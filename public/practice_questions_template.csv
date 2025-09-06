@@ -1,0 +1,6 @@
+id,statement,type,options,correct_options,explanation,tags,role,difficulty,time_limit_seconds
+q1,"What is output of console.log(typeof NaN)?","mcq_single","[{""id"":""a"",""text"":""number""},{""id"":""b"",""text"":""NaN""},{""id"":""c"",""text"":""undefined""}]","[""a""]","Because NaN is a number in JS.","javascript,types","Developer","easy",30
+q2,"Choose all stable sorting algorithms.","mcq_multi","[{""id"":""a"",""text"":""Merge sort""},{""id"":""b"",""text"":""Quick sort""},{""id"":""c"",""text"":""Insertion sort""}]","[""a"",""c""]","Merge and insertion sort are stable if implemented normally.","algorithms,sorting","Developer","medium",60
+q3,"Explain time complexity of binary search.","descriptive","[]","[]","Binary search divides search space in half each step, O(log n).","algorithms,search","Developer","easy",120
+q4,"Implement function to reverse a linked list (coding).","coding","[]","[]","Expected iterative and recursive solutions discussed in explanation.","data-structures,linked-list","Developer","medium",600
+q5,"Identify the Big-O of nested loops: for(i=0;i<n;i++){ for(j=0;j<n;j++){} }","mcq_single","[{""id"":""a"",""text"":""O(n)""},{""id"":""b"",""text"":""O(n^2)""},{""id"":""c"",""text"":""O(log n)""}]","[""b""]","Two nested loops both run n times, so O(n^2).","complexity,analysis","Developer","easy",30
