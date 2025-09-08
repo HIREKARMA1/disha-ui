@@ -382,7 +382,7 @@ export function UniversityProfile() {
                             <div className="text-center mb-6">
                                 <div className="w-24 h-24 mx-auto mb-4 relative">
                                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg overflow-hidden">
-                                        {profile.profile_picture ? (
+                                        {profile?.profile_picture ? (
                                             <img
                                                 src={profile.profile_picture}
                                                 alt={profile.name}
@@ -411,7 +411,7 @@ export function UniversityProfile() {
                                     {profile.name}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                    {profile.university_type || 'Educational Institution'}
+                                    {profile?.institute_type || 'Educational Institution'}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Est. {profile.established_year}
@@ -441,7 +441,7 @@ export function UniversityProfile() {
                                 <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50/80 to-red-50/80 dark:from-orange-900/20 dark:to-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
                                     <span className="text-sm text-gray-700 dark:text-gray-300">Placement</span>
                                     <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                                        {profile.placement_rate || 0}%
+                                        {profile?.placement_rate || 0}%
                                     </span>
                                 </div>
                             </div>
@@ -581,6 +581,8 @@ export function UniversityProfile() {
                         onSave={(formData) => handleSave('basic', formData)}
                         saving={saving}
                         onCancel={() => setEditing(null)}
+                        editing={editing}
+                        onEdit={handleEdit}
                     />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -591,7 +593,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.email}
+                                        {profile?.email}
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400">Email Address</p>
                                 </div>
@@ -603,7 +605,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.phone || 'Not provided'}
+                                        {profile?.phone || 'Not provided'}
                                     </p>
                                     <p className="text-xs text-green-600 dark:text-green-400">Phone Number</p>
                                 </div>
@@ -615,7 +617,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.website_url || 'Not provided'}
+                                        {profile?.website_url || 'Not provided'}
                                     </p>
                                     <p className="text-xs text-purple-600 dark:text-purple-400">Website</p>
                                 </div>
@@ -623,7 +625,7 @@ export function UniversityProfile() {
                         </div>
 
                         <div className="space-y-4">
-                            {profile.bio && (
+                            {profile?.bio && (
                                 <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                     <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Description</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -666,6 +668,8 @@ export function UniversityProfile() {
                         onSave={(formData) => handleSave('institution', formData)}
                         saving={saving}
                         onCancel={() => setEditing(null)}
+                        editing={editing}
+                        onEdit={handleEdit}
                     />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -676,7 +680,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.established_year || 'Not specified'}
+                                        {profile?.established_year || 'Not specified'}
                                     </p>
                                     <p className="text-xs text-orange-600 dark:text-orange-400">Established Year</p>
                                 </div>
@@ -688,7 +692,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.institute_type || 'Not specified'}
+                                        {profile?.institute_type || 'Not specified'}
                                     </p>
                                     <p className="text-xs text-indigo-600 dark:text-indigo-400">University Type</p>
                                 </div>
@@ -700,7 +704,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.verified ? 'Verified' : 'Not Verified'}
+                                        {profile?.verified ? 'Verified' : 'Not Verified'}
                                     </p>
                                     <p className="text-xs text-yellow-600 dark:text-yellow-400">Verification Status</p>
                                 </div>
@@ -714,7 +718,7 @@ export function UniversityProfile() {
                                     Address
                                 </h4>
                                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    {profile.address || 'Not provided'}
+                                    {profile?.address || 'Not provided'}
                                 </p>
                             </div>
                         </div>
@@ -752,6 +756,8 @@ export function UniversityProfile() {
                         onSave={(formData) => handleSave('academic', formData)}
                         saving={saving}
                         onCancel={() => setEditing(null)}
+                        editing={editing}
+                        onEdit={handleEdit}
                     />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -762,7 +768,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.courses_offered || 'Not specified'}
+                                        {profile?.courses_offered || 'Not specified'}
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400">Courses Offered</p>
                                 </div>
@@ -770,7 +776,7 @@ export function UniversityProfile() {
                         </div>
 
                         <div className="space-y-4">
-                            {profile.branch && (
+                            {profile?.branch && (
                                 <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                     <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Branch</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -813,6 +819,8 @@ export function UniversityProfile() {
                         onSave={(formData) => handleSave('placement', formData)}
                         saving={saving}
                         onCancel={() => setEditing(null)}
+                        editing={editing}
+                        onEdit={handleEdit}
                     />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -823,7 +831,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.total_students || 'Not specified'}
+                                        {profile?.total_students || 'Not specified'}
                                     </p>
                                     <p className="text-xs text-green-600 dark:text-green-400">Total Students</p>
                                 </div>
@@ -835,7 +843,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.total_faculty || 'Not specified'}
+                                        {profile?.total_faculty || 'Not specified'}
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400">Total Faculty</p>
                                 </div>
@@ -847,7 +855,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.placement_rate ? `${profile.placement_rate}%` : 'Not specified'}
+                                        {profile?.placement_rate ? `${profile?.placement_rate}%` : 'Not specified'}
                                     </p>
                                     <p className="text-xs text-purple-600 dark:text-purple-400">Placement Rate</p>
                                 </div>
@@ -859,7 +867,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.average_package ? `${profile.average_package} LPA` : 'Not specified'}
+                                        {profile?.average_package ? `${profile?.average_package} LPA` : 'Not specified'}
                                     </p>
                                     <p className="text-xs text-yellow-600 dark:text-yellow-400">Average Package</p>
                                 </div>
@@ -867,7 +875,7 @@ export function UniversityProfile() {
                         </div>
 
                         <div className="space-y-4">
-                            {profile.top_recruiters && (
+                            {profile?.top_recruiters && (
                                 <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                     <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Top Recruiters</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -890,9 +898,11 @@ interface ProfileSectionFormProps {
     onSave: (formData: UniversityProfileUpdateData) => void
     saving: boolean
     onCancel: () => void
+    editing: string | null
+    onEdit: (sectionId: string) => void
 }
 
-function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: ProfileSectionFormProps) {
+function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editing, onEdit }: ProfileSectionFormProps) {
     const [formData, setFormData] = useState<UniversityProfileUpdateData>({})
     const [uploadingImage, setUploadingImage] = useState(false)
 
@@ -901,7 +911,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             // Initialize form data with current profile values
             const initialData: UniversityProfileUpdateData = {}
             section.fields.forEach(field => {
-                initialData[field as keyof UniversityProfileUpdateData] = profile[field as keyof UniversityProfile] || ''
+                initialData[field as keyof UniversityProfileUpdateData] = (profile[field as keyof UniversityProfile] || '') as any
             })
             setFormData(initialData)
         }
@@ -1052,333 +1062,4 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         </form>
     )
 
-    function renderBasicInfo() {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <User className="w-5 h-5" />
-                        Basic Information
-                    </h3>
-                    {editing !== 'basic' && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit('basic')}
-                            className="flex items-center gap-2"
-                        >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                        </Button>
-                    )}
-                </div>
-
-                {editing === 'basic' ? (
-                    <ProfileSectionForm
-                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'phone', 'bio', 'website_url', 'profile_picture'], completed: false }}
-                        profile={profile}
-                        onSave={(formData) => handleSave('basic', formData)}
-                        saving={saving}
-                        onCancel={() => setEditing(null)}
-                    />
-                ) : (
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.email}
-                                    </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">Email Address</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <Phone className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.phone || 'Not provided'}
-                                    </p>
-                                    <p className="text-xs text-green-600 dark:text-green-400">Phone Number</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                    <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.website_url || 'Not provided'}
-                                    </p>
-                                    <p className="text-xs text-purple-600 dark:text-purple-400">Website</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            {profile.bio && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Description</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        {profile.bio}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        )
-    }
-
-    function renderInstitutionInfo() {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Building2 className="w-5 h-5" />
-                        Institution Details
-                    </h3>
-                    {editing !== 'institution' && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit('institution')}
-                            className="flex items-center gap-2"
-                        >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                        </Button>
-                    )}
-                </div>
-
-                {editing === 'institution' ? (
-                    <ProfileSectionForm
-                        section={{ id: 'institution', title: 'Institution Details', icon: Building2, fields: ['university_name', 'institute_type', 'established_year', 'contact_person_name', 'contact_designation', 'address'], completed: false }}
-                        profile={profile}
-                        onSave={(formData) => handleSave('institution', formData)}
-                        saving={saving}
-                        onCancel={() => setEditing(null)}
-                    />
-                ) : (
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                    <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.established_year || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-orange-600 dark:text-orange-400">Established Year</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                    <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.institute_type || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">University Type</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                                    <Shield className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.verified ? 'Verified' : 'Not Verified'}
-                                    </p>
-                                    <p className="text-xs text-yellow-600 dark:text-yellow-400">Verification Status</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    Address
-                                </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    {profile.address || 'Not provided'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        )
-    }
-
-    function renderAcademicInfo() {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <GraduationCap className="w-5 h-5" />
-                        Academic Information
-                    </h3>
-                    {editing !== 'academic' && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit('academic')}
-                            className="flex items-center gap-2"
-                        >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                        </Button>
-                    )}
-                </div>
-
-                {editing === 'academic' ? (
-                    <ProfileSectionForm
-                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['courses_offered', 'branch'], completed: false }}
-                        profile={profile}
-                        onSave={(formData) => handleSave('academic', formData)}
-                        saving={saving}
-                        onCancel={() => setEditing(null)}
-                    />
-                ) : (
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.total_students?.toLocaleString() || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">Total Students</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <GraduationCap className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.total_faculty?.toLocaleString() || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-green-600 dark:text-green-400">Total Faculty</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            {profile.courses_offered && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Courses Offered</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        {profile.courses_offered}
-                                    </p>
-                                </div>
-                            )}
-
-                            {profile.branch && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Branch</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        {profile.branch}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        )
-    }
-
-    function renderPlacementInfo() {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Trophy className="w-5 h-5" />
-                        Placement Statistics
-                    </h3>
-                    {editing !== 'placement' && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit('placement')}
-                            className="flex items-center gap-2"
-                        >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                        </Button>
-                    )}
-                </div>
-
-                {editing === 'placement' ? (
-                    <ProfileSectionForm
-                        section={{ id: 'placement', title: 'Placement Statistics', icon: Trophy, fields: ['total_students', 'total_faculty', 'placement_rate', 'average_package', 'top_recruiters'], completed: false }}
-                        profile={profile}
-                        onSave={(formData) => handleSave('placement', formData)}
-                        saving={saving}
-                        onCancel={() => setEditing(null)}
-                    />
-                ) : (
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <Trophy className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile.placement_rate || 0}%
-                                    </p>
-                                    <p className="text-xs text-green-600 dark:text-green-400">Placement Rate</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        ₹{profile.average_package || 0} LPA
-                                    </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">Average Package</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            {profile.top_recruiters && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Top Recruiters</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        {profile.top_recruiters}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        )
-    }
 }

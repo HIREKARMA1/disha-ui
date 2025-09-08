@@ -86,7 +86,7 @@ Based on the HireKarma logo:
    ```
 
 5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+   Navigate to [http://host:3000](http://localhost:3000)
 
 ## 🏗️ Project Structure
 

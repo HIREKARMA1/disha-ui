@@ -26,6 +26,7 @@ export function BulkUploadModal({
         rowCount: number;
         missingColumns: string[];
         sampleData: any[];
+        error?: string;
     } | null>(null)
 
     // Clear validation state when modal closes
@@ -480,7 +481,7 @@ export function BulkUploadModal({
                                                 e.stopPropagation()
                                                 handleSubmit(e)
                                             }}
-                                            disabled={!selectedFile || isUploading || (fileValidation && !fileValidation.isValid)}
+                                            disabled={!selectedFile || isUploading || (fileValidation ? !fileValidation.isValid : false)}
                                             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                                         >
                                             {isUploading ? 'Uploading...' : 'Upload Students'}

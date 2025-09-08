@@ -21,7 +21,7 @@ export const exportAttemptReport = (report: any, filename = 'practice-report.pdf
   }
 
   // Per-question table
-  const nextY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 10 : 100;
+  const nextY = (doc as any).previousAutoTable ? (doc as any).previousAutoTable.finalY + 10 : 100;
 
   autoTable(doc, {
     startY: nextY,
