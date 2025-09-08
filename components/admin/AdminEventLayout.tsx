@@ -13,17 +13,17 @@ interface AdminEventLayoutProps {
 
 export function AdminEventLayout({ children }: AdminEventLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
-    const { user, loading } = useAuth()
+    const { user, isLoading } = useAuth()
     const router = useRouter()
 
     // Redirect if not admin
     useEffect(() => {
-        if (!loading && user?.user_type !== 'admin') {
+        if (!isLoading && user?.user_type !== 'admin') {
             router.push('/dashboard')
         }
-    }, [user, loading, router])
+    }, [user, isLoading, router])
 
-    if (loading) {
+    if (isLoading) {
         return <LoadingOverlay />
     }
 

@@ -1,5 +1,5 @@
 // src/mocks/handlers.ts
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 
 const exampleModule = {
   id: 'mod-dev-1',
@@ -36,24 +36,21 @@ const questions = {
 
 export const handlers = [
   // GET modules
-  rest.get('/api/practice/modules', (req, res, ctx) => {
-    return res(ctx.status(200), ctx.json([exampleModule]));
+  http.get('/api/practice/modules', () => {
+    return HttpResponse.json([exampleModule]);
   }),
 
   // GET module by id -> includes questions (light)
-  rest.get('/api/practice/modules/:id', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        ...exampleModule,
-        questions: [questions.q1, questions.q2, questions.q3],
-      })
-    );
+  http.get('/api/practice/modules/:id', () => {
+    return HttpResponse.json({
+      ...exampleModule,
+      questions: [questions.q1, questions.q2, questions.q3],
+    });
   }),
 
   // Submit attempt
-  rest.post('/api/practice/submit', async (req, res, ctx) => {
-    const body = await req.json();
+  http.post('/api/practice/submit', async ({ request }) => {
+    const body = await request.json() as any;
     // naive scoring: mark MCQ single correct for q1->a, q2->a,c
     const results = body.answers.map((ans: any) => {
       if (ans.question_id === 'q1') {
@@ -71,23 +68,20 @@ export const handlers = [
     const correctCount = results.filter((r:any) => r.is_correct).length;
     const percent = (correctCount / results.length) * 100;
 
-    return res(
-      ctx.status(200),
-      ctx.json({
-        attempt_id: 'attempt-123',
-        module_id: body.module_id,
-        score_percent: percent,
-        time_taken_seconds: (new Date(body.ended_at).getTime() - new Date(body.started_at).getTime()) / 1000,
-        weak_areas: [{ tag: 'algorithms', accuracy: 40 }],
-        role_fit_score: 70 + (percent/10),
-        question_results: results,
-      })
-    );
+    return HttpResponse.json({
+      attempt_id: 'attempt-123',
+      module_id: body.module_id,
+      score_percent: percent,
+      time_taken_seconds: (new Date(body.ended_at).getTime() - new Date(body.started_at).getTime()) / 1000,
+      weak_areas: [{ tag: 'algorithms', accuracy: 40 }],
+      role_fit_score: 70 + (percent/10),
+      question_results: results,
+    });
   }),
 
   // Bulk upload (admin) - rudimentary
-  rest.post('/api/admin/practice/questions/bulk', async (req, res, ctx) => {
+  http.post('/api/admin/practice/questions/bulk', () => {
     // If file upload: respond with success with row count.
-    return res(ctx.status(200), ctx.json({ imported: 4, invalid: 1 }));
+    return HttpResponse.json({ imported: 4, invalid: 1 });
   }),
 ];
