@@ -296,7 +296,7 @@ export function CreateStudentModal({
                                                     type="text"
                                                     id="degree"
                                                     value={formData.degree || ''}
-                                                    onChange={(e) => handleInputChange('degree', e.target.value || undefined)}
+                                                    onChange={(e) => handleInputChange('degree', e.target.value || '')}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
                                                     placeholder="e.g., Bachelor of Technology"
                                                 />
@@ -314,7 +314,7 @@ export function CreateStudentModal({
                                                     type="text"
                                                     id="branch"
                                                     value={formData.branch || ''}
-                                                    onChange={(e) => handleInputChange('branch', e.target.value || undefined)}
+                                                    onChange={(e) => handleInputChange('branch', e.target.value || '')}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
                                                     placeholder="e.g., Computer Science"
                                                 />
@@ -334,7 +334,7 @@ export function CreateStudentModal({
                                                     min="2000"
                                                     max="2030"
                                                     value={formData.graduation_year || ''}
-                                                    onChange={(e) => handleInputChange('graduation_year', e.target.value ? parseInt(e.target.value) : undefined)}
+                                                    onChange={(e) => handleInputChange('graduation_year', e.target.value ? parseInt(e.target.value) : 0)}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
                                                     placeholder="e.g., 2025"
                                                 />

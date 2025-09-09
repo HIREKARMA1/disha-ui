@@ -16,6 +16,19 @@ import { Select } from '@/components/ui/select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
+
+// Union type for all possible form data
+type FormData = {
+    email: string
+    password: string
+    confirmPassword: string
+    user_type: UserType
+} & (
+        | { name: string; phone?: string; dob?: string; gender?: string; graduation_year?: number; institution?: string; degree?: string; branch?: string; technical_skills?: string }
+        | { company_name: string; website_url?: string; industry?: string; company_size?: string; founded_year?: number; contact_person?: string; contact_designation?: string; address?: string; phone?: string }
+        | { university_name: string; website_url?: string; institute_type?: string; established_year?: number; contact_person_name?: string; courses_offered?: string; phone?: string }
+        | { name: string; role?: string }
+    )
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
 
@@ -140,7 +153,7 @@ export default function RegisterPage() {
         setValue,
         reset,
         formState: { errors }
-    } = useForm({
+    } = useForm<FormData>({
         resolver: zodResolver(validationSchema),
         defaultValues: {
             user_type: 'student'
@@ -176,7 +189,7 @@ export default function RegisterPage() {
         setValue('user_type', userType)
     }
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (data: FormData) => {
         setIsLoading(true)
         try {
             // Prepare form data based on user type
@@ -189,16 +202,16 @@ export default function RegisterPage() {
             let response: any
             switch (selectedUserType) {
                 case 'student':
-                    response = await apiClient.registerStudent(formData as StudentRegisterRequest)
+                    response = await apiClient.registerStudent(formData as any)
                     break
                 case 'corporate':
-                    response = await apiClient.registerCorporate(formData as CorporateRegisterRequest)
+                    response = await apiClient.registerCorporate(formData as any)
                     break
                 case 'university':
-                    response = await apiClient.registerUniversity(formData as UniversityRegisterRequest)
+                    response = await apiClient.registerUniversity(formData as any)
                     break
                 case 'admin':
-                    response = await apiClient.registerAdmin(formData as AdminRegisterRequest)
+                    response = await apiClient.registerAdmin(formData as any)
                     break
                 default:
                     throw new Error('Invalid user type')
@@ -222,7 +235,7 @@ export default function RegisterPage() {
                     id: loginResponse.user_id || 'temp-id',
                     email: data.email,
                     user_type: selectedUserType,
-                    name: loginResponse.name || data.name || data.company_name || data.university_name || data.email
+                    name: loginResponse.name || (data as any).name || (data as any).company_name || (data as any).university_name || data.email
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
                 // Redirect to appropriate dashboard based on user type
@@ -293,12 +306,12 @@ export default function RegisterPage() {
                     id="name"
                     placeholder="Enter your full name"
                     leftIcon={<User className="w-4 h-4" />}
-                    error={!!errors.name}
+                    error={!!(errors as any).name}
                     {...register('name')}
                 />
-                {errors.name && (
+                {(errors as any).name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {typeof errors.name.message === 'string' ? errors.name.message : 'Name is required'}
+                        {typeof (errors as any).name.message === 'string' ? (errors as any).name.message : 'Name is required'}
                     </p>
                 )}
             </div>
@@ -327,12 +340,12 @@ export default function RegisterPage() {
                     id="company_name"
                     placeholder="Enter company name"
                     leftIcon={<Building2 className="w-4 h-4" />}
-                    error={!!errors.company_name}
+                    error={!!(errors as any).company_name}
                     {...register('company_name')}
                 />
-                {errors.company_name && (
+                {(errors as any).company_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {typeof errors.company_name.message === 'string' ? errors.company_name.message : 'Company name is required'}
+                        {typeof (errors as any).company_name.message === 'string' ? (errors as any).company_name.message : 'Company name is required'}
                     </p>
                 )}
             </div>
@@ -361,12 +374,12 @@ export default function RegisterPage() {
                     id="university_name"
                     placeholder="Enter university name"
                     leftIcon={<GraduationCap className="w-4 h-4" />}
-                    error={!!errors.university_name}
+                    error={!!(errors as any).university_name}
                     {...register('university_name')}
                 />
-                {errors.university_name && (
+                {(errors as any).university_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {typeof errors.university_name.message === 'string' ? errors.university_name.message : 'University name is required'}
+                        {typeof (errors as any).university_name.message === 'string' ? (errors as any).university_name.message : 'University name is required'}
                     </p>
                 )}
             </div>
@@ -395,12 +408,12 @@ export default function RegisterPage() {
                     id="name"
                     placeholder="Enter your full name"
                     leftIcon={<User className="w-4 h-4" />}
-                    error={!!errors.name}
+                    error={!!(errors as any).name}
                     {...register('name')}
                 />
-                {errors.name && (
+                {(errors as any).name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {typeof errors.name.message === 'string' ? errors.name.message : 'Name is required'}
+                        {typeof (errors as any).name.message === 'string' ? (errors as any).name.message : 'Name is required'}
                     </p>
                 )}
             </div>
@@ -518,12 +531,12 @@ export default function RegisterPage() {
                                         type="email"
                                         placeholder="Enter your email address"
                                         leftIcon={<Mail className="w-4 h-4" />}
-                                        error={!!errors.email}
+                                        error={!!(errors as any).email}
                                         {...register('email')}
                                     />
-                                    {errors.email && (
+                                    {(errors as any).email && (
                                         <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                            {typeof errors.email.message === 'string' ? errors.email.message : 'Email is required'}
+                                            {typeof (errors as any).email.message === 'string' ? (errors as any).email.message : 'Email is required'}
                                         </p>
                                     )}
                                 </div>
@@ -547,12 +560,12 @@ export default function RegisterPage() {
                                                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
                                             }
-                                            error={!!errors.password}
+                                            error={!!(errors as any).password}
                                             {...register('password')}
                                         />
-                                        {errors.password && (
+                                        {(errors as any).password && (
                                             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                {typeof errors.password.message === 'string' ? errors.password.message : 'Password is required'}
+                                                {typeof (errors as any).password.message === 'string' ? (errors as any).password.message : 'Password is required'}
                                             </p>
                                         )}
                                     </div>
@@ -575,12 +588,12 @@ export default function RegisterPage() {
                                                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
                                             }
-                                            error={!!errors.confirmPassword}
+                                            error={!!(errors as any).confirmPassword}
                                             {...register('confirmPassword')}
                                         />
-                                        {errors.confirmPassword && (
+                                        {(errors as any).confirmPassword && (
                                             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                {typeof errors.confirmPassword.message === 'string' ? errors.confirmPassword.message : 'Please confirm your password'}
+                                                {typeof (errors as any).confirmPassword.message === 'string' ? (errors as any).confirmPassword.message : 'Please confirm your password'}
                                             </p>
                                         )}
                                     </div>

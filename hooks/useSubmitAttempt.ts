@@ -11,8 +11,8 @@ export interface Answer {
 export const useSubmitAttempt = () => {
   const qc = useQueryClient();
 
-  return useMutation(
-    (payload: {
+  return useMutation({
+    mutationFn: (payload: {
       module_id: string;
       student_id: string;
       attempt_id: string;
@@ -20,15 +20,13 @@ export const useSubmitAttempt = () => {
       started_at: string;
       ended_at: string;
     }) => axios.post('/api/practice/submit', payload).then(r => r.data),
-    {
-      onSuccess: (data) => {
-        // invalidate caches as needed
-        qc.invalidateQueries(['practice', data.module_id]);
-      },
-      onError: (err) => {
-        console.error('Submit failed', err);
-        // optionally push attempt to retry queue (localStorage)
-      },
-    }
-  );
+    onSuccess: (data) => {
+      // invalidate caches as needed
+      qc.invalidateQueries({ queryKey: ['practice', data.module_id] });
+    },
+    onError: (err) => {
+      console.error('Submit failed', err);
+      // optionally push attempt to retry queue (localStorage)
+    },
+  });
 };

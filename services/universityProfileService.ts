@@ -53,6 +53,7 @@ export interface UniversityProfileUpdateData {
     placement_rate?: number
     average_package?: number
     top_recruiters?: string
+    profile_picture?: string
 }
 
 export interface FileUploadResponse {
