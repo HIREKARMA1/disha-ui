@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Brain, Clock, Users, Trophy, ArrowLeft } from 'lucide-react'
+import { Brain, Clock, Users, Trophy, ArrowLeft, History } from 'lucide-react'
 import { PracticeCard } from './PracticeCard'
 import { PracticeExam } from './PracticeExam'
 import { ResultReport } from './ResultReport'
+import { SavedSessionCard } from './SavedSessionCard'
+import { StartPracticeDialog } from './StartPracticeDialog'
 import { usePracticeModules } from '@/hooks/usePractice'
+import { useSavedSessions } from '@/hooks/useSavedSessions'
 import { PracticeModule, SubmitAttemptResponse } from '@/types/practice'
 import { Button } from '@/components/ui/button'
 
@@ -16,12 +19,47 @@ export function PracticeDashboard() {
     const [currentView, setCurrentView] = useState<ViewState>('dashboard')
     const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(null)
     const [examResult, setExamResult] = useState<SubmitAttemptResponse | null>(null)
+    const [isResuming, setIsResuming] = useState(false)
+    const [showStartDialog, setShowStartDialog] = useState(false)
+    const [pendingModule, setPendingModule] = useState<PracticeModule | null>(null)
     
     const { data: modules, isLoading, error } = usePracticeModules()
+    const { savedSessions, clearSession } = useSavedSessions(modules || [])
 
     const handleStartExam = (module: PracticeModule) => {
+        // Check if there's a saved session for this module
+        const savedSession = savedSessions.find(session => session.moduleId === module.id)
+        
+        if (savedSession) {
+            // Show dialog to ask user if they want to resume or start fresh
+            setPendingModule(module)
+            setShowStartDialog(true)
+        } else {
+            // No saved session, start fresh
+            startFreshExam(module)
+        }
+    }
+
+    const startFreshExam = (module: PracticeModule) => {
+        // Clear any existing session for this module before starting
+        const storageKey = `exam_session_${module.id}`
+        localStorage.removeItem(storageKey)
+        localStorage.removeItem(`clear_flag_${module.id}`)
+        localStorage.removeItem(`notified_${module.id}`)
+        
+        setIsResuming(false)
         setSelectedModule(module)
         setCurrentView('exam')
+        setShowStartDialog(false)
+        setPendingModule(null)
+    }
+
+    const resumeExam = (module: PracticeModule) => {
+        setIsResuming(true)
+        setSelectedModule(module)
+        setCurrentView('exam')
+        setShowStartDialog(false)
+        setPendingModule(null)
     }
 
     const handleExamComplete = (result: SubmitAttemptResponse) => {
@@ -33,11 +71,25 @@ export function PracticeDashboard() {
         setCurrentView('dashboard')
         setSelectedModule(null)
         setExamResult(null)
+        setIsResuming(false)
     }
 
     const handleBackToExam = () => {
         setCurrentView('exam')
         setExamResult(null)
+    }
+
+    const handleResumeSession = (moduleId: string) => {
+        const module = modules?.find(m => m.id === moduleId)
+        if (module) {
+            setIsResuming(true)
+            setSelectedModule(module)
+            setCurrentView('exam')
+        }
+    }
+
+    const handleClearSession = (moduleId: string) => {
+        clearSession(moduleId)
     }
 
     if (currentView === 'exam' && selectedModule) {
@@ -46,6 +98,7 @@ export function PracticeDashboard() {
                 module={selectedModule}
                 onComplete={handleExamComplete}
                 onBack={handleBackToDashboard}
+                startFresh={!isResuming}
             />
         )
     }
@@ -142,6 +195,38 @@ export function PracticeDashboard() {
                 </motion.div>
             </div>
 
+            {/* Saved Sessions */}
+            {savedSessions.length > 0 && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <History className="w-5 h-5 text-primary-500" />
+                            Saved Sessions
+                        </h2>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {savedSessions.length} incomplete session{savedSessions.length !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {savedSessions.map((session, index) => (
+                            <motion.div
+                                key={session.moduleId}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                <SavedSessionCard
+                                    session={session}
+                                    onResume={handleResumeSession}
+                                    onClear={handleClearSession}
+                                />
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Practice Modules Grid */}
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -201,6 +286,20 @@ export function PracticeDashboard() {
                     </div>
                 )}
             </div>
+
+            {/* Start Practice Dialog */}
+            {pendingModule && (
+                <StartPracticeDialog
+                    isOpen={showStartDialog}
+                    onClose={() => {
+                        setShowStartDialog(false)
+                        setPendingModule(null)
+                    }}
+                    onStartFresh={() => startFreshExam(pendingModule)}
+                    onResume={() => resumeExam(pendingModule)}
+                    savedSession={savedSessions.find(session => session.moduleId === pendingModule.id) || null}
+                />
+            )}
         </div>
     )
 }

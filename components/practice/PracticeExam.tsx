@@ -26,17 +26,12 @@ export function PracticeExam({ module, onComplete, onBack, onProgressUpdate, sta
     const [showConfirmExit, setShowConfirmExit] = useState(false)
     
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
-    const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam, setSession, forceFreshSession } = useExamSession(module.id)
+    const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam, setSession, forceFreshSession, saveToBackend } = useExamSession(module.id, startFresh)
 
     const currentQuestion = questions?.[currentQuestionIndex]
     const totalQuestions = questions?.length || 0
 
-    // Force fresh session if startFresh is true
-    useEffect(() => {
-        if (startFresh) {
-            forceFreshSession()
-        }
-    }, [startFresh, forceFreshSession])
+    // Note: Fresh session is now handled automatically by useExamSession hook
 
     // Restore current question index from session when session loads
     useEffect(() => {
@@ -185,7 +180,11 @@ export function PracticeExam({ module, onComplete, onBack, onProgressUpdate, sta
         }
     }
 
-    const confirmExit = () => {
+    const confirmExit = async () => {
+        // Save progress before exiting
+        if (saveToBackend) {
+            await saveToBackend()
+        }
         setShowConfirmExit(false)
         onBack()
     }

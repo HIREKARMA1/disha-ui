@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/api'
 
 const STORAGE_KEY_PREFIX = 'exam_session_'
 
-export function useExamSession(moduleId: string) {
+export function useExamSession(moduleId: string, forceFresh: boolean = false) {
     const [session, setSession] = useState<ExamSession | null>(null)
     const { user } = useAuth()
     const submitAttemptMutation = useSubmitAttempt()
@@ -17,6 +17,25 @@ export function useExamSession(moduleId: string) {
 
         const storageKey = `${STORAGE_KEY_PREFIX}${moduleId}`
         const clearFlagKey = `clear_flag_${moduleId}`
+        
+        // If forceFresh is true, clear everything and start fresh
+        if (forceFresh) {
+            localStorage.removeItem(storageKey)
+            localStorage.removeItem(clearFlagKey)
+            localStorage.removeItem(`notified_${moduleId}`)
+            
+            const newSession: ExamSession = {
+                moduleId,
+                currentQuestionIndex: 0,
+                answers: {},
+                timeSpent: {},
+                flaggedQuestions: new Set(),
+                startTime: new Date(),
+                isSubmitted: false
+            }
+            setSession(newSession)
+            return
+        }
         
         // Check if there's a clear flag for this module (using localStorage for persistence)
         const clearFlag = localStorage.getItem(clearFlagKey)
@@ -111,27 +130,38 @@ export function useExamSession(moduleId: string) {
             flaggedQuestions: Array.from(session.flaggedQuestions) // Convert Set to Array for JSON
         }
         localStorage.setItem(storageKey, JSON.stringify(sessionToSave))
+        
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('examSessionChanged'))
     }, [session, moduleId])
 
-    // Sync to backend every 30 seconds (only if not submitted)
+    // Manual save function
+    const saveToBackend = useCallback(async () => {
+        if (!session || !moduleId || session.isSubmitted) return
+
+        try {
+            const sessionToSave = {
+                ...session,
+                flaggedQuestions: Array.from(session.flaggedQuestions)
+            }
+            await apiClient.saveExamProgress(sessionToSave)
+            console.log('Session saved to backend')
+        } catch (error) {
+            console.error('Failed to sync exam progress to backend:', error)
+        }
+    }, [session, moduleId])
+
+    // Sync to backend immediately when session changes, then every 30 seconds
     useEffect(() => {
         if (!session || !moduleId || session.isSubmitted) return
 
-        const syncToBackend = async () => {
-            try {
-                const sessionToSave = {
-                    ...session,
-                    flaggedQuestions: Array.from(session.flaggedQuestions)
-                }
-                await apiClient.saveExamProgress(sessionToSave)
-            } catch (error) {
-                console.error('Failed to sync exam progress to backend:', error)
-            }
-        }
+        // Save immediately when session changes
+        saveToBackend()
         
-        const interval = setInterval(syncToBackend, 30000)
+        // Then save every 30 seconds
+        const interval = setInterval(saveToBackend, 30000)
         return () => clearInterval(interval)
-    }, [session?.isSubmitted, moduleId])
+    }, [session?.isSubmitted, moduleId, saveToBackend])
 
     const updateAnswer = useCallback((questionId: string, answer: string[]) => {
         setSession(prev => {
@@ -219,11 +249,23 @@ export function useExamSession(moduleId: string) {
         setSession(null)
         const storageKey = `${STORAGE_KEY_PREFIX}${moduleId}`
         localStorage.removeItem(storageKey)
+        
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('examSessionChanged'))
     }, [moduleId])
 
     const forceFreshSession = useCallback(() => {
         const storageKey = `${STORAGE_KEY_PREFIX}${moduleId}`
+        const clearFlagKey = `clear_flag_${moduleId}`
+        const notificationKey = `notified_${moduleId}`
+        
+        // Clear all related localStorage items
         localStorage.removeItem(storageKey)
+        localStorage.removeItem(clearFlagKey)
+        localStorage.removeItem(notificationKey)
+        
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new CustomEvent('examSessionChanged'))
         
         const newSession: ExamSession = {
             moduleId,
@@ -246,6 +288,7 @@ export function useExamSession(moduleId: string) {
         submitExam,
         clearSession,
         forceFreshSession,
+        saveToBackend,
         isSubmitting: submitAttemptMutation.isPending
     }
 }
