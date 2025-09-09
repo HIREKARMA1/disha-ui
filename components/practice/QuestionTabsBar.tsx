@@ -55,7 +55,7 @@ export function QuestionTabsBar({
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                     Questions
                 </h3>
-                <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
                         <span>Current</span>

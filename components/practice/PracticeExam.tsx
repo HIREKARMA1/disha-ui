@@ -17,17 +17,82 @@ interface PracticeExamProps {
     module: PracticeModule
     onComplete: (result: any) => void
     onBack: () => void
+    onProgressUpdate?: (currentQuestionIndex: number, answeredQuestions: number) => void
+    startFresh?: boolean
 }
 
-export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) {
+export function PracticeExam({ module, onComplete, onBack, onProgressUpdate, startFresh = false }: PracticeExamProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [showConfirmExit, setShowConfirmExit] = useState(false)
     
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
-    const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam } = useExamSession(module.id)
+    const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam, setSession, forceFreshSession } = useExamSession(module.id)
 
     const currentQuestion = questions?.[currentQuestionIndex]
     const totalQuestions = questions?.length || 0
+
+    // Force fresh session if startFresh is true
+    useEffect(() => {
+        if (startFresh) {
+            forceFreshSession()
+        }
+    }, [startFresh, forceFreshSession])
+
+    // Restore current question index from session when session loads
+    useEffect(() => {
+        if (session && session.currentQuestionIndex !== undefined) {
+            setCurrentQuestionIndex(session.currentQuestionIndex)
+        }
+    }, [session?.currentQuestionIndex])
+
+    // Track progress and notify parent component
+    useEffect(() => {
+        if (onProgressUpdate && questions) {
+            const answeredQuestions = Object.keys(session?.answers || {}).length
+            onProgressUpdate(currentQuestionIndex, answeredQuestions)
+        }
+    }, [currentQuestionIndex, session?.answers, onProgressUpdate, questions])
+
+    // Show restoration notification only once when session is first loaded with answers
+    useEffect(() => {
+        if (session && Object.keys(session.answers).length > 0) {
+            const hasBeenNotified = sessionStorage.getItem(`notified_${module.id}`)
+            if (!hasBeenNotified) {
+                toast.success('Session restored! Your progress has been saved.')
+                sessionStorage.setItem(`notified_${module.id}`, 'true')
+            }
+        }
+    }, [session?.answers, module.id])
+
+    const handleNext = useCallback(() => {
+        if (currentQuestionIndex < totalQuestions - 1) {
+            const newIndex = currentQuestionIndex + 1
+            setCurrentQuestionIndex(newIndex)
+            // Update session with new current question index
+            if (session) {
+                setSession(prev => prev ? { ...prev, currentQuestionIndex: newIndex } : null)
+            }
+        }
+    }, [currentQuestionIndex, totalQuestions, session, setSession])
+
+    const handlePrevious = useCallback(() => {
+        if (currentQuestionIndex > 0) {
+            const newIndex = currentQuestionIndex - 1
+            setCurrentQuestionIndex(newIndex)
+            // Update session with new current question index
+            if (session) {
+                setSession(prev => prev ? { ...prev, currentQuestionIndex: newIndex } : null)
+            }
+        }
+    }, [currentQuestionIndex, session, setSession])
+
+    const handleQuestionSelect = useCallback((index: number) => {
+        setCurrentQuestionIndex(index)
+        // Update session with new current question index
+        if (session) {
+            setSession(prev => prev ? { ...prev, currentQuestionIndex: index } : null)
+        }
+    }, [session, setSession])
 
     // Auto-save answers every 10 seconds
     useEffect(() => {
@@ -35,11 +100,16 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             if (session && !session.isSubmitted) {
                 // Auto-save is handled by the useExamSession hook
                 console.log('Auto-saving exam progress...')
+                // Only show toast if there are actual answers to save
+                const hasAnswers = Object.keys(session.answers).length > 0
+                if (hasAnswers) {
+                    toast.success('Progress auto-saved!', { duration: 2000 })
+                }
             }
         }, 10000)
 
         return () => clearInterval(interval)
-    }, [session])
+    }, [session?.answers, session?.isSubmitted])
 
     // Keyboard navigation
     useEffect(() => {
@@ -66,7 +136,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 case '9':
                     const questionNum = parseInt(e.key) - 1
                     if (questionNum < totalQuestions) {
-                        setCurrentQuestionIndex(questionNum)
+                        handleQuestionSelect(questionNum)
                     }
                     break
             }
@@ -74,47 +144,32 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
 
         window.addEventListener('keydown', handleKeyPress)
         return () => window.removeEventListener('keydown', handleKeyPress)
-    }, [totalQuestions])
+    }, [handleNext, handlePrevious, handleQuestionSelect, totalQuestions])
 
-    const handleNext = () => {
-        if (currentQuestionIndex < totalQuestions - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1)
-        }
-    }
-
-    const handlePrevious = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(currentQuestionIndex - 1)
-        }
-    }
-
-    const handleQuestionSelect = (index: number) => {
-        setCurrentQuestionIndex(index)
-    }
-
-    const handleAnswerChange = (answer: string[]) => {
+    const handleAnswerChange = useCallback((answer: string[]) => {
         if (currentQuestion) {
             updateAnswer(currentQuestion.id, answer)
         }
-    }
+    }, [currentQuestion, updateAnswer])
 
-    const handleTimeSpent = (timeSpent: number) => {
+    const handleTimeSpent = useCallback((timeSpent: number) => {
         if (currentQuestion) {
             updateTimeSpent(currentQuestion.id, timeSpent)
         }
-    }
+    }, [currentQuestion, updateTimeSpent])
 
-    const handleFlagToggle = () => {
+    const handleFlagToggle = useCallback(() => {
         if (currentQuestion) {
             toggleFlag(currentQuestion.id)
         }
-    }
+    }, [currentQuestion, toggleFlag])
 
     const handleSubmit = async () => {
         if (!questions || !session) return
 
         try {
             const result = await submitExam()
+            // Session will be automatically cleared by the useExamSession hook
             onComplete(result)
         } catch (error) {
             toast.error('Failed to submit exam. Please try again.')
@@ -184,6 +239,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 </div>
                 <ExamTimer
                     duration={module.duration_seconds}
+                    moduleId={module.id}
                     onTimeUp={handleSubmit}
                 />
             </div>
@@ -198,26 +254,30 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             />
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Question Panel */}
-                <div className="lg:col-span-2">
+            <div className={`grid gap-8 ${currentQuestion?.type === 'coding' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
+                {/* Question Panel - Full width for coding, 2/3 width for others */}
+                <div className={currentQuestion?.type === 'coding' ? 'col-span-1' : 'lg:col-span-2'}>
                     <QuestionPanel
                         question={currentQuestion!}
                         questionNumber={currentQuestionIndex + 1}
                         onTimeSpent={handleTimeSpent}
-                    />
-                </div>
-
-                {/* Options Panel */}
-                <div className="lg:col-span-1">
-                    <OptionsPanel
-                        question={currentQuestion!}
                         answer={session?.answers[currentQuestion?.id || ''] || []}
-                        isFlagged={session?.flaggedQuestions.has(currentQuestion?.id || '') || false}
                         onAnswerChange={handleAnswerChange}
+                        isFlagged={session?.flaggedQuestions.has(currentQuestion?.id || '') || false}
                         onFlagToggle={handleFlagToggle}
                     />
                 </div>
+
+                {/* Right Column - Options Panel (only for non-coding questions) */}
+                {currentQuestion?.type !== 'coding' && (
+                    <div className="lg:col-span-1">
+                        <OptionsPanel
+                            question={currentQuestion!}
+                            answer={session?.answers[currentQuestion?.id || ''] || []}
+                            onAnswerChange={handleAnswerChange}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Navigation */}

@@ -46,6 +46,19 @@ export interface QuestionResult {
   question_id: string
   is_correct: boolean
   explanation?: string
+  time_spent: number
+}
+
+export interface AnswerReview {
+  question_id: string
+  question_statement: string
+  question_type: string
+  question_options: Array<{ id: string; text: string }>
+  user_answer: string | string[] | Record<string, any>
+  correct_answer: string | string[] | Record<string, any>
+  is_correct: boolean
+  explanation?: string
+  time_spent: number
 }
 
 export interface WeakArea {
@@ -61,6 +74,7 @@ export interface SubmitAttemptResponse {
   weak_areas: WeakArea[]
   role_fit_score: number
   question_results: QuestionResult[]
+  answer_review: AnswerReview[]
 }
 
 export interface ExamSession {
@@ -101,7 +115,7 @@ export interface BulkUploadResult {
 }
 
 export interface StudentAttempt {
-  id: string
+  attempt_id: string
   student_id: string
   student_name: string
   module_id: string
@@ -112,4 +126,31 @@ export interface StudentAttempt {
   ended_at: string
   answers: QuestionAnswer[]
   question_results: QuestionResult[]
+  answer_review: AnswerReview[]
+}
+
+// Code execution types
+export interface CodeExecutionRequest {
+  code: string
+  language: string
+}
+
+export interface CodeExecutionResponse {
+  success: boolean
+  output: string
+  error: string
+  execution_time: number
+}
+
+export interface SupportedLanguage {
+  value: string
+  label: string
+  extension: string
+}
+
+export interface CodeExecutionConfig {
+  command: string
+  extension: string
+  timeout: number
+  compile_command?: string
 }

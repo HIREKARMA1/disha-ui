@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Question } from '@/types/practice'
+import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
 interface AdminQuestionEditorProps {
@@ -28,6 +29,7 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
 
     const [newTag, setNewTag] = useState('')
     const [newOption, setNewOption] = useState('')
+    const [isSaving, setIsSaving] = useState(false)
 
     useEffect(() => {
         if (question) {
@@ -119,7 +121,7 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
         }))
     }
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validation
         if (!formData.statement.trim()) {
             toast.error('Question statement is required')
@@ -136,10 +138,24 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
             return
         }
 
-        // TODO: Save to API
-        console.log('Saving question:', formData)
-        toast.success(question ? 'Question updated successfully' : 'Question created successfully')
-        onSave()
+        setIsSaving(true)
+        try {
+            if (question) {
+                // Update existing question
+                await apiClient.adminUpdateQuestion(question.id, formData)
+                toast.success('Question updated successfully')
+            } else {
+                // Create new question
+                await apiClient.adminCreateQuestion(formData)
+                toast.success('Question created successfully')
+            }
+            onSave()
+        } catch (error) {
+            console.error('Failed to save question:', error)
+            toast.error('Failed to save question. Please try again.')
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     return (
@@ -166,10 +182,11 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
                 </div>
                 <Button
                     onClick={handleSave}
+                    disabled={isSaving}
                     className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
                 >
                     <Save className="w-4 h-4 mr-2" />
-                    {question ? 'Update Question' : 'Create Question'}
+                    {isSaving ? 'Saving...' : (question ? 'Update Question' : 'Create Question')}
                 </Button>
             </div>
 

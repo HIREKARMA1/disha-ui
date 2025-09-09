@@ -11,9 +11,9 @@ import {
 } from '@/types/practice'
 
 // Check if we should use mock data
-const USE_MOCK_DATA = config.isDevelopment && (process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || true) // Temporarily enable mock data
+const USE_MOCK_DATA = config.features.useMockData
 
-// Mock data for development
+// Mock data for development (only used when NEXT_PUBLIC_USE_MOCK_DATA=true)
 const mockModules: PracticeModule[] = [
     {
         id: 'mod-dev-1',
@@ -238,8 +238,8 @@ export function usePracticeModules() {
                     setData(modules)
                 } else {
                     // Use real API calls
-                    const response = await apiClient.client.get('/api/v1/practice/modules')
-                    setData(response.data)
+                    const modules = await apiClient.getPracticeModules()
+                    setData(modules)
                 }
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch modules'))
@@ -277,8 +277,8 @@ export function usePracticeQuestions(moduleId: string) {
                     setData(questions)
                 } else {
                     // Use real API calls
-                    const response = await apiClient.client.get(`/api/v1/practice/modules/${moduleId}`)
-                    setData(response.data.questions || [])
+                    const moduleData = await apiClient.getPracticeModuleWithQuestions(moduleId)
+                    setData(moduleData.questions || [])
                 }
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch questions'))
@@ -309,8 +309,8 @@ export function useSubmitAttempt() {
                 return result
             } else {
                 // Use real API calls
-                const response = await apiClient.client.post('/api/v1/practice/submit', request)
-                return response.data
+                const result = await apiClient.submitPracticeAttempt(request)
+                return result
             }
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to submit attempt')
@@ -341,8 +341,8 @@ export function usePracticeStats() {
                     setData(stats)
                 } else {
                     // Use real API calls
-                    const response = await apiClient.client.get('/api/v1/practice/stats')
-                    setData(response.data)
+                    const stats = await apiClient.getPracticeStats()
+                    setData(stats)
                 }
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch stats'))

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
     Brain, 
@@ -18,42 +18,48 @@ import { Button } from '@/components/ui/button'
 import { AdminQuestionEditor } from './AdminQuestionEditor'
 import { AdminBulkUploader } from './AdminBulkUploader'
 import { AdminAttemptViewer } from './AdminAttemptViewer'
+import { AdminModuleEditor } from './AdminModuleEditor'
 import { PracticeModule, Question } from '@/types/practice'
+import { apiClient } from '@/lib/api'
+import { toast } from 'react-hot-toast'
 
-type ViewState = 'modules' | 'questions' | 'attempts' | 'create-question' | 'bulk-upload'
+type ViewState = 'modules' | 'questions' | 'attempts' | 'create-question' | 'bulk-upload' | 'edit-module'
 
 export function AdminPracticeManager() {
     const [currentView, setCurrentView] = useState<ViewState>('modules')
     const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(null)
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
+    const [modules, setModules] = useState<PracticeModule[]>([])
+    const [stats, setStats] = useState<{
+        total_attempts: number
+        total_modules: number
+        active_modules: number
+        total_questions: number
+    } | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<Error | null>(null)
 
-    // Mock data - replace with real API calls
-    const modules: PracticeModule[] = [
-        {
-            id: 'mod-dev-1',
-            title: 'Full-length Mock - Developer',
-            role: 'Developer',
-            duration_seconds: 3600,
-            questions_count: 3,
-            question_ids: ['q1', 'q2', 'q3'],
-            is_archived: false,
-            description: 'Comprehensive developer assessment',
-            difficulty: 'medium',
-            tags: ['programming', 'algorithms']
-        },
-        {
-            id: 'mod-apt-1',
-            title: 'Aptitude Quick Test',
-            role: 'General',
-            duration_seconds: 1800,
-            questions_count: 2,
-            question_ids: ['q4', 'q5'],
-            is_archived: false,
-            description: 'Quick aptitude test',
-            difficulty: 'easy',
-            tags: ['aptitude', 'logical-reasoning']
+    // Fetch modules and stats from API
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setIsLoading(true)
+                const [modulesData, statsData] = await Promise.all([
+                    apiClient.adminGetPracticeModules(),
+                    apiClient.adminGetPracticeStats()
+                ])
+                setModules(modulesData)
+                setStats(statsData)
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to fetch data'))
+                toast.error('Failed to load practice data')
+            } finally {
+                setIsLoading(false)
+            }
         }
-    ]
+
+        fetchData()
+    }, [])
 
     const handleCreateQuestion = () => {
         setSelectedQuestion(null)
@@ -80,11 +86,73 @@ export function AdminPracticeManager() {
         setSelectedQuestion(null)
     }
 
+    const handleEditModule = async (module: PracticeModule) => {
+        setSelectedModule(module)
+        setCurrentView('edit-module')
+    }
+
+    const handleUpdateModule = async (moduleData: any) => {
+        if (!selectedModule) return
+        
+        try {
+            await apiClient.adminUpdatePracticeModule(selectedModule.id, moduleData)
+            toast.success('Module updated successfully')
+            // Refresh modules list
+            const modulesData = await apiClient.adminGetPracticeModules()
+            setModules(modulesData)
+            setCurrentView('modules')
+            setSelectedModule(null)
+        } catch (error) {
+            toast.error('Failed to update module')
+            console.error('Update module error:', error)
+        }
+    }
+
+    const handleArchiveModule = async (moduleId: string, archive: boolean = true) => {
+        try {
+            await apiClient.adminArchivePracticeModule(moduleId, archive)
+            toast.success(`Module ${archive ? 'archived' : 'unarchived'} successfully`)
+            // Refresh modules list
+            const modulesData = await apiClient.adminGetPracticeModules()
+            setModules(modulesData)
+        } catch (err) {
+            toast.error(`Failed to ${archive ? 'archive' : 'unarchive'} module`)
+            console.error('Archive error:', err)
+        }
+    }
+
+    const handleDeleteModule = async (moduleId: string) => {
+        if (!confirm('Are you sure you want to delete this module? This action cannot be undone.')) {
+            return
+        }
+
+        try {
+            await apiClient.adminDeletePracticeModule(moduleId)
+            toast.success('Module deleted successfully')
+            // Refresh modules list
+            const modulesData = await apiClient.adminGetPracticeModules()
+            setModules(modulesData)
+        } catch (err) {
+            toast.error('Failed to delete module')
+            console.error('Delete error:', err)
+        }
+    }
+
     if (currentView === 'create-question') {
         return (
             <AdminQuestionEditor
                 question={selectedQuestion}
                 onSave={() => setCurrentView('modules')}
+                onCancel={handleBackToModules}
+            />
+        )
+    }
+
+    if (currentView === 'edit-module' && selectedModule) {
+        return (
+            <AdminModuleEditor
+                module={selectedModule}
+                onSave={handleUpdateModule}
                 onCancel={handleBackToModules}
             />
         )
@@ -153,7 +221,7 @@ export function AdminPracticeManager() {
                                 Total Modules
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {modules.length}
+                                {stats?.total_modules || modules.length}
                             </p>
                         </div>
                         <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
@@ -174,7 +242,7 @@ export function AdminPracticeManager() {
                                 Total Questions
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {modules.reduce((sum, m) => sum + m.questions_count, 0)}
+                                {stats?.total_questions || modules.reduce((sum, m) => sum + m.questions_count, 0)}
                             </p>
                         </div>
                         <div className="p-3 bg-secondary-100 dark:bg-secondary-900/20 rounded-lg">
@@ -195,7 +263,7 @@ export function AdminPracticeManager() {
                                 Active Modules
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {modules.filter(m => !m.is_archived).length}
+                                {stats?.active_modules || modules.filter(m => !m.is_archived).length}
                             </p>
                         </div>
                         <div className="p-3 bg-accent-green-100 dark:bg-accent-green-900/20 rounded-lg">
@@ -216,7 +284,7 @@ export function AdminPracticeManager() {
                                 Total Attempts
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                1,247
+                                {stats?.total_attempts || 0}
                             </p>
                         </div>
                         <div className="p-3 bg-accent-orange-100 dark:bg-accent-orange-900/20 rounded-lg">
@@ -258,7 +326,29 @@ export function AdminPracticeManager() {
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {modules.map((module) => (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                                            <span className="ml-2 text-gray-600 dark:text-gray-400">Loading modules...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-4 text-center text-red-600 dark:text-red-400">
+                                        {error.message}
+                                    </td>
+                                </tr>
+                            ) : modules.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                                        No practice modules found
+                                    </td>
+                                </tr>
+                            ) : (
+                                modules.map((module) => (
                                 <tr key={module.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div>
@@ -296,32 +386,40 @@ export function AdminPracticeManager() {
                                                 onClick={() => handleViewAttempts(module)}
                                                 variant="outline"
                                                 size="sm"
+                                                title="View Attempts"
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </Button>
                                             <Button
+                                                onClick={() => handleEditModule(module)}
                                                 variant="outline"
                                                 size="sm"
+                                                title="Edit Module"
                                             >
                                                 <Edit className="w-4 h-4" />
                                             </Button>
                                             <Button
+                                                onClick={() => handleArchiveModule(module.id, !module.is_archived)}
                                                 variant="outline"
                                                 size="sm"
+                                                title={module.is_archived ? "Unarchive Module" : "Archive Module"}
                                             >
                                                 <Archive className="w-4 h-4" />
                                             </Button>
                                             <Button
+                                                onClick={() => handleDeleteModule(module.id)}
                                                 variant="outline"
                                                 size="sm"
                                                 className="text-red-600 hover:text-red-700"
+                                                title="Delete Module"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>

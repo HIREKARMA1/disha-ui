@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { profileService, type StudentProfile } from '@/services/profileService'
 import { useAuth } from './useAuth'
 
@@ -64,11 +64,7 @@ export function useProfile() {
     const [error, setError] = useState<string | null>(null)
     const { isAuthenticated, user } = useAuth()
 
-    useEffect(() => {
-        loadProfile()
-    }, [isAuthenticated])
-
-    const loadProfile = async () => {
+    const loadProfile = useCallback(async () => {
         try {
             setLoading(true)
             setError(null)
@@ -96,7 +92,11 @@ export function useProfile() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [isAuthenticated, user])
+
+    useEffect(() => {
+        loadProfile()
+    }, [loadProfile])
 
     const refreshProfile = () => {
         loadProfile()

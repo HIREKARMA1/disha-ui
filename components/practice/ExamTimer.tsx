@@ -1,17 +1,34 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Clock, AlertTriangle } from 'lucide-react'
+import { apiClient } from '@/lib/api'
 
 interface ExamTimerProps {
     duration: number // in seconds
+    moduleId: string
     onTimeUp: () => void
 }
 
-export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
+export function ExamTimer({ duration, moduleId, onTimeUp }: ExamTimerProps) {
     const [timeLeft, setTimeLeft] = useState(duration)
     const [isWarning, setIsWarning] = useState(false)
     const [isCritical, setIsCritical] = useState(false)
+
+    // Debug logging and update timer when duration changes
+    useEffect(() => {
+        console.log('ExamTimer initialized with duration:', duration)
+        setTimeLeft(duration)
+    }, [duration])
+
+    // Sync time to backend every minute
+    const syncTimeToBackend = useCallback(async (timeRemaining: number) => {
+        try {
+            await apiClient.updateExamTime(moduleId, timeRemaining)
+        } catch (error) {
+            console.error('Failed to sync time to backend:', error)
+        }
+    }, [moduleId])
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -21,12 +38,19 @@ export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
                     onTimeUp()
                     return 0
                 }
-                return prev - 1
+                const newTime = prev - 1
+                
+                // Sync to backend every minute
+                if (newTime % 60 === 0) {
+                    syncTimeToBackend(newTime)
+                }
+                
+                return newTime
             })
         }, 1000)
 
         return () => clearInterval(timer)
-    }, [onTimeUp])
+    }, [onTimeUp, syncTimeToBackend])
 
     useEffect(() => {
         // Warning when 10 minutes left

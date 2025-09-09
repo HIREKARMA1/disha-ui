@@ -1,39 +1,42 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Question } from '@/types/practice'
-import { Clock, Code, Image as ImageIcon } from 'lucide-react'
+import { Code, Image as ImageIcon, Flag } from 'lucide-react'
+import { CodeIDE } from './CodeIDE'
+import { Button } from '@/components/ui/button'
 
 interface QuestionPanelProps {
     question: Question
     questionNumber: number
     onTimeSpent: (timeSpent: number) => void
+    answer?: string[]
+    onAnswerChange?: (answer: string[]) => void
+    isFlagged?: boolean
+    onFlagToggle?: () => void
 }
 
-export function QuestionPanel({ question, questionNumber, onTimeSpent }: QuestionPanelProps) {
-    const [timeSpent, setTimeSpent] = useState(0)
-
-    // Track time spent on this question
+export function QuestionPanel({ question, questionNumber, onTimeSpent, answer = [], onAnswerChange, isFlagged = false, onFlagToggle }: QuestionPanelProps) {
+    const [submittedOutput, setSubmittedOutput] = useState<string>('')
+    
+    // Track time spent on this question (simplified)
     useEffect(() => {
         const startTime = Date.now()
-        const interval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - startTime) / 1000)
-            setTimeSpent(elapsed)
-            onTimeSpent(elapsed)
-        }, 1000)
-
+        
         return () => {
-            clearInterval(interval)
             const finalTime = Math.floor((Date.now() - startTime) / 1000)
             onTimeSpent(finalTime)
         }
     }, [question.id, onTimeSpent])
 
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins}:${secs.toString().padStart(2, '0')}`
-    }
+    // Load submitted output when answer changes
+    useEffect(() => {
+        if (answer.length > 0) {
+            setSubmittedOutput(answer[0])
+        } else {
+            setSubmittedOutput('')
+        }
+    }, [answer])
 
     const getDifficultyColor = (difficulty: string) => {
         switch (difficulty) {
@@ -53,18 +56,12 @@ export function QuestionPanel({ question, questionNumber, onTimeSpent }: Questio
             {/* Question Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Question {questionNumber}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
-                            {question.difficulty}
-                        </span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Clock className="w-4 h-4" />
-                    <span>Time: {formatTime(timeSpent)}</span>
+                    <span className="text-lg font-medium text-gray-600 dark:text-gray-400">
+                        Question {questionNumber}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(question.difficulty)}`}>
+                        {question.difficulty}
+                    </span>
                 </div>
             </div>
 
@@ -104,15 +101,79 @@ export function QuestionPanel({ question, questionNumber, onTimeSpent }: Questio
 
             {/* Tags */}
             {question.tags && question.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-6">
                     {question.tags.map((tag, index) => (
                         <span
                             key={index}
-                            className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md"
+                            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm rounded-md"
                         >
                             {tag}
                         </span>
                     ))}
+                </div>
+            )}
+
+            {/* Flag and Status Section */}
+            <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                    {onFlagToggle && (
+                        <Button
+                            onClick={onFlagToggle}
+                            variant={isFlagged ? "default" : "outline"}
+                            size="sm"
+                            className={`${isFlagged 
+                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
+                                : 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                            }`}
+                        >
+                            <Flag className="w-4 h-4 mr-2" />
+                            {isFlagged ? 'Flagged for Review' : 'Mark for Review'}
+                        </Button>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                        Status:
+                    </span>
+                    <span className={`font-medium ${
+                        answer.length > 0 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                        {answer.length > 0 ? 'Answered' : 'Not Answered'}
+                    </span>
+                </div>
+            </div>
+
+            {/* Code IDE for Coding Questions - Integrated Layout */}
+            {question.type === 'coding' && onAnswerChange && (
+                <div className="mt-6">
+                    <CodeIDE
+                        code={''} // Always start with empty code for new attempts
+                        onCodeChange={(code) => {
+                            // Don't save code changes as answers, only save output
+                        }}
+                        onOutputSubmit={(output) => {
+                            // For coding questions, we submit the output instead of the code
+                            setSubmittedOutput(output)
+                            onAnswerChange([output])
+                        }}
+                        language="javascript"
+                        className="w-full"
+                    />
+                    
+                    {/* Show submitted output if available */}
+                    {submittedOutput && (
+                        <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
+                            <h4 className="text-sm font-medium text-green-900 dark:text-green-100 mb-2">
+                                Submitted Output:
+                            </h4>
+                            <pre className="text-sm font-mono text-green-800 dark:text-green-200 whitespace-pre-wrap">
+                                {submittedOutput}
+                            </pre>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

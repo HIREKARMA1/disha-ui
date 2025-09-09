@@ -19,6 +19,7 @@ export const config = {
   features: {
     analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
     debugMode: process.env.NEXT_PUBLIC_ENABLE_DEBUG_MODE === 'true',
+    useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' && process.env.NODE_ENV !== 'production',
   },
   
   // Environment

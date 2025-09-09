@@ -294,6 +294,131 @@ class ApiClient {
     });
     return response.data;
   }
+    // Practice Module API methods
+    async getPracticeModules(role?: string): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/modules', {
+        params: { role }
+      });
+      return response.data;
+    }
+  
+    async getPracticeModuleWithQuestions(moduleId: string): Promise<any> {
+      const response: AxiosResponse = await this.client.get(`/practice/modules/${moduleId}`);
+      return response.data;
+    }
+  
+    async submitPracticeAttempt(payload: any): Promise<any> {
+      const response: AxiosResponse = await this.client.post('/practice/submit', payload);
+      return response.data;
+    }
+  
+    async getPracticeStats(): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/stats');
+      return response.data;
+    }
+  
+    async getPracticeAttempts(params?: Record<string, any>): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/attempts', { params });
+      return response.data;
+    }
+  
+    // Admin Practice Module API methods
+    async adminGetPracticeModules(role?: string, archived: boolean = false): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/admin/modules', {
+        params: { role, archived }
+      });
+      return response.data;
+    }
+  
+    async adminCreatePracticeModule(data: any): Promise<any> {
+      const response: AxiosResponse = await this.client.post('/practice/admin/modules', data);
+      return response.data;
+    }
+  
+    async adminUpdatePracticeModule(moduleId: string, data: any): Promise<any> {
+      const response: AxiosResponse = await this.client.put(`/practice/admin/modules/${moduleId}`, data);
+      return response.data;
+    }
+  
+    async adminDeletePracticeModule(moduleId: string): Promise<any> {
+      const response: AxiosResponse = await this.client.delete(`/practice/admin/modules/${moduleId}`);
+      return response.data;
+    }
+  
+    async adminArchivePracticeModule(moduleId: string, archive: boolean = true): Promise<any> {
+      const response: AxiosResponse = await this.client.post(`/practice/admin/modules/${moduleId}/archive`, {
+        archive: archive
+      });
+      return response.data;
+    }
+  
+    async adminGetQuestions(role?: string, difficulty?: string): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/admin/questions', {
+        params: { role, difficulty }
+      });
+      return response.data;
+    }
+  
+    async adminCreateQuestion(data: any): Promise<any> {
+      const response: AxiosResponse = await this.client.post('/practice/admin/questions', data);
+      return response.data;
+    }
+  
+    async adminUpdateQuestion(questionId: string, data: any): Promise<any> {
+      const response: AxiosResponse = await this.client.put(`/practice/admin/questions/${questionId}`, data);
+      return response.data;
+    }
+  
+    async adminDeleteQuestion(questionId: string): Promise<any> {
+      const response: AxiosResponse = await this.client.delete(`/practice/admin/questions/${questionId}`);
+      return response.data;
+    }
+  
+    async adminBulkUploadQuestions(formData: FormData): Promise<any> {
+      const response: AxiosResponse = await this.client.post('/practice/admin/questions/bulk', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
+  
+    async adminGetAttempts(params?: Record<string, any>): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/admin/attempts', { params });
+      return response.data;
+    }
+  
+    async adminGetAttemptDetails(attemptId: string): Promise<any> {
+      const response: AxiosResponse = await this.client.get(`/practice/admin/attempts/${attemptId}`);
+      return response.data;
+    }
+
+    async adminGetPracticeStats(): Promise<any> {
+      const response: AxiosResponse = await this.client.get('/practice/admin/stats');
+      return response.data;
+    }
+  
+    async adminExportAttempts(moduleId?: string): Promise<Blob> {
+      const response: AxiosResponse = await this.client.get('/practice/admin/attempts/export', {
+        params: { moduleId },
+        responseType: 'blob'
+      });
+      return response.data;
+    }
+  
+    // Exam session management
+    async saveExamProgress(sessionData: any): Promise<any> {
+      const response: AxiosResponse = await this.client.post('/practice/session/save', sessionData);
+      return response.data;
+    }
+  
+    async updateExamTime(moduleId: string, timeRemaining: number): Promise<any> {
+      const response: AxiosResponse = await this.client.post('/practice/session/time', {
+        moduleId,
+        timeRemaining
+      });
+      return response.data;
+    }
 }
 
 export const apiClient = new ApiClient();

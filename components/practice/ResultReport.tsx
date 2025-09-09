@@ -250,47 +250,114 @@ export function ResultReport({
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                         Question Review
                     </h3>
-                    <div className="space-y-4">
-                        {result.question_results.map((questionResult, index) => (
-                            <div
-                                key={index}
-                                className={`p-4 rounded-lg border ${
-                                    questionResult.is_correct
-                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
-                                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
-                                }`}
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 mt-1">
-                                        {questionResult.is_correct ? (
-                                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                        ) : (
-                                            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                                Question {index + 1}
-                                            </span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                questionResult.is_correct
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                                            }`}>
-                                                {questionResult.is_correct ? 'Correct' : 'Incorrect'}
-                                            </span>
+                    <div className="space-y-6">
+                        {result.answer_review && result.answer_review.length > 0 ? (
+                            result.answer_review.map((review, index) => (
+                                <div
+                                    key={review.question_id}
+                                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
+                                >
+                                    <div className="space-y-4">
+                                        {/* Question Header */}
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex-shrink-0">
+                                                {review.is_correct ? (
+                                                    <CheckCircle className="w-6 h-6 text-green-500" />
+                                                ) : (
+                                                    <XCircle className="w-6 h-6 text-red-500" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                        Question {index + 1}
+                                                    </span>
+                                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                                        review.is_correct
+                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                                    }`}>
+                                                        {review.is_correct ? 'Correct' : 'Incorrect'}
+                                                    </span>
+                                                </div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                    Time spent: {Math.floor(review.time_spent / 60)}m {review.time_spent % 60}s
+                                                </div>
+                                            </div>
                                         </div>
-                                        {questionResult.explanation && (
+
+                                        {/* Question Statement */}
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                                                Question:
+                                            </h4>
                                             <div 
-                                                className="text-sm text-gray-600 dark:text-gray-400 prose prose-sm max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: questionResult.explanation }}
+                                                className="text-gray-700 dark:text-gray-300 prose prose-sm max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: review.question_statement }}
                                             />
+                                        </div>
+
+                                        {/* Answer Comparison */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Your Answer */}
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                                                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+                                                    Your Answer:
+                                                </h4>
+                                                <div className="text-blue-800 dark:text-blue-200">
+                                                    {Array.isArray(review.user_answer) ? (
+                                                        <ul className="list-disc list-inside space-y-1">
+                                                            {review.user_answer.map((answer, idx) => (
+                                                                <li key={idx}>{answer}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p>{String(review.user_answer)}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Correct Answer */}
+                                            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                                                <h4 className="text-sm font-medium text-green-900 dark:text-green-300 mb-2">
+                                                    Correct Answer:
+                                                </h4>
+                                                <div className="text-green-800 dark:text-green-200">
+                                                    {Array.isArray(review.correct_answer) ? (
+                                                        <ul className="list-disc list-inside space-y-1">
+                                                            {review.correct_answer.map((answer, idx) => (
+                                                                <li key={idx}>{answer}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p>{String(review.correct_answer)}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Explanation */}
+                                        {review.explanation && (
+                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                                                <h4 className="text-sm font-medium text-yellow-900 dark:text-yellow-300 mb-2">
+                                                    Explanation:
+                                                </h4>
+                                                <div 
+                                                    className="text-yellow-800 dark:text-yellow-200 prose prose-sm max-w-none"
+                                                    dangerouslySetInnerHTML={{ __html: review.explanation }}
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-gray-500 dark:text-gray-400">
+                                    No detailed answer review available for this attempt.
+                                </p>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </motion.div>
             )}

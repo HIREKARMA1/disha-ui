@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Upload, Download, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BulkUploadResult } from '@/types/practice'
+import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
 interface AdminBulkUploaderProps {
@@ -61,22 +62,22 @@ export function AdminBulkUploader({ onComplete, onCancel }: AdminBulkUploaderPro
 
         setIsProcessing(true)
         try {
-            // Mock upload process
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            const formData = new FormData()
+            formData.append('file', selectedFile)
             
-            const mockResult: BulkUploadResult = {
-                success: true,
-                totalRows: previewData.length,
-                validRows: Math.floor(previewData.length * 0.8),
-                invalidRows: Math.floor(previewData.length * 0.2),
-                errors: [
-                    { row: 3, field: 'statement', message: 'Question statement is required' },
-                    { row: 7, field: 'options', message: 'At least 2 options required for MCQ' }
-                ]
+            const result = await apiClient.adminBulkUploadQuestions(formData)
+            
+            const uploadResult: BulkUploadResult = {
+                success: result.success || true,
+                totalRows: result.totalRows || previewData.length,
+                validRows: result.validRows || result.uploaded_count || 0,
+                invalidRows: result.invalidRows || result.invalid_count || 0,
+                errors: result.errors || []
             }
             
-            setUploadResult(mockResult)
+            setUploadResult(uploadResult)
             setUploadStep('result')
+            toast.success('Questions uploaded successfully')
         } catch (error) {
             toast.error('Upload failed. Please try again.')
             console.error('Upload error:', error)
