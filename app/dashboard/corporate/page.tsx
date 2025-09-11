@@ -66,7 +66,7 @@ export default function CorporateDashboard() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Navbar */}
-            <Navbar variant="solid" showHomeLink={false} />
+            <Navbar variant="solid" />
 
             <div className="pt-20 px-4">
                 <div className="container mx-auto">

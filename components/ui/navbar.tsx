@@ -58,6 +58,12 @@ export function Navbar({
             setHoverTimeout(null)
         }
 
+        // Close all other dropdowns first
+        setIsAboutOpen(false)
+        setIsSolutionsOpen(false)
+        setIsResourcesOpen(false)
+
+        // Then open the selected one
         switch (dropdownType) {
             case 'about':
                 setIsAboutOpen(true)
