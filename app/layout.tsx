@@ -9,8 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
     title: 'Hire Karma - It all depends upon your karma',
-    description: 'Connect with opportunities that match your skills and aspirations',
-
+    description: 'Connect with opportunities that match your skills and aspirations'
 }
 
 export const viewport: Viewport = {

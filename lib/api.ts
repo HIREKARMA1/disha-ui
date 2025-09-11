@@ -13,9 +13,23 @@ import {
   VerifyPhoneRequest,
   UserInfo
 } from '@/types/auth';
+import {
+  FeatureFlag,
+  FeatureFlagCreate,
+  FeatureFlagUpdate,
+  UniversityFeatureFlag,
+  UniversityFeatureUpdate,
+  BulkUniversityFeatureUpdate,
+  FeatureAccessRequest,
+  FeatureAccessResponse,
+  FeatureFlagHealthResponse,
+  FeatureUsageStatsResponse,
+  UniversityFeatureSummaryResponse,
+  BulkUpdateResponse
+} from '@/types/feature-flags';
 
 class ApiClient {
-  public client: AxiosInstance;
+  private client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
@@ -67,8 +81,10 @@ class ApiClient {
             }
           } catch (refreshError) {
             // Refresh failed, redirect to login
+            console.error('❌ Token refresh failed:', refreshError);
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_data');
             window.location.href = '/auth/login';
           }
         }
@@ -220,6 +236,17 @@ class ApiClient {
     return response.data;
   }
 
+  // Student feature endpoints
+  async getStudentFeatures(): Promise<UniversityFeatureFlag[]> {
+    const response: AxiosResponse = await this.client.get('/students/features');
+    return response.data;
+  }
+
+  async checkStudentFeatureAccess(accessData: FeatureAccessRequest): Promise<FeatureAccessResponse> {
+    const response: AxiosResponse = await this.client.post('/students/features/check-access', accessData);
+    return response.data;
+  }
+
   // University profile endpoints
   async getUniversityProfile(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/profile');
@@ -234,6 +261,17 @@ class ApiClient {
   // University endpoints
   async getUniversityDashboard(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/dashboard');
+    return response.data;
+  }
+
+  // University feature endpoints
+  async getUniversityFeatures(): Promise<UniversityFeatureFlag[]> {
+    const response: AxiosResponse = await this.client.get('/universities/features');
+    return response.data;
+  }
+
+  async checkUniversityFeatureAccess(accessData: FeatureAccessRequest): Promise<FeatureAccessResponse> {
+    const response: AxiosResponse = await this.client.post('/universities/features/check-access', accessData);
     return response.data;
   }
 
@@ -292,6 +330,140 @@ class ApiClient {
     const response: AxiosResponse = await this.client.post(`/universities/students/${studentId}/archive`, {
       archive: archive
     });
+    return response.data;
+  }
+
+  // Feature Flag Management Endpoints
+  async createFeatureFlag(data: FeatureFlagCreate): Promise<FeatureFlag> {
+    const response: AxiosResponse = await this.client.post('/admins/feature-flags', data);
+    return response.data;
+  }
+
+  async getFeatureFlags(): Promise<FeatureFlag[]> {
+    const response: AxiosResponse = await this.client.get('/admins/feature-flags');
+    return response.data;
+  }
+
+  // Admin University Management
+  async getUniversities(): Promise<Array<{ id: string; name: string; email: string; status: string }>> {
+    console.log('🏢 Fetching universities...')
+    try {
+      const response: AxiosResponse = await this.client.get('/admins/users', {
+        params: { user_type: 'university', limit: 100 }
+      });
+      console.log('✅ Universities response:', response.data)
+      console.log('📊 Total users returned:', response.data.users?.length || 0)
+      console.log('📋 User types in response:', response.data.users?.map((u: any) => u.user_type) || [])
+      
+      const universities = response.data.users.map((user: any) => ({
+        id: user.id,
+        name: user.name || user.email,
+        email: user.email,
+        status: user.status,
+        user_type: user.user_type // Add this for debugging
+      }));
+      
+      console.log('🏫 Processed universities:', universities)
+      return universities;
+    } catch (error: any) {
+      console.error('❌ Error fetching universities:', error)
+      console.error('❌ Error response:', error.response?.data)
+      console.error('❌ Error status:', error.response?.status)
+      throw error
+    }
+  }
+
+  async getFeatureFlag(featureId: string): Promise<FeatureFlag> {
+    const response: AxiosResponse = await this.client.get(`/admins/feature-flags/${featureId}`);
+    return response.data;
+  }
+
+  async updateFeatureFlag(featureId: string, data: FeatureFlagUpdate): Promise<FeatureFlag> {
+    const response: AxiosResponse = await this.client.put(`/admins/feature-flags/${featureId}`, data);
+    return response.data;
+  }
+
+  async deleteFeatureFlag(featureId: string): Promise<{ message: string }> {
+    const response: AxiosResponse = await this.client.delete(`/admins/feature-flags/${featureId}`);
+    return response.data;
+  }
+
+  async setUniversityFeatureFlag(universityId: string, featureKey: string, status: string, featureData?: any): Promise<UniversityFeatureFlag> {
+    const response: AxiosResponse = await this.client.post(`/admins/feature-flags/university/${universityId}/features?feature_key=${featureKey}&status=${status}`, featureData);
+    return response.data;
+  }
+
+  async updateUniversityFeatureFlag(update: UniversityFeatureUpdate): Promise<UniversityFeatureFlag> {
+    // Find the feature to get the feature_key
+    const features = await this.getFeatureFlags();
+    const feature = features.find(f => f.id === update.feature_flag_id);
+    
+    if (!feature) {
+      throw new Error(`Feature with ID ${update.feature_flag_id} not found`);
+    }
+    
+    const status = update.is_enabled ? 'enabled' : 'disabled';
+    const featureData = {
+      custom_message: update.reason,
+      custom_config: update.custom_config
+    };
+    
+    return this.setUniversityFeatureFlag(update.university_id, feature.feature_key, status, featureData);
+  }
+
+  async getUniversityFeatureFlags(universityId?: string): Promise<UniversityFeatureFlag[]> {
+    if (universityId) {
+      // Get specific university's feature flags
+      const response: AxiosResponse = await this.client.get(`/admins/feature-flags/university/${universityId}/features`);
+      return response.data;
+    } else {
+      // Get all university feature flags (this endpoint returns empty list, but keeping for compatibility)
+      const response: AxiosResponse = await this.client.get('/admins/feature-flags/university');
+      return response.data;
+    }
+  }
+
+  async bulkUpdateUniversityFeatures(data: BulkUniversityFeatureUpdate): Promise<BulkUpdateResponse> {
+    // Ensure university_id is a string, not an object
+    const universityId = typeof data.university_id === 'string' ? data.university_id : String(data.university_id);
+    
+    // Transform the data to match backend expectations
+    const transformedData = {
+      university_id: universityId,
+      feature_updates: data.feature_updates.map(update => ({
+        feature_key: update.feature_key, // Backend expects feature_key, not feature_flag_id
+        status: update.is_enabled ? 'enabled' : 'disabled', // Backend expects status string, not boolean
+        custom_settings: update.custom_config,
+        custom_message: update.reason
+      })),
+      reason: data.reason
+    };
+    
+    console.log('🔄 Bulk update request data:', transformedData);
+    const response: AxiosResponse = await this.client.post(`/admins/feature-flags/university/${universityId}/bulk-update`, transformedData);
+    return response.data;
+  }
+
+  async getFeatureUsageStats(featureId?: string): Promise<FeatureUsageStatsResponse[]> {
+    const params = featureId ? { feature_id: featureId } : {};
+    const response: AxiosResponse = await this.client.get('/admins/feature-flags/usage-stats', { params });
+    return response.data;
+  }
+
+  async getUniversityFeatureSummary(universityId: string): Promise<UniversityFeatureSummaryResponse> {
+    const response: AxiosResponse = await this.client.get(`/admins/feature-flags/university/${universityId}/summary`);
+    return response.data;
+  }
+
+  async getFeatureFlagsHealth(): Promise<FeatureFlagHealthResponse> {
+    const response: AxiosResponse = await this.client.get('/admins/feature-flags/health');
+    return response.data;
+  }
+
+
+  // Public Feature Flag Health Check
+  async getPublicFeatureFlagsHealth(): Promise<FeatureFlagHealthResponse> {
+    const response: AxiosResponse = await this.client.get('/feature-flags/health');
     return response.data;
   }
 }

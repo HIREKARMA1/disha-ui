@@ -1,10 +1,9 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Shield, Users, Settings, TrendingUp, Activity, Calendar } from 'lucide-react'
+import { Shield, Users, Settings, TrendingUp, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/ui/navbar'
-import Link from 'next/link'
 
 export default function AdminDashboard() {
     return (
@@ -45,34 +44,36 @@ export default function AdminDashboard() {
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <Link href="/dashboard/admin/events" className="block">
-                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow cursor-pointer">
-                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                    <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Event Management</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Manage all events</p>
-                            </div>
-                        </Link>
-
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow cursor-pointer group"
+                             onClick={() => window.location.href = '/dashboard/admin/users'}>
+                            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             </div>
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">User Management</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Manage all users</p>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow cursor-pointer group"
+                             onClick={() => window.location.href = '/dashboard/admin/feature-flags'}>
+                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                <Settings className="w-6 h-6 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Feature Flags</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Manage university features</p>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow cursor-pointer group"
+                             onClick={() => window.location.href = '/dashboard/admin/monitor'}>
+                            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                                 <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                             </div>
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">System Monitor</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Monitor system health</p>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow">
-                            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 text-center hover:shadow-xl transition-shadow cursor-pointer group"
+                             onClick={() => window.location.href = '/dashboard/admin/analytics'}>
+                            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                                 <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                             </div>
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Analytics</h3>
@@ -91,6 +92,13 @@ export default function AdminDashboard() {
                                 <div>
                                     <h4 className="font-semibold text-gray-900 dark:text-white">Complete Admin Profile</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Set up your admin preferences</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <div className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                                <div>
+                                    <h4 className="font-semibold text-gray-900 dark:text-white">Configure Feature Flags</h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Set up feature access for universities</p>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
