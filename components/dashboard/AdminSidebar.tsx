@@ -5,17 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
     User,
-    Briefcase,
     Users,
-    FileText,
-    Calendar,
-    BarChart3,
-    Search,
+    Building2,
+    Shield,
     Settings,
+    BarChart3,
+    Activity,
+    Calendar,
+    FileText,
     X,
     Menu,
     LogOut,
-    Building2
+    Eye,
+    Database,
+    Server,
+    AlertTriangle
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -35,74 +39,88 @@ interface NavItem {
 const navItems: NavItem[] = [
     {
         label: 'Dashboard',
-        href: '/dashboard/corporate',
+        href: '/dashboard/admin',
         icon: LayoutDashboard,
         description: 'Overview and analytics',
         color: 'from-blue-500 to-purple-600'
     },
     {
         label: 'Profile',
-        href: '/dashboard/corporate/profile',
-        icon: Building2,
-        description: 'Company information & settings',
+        href: '/dashboard/admin/profile',
+        icon: User,
+        description: 'Admin information & settings',
         color: 'from-green-500 to-teal-600'
     },
     {
-        label: 'Job Postings',
-        href: '/dashboard/corporate/jobs',
-        icon: Briefcase,
-        description: 'Manage job listings',
+        label: 'User Management',
+        href: '/dashboard/admin/users',
+        icon: Users,
+        description: 'Manage all users',
         color: 'from-orange-500 to-red-600'
     },
     {
-        label: 'Candidates',
-        href: '/dashboard/corporate/candidates',
-        icon: Users,
-        description: 'Browse talent pool',
+        label: 'Universities',
+        href: '/dashboard/admin/universities',
+        icon: Building2,
+        description: 'Manage universities',
         color: 'from-purple-500 to-pink-600'
     },
     {
-        label: 'Applications',
-        href: '/dashboard/corporate/applications',
-        icon: FileText,
-        description: 'Review applications',
+        label: 'Analytics',
+        href: '/dashboard/admin/analytics',
+        icon: BarChart3,
+        description: 'Platform insights',
         color: 'from-indigo-500 to-blue-600'
     },
     {
-        label: 'Interviews',
-        href: '/dashboard/corporate/interviews',
+        label: 'Events',
+        href: '/dashboard/admin/events',
         icon: Calendar,
-        description: 'Schedule interviews',
+        description: 'Manage events',
         color: 'from-rose-500 to-pink-600'
     },
     {
-        label: 'Analytics',
-        href: '/dashboard/corporate/analytics',
-        icon: BarChart3,
-        description: 'Hiring insights',
+        label: 'System Monitor',
+        href: '/dashboard/admin/monitor',
+        icon: Activity,
+        description: 'System health monitoring',
         color: 'from-yellow-500 to-orange-600'
     },
     {
-        label: 'Talent Search',
-        href: '/dashboard/corporate/talent-search',
-        icon: Search,
-        description: 'Find candidates',
+        label: 'Reports',
+        href: '/dashboard/admin/reports',
+        icon: FileText,
+        description: 'Generate reports',
         color: 'from-emerald-500 to-green-600'
     },
     {
-        label: 'Settings',
-        href: '/dashboard/corporate/settings',
-        icon: Settings,
-        description: 'Account settings',
+        label: 'Audit Logs',
+        href: '/dashboard/admin/audit',
+        icon: Eye,
+        description: 'View audit logs',
         color: 'from-cyan-500 to-blue-600'
+    },
+    {
+        label: 'Database',
+        href: '/dashboard/admin/database',
+        icon: Database,
+        description: 'Database management',
+        color: 'from-violet-500 to-purple-600'
+    },
+    {
+        label: 'System Settings',
+        href: '/dashboard/admin/settings',
+        icon: Settings,
+        description: 'System configuration',
+        color: 'from-gray-500 to-gray-600'
     }
 ]
 
-interface CorporateSidebarProps {
+interface AdminSidebarProps {
     className?: string
 }
 
-export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
+export function AdminSidebar({ className = '' }: AdminSidebarProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [profileData, setProfileData] = useState<any>(null)
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
@@ -113,11 +131,11 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
     // Fetch profile data when component mounts
     useEffect(() => {
         const fetchProfile = async () => {
-            if (user?.user_type === 'corporate') {
+            if (user?.user_type === 'admin') {
                 setIsLoadingProfile(true)
                 try {
-                    // TODO: Replace with actual corporate profile API call
-                    // const data = await apiClient.getCorporateProfile()
+                    // TODO: Replace with actual admin profile API call
+                    // const data = await apiClient.getAdminProfile()
                     // setProfileData(data)
                     setProfileData(null) // Placeholder for now
                 } catch (error) {
@@ -149,12 +167,12 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
         if (profileData?.name && profileData.name.trim()) {
             return profileData.name
         }
-        return user?.name || 'Corporate Name'
+        return user?.name || 'Admin Name'
     }
 
     // Get display email
     const getDisplayEmail = () => {
-        return profileData?.email || user?.email || 'corporate@company.com'
+        return profileData?.email || user?.email || 'admin@hirekarma.com'
     }
 
     // Get profile picture
@@ -184,12 +202,12 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                     className="w-full h-full object-cover"
                                     onError={handleImageError}
                                 />
-                            ) : getDisplayName() !== 'Corporate Name' ? (
+                            ) : getDisplayName() !== 'Admin Name' ? (
                                 <span className="text-white font-semibold text-lg">
                                     {getDisplayName().charAt(0).toUpperCase()}
                                 </span>
                             ) : (
-                                <Building2 className="w-6 h-6 text-white" />
+                                <Shield className="w-6 h-6 text-white" />
                             )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -267,7 +285,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
             {/* Mobile Bottom Navigation */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
                 <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {navItems.slice(0, 5).map((item) => {
+                    {navItems.slice(0, 4).map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
 
@@ -282,7 +300,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                 key={item.href}
                                 href={item.href}
                                 onClick={handleClick}
-                                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[20%] ${isActive
+                                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[25%] ${isActive
                                     ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                                     }`}
@@ -293,7 +311,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                     })}
                     <button
                         onClick={toggleMobileMenu}
-                        className="flex items-center justify-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 w-full max-w-[20%]"
+                        className="flex items-center justify-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 w-full max-w-[25%]"
                     >
                         <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
@@ -344,12 +362,12 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                                 className="w-full h-full object-cover"
                                                 onError={handleImageError}
                                             />
-                                        ) : getDisplayName() !== 'Corporate Name' ? (
+                                        ) : getDisplayName() !== 'Admin Name' ? (
                                             <span className="text-white font-semibold text-sm">
                                                 {getDisplayName().charAt(0).toUpperCase()}
                                             </span>
                                         ) : (
-                                            <Building2 className="w-5 h-5 text-white" />
+                                            <Shield className="w-5 h-5 text-white" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
