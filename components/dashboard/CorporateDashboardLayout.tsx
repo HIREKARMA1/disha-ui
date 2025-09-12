@@ -16,7 +16,7 @@ interface CorporateDashboardLayoutProps {
     children?: React.ReactNode
 }
 
-function CorporateDashboardContent({ children }: CorporateDashboardLayoutProps) {
+export function CorporateDashboardContent({ children }: CorporateDashboardLayoutProps) {
     const [dashboardData, setDashboardData] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -113,3 +113,4 @@ export function CorporateDashboardLayout({ children }: CorporateDashboardLayoutP
         </>
     )
 }
+

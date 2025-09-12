@@ -135,9 +135,9 @@ const DropdownMenuItem = React.forwardRef<HTMLButtonElement, DropdownMenuItemPro
                     inset && "pl-8",
                     className
                 )}
-                onClick={() => {
+                onClick={(e) => {
                     setIsOpen(false)
-                    props.onClick?.()
+                    props.onClick?.(e)
                 }}
                 {...props}
             >
@@ -159,9 +159,9 @@ const DropdownMenuCheckboxItem = React.forwardRef<HTMLButtonElement, DropdownMen
                     "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left",
                     className
                 )}
-                onClick={() => {
+                onClick={(e) => {
                     setIsOpen(false)
-                    props.onClick?.()
+                    props.onClick?.(e)
                 }}
                 {...props}
             >
@@ -186,9 +186,9 @@ const DropdownMenuRadioItem = React.forwardRef<HTMLButtonElement, DropdownMenuRa
                     "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left",
                     className
                 )}
-                onClick={() => {
+                onClick={(e) => {
                     setIsOpen(false)
-                    props.onClick?.()
+                    props.onClick?.(e)
                 }}
                 {...props}
             >

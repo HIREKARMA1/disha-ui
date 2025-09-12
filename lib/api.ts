@@ -203,7 +203,7 @@ class ApiClient {
   }
 
   async changeJobStatus(jobId: string, status: string): Promise<any> {
-    const response: AxiosResponse = await this.client.post(`/jobs/${jobId}/status`, { status });
+    const response: AxiosResponse = await this.client.post(`/jobs/${jobId}/status?status=${status}`);
     return response.data;
   }
 

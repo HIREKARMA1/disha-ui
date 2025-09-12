@@ -18,3 +18,4 @@ export default function CorporateTalentSearchPage() {
         </CorporateDashboardLayout>
     )
 }
+

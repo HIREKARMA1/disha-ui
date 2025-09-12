@@ -96,3 +96,4 @@ export function CorporateWelcomeMessage({
         </motion.div>
     )
 }
+

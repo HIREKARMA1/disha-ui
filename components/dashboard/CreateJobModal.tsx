@@ -38,6 +38,7 @@ interface JobFormData {
     industry: string
     selection_process: string
     campus_drive_date: string
+    status: string
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModalProps) {
@@ -64,10 +65,13 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         max_applications: '100',
         industry: '',
         selection_process: '',
-        campus_drive_date: ''
+        campus_drive_date: '',
+        status: 'active'
     })
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean) => {
+        console.log('📝 handleInputChange called:', { field, value })
+
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -101,6 +105,10 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        console.log('🚨 Form submitted! Event:', e)
+        console.log('🚨 Form target:', e.target)
+        console.log('🚨 Form data:', formData)
 
         // Clear previous validation errors
         setValidationErrors({})
@@ -149,15 +157,23 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 experience_max: formData.experience_max ? parseInt(formData.experience_max) : null,
                 education_level: formData.education_level || null,
                 skills_required: formData.skills_required.length > 0 ? formData.skills_required : null,
-                application_deadline: formData.application_deadline ? new Date(formData.application_deadline).toISOString() : null,
+                application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 max_applications: parseInt(formData.max_applications),
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
-                campus_drive_date: formData.campus_drive_date ? new Date(formData.campus_drive_date).toISOString() : null
+                campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
+                status: formData.status
             }
 
             await apiClient.createJob(jobData)
-            toast.success('Job posted successfully!')
+
+            const successMessages = {
+                active: 'Job posted successfully!',
+                inactive: 'Job created and set to inactive!'
+            }
+
+            const message = successMessages[formData.status as keyof typeof successMessages] || 'Job created successfully!'
+            toast.success(message)
             onJobCreated()
             onClose()
 
@@ -182,7 +198,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 max_applications: '100',
                 industry: '',
                 selection_process: '',
-                campus_drive_date: ''
+                campus_drive_date: '',
+                status: 'active'
             })
         } catch (error: any) {
             console.error('Failed to create job:', error)
@@ -320,6 +337,27 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                             placeholder="Describe the key responsibilities and duties..."
                                             rows={3}
                                         />
+                                    </div>
+                                </div>
+
+                                {/* Status Selection */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Job Status *
+                                        </label>
+                                        <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select job status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="active">Active - Job is live and accepting applications</SelectItem>
+                                                <SelectItem value="inactive">Inactive - Hidden from public view</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            Choose how you want to publish this job posting
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -532,6 +570,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                             value={formData.application_deadline}
                                             onChange={(value) => handleInputChange('application_deadline', value)}
                                             placeholder="Select application deadline"
+                                            autoClose={true}
                                         />
                                     </div>
 
@@ -568,6 +607,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         value={formData.campus_drive_date}
                                         onChange={(value) => handleInputChange('campus_drive_date', value)}
                                         placeholder="Select campus drive date"
+                                        autoClose={true}
                                     />
                                 </div>
                             </div>

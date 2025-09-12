@@ -104,6 +104,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
     // Populate form data when job changes
     useEffect(() => {
         if (job) {
+            console.log('🔍 EditJobModal Debug:')
+            console.log('Job object:', job)
+            console.log('Job type from job:', job.job_type)
+            console.log('Job type type:', typeof job.job_type)
+
             setFormData({
                 title: job.title || '',
                 description: job.description || '',
@@ -120,14 +125,27 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
                 experience_max: job.experience_max ? job.experience_max.toString() : '',
                 education_level: job.education_level || '',
                 skills_required: job.skills_required || [],
-                application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 16) : '',
+                application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
                 max_applications: job.max_applications ? job.max_applications.toString() : '100',
                 industry: job.industry || '',
                 selection_process: job.selection_process || '',
-                campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 16) : ''
+                campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : ''
+            })
+
+            console.log('Form data being set:', {
+                job_type: job.job_type || '',
+                education_level: job.education_level || ''
             })
         }
     }, [job])
+
+    // Debug formData changes
+    useEffect(() => {
+        console.log('📝 FormData updated:', {
+            job_type: formData.job_type,
+            education_level: formData.education_level
+        })
+    }, [formData.job_type, formData.education_level])
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -196,11 +214,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
                 experience_max: formData.experience_max ? parseInt(formData.experience_max) : null,
                 education_level: formData.education_level || null,
                 skills_required: formData.skills_required.length > 0 ? formData.skills_required : null,
-                application_deadline: formData.application_deadline ? new Date(formData.application_deadline).toISOString() : null,
+                application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 max_applications: parseInt(formData.max_applications),
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
-                campus_drive_date: formData.campus_drive_date ? new Date(formData.campus_drive_date).toISOString() : null
+                campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null
             }
 
             await apiClient.updateJob(job.id, jobData)
@@ -281,9 +299,16 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Job Type *
                                         </label>
-                                        <Select value={formData.job_type} onValueChange={(value) => handleInputChange('job_type', value)}>
+                                        <Select
+                                            key={`job-type-${formData.job_type}-${job?.id}`}
+                                            value={formData.job_type || undefined}
+                                            onValueChange={(value) => {
+                                                console.log('Job type changed to:', value)
+                                                handleInputChange('job_type', value)
+                                            }}
+                                        >
                                             <SelectTrigger className={validationErrors.job_type ? "border-red-500" : ""}>
-                                                <SelectValue placeholder={validationErrors.job_type || "Select job type"} />
+                                                <SelectValue placeholder="Select job type" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="full_time">Full Time</SelectItem>
@@ -419,7 +444,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Education Level
                                         </label>
-                                        <Select value={formData.education_level} onValueChange={(value) => handleInputChange('education_level', value)}>
+                                        <Select
+                                            key={`education-${formData.education_level}-${job?.id}`}
+                                            value={formData.education_level || undefined}
+                                            onValueChange={(value) => handleInputChange('education_level', value)}
+                                        >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select education level" />
                                             </SelectTrigger>
@@ -593,3 +622,4 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
         </AnimatePresence>
     )
 }
+

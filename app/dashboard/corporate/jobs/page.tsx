@@ -78,6 +78,11 @@ export default function CorporateJobsPage() {
         try {
             setLoading(true)
             const response = await apiClient.getCorporateJobs()
+            console.log('🔍 Jobs fetched from API:', response)
+            if (response.length > 0) {
+                console.log('First job data:', response[0])
+                console.log('First job job_type:', response[0].job_type)
+            }
             setJobs(response)
             setPagination(prev => ({
                 ...prev,
@@ -144,6 +149,8 @@ export default function CorporateJobsPage() {
     }
 
     const handleEditJob = (job: Job) => {
+        console.log('🔍 handleEditJob called with job:', job)
+        console.log('Job type in handleEditJob:', job.job_type)
         setEditingJob(job)
         setShowEditModal(true)
     }
@@ -171,22 +178,18 @@ export default function CorporateJobsPage() {
         }
     }
 
-    const handleStatusUpdate = async (job: Job) => {
-        try {
-            const newStatus = job.status === 'active' ? 'draft' : 'active'
-            await apiClient.changeJobStatus(job.id, newStatus)
-            toast.success(`Job ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`)
-            fetchJobs() // Refresh the jobs list
-        } catch (error: any) {
-            console.error('Failed to update job status:', error)
-            toast.error('Failed to update job status. Please try again.')
-        }
-    }
-
     const handleStatusChange = async (job: Job, newStatus: string) => {
         try {
             await apiClient.changeJobStatus(job.id, newStatus)
-            toast.success(`Job ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`)
+
+            const statusMessages = {
+                active: 'activated',
+                inactive: 'deactivated',
+                closed: 'closed'
+            }
+
+            const message = statusMessages[newStatus as keyof typeof statusMessages] || 'updated'
+            toast.success(`Job ${message} successfully!`)
             fetchJobs() // Refresh the jobs list
         } catch (error: any) {
             console.error('Failed to change job status:', error)
@@ -293,7 +296,6 @@ export default function CorporateJobsPage() {
                                         <SelectItem value="all">All Status</SelectItem>
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="inactive">Inactive</SelectItem>
-                                        <SelectItem value="draft">Draft</SelectItem>
                                         <SelectItem value="closed">Closed</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -388,7 +390,7 @@ export default function CorporateJobsPage() {
                                     onViewDescription={() => handleViewJob(job)}
                                     onEdit={() => handleEditJob(job)}
                                     onDelete={() => handleDeleteJob(job)}
-                                    onStatusUpdate={() => handleStatusUpdate(job)}
+                                    onStatusChange={handleStatusChange}
                                     cardIndex={index}
                                 />
                             ))}

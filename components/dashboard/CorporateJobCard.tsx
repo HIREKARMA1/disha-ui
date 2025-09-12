@@ -44,11 +44,11 @@ interface CorporateJobCardProps {
     onViewDescription: () => void
     onEdit: () => void
     onDelete: () => void
-    onStatusUpdate: () => void
+    onStatusChange: (job: Job, newStatus: string) => void
     cardIndex?: number
 }
 
-export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onStatusUpdate, cardIndex = 0 }: CorporateJobCardProps) {
+export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, cardIndex = 0 }: CorporateJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -167,17 +167,17 @@ export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onS
     const getStatusColor = (status: string) => {
         const colors = {
             active: 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-            draft: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
+            inactive: 'bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
             closed: 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400',
             paused: 'bg-gray-50 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
         }
-        return colors[status as keyof typeof colors] || colors.draft
+        return colors[status as keyof typeof colors] || colors.inactive
     }
 
     const getStatusLabel = (status: string) => {
         const labels = {
             active: 'Active',
-            draft: 'Draft',
+            inactive: 'Inactive',
             closed: 'Closed',
             paused: 'Paused'
         }
@@ -240,25 +240,51 @@ export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onS
                                                 onEdit()
                                                 setShowDropdown(false)
                                             }}
-                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                            className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
                                         >
                                             <Edit className="w-4 h-4" />
                                             Edit Job
                                         </button>
-                                        <button
-                                            onClick={() => {
-                                                onStatusUpdate()
-                                                setShowDropdown(false)
-                                            }}
-                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                        >
-                                            {job.status === 'active' ? (
-                                                <ToggleLeft className="w-4 h-4" />
-                                            ) : (
+
+                                        {/* Specific status options */}
+                                        {job.status !== 'active' && (
+                                            <button
+                                                onClick={() => {
+                                                    onStatusChange(job, 'active')
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                                            >
                                                 <ToggleRight className="w-4 h-4" />
-                                            )}
-                                            {job.status === 'active' ? 'Deactivate' : 'Activate'}
-                                        </button>
+                                                Set to Active
+                                            </button>
+                                        )}
+
+                                        {job.status !== 'inactive' && (
+                                            <button
+                                                onClick={() => {
+                                                    onStatusChange(job, 'inactive')
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center gap-2"
+                                            >
+                                                <ToggleLeft className="w-4 h-4" />
+                                                Set to Inactive
+                                            </button>
+                                        )}
+
+                                        {job.status !== 'closed' && (
+                                            <button
+                                                onClick={() => {
+                                                    onStatusChange(job, 'closed')
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                            >
+                                                <ToggleLeft className="w-4 h-4" />
+                                                Set to Closed
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => {
                                                 onDelete()
