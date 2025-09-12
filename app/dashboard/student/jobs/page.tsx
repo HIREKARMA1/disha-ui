@@ -13,6 +13,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
+import FeatureGuard from '@/components/student/FeatureGuard'
 
 interface Job {
     id: string

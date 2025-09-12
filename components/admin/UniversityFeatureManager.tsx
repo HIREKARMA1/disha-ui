@@ -134,27 +134,36 @@ export function UniversityFeatureManager({
         disabled: Object.values(localFlags).filter(v => !v).length
       })
       
+      // Send ALL features with their current state, not just changed ones
+      // This ensures the backend gets the complete picture of what should be enabled
       const updates: UniversityFeatureUpdate[] = features
-        .filter(feature => {
+        .map(feature => {
           const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id)
           const currentValue = universityFlag?.is_enabled ?? feature.default_enabled
           const hasChanged = localFlags[feature.id] !== currentValue
+          
           console.log(`Feature ${feature.feature_key}:`, {
             currentValue,
             newValue: localFlags[feature.id],
             hasChanged
           })
-          return hasChanged
+          
+          return {
+            university_id: universityId,
+            feature_flag_id: feature.id,
+            feature_key: feature.feature_key,
+            is_enabled: localFlags[feature.id],
+            reason: `Updated via admin panel at ${new Date().toISOString()}`
+          }
         })
-        .map(feature => ({
-          university_id: universityId,
-          feature_flag_id: feature.id,
-          feature_key: feature.feature_key, // Add feature_key for backend compatibility
-          is_enabled: localFlags[feature.id],
-          reason: `Updated via admin panel at ${new Date().toISOString()}`
-        }))
 
       console.log('📝 Updates to be saved:', updates)
+      console.log('📊 Update summary:', {
+        totalFeatures: updates.length,
+        enabledFeatures: updates.filter(u => u.is_enabled).length,
+        disabledFeatures: updates.filter(u => !u.is_enabled).length,
+        enabledFeatureKeys: updates.filter(u => u.is_enabled).map(u => u.feature_key)
+      })
       await onUpdate(updates)
       setHasChanges(false)
       console.log('✅ Save completed, waiting for refresh...')

@@ -68,6 +68,14 @@ export default function AdminFeatureFlagsPage() {
         universityFlagsData = await apiClient.getUniversityFeatureFlags(selectedUniId)
         console.log('✅ University flags loaded for', selectedUniId, ':', universityFlagsData.length)
         console.log('📊 University flags data sample:', universityFlagsData.slice(0, 3))
+        
+        // Also get the summary for accurate counts
+        try {
+          const summary = await apiClient.getUniversityFeaturesSummary(selectedUniId)
+          console.log('✅ University features summary:', summary)
+        } catch (err) {
+          console.warn('⚠️ Could not load university features summary:', err)
+        }
       } else {
         // Load all university feature flags (this will be empty, but keeping for compatibility)
         universityFlagsData = await apiClient.getUniversityFeatureFlags()
@@ -80,9 +88,30 @@ export default function AdminFeatureFlagsPage() {
         default_enabled: feature.is_global // Global features are enabled by default
       }))
       
+      // Update state with fresh data
       setFeatures(featuresWithDefaults)
       setUniversityFlags(universityFlagsData)
       setUniversities(universitiesData)
+      
+      console.log('🔄 State updated with fresh data:')
+      console.log('📊 Features count:', featuresWithDefaults.length)
+      console.log('📊 University flags count:', universityFlagsData.length)
+      console.log('📊 Universities count:', universitiesData.length)
+      
+      // Log detailed university flags data for debugging
+      if (selectedUniId && universityFlagsData.length > 0) {
+        const enabledCount = universityFlagsData.filter(uf => uf.is_enabled).length
+        const disabledCount = universityFlagsData.length - enabledCount
+        console.log('📊 University flags breakdown:')
+        console.log('  - Enabled:', enabledCount)
+        console.log('  - Disabled:', disabledCount)
+        console.log('  - Total:', universityFlagsData.length)
+        console.log('📊 Sample university flags:', universityFlagsData.slice(0, 3).map(uf => ({
+          feature_flag_id: uf.feature_flag_id,
+          is_enabled: uf.is_enabled
+        })))
+      }
+      
     } catch (err: any) {
       console.error('❌ Failed to load feature flag data:', err)
       console.error('❌ Error response:', err.response?.data)
@@ -158,37 +187,55 @@ export default function AdminFeatureFlagsPage() {
   const handleBulkUpdate = async (updates: BulkUniversityFeatureUpdate) => {
     try {
       console.log('🔄 Performing bulk update:', updates)
-      const result = await apiClient.bulkUpdateUniversityFeatures(updates)
-      console.log('✅ Bulk update result:', result)
+      console.log('🔄 Updates count:', updates.feature_updates.length)
+      console.log('🔄 University ID:', updates.university_id)
       
-      if (result.error_count === 0) {
-        // All updates successful, reload data to get updated state
-        console.log('✅ All updates successful, reloading data...')
-        console.log('🔄 Before loadData - universityFlags count:', universityFlags.length)
-        console.log('🔄 Before loadData - universityFlags sample:', universityFlags.slice(0, 3))
-        
-        await loadData(updates.university_id) // Pass the university ID to reload specific data
-        
-        console.log('🔄 After loadData - universityFlags count:', universityFlags.length)
-        console.log('🔄 After loadData - universityFlags sample:', universityFlags.slice(0, 3))
-        console.log('🔄 Incrementing refresh trigger from:', refreshTrigger)
-        
-        setRefreshTrigger(prev => {
-          const newTrigger = prev + 1
-          console.log('🔄 New refresh trigger:', newTrigger)
-          return newTrigger
-        })
-        setError(null) // Clear any previous errors
-        console.log('✅ Bulk update completed successfully')
-      } else {
-        // Some updates failed
-        console.log('⚠️ Some updates failed:', result.errors)
-        setError(result.message || `Bulk update completed: ${result.success_count} successful, ${result.error_count} failed`)
-      }
+      // Extract enabled features from the updates
+      const enabledFeatures = updates.feature_updates
+        .filter(update => update.is_enabled)
+        .map(update => update.feature_key)
+      
+      console.log('🔄 All feature updates:', updates.feature_updates)
+      console.log('🔄 Enabled features to save:', enabledFeatures)
+      console.log('🔄 Enabled features count:', enabledFeatures.length)
+      
+      // Use the new save endpoint
+      const result = await apiClient.saveUniversityFeatures(updates.university_id, enabledFeatures)
+      console.log('✅ Save result:', result)
+      
+      // All updates successful, reload data to get updated state
+      console.log('✅ Save successful, reloading data...')
+      console.log('📊 Result details:', {
+        totalFeatures: result.totalFeatures,
+        enabledCount: result.enabledCount,
+        disabledCount: result.disabledCount
+      })
+      
+      // Force a complete data reload with a small delay to ensure backend is updated
+      setTimeout(async () => {
+        console.log('🔄 Reloading data after successful save...')
+        await forceRefreshData(updates.university_id)
+        console.log('✅ Data reload completed')
+      }, 1000) // Increased delay to 1 second to ensure backend has processed the update
+      
+      setError(null) // Clear any previous errors
+      console.log('✅ Save completed successfully')
     } catch (err: any) {
-      console.error('❌ Failed to perform bulk update:', err)
-      setError(err.response?.data?.message || 'Failed to perform bulk update')
+      console.error('❌ Failed to save university features:', err)
+      setError(err.response?.data?.message || 'Failed to save university features')
     }
+  }
+
+  const handleRefresh = async () => {
+    console.log('🔄 Manual refresh triggered')
+    setRefreshTrigger(prev => prev + 1)
+    await loadData(selectedUniversity)
+  }
+
+  const forceRefreshData = async (universityId?: string) => {
+    console.log('🔄 Force refresh data triggered for university:', universityId || selectedUniversity)
+    setRefreshTrigger(prev => prev + 1)
+    await loadData(universityId || selectedUniversity)
   }
 
 
@@ -369,6 +416,7 @@ export default function AdminFeatureFlagsPage() {
             onFeatureEdit={handleFeatureEdit}
             onFeatureDelete={handleFeatureDelete}
             onAssignToUniversity={handleAssignToUniversity}
+            onRefresh={handleRefresh}
             loading={loading}
             refreshTrigger={refreshTrigger}
           />

@@ -235,3 +235,12 @@ export const FEATURE_CATEGORIES = {
 } as const;
 
 export type FeatureCategory = keyof typeof FEATURE_CATEGORIES;
+
+// New response type for the save university features endpoint
+export interface UniversityFeatureSaveResponse {
+  universityId: string;
+  totalFeatures: number;
+  enabledCount: number;
+  disabledCount: number;
+  enabledFeatures: string[];
+}

@@ -35,6 +35,7 @@ interface FeatureFlagDashboardProps {
   onFeatureEdit?: (feature: FeatureFlag) => void
   onFeatureDelete?: (featureId: string) => void
   onAssignToUniversity?: (featureId: string, universityId: string) => void
+  onRefresh?: () => void
   loading?: boolean
   refreshTrigger?: number
 }
@@ -49,6 +50,7 @@ export function FeatureFlagDashboard({
   onFeatureEdit,
   onFeatureDelete,
   onAssignToUniversity,
+  onRefresh,
   loading = false,
   refreshTrigger
 }: FeatureFlagDashboardProps) {
@@ -130,21 +132,32 @@ export function FeatureFlagDashboard({
 
   // Wrapper function to handle UniversityFeatureUpdate[] from UniversityFeatureManager
   const handleUniversityUpdate = async (updates: UniversityFeatureUpdate[]) => {
-    if (!onBulkUpdate || updates.length === 0) return
+    console.log('🔄 handleUniversityUpdate called with:', updates)
+    console.log('🔄 Updates count:', updates.length)
+    console.log('🔄 onBulkUpdate function:', onBulkUpdate ? 'Present' : 'Missing')
+    
+    if (!onBulkUpdate || updates.length === 0) {
+      console.log('❌ Early return: onBulkUpdate missing or no updates')
+      return
+    }
 
     // Extract university_id from the first update (all should have the same university_id)
     const universityId = updates[0].university_id
+    console.log('🔄 University ID:', universityId)
     
     // Convert UniversityFeatureUpdate[] to the format expected by bulk update
     const featureUpdates = updates.map(update => {
       // Find the feature to get the feature_key
       const feature = features.find(f => f.id === update.feature_flag_id)
-      return {
+      const result = {
+        feature_flag_id: update.feature_flag_id,
         feature_key: feature?.feature_key || update.feature_flag_id,
-        status: update.is_enabled ? 'enabled' : 'disabled',
+        is_enabled: update.is_enabled,
         reason: update.reason,
         custom_config: update.custom_config
       }
+      console.log('🔄 Feature update:', result)
+      return result
     })
 
     const bulkUpdate: BulkUniversityFeatureUpdate = {
@@ -188,7 +201,7 @@ export function FeatureFlagDashboard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.location.reload()}
+              onClick={onRefresh || (() => window.location.reload())}
               disabled={loading}
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

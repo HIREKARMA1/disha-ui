@@ -7,6 +7,7 @@ import {
     User,
     Users,
     Briefcase,
+    Settings,
     X,
     Menu,
     LogOut
@@ -17,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import { useFeatureAccess } from '@/hooks/useFeatureAccess'
 
 interface NavItem {
     label: string
@@ -24,6 +26,7 @@ interface NavItem {
     icon: React.ComponentType<{ className?: string }>
     description?: string
     color?: string
+    featureKey?: string // Feature key to check access
 }
 
 const navItems: NavItem[] = [
@@ -32,28 +35,40 @@ const navItems: NavItem[] = [
         href: '/dashboard/university',
         icon: LayoutDashboard,
         description: 'Overview and analytics',
-        color: 'from-blue-500 to-purple-600'
+        color: 'from-blue-500 to-purple-600',
+        featureKey: 'dashboard' // Always available
     },
     {
         label: 'Profile',
         href: '/dashboard/university/profile',
         icon: User,
         description: 'University information & settings',
-        color: 'from-green-500 to-teal-600'
+        color: 'from-green-500 to-teal-600',
+        featureKey: 'profile' // Always available
     },
     {
         label: 'Students',
         href: '/dashboard/university/students',
         icon: Users,
         description: 'Manage student profiles',
-        color: 'from-orange-500 to-red-600'
+        color: 'from-orange-500 to-red-600',
+        featureKey: 'student_management'
     },
     {
         label: 'Jobs',
         href: '/dashboard/university/jobs',
         icon: Briefcase,
         description: 'Browse and manage job opportunities',
-        color: 'from-purple-500 to-pink-600'
+        color: 'from-purple-500 to-pink-600',
+        featureKey: 'job_management'
+    },
+    {
+        label: 'Features',
+        href: '/dashboard/university/features',
+        icon: Settings,
+        description: 'Manage available features',
+        color: 'from-indigo-500 to-blue-600',
+        featureKey: 'feature_management' // Always available for universities
     }
 ]
 
@@ -68,6 +83,18 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
+    
+    // Get university's enabled features for sidebar navigation
+    const { hasAccess, checkFeatureAccess } = useFeatureAccess()
+    
+    // Filter navigation items based on feature access
+    const availableNavItems = navItems.filter(item => {
+        // If no feature key is specified, always show the item
+        if (!item.featureKey) return true;
+        
+        // For now, show all items - feature access can be implemented later
+        return true;
+    })
 
     // Fetch profile data when component mounts
     useEffect(() => {
@@ -126,6 +153,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
         setImageError(true)
     }
 
+
     return (
         <>
             {/* Desktop Sidebar */}
@@ -164,7 +192,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
 
                 {/* Navigation */}
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {navItems.map((item) => {
+                    {availableNavItems.map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
 
@@ -208,6 +236,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                         )
                     })}
                 </nav>
+
 
                 {/* Logout Section */}
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700">
@@ -318,7 +347,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
 
                             {/* Navigation */}
                             <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-                                {navItems.map((item) => {
+                                {availableNavItems.map((item) => {
                                     const isActive = pathname === item.href
                                     const { startLoading } = useLoading()
 
