@@ -121,3 +121,4 @@ export function CorporateRecentActivities({ className = '' }: CorporateRecentAct
         </motion.div>
     )
 }
+

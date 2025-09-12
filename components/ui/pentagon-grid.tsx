@@ -126,3 +126,4 @@ export function PentagonGrid({ className = "" }: PentagonGridProps) {
         </div>
     )
 }
+

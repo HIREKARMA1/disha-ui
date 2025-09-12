@@ -1,421 +1,239 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
 import {
     LayoutDashboard,
-    User,
+    Building2,
     Briefcase,
     Users,
     FileText,
-    BarChart3,
-    Settings,
     Calendar,
-    X,
-    Menu,
-    LogOut,
-    Building2,
+    BarChart3,
     Search,
-    Target,
-    TrendingUp
+    Settings,
+    ChevronLeft,
+    ChevronRight,
+    LogOut,
+    User
 } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { apiClient } from '@/lib/api'
-import Image from 'next/image'
-import { useLoading } from '@/contexts/LoadingContext'
+import { Button } from '@/components/ui/button'
 
-interface NavItem {
-    label: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    description?: string
-    color?: string
-}
-
-const navItems: NavItem[] = [
+const navigationItems = [
     {
-        label: 'Dashboard',
+        name: 'Dashboard',
         href: '/dashboard/corporate',
         icon: LayoutDashboard,
-        description: 'Overview and analytics',
-        color: 'from-blue-500 to-purple-600'
+        description: 'Overview and analytics'
     },
     {
-        label: 'Profile',
+        name: 'Profile',
         href: '/dashboard/corporate/profile',
-        icon: User,
-        description: 'Company information & settings',
-        color: 'from-green-500 to-teal-600'
+        icon: Building2,
+        description: 'Company information'
     },
     {
-        label: 'Job Postings',
+        name: 'Job Postings',
         href: '/dashboard/corporate/jobs',
         icon: Briefcase,
-        description: 'Manage job opportunities',
-        color: 'from-orange-500 to-red-600'
+        description: 'Manage job listings'
     },
     {
-        label: 'Candidates',
+        name: 'Candidates',
         href: '/dashboard/corporate/candidates',
         icon: Users,
-        description: 'Browse and manage candidates',
-        color: 'from-purple-500 to-pink-600'
+        description: 'Browse talent pool'
     },
     {
-        label: 'Applications',
+        name: 'Applications',
         href: '/dashboard/corporate/applications',
         icon: FileText,
-        description: 'Review job applications',
-        color: 'from-indigo-500 to-blue-600'
+        description: 'Review applications'
     },
     {
-        label: 'Interviews',
+        name: 'Interviews',
         href: '/dashboard/corporate/interviews',
         icon: Calendar,
-        description: 'Schedule and manage interviews',
-        color: 'from-rose-500 to-pink-600'
+        description: 'Schedule interviews'
     },
     {
-        label: 'Analytics',
+        name: 'Analytics',
         href: '/dashboard/corporate/analytics',
         icon: BarChart3,
-        description: 'Hiring insights and reports',
-        color: 'from-yellow-500 to-orange-600'
+        description: 'Hiring insights'
     },
     {
-        label: 'Talent Search',
+        name: 'Talent Search',
         href: '/dashboard/corporate/talent-search',
         icon: Search,
-        description: 'Search for specific talent',
-        color: 'from-emerald-500 to-green-600'
+        description: 'Find candidates'
     },
     {
-        label: 'Settings',
+        name: 'Settings',
         href: '/dashboard/corporate/settings',
         icon: Settings,
-        description: 'Account and preferences',
-        color: 'from-cyan-500 to-blue-600'
+        description: 'Account settings'
     }
 ]
 
-interface CorporateSidebarProps {
-    className?: string
-}
-
-export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const [profileData, setProfileData] = useState<any>(null)
-    const [isLoadingProfile, setIsLoadingProfile] = useState(false)
-    const [imageError, setImageError] = useState(false)
+export function CorporateSidebar() {
+    const [isCollapsed, setIsCollapsed] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
 
-    // Fetch profile data when component mounts
-    useEffect(() => {
-        const fetchProfile = async () => {
-            if (user?.user_type === 'corporate') {
-                setIsLoadingProfile(true)
-                try {
-                    // TODO: Replace with actual corporate profile API call
-                    // const data = await apiClient.getCorporateProfile()
-                    // setProfileData(data)
-                    setProfileData(null) // Placeholder for now
-                } catch (error) {
-                    console.error('Failed to fetch profile:', error)
-                } finally {
-                    setIsLoadingProfile(false)
-                }
-            }
-        }
-
-        fetchProfile()
-    }, [user])
-
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen)
-    }
-
-    const closeMobileMenu = () => {
-        setIsMobileMenuOpen(false)
-    }
-
-    const handleLogout = () => {
-        logout()
-        closeMobileMenu()
-    }
-
-    // Get display name from profile data
-    const getDisplayName = () => {
-        if (profileData?.name && profileData.name.trim()) {
-            return profileData.name
-        }
-        return user?.name || 'Company Name'
-    }
-
-    // Get display email
-    const getDisplayEmail = () => {
-        return profileData?.email || user?.email || 'company@example.com'
-    }
-
-    // Get profile picture
-    const getProfilePicture = () => {
-        return profileData?.profile_picture || null
-    }
-
-    // Handle profile picture error
-    const handleImageError = () => {
-        setImageError(true)
+    const toggleSidebar = () => {
+        setIsCollapsed(!isCollapsed)
     }
 
     return (
-        <>
-            {/* Desktop Sidebar */}
-            <div className={`hidden lg:flex flex-col w-64 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${className}`}>
-                {/* User Profile Section */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 overflow-hidden">
-                            {getProfilePicture() && !imageError ? (
-                                <Image
-                                    src={getProfilePicture()}
-                                    alt="Profile"
-                                    width={48}
-                                    height={48}
-                                    className="w-full h-full object-cover"
-                                    onError={handleImageError}
-                                />
-                            ) : getDisplayName() !== 'Company Name' ? (
-                                <span className="text-white font-semibold text-lg">
-                                    {getDisplayName().charAt(0).toUpperCase()}
-                                </span>
-                            ) : (
-                                <Building2 className="w-6 h-6 text-white" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">
-                                {getDisplayName()}
-                            </p>
-                            <p className="text-xs text-white/80 truncate">
-                                {getDisplayEmail()}
-                            </p>
-                        </div>
-                    </div>
+        <motion.div
+            initial={false}
+            animate={{ width: isCollapsed ? '4rem' : '16rem' }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-40 overflow-hidden"
+        >
+            <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                    {!isCollapsed && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="flex items-center space-x-2"
+                        >
+                            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                                <Building2 className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Corporate
+                                </h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Dashboard
+                                </p>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleSidebar}
+                        className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                        {isCollapsed ? (
+                            <ChevronRight className="w-4 h-4" />
+                        ) : (
+                            <ChevronLeft className="w-4 h-4" />
+                        )}
+                    </Button>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {navItems.map((item) => {
+                <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+                    {navigationItems.map((item, index) => {
                         const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
-                        const handleClick = () => {
-                            if (!isActive) {
-                                startLoading()
-                            }
-                        }
 
                         return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={handleClick}
-                                className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${isActive
-                                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-                                    }`}
+                            <motion.div
+                                key={item.name}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05 }}
                             >
-                                <div className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isActive
-                                    ? 'bg-white/20 backdrop-blur-sm'
-                                    : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-white/50 dark:group-hover:bg-gray-600/50'
-                                    }`}>
-                                    <item.icon className={`w-5 h-5 ${isActive
-                                        ? 'text-white'
-                                        : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                                        }`} />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-medium">{item.label}</div>
-                                    {item.description && (
-                                        <div className={`text-xs mt-0.5 ${isActive
-                                            ? 'text-white/90'
-                                            : 'text-gray-600 dark:text-gray-300'
-                                            }`}>
-                                            {item.description}
-                                        </div>
-                                    )}
-                                </div>
-                            </Link>
+                                <Link href={item.href}>
+                                    <div
+                                        className={cn(
+                                            "flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group",
+                                            isActive
+                                                ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700"
+                                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+                                        )}
+                                    >
+                                        <item.icon className={cn(
+                                            "w-5 h-5 flex-shrink-0",
+                                            isActive
+                                                ? "text-primary-600 dark:text-primary-400"
+                                                : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+                                        )} />
+
+                                        {!isCollapsed && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: 0.1 }}
+                                                className="flex-1 min-w-0"
+                                            >
+                                                <div className="text-sm font-medium truncate">
+                                                    {item.name}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                    {item.description}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </div>
+                                </Link>
+                            </motion.div>
                         )
                     })}
                 </nav>
 
-                {/* Logout Section */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 group"
-                    >
-                        <div className="p-2 rounded-lg mr-3 bg-red-100 dark:bg-red-900/20 group-hover:bg-red-200 dark:group-hover:bg-red-900/30 transition-colors">
-                            <LogOut className="w-5 h-5" />
-                        </div>
-                        <span>Logout</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Bottom Navigation */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
-                <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {navItems.slice(0, 4).map((item) => {
-                        const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
-                        const handleClick = () => {
-                            if (!isActive) {
-                                startLoading()
-                            }
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={handleClick}
-                                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[25%] ${isActive
-                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <item.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </Link>
-                        )
-                    })}
-                    <button
-                        onClick={toggleMobileMenu}
-                        className="flex items-center justify-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 w-full max-w-[25%]"
-                    >
-                        <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu Overlay */}
-            <AnimatePresence>
-                {isMobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
-                        onClick={closeMobileMenu}
-                    >
+                {/* User Profile Section */}
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+                    {!isCollapsed ? (
                         <motion.div
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl"
-                            onClick={(e) => e.stopPropagation()}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="space-y-3"
                         >
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
-                                <h2 className="text-lg font-semibold text-white">
-                                    Menu
-                                </h2>
-                                <button
-                                    onClick={closeMobileMenu}
-                                    className="p-2 rounded-lg hover:bg-white/20 transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-white" />
-                                </button>
-                            </div>
-
-                            {/* User Profile in Mobile */}
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center overflow-hidden">
-                                        {getProfilePicture() && !imageError ? (
-                                            <Image
-                                                src={getProfilePicture()}
-                                                alt="Profile"
-                                                width={40}
-                                                height={40}
-                                                className="w-full h-full object-cover"
-                                                onError={handleImageError}
-                                            />
-                                        ) : getDisplayName() !== 'Company Name' ? (
-                                            <span className="text-white font-semibold text-sm">
-                                                {getDisplayName().charAt(0).toUpperCase()}
-                                            </span>
-                                        ) : (
-                                            <Building2 className="w-5 h-5 text-white" />
-                                        )}
+                            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
+                                    <User className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                        {user?.name || 'Corporate User'}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                            {getDisplayName()}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            {getDisplayEmail()}
-                                        </p>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {user?.email || 'corporate@company.com'}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Navigation */}
-                            <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-                                {navItems.map((item) => {
-                                    const isActive = pathname === item.href
-                                    const { startLoading } = useLoading()
-
-                                    const handleClick = () => {
-                                        closeMobileMenu()
-                                        if (!isActive) {
-                                            startLoading()
-                                        }
-                                    }
-
-                                    return (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={handleClick}
-                                            className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                                ? `bg-gradient-to-r ${item.color} text-white`
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                                                }`}
-                                        >
-                                            <item.icon className="w-5 h-5 mr-3" />
-                                            <div>
-                                                <div className="font-medium">{item.label}</div>
-                                                {item.description && (
-                                                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
-                                                        {item.description}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Link>
-                                    )
-                                })}
-                            </nav>
-
-                            {/* Logout in Mobile */}
-                            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-                                >
-                                    <LogOut className="w-5 h-5 mr-3" />
-                                    <span>Logout</span>
-                                </button>
-                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={logout}
+                                className="w-full justify-start text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                                <LogOut className="w-4 h-4 mr-2" />
+                                Sign Out
+                            </Button>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+                    ) : (
+                        <div className="flex flex-col items-center space-y-2">
+                            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                                <User className="w-4 h-4 text-white" />
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={logout}
+                                className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </motion.div>
     )
 }

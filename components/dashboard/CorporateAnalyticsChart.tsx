@@ -125,3 +125,4 @@ export function CorporateAnalyticsChart({ className = '' }: CorporateAnalyticsCh
         </motion.div>
     )
 }
+

@@ -181,6 +181,32 @@ class ApiClient {
     return response.data;
   }
 
+  // Corporate job management endpoints
+  async createJob(jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/jobs/', jobData);
+    return response.data;
+  }
+
+  async getCorporateJobs(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/jobs/corporate/jobs');
+    return response.data;
+  }
+
+  async updateJob(jobId: string, jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/jobs/${jobId}`, jobData);
+    return response.data;
+  }
+
+  async deleteJob(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/jobs/${jobId}`);
+    return response.data;
+  }
+
+  async changeJobStatus(jobId: string, status: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/jobs/${jobId}/status?status=${status}`);
+    return response.data;
+  }
+
   // Video search endpoint
   async searchVideos(query: string, skip: number = 0, limit: number = 12): Promise<any> {
     const response: AxiosResponse = await this.client.get('/video-search/', {
