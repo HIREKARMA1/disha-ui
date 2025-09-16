@@ -162,6 +162,11 @@ export function StudentProfileModal({
 
     // Debug: Log the combined data
     console.log('StudentProfileModal - extendedStudent:', extendedStudent)
+    console.log('🔍 Document fields check:')
+    console.log('🔍 Resume:', extendedStudent.resume)
+    console.log('🔍 Tenth certificate:', extendedStudent.tenth_certificate)
+    console.log('🔍 Twelfth certificate:', extendedStudent.twelfth_certificate)
+    console.log('🔍 Internship certificates:', extendedStudent.internship_certificates)
 
     // Safety check: ensure extendedStudent has required properties
     if (!extendedStudent.id || !extendedStudent.name || !extendedStudent.email) {
@@ -1232,6 +1237,13 @@ export function StudentProfileModal({
             extendedStudent.tenth_certificate ||
             extendedStudent.twelfth_certificate ||
             extendedStudent.internship_certificates
+
+        console.log('🔍 Documents check in renderDocumentsInfo:')
+        console.log('🔍 hasDocuments:', hasDocuments)
+        console.log('🔍 Resume:', extendedStudent.resume)
+        console.log('🔍 Tenth cert:', extendedStudent.tenth_certificate)
+        console.log('🔍 Twelfth cert:', extendedStudent.twelfth_certificate)
+        console.log('🔍 Internship certs:', extendedStudent.internship_certificates)
 
         if (!hasDocuments) {
             return (

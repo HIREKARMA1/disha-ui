@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -46,10 +46,11 @@ interface AdminJobCardProps {
     onDelete: (job: Job) => void
     onStatusChange: (job: Job, status: string) => void
     onAssignToUniversity: (job: Job) => void
+    onViewAppliedStudents: (job: Job) => void
     cardIndex?: number
 }
 
-export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, cardIndex = 0 }: AdminJobCardProps) {
+export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onViewAppliedStudents, cardIndex = 0 }: AdminJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -256,6 +257,17 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                         >
                                             <GraduationCap className="w-4 h-4" />
                                             Assign to University
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                onViewAppliedStudents(job)
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                                        >
+                                            <UserCheck className="w-4 h-4" />
+                                            View Applied Students
                                         </button>
 
                                         {/* Specific status options */}

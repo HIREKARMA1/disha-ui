@@ -207,6 +207,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getJobApplications(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/corporates/applications?job_id=${jobId}`);
+    return response.data;
+  }
+
   // Admin job management endpoints
   async getAllJobsAdmin(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/admins/jobs');
@@ -220,6 +225,11 @@ class ApiClient {
 
   async getAssignedUniversitiesAdmin(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/assigned-universities`);
+    return response.data;
+  }
+
+  async getAppliedStudentsAdmin(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/applied-students`);
     return response.data;
   }
 
@@ -284,6 +294,11 @@ class ApiClient {
   // Student profile endpoints
   async getStudentProfile(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/students/profile');
+    return response.data;
+  }
+
+  async getStudentProfileById(studentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admins/students/${studentId}/profile`);
     return response.data;
   }
 

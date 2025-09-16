@@ -12,6 +12,7 @@ import { EditJobModal } from '@/components/dashboard/EditJobModal'
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { AssignUniversityModal } from '@/components/admin/AssignUniversityModal'
+import { AppliedStudentsModal } from '@/components/admin/AppliedStudentsModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
@@ -66,6 +67,8 @@ export default function AdminJobsPage() {
     const [showAssignModal, setShowAssignModal] = useState(false)
     const [jobToDelete, setJobToDelete] = useState<Job | null>(null)
     const [jobToAssign, setJobToAssign] = useState<Job | null>(null)
+    const [showAppliedStudentsModal, setShowAppliedStudentsModal] = useState(false)
+    const [jobForAppliedStudents, setJobForAppliedStudents] = useState<Job | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [pagination, setPagination] = useState({
         page: 1,
@@ -152,6 +155,11 @@ export default function AdminJobsPage() {
     const handleAssignJob = (job: Job) => {
         setJobToAssign(job)
         setShowAssignModal(true)
+    }
+
+    const handleViewAppliedStudents = (job: Job) => {
+        setJobForAppliedStudents(job)
+        setShowAppliedStudentsModal(true)
     }
 
     const confirmDeleteJob = async () => {
@@ -378,6 +386,7 @@ export default function AdminJobsPage() {
                                     onEdit={handleEditJob}
                                     onDelete={handleDeleteJob}
                                     onAssignToUniversity={handleAssignJob}
+                                    onViewAppliedStudents={handleViewAppliedStudents}
                                     onStatusChange={handleStatusChange}
                                     cardIndex={index}
                                 />
@@ -501,6 +510,15 @@ export default function AdminJobsPage() {
                     setShowAssignModal(false)
                     setJobToAssign(null)
                 }}
+            />
+
+            <AppliedStudentsModal
+                isOpen={showAppliedStudentsModal}
+                onClose={() => {
+                    setShowAppliedStudentsModal(false)
+                    setJobForAppliedStudents(null)
+                }}
+                job={jobForAppliedStudents}
             />
 
             {selectedJob && (
