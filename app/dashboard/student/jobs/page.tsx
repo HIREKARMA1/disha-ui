@@ -769,8 +769,26 @@ function JobOpportunitiesPageContent() {
     // Check application status for jobs
     const checkApplicationStatus = async () => {
         try {
-            // You can implement this to check if user has already applied for jobs
-            // For now, we'll use a simple approach
+            // First, try to fetch applied jobs from server
+            try {
+                const response = await apiClient.getStudentAppliedJobs()
+                if (response && response.applications) {
+                    const appliedJobsMap = new Map()
+                    response.applications.forEach((app: any) => {
+                        appliedJobsMap.set(app.job_id, 'applied')
+                    })
+                    console.log('Loaded application status from server:', Object.fromEntries(appliedJobsMap))
+                    setApplicationStatus(appliedJobsMap)
+
+                    // Update localStorage with server data
+                    localStorage.setItem('appliedJobs', JSON.stringify(Object.fromEntries(appliedJobsMap)))
+                    return
+                }
+            } catch (serverError) {
+                console.log('Server fetch failed, falling back to localStorage:', serverError)
+            }
+
+            // Fallback to localStorage if server fetch fails
             const appliedJobs = localStorage.getItem('appliedJobs')
             if (appliedJobs) {
                 const parsed = JSON.parse(appliedJobs)

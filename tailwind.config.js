@@ -9,8 +9,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary brand colors - Dark Blue based
+        // CSS Variables for shadcn/ui components
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
           50: "#e6f3ff",
           100: "#b3d9ff",
           200: "#80bfff",
@@ -22,9 +29,9 @@ module.exports = {
           800: "#093a65",
           900: "#033250",
         },
-
-        // Secondary colors - Bright Blue based
         secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
           50: "#e6f9ff",
           100: "#b3edff",
           200: "#80e1ff",
@@ -36,9 +43,17 @@ module.exports = {
           800: "#006f99",
           900: "#005e80",
         },
-
-        // Accent colors from palette
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
         accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
           yellow: {
             50: "#fffdf0",
             100: "#fff8cc",
@@ -88,6 +103,14 @@ module.exports = {
             900: "#055031",
           },
         },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
 
         // Semantic colors
         success: "#098855", // Dark Green
@@ -115,6 +138,11 @@ module.exports = {
           800: "#1f2937",
           900: "#111827",
         },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
