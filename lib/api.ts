@@ -207,6 +207,47 @@ class ApiClient {
     return response.data;
   }
 
+  // Admin job management endpoints
+  async getAllJobsAdmin(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/jobs');
+    return response.data;
+  }
+
+  async getAllUniversitiesAdmin(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/universities');
+    return response.data;
+  }
+
+  async getAssignedUniversitiesAdmin(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/assigned-universities`);
+    return response.data;
+  }
+
+  async assignJobToUniversity(jobId: string, universityId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admins/jobs/${jobId}/assign-university?university_id=${universityId}`);
+    return response.data;
+  }
+
+  async unassignJobFromUniversity(jobId: string, universityId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/jobs/admin/${jobId}/unassign-university/${universityId}`);
+    return response.data;
+  }
+
+  async updateJobAdmin(jobId: string, jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admins/jobs/${jobId}`, jobData);
+    return response.data;
+  }
+
+  async deleteJobAdmin(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admins/jobs/${jobId}`);
+    return response.data;
+  }
+
+  async changeJobStatusAdmin(jobId: string, status: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admins/jobs/${jobId}/status?status=${status}`);
+    return response.data;
+  }
+
   // Video search endpoint
   async searchVideos(query: string, skip: number = 0, limit: number = 12): Promise<any> {
     const response: AxiosResponse = await this.client.get('/video-search/', {

@@ -49,6 +49,7 @@ interface EditJobModalProps {
     onClose: () => void
     onJobUpdated: () => void
     job: Job | null
+    isAdmin?: boolean // Add prop to indicate if this is admin context
 }
 
 interface JobFormData {
@@ -74,7 +75,7 @@ interface JobFormData {
     campus_drive_date: string
 }
 
-export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModalProps) {
+export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false }: EditJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -221,7 +222,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job }: EditJobModa
                 campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null
             }
 
-            await apiClient.updateJob(job.id, jobData)
+            if (isAdmin) {
+                await apiClient.updateJobAdmin(job.id, jobData)
+            } else {
+                await apiClient.updateJob(job.id, jobData)
+            }
             toast.success('Job updated successfully!')
             onJobUpdated()
             onClose()
