@@ -97,13 +97,18 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                 name: student.name,
                 email: student.email,
                 phone: student.phone || '',
-                university_name: student.university_name || '',
                 degree: student.degree || '',
                 branch: student.branch || '',
                 graduation_year: student.graduation_year || 0,
-                cgpa: student.cgpa || 0,
+                btech_cgpa: student.cgpa || 0,
                 profile_picture: student.profile_picture || '',
-                location: student.location || '',
+                placement_status: student.status || 'active',
+                total_applications: 0,
+                interviews_attended: 0,
+                offers_received: 0,
+                profile_completion_percentage: student.profile_completion_percentage || 0,
+                is_archived: false,
+                created_at: student.created_at || student.applied_at,
 
                 // Skills tab data
                 technical_skills: student.technical_skills || '',
@@ -145,13 +150,8 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                 email_verified: student.email_verified || false,
                 phone_verified: student.phone_verified || false,
                 status: student.status || 'active',
-                created_at: student.created_at || student.applied_at,
-                updated_at: student.updated_at || student.applied_at,
-                last_login: student.last_login || '',
-                profile_completion_percentage: student.profile_completion_percentage || 0,
                 university_id: student.university_id || '',
-                college_id: student.college_id || '',
-                is_archived: false
+                college_id: student.college_id || ''
             }
 
             setSelectedStudent(studentListItem)

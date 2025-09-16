@@ -59,7 +59,7 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                     name: app.student_name,
                     email: app.student_email,
                     phone: app.phone || '',
-                    university_name: app.university || '',
+                    university_id: app.university_id || '',
                     degree: app.degree || '',
                     branch: app.branch || '',
                     graduation_year: app.graduation_year || 0,
@@ -69,7 +69,7 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                     cover_letter: app.cover_letter,
                     expected_salary: app.expected_salary,
                     availability_date: app.availability_date,
-                    location: app.location || '',
+                    city: app.city || '',
                     skills: app.technical_skills ? app.technical_skills.split(', ') : [],
                     profile_picture: app.profile_picture || '',
 
@@ -106,7 +106,6 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                     gender: app.gender || '',
                     country: app.country || '',
                     state: app.state || '',
-                    city: app.city || '',
                     tenth_grade_percentage: app.tenth_grade_percentage || 0,
                     twelfth_grade_percentage: app.twelfth_grade_percentage || 0,
                     total_percentage: app.total_percentage || 0,
@@ -116,7 +115,6 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                     updated_at: app.updated_at || app.applied_at,
                     last_login: app.last_login || '',
                     profile_completion_percentage: app.profile_completion_percentage || 0,
-                    university_id: app.university_id || '',
                     college_id: app.college_id || ''
                 }))
 
@@ -158,13 +156,20 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                 name: student.name,
                 email: student.email,
                 phone: student.phone || '',
-                university_name: student.university_name || '',
+                university_id: student.university_id || '',
                 degree: student.degree || '',
                 branch: student.branch || '',
                 graduation_year: student.graduation_year || 0,
-                cgpa: student.cgpa || 0,
+                btech_cgpa: student.cgpa || 0,
                 profile_picture: student.profile_picture || '',
-                location: student.location || '',
+                city: student.city || '',
+                placement_status: student.status || 'active',
+                total_applications: 0,
+                interviews_attended: 0,
+                offers_received: 0,
+                profile_completion_percentage: student.profile_completion_percentage || 0,
+                is_archived: false,
+                created_at: student.created_at || student.applied_at,
 
                 // Skills tab data
                 technical_skills: student.technical_skills || '',
@@ -199,20 +204,13 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                 gender: student.gender || '',
                 country: student.country || '',
                 state: student.state || '',
-                city: student.city || '',
                 tenth_grade_percentage: student.tenth_grade_percentage || 0,
                 twelfth_grade_percentage: student.twelfth_grade_percentage || 0,
                 total_percentage: student.total_percentage || 0,
                 email_verified: student.email_verified || false,
                 phone_verified: student.phone_verified || false,
                 status: student.status || 'active',
-                created_at: student.created_at || student.applied_at,
-                updated_at: student.updated_at || student.applied_at,
-                last_login: student.last_login || '',
-                profile_completion_percentage: student.profile_completion_percentage || 0,
-                university_id: student.university_id || '',
-                college_id: student.college_id || '',
-                is_archived: false
+                college_id: student.college_id || ''
             }
 
             setSelectedStudent(studentListItem)
@@ -317,8 +315,8 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
 
                             {/* Job Info */}
                             <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                <h3 className="font-medium text-gray-900 dark:text-white">{job.title}</h3>
-                                {job.corporate_name && (
+                                <h3 className="font-medium text-gray-900 dark:text-white">{job?.title}</h3>
+                                {job?.corporate_name && (
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                         Company: {job.corporate_name}
                                     </p>
@@ -391,7 +389,7 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                                                     <td className="py-4 px-4">
                                                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                             <Building className="w-4 h-4" />
-                                                            <span>{student.university_name || 'Not specified'}</span>
+                                                            <span>{student.university_id || 'Not specified'}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
