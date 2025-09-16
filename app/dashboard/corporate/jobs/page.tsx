@@ -12,6 +12,7 @@ import { CreateJobModal } from '@/components/dashboard/CreateJobModal'
 import { EditJobModal } from '@/components/dashboard/EditJobModal'
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
+import { CorporateAppliedStudentsModal } from '@/components/corporate/CorporateAppliedStudentsModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
@@ -66,6 +67,8 @@ export default function CorporateJobsPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [jobToDelete, setJobToDelete] = useState<Job | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [showAppliedStudentsModal, setShowAppliedStudentsModal] = useState(false)
+    const [selectedJobForStudents, setSelectedJobForStudents] = useState<Job | null>(null)
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 9,
@@ -158,6 +161,11 @@ export default function CorporateJobsPage() {
     const handleDeleteJob = (job: Job) => {
         setJobToDelete(job)
         setShowDeleteModal(true)
+    }
+
+    const handleViewAppliedStudents = (job: Job) => {
+        setSelectedJobForStudents(job)
+        setShowAppliedStudentsModal(true)
     }
 
     const confirmDeleteJob = async () => {
@@ -391,6 +399,7 @@ export default function CorporateJobsPage() {
                                     onEdit={() => handleEditJob(job)}
                                     onDelete={() => handleDeleteJob(job)}
                                     onStatusChange={handleStatusChange}
+                                    onViewAppliedStudents={() => handleViewAppliedStudents(job)}
                                     cardIndex={index}
                                 />
                             ))}
@@ -524,6 +533,15 @@ export default function CorporateJobsPage() {
                     showApplyButton={false} // Hide apply button in corporate context
                 />
             )}
+
+            <CorporateAppliedStudentsModal
+                isOpen={showAppliedStudentsModal}
+                onClose={() => {
+                    setShowAppliedStudentsModal(false)
+                    setSelectedJobForStudents(null)
+                }}
+                job={selectedJobForStudents}
+            />
         </CorporateDashboardLayout>
     )
 }

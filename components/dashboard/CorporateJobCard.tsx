@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -45,10 +45,11 @@ interface CorporateJobCardProps {
     onEdit: () => void
     onDelete: () => void
     onStatusChange: (job: Job, newStatus: string) => void
+    onViewAppliedStudents: () => void
     cardIndex?: number
 }
 
-export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, cardIndex = 0 }: CorporateJobCardProps) {
+export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onViewAppliedStudents, cardIndex = 0 }: CorporateJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -235,6 +236,17 @@ export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onS
                             {showDropdown && (
                                 <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
                                     <div className="py-1">
+                                        <button
+                                            onClick={() => {
+                                                onViewAppliedStudents()
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+                                        >
+                                            <UserCheck className="w-4 h-4" />
+                                            View Applied Students
+                                        </button>
+
                                         <button
                                             onClick={() => {
                                                 onEdit()
