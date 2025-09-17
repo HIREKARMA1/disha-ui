@@ -9,6 +9,7 @@ import { AnalyticsChart } from './AnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { RecentActivities } from './RecentActivities'
 import { useAuth } from '@/hooks/useAuth'
+import { useStudentFeatures } from '@/hooks/useStudentFeatures'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
 
@@ -20,6 +21,7 @@ interface StudentDashboardLayoutProps {
 function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     const [studentName, setStudentName] = useState<string>('Student')
     const { user } = useAuth()
+    const { features, loading: featuresLoading, error: featuresError } = useStudentFeatures()
     
 
     // Fetch student profile data to get the name

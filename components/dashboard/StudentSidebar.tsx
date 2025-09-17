@@ -16,6 +16,7 @@ import {
     Menu,
     LogOut,
     Brain,
+    Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -23,6 +24,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import { useStudentFeatureAccess } from '@/hooks/useStudentFeatureAccess'
+import { FeatureAccessModal } from '@/components/ui/FeatureAccessModal'
 
 // Icon mapping for features
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -50,11 +53,50 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
     const [profileData, setProfileData] = useState<any>(null)
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [imageError, setImageError] = useState(false)
+    const [modalFeature, setModalFeature] = useState<{
+        name: string;
+        description?: string;
+        customMessage?: string;
+        maintenanceMessage?: string;
+        isMaintenanceMode?: boolean;
+    } | null>(null)
     const pathname = usePathname()
     const router = useRouter()
     const { user, logout } = useAuth()
+    const { features, hasFeatureAccess, getFeatureInfo, loading: featuresLoading, error: featuresError } = useStudentFeatureAccess()
     
-    // Simple navigation items - no complex feature access control
+    // Debug logging
+    useEffect(() => {
+        console.log('🎯 StudentSidebar - Features loaded:', features);
+        console.log('🎯 StudentSidebar - Features loading:', featuresLoading);
+        console.log('🎯 StudentSidebar - Features error:', featuresError);
+        console.log('🎯 StudentSidebar - Features count:', features.length);
+        
+        // Log each feature's access status
+        features.forEach(feature => {
+            console.log(`🔍 Feature ${feature.feature_key}:`, {
+                is_available: feature.is_available,
+                display_name: feature.display_name,
+                is_global: feature.is_global
+            });
+        });
+        
+        // Test feature access for each navigation item
+        navigationItems.forEach(item => {
+            if (item.feature_key) {
+                const hasAccess = hasFeatureAccess(item.feature_key);
+                const featureInfo = getFeatureInfo(item.feature_key);
+                console.log(`🎯 Feature access for ${item.feature_key}:`, {
+                    hasAccess,
+                    featureInfo,
+                    itemName: item.name
+                });
+            }
+        });
+    }, [features, featuresLoading, featuresError, hasFeatureAccess, getFeatureInfo]);
+
+    
+    // Navigation items with feature access control
     const navigationItems = [
         {
             id: 'dashboard',
@@ -62,7 +104,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Overview and analytics',
             icon: 'Home',
             route: '/dashboard/student',
-            order: 1
+            order: 1,
+            feature_key: null, // Always accessible
+            is_always_accessible: true
         },
         {
             id: 'profile',
@@ -70,7 +114,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Personal information & settings',
             icon: 'User',
             route: '/dashboard/student/profile',
-            order: 2
+            order: 2,
+            feature_key: null, // Always accessible
+            is_always_accessible: true
         },
         {
             id: 'jobs',
@@ -78,7 +124,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Browse and apply for jobs',
             icon: 'Briefcase',
             route: '/dashboard/student/jobs',
-            order: 3
+            order: 3,
+            feature_key: null, // Always accessible
+            is_always_accessible: true
         },
         {
             id: 'resume_builder',
@@ -86,7 +134,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Create professional resume',
             icon: 'FileText',
             route: '/dashboard/student/resume-builder',
-            order: 4
+            order: 4,
+            feature_key: 'resume',
+            is_always_accessible: false
         },
         {
             id: 'career_align',
@@ -94,7 +144,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Career guidance and planning',
             icon: 'Target',
             route: '/dashboard/student/career-align',
-            order: 5
+            order: 5,
+            feature_key: 'careeralign',
+            is_always_accessible: false
         },
         {
             id: 'practice',
@@ -102,7 +154,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Practice tests and assessments',
             icon: 'Brain',
             route: '/dashboard/student/practice',
-            order: 6
+            order: 6,
+            feature_key: 'practice',
+            is_always_accessible: false
         },
         {
             id: 'video_search',
@@ -110,7 +164,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Educational videos and tutorials',
             icon: 'Search',
             route: '/dashboard/student/video-search',
-            order: 7
+            order: 7,
+            feature_key: 'video_search',
+            is_always_accessible: false
         },
         {
             id: 'library',
@@ -118,7 +174,29 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Resources and materials',
             icon: 'Library',
             route: '/dashboard/student/library',
-            order: 8
+            order: 8,
+            feature_key: 'library',
+            is_always_accessible: false
+        },
+        {
+            id: 'analytics',
+            name: 'Analytics',
+            description: 'Analytics and reporting dashboard',
+            icon: 'BarChart3',
+            route: '/dashboard/student/analytics',
+            order: 9,
+            feature_key: 'analytics',
+            is_always_accessible: false
+        },
+        {
+            id: 'sadhana',
+            name: 'Sadhana',
+            description: 'Sadhana learning platform',
+            icon: 'Brain',
+            route: '/dashboard/student/sadhana',
+            order: 10,
+            feature_key: 'sadhana',
+            is_always_accessible: false
         },
         {
             id: 'sangha',
@@ -126,7 +204,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             description: 'Community and networking',
             icon: 'Users',
             route: '/dashboard/student/sangha',
-            order: 9
+            order: 11,
+            feature_key: 'sangha',
+            is_always_accessible: false
         }
     ]
     
@@ -163,8 +243,25 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
         closeMobileMenu()
     }
 
-    const handleNavigation = (route: string) => {
+    const handleNavigation = (route: string, featureKey?: string) => {
+        // Check if this is a feature that requires access control
+        if (featureKey && !hasFeatureAccess(featureKey)) {
+            const featureInfo = getFeatureInfo(featureKey)
+            setModalFeature({
+                name: featureInfo?.display_name || featureKey,
+                description: featureInfo?.description,
+                customMessage: featureInfo?.custom_message,
+                maintenanceMessage: featureInfo?.maintenance_message,
+                isMaintenanceMode: featureInfo?.maintenance_message ? true : false
+            })
+            return
+        }
+        
         router.push(route)
+    }
+
+    const closeModal = () => {
+        setModalFeature(null)
     }
 
 
@@ -263,16 +360,22 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                             if (!isActive) {
                                 startLoading()
                             }
-                            handleNavigation(item.route)
+                            handleNavigation(item.route, item.feature_key || undefined)
                         }
+
+                        const isFeatureDisabled = item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key)
+                        const isFeatureLoading = item.feature_key && featuresLoading
 
                         return (
                             <button
                                 key={item.id}
                                 onClick={handleClick}
+                                disabled={isFeatureDisabled}
                                 className={`group w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${
                                     isActive
                                         ? `bg-gradient-to-r ${color} text-white shadow-lg transform scale-105`
+                                        : isFeatureDisabled
+                                        ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
                                         : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                             >
@@ -288,13 +391,25 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                     }`} />
                                 </div>
                                 <div className="flex-1 text-left">
-                                    <div className="font-medium">
+                                    <div className="font-medium flex items-center">
                                         {item.name}
+                                        {isFeatureLoading && (
+                                            <span className="ml-2 text-xs bg-blue-200 dark:bg-blue-600 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                                                Loading...
+                                            </span>
+                                        )}
+                                        {isFeatureDisabled && !isFeatureLoading && (
+                                            <span className="ml-2 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">
+                                                Disabled
+                                            </span>
+                                        )}
                                     </div>
                                     {item.description && (
                                         <div className={`text-xs mt-0.5 ${
                                             isActive
                                                 ? 'text-white/90'
+                                                : isFeatureDisabled
+                                                ? 'text-gray-500 dark:text-gray-500'
                                                 : 'text-gray-600 dark:text-gray-300'
                                         }`}>
                                             {item.description}
@@ -332,16 +447,22 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                             if (!isActive) {
                                 startLoading()
                             }
-                            handleNavigation(item.route)
+                            handleNavigation(item.route, item.feature_key || undefined)
                         }
+
+                        const isFeatureDisabled = item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key)
+                        const isFeatureLoading = item.feature_key && featuresLoading
 
                         return (
                             <button
                                 key={item.id}
                                 onClick={handleClick}
+                                disabled={isFeatureDisabled}
                                 className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[20%] ${
                                     isActive
                                         ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                                        : isFeatureDisabled
+                                        ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
                                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                                 }`}
                             >
@@ -434,28 +555,46 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                         if (!isActive) {
                                             startLoading()
                                         }
-                                        handleNavigation(item.route)
+                                        handleNavigation(item.route, item.feature_key || undefined)
                                     }
+
+                                    const isFeatureDisabled = item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key)
+                        const isFeatureLoading = item.feature_key && featuresLoading
 
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={handleClick}
+                                            disabled={isFeatureDisabled}
                                             className={`w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                                                 isActive
                                                     ? `bg-gradient-to-r ${color} text-white`
+                                                    : isFeatureDisabled
+                                                    ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
                                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                                             }`}
                                         >
                                             <IconComponent className="w-5 h-5 mr-3" />
                                             <div className="flex-1 text-left">
-                                                <div className="font-medium">
+                                                <div className="font-medium flex items-center">
                                                     {item.name}
+                                                    {isFeatureLoading && (
+                                                        <span className="ml-2 text-xs bg-blue-200 dark:bg-blue-600 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                                                            Loading...
+                                                        </span>
+                                                    )}
+                                                    {isFeatureDisabled && !isFeatureLoading && (
+                                                        <span className="ml-2 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">
+                                                            Disabled
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {item.description && (
                                                     <div className={`text-xs mt-0.5 ${
                                                         isActive
                                                             ? 'text-white/90'
+                                                            : isFeatureDisabled
+                                                            ? 'text-gray-500 dark:text-gray-500'
                                                             : 'text-gray-600 dark:text-gray-300'
                                                     }`}>
                                                         {item.description}
@@ -481,6 +620,20 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Feature Access Modal */}
+            {modalFeature && (
+                <FeatureAccessModal
+                    isOpen={!!modalFeature}
+                    onClose={closeModal}
+                    featureName={modalFeature.name}
+                    featureDescription={modalFeature.description}
+                    customMessage={modalFeature.customMessage}
+                    maintenanceMessage={modalFeature.maintenanceMessage}
+                    isMaintenanceMode={modalFeature.isMaintenanceMode}
+                />
+            )}
+
 
         </>
     )

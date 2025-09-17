@@ -148,7 +148,8 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
   }
 
   // Filter only enabled features for students
-  const enabledFeatures = features.filter(feature => feature.status === 'enabled')
+  // Use the is_available field from the API response, which properly handles global and university-specific features
+  const enabledFeatures = features.filter(feature => feature.is_available === true)
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
@@ -162,12 +163,12 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
       <div className="grid gap-4">
         {enabledFeatures.map((feature, index) => (
           <motion.div
-            key={feature.id}
+            key={feature.feature_key}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
             className={`border rounded-lg p-4 transition-all duration-200 hover:shadow-md ${
-              expandedFeature === feature.id 
+              expandedFeature === feature.feature_key 
                 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' 
                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
@@ -194,11 +195,11 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
               </div>
               
               <div className="flex items-center space-x-3">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(feature.university_status?.status || (feature.is_available ? 'enabled' : 'disabled'))}`}>
-                  {getStatusIcon(feature.university_status?.status || (feature.is_available ? 'enabled' : 'disabled'))}
-                  <span className="ml-1 capitalize">{feature.university_status?.status || (feature.is_available ? 'enabled' : 'disabled')}</span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(feature.is_available ? 'enabled' : 'disabled')}`}>
+                  {getStatusIcon(feature.is_available ? 'enabled' : 'disabled')}
+                  <span className="ml-1 capitalize">{feature.is_available ? 'enabled' : 'disabled'}</span>
                 </span>
-                
+
                 {feature.is_available && (
                   <a
                     href={getFeatureUrl(feature.feature_key || '')}
@@ -209,9 +210,9 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
                   </a>
                 )}
                 
-                {(feature.university_status?.custom_message || feature.maintenance_message) && (
+                {(feature.custom_message || feature.maintenance_message) && (
                   <button
-                    onClick={() => setExpandedFeature(expandedFeature === feature.id ? null : feature.id)}
+                    onClick={() => setExpandedFeature(expandedFeature === feature.feature_key ? null : feature.feature_key)}
                     className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
                   >
                     <Settings className="w-4 h-4" />
@@ -220,7 +221,7 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
               </div>
             </div>
 
-            {expandedFeature === feature.id && (feature.university_status?.custom_message || feature.maintenance_message) && (
+            {expandedFeature === feature.feature_key && (feature.custom_message || feature.maintenance_message) && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -228,18 +229,18 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
                 className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
               >
                 <div className="space-y-3">
-                  {(feature.university_status?.custom_message || feature.maintenance_message) && (
+                  {(feature.custom_message || feature.maintenance_message) && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                        {feature.university_status?.custom_message ? 'Custom Message' : 'Maintenance Message'}
+                        {feature.custom_message ? 'Custom Message' : 'Maintenance Message'}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {feature.university_status?.custom_message || feature.maintenance_message}
+                        {feature.custom_message || feature.maintenance_message}
                       </p>
                     </div>
                   )}
                   
-                  {feature.university_status?.custom_settings && Object.keys(feature.university_status.custom_settings).length > 0 && (
+                  {feature.custom_settings && Object.keys(feature.university_status.custom_settings).length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">Custom Settings</h4>
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">

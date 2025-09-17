@@ -190,11 +190,7 @@ class ApiClient {
     return localStorage.getItem('access_token');
   }
 
-  // Dashboard and data endpoints
-  async getStudentDashboard(): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/students/dashboard');
-    return response.data;
-  }
+  // Dashboard and data endpoints (legacy - use the one in comprehensive student features section)
 
   async getStudentAppliedJobs(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/students/applied-jobs');
@@ -212,13 +208,7 @@ class ApiClient {
     return response.data;
   }
 
-  // Video search endpoint
-  async searchVideos(query: string, skip: number = 0, limit: number = 12): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/video-search/', {
-      params: { query, skip, limit }
-    });
-    return response.data;
-  }
+  // Video search endpoint (legacy - use the one in comprehensive student features section)
 
   // Library endpoints
   async searchLibraryTopics(page: number = 1, limit: number = 12, query: string = '', categoryId: number | null = null): Promise<any> {
@@ -230,10 +220,7 @@ class ApiClient {
     return response.data;
   }
 
-  async getLibraryCategories(): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/library/categories/');
-    return response.data;
-  }
+  // getLibraryCategories moved to comprehensive student features section
 
   // Career align endpoints
   async analyzeResume(formData: FormData): Promise<any> {
@@ -404,9 +391,17 @@ class ApiClient {
   }
 
   async setUniversityFeatureFlag(universityId: string, featureKey: string, status: string, featureData?: any): Promise<UniversityFeatureFlag> {
-    const response: AxiosResponse = await this.client.post(`/admins/feature-flags/university/${universityId}/features?feature_key=${featureKey}&status=${status}`, featureData);
+    const response: AxiosResponse = await this.client.post(`/admins/feature-flags/university/${universityId}/toggle`, {
+      feature_key: featureKey,
+      status: status,
+      custom_message: featureData?.custom_message,
+      custom_settings: featureData?.custom_settings,
+      allowed_user_types: featureData?.allowed_user_types,
+      allowed_roles: featureData?.allowed_roles
+    });
     return response.data;
   }
+
 
   async updateUniversityFeatureFlag(update: UniversityFeatureUpdate): Promise<UniversityFeatureFlag> {
     // Find the feature to get the feature_key
@@ -516,10 +511,159 @@ class ApiClient {
   }
 
   // Student Features endpoints
-  async getStudentFeatures(): Promise<StudentFeaturesListResponse> {
-    const response: AxiosResponse = await this.client.get('/student/features');
+  async getStudentFeatures(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/students/features');
     return response.data;
   }
+
+  // ============================================================================
+  // COMPREHENSIVE STUDENT FEATURE ENDPOINTS
+  // ============================================================================
+
+  // Career Align Feature
+  async getRecommendedJobs(limit: number = 10): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/recommended-jobs', {
+      params: { limit }
+    });
+    return response.data;
+  }
+
+  async getAppliedJobs(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/applied-jobs');
+    return response.data;
+  }
+
+  // Analytics Feature
+  async getStudentDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/dashboard');
+    return response.data;
+  }
+
+  async getProfileCompletion(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/students/profile-completion');
+    return response.data;
+  }
+
+  // Practice Tests Feature
+  async getPracticeTests(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/practice/student/tests');
+    return response.data;
+  }
+
+  async startPracticeTest(testId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/practice/student/attempts', {
+      test_id: testId
+    });
+    return response.data;
+  }
+
+  async getPracticeTestResults(attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/practice/student/attempts/${attemptId}`);
+    return response.data;
+  }
+
+  // Video Search Feature
+  async searchVideos(query: string, skip: number = 0, limit: number = 12): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/videos/search', {
+      params: { query, skip, limit }
+    });
+    return response.data;
+  }
+
+  async getVideoCategories(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/videos/categories');
+    return response.data;
+  }
+
+  async bookmarkVideo(videoId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/videos/bookmark', {
+      video_id: videoId
+    });
+    return response.data;
+  }
+
+  // Library Feature
+  async getLibraryResources(page: number = 1, limit: number = 12, query: string = '', categoryId: number | null = null): Promise<any> {
+    const params: any = { page, limit };
+    if (query) params.query = query;
+    if (categoryId) params.category_id = categoryId;
+    
+    const response: AxiosResponse = await this.client.get('/library/resources', { params });
+    return response.data;
+  }
+
+  async getLibraryCategories(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/library/categories');
+    return response.data;
+  }
+
+  async downloadLibraryResource(resourceId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/library/download', {
+      resource_id: resourceId
+    });
+    return response.data;
+  }
+
+  // Resume Builder Feature
+  async getResumeTemplates(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/resume/templates');
+    return response.data;
+  }
+
+  async generateResume(templateId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/resume/generate', {
+      template_id: templateId,
+      ...data
+    });
+    return response.data;
+  }
+
+  async uploadResume(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post('/students/upload-resume', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  // Sadhana Feature
+  async getSadhanaDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/sadhana/student/dashboard');
+    return response.data;
+  }
+
+  async getSadhanaProgress(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/sadhana/student/progress');
+    return response.data;
+  }
+
+  async logSadhanaActivity(activityData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/sadhana/student/activities', activityData);
+    return response.data;
+  }
+
+  // Sangha Feature
+  async getSanghaCommunity(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/sangha/student/community');
+    return response.data;
+  }
+
+  async getSanghaEvents(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/sangha/student/events');
+    return response.data;
+  }
+
+  async joinSanghaGroup(groupId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/sangha/student/join', {
+      group_id: groupId
+    });
+    return response.data;
+  }
+
 
   // University Student Features endpoints
   async getUniversityStudentFeatures(universityId: string): Promise<StudentFeaturesListResponse> {

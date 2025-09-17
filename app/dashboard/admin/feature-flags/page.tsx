@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { apiClient } from '@/lib/api'
 import { FeatureFlag, UniversityFeatureFlag, BulkUniversityFeatureUpdate, UniversityFeatureUpdate } from '@/types/feature-flags'
 import { useAuth } from '@/hooks/useAuth'
-import { Building2, RefreshCw } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 
 export default function AdminFeatureFlagsPage() {
   const router = useRouter()
@@ -61,26 +61,18 @@ export default function AdminFeatureFlagsPage() {
       console.log('✅ Features loaded:', featuresData.length)
       console.log('✅ Universities loaded:', universitiesData.length)
 
-      // Load university-specific feature flags if a university is selected
-      let universityFlagsData: UniversityFeatureFlag[] = []
-      if (selectedUniId) {
-        console.log('🏫 Loading feature flags for university:', selectedUniId)
-        universityFlagsData = await apiClient.getUniversityFeatureFlags(selectedUniId)
-        console.log('✅ University flags loaded for', selectedUniId, ':', universityFlagsData.length)
-        console.log('📊 University flags data sample:', universityFlagsData.slice(0, 3))
-        
-        // Also get the summary for accurate counts
-        try {
-          const summary = await apiClient.getUniversityFeaturesSummary(selectedUniId)
-          console.log('✅ University features summary:', summary)
-        } catch (err) {
-          console.warn('⚠️ Could not load university features summary:', err)
-        }
-      } else {
-        // Load all university feature flags (this will be empty, but keeping for compatibility)
-        universityFlagsData = await apiClient.getUniversityFeatureFlags()
-        console.log('✅ All university flags loaded:', universityFlagsData.length)
-      }
+      // Load ALL university feature flags to show counts in the universities table
+      console.log('🏫 Loading ALL university feature flags for count calculation...')
+      const allUniversityFlagsData = await apiClient.getUniversityFeatureFlags()
+      console.log('✅ All university flags loaded:', allUniversityFlagsData.length)
+      
+      // Log enabled/disabled counts for debugging
+      const enabledCount = allUniversityFlagsData.filter(flag => flag.is_enabled).length
+      const disabledCount = allUniversityFlagsData.filter(flag => !flag.is_enabled).length
+      console.log(`📈 All university flags breakdown: ${enabledCount} enabled, ${disabledCount} disabled`)
+      
+      // Set the university flags data
+      setUniversityFlags(allUniversityFlagsData)
 
       // Add default_enabled property based on is_global for frontend compatibility
       const featuresWithDefaults = featuresData.map(feature => ({
@@ -90,27 +82,13 @@ export default function AdminFeatureFlagsPage() {
       
       // Update state with fresh data
       setFeatures(featuresWithDefaults)
-      setUniversityFlags(universityFlagsData)
       setUniversities(universitiesData)
       
       console.log('🔄 State updated with fresh data:')
       console.log('📊 Features count:', featuresWithDefaults.length)
-      console.log('📊 University flags count:', universityFlagsData.length)
+      console.log('📊 University flags count:', allUniversityFlagsData.length)
       console.log('📊 Universities count:', universitiesData.length)
       
-      // Log detailed university flags data for debugging
-      if (selectedUniId && universityFlagsData.length > 0) {
-        const enabledCount = universityFlagsData.filter(uf => uf.is_enabled).length
-        const disabledCount = universityFlagsData.length - enabledCount
-        console.log('📊 University flags breakdown:')
-        console.log('  - Enabled:', enabledCount)
-        console.log('  - Disabled:', disabledCount)
-        console.log('  - Total:', universityFlagsData.length)
-        console.log('📊 Sample university flags:', universityFlagsData.slice(0, 3).map(uf => ({
-          feature_flag_id: uf.feature_flag_id,
-          is_enabled: uf.is_enabled
-        })))
-      }
       
     } catch (err: any) {
       console.error('❌ Failed to load feature flag data:', err)
@@ -153,28 +131,36 @@ export default function AdminFeatureFlagsPage() {
 
       await apiClient.updateUniversityFeatureFlag(update)
       
-      // Update local state
+      // Update local state with better conflict resolution
       setUniversityFlags(prev => {
-        const existing = prev.find(uf => uf.university_id === universityId && uf.feature_flag_id === featureId)
-        if (existing) {
-          return prev.map(uf => 
-            uf.university_id === universityId && uf.feature_flag_id === featureId
-              ? { ...uf, is_enabled: enabled }
-              : uf
-          )
+        const existingIndex = prev.findIndex(uf => uf.university_id === universityId && uf.feature_flag_id === featureId)
+        
+        if (existingIndex !== -1) {
+          // Update existing entry
+          const updated = [...prev]
+          updated[existingIndex] = { 
+            ...updated[existingIndex], 
+            is_enabled: enabled,
+            status: enabled ? 'enabled' : 'disabled',
+            updated_at: new Date().toISOString()
+          }
+          return updated
         } else {
+          // Add new entry
           return [...prev, {
-            id: `temp-${Date.now()}`,
+            id: `temp-${Date.now()}-${Math.random()}`,
             university_id: universityId,
             feature_flag_id: featureId,
             is_enabled: enabled,
+            status: enabled ? 'enabled' : 'disabled',
             enabled_at: enabled ? new Date().toISOString() : undefined,
             disabled_at: enabled ? undefined : new Date().toISOString(),
             enabled_by: user?.id || 'admin',
             disabled_by: enabled ? undefined : user?.id || 'admin',
             reason: update.reason,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            tenant_id: 'default'
           }]
         }
       })
@@ -183,6 +169,7 @@ export default function AdminFeatureFlagsPage() {
       setError(err.response?.data?.message || 'Failed to toggle feature')
     }
   }
+
 
   const handleBulkUpdate = async (updates: BulkUniversityFeatureUpdate) => {
     try {
@@ -226,11 +213,6 @@ export default function AdminFeatureFlagsPage() {
     }
   }
 
-  const handleRefresh = async () => {
-    console.log('🔄 Manual refresh triggered')
-    setRefreshTrigger(prev => prev + 1)
-    await loadData(selectedUniversity)
-  }
 
   const forceRefreshData = async (universityId?: string) => {
     console.log('🔄 Force refresh data triggered for university:', universityId || selectedUniversity)
@@ -345,78 +327,16 @@ export default function AdminFeatureFlagsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* University Selection */}
-          <div className="mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <Building2 className="w-6 h-6 text-primary-600" />
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    University Feature Management
-                  </h2>
-                </div>
-                <Button
-                  onClick={() => loadData()}
-                  variant="outline"
-                  size="sm"
-                  disabled={loading}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select University
-                  </label>
-                  <Select value={selectedUniversity} onValueChange={handleUniversitySelection}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose a university to manage features" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {universities.map((university) => (
-                        <SelectItem key={university.id} value={university.id}>
-                          <div className="flex items-center space-x-2">
-                            <span>{university.name}</span>
-                            <span className="text-xs text-gray-500">({university.email})</span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              university.status === 'active' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-                            }`}>
-                              {university.status}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {selectedUniversity && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Managing features for: <span className="font-medium">
-                      {universities.find(u => u.id === selectedUniversity)?.name}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
           <FeatureFlagDashboard
             features={features}
             universityFlags={universityFlags}
             universities={universities}
-            selectedUniversity={selectedUniversity}
             onFeatureToggle={handleFeatureToggle}
             onBulkUpdate={handleBulkUpdate}
             onFeatureEdit={handleFeatureEdit}
             onFeatureDelete={handleFeatureDelete}
             onAssignToUniversity={handleAssignToUniversity}
-            onRefresh={handleRefresh}
             loading={loading}
             refreshTrigger={refreshTrigger}
           />

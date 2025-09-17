@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, CheckCircle, XCircle, Globe, Lock } from 'lucide-react';
+import { Settings, CheckCircle, XCircle, Globe, Lock, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useUniversityFeatures } from '@/hooks/useUniversityFeatures';
 import { useAuth } from '@/hooks/useAuth';
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout';
+import { apiClient } from '@/lib/api';
+import { toast } from 'react-hot-toast';
 
 export default function UniversityFeaturesPage() {
   const { user } = useAuth();
-  const { features, loading, error } = useUniversityFeatures();
+  const { features, loading, error, refetch } = useUniversityFeatures();
+  const [togglingFeatures, setTogglingFeatures] = useState<Set<string>>(new Set());
 
   // Debug logging
   useEffect(() => {
@@ -21,6 +24,55 @@ export default function UniversityFeaturesPage() {
 
   const enabledCount = features.filter(f => f.is_available).length;
   const totalCount = features.length;
+
+  const handleToggleFeature = async (featureKey: string, currentStatus: boolean) => {
+    if (!user?.id) {
+      toast.error('User not found');
+      return;
+    }
+
+    setTogglingFeatures(prev => new Set(prev).add(featureKey));
+    
+    try {
+      const newStatus = !currentStatus;
+      const statusString = newStatus ? 'enabled' : 'disabled';
+      
+      await apiClient.setUniversityFeatureFlag(
+        user.id, // For university users, user.id is the university_id
+        featureKey,
+        statusString,
+        {
+          custom_message: newStatus 
+            ? `Feature enabled by ${user.name || 'university admin'}` 
+            : `Feature disabled by ${user.name || 'university admin'}`,
+          allowed_user_types: ['student', 'university'],
+          allowed_roles: ['admin', 'moderator']
+        }
+      );
+
+      toast.success(
+        newStatus 
+          ? `Feature "${featureKey}" has been enabled` 
+          : `Feature "${featureKey}" has been disabled`
+      );
+
+      // Refresh features to get updated status
+      await refetch();
+      
+    } catch (error: any) {
+      console.error('Failed to toggle feature:', error);
+      toast.error(
+        error.response?.data?.detail || 
+        `Failed to ${currentStatus ? 'disable' : 'enable'} feature`
+      );
+    } finally {
+      setTogglingFeatures(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(featureKey);
+        return newSet;
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -273,7 +325,7 @@ export default function UniversityFeaturesPage() {
                     </p>
                   )}
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Category:</span>
                       <span className="text-gray-900 dark:text-white capitalize group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -293,6 +345,40 @@ export default function UniversityFeaturesPage() {
                         {feature.is_available ? 'Available' : 'Not Available'}
                       </span>
                     </div>
+                    
+                    {/* Toggle Button */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {feature.is_available ? 'Enabled for students' : 'Disabled for students'}
+                      </span>
+                      <button
+                        onClick={() => handleToggleFeature(feature.feature_key, feature.is_available)}
+                        disabled={togglingFeatures.has(feature.feature_key) || feature.is_global}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          feature.is_available
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600'
+                        } ${feature.is_global ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            feature.is_available ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                        {togglingFeatures.has(feature.feature_key) && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                    
+                    {feature.is_global && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center">
+                        <Globe className="w-3 h-3 mr-1" />
+                        Global feature - cannot be disabled
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

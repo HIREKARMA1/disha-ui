@@ -20,9 +20,13 @@ export interface StudentFeature {
 }
 
 export interface StudentFeatureWithAccess extends StudentFeature {
-  is_enabled_for_university: boolean;
-  access_reason?: string;
-  custom_message?: string;
+  is_available: boolean;
+  university_status?: {
+    access_reason: string;
+    custom_message?: string;
+    is_enabled_for_university: boolean;
+    university_id: string;
+  };
 }
 
 export interface StudentFeaturesListResponse {

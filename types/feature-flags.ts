@@ -28,12 +28,14 @@ export interface UniversityFeatureFlag {
   university_id: string;
   feature_flag_id: string;
   is_enabled: boolean;
+  status?: string; // Added to support frontend state management
   enabled_at?: string;
   disabled_at?: string;
   enabled_by: string;
   disabled_by?: string;
   reason?: string;
   custom_config?: Record<string, any>;
+  tenant_id?: string; // Added to support multi-tenant architecture
   created_at: string;
   updated_at: string;
   feature_flag?: FeatureFlag;

@@ -70,33 +70,34 @@ export const useStudentFeatures = (): UseStudentFeaturesReturn => {
       // Make new request
       console.log('Fetching fresh student features data');
       globalCache.promise = apiClient.getStudentFeatures();
-      const response: StudentFeaturesListResponse = await globalCache.promise;
+      const response: any[] = await globalCache.promise;
       
       // Update cache
-      globalCache.data = response;
+      globalCache.data = { features: response, total_count: response.length, enabled_count: 0, disabled_count: 0 };
       globalCache.timestamp = now;
       globalCache.promise = null;
       
       // Debug logging
       console.log('Student features API response:', response);
-      console.log('Features with access status:', response.features.map(f => ({
+      console.log('Features with access status:', response.map(f => ({
         feature_key: f.feature_key,
         display_name: f.display_name,
-        is_enabled_for_university: f.is_enabled_for_university,
-        access_reason: f.access_reason,
-        custom_message: f.custom_message
+        is_available: f.is_available,
+        access_reason: f.university_status?.access_reason,
+        custom_message: f.university_status?.custom_message
       })));
       
       // Check if any features are enabled
-      const enabledFeatures = response.features.filter(f => f.is_enabled_for_university);
+      const enabledFeatures = response.filter(f => f.is_available);
+      const disabledFeatures = response.filter(f => !f.is_available);
       console.log('Enabled features count:', enabledFeatures.length);
       console.log('Enabled features:', enabledFeatures.map(f => f.feature_key));
       
       if (mountedRef.current) {
-        setFeatures(response.features);
-        setTotalCount(response.total_count);
-        setEnabledCount(response.enabled_count);
-        setDisabledCount(response.disabled_count);
+        setFeatures(response);
+        setTotalCount(response.length);
+        setEnabledCount(enabledFeatures.length);
+        setDisabledCount(disabledFeatures.length);
       }
       
     } catch (err) {

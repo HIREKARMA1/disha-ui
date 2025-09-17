@@ -14,10 +14,11 @@ import {
   Search,
   Filter,
   Download,
-  RefreshCw,
   BarChart3,
   Globe,
-  Shield
+  Shield,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FeatureFlagCard } from './FeatureFlagCard'
@@ -29,13 +30,11 @@ interface FeatureFlagDashboardProps {
   features: FeatureFlag[]
   universityFlags: UniversityFeatureFlag[]
   universities: Array<{ id: string; name: string; email: string; status: string }>
-  selectedUniversity?: string
   onFeatureToggle?: (featureId: string, universityId: string, enabled: boolean) => void
   onBulkUpdate?: (updates: BulkUniversityFeatureUpdate) => void
   onFeatureEdit?: (feature: FeatureFlag) => void
   onFeatureDelete?: (featureId: string) => void
   onAssignToUniversity?: (featureId: string, universityId: string) => void
-  onRefresh?: () => void
   loading?: boolean
   refreshTrigger?: number
 }
@@ -44,20 +43,20 @@ export function FeatureFlagDashboard({
   features,
   universityFlags,
   universities,
-  selectedUniversity,
   onFeatureToggle,
   onBulkUpdate,
   onFeatureEdit,
   onFeatureDelete,
   onAssignToUniversity,
-  onRefresh,
   loading = false,
   refreshTrigger
 }: FeatureFlagDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'universities' | 'features'>('overview')
+  const [activeTab, setActiveTab] = useState<'universities' | 'university-features'>('universities')
+  const [selectedUniversityForFeatures, setSelectedUniversityForFeatures] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [togglingFeatures, setTogglingFeatures] = useState<Set<string>>(new Set())
 
   // Filter features based on search and filters
   const filteredFeatures = useMemo(() => {
@@ -85,7 +84,35 @@ export function FeatureFlagDashboard({
     // Calculate university feature usage
     const universityStats = universities.map(uni => {
       const uniFlags = universityFlags.filter(uf => uf.university_id === uni.id)
-      const enabledCount = uniFlags.filter(uf => uf.is_enabled).length
+      
+      // Debug logging
+      console.log(`🔍 University ${uni.name} (${uni.id}):`, {
+        totalFlags: uniFlags.length,
+        enabledFlags: uniFlags.filter(uf => uf.is_enabled).length,
+        allFlags: uniFlags.map(uf => ({
+          feature_flag_id: uf.feature_flag_id,
+          is_enabled: uf.is_enabled,
+          status: uf.status
+        }))
+      })
+      
+      // Count enabled features by checking each feature individually
+      // Only count if the flag explicitly exists and is enabled
+      let enabledCount = 0
+      for (const feature of features) {
+        const universityFlag = uniFlags.find(uf => uf.feature_flag_id === feature.id)
+        // Only count as enabled if the flag exists AND is explicitly enabled
+        if (universityFlag && universityFlag.is_enabled === true) {
+          enabledCount++
+        }
+      }
+      
+      console.log(`📊 University ${uni.name} counts:`, {
+        totalFeatures: totalFeatures,
+        enabledFeatures: enabledCount,
+        disabledFeatures: totalFeatures - enabledCount
+      })
+      
       return {
         id: uni.id,
         name: uni.name,
@@ -170,13 +197,24 @@ export function FeatureFlagDashboard({
     await onBulkUpdate(bulkUpdate)
   }
 
-  const selectedUniversityData = selectedUniversity 
-    ? universities.find(uni => uni.id === selectedUniversity)
-    : null
 
-  const selectedUniversityFlags = selectedUniversity
-    ? universityFlags.filter(uf => uf.university_id === selectedUniversity)
-    : []
+  // Handle feature toggle with loading state
+  const handleFeatureToggle = async (featureId: string, universityId: string, enabled: boolean) => {
+    if (!onFeatureToggle) return
+    
+    setTogglingFeatures(prev => new Set(prev).add(featureId))
+    try {
+      await onFeatureToggle(featureId, universityId, enabled)
+    } catch (error) {
+      console.error('Failed to toggle feature:', error)
+    } finally {
+      setTogglingFeatures(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(featureId)
+        return newSet
+      })
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -198,15 +236,6 @@ export function FeatureFlagDashboard({
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh || (() => window.location.reload())}
-              disabled={loading}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
             
           </div>
         </div>
@@ -260,191 +289,317 @@ export function FeatureFlagDashboard({
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'universities', label: 'Universities', icon: Building2 },
-              { id: 'features', label: 'Features', icon: Settings }
+              { id: 'universities', label: 'Universities List', icon: Building2 },
+              { id: 'university-features', label: 'University Features', icon: Settings, disabled: !selectedUniversityForFeatures }
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => !tab.disabled && setActiveTab(tab.id as any)}
+                disabled={tab.disabled}
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
                     ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : tab.disabled
+                    ? 'border-transparent text-gray-300 dark:text-gray-600 cursor-not-allowed'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
                 <span>{tab.label}</span>
+                {tab.disabled && <span className="text-xs text-gray-400">(Select University)</span>}
               </button>
             ))}
           </nav>
         </div>
 
         <div className="p-6">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
+          {/* Universities List Tab */}
+          {activeTab === 'universities' && (
             <div className="space-y-6">
-              {/* University Feature Usage Chart */}
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  University Feature Usage
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Universities List
                 </h3>
-                <div className="space-y-3">
-                  {stats.universityStats.map(uni => (
-                    <div key={uni.id} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {uni.name}
-                          </span>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {uni.enabledFeatures}/{uni.totalFeatures} features
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${uni.enabledPercentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Click on a university to manage its features
                 </div>
               </div>
 
-              {/* Feature Categories Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(FEATURE_CATEGORIES).map(([category, info]) => {
-                  const categoryFeatures = features.filter(f => f.feature_category === category)
-                  const activeCount = categoryFeatures.filter(f => f.is_active).length
+              {/* Universities Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          University
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Features Enabled
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {universities.map((university) => {
+                        const uniFlags = universityFlags.filter(uf => uf.university_id === university.id)
+                        
+                        // Count enabled features by checking each feature individually
+                        // Only count if the flag exists AND is explicitly enabled
+                        let enabledCount = 0
+                        for (const feature of features) {
+                          const universityFlag = uniFlags.find(uf => uf.feature_flag_id === feature.id)
+                          if (universityFlag && universityFlag.is_enabled === true) {
+                            enabledCount++
+                          }
+                        }
+                        
+                        const totalCount = features.length
+                        const enabledPercentage = totalCount > 0 ? Math.round((enabledCount / totalCount) * 100) : 0
+                        
+                        // Debug logging
+                        console.log(`🏫 University ${university.name} counting:`, {
+                          totalFeatures: totalCount,
+                          enabledFeatures: enabledCount,
+                          disabledFeatures: totalCount - enabledCount,
+                          uniFlags: uniFlags.length,
+                          enabledFlags: uniFlags.filter(uf => uf.is_enabled).length
+                        })
                   
                   return (
-                    <div key={category} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-${info.color}-100 dark:bg-${info.color}-900/20`}>
-                          <Settings className={`w-4 h-4 text-${info.color}-600 dark:text-${info.color}-400`} />
+                          <tr 
+                            key={university.id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedUniversityForFeatures(university.id)
+                              setActiveTab('university-features')
+                            }}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                                  <Building2 className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {university.name}
                         </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900 dark:text-white">{info.label}</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">{info.description}</p>
                         </div>
                       </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {activeCount}/{categoryFeatures.length} active
+                                {university.email}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                university.status === 'active'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                              }`}>
+                                {university.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-1 mr-3">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      {enabledCount}/{totalCount}
+                                    </span>
+                                    <span className="text-gray-500 dark:text-gray-400">
+                                      {enabledPercentage}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-1">
+                                    <div
+                                      className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${enabledPercentage}%` }}
+                                    />
+                                  </div>
+                      </div>
+                    </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedUniversityForFeatures(university.id)
+                                  setActiveTab('university-features')
+                                }}
+                                className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                              >
+                                Manage Features
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* University Features Tab */}
+          {activeTab === 'university-features' && selectedUniversityForFeatures && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => setActiveTab('universities')}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  >
+                    ← Back to Universities
+                  </button>
+                  <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Features for {universities.find(u => u.id === selectedUniversityForFeatures)?.name}
+                </h3>
+                </div>
+              </div>
+
+              {/* Feature Summary Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-center space-x-2">
+                    <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Features</span>
+            </div>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">
+                    {features.length}
+              </p>
+            </div>
+                
+                <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-medium text-green-800 dark:text-green-200">Enabled</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-1">
+                    {features.filter(feature => {
+                      const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id && uf.university_id === selectedUniversityForFeatures)
+                      return universityFlag?.is_enabled === true
+                    }).length}
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <span className="text-sm font-medium text-red-800 dark:text-red-200">Disabled</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-900 dark:text-red-100 mt-1">
+                    {features.filter(feature => {
+                      const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id && uf.university_id === selectedUniversityForFeatures)
+                      return universityFlag?.is_enabled !== true
+                    }).length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Features List with Toggles */}
+              <div className="space-y-4">
+                {features.map(feature => {
+                  const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id && uf.university_id === selectedUniversityForFeatures)
+                  const isEnabled = universityFlag?.is_enabled ?? false
+                  
+                  return (
+                    <div
+                      key={feature.id}
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-${FEATURE_CATEGORIES[feature.feature_category as FeatureCategory]?.color || 'blue'}-100 dark:bg-${FEATURE_CATEGORIES[feature.feature_category as FeatureCategory]?.color || 'blue'}-900/20`}>
+                              <Settings className={`w-4 h-4 text-${FEATURE_CATEGORIES[feature.feature_category as FeatureCategory]?.color || 'blue'}-600 dark:text-${FEATURE_CATEGORIES[feature.feature_category as FeatureCategory]?.color || 'blue'}-400`} />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{feature.feature_name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{feature.description}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="font-mono">{feature.feature_key}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              feature.feature_category === 'CAREER' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                              feature.feature_category === 'ANALYTICS' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                              feature.feature_category === 'PRACTICE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                              feature.feature_category === 'VIDEO_SEARCH' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                              feature.feature_category === 'LIBRARY' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' :
+                              feature.feature_category === 'RESUME' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                              feature.feature_category === 'SADHANA' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                              feature.feature_category === 'SANGHA' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                            }`}>
+                              {FEATURE_CATEGORIES[feature.feature_category as FeatureCategory]?.label || feature.feature_category}
+                            </span>
+                            {feature.is_global && (
+                              <span className="flex items-center space-x-1">
+                                <Globe className="w-3 h-3" />
+                                <span>Global</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                              <div className={`font-medium text-sm ${isEnabled ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                {isEnabled ? 'Enabled' : 'Disabled'}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {universityFlag ? 'University Setting' : 'Default Setting'}
+                              </div>
+                            </div>
+
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {isEnabled ? 'ON' : 'OFF'}
+                            </span>
+                            <button
+                              onClick={() => handleFeatureToggle(feature.id, selectedUniversityForFeatures, !isEnabled)}
+                              disabled={loading || !feature.is_active || togglingFeatures.has(feature.id)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                                isEnabled 
+                                  ? 'bg-green-500 hover:bg-green-600' 
+                                  : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+                              } ${loading || !feature.is_active || togglingFeatures.has(feature.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-all duration-200 ${
+                                  isEnabled ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                              />
+                              {togglingFeatures.has(feature.id) && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                            </button>
+                            {isEnabled ? (
+                              <ToggleRight className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <ToggleLeft className="w-4 h-4 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )
                 })}
-              </div>
-            </div>
-          )}
-
-          {/* University Features Tab - Only show when university is selected */}
-          {activeTab === 'universities' && selectedUniversity && selectedUniversityData && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Feature Management for {selectedUniversityData.name}
-                </h3>
-              </div>
-
-              <UniversityFeatureManager
-                key={`${selectedUniversity}-${universityFlags.length}-${refreshTrigger}`}
-                universityId={selectedUniversity}
-                universityName={selectedUniversityData.name}
-                features={features}
-                universityFlags={selectedUniversityFlags}
-                onUpdate={handleUniversityUpdate}
-                loading={loading}
-                refreshTrigger={refreshTrigger}
-              />
-            </div>
-          )}
-
-          {/* Show message when no university is selected */}
-          {activeTab === 'universities' && !selectedUniversity && (
-            <div className="text-center py-12">
-              <Building2 className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Select a University
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Choose a university from the dropdown above to manage its feature access
-              </p>
-            </div>
-          )}
-
-          {/* Features Tab */}
-          {activeTab === 'features' && (
-            <div className="space-y-6">
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex-1 min-w-64">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search features..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-                
-                <select
-                  value={categoryFilter || ''}
-                  onChange={(e) => setCategoryFilter(e.target.value || null)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">All Categories</option>
-                  {Object.entries(FEATURE_CATEGORIES).map(([key, info]) => (
-                    <option key={key} value={key}>{info.label}</option>
-                  ))}
-                </select>
-                
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              {/* Features Grid */}
-              <div className="space-y-4">
-                {filteredFeatures.length > 0 ? (
-                  filteredFeatures.map(feature => (
-                    <FeatureFlagCard
-                      key={feature.id}
-                      feature={feature}
-                      universityFlags={universityFlags.filter(uf => uf.feature_flag_id === feature.id)}
-                      onToggle={onFeatureToggle ? (featureId, enabled) => {
-                        // For global toggle, we might want to update all universities
-                        // This is a simplified implementation
-                        console.log('Global feature toggle:', featureId, enabled)
-                      } : undefined}
-                      onEdit={onFeatureEdit}
-                      onDelete={onFeatureDelete}
-                      loading={loading}
-                      showUniversityStatus={true}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <Settings className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No Features Found
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Try adjusting your search or filter criteria
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           )}

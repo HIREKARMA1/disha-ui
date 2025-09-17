@@ -55,7 +55,7 @@ export function UniversityFeatureManager({
     const initialFlags: Record<string, boolean> = {}
     features.forEach(feature => {
       const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id)
-      const isEnabled = universityFlag?.is_enabled ?? feature.default_enabled
+      const isEnabled = universityFlag?.is_enabled ?? false
       console.log(`Feature ${feature.feature_key}:`, {
         featureId: feature.id,
         universityFlag: universityFlag,
@@ -85,7 +85,7 @@ export function UniversityFeatureManager({
   useEffect(() => {
     const hasAnyChanges = features.some(feature => {
       const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id)
-      const currentValue = universityFlag?.is_enabled ?? feature.default_enabled
+      const currentValue = universityFlag?.is_enabled ?? false
       return localFlags[feature.id] !== currentValue
     })
     setHasChanges(hasAnyChanges)
@@ -139,7 +139,7 @@ export function UniversityFeatureManager({
       const updates: UniversityFeatureUpdate[] = features
         .map(feature => {
           const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id)
-          const currentValue = universityFlag?.is_enabled ?? feature.default_enabled
+          const currentValue = universityFlag?.is_enabled ?? false
           const hasChanged = localFlags[feature.id] !== currentValue
           
           console.log(`Feature ${feature.feature_key}:`, {
@@ -178,7 +178,7 @@ export function UniversityFeatureManager({
     const resetFlags: Record<string, boolean> = {}
     features.forEach(feature => {
       const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id)
-      resetFlags[feature.id] = universityFlag?.is_enabled ?? feature.default_enabled
+      resetFlags[feature.id] = universityFlag?.is_enabled ?? false
     })
     setLocalFlags(resetFlags)
   }
@@ -378,7 +378,7 @@ export function UniversityFeatureManager({
                   {categoryFeatures.map(feature => {
                     const isEnabled = localFlags[feature.id]
                     const universityFlag = universityFlags.find(uf => uf.feature_flag_id === feature.id)
-                    const isChanged = universityFlag ? localFlags[feature.id] !== universityFlag.is_enabled : localFlags[feature.id] !== feature.default_enabled
+                    const isChanged = universityFlag ? localFlags[feature.id] !== universityFlag.is_enabled : localFlags[feature.id] !== false
 
                     return (
                       <div
