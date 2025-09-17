@@ -1,56 +1,50 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { MatchScorePieChart } from './MatchScorePieChart'
 
-interface Job {
+interface UniversityJob {
     id: string
     title: string
     description: string
     requirements?: string
-    responsibilities?: string
-    job_type: string
-    status: string
-    location: string
-    remote_work: boolean
-    travel_required: boolean
-    salary_min?: number
-    salary_max?: number
-    salary_currency: string
-    experience_min?: number
-    experience_max?: number
-    education_level?: string
-    skills_required?: string[]
-    application_deadline?: string
-    max_applications: number
-    current_applications: number
+    company_name?: string
+    company_verified?: boolean
     industry?: string
-    selection_process?: string
+    location: string
+    job_type: string
+    salary_min?: string
+    salary_max?: string
+    application_deadline?: string
     campus_drive_date?: string
-    views_count: number
-    applications_count: number
-    created_at: string
-    corporate_id: string
-    corporate_name?: string
-    is_active: boolean
-    can_apply: boolean
+    venue?: string
+    max_students?: number
+    skills_required?: string[]
+    status: string
+    benefits?: string
+    selection_process?: string
+    approved: boolean
 }
 
-interface JobCardProps {
-    job: Job
+interface UniversityJobCardProps {
+    job: UniversityJob
     onViewDescription: () => void
-    onApply: () => void
-    isApplying?: boolean
-    applicationStatus?: string
-    cardIndex?: number // Add card index for consecutive color assignment
-    showMatchScore?: boolean // Add option to show match score pie chart
-    matchScore?: number // Add match score for career align jobs
+    onApprove?: () => void
+    onReject?: () => void
+    isProcessing?: boolean
+    cardIndex?: number
 }
 
-export function JobCard({ job, onViewDescription, onApply, isApplying = false, applicationStatus, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
+export function UniversityJobCard({
+    job,
+    onViewDescription,
+    onApprove,
+    onReject,
+    isProcessing = false,
+    cardIndex = 0
+}: UniversityJobCardProps) {
     // Safety check - ensure job object is valid
     if (!job || typeof job !== 'object') {
         console.error('Invalid job object:', job)
@@ -80,28 +74,16 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
     }
 
     const cardColors = getCardColorScheme(cardIndex)
-    const formatSalary = (currency: string, min?: number, max?: number) => {
-        try {
-            if (!min && !max) return 'Not specified'
-            if (min && max) return `${currency} ${Number(min).toLocaleString()} - ${Number(max).toLocaleString()}`
-            if (min) return `${currency} ${Number(min).toLocaleString()}+`
-            if (max) return `${currency} Up to ${Number(max).toLocaleString()}`
-            return 'Not specified'
-        } catch (error) {
-            console.error('Error formatting salary:', error, { min, max, currency })
-            return 'Not specified'
-        }
-    }
 
-    const formatExperience = (min?: number, max?: number) => {
+    const formatSalary = (min?: string, max?: string) => {
         try {
             if (!min && !max) return 'Not specified'
-            if (min && max) return `${Number(min)}-${Number(max)} years`
-            if (min) return `${Number(min)}+ years`
-            if (max) return `Up to ${Number(max)} years`
+            if (min && max) return `₹ ${Number(min).toLocaleString()} - ${Number(max).toLocaleString()}`
+            if (min) return `₹ ${Number(min).toLocaleString()}+`
+            if (max) return `₹ Up to ${Number(max).toLocaleString()}`
             return 'Not specified'
         } catch (error) {
-            console.error('Error formatting experience:', error, { min, max })
+            console.error('Error formatting salary:', error, { min, max })
             return 'Not specified'
         }
     }
@@ -148,6 +130,16 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
         return labels[jobType as keyof typeof labels] || jobType
     }
 
+    const getApprovalStatusColor = (approved: boolean) => {
+        return approved
+            ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+            : 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+    }
+
+    const getApprovalStatusLabel = (approved: boolean) => {
+        return approved ? 'Approved' : 'Pending'
+    }
+
     const isDeadlineNear = () => {
         try {
             if (!job.application_deadline || typeof job.application_deadline !== 'string') return false
@@ -175,10 +167,6 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
         }
     }
 
-    const canApply = () => {
-        return applicationStatus !== 'applied' && !isDeadlineExpired() && job.can_apply
-    }
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -193,10 +181,15 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
                             {typeof job.title === 'string' ? job.title : String(job.title || '')}
                         </h3>
-                        {job.corporate_name && (
+                        {job.company_name && (
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
                                 <Building className="w-4 h-4" />
-                                {typeof job.corporate_name === 'string' ? job.corporate_name : String(job.corporate_name || '')}
+                                {typeof job.company_name === 'string' ? job.company_name : String(job.company_name || '')}
+                                {job.company_verified && (
+                                    <span className="text-green-600 dark:text-green-400">
+                                        <CheckCircle className="w-3 h-3" />
+                                    </span>
+                                )}
                             </p>
                         )}
                     </div>
@@ -207,15 +200,12 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                         )}>
                             {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
                         </span>
-                        {/* Prominent Match Score Badge */}
-                        {showMatchScore && matchScore !== undefined && (
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${matchScore >= 80 ? 'bg-green-500 text-white' :
-                                matchScore >= 60 ? 'bg-orange-500 text-white' :
-                                    'bg-red-500 text-white'
-                                }`}>
-                                {Math.round(matchScore)}% Match
-                            </div>
-                        )}
+                        <span className={cn(
+                            "px-2 py-1 text-xs font-medium rounded-full",
+                            getApprovalStatusColor(job.approved)
+                        )}>
+                            {getApprovalStatusLabel(job.approved)}
+                        </span>
                     </div>
                 </div>
 
@@ -224,30 +214,34 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <MapPin className="w-4 h-4" />
                         <span className="truncate">{typeof job.location === 'string' ? job.location : String(job.location || '')}</span>
-                        {job.remote_work && (
-                            <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
-                                Remote
-                            </span>
-                        )}
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <DollarSign className="w-4 h-4" />
-                        <span className="truncate">{formatSalary(job.salary_currency, job.salary_min, job.salary_max)}</span>
+                        <span className="truncate">{formatSalary(job.salary_min, job.salary_max)}</span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Briefcase className="w-4 h-4" />
-                        <span className="truncate">{formatExperience(job.experience_min, job.experience_max)}</span>
-                    </div>
+                    {job.campus_drive_date && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Calendar className="w-4 h-4" />
+                            <span className="truncate">Drive: {formatDate(job.campus_drive_date)}</span>
+                        </div>
+                    )}
 
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Users className="w-4 h-4" />
-                        <span className="truncate">{Number(job.current_applications || 0)}/{Number(job.max_applications || 0)}</span>
-                    </div>
+                    {job.venue && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <VenueIcon className="w-4 h-4" />
+                            <span className="truncate">{job.venue}</span>
+                        </div>
+                    )}
+
+                    {job.max_students && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 col-span-2">
+                            <GraduationCap className="w-4 h-4" />
+                            <span className="truncate">Max Students: {job.max_students}</span>
+                        </div>
+                    )}
                 </div>
-
-
 
                 {/* Skills */}
                 {job.skills_required && Array.isArray(job.skills_required) && job.skills_required.length > 0 && (
@@ -306,23 +300,9 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                             )}
                         </div>
                     )}
-
-                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <Clock className="w-3 h-3" />
-                        <span>Posted {formatDate(job.created_at)}</span>
-                    </div>
                 </div>
 
                 {/* Status Indicators - moved above buttons for consistent alignment */}
-                {applicationStatus === 'applied' && (
-                    <div className="mb-3 text-center">
-                        <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Application Submitted
-                        </span>
-                    </div>
-                )}
-
                 {isDeadlineExpired() && (
                     <div className="mb-3 text-center">
                         <span className="text-xs text-red-600 dark:text-red-400 font-medium">
@@ -340,32 +320,40 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                         className="flex-1 flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
                     >
                         <FileText className="w-4 h-4" />
-                        View JD
+                        View Details
                     </Button>
 
-                    <Button
-                        onClick={onApply}
-                        disabled={!canApply() || isApplying}
-                        size="sm"
-                        className={cn(
-                            "flex-1 flex items-center gap-2 transition-all duration-200 hover:shadow-md",
-                            !canApply()
-                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
-                                : "bg-primary-500 hover:bg-primary-600"
-                        )}
-                    >
-                        {isApplying ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Applying...
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="w-4 h-4" />
-                                {applicationStatus === 'applied' ? 'Applied' : isDeadlineExpired() ? 'Expired' : 'Apply Now'}
-                            </>
-                        )}
-                    </Button>
+                    {!job.approved && (
+                        <>
+                            <Button
+                                onClick={onApprove}
+                                disabled={isProcessing}
+                                size="sm"
+                                className="flex-1 bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="w-4 h-4" />
+                                        Approve
+                                    </>
+                                )}
+                            </Button>
+                        </>
+                    )}
+
+                    {job.approved && (
+                        <div className="flex-1 flex items-center justify-center">
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Approved
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
         </motion.div>

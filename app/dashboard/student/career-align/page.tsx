@@ -96,6 +96,7 @@ function CareerAlignPageContent() {
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
     const [applyingJobs, setApplyingJobs] = useState<Set<string>>(new Set())
     const [applicationStatus, setApplicationStatus] = useState<Map<string, string>>(new Map())
+    const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open') // Filter for job status
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
@@ -138,7 +139,12 @@ function CareerAlignPageContent() {
             const result: CareerAlignResponse = await apiClient.analyzeResume(formData)
             setAnalysisResult(result)
             setCurrentPage(1)
-            setTotalPages(Math.ceil(result.top_recommended_jobs.length / jobsPerPage))
+            const jobs = convertJobMatchesToJobs(result.top_recommended_jobs)
+            setTotalPages(Math.ceil(jobs.length / jobsPerPage))
+
+            // Check application status for recommended jobs
+            await checkApplicationStatus(jobs)
+
             toast.success('Resume analysis completed successfully!')
         } catch (err: any) {
             console.error('Analysis error:', err)
@@ -168,8 +174,13 @@ function CareerAlignPageContent() {
 
             setApplicationStatus(prev => {
                 const newStatus = new Map(prev).set(jobId, 'applied')
+
+                // Save to localStorage for persistence
                 const currentStatus = Object.fromEntries(newStatus)
                 localStorage.setItem('appliedJobs', JSON.stringify(currentStatus))
+
+                console.log(`Application status updated for job ${jobId}:`, newStatus.get(jobId))
+                console.log('All application statuses:', Object.fromEntries(newStatus))
                 return newStatus
             })
 
@@ -185,6 +196,75 @@ function CareerAlignPageContent() {
                 newSet.delete(jobId)
                 return newSet
             })
+        }
+    }
+
+    // Helper function to check if a job is expired
+    const isJobExpired = (job: Job) => {
+        if (!job.application_deadline) return false
+        const deadline = new Date(job.application_deadline)
+        const now = new Date()
+        return deadline < now
+    }
+
+    // Helper function to check if a job is open (available for application)
+    const isJobOpen = (job: Job) => {
+        const status = applicationStatus.get(job.id)
+        return status !== 'applied' && !isJobExpired(job) && job.can_apply
+    }
+
+    // Helper function to check if a job is closed (applied, expired, or not available)
+    const isJobClosed = (job: Job) => {
+        const status = applicationStatus.get(job.id)
+        return status === 'applied' || isJobExpired(job) || !job.can_apply
+    }
+
+    // Filter jobs based on job status filter
+    const filterJobsByStatus = (jobs: Job[]) => {
+        if (jobStatusFilter === 'all') return jobs
+        if (jobStatusFilter === 'open') return jobs.filter(isJobOpen)
+        if (jobStatusFilter === 'closed') return jobs.filter(isJobClosed)
+        return jobs
+    }
+
+    // Check application status for jobs
+    const checkApplicationStatus = async (jobs: Job[]) => {
+        try {
+            const jobIds = jobs.map(job => job.id)
+            if (jobIds.length === 0) return
+
+            console.log('Checking application status for job IDs:', jobIds)
+
+            // First, try to fetch applied jobs from server
+            try {
+                const response = await apiClient.getStudentAppliedJobs()
+                if (response && response.applications) {
+                    const appliedJobsMap = new Map()
+                    response.applications.forEach((app: any) => {
+                        appliedJobsMap.set(app.job_id, 'applied')
+                    })
+                    console.log('Loaded application status from server:', Object.fromEntries(appliedJobsMap))
+                    setApplicationStatus(appliedJobsMap)
+
+                    // Update localStorage with server data
+                    localStorage.setItem('appliedJobs', JSON.stringify(Object.fromEntries(appliedJobsMap)))
+                    return
+                }
+            } catch (serverError) {
+                console.log('Server fetch failed, falling back to localStorage:', serverError)
+            }
+
+            // Fallback to localStorage if server fetch fails
+            const appliedJobs = localStorage.getItem('appliedJobs')
+            if (appliedJobs) {
+                const parsed = JSON.parse(appliedJobs)
+                console.log('Loading application status from localStorage:', parsed)
+                setApplicationStatus(new Map(Object.entries(parsed)))
+            } else {
+                console.log('No application status found in localStorage')
+            }
+        } catch (error) {
+            console.error('Error checking application status:', error)
         }
     }
 
@@ -242,9 +322,7 @@ function CareerAlignPageContent() {
     const getCurrentPageJobs = () => {
         if (!analysisResult) return []
         const jobsToUse = filteredJobs.length > 0 ? filteredJobs : convertJobMatchesToJobs(analysisResult.top_recommended_jobs)
-        const startIndex = (currentPage - 1) * jobsPerPage
-        const endIndex = startIndex + jobsPerPage
-        return jobsToUse.slice(startIndex, endIndex)
+        return jobsToUse
     }
 
     const handlePageChange = (newPage: number) => {
@@ -285,6 +363,11 @@ function CareerAlignPageContent() {
             setTotalPages(Math.ceil(analysisResult.top_recommended_jobs.length / jobsPerPage))
         }
     }
+
+    // Load application status on component mount
+    useEffect(() => {
+        checkApplicationStatus([])
+    }, [])
 
     return (
         <StudentDashboardLayout>
@@ -497,6 +580,15 @@ function CareerAlignPageContent() {
                                         />
                                     </div>
 
+                                    <select
+                                        value={jobStatusFilter}
+                                        onChange={(e) => setJobStatusFilter(e.target.value as 'all' | 'open' | 'closed')}
+                                        className="px-3 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10"
+                                    >
+                                        <option value="all">All Jobs</option>
+                                        <option value="open">Open Jobs</option>
+                                        <option value="closed">Closed Jobs</option>
+                                    </select>
                                     <Button
                                         onClick={handleSearch}
                                         disabled={!searchTerm.trim()}
@@ -525,7 +617,11 @@ function CareerAlignPageContent() {
                                     <div className="text-gray-600 dark:text-gray-300 text-sm">
                                         <span className="flex items-center gap-2">
                                             📊 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                                                Showing {((currentPage - 1) * jobsPerPage) + 1} to {Math.min(currentPage * jobsPerPage, (filteredJobs.length > 0 ? filteredJobs.length : analysisResult.top_recommended_jobs.length))} of {filteredJobs.length > 0 ? filteredJobs.length : analysisResult.top_recommended_jobs.length} jobs
+                                                {(() => {
+                                                    const allJobs = getCurrentPageJobs()
+                                                    const filteredJobs = filterJobsByStatus(allJobs)
+                                                    return `Showing ${filteredJobs.length} of ${allJobs.length} jobs`
+                                                })()}
                                             </span>
                                         </span>
                                     </div>
@@ -539,88 +635,102 @@ function CareerAlignPageContent() {
 
                             {/* Jobs Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {getCurrentPageJobs().map((job, index) => {
-                                    const jobApplicationStatus = applicationStatus.get(job.id)
-                                    // Extract match score from job description
-                                    const matchScoreMatch = job.description.match(/Match Score: (\d+(?:\.\d+)?)%/)
-                                    const matchScore = matchScoreMatch ? parseFloat(matchScoreMatch[1]) : 0
+                                {(() => {
+                                    const allJobs = getCurrentPageJobs()
+                                    const filteredJobs = filterJobsByStatus(allJobs)
+                                    const startIndex = (currentPage - 1) * jobsPerPage
+                                    const endIndex = startIndex + jobsPerPage
+                                    const paginatedJobs = filteredJobs.slice(startIndex, endIndex)
 
-                                    return (
-                                        <JobCard
-                                            key={job.id}
-                                            job={job}
-                                            onViewDescription={() => setSelectedJob(job)}
-                                            onApply={() => handleApplyClick(job)}
-                                            isApplying={applyingJobs.has(job.id)}
-                                            applicationStatus={jobApplicationStatus}
-                                            cardIndex={index}
-                                            showMatchScore={true}
-                                            matchScore={matchScore}
-                                        />
-                                    )
-                                })}
+                                    return paginatedJobs.map((job, index) => {
+                                        const jobApplicationStatus = applicationStatus.get(job.id)
+                                        console.log(`Job ${job.id} (${job.title}) - Application Status: ${jobApplicationStatus}, Can Apply: ${job.can_apply}`)
+                                        // Extract match score from job description
+                                        const matchScoreMatch = job.description.match(/Match Score: (\d+(?:\.\d+)?)%/)
+                                        const matchScore = matchScoreMatch ? parseFloat(matchScoreMatch[1]) : 0
+
+                                        return (
+                                            <JobCard
+                                                key={job.id}
+                                                job={job}
+                                                onViewDescription={() => setSelectedJob(job)}
+                                                onApply={() => handleApplyClick(job)}
+                                                isApplying={applyingJobs.has(job.id)}
+                                                applicationStatus={jobApplicationStatus}
+                                                cardIndex={index}
+                                                showMatchScore={true}
+                                                matchScore={matchScore}
+                                            />
+                                        )
+                                    })
+                                })()}
                             </div>
 
                             {/* Pagination */}
-                            {totalPages > 1 && (
-                                <div className="mt-8 flex items-center justify-center">
-                                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4">
-                                        <div className="flex items-center gap-2">
-                                            {/* Previous Button */}
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handlePageChange(currentPage - 1)}
-                                                disabled={currentPage <= 1}
-                                                className="px-3 py-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                ←
-                                            </Button>
+                            {(() => {
+                                const allJobs = getCurrentPageJobs()
+                                const filteredJobs = filterJobsByStatus(allJobs)
+                                const filteredTotalPages = Math.ceil(filteredJobs.length / jobsPerPage)
+                                return filteredTotalPages > 1 && (
+                                    <div className="mt-8 flex items-center justify-center">
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4">
+                                            <div className="flex items-center gap-2">
+                                                {/* Previous Button */}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(currentPage - 1)}
+                                                    disabled={currentPage <= 1}
+                                                    className="px-3 py-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    ←
+                                                </Button>
 
-                                            {/* Page Numbers */}
-                                            <div className="flex items-center gap-1">
-                                                {[...Array(totalPages)].map((_, i) => {
-                                                    const pageNum = i + 1
-                                                    const isCurrentPage = pageNum === currentPage
-                                                    const isNearCurrent = Math.abs(pageNum - currentPage) <= 1
-                                                    const isFirstOrLast = pageNum === 1 || pageNum === totalPages
+                                                {/* Page Numbers */}
+                                                <div className="flex items-center gap-1">
+                                                    {[...Array(totalPages)].map((_, i) => {
+                                                        const pageNum = i + 1
+                                                        const isCurrentPage = pageNum === currentPage
+                                                        const isNearCurrent = Math.abs(pageNum - currentPage) <= 1
+                                                        const isFirstOrLast = pageNum === 1 || pageNum === totalPages
 
-                                                    if (isFirstOrLast || isNearCurrent) {
-                                                        return (
-                                                            <Button
-                                                                key={pageNum}
-                                                                variant={isCurrentPage ? "default" : "outline"}
-                                                                size="sm"
-                                                                onClick={() => handlePageChange(pageNum)}
-                                                                className={`min-w-[32px] h-8 ${isCurrentPage
-                                                                    ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-md'
-                                                                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 hover:shadow-md'
-                                                                    }`}
-                                                            >
-                                                                {pageNum}
-                                                            </Button>
-                                                        )
-                                                    } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                                                        return <span key={pageNum} className="px-2 text-primary-400 dark:text-primary-300">...</span>
-                                                    }
-                                                    return null
-                                                })}
+                                                        if (isFirstOrLast || isNearCurrent) {
+                                                            return (
+                                                                <Button
+                                                                    key={pageNum}
+                                                                    variant={isCurrentPage ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    onClick={() => handlePageChange(pageNum)}
+                                                                    className={`min-w-[32px] h-8 ${isCurrentPage
+                                                                        ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-md'
+                                                                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 hover:shadow-md'
+                                                                        }`}
+                                                                >
+                                                                    {pageNum}
+                                                                </Button>
+                                                            )
+                                                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                                                            return <span key={pageNum} className="px-2 text-primary-400 dark:text-primary-300">...</span>
+                                                        }
+                                                        return null
+                                                    })}
+                                                </div>
+
+                                                {/* Next Button */}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(currentPage + 1)}
+                                                    disabled={currentPage >= filteredTotalPages}
+                                                    className="px-3 py-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    →
+                                                </Button>
                                             </div>
-
-                                            {/* Next Button */}
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handlePageChange(currentPage + 1)}
-                                                disabled={currentPage >= totalPages}
-                                                className="px-3 py-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                →
-                                            </Button>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )
+                            })()}
                         </div>
                     </>
                 )}
@@ -647,6 +757,7 @@ function CareerAlignPageContent() {
                             setSelectedJob(null)
                         }}
                         isApplying={applyingJobs.has(selectedJob.id)}
+                        applicationStatus={applicationStatus.get(selectedJob.id)}
                     />
                 )}
 
