@@ -4,7 +4,7 @@
 export interface FeatureFlag {
   id: string;
   feature_name: string;
-  feature_category: 'career' | 'analytics' | 'practice' | 'video_search' | 'library' | 'resume' | 'sadhana' | 'sangha';
+  feature_category: 'career' | 'practice' | 'video_search' | 'library' | 'resume' | 'sadhana' | 'sangha';
   feature_key: string;
   display_name: string;
   description: string;
@@ -43,7 +43,7 @@ export interface UniversityFeatureFlag {
 
 export interface FeatureFlagCreate {
   feature_name: string;
-  feature_category: 'career' | 'analytics' | 'practice' | 'video_search' | 'library' | 'resume' | 'sadhana' | 'sangha';
+  feature_category: 'career' | 'practice' | 'video_search' | 'library' | 'resume' | 'sadhana' | 'sangha';
   feature_key: string;
   display_name: string;
   description: string;
@@ -191,12 +191,6 @@ export const FEATURE_CATEGORIES = {
     icon: 'Briefcase',
     color: 'blue',
     description: 'Career guidance and job matching features'
-  },
-  analytics: {
-    label: 'Analytics',
-    icon: 'BarChart3',
-    color: 'green',
-    description: 'Data analytics and reporting features'
   },
   practice: {
     label: 'Practice Tests',

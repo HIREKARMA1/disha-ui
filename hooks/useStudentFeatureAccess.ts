@@ -28,78 +28,82 @@ export const useStudentFeatureAccess = (): UseStudentFeatureAccessReturn => {
       return;
     }
 
-
     try {
       setLoading(true);
       setError(null);
       
-      // Get student features from the backend
-      // This should return features available to the student's university
-      console.log('🎯 Fetching student features for user:', user);
-      console.log('🎯 User university_id:', user?.university_id);
+      console.log('🎯 Fetching university features for student:', user.id);
       
-      const response = await apiClient.getStudentFeatures();
-      console.log('🎯 Student features API response:', response);
+      // Use the new API endpoint that gets university-specific features
+      const response = await apiClient.getStudentUniversityFeatures(user.id);
+      console.log('🎯 University features API response:', response);
       console.log('🎯 Response type:', typeof response);
       console.log('🎯 Response length:', Array.isArray(response) ? response.length : 'Not an array');
       
+      // Check if response is an error
+      if (response && typeof response === 'object' && 'error' in response) {
+        console.error('🎯 API returned error response:', response);
+        throw new Error(`API Error: ${response.error}`);
+      }
+      
+      // Check if response is empty or null
+      if (!response || (Array.isArray(response) && response.length === 0)) {
+        console.error('🎯 API returned empty response:', response);
+        throw new Error('API returned empty response');
+      }
+      
+      // Additional debugging for the response structure
+      if (Array.isArray(response) && response.length > 0) {
+        console.log('🎯 First feature in response:', response[0]);
+        console.log('🎯 All feature keys:', response.map(f => f.feature_key));
+        console.log('🎯 All is_available values:', response.map(f => ({ key: f.feature_key, is_available: f.is_available })));
+        
+        // Debug: Log each feature's exact structure
+        response.forEach((feature, index) => {
+          console.log(`🎯 Raw feature ${index}:`, {
+            feature_key: feature.feature_key,
+            display_name: feature.display_name,
+            is_available: feature.is_available,
+            keys: Object.keys(feature)
+          });
+        });
+      }
+      
       // Transform the response to match StudentFeatureWithAccess interface
-      // The response is an array of UniversityFeatureFlagResponse objects
       const transformedFeatures = response.map((feature: any, index: number) => {
         console.log('🔍 Processing feature:', feature);
-        console.log('🔍 Feature is_enabled:', feature.is_enabled);
-        console.log('🔍 Feature status:', feature.status);
-        console.log('🔍 Feature has feature object:', !!feature.feature);
+        console.log('🔍 Feature is_available:', feature.is_available);
+        console.log('🔍 Feature feature_key:', feature.feature_key);
+        console.log('🔍 Feature display_name:', feature.display_name);
         
-        // Since the API doesn't return a feature object, we'll create one with default values
-        // and use the feature_flag_id as the feature key
-        const isEnabled = feature.is_enabled || false;
+        // Use is_available field directly from the API response
+        const isEnabled = feature.is_available || false;
         
         console.log('🔍 Final isEnabled value:', isEnabled);
         
-        // Create a mapping of feature_flag_id (UUID) to feature details
-        const featureKeyMap: Record<string, any> = {
-          '503a4f11-aab9-42db-bce1-2467340a0e8e': { key: 'careeralign', name: 'careeralign', display: 'Career Align', icon: 'Target', category: 'career' },
-          'b9bb6975-ee1f-4a64-92ef-83576f396fd6': { key: 'analytics', name: 'analytics', display: 'Analytics Dashboard', icon: 'BarChart3', category: 'analytics' },
-          '65582d7c-b1d0-4671-875f-771032075e2e': { key: 'practice', name: 'practice', display: 'Practice Tests', icon: 'BookOpen', category: 'practice' },
-          'c18d97eb-d9b8-4737-a3e1-5c06fac74d51': { key: 'video_search', name: 'video_search', display: 'Video Search', icon: 'Search', category: 'video_search' },
-          '11d80635-b856-4fad-9b89-855e035560d1': { key: 'library', name: 'library', display: 'Resource Library', icon: 'Library', category: 'library' },
-          '3005eece-fb43-481c-a69c-2e71d2b7def5': { key: 'resume', name: 'resume_builder', display: 'Resume Builder', icon: 'FileText', category: 'resume' },
-          'fc874a57-d873-4edb-831b-4b62cfca6c11': { key: 'sadhana', name: 'sadhana', display: 'Sadhana Platform', icon: 'Brain', category: 'sadhana' },
-          '1e65aabe-aaf0-4706-96e5-f77b76a71c8c': { key: 'sangha', name: 'sangha', display: 'Sangha Community', icon: 'Users', category: 'sangha' }
-        };
-        
-        const featureFlagId = feature.feature_flag_id;
-        const featureInfo = featureKeyMap[featureFlagId] || { 
-          key: 'unknown',
-          name: 'Unknown Feature', 
-          display: 'Unknown Feature', 
-          icon: 'HelpCircle', 
-          category: 'general' 
-        };
-        
         const transformed: StudentFeatureWithAccess = {
-          id: featureFlagId || `feature-${index}`,
-          feature_key: featureInfo.key,
-          feature_name: featureInfo.name,
-          display_name: featureInfo.display,
-          description: `Access to ${featureInfo.display} features`,
-          icon: featureInfo.icon,
-          route: `/${featureInfo.key}`,
-          order: index,
-          is_active: true,
-          category: featureInfo.category,
-          requires_auth: true,
-          settings: {},
+          id: feature.id || `feature-${index}`,
+          feature_key: feature.feature_key || 'unknown',
+          feature_name: feature.feature_name || feature.feature_key || 'Unknown Feature',
+          display_name: feature.display_name || feature.feature_name || 'Unknown Feature',
+          description: feature.description || `Access to ${feature.display_name || feature.feature_name} features`,
+          icon: feature.icon || 'HelpCircle',
+          route: `/${feature.feature_key || 'unknown'}`,
+          order: feature.order || index,
+          is_active: feature.is_active !== false,
+          category: feature.feature_category || 'general',
+          requires_auth: feature.requires_auth !== false,
+          settings: feature.settings || {},
           created_at: feature.created_at || new Date().toISOString(),
           updated_at: feature.updated_at,
-          tenant_id: feature.tenant_id || user?.tenant_id || '',
-          is_available: isEnabled, // Use the is_enabled field directly
+          tenant_id: feature.tenant_id || 'default',
+          is_available: isEnabled, // Use the is_available field directly from API
+          maintenance_message: feature.maintenance_message,
           university_status: {
-            access_reason: feature.status || 'university_enabled',
-            custom_message: feature.custom_message,
+            access_reason: feature.university_status?.access_reason || (isEnabled ? 'university_enabled' : 'university_disabled'),
+            custom_message: feature.university_status?.custom_message || feature.custom_message,
             is_enabled_for_university: isEnabled,
-            university_id: user?.university_id || ''
+            university_id: feature.university_status?.university_id || feature.university_id || user?.university_id || ''
           }
         };
         
@@ -108,6 +112,15 @@ export const useStudentFeatureAccess = (): UseStudentFeatureAccessReturn => {
       }) || [];
       
       console.log('🎯 Final transformed features:', transformedFeatures);
+      
+      // Debug: Log each feature's key for debugging
+      transformedFeatures.forEach((feature, index) => {
+        console.log(`🎯 Transformed feature ${index}:`, {
+          feature_key: feature.feature_key,
+          is_available: feature.is_available,
+          display_name: feature.display_name
+        });
+      });
       
       setFeatures(transformedFeatures);
       
@@ -123,11 +136,29 @@ export const useStudentFeatureAccess = (): UseStudentFeatureAccessReturn => {
   const hasFeatureAccess = (featureKey: string): boolean => {
     // If still loading, don't assume disabled
     if (loading) {
-      return false; // Return false during loading to prevent premature access
+      console.log(`🔍 hasFeatureAccess(${featureKey}): Still loading, returning false`);
+      return false;
     }
     
+    // If features array is empty, return false
+    if (!features || features.length === 0) {
+      console.log(`🔍 hasFeatureAccess(${featureKey}): Features array is empty, returning false`);
+      return false;
+    }
+    
+    // Find the feature
     const feature = features.find(f => f.feature_key === featureKey);
-    return feature ? feature.is_available : false;
+    const hasAccess = feature ? feature.is_available : false;
+    
+    console.log(`🔍 hasFeatureAccess(${featureKey}):`, {
+      featureFound: !!feature,
+      is_available: feature?.is_available,
+      hasAccess,
+      totalFeatures: features.length,
+      searchedKey: featureKey
+    });
+    
+    return hasAccess;
   };
 
   const getFeatureInfo = (featureKey: string): StudentFeatureWithAccess | undefined => {

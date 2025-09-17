@@ -516,6 +516,12 @@ class ApiClient {
     return response.data;
   }
 
+  // Get university-specific features for a student
+  async getStudentUniversityFeatures(studentId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(`/university-features/${studentId}`);
+    return response.data;
+  }
+
   // ============================================================================
   // COMPREHENSIVE STUDENT FEATURE ENDPOINTS
   // ============================================================================

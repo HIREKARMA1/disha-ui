@@ -77,7 +77,8 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             console.log(`🔍 Feature ${feature.feature_key}:`, {
                 is_available: feature.is_available,
                 display_name: feature.display_name,
-                is_global: feature.is_global
+                is_active: feature.is_active,
+                university_status: feature.university_status
             });
         });
         
@@ -179,16 +180,6 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             is_always_accessible: false
         },
         {
-            id: 'analytics',
-            name: 'Analytics',
-            description: 'Analytics and reporting dashboard',
-            icon: 'BarChart3',
-            route: '/dashboard/student/analytics',
-            order: 9,
-            feature_key: 'analytics',
-            is_always_accessible: false
-        },
-        {
             id: 'sadhana',
             name: 'Sadhana',
             description: 'Sadhana learning platform',
@@ -250,7 +241,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             setModalFeature({
                 name: featureInfo?.display_name || featureKey,
                 description: featureInfo?.description,
-                customMessage: featureInfo?.custom_message,
+                customMessage: featureInfo?.university_status?.custom_message,
                 maintenanceMessage: featureInfo?.maintenance_message,
                 isMaintenanceMode: featureInfo?.maintenance_message ? true : false
             })
@@ -363,7 +354,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                             handleNavigation(item.route, item.feature_key || undefined)
                         }
 
-                        const isFeatureDisabled = item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key)
+                        const isFeatureDisabled = !!(item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key))
                         const isFeatureLoading = item.feature_key && featuresLoading
 
                         return (
@@ -450,7 +441,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                             handleNavigation(item.route, item.feature_key || undefined)
                         }
 
-                        const isFeatureDisabled = item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key)
+                        const isFeatureDisabled = !!(item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key))
                         const isFeatureLoading = item.feature_key && featuresLoading
 
                         return (
@@ -558,7 +549,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                         handleNavigation(item.route, item.feature_key || undefined)
                                     }
 
-                                    const isFeatureDisabled = item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key)
+                                    const isFeatureDisabled = !!(item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key))
                         const isFeatureLoading = item.feature_key && featuresLoading
 
                                     return (

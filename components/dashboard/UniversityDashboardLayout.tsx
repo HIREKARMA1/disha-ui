@@ -96,10 +96,12 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
 
                                     <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
                                         <div className="xl:col-span-7 space-y-6">
-                                            <UniversityAnalyticsChart
-                                                studentStats={dashboardData.student_statistics}
-                                                jobStats={dashboardData.job_statistics}
-                                            />
+                                            {dashboardData.student_statistics && dashboardData.job_statistics && (
+                                                <UniversityAnalyticsChart
+                                                    studentStats={dashboardData.student_statistics}
+                                                    jobStats={dashboardData.job_statistics}
+                                                />
+                                            )}
                                             <UniversityRecentActivities
                                                 activities={dashboardData.recent_activity}
                                             />

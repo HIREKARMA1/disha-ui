@@ -83,11 +83,12 @@ export const useStudentFeatures = (): UseStudentFeaturesReturn => {
         feature_key: f.feature_key,
         display_name: f.display_name,
         is_available: f.is_available,
+        is_enabled: f.is_enabled,
         access_reason: f.university_status?.access_reason,
         custom_message: f.university_status?.custom_message
       })));
       
-      // Check if any features are enabled
+      // Check if any features are enabled using is_available field
       const enabledFeatures = response.filter(f => f.is_available);
       const disabledFeatures = response.filter(f => !f.is_available);
       console.log('Enabled features count:', enabledFeatures.length);

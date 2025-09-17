@@ -65,7 +65,6 @@ interface UniversityFeaturesProps {
 const getFeatureIcon = (category: string) => {
   switch (category) {
     case 'career': return <TrendingUp className="w-5 h-5" />
-    case 'analytics': return <BarChart3 className="w-5 h-5" />
     case 'practice': return <BookOpen className="w-5 h-5" />
     case 'video_search': return <Video className="w-5 h-5" />
     case 'library': return <BookOpen className="w-5 h-5" />

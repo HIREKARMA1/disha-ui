@@ -21,6 +21,8 @@ export interface StudentFeature {
 
 export interface StudentFeatureWithAccess extends StudentFeature {
   is_available: boolean;
+  maintenance_message?: string;
+  is_enabled_for_university: boolean;
   university_status?: {
     access_reason: string;
     custom_message?: string;
