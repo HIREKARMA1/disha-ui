@@ -158,29 +158,59 @@ export function FileUpload({
             />
 
             {currentFile ? (
-                // Show current file
-                <div className="relative p-4 border-2 border-green-200 dark:border-green-700 rounded-lg bg-green-50 dark:bg-green-900/20">
-                    <div className="flex items-center space-x-3">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                File uploaded successfully
-                            </p>
-                            <p className="text-xs text-green-600 dark:text-green-400 truncate">
-                                {currentFile}
-                            </p>
+                // Show current file with upload option
+                <div className="space-y-3">
+                    <div className="relative p-4 border-2 border-green-200 dark:border-green-700 rounded-lg bg-green-50 dark:bg-green-900/20">
+                        <div className="flex items-center space-x-3">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                    File uploaded successfully
+                                </p>
+                                <p className="text-xs text-green-600 dark:text-green-400 truncate">
+                                    {currentFile}
+                                </p>
+                            </div>
+                            {onFileRemove && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleRemove}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-800"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            )}
                         </div>
-                        {onFileRemove && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleRemove}
-                                className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-800"
-                            >
-                                <X className="w-4 h-4" />
-                            </Button>
+                    </div>
+
+                    {/* Upload new file option */}
+                    <div
+                        className={cn(
+                            "relative border-2 border-dashed rounded-lg p-4 text-center transition-all duration-200 cursor-pointer",
+                            dragActive
+                                ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                                : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                            disabled && "opacity-50 cursor-not-allowed"
                         )}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                        onClick={handleClick}
+                    >
+                        <div className="space-y-2">
+                            {getFileIcon()}
+                            <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                    Click to upload a new file or drag and drop
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {getAcceptedTypesText()}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             ) : (
