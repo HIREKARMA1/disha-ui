@@ -481,8 +481,8 @@ function UniversityJobsPageContent() {
                                             →
                                         </Button>
                                     </div>
-                </div>
-            </div>
+                                </div>
+                            </div>
                         )}
                     </>
                 ) : (
