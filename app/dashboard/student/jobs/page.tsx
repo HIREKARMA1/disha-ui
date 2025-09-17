@@ -1261,6 +1261,7 @@ function JobOpportunitiesPageContent() {
                         setSelectedJob(null)
                     }}
                     isApplying={applyingJobs.has(selectedJob.id)}
+                    applicationStatus={applicationStatus.get(selectedJob.id)}
                 />
             )}
 

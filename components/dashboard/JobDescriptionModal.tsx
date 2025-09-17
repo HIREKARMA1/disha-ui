@@ -44,9 +44,10 @@ interface JobDescriptionModalProps {
     onApply: () => void
     isApplying?: boolean
     showApplyButton?: boolean // New prop to control apply button visibility
+    applicationStatus?: string // Add application status prop
 }
 
-export function JobDescriptionModal({ job, onClose, onApply, isApplying = false, showApplyButton = true }: JobDescriptionModalProps) {
+export function JobDescriptionModal({ job, onClose, onApply, isApplying = false, showApplyButton = true, applicationStatus }: JobDescriptionModalProps) {
     const formatSalary = (currency: string, min?: number, max?: number) => {
         if (!min && !max) return 'Not specified'
         if (min && max) return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`
@@ -88,6 +89,10 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
         const deadline = new Date(job.application_deadline)
         const now = new Date()
         return deadline < now
+    }
+
+    const canApply = () => {
+        return applicationStatus !== 'applied' && !isDeadlineExpired() && job.can_apply
     }
 
     return (
@@ -393,10 +398,10 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                 {showApplyButton && (
                                     <Button
                                         onClick={onApply}
-                                        disabled={!job.can_apply || isDeadlineExpired() || isApplying}
+                                        disabled={!canApply() || isApplying}
                                         className={cn(
                                             "bg-primary-500 hover:bg-primary-600 text-white",
-                                            (!job.can_apply || isDeadlineExpired()) && "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
+                                            !canApply() && "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
                                         )}
                                     >
                                         {isApplying ? (
@@ -407,7 +412,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         ) : (
                                             <>
                                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                                {!job.can_apply ? 'Already Applied' : isDeadlineExpired() ? 'Deadline Expired' : 'Apply Now'}
+                                                {applicationStatus === 'applied' ? 'Already Applied' : isDeadlineExpired() ? 'Expired' : 'Apply Now'}
                                             </>
                                         )}
                                     </Button>
