@@ -376,6 +376,22 @@ class ApiClient {
     });
     return response.data;
   }
+
+  // University job management endpoints
+  async getUniversityJobs(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/jobs');
+    return response.data;
+  }
+
+  async approveUniversityJob(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/approve`);
+    return response.data;
+  }
+
+  async rejectUniversityJob(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/reject`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
