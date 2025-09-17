@@ -107,6 +107,7 @@ function JobOpportunitiesPageContent() {
     const [applicationStatus, setApplicationStatus] = useState<Map<string, string>>(new Map()) // Track application status
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
+    const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open') // New filter for job status
 
     // Fetch jobs from API
     const fetchJobs = async (
@@ -762,6 +763,7 @@ function JobOpportunitiesPageContent() {
             date_posted: ''
         })
         setSearchTerm('')
+        setJobStatusFilter('open')
         setPagination(prev => ({ ...prev, page: 1 }))
         fetchJobs(1, {})
     }
@@ -800,6 +802,34 @@ function JobOpportunitiesPageContent() {
         } catch (error) {
             console.error('Error checking application status:', error)
         }
+    }
+
+    // Helper function to check if a job is expired
+    const isJobExpired = (job: Job) => {
+        if (!job.application_deadline) return false
+        const deadline = new Date(job.application_deadline)
+        const now = new Date()
+        return deadline < now
+    }
+
+    // Helper function to check if a job is open (available for application)
+    const isJobOpen = (job: Job) => {
+        const status = applicationStatus.get(job.id)
+        return status !== 'applied' && !isJobExpired(job) && job.can_apply
+    }
+
+    // Helper function to check if a job is closed (applied, expired, or not available)
+    const isJobClosed = (job: Job) => {
+        const status = applicationStatus.get(job.id)
+        return status === 'applied' || isJobExpired(job) || !job.can_apply
+    }
+
+    // Filter jobs based on job status filter
+    const filterJobsByStatus = (jobs: Job[]) => {
+        if (jobStatusFilter === 'all') return jobs
+        if (jobStatusFilter === 'open') return jobs.filter(isJobOpen)
+        if (jobStatusFilter === 'closed') return jobs.filter(isJobClosed)
+        return jobs
     }
 
     // Global validation error handler
@@ -920,6 +950,15 @@ function JobOpportunitiesPageContent() {
                         <Filter className="w-4 h-4" />
                         {showFilters ? 'Hide' : 'Show'} Filters
                     </Button>
+                    <select
+                        value={jobStatusFilter}
+                        onChange={(e) => setJobStatusFilter(e.target.value as 'all' | 'open' | 'closed')}
+                        className="px-3 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10"
+                    >
+                        <option value="all">All Jobs</option>
+                        <option value="open">Open Jobs</option>
+                        <option value="closed">Closed Jobs</option>
+                    </select>
                     <Button
                         onClick={handleSearch}
                         className="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 h-10 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
@@ -927,6 +966,7 @@ function JobOpportunitiesPageContent() {
                         Search
                     </Button>
                 </div>
+
 
                 {/* Filters */}
                 {showFilters && (
@@ -1086,7 +1126,7 @@ function JobOpportunitiesPageContent() {
                             ) : (
                                 <span className="flex items-center gap-2">
                                     📊 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} jobs
+                                        Showing {filterJobsByStatus(jobs).length} of {jobs.length} jobs
                                     </span>
                                 </span>
                             )}
@@ -1117,7 +1157,7 @@ function JobOpportunitiesPageContent() {
                 ) : jobs.length > 0 ? (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {jobs.map((job, index) => {
+                            {filterJobsByStatus(jobs).map((job, index) => {
                                 // Final safety check before rendering
                                 if (!job || typeof job !== 'object') {
                                     console.error('Attempting to render invalid job:', job)
