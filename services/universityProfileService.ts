@@ -22,8 +22,6 @@ export interface UniversityProfile {
     address?: string
     courses_offered?: string
     branch?: string
-    verified: boolean
-    verification_date?: string
     total_students?: number
     total_faculty?: number
     departments?: string
@@ -31,6 +29,8 @@ export interface UniversityProfile {
     placement_rate?: number
     average_package?: number
     top_recruiters?: string
+    total_jobs_approved?: number
+    total_jobs?: number
 }
 
 export interface UniversityProfileUpdateData {

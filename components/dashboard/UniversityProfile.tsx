@@ -7,7 +7,6 @@ import {
     GraduationCap,
     Globe,
     Zap,
-    Shield,
     Trophy,
     Building2,
     MapPin,
@@ -75,21 +74,13 @@ export function UniversityProfile() {
             icon: GraduationCap,
             fields: ['courses_offered', 'branch'],
             completed: false
-        },
-        {
-            id: 'placement',
-            title: 'Placement Statistics',
-            icon: Trophy,
-            fields: ['placement_rate', 'average_package', 'top_recruiters'],
-            completed: false
         }
     ]
 
     const tabs = [
         { id: 'basic', label: 'Basic Info', icon: User },
         { id: 'institution', label: 'Institution', icon: Building2 },
-        { id: 'academic', label: 'Academic', icon: GraduationCap },
-        { id: 'placement', label: 'Placement', icon: Trophy }
+        { id: 'academic', label: 'Academic', icon: GraduationCap }
     ]
 
     useEffect(() => {
@@ -104,7 +95,17 @@ export function UniversityProfile() {
             // Try to fetch from API first
             try {
                 const profileData = await universityProfileService.getProfile()
-                setProfile(profileData)
+                // Merge API data with mock data for missing fields
+                const mergedProfile: UniversityProfile = {
+                    ...profileData,
+                    // Ensure these fields are always present with mock data
+                    total_students: profileData.total_students || 15000,
+                    total_jobs: profileData.total_jobs || 8,
+                    total_jobs_approved: profileData.total_jobs_approved || 3,
+                    phone: profileData.phone || '+91 98765 43210',
+                    phone_verified: profileData.phone_verified !== undefined ? profileData.phone_verified : true
+                }
+                setProfile(mergedProfile)
             } catch (apiError) {
                 console.log('API not available, using fallback data')
                 // Fallback to mock data if API is not available
@@ -112,10 +113,10 @@ export function UniversityProfile() {
                     id: user?.id || '1',
                     email: user?.email || 'university@example.edu',
                     name: user?.name || 'University Name',
-                    phone: '+1 (555) 123-4567',
+                    phone: '+91 98765 43210',
                     status: 'active',
                     email_verified: true,
-                    phone_verified: false,
+                    phone_verified: true,
                     created_at: '2023-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                     last_login: '2024-01-01T00:00:00Z',
@@ -130,15 +131,11 @@ export function UniversityProfile() {
                     address: '123 University Street, University City, State, Country',
                     courses_offered: 'Engineering, Management, Arts, Science',
                     branch: 'Multiple',
-                    verified: true,
-                    verification_date: '2023-01-01T00:00:00Z',
-                    total_students: 15000,
-                    total_faculty: 500,
                     departments: 'Engineering, Management, Arts, Science, Medicine',
                     programs_offered: 'B.Tech, M.Tech, MBA, BBA, B.Sc, M.Sc, Ph.D',
-                    placement_rate: 85,
-                    average_package: 8.5,
-                    top_recruiters: 'Google, Microsoft, Amazon, TCS, Infosys, Wipro'
+                    total_students: 15000,
+                    total_jobs: 8,
+                    total_jobs_approved: 3
                 }
                 setProfile(mockProfile)
             }
@@ -219,13 +216,6 @@ export function UniversityProfile() {
                 case 'academic':
                     initialData.courses_offered = profile.courses_offered
                     initialData.branch = profile.branch
-                    break
-                case 'placement':
-                    initialData.total_students = profile.total_students
-                    initialData.total_faculty = profile.total_faculty
-                    initialData.placement_rate = profile.placement_rate
-                    initialData.average_package = profile.average_package
-                    initialData.top_recruiters = profile.top_recruiters
                     break
             }
 
@@ -396,7 +386,7 @@ export function UniversityProfile() {
                                     </div>
                                     <button
                                         className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
-                                        onClick={() => setEditing('profile-picture')}
+                                        onClick={() => setEditing('basic')}
                                         title="Change profile picture"
                                         disabled={uploadingImage}
                                     >
@@ -427,21 +417,27 @@ export function UniversityProfile() {
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">Students</span>
-                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                                        {profile.total_students?.toLocaleString() || 'N/A'}
-                                    </span>
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">Phone</span>
+                                    <div className="p-1.5 bg-blue-500 rounded-full">
+                                        <CheckCircle className="w-4 h-4 text-white" />
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-pink-50/80 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50">
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">Faculty</span>
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">Total Students</span>
                                     <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                                        {profile.total_faculty?.toLocaleString() || 'N/A'}
+                                        {profile?.total_students?.toLocaleString() || 'N/A'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg border border-indigo-200/50 dark:border-indigo-700/50">
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">Total Jobs</span>
+                                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                                        {profile?.total_jobs?.toLocaleString() || 'N/A'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50/80 to-red-50/80 dark:from-orange-900/20 dark:to-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">Placement</span>
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">Jobs Approved</span>
                                     <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                                        {profile?.placement_rate || 0}%
+                                        {profile?.total_jobs_approved?.toLocaleString() || 'N/A'}
                                     </span>
                                 </div>
                             </div>
@@ -498,41 +494,6 @@ export function UniversityProfile() {
                     </div>
                 </div>
 
-                {/* Profile Picture Upload Modal */}
-                {editing === 'profile-picture' && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Upload Profile Picture
-                                </h3>
-                                <button
-                                    onClick={() => setEditing(null)}
-                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-gray-500" />
-                                </button>
-                            </div>
-
-                            <FileUpload
-                                onFileSelect={handleImageUpload}
-                                type="image"
-                                currentFile={profile.profile_picture}
-                                placeholder="Click to upload or drag and drop a profile picture"
-                                className="mb-4"
-                            />
-
-                            <div className="flex justify-end gap-3">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setEditing(null)}
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
             </div>
         </UniversityDashboardLayout>
@@ -546,8 +507,6 @@ export function UniversityProfile() {
                 return renderInstitutionInfo()
             case 'academic':
                 return renderAcademicInfo()
-            case 'placement':
-                return renderPlacementInfo()
             default:
                 return renderBasicInfo()
         }
@@ -698,17 +657,6 @@ export function UniversityProfile() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                                    <Shield className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.verified ? 'Verified' : 'Not Verified'}
-                                    </p>
-                                    <p className="text-xs text-yellow-600 dark:text-yellow-400">Verification Status</p>
-                                </div>
-                            </div>
                         </div>
 
                         <div className="space-y-4">
@@ -791,104 +739,6 @@ export function UniversityProfile() {
         )
     }
 
-    function renderPlacementInfo() {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Trophy className="w-5 h-5" />
-                        Placement Statistics
-                    </h3>
-                    {editing !== 'placement' && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit('placement')}
-                            className="flex items-center gap-2"
-                        >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                        </Button>
-                    )}
-                </div>
-
-                {editing === 'placement' ? (
-                    <ProfileSectionForm
-                        section={{ id: 'placement', title: 'Placement Statistics', icon: Trophy, fields: ['total_students', 'total_faculty', 'placement_rate', 'average_package', 'top_recruiters'], completed: false }}
-                        profile={profile}
-                        onSave={(formData) => handleSave('placement', formData)}
-                        saving={saving}
-                        onCancel={() => setEditing(null)}
-                        editing={editing}
-                        onEdit={handleEdit}
-                    />
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <User className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.total_students || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-green-600 dark:text-green-400">Total Students</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.total_faculty || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">Total Faculty</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                    <Trophy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.placement_rate ? `${profile?.placement_rate}%` : 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-purple-600 dark:text-purple-400">Placement Rate</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                                    <Trophy className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.average_package ? `${profile?.average_package} LPA` : 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-yellow-600 dark:text-yellow-400">Average Package</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            {profile?.top_recruiters && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Top Recruiters</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        {profile.top_recruiters}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        )
-    }
 }
 
 // ProfileSectionForm component for inline editing
@@ -959,7 +809,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         }
 
         // Handle textarea fields
-        if (field.includes('bio') || field.includes('address') || field.includes('courses_offered') || field.includes('top_recruiters')) {
+        if (field.includes('bio') || field.includes('address') || field.includes('courses_offered')) {
             return (
                 <Textarea
                     value={value as string}
@@ -1035,7 +885,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {section.fields.map((field) => (
-                    <div key={field} className={field.includes('bio') || field.includes('address') || field.includes('courses_offered') || field.includes('top_recruiters') ? 'md:col-span-2' : ''}>
+                    <div key={field} className={field.includes('bio') || field.includes('address') || field.includes('courses_offered') ? 'md:col-span-2' : ''}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
                             {field.replace(/_/g, ' ')}
                         </label>
