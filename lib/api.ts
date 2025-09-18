@@ -208,7 +208,82 @@ class ApiClient {
     return response.data;
   }
 
-  // Video search endpoint (legacy - use the one in comprehensive student features section)
+  // Corporate job management endpoints
+  async createJob(jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/jobs/', jobData);
+    return response.data;
+  }
+
+  async getCorporateJobs(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/jobs/corporate/jobs');
+    return response.data;
+  }
+
+  async updateJob(jobId: string, jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/jobs/${jobId}`, jobData);
+    return response.data;
+  }
+
+  async deleteJob(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/jobs/${jobId}`);
+    return response.data;
+  }
+
+  async changeJobStatus(jobId: string, status: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/jobs/${jobId}/status?status=${status}`);
+    return response.data;
+  }
+
+  async getJobApplications(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/corporates/applications?job_id=${jobId}`);
+    return response.data;
+  }
+
+  // Admin job management endpoints
+  async getAllJobsAdmin(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/jobs');
+    return response.data;
+  }
+
+  async getAllUniversitiesAdmin(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/universities');
+    return response.data;
+  }
+
+  async getAssignedUniversitiesAdmin(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/assigned-universities`);
+    return response.data;
+  }
+
+  async getAppliedStudentsAdmin(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/applied-students`);
+    return response.data;
+  }
+
+  async assignJobToUniversity(jobId: string, universityId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admins/jobs/${jobId}/assign-university?university_id=${universityId}`);
+    return response.data;
+  }
+
+  async unassignJobFromUniversity(jobId: string, universityId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/jobs/admin/${jobId}/unassign-university/${universityId}`);
+    return response.data;
+  }
+
+  async updateJobAdmin(jobId: string, jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/admins/jobs/${jobId}`, jobData);
+    return response.data;
+  }
+
+  async deleteJobAdmin(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admins/jobs/${jobId}`);
+    return response.data;
+  }
+
+  async changeJobStatusAdmin(jobId: string, status: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admins/jobs/${jobId}/status?status=${status}`);
+    return response.data;
+  }
 
   // Library endpoints
   async searchLibraryTopics(page: number = 1, limit: number = 12, query: string = '', categoryId: number | null = null): Promise<any> {
@@ -238,6 +313,42 @@ class ApiClient {
     return response.data;
   }
 
+  async updateStudentProfile(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put('/students/profile', data);
+    return response.data;
+  }
+
+  async uploadProfilePicture(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+
+    const response: AxiosResponse = await this.client.post('/students/upload-profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+
+  async uploadCertificate(file: File, certificateType: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('certificate', file);
+    formData.append('type', certificateType);
+
+    const response: AxiosResponse = await this.client.post('/students/upload-certificate', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async deleteFile(fileType: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/students/files/${fileType}`);
+    return response.data;
+  }
+
   // Student feature endpoints (legacy - use getStudentFeaturesWithAccess instead)
   async getStudentFeaturesLegacy(): Promise<UniversityFeatureFlag[]> {
     const response: AxiosResponse = await this.client.get('/students/features');
@@ -246,6 +357,11 @@ class ApiClient {
 
   async checkStudentFeatureAccess(accessData: FeatureAccessRequest): Promise<FeatureAccessResponse> {
     const response: AxiosResponse = await this.client.post('/students/features/check-access', accessData);
+    return response.data;
+  }
+
+  async getStudentProfileById(studentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admins/students/${studentId}/profile`);
     return response.data;
   }
 
@@ -316,6 +432,18 @@ class ApiClient {
     formData.append('file', file);
     
     const response: AxiosResponse = await this.client.post('/universities/students/upload-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async uploadUniversityProfilePicture(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post('/universities/upload-profile-picture', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -616,6 +744,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getTemplateById(templateId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/resume/templates/${templateId}`);
+    return response.data;
+  }
+
   async generateResume(templateId: string, data: any): Promise<any> {
     const response: AxiosResponse = await this.client.post('/resume/generate', {
       template_id: templateId,
@@ -632,6 +765,39 @@ class ApiClient {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+    });
+    return response.data;
+  }
+
+  // Resume Management Feature
+  async createResume(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/resume/resumes', data);
+    return response.data;
+  }
+
+  async getResumes(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/resume/resumes');
+    return response.data;
+  }
+
+  async getResumeById(resumeId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/resume/resumes/${resumeId}`);
+    return response.data;
+  }
+
+  async updateResume(resumeId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/resume/resumes/${resumeId}`, data);
+    return response.data;
+  }
+
+  async deleteResume(resumeId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/resume/resumes/${resumeId}`);
+    return response.data;
+  }
+
+  async duplicateResume(resumeId: string, newName: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/resume/resumes/${resumeId}/duplicate`, {
+      new_name: newName
     });
     return response.data;
   }
@@ -700,6 +866,22 @@ class ApiClient {
 
   async deleteStudentFeature(featureId: string): Promise<{ message: string }> {
     const response: AxiosResponse = await this.client.delete(`/admins/student-features/${featureId}`);
+    return response.data;
+  }
+
+  // University job management endpoints
+  async getUniversityJobs(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/jobs');
+    return response.data;
+  }
+
+  async approveUniversityJob(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/approve`);
+    return response.data;
+  }
+
+  async rejectUniversityJob(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/reject`);
     return response.data;
   }
 }

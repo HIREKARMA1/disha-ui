@@ -210,8 +210,8 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                         {/* Prominent Match Score Badge */}
                         {showMatchScore && matchScore !== undefined && (
                             <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${matchScore >= 80 ? 'bg-green-500 text-white' :
-                                    matchScore >= 60 ? 'bg-orange-500 text-white' :
-                                        'bg-red-500 text-white'
+                                matchScore >= 60 ? 'bg-orange-500 text-white' :
+                                    'bg-red-500 text-white'
                                 }`}>
                                 {Math.round(matchScore)}% Match
                             </div>
@@ -313,6 +313,24 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                     </div>
                 </div>
 
+                {/* Status Indicators - moved above buttons for consistent alignment */}
+                {applicationStatus === 'applied' && (
+                    <div className="mb-3 text-center">
+                        <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Application Submitted
+                        </span>
+                    </div>
+                )}
+
+                {isDeadlineExpired() && (
+                    <div className="mb-3 text-center">
+                        <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                            Application Deadline Expired
+                        </span>
+                    </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex gap-3 mt-auto pt-4">
                     <Button
@@ -349,24 +367,6 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                         )}
                     </Button>
                 </div>
-
-                {/* Status Indicators */}
-                {applicationStatus === 'applied' && (
-                    <div className="mt-3 text-center">
-                        <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Application Submitted
-                        </span>
-                    </div>
-                )}
-
-                {isDeadlineExpired() && (
-                    <div className="mt-3 text-center">
-                        <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-                            Application Deadline Expired
-                        </span>
-                    </div>
-                )}
             </div>
         </motion.div>
     )
