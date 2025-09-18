@@ -66,7 +66,7 @@ const FeatureAccessModal: React.FC<FeatureAccessModalProps> = ({
                   Access Restricted
                 </p>
                 <p className="text-orange-700 text-sm">
-                  {feature.custom_message || "This feature is not enabled. Please contact your university admin."}
+                  {(feature as any).custom_message || "This feature is not enabled. Please contact your university admin."}
                 </p>
               </div>
             </div>

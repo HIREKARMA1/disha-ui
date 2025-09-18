@@ -72,8 +72,8 @@ export class UniversityProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const response = await apiClient.client.get('/universities/profile')
-            return response.data
+            const data = await apiClient.getUniversityProfile()
+            return data
         } catch (error: any) {
             console.error('Error fetching university profile:', error)
             
@@ -98,8 +98,8 @@ export class UniversityProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const response = await apiClient.client.put('/universities/profile', data)
-            return response.data
+            const response = await apiClient.updateUniversityProfile(data)
+            return response
         } catch (error: any) {
             console.error('Error updating university profile:', error)
             
@@ -124,16 +124,8 @@ export class UniversityProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const formData = new FormData()
-            formData.append('file', file)
-
-            const response = await apiClient.client.post('/universities/upload-profile-picture', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            })
-
-            return response.data
+            const response = await apiClient.uploadUniversityProfilePicture(file)
+            return response
         } catch (error: any) {
             console.error('Error uploading profile picture:', error)
             

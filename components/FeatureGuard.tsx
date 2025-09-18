@@ -79,7 +79,7 @@ export function FeatureGuard({
         console.log('FeatureGuard: Found feature:', {
           feature_key: feature.feature_key,
           is_enabled_for_university: feature.is_enabled_for_university,
-          access_reason: feature.access_reason
+          access_reason: (feature as any).access_reason
         });
 
         if (!feature.is_enabled_for_university) {
@@ -88,8 +88,8 @@ export function FeatureGuard({
             feature_key: featureKey,
             is_available: false,
             reason: 'university_disabled',
-            message: feature.custom_message || 'This feature is not enabled for your university.',
-            custom_message: feature.custom_message
+            message: (feature as any).custom_message || 'This feature is not enabled for your university.',
+            custom_message: (feature as any).custom_message
           });
           setCheckingAccess(false);
           return;
@@ -99,7 +99,7 @@ export function FeatureGuard({
         try {
           const response = await apiClient.checkStudentFeatureAccess({
             feature_key: featureKey,
-            university_id: user.university_id,
+            university_id: user.university_id || undefined,
             user_type: user.user_type
           });
           

@@ -70,7 +70,7 @@ const FeatureGuard: React.FC<FeatureGuardProps> = ({
       <FallbackComponent
         featureName={feature.display_name}
         featureDescription={feature.description}
-        customMessage={feature.custom_message}
+        customMessage={(feature as any).custom_message}
       />
     );
   }

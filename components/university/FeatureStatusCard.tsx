@@ -93,11 +93,11 @@ const FeatureStatusCard: React.FC<FeatureStatusCardProps> = ({
             </div>
           )}
 
-          {feature.access_reason && (
+          {(feature as any).access_reason && (
             <div className="flex items-center justify-between">
               <span>Access:</span>
               <span className="font-medium capitalize">
-                {feature.access_reason.replace('_', ' ')}
+                {(feature as any).access_reason.replace('_', ' ')}
               </span>
             </div>
           )}
@@ -133,9 +133,9 @@ const FeatureStatusCard: React.FC<FeatureStatusCardProps> = ({
         )}
 
         {/* Custom Message */}
-        {feature.custom_message && (
+        {(feature as any).custom_message && (
           <div className="mt-3 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded text-xs text-orange-800 dark:text-orange-200">
-            <strong>Note:</strong> {feature.custom_message}
+            <strong>Note:</strong> {(feature as any).custom_message}
           </div>
         )}
       </div>

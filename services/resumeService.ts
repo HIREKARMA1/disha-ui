@@ -97,52 +97,42 @@ export interface ResumeListResponse {
 class ResumeService {
     // Create a new resume
     async createResume(data: CreateResumeRequest): Promise<ResumeData> {
-        const response = await apiClient.client.post('/resume/resumes', data)
-        return response.data
+        return await apiClient.createResume(data)
     }
 
     // Get all resumes for the current student
     async getResumes(): Promise<ResumeListResponse> {
-        const response = await apiClient.client.get('/resume/resumes')
-        return response.data
+        return await apiClient.getResumes()
     }
 
     // Get a specific resume by ID
     async getResumeById(resumeId: string): Promise<ResumeData> {
-        const response = await apiClient.client.get(`/resume/resumes/${resumeId}`)
-        return response.data
+        return await apiClient.getResumeById(resumeId)
     }
 
     // Update a resume
     async updateResume(resumeId: string, data: UpdateResumeRequest): Promise<ResumeData> {
-        const response = await apiClient.client.put(`/resume/resumes/${resumeId}`, data)
-        return response.data
+        return await apiClient.updateResume(resumeId, data)
     }
 
     // Delete a resume
     async deleteResume(resumeId: string): Promise<{ message: string }> {
-        const response = await apiClient.client.delete(`/resume/resumes/${resumeId}`)
-        return response.data
+        return await apiClient.deleteResume(resumeId)
     }
 
     // Duplicate a resume
     async duplicateResume(resumeId: string, newName: string): Promise<ResumeData> {
-        const response = await apiClient.client.post(`/resume/resumes/${resumeId}/duplicate`, {
-            new_name: newName
-        })
-        return response.data
+        return await apiClient.duplicateResume(resumeId, newName)
     }
 
     // Get resume templates
     async getTemplates(): Promise<{ templates: any[], total: number }> {
-        const response = await apiClient.client.get('/resume/templates')
-        return response.data
+        return await apiClient.getResumeTemplates()
     }
 
     // Get a specific template by ID
     async getTemplateById(templateId: string): Promise<any> {
-        const response = await apiClient.client.get(`/resume/templates/${templateId}`)
-        return response.data
+        return await apiClient.getTemplateById(templateId)
     }
 }
 

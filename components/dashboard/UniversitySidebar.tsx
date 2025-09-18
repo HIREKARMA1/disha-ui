@@ -85,7 +85,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
     const { user, logout } = useAuth()
     
     // Get university's enabled features for sidebar navigation
-    const { hasAccess, checkFeatureAccess } = useFeatureAccess()
+    const { checkFeatureAccess } = useFeatureAccess()
     
     // Filter navigation items based on feature access
     const availableNavItems = navItems.filter(item => {

@@ -209,7 +209,7 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
                   </a>
                 )}
                 
-                {(feature.custom_message || feature.maintenance_message) && (
+                {((feature as any).custom_message || feature.maintenance_message) && (
                   <button
                     onClick={() => setExpandedFeature(expandedFeature === feature.feature_key ? null : feature.feature_key)}
                     className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -220,7 +220,7 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
               </div>
             </div>
 
-            {expandedFeature === feature.feature_key && (feature.custom_message || feature.maintenance_message) && (
+            {expandedFeature === feature.feature_key && ((feature as any).custom_message || feature.maintenance_message) && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -228,18 +228,18 @@ export function StudentFeatures({ features, loading = false }: StudentFeaturesPr
                 className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
               >
                 <div className="space-y-3">
-                  {(feature.custom_message || feature.maintenance_message) && (
+                  {((feature as any).custom_message || feature.maintenance_message) && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                        {feature.custom_message ? 'Custom Message' : 'Maintenance Message'}
+                        {(feature as any).custom_message ? 'Custom Message' : 'Maintenance Message'}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {feature.custom_message || feature.maintenance_message}
+                        {(feature as any).custom_message || feature.maintenance_message}
                       </p>
                     </div>
                   )}
                   
-                  {feature.custom_settings && Object.keys(feature.university_status.custom_settings).length > 0 && (
+                  {(feature as any).custom_settings && feature.university_status && feature.university_status.custom_settings && Object.keys(feature.university_status.custom_settings).length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">Custom Settings</h4>
                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">

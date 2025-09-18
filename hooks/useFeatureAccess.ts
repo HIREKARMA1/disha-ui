@@ -45,7 +45,7 @@ export const useFeatureAccess = (): UseFeatureAccessReturn => {
     }, 3000);
 
     // Show error toast
-    const errorMessage = feature.custom_message || 
+    const errorMessage = (feature as any).custom_message || 
       `This feature (${feature.display_name}) is not available for your university. Please contact your university administrator to enable this feature.`;
     
     toast.error(errorMessage, {

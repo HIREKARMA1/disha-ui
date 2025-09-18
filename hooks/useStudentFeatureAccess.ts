@@ -98,6 +98,7 @@ export const useStudentFeatureAccess = (): UseStudentFeatureAccessReturn => {
           updated_at: feature.updated_at,
           tenant_id: feature.tenant_id || 'default',
           is_available: isEnabled, // Use the is_available field directly from API
+          is_enabled_for_university: isEnabled,
           maintenance_message: feature.maintenance_message,
           university_status: {
             access_reason: feature.university_status?.access_reason || (isEnabled ? 'university_enabled' : 'university_disabled'),
@@ -211,7 +212,6 @@ export const useStudentFeatureAccess = (): UseStudentFeatureAccessReturn => {
     error,
     hasFeatureAccess,
     getFeatureInfo,
-    refetch: fetchStudentFeatures,
-    forceRefresh
+    refetch: fetchStudentFeatures
   };
 };

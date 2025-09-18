@@ -221,13 +221,13 @@ export function UniversityFeaturesSection({
                     <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                       <span className="font-mono">{feature.feature_key}</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        feature.feature_category === 'CAREER' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                        feature.feature_category === 'ANALYTICS' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                        feature.feature_category === 'PRACTICE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                        feature.feature_category === 'VIDEO_SEARCH' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                        feature.feature_category === 'LIBRARY' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' :
-                        feature.feature_category === 'RESUME' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
-                        feature.feature_category === 'SADHANA' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                        feature.feature_category === 'career' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                        feature.feature_category === 'practice' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                        feature.feature_category === 'video_search' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                        feature.feature_category === 'library' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                        feature.feature_category === 'resume' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' :
+                        feature.feature_category === 'sadhana' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                        feature.feature_category === 'sangha' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
                         feature.feature_category === 'SANGHA' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300' :
                         'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
                       }`}>

@@ -103,8 +103,8 @@ export function FeatureFlagCard({
               <div className="flex items-center space-x-4 text-sm">
                 <div className="flex items-center space-x-1">
                   <span className={`w-2 h-2 rounded-full ${feature.is_active ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                  <span className={getStatusColor(feature.is_active, feature.default_enabled)}>
-                    {getStatusText(feature.is_active, feature.default_enabled)}
+                  <span className={getStatusColor(feature.is_active, feature.default_enabled ?? false)}>
+                    {getStatusText(feature.is_active, feature.default_enabled ?? false)}
                   </span>
                 </div>
                 
@@ -225,7 +225,7 @@ export function FeatureFlagCard({
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">User Types:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {feature.user_types.map((type, index) => (
+                    {(feature as any).user_types?.map((type: any, index: number) => (
                       <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded text-xs">
                         {type}
                       </span>
@@ -235,8 +235,8 @@ export function FeatureFlagCard({
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Required Roles:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {feature.required_roles.length > 0 ? (
-                      feature.required_roles.map((role, index) => (
+                    {(feature as any).required_roles?.length > 0 ? (
+                      (feature as any).required_roles.map((role: any, index: number) => (
                         <span key={index} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 rounded text-xs">
                           {role}
                         </span>

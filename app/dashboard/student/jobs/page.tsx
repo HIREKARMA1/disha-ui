@@ -130,8 +130,8 @@ function JobOpportunitiesPageContent() {
                 }
             })
 
-            const response = await apiClient.client.get(`/jobs/?${params}`)
-            const data: JobSearchResponse = response.data
+            const response = await apiClient.getAvailableJobs(page, pagination.limit)
+            const data = response
 
             console.log('Raw API response:', data) // Debug log
 
@@ -173,7 +173,7 @@ function JobOpportunitiesPageContent() {
 
             // Check for validation error objects in the response
             if (data.jobs && Array.isArray(data.jobs)) {
-                data.jobs.forEach((job, index) => {
+                data.jobs.forEach((job: any, index: number) => {
                     if (job && typeof job === 'object') {
                         Object.entries(job).forEach(([key, value]) => {
                             if (value && typeof value === 'object' && 'type' in value && 'loc' in value && 'msg' in value) {
@@ -509,7 +509,7 @@ function JobOpportunitiesPageContent() {
         try {
             setApplyingJobs(prev => new Set(prev).add(jobId))
 
-            const response = await apiClient.client.post(`/applications/apply/${jobId}`, {
+            const response = await apiClient.applyForJob(jobId, {
                 job_id: jobId, // Add the missing job_id field
                 cover_letter: applicationData.cover_letter || `I am interested in this position and believe my skills and experience make me a great fit.`,
                 expected_salary: applicationData.expected_salary || null,
@@ -1329,3 +1329,5 @@ export default function JobOpportunitiesPage() {
         </ErrorBoundary>
     )
 }
+
+

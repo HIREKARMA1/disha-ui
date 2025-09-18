@@ -238,7 +238,7 @@ export function usePracticeModules() {
                     setData(modules)
                 } else {
                     // Use real API calls
-                    const response = await apiClient.client.get('/api/v1/practice/modules')
+                    const response = await apiClient.getPracticeTests()
                     setData(response.data)
                 }
             } catch (err) {
@@ -277,7 +277,7 @@ export function usePracticeQuestions(moduleId: string) {
                     setData(questions)
                 } else {
                     // Use real API calls
-                    const response = await apiClient.client.get(`/api/v1/practice/modules/${moduleId}`)
+                    const response = await apiClient.getPracticeTests()
                     setData(response.data.questions || [])
                 }
             } catch (err) {
@@ -309,7 +309,7 @@ export function useSubmitAttempt() {
                 return result
             } else {
                 // Use real API calls
-                const response = await apiClient.client.post('/api/v1/practice/submit', request)
+                const response = await apiClient.startPracticeTest(request.module_id)
                 return response.data
             }
         } catch (err) {
@@ -341,7 +341,7 @@ export function usePracticeStats() {
                     setData(stats)
                 } else {
                     // Use real API calls
-                    const response = await apiClient.client.get('/api/v1/practice/stats')
+                    const response = await apiClient.getPracticeTestResults('')
                     setData(response.data)
                 }
             } catch (err) {
