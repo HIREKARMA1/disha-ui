@@ -137,17 +137,17 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                     className="w-full"
                 >
-                    <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 w-full ${stat.bgColor}`}>
+                    <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full group ${stat.bgColor}`}>
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                                     {stat.label}
                                 </p>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
                                     {stat.value}
                                 </p>
                             </div>
-                            <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm`}>
+                            <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
                                 <stat.icon className={`w-6 h-6 ${stat.color}`} />
                             </div>
                         </div>
