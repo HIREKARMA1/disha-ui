@@ -12,7 +12,6 @@ import {
     Building2,
     AlertCircle
 } from 'lucide-react'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { dashboardService, type DashboardStats } from '@/services/dashboardService'
@@ -23,8 +22,6 @@ interface StatCard {
     icon: React.ComponentType<{ className?: string }>
     color: string
     bgColor: string
-    href: string
-    filter?: string
 }
 
 interface DashboardStatsProps {
@@ -74,36 +71,28 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
             value: stats.totalJobs.toString(),
             icon: Briefcase,
             color: 'text-blue-600',
-            bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-            href: '/dashboard/student/jobs',
-            filter: 'all'
+            bgColor: 'bg-blue-50 dark:bg-blue-900/20'
         },
         {
             label: 'Applied Jobs',
             value: stats.appliedJobs.toString(),
             icon: FileText,
             color: 'text-green-600',
-            bgColor: 'bg-green-50 dark:bg-green-900/20',
-            href: '/dashboard/student/jobs',
-            filter: 'applied'
+            bgColor: 'bg-green-50 dark:bg-green-900/20'
         },
         {
             label: 'Selected',
             value: stats.selected.toString(),
             icon: CheckCircle,
             color: 'text-emerald-600',
-            bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
-            href: '/dashboard/student/jobs',
-            filter: 'selected'
+            bgColor: 'bg-emerald-50 dark:bg-emerald-900/20'
         },
         {
             label: 'Rejected',
             value: stats.rejected.toString(),
             icon: XCircle,
             color: 'text-red-600',
-            bgColor: 'bg-red-50 dark:bg-red-900/20',
-            href: '/dashboard/student/jobs',
-            filter: 'rejected'
+            bgColor: 'bg-red-50 dark:bg-red-900/20'
         }
     ]
 
@@ -148,26 +137,21 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                     className="w-full"
                 >
-                    <Link
-                        href={`${stat.href}${stat.filter ? `?filter=${stat.filter}` : ''}`}
-                        className="block group w-full"
-                    >
-                        <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        {stat.label}
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                        {stat.value}
-                                    </p>
-                                </div>
-                                <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                                </div>
+                    <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full group ${stat.bgColor}`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                    {stat.label}
+                                </p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
+                                    {stat.value}
+                                </p>
+                            </div>
+                            <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                                <stat.icon className={`w-6 h-6 ${stat.color}`} />
                             </div>
                         </div>
-                    </Link>
+                    </div>
                 </motion.div>
             ))}
         </div>
