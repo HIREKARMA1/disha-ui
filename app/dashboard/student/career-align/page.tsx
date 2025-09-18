@@ -656,7 +656,6 @@ function CareerAlignPageContent() {
                                                 onViewDescription={() => setSelectedJob(job)}
                                                 onApply={() => handleApplyClick(job)}
                                                 isApplying={applyingJobs.has(job.id)}
-                                                applicationStatus={jobApplicationStatus}
                                                 cardIndex={index}
                                                 showMatchScore={true}
                                                 matchScore={matchScore}
@@ -757,7 +756,6 @@ function CareerAlignPageContent() {
                             setSelectedJob(null)
                         }}
                         isApplying={applyingJobs.has(selectedJob.id)}
-                        applicationStatus={applicationStatus.get(selectedJob.id)}
                     />
                 )}
 
