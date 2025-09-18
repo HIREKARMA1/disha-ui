@@ -16,7 +16,7 @@ import {
     Menu,
     LogOut,
     Brain,
-    Lock,
+    ClipboardList
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -41,7 +41,18 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     'Users': Users,
     'Search': Search,
     'Target': Target,
-    'Lock': Lock,
+}
+
+// Navigation item interface
+interface NavItem {
+    id: string
+    name: string
+    description: string
+    icon: string
+    route: string
+    order: number
+    feature_key: string | null
+    is_always_accessible: boolean
 }
 
 interface StudentSidebarProps {
@@ -550,7 +561,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                     }
 
                                     const isFeatureDisabled = !!(item.feature_key && !featuresLoading && !hasFeatureAccess(item.feature_key))
-                        const isFeatureLoading = item.feature_key && featuresLoading
+                                    const isFeatureLoading = item.feature_key && featuresLoading
 
                                     return (
                                         <button

@@ -46,6 +46,7 @@ interface Job {
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
+    application_status?: string
 }
 
 interface JobSearchResponse {
@@ -1173,9 +1174,6 @@ function JobOpportunitiesPageContent() {
                                     }
                                 }
 
-                                const jobApplicationStatus = applicationStatus.get(job.id)
-                                console.log(`Job ${job.id} application status:`, jobApplicationStatus)
-
                                 return (
                                     <JobCard
                                         key={job.id}
@@ -1183,7 +1181,6 @@ function JobOpportunitiesPageContent() {
                                         onViewDescription={() => setSelectedJob(job)}
                                         onApply={() => handleApplyClick(job)}
                                         isApplying={applyingJobs.has(job.id)}
-                                        applicationStatus={jobApplicationStatus}
                                         cardIndex={index}
                                     />
                                 )
@@ -1302,7 +1299,6 @@ function JobOpportunitiesPageContent() {
                         setSelectedJob(null)
                     }}
                     isApplying={applyingJobs.has(selectedJob.id)}
-                    applicationStatus={applicationStatus.get(selectedJob.id)}
                 />
             )}
 
