@@ -392,6 +392,41 @@ class ApiClient {
     const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/reject`);
     return response.data;
   }
+
+  // Corporate application management endpoints
+  async getCorporateApplications(params: {
+    status?: string;
+    job_id?: string;
+    sort_by?: string;
+    sort_order?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/applications/corporate/applications', { params });
+    return response.data;
+  }
+
+  async updateApplicationStatus(applicationId: string, statusData: {
+    status: string;
+    corporate_notes?: string;
+    interview_date?: string;
+    interview_location?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/applications/${applicationId}/status`, statusData);
+    return response.data;
+  }
+
+  async uploadOfferLetter(applicationId: string, file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post(`/applications/${applicationId}/offer-letter`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
