@@ -97,7 +97,7 @@ export default function CorporateApplications() {
             fetchApplications()
         } catch (err) {
             console.error('Failed to update status:', err)
-            toast.error(getErrorMessage(err))
+            toast.error(getErrorMessage(err as any))
         }
     }
 
@@ -110,7 +110,7 @@ export default function CorporateApplications() {
             fetchApplications()
         } catch (err) {
             console.error('Failed to upload offer letter:', err)
-            toast.error(getErrorMessage(err))
+            toast.error(getErrorMessage(err as any))
         }
     }
 
