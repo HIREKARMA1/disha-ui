@@ -331,6 +331,12 @@ class ApiClient {
     return response.data;
   }
 
+  // Corporate endpoints
+  async getCorporateDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/corporates/dashboard');
+    return response.data;
+  }
+
   async getUniversityStudents(includeArchived: boolean = false): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/students', {
       params: { include_archived: includeArchived }
