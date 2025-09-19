@@ -15,7 +15,8 @@ import {
     X,
     Menu,
     LogOut,
-    Brain
+    Brain,
+    ClipboardList
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -53,6 +54,13 @@ const navItems: NavItem[] = [
         icon: Briefcase,
         description: 'Browse and apply for jobs',
         color: 'from-orange-500 to-red-600'
+    },
+    {
+        label: 'Applications',
+        href: '/dashboard/student/applications',
+        icon: ClipboardList,
+        description: 'Track your job applications',
+        color: 'from-blue-500 to-indigo-600'
     },
     {
         label: 'Resume Builder',

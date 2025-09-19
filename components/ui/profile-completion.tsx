@@ -12,11 +12,17 @@ interface ProfileField {
 
 interface ProfileCompletionProps {
     completion: number
-    fields: ProfileField[]
+    fields?: ProfileField[]
+    completionData?: {
+        completed_fields: string[]
+        missing_fields: string[]
+        total_fields: number
+        completed_count: number
+    }
     className?: string
 }
 
-export function ProfileCompletion({ completion, fields, className }: ProfileCompletionProps) {
+export function ProfileCompletion({ completion, fields, completionData, className }: ProfileCompletionProps) {
     const getCompletionColor = (percentage: number) => {
         if (percentage >= 80) return 'text-green-600'
         if (percentage >= 60) return 'text-yellow-600'
@@ -38,17 +44,20 @@ export function ProfileCompletion({ completion, fields, className }: ProfileComp
         return 'bg-red-500'
     }
 
-    const completedFields = fields.filter(field => field.completed)
-    const incompleteFields = fields.filter(field => !field.completed)
-    const requiredIncomplete = incompleteFields.filter(field => field.required)
+    // Use completionData if available, otherwise fall back to fields
+    const completedCount = completionData?.completed_count || (fields ? fields.filter(field => field.completed).length : 0)
+    const totalFields = completionData?.total_fields || (fields ? fields.length : 0)
+    const completedFieldsList = completionData?.completed_fields || (fields ? fields.filter(field => field.completed).map(f => f.name) : [])
+    const missingFieldsList = completionData?.missing_fields || (fields ? fields.filter(field => !field.completed).map(f => f.name) : [])
 
-    const categories = Array.from(new Set(fields.map(field => field.category)))
-    const categoryStats = categories.map(category => {
+    // For backward compatibility, still calculate category stats if fields are provided
+    const categories = fields ? Array.from(new Set(fields.map(field => field.category))) : []
+    const categoryStats = fields ? categories.map(category => {
         const categoryFields = fields.filter(field => field.category === category)
         const completed = categoryFields.filter(field => field.completed).length
         const total = categoryFields.length
         return { category, completed, total, percentage: (completed / total) * 100 }
-    })
+    }) : []
 
     return (
         <div className={cn("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6", className)}>
@@ -67,7 +76,7 @@ export function ProfileCompletion({ completion, fields, className }: ProfileComp
                         {completion}%
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {completedFields.length} of {fields.length} fields
+                        {completedCount} of {totalFields} fields
                     </div>
                 </div>
             </div>
@@ -89,30 +98,32 @@ export function ProfileCompletion({ completion, fields, className }: ProfileComp
                 </div>
             </div>
 
-            {/* Category Breakdown */}
-            <div className="space-y-4 mb-6">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                    Category Progress
-                </h4>
-                {categoryStats.map(({ category, completed, total, percentage }) => (
-                    <div key={category} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
-                                {category}
-                            </span>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {completed}/{total}
-                            </span>
+            {/* Category Breakdown - Only show if fields are provided */}
+            {fields && fields.length > 0 && (
+                <div className="space-y-4 mb-6">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                        Category Progress
+                    </h4>
+                    {categoryStats.map(({ category, completed, total, percentage }) => (
+                        <div key={category} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
+                                    {category}
+                                </span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    {completed}/{total}
+                                </span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div
+                                    className={cn("h-2 rounded-full transition-all duration-300", getProgressColor(percentage))}
+                                    style={{ width: `${percentage}%` }}
+                                />
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div
-                                className={cn("h-2 rounded-full transition-all duration-300", getProgressColor(percentage))}
-                                style={{ width: `${percentage}%` }}
-                            />
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Completion Status */}
             <div className="space-y-4">
@@ -121,65 +132,45 @@ export function ProfileCompletion({ completion, fields, className }: ProfileComp
                 </h4>
 
                 {/* Completed Fields */}
-                {completedFields.length > 0 && (
+                {completedFieldsList.length > 0 && (
                     <div className="space-y-2">
                         <div className="flex items-center space-x-2 text-sm text-green-600">
                             <CheckCircle className="w-4 h-4" />
-                            <span>Completed ({completedFields.length})</span>
+                            <span>Completed ({completedFieldsList.length})</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            {completedFields.slice(0, 6).map((field, index) => (
+                            {completedFieldsList.slice(0, 6).map((fieldName, index) => (
                                 <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                                    {field.name.replace(/_/g, ' ')}
+                                    {fieldName.replace(/_/g, ' ')}
                                 </div>
                             ))}
-                            {completedFields.length > 6 && (
+                            {completedFieldsList.length > 6 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
-                                    +{completedFields.length - 6} more
+                                    +{completedFieldsList.length - 6} more
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Incomplete Required Fields */}
-                {requiredIncomplete.length > 0 && (
+                {/* Missing Fields */}
+                {missingFieldsList.length > 0 && (
                     <div className="space-y-2">
                         <div className="flex items-center space-x-2 text-sm text-red-600">
                             <AlertCircle className="w-4 h-4" />
-                            <span>Required ({requiredIncomplete.length})</span>
+                            <span>Missing ({missingFieldsList.length})</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            {requiredIncomplete.slice(0, 6).map((field, index) => (
+                            {missingFieldsList.slice(0, 6).map((fieldName, index) => (
                                 <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                                    {field.name.replace(/_/g, ' ')}
+                                    {fieldName.replace(/_/g, ' ')}
                                 </div>
                             ))}
-                            {requiredIncomplete.length > 6 && (
+                            {missingFieldsList.length > 6 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
-                                    +{requiredIncomplete.length - 6} more
+                                    +{missingFieldsList.length - 6} more
                                 </div>
                             )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Optional Incomplete Fields */}
-                {incompleteFields.filter(field => !field.required).length > 0 && (
-                    <div className="space-y-2">
-                        <div className="flex items-center space-x-2 text-sm text-yellow-600">
-                            <Star className="w-4 h-4" />
-                            <span>Optional ({incompleteFields.filter(field => !field.required).length})</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {incompleteFields
-                                .filter(field => !field.required)
-                                .slice(0, 4)
-                                .map((field, index) => (
-                                    <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded">
-                                        {field.name.replace(/_/g, ' ')}
-                                    </div>
-                                ))}
                         </div>
                     </div>
                 )}

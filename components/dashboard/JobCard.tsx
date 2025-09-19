@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { MatchScorePieChart } from './MatchScorePieChart'
@@ -37,6 +37,7 @@ interface Job {
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
+    application_status?: string
 }
 
 interface JobCardProps {
@@ -44,13 +45,12 @@ interface JobCardProps {
     onViewDescription: () => void
     onApply: () => void
     isApplying?: boolean
-    applicationStatus?: string
     cardIndex?: number // Add card index for consecutive color assignment
     showMatchScore?: boolean // Add option to show match score pie chart
     matchScore?: number // Add match score for career align jobs
 }
 
-export function JobCard({ job, onViewDescription, onApply, isApplying = false, applicationStatus, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
+export function JobCard({ job, onViewDescription, onApply, isApplying = false, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
     // Safety check - ensure job object is valid
     if (!job || typeof job !== 'object') {
         console.error('Invalid job object:', job)
@@ -176,7 +176,49 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
     }
 
     const canApply = () => {
-        return applicationStatus !== 'applied' && !isDeadlineExpired() && job.can_apply
+        return !job.application_status && !isDeadlineExpired() && job.can_apply
+    }
+
+    const getApplicationStatusDisplay = (status: string) => {
+        switch (status) {
+            case 'applied':
+                return (
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center justify-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Application Submitted
+                    </span>
+                )
+            case 'shortlisted':
+                return (
+                    <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium flex items-center justify-center gap-1">
+                        <Users className="w-3 h-3" />
+                        Shortlisted
+                    </span>
+                )
+            case 'selected':
+                return (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Selected! 🎉
+                    </span>
+                )
+            case 'rejected':
+                return (
+                    <span className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center justify-center gap-1">
+                        <X className="w-3 h-3" />
+                        Not Selected
+                    </span>
+                )
+            case 'pending':
+                return (
+                    <span className="text-xs text-purple-600 dark:text-purple-400 font-medium flex items-center justify-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Under Review
+                    </span>
+                )
+            default:
+                return null
+        }
     }
 
     return (
@@ -314,16 +356,13 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                 </div>
 
                 {/* Status Indicators - moved above buttons for consistent alignment */}
-                {applicationStatus === 'applied' && (
+                {job.application_status && job.application_status !== 'none' && (
                     <div className="mb-3 text-center">
-                        <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Application Submitted
-                        </span>
+                        {getApplicationStatusDisplay(job.application_status)}
                     </div>
                 )}
 
-                {isDeadlineExpired() && (
+                {isDeadlineExpired() && !job.application_status && (
                     <div className="mb-3 text-center">
                         <span className="text-xs text-red-600 dark:text-red-400 font-medium">
                             Application Deadline Expired
@@ -362,7 +401,12 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, a
                         ) : (
                             <>
                                 <CheckCircle className="w-4 h-4" />
-                                {applicationStatus === 'applied' ? 'Applied' : isDeadlineExpired() ? 'Expired' : 'Apply Now'}
+                                {job.application_status === 'applied' ? 'Applied' :
+                                    job.application_status === 'selected' ? 'Selected' :
+                                        job.application_status === 'rejected' ? 'Not Selected' :
+                                            job.application_status === 'shortlisted' ? 'Shortlisted' :
+                                                job.application_status === 'pending' ? 'Under Review' :
+                                                    isDeadlineExpired() ? 'Expired' : 'Apply Now'}
                             </>
                         )}
                     </Button>
