@@ -61,19 +61,19 @@ export function AdminProfile() {
             icon: User,
             fields: ['name', 'email', 'phone', 'bio', 'profile_picture'],
             completed: false
-        },
-        {
-            id: 'admin',
-            title: 'Admin Settings',
-            icon: Shield,
-            fields: ['role', 'permissions'],
-            completed: false
         }
+        // {
+        //     id: 'admin',
+        //     title: 'Admin Settings',
+        //     icon: Shield,
+        //     fields: ['role', 'permissions'],
+        //     completed: false
+        // }
     ]
 
     const tabs = [
-        { id: 'basic', label: 'Basic Info', icon: User },
-        { id: 'admin', label: 'Admin Settings', icon: Shield }
+        { id: 'basic', label: 'Basic Info', icon: User }
+        // { id: 'admin', label: 'Admin Settings', icon: Shield }
     ]
 
     useEffect(() => {
@@ -428,7 +428,7 @@ export function AdminProfile() {
                                     </div>
                                 )}
 
-                                {activeTab === 'admin' && (
+                                {/* {activeTab === 'admin' && (
                                     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center space-x-3">
@@ -480,7 +480,7 @@ export function AdminProfile() {
                                             </div>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         </div>
                     </div>
