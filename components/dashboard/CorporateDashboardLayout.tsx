@@ -28,11 +28,9 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
             if (user?.user_type === 'corporate') {
                 try {
                     setIsLoading(true)
-                    // TODO: Replace with actual corporate dashboard API call
-                    // const data = await apiClient.getCorporateDashboard()
-                    // console.log('🎯 Corporate Dashboard Data:', data)
-                    // setDashboardData(data)
-                    setDashboardData(null) // Placeholder for now
+                    const data = await apiClient.getCorporateDashboard()
+                    console.log('🎯 Corporate Dashboard Data:', data)
+                    setDashboardData(data)
                     setError(null)
                 } catch (error) {
                     console.error('Failed to fetch corporate dashboard data:', error)
@@ -84,7 +82,7 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
                                 <>
                                     <CorporateWelcomeMessage />
 
-                                    <CorporateDashboardStats />
+                                    <CorporateDashboardStats dashboardData={dashboardData} isLoading={isLoading} />
 
                                     <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
                                         <div className="xl:col-span-7 space-y-6">
