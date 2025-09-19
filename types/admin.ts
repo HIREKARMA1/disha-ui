@@ -66,3 +66,38 @@ export interface AdminJobStats {
     active_jobs: number
     pending_approvals: number
 }
+
+export interface AdminProfile {
+    // Basic information
+    id: string
+    email: string
+    name: string
+    phone?: string
+    status: string
+    email_verified: boolean
+    phone_verified: boolean
+    created_at: string
+    updated_at?: string
+    last_login?: string
+    
+    // Profile fields
+    profile_picture?: string
+    bio?: string
+    
+    // Admin specific fields
+    role?: string
+    permissions?: string[]
+    tenant_id?: string
+}
+
+export interface AdminProfileUpdateData {
+    // Basic information
+    name?: string
+    phone?: string
+    bio?: string
+    profile_picture?: string
+    
+    // Admin specific fields
+    role?: string
+    permissions?: string[]
+}
