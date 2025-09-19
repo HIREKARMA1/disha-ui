@@ -96,6 +96,14 @@ export interface ProfileUpdateData {
     tenth_year?: string
 }
 
+export interface ProfileCompletionResponse {
+    completion_percentage: number
+    completed_fields: string[]
+    missing_fields: string[]
+    total_fields: number
+    completed_count: number
+}
+
 export interface FileUploadResponse {
     success: boolean
     file_url: string
@@ -235,9 +243,9 @@ export class ProfileService {
     }
 
     /**
-     * Get profile completion percentage
+     * Get profile completion percentage with detailed information
      */
-    async getProfileCompletion(): Promise<{ completion_percentage: number }> {
+    async getProfileCompletion(): Promise<ProfileCompletionResponse> {
         try {
             if (!apiClient.isAuthenticated()) {
                 throw new Error('User not authenticated. Please log in.')

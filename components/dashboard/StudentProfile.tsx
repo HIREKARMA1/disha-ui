@@ -22,7 +22,7 @@ import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
 import { cn, getInitials, truncateText } from '@/lib/utils'
-import { profileService, type StudentProfile, type ProfileUpdateData } from '@/services/profileService'
+import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
 
 interface ProfileSection {
@@ -35,6 +35,7 @@ interface ProfileSection {
 
 export function StudentProfile() {
     const [profile, setProfile] = useState<StudentProfile | null>(null)
+    const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
     const [loading, setLoading] = useState(true)
     const [editing, setEditing] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -51,7 +52,7 @@ export function StudentProfile() {
             id: 'basic',
             title: 'Basic Information',
             icon: User,
-            fields: ['name', 'email', 'phone', 'bio', 'profile_picture'],
+            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'profile_picture'],
             completed: false
         },
         {
@@ -65,7 +66,7 @@ export function StudentProfile() {
             id: 'skills',
             title: 'Skills & Interests',
             icon: Zap,
-            fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest'],
+            fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest', 'location_preferences'],
             completed: false
         },
         {
@@ -108,8 +109,15 @@ export function StudentProfile() {
         try {
             setLoading(true)
             setError(null)
-            const profileData = await profileService.getProfile()
+
+            // Fetch both profile and completion data in parallel
+            const [profileData, completionData] = await Promise.all([
+                profileService.getProfile(),
+                profileService.getProfileCompletion()
+            ])
+
             setProfile(profileData)
+            setProfileCompletion(completionData)
         } catch (error: any) {
             setError(error.message)
         } finally {
@@ -121,10 +129,22 @@ export function StudentProfile() {
         try {
             setSaving(true)
             setError(null)
+
+            console.log('Saving profile data for section:', sectionId)
+            console.log('Form data being sent:', formData)
+
             const updatedProfile = await profileService.updateProfile(formData)
+            console.log('Profile updated successfully:', updatedProfile)
+
             setProfile(updatedProfile)
+
+            // Refresh completion data after profile update
+            const completionData = await profileService.getProfileCompletion()
+            setProfileCompletion(completionData)
+
             setEditing(null)
         } catch (error: any) {
+            console.error('Error saving profile:', error)
             setError(error.message)
         } finally {
             setSaving(false)
@@ -135,7 +155,7 @@ export function StudentProfile() {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <Navbar />
-                    <StudentSidebar />
+                <StudentSidebar />
                 <div className="pt-16 lg:pl-64">
                     <main className="flex-1 p-4 lg:p-6">
                         <div className="w-full">
@@ -213,7 +233,7 @@ export function StudentProfile() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <Navbar />
-                <StudentSidebar />
+            <StudentSidebar />
             <div className="pt-16 lg:pl-64">
                 <main className="flex-1 p-4 lg:p-6">
                     <div className="w-full">
@@ -223,7 +243,7 @@ export function StudentProfile() {
                                 <div className="flex-1 min-w-0">
                                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                                         Student Profile 👤
-                            </h1>
+                                    </h1>
                                     <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
                                         Manage your personal information and career details ✨
                                     </p>
@@ -244,695 +264,686 @@ export function StudentProfile() {
 
                         {/* Profile Content */}
                         <div className="space-y-6">
-                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
-                            {/* Top Horizontal Section - Profile Overview */}
-                            <div className="xl:col-span-4">
-                                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
-                                    <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-                                        {/* Profile Avatar & Info */}
-                                        <div className="text-center lg:text-left">
-                                            <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto lg:mx-0 mb-4 relative">
-                                                <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                                                    {profile.profile_picture ? (
-                                                        <img
-                                                            src={profile.profile_picture}
-                                                            alt={profile.name}
-                                                            className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-xl lg:text-2xl font-bold text-white">
-                                                            {getInitials(profile.name)}
-                                                        </span>
-                                                    )}
+                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
+                                {/* Top Horizontal Section - Profile Overview */}
+                                <div className="xl:col-span-4">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
+                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+                                            {/* Profile Avatar & Info */}
+                                            <div className="text-center lg:text-left">
+                                                <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto lg:mx-0 mb-4 relative">
+                                                    <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                                        {profile.profile_picture ? (
+                                                            <img
+                                                                src={profile.profile_picture}
+                                                                alt={profile.name}
+                                                                className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xl lg:text-2xl font-bold text-white">
+                                                                {getInitials(profile.name)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
+                                                        onClick={() => setEditing('basic')}
+                                                        title="Change profile picture"
+                                                    >
+                                                        <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
-                                                    onClick={() => setEditing('basic')}
-                                                    title="Change profile picture"
-                                                >
-                                                    <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
-                                                </button>
+                                                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                                                    {profile.name}
+                                                </h3>
+                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                    {profile.institution || 'University Student'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {profile.degree} • {profile.branch}
+                                                </p>
                                             </div>
-                                            <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                                                {profile.name}
-                                            </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                {profile.institution || 'University Student'}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {profile.degree} • {profile.branch}
-                                            </p>
-                                        </div>
 
-                                        {/* Profile Stats */}
-                                        <div className="flex-1">
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-                                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
-                                                    {profile.email_verified ? (
-                                                        <div className="p-1.5 bg-green-500 rounded-full">
-                                                            <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                            <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                                    {profile.phone_verified ? (
-                                                        <div className="p-1.5 bg-green-500 rounded-full">
-                                                            <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                            <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Photo</span>
-                                                    {profile.profile_picture ? (
-                                                        <div className="p-1.5 bg-green-500 rounded-full">
-                                                            <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                            <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Resume</span>
-                                                    {profile.resume ? (
-                                                        <div className="p-1.5 bg-green-500 rounded-full">
-                                                            <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                            <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                        </div>
-                                                    )}
+                                            {/* Profile Stats */}
+                                            <div className="flex-1">
+                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
+                                                        {profile.email_verified ? (
+                                                            <div className="p-1.5 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
+                                                        {profile.phone_verified ? (
+                                                            <div className="p-1.5 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Photo</span>
+                                                        {profile.profile_picture ? (
+                                                            <div className="p-1.5 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Resume</span>
+                                                        {profile.resume ? (
+                                                            <div className="p-1.5 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Profile Completion Card */}
-                            <div className="xl:col-span-1">
-                                <ProfileCompletion
-                                    completion={profile.profile_completion_percentage}
-                                    fields={[
-                                        { name: 'name', completed: !!profile.name, required: true, category: 'Basic' },
-                                        { name: 'email', completed: !!profile.email, required: true, category: 'Basic' },
-                                        { name: 'phone', completed: !!profile.phone, required: false, category: 'Basic' },
-                                        { name: 'bio', completed: !!profile.bio, required: false, category: 'Basic' },
-                                        { name: 'profile_picture', completed: !!profile.profile_picture, required: false, category: 'Basic' },
-                                        { name: 'institution', completed: !!profile.institution, required: true, category: 'Academic' },
-                                        { name: 'degree', completed: !!profile.degree, required: true, category: 'Academic' },
-                                        { name: 'branch', completed: !!profile.branch, required: true, category: 'Academic' },
-                                        { name: 'graduation_year', completed: !!profile.graduation_year, required: true, category: 'Academic' },
-                                        { name: 'resume', completed: !!profile.resume, required: true, category: 'Documents' },
-                                        { name: 'technical_skills', completed: !!profile.technical_skills, required: false, category: 'Skills' },
-                                        { name: 'internship_experience', completed: !!profile.internship_experience, required: false, category: 'Experience' }
-                                    ]}
-                                />
-                            </div>
-
-                            {/* Tab-based Profile Sections */}
-                            <div className="xl:col-span-3">
-                                {/* Tab Navigation */}
-                                <div className="mb-6">
-                                    <div className="border-b border-gray-200 dark:border-gray-700">
-                                        <nav className="-mb-px flex space-x-8 overflow-x-auto">
-                                            {tabs.map((tab) => (
-                                                <button
-                                                    key={tab.id}
-                                                    onClick={() => setActiveTab(tab.id)}
-                                                    className={cn(
-                                                        "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
-                                                        activeTab === tab.id
-                                                            ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                                                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                                                    )}
-                                                >
-                                                    <tab.icon className="w-4 h-4" />
-                                                    <span>{tab.label}</span>
-                                                </button>
-                                            ))}
-                                        </nav>
-                                    </div>
+                                {/* Profile Completion Card */}
+                                <div className="xl:col-span-1">
+                                    <ProfileCompletion
+                                        completion={profileCompletion?.completion_percentage || profile?.profile_completion_percentage || 0}
+                                        completionData={profileCompletion || undefined}
+                                    />
                                 </div>
 
-                                {/* Tab Content */}
-                                <div className="min-h-[600px]">
-                                    {activeTab === 'basic' && (
-                                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                        <User className="w-6 h-6 text-white" />
+                                {/* Tab-based Profile Sections */}
+                                <div className="xl:col-span-3">
+                                    {/* Tab Navigation */}
+                                    <div className="mb-6">
+                                        <div className="border-b border-gray-200 dark:border-gray-700">
+                                            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                                                {tabs.map((tab) => (
+                                                    <button
+                                                        key={tab.id}
+                                                        onClick={() => setActiveTab(tab.id)}
+                                                        className={cn(
+                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
+                                                            activeTab === tab.id
+                                                                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                                                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                                                        )}
+                                                    >
+                                                        <tab.icon className="w-4 h-4" />
+                                                        <span>{tab.label}</span>
+                                                    </button>
+                                                ))}
+                                            </nav>
+                                        </div>
+                                    </div>
+
+                                    {/* Tab Content */}
+                                    <div className="min-h-[600px]">
+                                        {activeTab === 'basic' && (
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                            <User className="w-6 h-6 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Personal details and contact information</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">Personal details and contact information</p>
-                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditing('basic')}
+                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                    >
+                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditing('basic')}
-                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
-                                                >
-                                                    <ChevronRight className="w-3 h-3 mr-1" />
-                                                    Edit
-                                                </Button>
-                                            </div>
 
-                                            {editing === 'basic' ? (
-                                                <ProfileSectionForm
-                                                    section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'bio', 'profile_picture'], completed: false }}
-                                                    profile={profile}
-                                                    onSave={(formData) => handleSave('basic', formData)}
-                                                    saving={saving}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Personal Details
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.name || 'Name not provided'}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Contact Information
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.email || 'Email not provided'}
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                            Phone: {profile.phone || 'Not provided'}
-                                                        </div>
-                                                    </div>
-
-                                                    {profile.bio && (
+                                                {editing === 'basic' ? (
+                                                    <ProfileSectionForm
+                                                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'profile_picture'], completed: false }}
+                                                        profile={profile}
+                                                        onSave={(formData) => handleSave('basic', formData)}
+                                                        saving={saving}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-4">
                                                         <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                             <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Bio
+                                                                Personal Details
                                                             </div>
                                                             <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {profile.bio}
+                                                                {profile.name || 'Name not provided'}
                                                             </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Profile Picture
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center space-x-3">
-                                                                {profile.profile_picture ? (
-                                                                    <>
-                                                                        <img
-                                                                            src={profile.profile_picture}
-                                                                            alt="Profile"
-                                                                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
-                                                                        />
-                                                                        <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
-                                                                )}
-                                                            </div>
-                                                            {profile.profile_picture && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => profile.profile_picture && setImageModal({
-                                                                        isOpen: true,
-                                                                        imageUrl: profile.profile_picture,
-                                                                        altText: 'Profile Picture'
-                                                                    })}
-                                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                                                >
-                                                                    <Camera className="w-4 h-4 mr-2" />
-                                                                    View Image
-                                                                </Button>
+                                                            {profile.dob && (
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                                    Date of Birth: {new Date(profile.dob).toLocaleDateString()}
+                                                                </div>
+                                                            )}
+                                                            {profile.gender && (
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                                    Gender: {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
 
-                                    {activeTab === 'academic' && (
-                                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                        <GraduationCap className="w-6 h-6 text-white" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Academic Information</h3>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">Educational background and achievements</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditing('academic')}
-                                                    className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
-                                                >
-                                                    <ChevronRight className="w-3 h-3 mr-1" />
-                                                    Edit
-                                                </Button>
-                                            </div>
-
-                                            {editing === 'academic' ? (
-                                                <ProfileSectionForm
-                                                    section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
-                                                    profile={profile}
-                                                    onSave={(formData) => handleSave('academic', formData)}
-                                                    saving={saving}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            ) : (
-                                                <div className="space-y-6">
-                                                    {/* College Section */}
-                                                    <div className="p-6 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50">
-                                                        <div className="flex items-center space-x-3 mb-4">
-                                                            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                                                                <GraduationCap className="w-4 h-4 text-white" />
+                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                Contact Information
                                                             </div>
-                                                                <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100">College</h3>
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                {profile.email || 'Email not provided'}
+                                                            </div>
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                                Phone: {profile.phone || 'Not provided'}
+                                                            </div>
                                                         </div>
 
-                                                        {profile.institution && profile.degree && profile.branch ? (
-                                                            <div className="space-y-3">
-                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
-                                                                    <div className="font-medium text-emerald-900 dark:text-emerald-100 mb-2">
-                                                                        {profile.degree} from {profile.institution}
-                                                                    </div>
-                                                                    <div className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                                        {profile.branch} • {profile.graduation_year ? `Graduating in ${profile.graduation_year}` : 'Graduation year not specified'}
-                                                                    </div>
+                                                        {(profile.country || profile.state || profile.city) && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Location
                                                                 </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {[profile.city, profile.state, profile.country].filter(Boolean).join(', ') || 'Location not provided'}
+                                                                </div>
+                                                            </div>
+                                                        )}
 
-                                                                {profile.btech_cgpa && (
+                                                        {profile.bio && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Bio
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.bio}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                Profile Picture
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center space-x-3">
+                                                                    {profile.profile_picture ? (
+                                                                        <>
+                                                                            <img
+                                                                                src={profile.profile_picture}
+                                                                                alt="Profile"
+                                                                                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                                                                            />
+                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
+                                                                    )}
+                                                                </div>
+                                                                {profile.profile_picture && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => profile.profile_picture && setImageModal({
+                                                                            isOpen: true,
+                                                                            imageUrl: profile.profile_picture,
+                                                                            altText: 'Profile Picture'
+                                                                        })}
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                                    >
+                                                                        <Camera className="w-4 h-4 mr-2" />
+                                                                        View Image
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'academic' && (
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                            <GraduationCap className="w-6 h-6 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Academic Information</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Educational background and achievements</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditing('academic')}
+                                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
+                                                    >
+                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                </div>
+
+                                                {editing === 'academic' ? (
+                                                    <ProfileSectionForm
+                                                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
+                                                        profile={profile}
+                                                        onSave={(formData) => handleSave('academic', formData)}
+                                                        saving={saving}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-6">
+                                                        {/* College Section */}
+                                                        <div className="p-6 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50">
+                                                            <div className="flex items-center space-x-3 mb-4">
+                                                                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                                                                    <GraduationCap className="w-4 h-4 text-white" />
+                                                                </div>
+                                                                <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100">College</h3>
+                                                            </div>
+
+                                                            {profile.institution && profile.degree && profile.branch ? (
+                                                                <div className="space-y-3">
                                                                     <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
                                                                         <div className="font-medium text-emerald-900 dark:text-emerald-100 mb-2">
-                                                                            CGPA
+                                                                            {profile.degree} from {profile.institution}
                                                                         </div>
                                                                         <div className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                                            {profile.btech_cgpa}
+                                                                            {profile.branch} • {profile.graduation_year ? `Graduating in ${profile.graduation_year}` : 'Graduation year not specified'}
                                                                         </div>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
-                                                                <div className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                                    No college details provided yet
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
 
-                                                    {/* 12th Section */}
-                                                    <div className="p-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
-                                                        <div className="flex items-center space-x-3 mb-4">
-                                                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                                </svg>
-                                                            </div>
+                                                                    {profile.btech_cgpa && (
+                                                                        <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
+                                                                            <div className="font-medium text-emerald-900 dark:text-emerald-100 mb-2">
+                                                                                CGPA
+                                                                            </div>
+                                                                            <div className="text-sm text-emerald-700 dark:text-emerald-300">
+                                                                                {profile.btech_cgpa}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
+                                                                    <div className="text-sm text-emerald-700 dark:text-emerald-300">
+                                                                        No college details provided yet
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* 12th Section */}
+                                                        <div className="p-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                                                            <div className="flex items-center space-x-3 mb-4">
+                                                                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                                                    </svg>
+                                                                </div>
                                                                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Class XII</h3>
+                                                            </div>
+
+                                                            {profile.twelfth_grade_percentage ? (
+                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
+                                                                    <div className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                                                                        Percentage
+                                                                    </div>
+                                                                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                                                                        {profile.twelfth_grade_percentage}%
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
+                                                                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                                                                        No Class XII details provided yet
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
 
-                                                        {profile.twelfth_grade_percentage ? (
-                                                            <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
-                                                                <div className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                                                                    Percentage
+                                                        {/* 10th Section */}
+                                                        <div className="p-6 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50">
+                                                            <div className="flex items-center space-x-3 mb-4">
+                                                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                                                    </svg>
                                                                 </div>
-                                                                <div className="text-sm text-blue-700 dark:text-blue-300">
-                                                                    {profile.twelfth_grade_percentage}%
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
-                                                                <div className="text-sm text-blue-700 dark:text-blue-300">
-                                                                    No Class XII details provided yet
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* 10th Section */}
-                                                    <div className="p-6 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50">
-                                                        <div className="flex items-center space-x-3 mb-4">
-                                                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                                </svg>
-                                                            </div>
                                                                 <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Class X</h3>
-                                                        </div>
+                                                            </div>
 
-                                                        {profile.tenth_grade_percentage ? (
-                                                            <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/30 dark:border-purple-600/30">
-                                                                <div className="font-medium text-purple-900 dark:text-purple-100 mb-2">
-                                                                    Percentage
+                                                            {profile.tenth_grade_percentage ? (
+                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/30 dark:border-purple-600/30">
+                                                                    <div className="font-medium text-purple-900 dark:text-purple-100 mb-2">
+                                                                        Percentage
+                                                                    </div>
+                                                                    <div className="text-sm text-purple-700 dark:text-purple-300">
+                                                                        {profile.tenth_grade_percentage}%
+                                                                    </div>
                                                                 </div>
-                                                                <div className="text-sm text-purple-700 dark:text-purple-300">
-                                                                    {profile.tenth_grade_percentage}%
+                                                            ) : (
+                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/30 dark:border-purple-600/30">
+                                                                    <div className="text-sm text-purple-700 dark:text-purple-300">
+                                                                        No Class X details provided yet
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'skills' && (
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                            <Zap className="w-6 h-6 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Skills & Interests</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Technical skills, soft skills, and career preferences</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditing('skills')}
+                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200"
+                                                    >
+                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                </div>
+
+                                                {editing === 'skills' ? (
+                                                    <ProfileSectionForm
+                                                        section={{ id: 'skills', title: 'Skills & Interests', icon: Zap, fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest', 'location_preferences'], completed: false }}
+                                                        profile={profile}
+                                                        onSave={(formData) => handleSave('skills', formData)}
+                                                        saving={saving}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {profile.technical_skills && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Technical Skills
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.technical_skills}
                                                                 </div>
                                                             </div>
-                                                        ) : (
-                                                            <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/30 dark:border-purple-600/30">
-                                                                <div className="text-sm text-purple-700 dark:text-purple-300">
-                                                                    No Class X details provided yet
+                                                        )}
+
+                                                        {profile.soft_skills && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Soft Skills
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.soft_skills}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.certifications && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Certifications
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.certifications}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.preferred_industry && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Preferred Industry
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.preferred_industry}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.job_roles_of_interest && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Job Roles Of Interest
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.job_roles_of_interest}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.location_preferences && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Location Preferences
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.location_preferences}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {!profile.technical_skills && !profile.soft_skills && !profile.certifications && !profile.preferred_industry && !profile.job_roles_of_interest && !profile.location_preferences && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Skills & Interests
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    No skills or interests provided yet
                                                                 </div>
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'skills' && (
-                                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                        <Zap className="w-6 h-6 text-white" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Skills & Interests</h3>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">Technical skills, soft skills, and career preferences</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditing('skills')}
-                                                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200"
-                                                >
-                                                    <ChevronRight className="w-3 h-3 mr-1" />
-                                                    Edit
-                                                </Button>
+                                                )}
                                             </div>
+                                        )}
 
-                                            {editing === 'skills' ? (
-                                                <ProfileSectionForm
-                                                    section={{ id: 'skills', title: 'Skills & Interests', icon: Zap, fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest'], completed: false }}
-                                                    profile={profile}
-                                                    onSave={(formData) => handleSave('skills', formData)}
-                                                    saving={saving}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {profile.technical_skills && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Technical Skills
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {profile.technical_skills}
-                                                            </div>
+                                        {activeTab === 'experience' && (
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                            <Trophy className="w-6 h-6 text-white" />
                                                         </div>
-                                                    )}
-
-                                                    {profile.soft_skills && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Soft Skills
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {profile.soft_skills}
-                                                            </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Experience & Projects</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
                                                         </div>
-                                                    )}
-
-                                                    {profile.certifications && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Certifications
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {profile.certifications}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {profile.preferred_industry && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Preferred Industry
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {profile.preferred_industry}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {profile.job_roles_of_interest && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Job Roles Of Interest
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {profile.job_roles_of_interest}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {!profile.technical_skills && !profile.soft_skills && !profile.certifications && !profile.preferred_industry && !profile.job_roles_of_interest && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Skills & Interests
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                No skills or interests provided yet
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'experience' && (
-                                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                        <Trophy className="w-6 h-6 text-white" />
                                                     </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Experience & Projects</h3>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
-                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditing('experience')}
+                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
+                                                    >
+                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditing('experience')}
-                                                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
-                                                >
-                                                    <ChevronRight className="w-3 h-3 mr-1" />
-                                                    Edit
-                                                </Button>
-                                            </div>
 
-                                            {editing === 'experience' ? (
-                                                <ProfileSectionForm
-                                                    section={{ id: 'experience', title: 'Experience & Projects', icon: Trophy, fields: ['internship_experience', 'project_details', 'extracurricular_activities'], completed: false }}
-                                                    profile={profile}
-                                                    onSave={(formData) => handleSave('experience', formData)}
-                                                    saving={saving}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {profile.internship_experience && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="flex items-start space-x-3">
-                                                                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                        Internship Experience
+                                                {editing === 'experience' ? (
+                                                    <ProfileSectionForm
+                                                        section={{ id: 'experience', title: 'Experience & Projects', icon: Trophy, fields: ['internship_experience', 'project_details', 'extracurricular_activities'], completed: false }}
+                                                        profile={profile}
+                                                        onSave={(formData) => handleSave('experience', formData)}
+                                                        saving={saving}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {profile.internship_experience && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="flex items-start space-x-3">
+                                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                                        </svg>
                                                                     </div>
-                                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                        {profile.internship_experience}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {profile.project_details && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="flex items-start space-x-3">
-                                                                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                        Project Details
-                                                                    </div>
-                                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                        {profile.project_details}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {profile.extracurricular_activities && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="flex items-start space-x-3">
-                                                                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                    <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                        Extracurricular Activities
-                                                                    </div>
-                                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                        {profile.extracurricular_activities}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {!profile.internship_experience && !profile.project_details && !profile.extracurricular_activities && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="flex items-start space-x-3">
-                                                                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                        Experience & Projects
-                                                                    </div>
-                                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                        No experience or projects provided yet
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'documents' && (
-                                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                        <Shield className="w-6 h-6 text-white" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Documents & Certificates</h3>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">Resume, certificates, and important documents</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditing('documents')}
-                                                    className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200"
-                                                >
-                                                    <ChevronRight className="w-3 h-3 mr-1" />
-                                                    Edit
-                                                </Button>
-                                            </div>
-
-                                            {editing === 'documents' ? (
-                                                <ProfileSectionForm
-                                                    section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates'], completed: false }}
-                                                    profile={profile}
-                                                    onSave={(formData) => handleSave('documents', formData)}
-                                                    saving={saving}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Resume
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center space-x-3">
-                                                                {profile.resume ? (
-                                                                    <>
-                                                                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                                                                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                            Internship Experience
                                                                         </div>
-                                                                        <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
-                                                                )}
+                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                            {profile.internship_experience}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                            {profile.resume && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => window.open(profile.resume, '_blank')}
-                                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                                                >
-                                                                    <FileText className="w-4 h-4 mr-2" />
-                                                                    View File
-                                                                </Button>
-                                                            )}
+                                                        )}
+
+                                                        {profile.project_details && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="flex items-start space-x-3">
+                                                                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                        <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                                        </svg>
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                            Project Details
+                                                                        </div>
+                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                            {profile.project_details}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.extracurricular_activities && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="flex items-start space-x-3">
+                                                                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                        <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                                        </svg>
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                            Extracurricular Activities
+                                                                        </div>
+                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                            {profile.extracurricular_activities}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {!profile.internship_experience && !profile.project_details && !profile.extracurricular_activities && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="flex items-start space-x-3">
+                                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                        <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                                        </svg>
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                            Experience & Projects
+                                                                        </div>
+                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                            No experience or projects provided yet
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'documents' && (
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                            <Shield className="w-6 h-6 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Documents & Certificates</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Resume, certificates, and important documents</p>
                                                         </div>
                                                     </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditing('documents')}
+                                                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200"
+                                                    >
+                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                </div>
 
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Academic Certificates
-                                                        </div>
-                                                        <div className="space-y-3">
+                                                {editing === 'documents' ? (
+                                                    <ProfileSectionForm
+                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates'], completed: false }}
+                                                        profile={profile}
+                                                        onSave={(formData) => handleSave('documents', formData)}
+                                                        saving={saving}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                Resume
+                                                            </div>
                                                             <div className="flex items-center justify-between">
                                                                 <div className="flex items-center space-x-3">
-                                                                    <span className="text-sm text-gray-600 dark:text-gray-400">Class X:</span>
-                                                                    {profile.tenth_certificate ? (
-                                                                        <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                    {profile.resume ? (
+                                                                        <>
+                                                                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                                                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                                                            </div>
+                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                        </>
                                                                     ) : (
                                                                         <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
                                                                     )}
                                                                 </div>
-                                                                {profile.tenth_certificate && (
+                                                                {profile.resume && (
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        onClick={() => window.open(profile.tenth_certificate, '_blank')}
+                                                                        onClick={() => window.open(profile.resume, '_blank')}
                                                                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
                                                                     >
                                                                         <FileText className="w-4 h-4 mr-2" />
@@ -940,20 +951,80 @@ export function StudentProfile() {
                                                                     </Button>
                                                                 )}
                                                             </div>
+                                                        </div>
+
+                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                Academic Certificates
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Class X:</span>
+                                                                        {profile.tenth_certificate ? (
+                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                        ) : (
+                                                                            <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
+                                                                        )}
+                                                                    </div>
+                                                                    {profile.tenth_certificate && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => window.open(profile.tenth_certificate, '_blank')}
+                                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                                        >
+                                                                            <FileText className="w-4 h-4 mr-2" />
+                                                                            View File
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Class XII:</span>
+                                                                        {profile.twelfth_certificate ? (
+                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                        ) : (
+                                                                            <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
+                                                                        )}
+                                                                    </div>
+                                                                    {profile.twelfth_certificate && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => window.open(profile.twelfth_certificate, '_blank')}
+                                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                                        >
+                                                                            <FileText className="w-4 h-4 mr-2" />
+                                                                            View File
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                Internship Certificates
+                                                            </div>
                                                             <div className="flex items-center justify-between">
                                                                 <div className="flex items-center space-x-3">
-                                                                    <span className="text-sm text-gray-600 dark:text-gray-400">Class XII:</span>
-                                                                    {profile.twelfth_certificate ? (
-                                                                        <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                    {profile.internship_certificates ? (
+                                                                        <>
+                                                                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                                                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                                                            </div>
+                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                        </>
                                                                     ) : (
                                                                         <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
                                                                     )}
                                                                 </div>
-                                                                {profile.twelfth_certificate && (
+                                                                {profile.internship_certificates && (
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        onClick={() => window.open(profile.twelfth_certificate, '_blank')}
+                                                                        onClick={() => window.open(profile.internship_certificates, '_blank')}
                                                                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
                                                                     >
                                                                         <FileText className="w-4 h-4 mr-2" />
@@ -963,143 +1034,111 @@ export function StudentProfile() {
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Internship Certificates
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center space-x-3">
-                                                                {profile.internship_certificates ? (
-                                                                    <>
-                                                                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                                                                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                                                        </div>
-                                                                        <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
-                                                                )}
-                                                            </div>
-                                                            {profile.internship_certificates && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => window.open(profile.internship_certificates, '_blank')}
-                                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                                                >
-                                                                    <FileText className="w-4 h-4 mr-2" />
-                                                                    View File
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'social' && (
-                                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                        <Globe className="w-6 h-6 text-white" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Social Profiles</h3>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400">LinkedIn, GitHub, and personal websites</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditing('social')}
-                                                    className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200"
-                                                >
-                                                    <ChevronRight className="w-3 h-3 mr-1" />
-                                                    Edit
-                                                </Button>
+                                                )}
                                             </div>
+                                        )}
 
-                                            {editing === 'social' ? (
-                                                <ProfileSectionForm
-                                                    section={{ id: 'social', title: 'Social Profiles', icon: Globe, fields: ['linkedin_profile', 'github_profile', 'personal_website'], completed: false }}
-                                                    profile={profile}
-                                                    onSave={(formData) => handleSave('social', formData)}
-                                                    saving={saving}
-                                                    onCancel={() => setEditing(null)}
-                                                />
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {profile.linkedin_profile && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                LinkedIn Profile
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                <a
-                                                                    href={profile.linkedin_profile}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
-                                                                >
-                                                                    {profile.linkedin_profile}
-                                                                </a>
-                                                            </div>
+                                        {activeTab === 'social' && (
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                            <Globe className="w-6 h-6 text-white" />
                                                         </div>
-                                                    )}
-
-                                                    {profile.github_profile && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                GitHub Profile
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                <a
-                                                                    href={profile.github_profile}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
-                                                                >
-                                                                    {profile.github_profile}
-                                                                </a>
-                                                            </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Social Profiles</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">LinkedIn, GitHub, and personal websites</p>
                                                         </div>
-                                                    )}
-
-                                                    {profile.personal_website && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Personal Website
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                <a
-                                                                    href={profile.personal_website}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
-                                                                >
-                                                                    {profile.personal_website}
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {!profile.linkedin_profile && !profile.github_profile && !profile.personal_website && (
-                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Social Profiles
-                                                            </div>
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                No social profiles provided yet
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditing('social')}
+                                                        className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200"
+                                                    >
+                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        Edit
+                                                    </Button>
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
+
+                                                {editing === 'social' ? (
+                                                    <ProfileSectionForm
+                                                        section={{ id: 'social', title: 'Social Profiles', icon: Globe, fields: ['linkedin_profile', 'github_profile', 'personal_website'], completed: false }}
+                                                        profile={profile}
+                                                        onSave={(formData) => handleSave('social', formData)}
+                                                        saving={saving}
+                                                        onCancel={() => setEditing(null)}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {profile.linkedin_profile && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    LinkedIn Profile
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    <a
+                                                                        href={profile.linkedin_profile}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
+                                                                    >
+                                                                        {profile.linkedin_profile}
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.github_profile && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    GitHub Profile
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    <a
+                                                                        href={profile.github_profile}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
+                                                                    >
+                                                                        {profile.github_profile}
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {profile.personal_website && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Personal Website
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    <a
+                                                                        href={profile.personal_website}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
+                                                                    >
+                                                                        {profile.personal_website}
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {!profile.linkedin_profile && !profile.github_profile && !profile.personal_website && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Social Profiles
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    No social profiles provided yet
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1155,13 +1194,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
+        // Clean up form data - convert empty strings to null for numeric fields
+        const cleanedFormData = { ...formData }
+        Object.keys(cleanedFormData).forEach(key => {
+            if (cleanedFormData[key] === '') {
+                cleanedFormData[key] = null
+            }
+        })
+
         // Validate social profile URLs before saving
         if (section.id === 'social') {
             const socialFields = ['linkedin_profile', 'github_profile', 'personal_website']
             let hasErrors = false
 
             socialFields.forEach(field => {
-                const url = formData[field]
+                const url = cleanedFormData[field]
                 if (url) {
                     try {
                         new URL(url)
@@ -1180,7 +1227,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
         }
 
-        onSave(formData)
+        // For Academic section, allow partial updates - no validation required
+        // Users can fill any combination of College, Class XII, and Class X data
+        if (section.id === 'academic') {
+            console.log('Academic form data being submitted:', cleanedFormData)
+        }
+
+        onSave(cleanedFormData)
     }
 
     const handleFileUpload = async (field: string, file: File) => {
@@ -1323,12 +1376,54 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+        // Handle date of birth field
+        if (field === 'dob') {
+            return (
+                <input
+                    type="date"
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Select your date of birth"
+                />
+            )
+        }
+
+        // Handle gender field
+        if (field === 'gender') {
+            return (
+                <select
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                    <option value="">Select your gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                </select>
+            )
+        }
+
+        // Handle location preferences field (textarea for multiple locations)
+        if (field === 'location_preferences') {
+            return (
+                <textarea
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter your preferred locations (e.g., Mumbai, Delhi, Remote, Bangalore)"
+                />
+            )
+        }
+
         if (field.includes('year')) {
             return (
                 <input
                     type="text"
                     value={value}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value === '' ? null : e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder={`Enter your ${field.replace(/_/g, ' ')} (e.g., 2021-2022)`}
                 />
@@ -1343,7 +1438,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     min="0"
                     max="10"
                     value={value}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value === '' ? null : e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
                 />
@@ -1358,7 +1453,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     min="0"
                     max="100"
                     value={value}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value === '' ? null : e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
                 />
@@ -1454,6 +1549,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             {section.id === 'academic' ? (
                 // Academic Section - Organized Layout
                 <>
+                    {/* Academic Information Notice */}
+                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+                                    Flexible Academic Information
+                                </h4>
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                    You can fill any combination of College, Class XII, and Class X information.
+                                    Fill in the sections that apply to your educational background.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* College Section */}
                     <div className="border border-emerald-200 dark:border-emerald-700 rounded-xl p-6 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-900/20 dark:to-teal-900/20">
                         <div className="flex items-center space-x-3 mb-6">
@@ -1499,7 +1614,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                                     min="0"
                                     max="100"
                                     value={formData.twelfth_grade_percentage || ''}
-                                    onChange={(e) => setFormData({ ...formData, twelfth_grade_percentage: e.target.value })}
+                                    onChange={(e) => setFormData({ ...formData, twelfth_grade_percentage: e.target.value === '' ? null : e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     placeholder="Enter your 12th grade percentage"
                                 />
@@ -1529,7 +1644,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                                     min="0"
                                     max="100"
                                     value={formData.tenth_grade_percentage || ''}
-                                    onChange={(e) => setFormData({ ...formData, tenth_grade_percentage: e.target.value })}
+                                    onChange={(e) => setFormData({ ...formData, tenth_grade_percentage: e.target.value === '' ? null : e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                     placeholder="Enter your 10th grade percentage"
                                 />
