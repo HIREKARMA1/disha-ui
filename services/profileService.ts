@@ -120,8 +120,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const response = await apiClient.client.get('/students/profile')
-            return response.data
+            return await apiClient.getStudentProfile()
         } catch (error: any) {
             console.error('Error fetching profile:', error)
             
@@ -146,8 +145,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const response = await apiClient.client.put('/students/profile', data)
-            return response.data
+            return await apiClient.updateStudentProfile(data)
         } catch (error: any) {
             console.error('Error updating profile:', error)
             
@@ -172,16 +170,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const formData = new FormData()
-            formData.append('profile_picture', file)
-
-            const response = await apiClient.client.post('/students/upload-profile-picture', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            })
-
-            return response.data
+            return await apiClient.uploadProfilePicture(file)
         } catch (error: any) {
             console.error('Error uploading profile picture:', error)
             
@@ -208,16 +197,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const formData = new FormData()
-            formData.append('resume', file)
-
-            const response = await apiClient.client.post('/students/upload-resume', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            })
-
-            return response.data
+            return await apiClient.uploadResume(file)
         } catch (error: any) {
             console.error('Error uploading resume:', error)
             
@@ -244,17 +224,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const formData = new FormData()
-            formData.append('certificate', file)
-            formData.append('type', certificateType)
-
-            const response = await apiClient.client.post('/students/upload-certificate', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            })
-
-            return response.data
+            return await apiClient.uploadCertificate(file, certificateType)
         } catch (error: any) {
             console.error('Error uploading certificate:', error)
             
@@ -281,8 +251,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const response = await apiClient.client.get('/students/profile-completion')
-            return response.data
+            return await apiClient.getProfileCompletion()
         } catch (error: any) {
             console.error('Error fetching profile completion:', error)
             
@@ -305,8 +274,7 @@ export class ProfileService {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            const response = await apiClient.client.delete(`/students/files/${fileType}`)
-            return response.data
+            return await apiClient.deleteFile(fileType)
         } catch (error: any) {
             console.error('Error deleting file:', error)
             

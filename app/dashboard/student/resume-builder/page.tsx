@@ -2,11 +2,14 @@
 
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { ResumeBuilderPage } from '@/components/resume-builder'
+import FeatureGuard from '@/components/student/FeatureGuard'
 
 export default function ResumeBuilderDashboardPage() {
     return (
         <StudentDashboardLayout>
-            <ResumeBuilderPage />
+            <FeatureGuard featureKey="resume">
+                <ResumeBuilderPage />
+            </FeatureGuard>
         </StudentDashboardLayout>
     )
 }

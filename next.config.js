@@ -3,20 +3,22 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "localhost",
-        port: "8000",
-        pathname: "/**",
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
       },
       {
-        protocol: "https",
-        hostname: "hirekarma.s3.us-east-1.amazonaws.com",
-        pathname: "/**",
+        protocol: 'https',
+        hostname: 'hirekarma.s3.us-east-1.amazonaws.com',
+        port: '',
+        pathname: '/**',
       },
       {
-        protocol: "https",
-        hostname: "hirekarma.s3.amazonaws.com",
-        pathname: "/**",
+        protocol: 'https',
+        hostname: 'hirekarma.s3.amazonaws.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },

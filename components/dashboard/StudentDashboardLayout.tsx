@@ -9,8 +9,10 @@ import { AnalyticsChart } from './AnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { RecentActivities } from './RecentActivities'
 import { useAuth } from '@/hooks/useAuth'
+import { useStudentFeatures } from '@/hooks/useStudentFeatures'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
+
 
 interface StudentDashboardLayoutProps {
     children?: React.ReactNode
@@ -19,6 +21,8 @@ interface StudentDashboardLayoutProps {
 function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     const [studentName, setStudentName] = useState<string>('Student')
     const { user } = useAuth()
+    const { features, loading: featuresLoading, error: featuresError } = useStudentFeatures()
+    
 
     // Fetch student profile data to get the name
     useEffect(() => {
@@ -44,6 +48,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
         fetchStudentName()
     }, [user?.id])
 
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
             {/* Navbar is now fixed positioned */}
@@ -66,7 +71,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                                     <AnalyticsChart />
                                     <RecentActivities />
                                 </div>
-                                <div className="xl:col-span-3">
+                                <div className="xl:col-span-3 space-y-6">
                                     <AdvertisementBanner />
                                 </div>
                             </div>

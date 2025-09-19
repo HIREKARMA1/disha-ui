@@ -6,6 +6,7 @@ export interface User {
     email: string
     user_type: 'student' | 'corporate' | 'university' | 'admin'
     name?: string
+    university_id?: string | null
 }
 
 export function useAuth() {
@@ -49,15 +50,46 @@ export function useAuth() {
                 // Check if token is expired (basic check)
                 try {
                     const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]))
+                    console.log('🔐 Token payload:', tokenPayload)
+                    console.log('🔐 University ID in token:', tokenPayload.university_id)
                     const currentTime = Date.now() / 1000
                     
                     if (tokenPayload.exp > currentTime) {
                         // Token is valid, get user data
+                        console.log('Token is valid, checking user data')
                         const userData = localStorage.getItem('user_data')
                         if (userData) {
-                            const parsedUser = JSON.parse(userData)
-                            setUser(parsedUser)
-                            setIsAuthenticated(true)
+                            try {
+                                const parsedUser = JSON.parse(userData)
+                                console.log('User data found in localStorage:', parsedUser)
+                                
+                                // Ensure university_id is included from token payload
+                                const userWithUniversity = {
+                                    ...parsedUser,
+                                    university_id: parsedUser.university_id || tokenPayload.university_id || null
+                                }
+                                console.log('User with university_id:', userWithUniversity)
+                                
+                                setUser(userWithUniversity)
+                                setIsAuthenticated(true)
+                                // Update stored user data with university_id
+                                localStorage.setItem('user_data', JSON.stringify(userWithUniversity))
+                            } catch (error) {
+                                console.error('Error parsing user data:', error)
+                                // If user data is corrupted, try to get it from token payload
+                                const userFromToken = {
+                                    id: tokenPayload.sub || 'temp-id',
+                                    email: tokenPayload.email || '',
+                                    user_type: tokenPayload.user_type || 'student',
+                                    name: tokenPayload.name || '',
+                                    university_id: tokenPayload.university_id || null
+                                }
+                                console.log('Using user data from token:', userFromToken)
+                                setUser(userFromToken)
+                                setIsAuthenticated(true)
+                                // Store the user data for future use
+                                localStorage.setItem('user_data', JSON.stringify(userFromToken))
+                            }
                         } else {
                             // If no user data, try to get it from token payload
                             const userFromToken = {
@@ -66,6 +98,7 @@ export function useAuth() {
                                 user_type: tokenPayload.user_type || 'student',
                                 name: tokenPayload.name || ''
                             }
+                            console.log('No user data in localStorage, using token data:', userFromToken)
                             setUser(userFromToken)
                             setIsAuthenticated(true)
                             // Store the user data for future use
@@ -73,6 +106,7 @@ export function useAuth() {
                         }
                     } else {
                         // Token expired, clear everything
+                        console.log('Token expired, logging out')
                         logout()
                     }
                 } catch (error) {
@@ -93,11 +127,13 @@ export function useAuth() {
     }
 
     const login = (userData: User, accessToken: string, refreshToken: string) => {
+        console.log('Login called with user data:', userData)
         localStorage.setItem('access_token', accessToken)
         localStorage.setItem('refresh_token', refreshToken)
         localStorage.setItem('user_data', JSON.stringify(userData))
         setUser(userData)
         setIsAuthenticated(true)
+        console.log('Login completed, user set to:', userData)
     }
 
     const logout = () => {

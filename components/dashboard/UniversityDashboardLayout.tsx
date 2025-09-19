@@ -13,6 +13,7 @@ import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
 import { UniversityDashboardData } from '@/types/university'
 
+
 interface UniversityDashboardLayoutProps {
     children?: React.ReactNode
 }
@@ -46,6 +47,7 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
 
         fetchDashboardData()
     }, [user?.id, user?.user_type, user?.name])
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -94,10 +96,12 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
 
                                     <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
                                         <div className="xl:col-span-7 space-y-6">
-                                            <UniversityAnalyticsChart
-                                                studentStats={dashboardData.student_statistics}
-                                                jobStats={dashboardData.job_statistics}
-                                            />
+                                            {dashboardData.student_statistics && dashboardData.job_statistics && (
+                                                <UniversityAnalyticsChart
+                                                    studentStats={dashboardData.student_statistics}
+                                                    jobStats={dashboardData.job_statistics}
+                                                />
+                                            )}
                                             <UniversityRecentActivities
                                                 activities={dashboardData.recent_activity}
                                             />
