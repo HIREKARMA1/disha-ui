@@ -25,7 +25,8 @@ import { CorporateDashboardLayout } from './CorporateDashboardLayout'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
 import { cn, getInitials, truncateText } from '@/lib/utils'
-import { corporateProfileService, type CorporateProfile, type CorporateProfileUpdateData } from '@/services/corporateProfileService'
+import { corporateProfileService } from '@/services/corporateProfileService'
+import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
 import { useAuth } from '@/hooks/useAuth'
 
 interface ProfileSection {
