@@ -67,6 +67,13 @@ const navItems: NavItem[] = [
         color: 'from-purple-500 to-pink-600'
     },
     {
+        label: 'Feature Flags',
+        href: '/dashboard/admin/feature-flags',
+        icon: Settings,
+        description: 'Manage university features',
+        color: 'from-green-500 to-emerald-600'
+    },
+    {
         label: 'Job Management',
         href: '/dashboard/admin/jobs',
         icon: Briefcase,
@@ -293,7 +300,9 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
             {/* Mobile Bottom Navigation */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
                 <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {navItems.slice(0, 5).map((item) => {
+                    {navItems.filter(item => 
+                        ['Dashboard', 'Profile', 'User Management', 'Universities', 'Feature Flags'].includes(item.label)
+                    ).map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
 

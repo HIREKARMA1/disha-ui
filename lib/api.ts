@@ -851,7 +851,7 @@ class ApiClient {
 
   // University Student Features endpoints
   async getUniversityStudentFeatures(universityId: string): Promise<StudentFeaturesListResponse> {
-    const response: AxiosResponse = await this.client.get(`/student-features/universities/${universityId}/student-features`);
+    const response: AxiosResponse = await this.client.get(`/students/features`);
     return response.data;
   }
 
