@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { BarChart3, TrendingUp, Users, Briefcase } from 'lucide-react'
+import { BarChart3, TrendingUp, Users, Briefcase, Clock } from 'lucide-react'
 
 interface CorporateAnalyticsChartProps {
     className?: string
@@ -33,7 +33,7 @@ export function CorporateAnalyticsChart({ className = '' }: CorporateAnalyticsCh
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}
         >
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -55,7 +55,7 @@ export function CorporateAnalyticsChart({ className = '' }: CorporateAnalyticsCh
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 blur-sm pointer-events-none">
                 {/* Applications Over Time Chart */}
                 <div>
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -120,6 +120,21 @@ export function CorporateAnalyticsChart({ className = '' }: CorporateAnalyticsCh
                             </motion.div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl">
+                <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
+                        <Clock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Coming Soon
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                        Hiring Analytics functionality is under development. Stay tuned for comprehensive insights!
+                    </p>
                 </div>
             </div>
         </motion.div>

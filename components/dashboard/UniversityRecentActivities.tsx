@@ -9,7 +9,8 @@ import {
     DollarSign,
     Calendar,
     ArrowRight,
-    Activity
+    Activity,
+    Clock
 } from 'lucide-react'
 import { RecentActivity } from '@/types/university'
 
@@ -168,7 +169,7 @@ export function UniversityRecentActivities({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}
         >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -187,7 +188,7 @@ export function UniversityRecentActivities({
             </div>
 
             {/* Activities List */}
-            <div className="space-y-4">
+            <div className="space-y-4 blur-sm pointer-events-none">
                 {displayActivities.slice(0, 5).map((activity, index) => {
                     const Icon = getActivityIcon(activity.type)
                     const colors = getActivityColor(activity.type)
@@ -247,7 +248,7 @@ export function UniversityRecentActivities({
 
             {/* Empty State */}
             {displayActivities.length === 0 && (
-                <div className="text-center py-12">
+                <div className="text-center py-12 blur-sm pointer-events-none">
                     <Activity className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                         No Recent Activities
@@ -260,7 +261,7 @@ export function UniversityRecentActivities({
 
             {/* Activity Summary */}
             {displayActivities.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 blur-sm pointer-events-none">
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">
                             Showing {Math.min(5, displayActivities.length)} of {displayActivities.length} activities
@@ -278,6 +279,21 @@ export function UniversityRecentActivities({
                     </div>
                 </div>
             )}
+
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl">
+                <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
+                        <Clock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Coming Soon
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                        Recent Activities functionality is under development. Stay tuned for updates!
+                    </p>
+                </div>
+            </div>
         </motion.div>
     )
 }

@@ -1,9 +1,13 @@
 "use client"
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, Briefcase, Clock, DollarSign, Users, Building, Calendar, Globe, Car, GraduationCap, Award, FileText, CheckCircle } from 'lucide-react'
+import { X, MapPin, Briefcase, Clock, DollarSign, Users, Building, Calendar, Globe, Car, GraduationCap, Award, FileText, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { apiClient } from '@/lib/api'
+import { useState, useEffect } from 'react'
+import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
+import { toast } from 'react-hot-toast'
 
 interface Job {
     id: string
@@ -38,6 +42,22 @@ interface Job {
     can_apply: boolean
 }
 
+interface CorporateProfile {
+    id: string
+    company_name: string
+    website_url?: string
+    industry?: string
+    company_size?: string
+    founded_year?: number
+    description?: string
+    company_type?: string
+    company_logo?: string
+    verified: boolean
+    contact_person?: string
+    contact_designation?: string
+    address?: string
+}
+
 interface JobDescriptionModalProps {
     job: Job
     onClose: () => void
@@ -48,6 +68,49 @@ interface JobDescriptionModalProps {
 }
 
 export function JobDescriptionModal({ job, onClose, onApply, isApplying = false, showApplyButton = true, applicationStatus }: JobDescriptionModalProps) {
+    const [corporateProfile, setCorporateProfile] = useState<CorporateProfile | null>(null)
+    const [loadingCorporate, setLoadingCorporate] = useState(false)
+    const [corporateError, setCorporateError] = useState<string | null>(null)
+    const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
+
+    useEffect(() => {
+        const fetchCorporateProfile = async () => {
+            if (!job.corporate_id) return
+
+            setLoadingCorporate(true)
+            setCorporateError(null)
+
+            try {
+                const profile = await apiClient.getPublicCorporateProfile(job.corporate_id)
+                setCorporateProfile(profile)
+            } catch (error) {
+                console.error('Failed to fetch corporate profile:', error)
+                setCorporateError('Failed to load company information')
+            } finally {
+                setLoadingCorporate(false)
+            }
+        }
+
+        fetchCorporateProfile()
+    }, [job.corporate_id])
+
+    const handleDownloadPDF = async () => {
+        setIsDownloadingPDF(true)
+        try {
+            const success = await downloadJobDescriptionPDF(job, corporateProfile || undefined)
+            if (success) {
+                toast.success('Job description PDF downloaded successfully!')
+            } else {
+                toast.error('Failed to generate PDF. Please try again.')
+            }
+        } catch (error) {
+            console.error('Error downloading PDF:', error)
+            toast.error('Failed to generate PDF. Please try again.')
+        } finally {
+            setIsDownloadingPDF(false)
+        }
+    }
+
     const formatSalary = (currency: string, min?: number, max?: number) => {
         if (!min && !max) return 'Not specified'
         if (min && max) return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`
@@ -209,6 +272,136 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Company Information */}
+                        <div className="mb-6">
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                <Building className="w-5 h-5 text-primary-500" />
+                                Company Information
+                                {corporateProfile?.verified && (
+                                    <span className="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 text-xs rounded-full flex items-center gap-1">
+                                        <Shield className="w-3 h-3" />
+                                        Verified
+                                    </span>
+                                )}
+                            </h3>
+
+                            {loadingCorporate ? (
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="animate-pulse space-y-3">
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                                    </div>
+                                </div>
+                            ) : corporateError ? (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                                    <p className="text-red-800 dark:text-red-200">{corporateError}</p>
+                                </div>
+                            ) : corporateProfile ? (
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="flex items-start gap-4">
+                                        {corporateProfile.company_logo && (
+                                            <img
+                                                src={corporateProfile.company_logo}
+                                                alt={corporateProfile.company_name}
+                                                className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                                            />
+                                        )}
+                                        <div className="flex-1">
+                                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                                {corporateProfile.company_name}
+                                            </h4>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                                {corporateProfile.industry && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Building className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-gray-600 dark:text-gray-400">Industry:</span>
+                                                        <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.industry}</span>
+                                                    </div>
+                                                )}
+
+                                                {corporateProfile.company_size && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Users className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-gray-600 dark:text-gray-400">Size:</span>
+                                                        <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.company_size}</span>
+                                                    </div>
+                                                )}
+
+                                                {corporateProfile.founded_year && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Calendar className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-gray-600 dark:text-gray-400">Founded:</span>
+                                                        <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.founded_year}</span>
+                                                    </div>
+                                                )}
+
+                                                {corporateProfile.company_type && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Briefcase className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                                                        <span className="text-gray-900 dark:text-white font-medium capitalize">{corporateProfile.company_type}</span>
+                                                    </div>
+                                                )}
+
+                                                {corporateProfile.website_url && (
+                                                    <div className="flex items-center gap-2 md:col-span-2">
+                                                        <Globe className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-gray-600 dark:text-gray-400">Website:</span>
+                                                        <a
+                                                            href={corporateProfile.website_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center gap-1"
+                                                        >
+                                                            Visit Website
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                    </div>
+                                                )}
+
+                                                {corporateProfile.address && (
+                                                    <div className="flex items-start gap-2 md:col-span-2">
+                                                        <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
+                                                        <div>
+                                                            <span className="text-gray-600 dark:text-gray-400">Address:</span>
+                                                            <p className="text-gray-900 dark:text-white font-medium">{corporateProfile.address}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {corporateProfile.description && (
+                                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                    <h5 className="font-medium text-gray-900 dark:text-white mb-2">About {corporateProfile.company_name}</h5>
+                                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
+                                                        {corporateProfile.description}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {corporateProfile.contact_person && (
+                                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                    <h5 className="font-medium text-gray-900 dark:text-white mb-2">Contact Information</h5>
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                        <p><span className="font-medium">Contact Person:</span> {corporateProfile.contact_person}</p>
+                                                        {corporateProfile.contact_designation && (
+                                                            <p><span className="font-medium">Designation:</span> {corporateProfile.contact_designation}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <p className="text-gray-500 dark:text-gray-400">Company information not available</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Job Description */}
@@ -388,6 +581,24 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     <div className="bg-white dark:bg-gray-800 p-6 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col sm:flex-row gap-3 justify-end items-center">
                             <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={handleDownloadPDF}
+                                    disabled={isDownloadingPDF}
+                                    className="border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md text-blue-600 dark:text-blue-400"
+                                >
+                                    {isDownloadingPDF ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Download PDF
+                                        </>
+                                    )}
+                                </Button>
                                 <Button
                                     variant="outline"
                                     onClick={onClose}

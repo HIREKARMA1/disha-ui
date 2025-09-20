@@ -94,10 +94,11 @@ class ApiClient {
     return response.data;
   }
 
-  async registerAdmin(data: AdminRegisterRequest): Promise<{ message: string; user_id: string; email: string }> {
-    const response: AxiosResponse = await this.client.post('/auth/register/admin', data);
-    return response.data;
-  }
+  // Admin registration removed for security - admin accounts must be created manually
+  // async registerAdmin(data: AdminRegisterRequest): Promise<{ message: string; user_id: string; email: string }> {
+  //   const response: AxiosResponse = await this.client.post('/auth/register/admin', data);
+  //   return response.data;
+  // }
 
   async login(data: LoginRequest): Promise<TokenResponse> {
     const response: AxiosResponse = await this.client.post('/auth/login', data);
@@ -232,7 +233,7 @@ class ApiClient {
 
   async getAllUniversitiesAdmin(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/admins/universities');
-    return response.data;
+    return response.data.universities || [];
   }
 
   async getAssignedUniversitiesAdmin(jobId: string): Promise<any> {
@@ -443,6 +444,12 @@ class ApiClient {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  }
+
+  // Public corporate profile endpoint
+  async getPublicCorporateProfile(corporateId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
     return response.data;
   }
 }

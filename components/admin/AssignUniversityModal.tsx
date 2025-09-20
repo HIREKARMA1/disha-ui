@@ -47,6 +47,12 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
 
     // Filter universities based on search term
     useEffect(() => {
+        // Ensure universities is an array before filtering
+        if (!Array.isArray(universities)) {
+            setFilteredUniversities([])
+            return
+        }
+
         if (searchTerm.trim()) {
             const filtered = universities.filter(uni =>
                 (uni.university_name && uni.university_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -71,10 +77,14 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
         try {
             setIsLoading(true)
             const response = await apiClient.getAllUniversitiesAdmin()
-            setUniversities(response)
+            // Ensure response is an array
+            const universitiesArray = Array.isArray(response) ? response : []
+            setUniversities(universitiesArray)
         } catch (error) {
             console.error('Failed to fetch universities:', error)
             toast.error('Failed to load universities')
+            // Set empty array on error to prevent filter issues
+            setUniversities([])
         } finally {
             setIsLoading(false)
         }
@@ -85,9 +95,13 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
 
         try {
             const response = await apiClient.getAssignedUniversitiesAdmin(job.id)
-            setAssignedUniversities(response)
+            // Ensure response is an array
+            const assignedArray = Array.isArray(response) ? response : []
+            setAssignedUniversities(assignedArray)
         } catch (error) {
             console.error('Failed to fetch assigned universities:', error)
+            // Set empty array on error to prevent filter issues
+            setAssignedUniversities([])
             // Don't show error toast for this, as it's not critical
         }
     }
