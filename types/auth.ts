@@ -1,4 +1,5 @@
 export type UserType = 'student' | 'corporate' | 'university' | 'admin';
+// Admin type included for login functionality - admin accounts must be created manually
 
 export interface StudentRegisterRequest {
   name: string;
