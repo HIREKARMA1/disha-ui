@@ -39,6 +39,18 @@ interface JobFormData {
     selection_process: string
     campus_drive_date: string
     status: string
+    // New fields from JD template
+    number_of_openings: string
+    joining_location: string
+    mode_of_work: string
+    perks_and_benefits: string
+    eligibility_criteria: string
+    education_degree: string
+    education_branch: string
+    service_agreement_details: string
+    expiration_date: string
+    ctc_with_probation: string
+    ctc_after_probation: string
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModalProps) {
@@ -66,7 +78,19 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         industry: '',
         selection_process: '',
         campus_drive_date: '',
-        status: 'active'
+        status: 'active',
+        // New fields from JD template
+        number_of_openings: '',
+        joining_location: '',
+        mode_of_work: '',
+        perks_and_benefits: '',
+        eligibility_criteria: '',
+        education_degree: '',
+        education_branch: '',
+        service_agreement_details: '',
+        expiration_date: '',
+        ctc_with_probation: '',
+        ctc_after_probation: ''
     })
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean) => {
@@ -162,7 +186,19 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
                 campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
-                status: formData.status
+                status: formData.status,
+                // New fields from JD template
+                number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
+                joining_location: formData.joining_location || null,
+                mode_of_work: formData.mode_of_work || null,
+                perks_and_benefits: formData.perks_and_benefits || null,
+                eligibility_criteria: formData.eligibility_criteria || null,
+                education_degree: formData.education_degree || null,
+                education_branch: formData.education_branch || null,
+                service_agreement_details: formData.service_agreement_details || null,
+                expiration_date: formData.expiration_date ? formData.expiration_date : null,
+                ctc_with_probation: formData.ctc_with_probation || null,
+                ctc_after_probation: formData.ctc_after_probation || null
             }
 
             await apiClient.createJob(jobData)
@@ -199,7 +235,19 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 industry: '',
                 selection_process: '',
                 campus_drive_date: '',
-                status: 'active'
+                status: 'active',
+                // New fields from JD template
+                number_of_openings: '',
+                joining_location: '',
+                mode_of_work: '',
+                perks_and_benefits: '',
+                eligibility_criteria: '',
+                education_degree: '',
+                education_branch: '',
+                service_agreement_details: '',
+                expiration_date: '',
+                ctc_with_probation: '',
+                ctc_after_probation: ''
             })
         } catch (error: any) {
             console.error('Failed to create job:', error)
@@ -587,6 +635,32 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Number of Openings
+                                        </label>
+                                        <Input
+                                            type="number"
+                                            value={formData.number_of_openings}
+                                            onChange={(e) => handleInputChange('number_of_openings', e.target.value)}
+                                            placeholder="e.g., 3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Expiration Date
+                                        </label>
+                                        <DateTimePicker
+                                            value={formData.expiration_date}
+                                            onChange={(value) => handleInputChange('expiration_date', value)}
+                                            placeholder="Select expiration date"
+                                            autoClose={true}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Selection Process
@@ -609,6 +683,157 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         placeholder="Select campus drive date"
                                         autoClose={true}
                                     />
+                                </div>
+                            </div>
+
+                            {/* Additional Job Details */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Users className="w-5 h-5" />
+                                    Additional Job Details
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Joining Location
+                                        </label>
+                                        <Input
+                                            value={formData.joining_location}
+                                            onChange={(e) => handleInputChange('joining_location', e.target.value)}
+                                            placeholder="e.g., Ahmedabad, Gujarat"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Mode of Work
+                                        </label>
+                                        <Select value={formData.mode_of_work} onValueChange={(value) => handleInputChange('mode_of_work', value)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select mode of work" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="onsite">Onsite</SelectItem>
+                                                <SelectItem value="remote">Remote</SelectItem>
+                                                <SelectItem value="hybrid">Hybrid</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Education Degree
+                                        </label>
+                                        <Select value={formData.education_degree} onValueChange={(value) => handleInputChange('education_degree', value)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select degree" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="B.Tech">B.Tech</SelectItem>
+                                                <SelectItem value="MCA">MCA</SelectItem>
+                                                <SelectItem value="B.E">B.E</SelectItem>
+                                                <SelectItem value="M.Tech">M.Tech</SelectItem>
+                                                <SelectItem value="B.Sc">B.Sc</SelectItem>
+                                                <SelectItem value="M.Sc">M.Sc</SelectItem>
+                                                <SelectItem value="BBA">BBA</SelectItem>
+                                                <SelectItem value="MBA">MBA</SelectItem>
+                                                <SelectItem value="Any">Any</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Education Branch
+                                        </label>
+                                        <Select value={formData.education_branch} onValueChange={(value) => handleInputChange('education_branch', value)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select branch" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="All">All Branches</SelectItem>
+                                                <SelectItem value="CSE">Computer Science</SelectItem>
+                                                <SelectItem value="ECE">Electronics & Communication</SelectItem>
+                                                <SelectItem value="EEE">Electrical & Electronics</SelectItem>
+                                                <SelectItem value="ME">Mechanical</SelectItem>
+                                                <SelectItem value="CE">Civil</SelectItem>
+                                                <SelectItem value="IT">Information Technology</SelectItem>
+                                                <SelectItem value="CS">Computer Science</SelectItem>
+                                                <SelectItem value="MCA">MCA</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Eligibility Criteria
+                                    </label>
+                                    <Textarea
+                                        value={formData.eligibility_criteria}
+                                        onChange={(e) => handleInputChange('eligibility_criteria', e.target.value)}
+                                        placeholder="e.g., B.Tech, MCA"
+                                        rows={2}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Perks and Benefits
+                                    </label>
+                                    <Textarea
+                                        value={formData.perks_and_benefits}
+                                        onChange={(e) => handleInputChange('perks_and_benefits', e.target.value)}
+                                        placeholder="e.g., Unlimited growth opportunities, Highly competitive pay, Learning and development"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Service Agreement Details
+                                    </label>
+                                    <Textarea
+                                        value={formData.service_agreement_details}
+                                        onChange={(e) => handleInputChange('service_agreement_details', e.target.value)}
+                                        placeholder="Enter service agreement details if applicable"
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Probation Salary Details */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <DollarSign className="w-5 h-5" />
+                                    Probation Salary Details
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            CTC During Probation
+                                        </label>
+                                        <Input
+                                            value={formData.ctc_with_probation}
+                                            onChange={(e) => handleInputChange('ctc_with_probation', e.target.value)}
+                                            placeholder="e.g., 4k-10k per month"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            CTC After Probation
+                                        </label>
+                                        <Input
+                                            value={formData.ctc_after_probation}
+                                            onChange={(e) => handleInputChange('ctc_after_probation', e.target.value)}
+                                            placeholder="e.g., 2LPA-3LPA"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
