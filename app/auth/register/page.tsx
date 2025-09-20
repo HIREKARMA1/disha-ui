@@ -35,15 +35,15 @@ import { Navbar } from '@/components/ui/navbar'
 const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
-    { value: 'university', label: 'University' },
-    { value: 'admin', label: 'Admin' }
+    { value: 'university', label: 'University' }
+    // Admin option removed for security - admin accounts must be created manually
 ]
 
 const userTypeIcons = {
     student: User,
     corporate: Building2,
-    university: GraduationCap,
-    admin: Shield
+    university: GraduationCap
+    // Admin icon removed for security
 }
 
 // Create schemas independently to avoid .extend() issues
@@ -158,7 +158,7 @@ export default function RegisterPage() {
 
     useEffect(() => {
         const type = searchParams.get('type') as UserType
-        if (type && ['student', 'corporate', 'university', 'admin'].includes(type)) {
+        if (type && ['student', 'corporate', 'university'].includes(type)) {
             setSelectedUserType(type)
             setValue('user_type', type)
         }
@@ -233,9 +233,6 @@ export default function RegisterPage() {
                         break
                     case 'university':
                         router.push('/dashboard/university')
-                        break
-                    case 'admin':
-                        router.push('/dashboard/admin')
                         break
                     default:
                         router.push('/dashboard')
@@ -383,39 +380,6 @@ export default function RegisterPage() {
         </div>
     )
 
-    const renderAdminForm = () => (
-        <div className="space-y-4">
-            <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Full Name *
-                </label>
-                <Input
-                    id="name"
-                    placeholder="Enter your full name"
-                    leftIcon={<User className="w-4 h-4" />}
-                    error={!!(errors as any).name}
-                    {...register('name')}
-                />
-                {(errors as any).name && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {typeof (errors as any).name.message === 'string' ? (errors as any).name.message : 'Name is required'}
-                    </p>
-                )}
-            </div>
-
-            <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Role
-                </label>
-                <Input
-                    id="role"
-                    placeholder="e.g., System Administrator"
-                    leftIcon={<Shield className="w-4 h-4" />}
-                    {...register('role')}
-                />
-            </div>
-        </div>
-    )
 
     const renderFormFields = () => {
         switch (selectedUserType) {
@@ -425,8 +389,6 @@ export default function RegisterPage() {
                 return renderCorporateForm()
             case 'university':
                 return renderUniversityForm()
-            case 'admin':
-                return renderAdminForm()
             default:
                 return renderStudentForm()
         }
@@ -449,7 +411,7 @@ export default function RegisterPage() {
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-6">
                             {(() => {
-                                const IconComponent = userTypeIcons[selectedUserType]
+                                const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
                                 return <IconComponent className="w-10 h-10 text-white" />
                             })()}
                         </div>
@@ -468,7 +430,7 @@ export default function RegisterPage() {
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {userTypeOptions.map((option) => {
-                                const Icon = userTypeIcons[option.value as UserType]
+                                const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
                                 const isSelected = selectedUserType === option.value
 
                                 return (
@@ -608,7 +570,7 @@ export default function RegisterPage() {
                     </div>
 
                     {/* Additional Info */}
-                    <div className="mt-6 text-center">
+                    {/* <div className="mt-6 text-center">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             By creating an account, you agree to our{' '}
                             <Link href="/terms" className="text-primary-600 dark:text-primary-400 hover:underline">
@@ -619,7 +581,7 @@ export default function RegisterPage() {
                                 Privacy Policy
                             </Link>
                         </p>
-                    </div>
+                    </div> */}
                 </motion.div>
             </div>
         </div>

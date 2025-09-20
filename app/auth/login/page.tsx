@@ -284,14 +284,14 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <div className="mt-4 text-center">
+                        {/* <div className="mt-4 text-center">
                             <Link
                                 href="/auth/forgot-password"
                                 className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
                             >
                                 Forgot your password?
                             </Link>
-                        </div>
+                        </div> */}
                     </div>
                 </motion.div>
             </div>
