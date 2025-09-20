@@ -5,8 +5,7 @@ import {
     Briefcase,
     Users,
     FileText,
-    Calendar,
-    TrendingUp,
+    CheckCircle,
     Target,
     Building2,
     AlertCircle
@@ -23,46 +22,47 @@ interface StatCard {
 interface CorporateDashboardStatsProps {
     className?: string
     isLoading?: boolean
+    dashboardData?: any
 }
 
 export function CorporateDashboardStats({
     className = '',
-    isLoading = false
+    isLoading = false,
+    dashboardData
 }: CorporateDashboardStatsProps) {
-    // Mock data for now - will be replaced with actual API data
-    const mockStats = {
-        activeJobs: 12,
-        totalCandidates: 245,
-        interviewsScheduled: 8,
-        hireRate: 78
-    }
+    // Extract data from dashboardData or use defaults
+    const jobStats = dashboardData?.job_statistics || {}
+    const activeJobs = jobStats.active_jobs || 0
+    const totalApplications = jobStats.total_applications || 0
+    const shortlistedCandidates = jobStats.shortlisted_candidates || 0
+    const totalJobsPosted = jobStats.total_jobs_posted || 0
 
     const statCards: StatCard[] = [
         {
             label: 'Active Jobs',
-            value: mockStats.activeJobs.toString(),
+            value: activeJobs.toString(),
             icon: Briefcase,
             color: 'text-blue-600',
             bgColor: 'bg-blue-50 dark:bg-blue-900/20'
         },
         {
-            label: 'Total Candidates',
-            value: mockStats.totalCandidates.toString(),
-            icon: Users,
+            label: 'Total Applications',
+            value: totalApplications.toString(),
+            icon: FileText,
             color: 'text-green-600',
             bgColor: 'bg-green-50 dark:bg-green-900/20'
         },
         {
-            label: 'Interviews Scheduled',
-            value: mockStats.interviewsScheduled.toString(),
-            icon: Calendar,
+            label: 'Shortlisted Candidates',
+            value: shortlistedCandidates.toString(),
+            icon: Users,
             color: 'text-purple-600',
             bgColor: 'bg-purple-50 dark:bg-purple-900/20'
         },
         {
-            label: 'Hire Rate',
-            value: `${mockStats.hireRate}%`,
-            icon: TrendingUp,
+            label: 'Total Jobs Posted',
+            value: totalJobsPosted.toString(),
+            icon: Target,
             color: 'text-orange-600',
             bgColor: 'bg-orange-50 dark:bg-orange-900/20'
         }

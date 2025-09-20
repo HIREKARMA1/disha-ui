@@ -34,6 +34,7 @@ interface UniversityJob {
     benefits?: string
     selection_process?: string
     approved: boolean
+    corporate_id?: string
 }
 
 interface UniversityJobsResponse {
@@ -540,7 +541,7 @@ function UniversityJobsPageContent() {
                         views_count: 0,
                         applications_count: 0,
                         created_at: '',
-                        corporate_id: '',
+                        corporate_id: selectedJob.corporate_id || '',
                         corporate_name: selectedJob.company_name,
                         is_active: true,
                         can_apply: false

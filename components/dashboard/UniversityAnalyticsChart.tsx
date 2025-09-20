@@ -28,7 +28,8 @@ import {
     Users,
     DollarSign,
     Building,
-    Target
+    Target,
+    Clock
 } from 'lucide-react'
 import { StudentStatistics, JobStatistics } from '@/types/university'
 
@@ -356,7 +357,7 @@ export function UniversityAnalyticsChart({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}
         >
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
@@ -388,7 +389,7 @@ export function UniversityAnalyticsChart({
             </div>
 
             {/* Chart Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 blur-sm pointer-events-none">
                 {chartTabs.map((tab) => (
                     <button
                         key={tab.id}
@@ -405,7 +406,7 @@ export function UniversityAnalyticsChart({
             </div>
 
             {/* Chart Content */}
-            <div className="min-h-[400px]">
+            <div className="min-h-[400px] blur-sm pointer-events-none">
                 {activeChart === 'placement' && renderPlacementChart()}
                 {activeChart === 'salary' && renderSalaryChart()}
                 {activeChart === 'trends' && renderTrendsChart()}
@@ -430,6 +431,21 @@ export function UniversityAnalyticsChart({
                     </div>
                 </div>
             )}
+
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl">
+                <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
+                        <Clock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Coming Soon
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                        Placement Analytics functionality is under development. Stay tuned for comprehensive insights!
+                    </p>
+                </div>
+            </div>
         </motion.div>
     )
 }

@@ -76,13 +76,13 @@ const navItems: NavItem[] = [
         description: 'Career guidance and planning',
         color: 'from-indigo-500 to-blue-600'
     },
-    {
-        label: 'Practice',
-        href: '/dashboard/student/practice',
-        icon: Brain,
-        description: 'Practice tests and assessments',
-        color: 'from-rose-500 to-pink-600'
-    },
+    // {
+    //     label: 'Practice',
+    //     href: '/dashboard/student/practice',
+    //     icon: Brain,
+    //     description: 'Practice tests and assessments',
+    //     color: 'from-rose-500 to-pink-600'
+    // },
     {
         label: 'Video Search',
         href: '/dashboard/student/video-search',
@@ -97,20 +97,20 @@ const navItems: NavItem[] = [
         description: 'Resources and materials',
         color: 'from-emerald-500 to-green-600'
     },
-    {
-        label: 'Sadhana',
-        href: '/dashboard/student/sangha',
-        icon: Users,
-        description: 'Community and networking',
-        color: 'from-cyan-500 to-blue-600'
-    },
-    {
-        label: 'Sangha',
-        href: '/dashboard/student/sangha',
-        icon: Users,
-        description: 'Community and networking',
-        color: 'from-violet-500 to-purple-600'
-    }
+    // {
+    //     label: 'Sadhana',
+    //     href: '/dashboard/student/sangha',
+    //     icon: Users,
+    //     description: 'Community and networking',
+    //     color: 'from-cyan-500 to-blue-600'
+    // },
+    // {
+    //     label: 'Sangha',
+    //     href: '/dashboard/student/sangha',
+    //     icon: Users,
+    //     description: 'Community and networking',
+    //     color: 'from-violet-500 to-purple-600'
+    // }
 ]
 
 interface StudentSidebarProps {

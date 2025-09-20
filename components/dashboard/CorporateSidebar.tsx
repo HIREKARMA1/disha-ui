@@ -54,13 +54,13 @@ const navItems: NavItem[] = [
         description: 'Manage job listings',
         color: 'from-orange-500 to-red-600'
     },
-    {
-        label: 'Candidates',
-        href: '/dashboard/corporate/candidates',
-        icon: Users,
-        description: 'Browse talent pool',
-        color: 'from-purple-500 to-pink-600'
-    },
+    // {
+    //     label: 'Candidates',
+    //     href: '/dashboard/corporate/candidates',
+    //     icon: Users,
+    //     description: 'Browse talent pool',
+    //     color: 'from-purple-500 to-pink-600'
+    // },
     {
         label: 'Applications',
         href: '/dashboard/corporate/applications',
@@ -68,34 +68,34 @@ const navItems: NavItem[] = [
         description: 'Review applications',
         color: 'from-indigo-500 to-blue-600'
     },
-    {
-        label: 'Interviews',
-        href: '/dashboard/corporate/interviews',
-        icon: Calendar,
-        description: 'Schedule interviews',
-        color: 'from-rose-500 to-pink-600'
-    },
-    {
-        label: 'Analytics',
-        href: '/dashboard/corporate/analytics',
-        icon: BarChart3,
-        description: 'Hiring insights',
-        color: 'from-yellow-500 to-orange-600'
-    },
-    {
-        label: 'Talent Search',
-        href: '/dashboard/corporate/talent-search',
-        icon: Search,
-        description: 'Find candidates',
-        color: 'from-emerald-500 to-green-600'
-    },
-    {
-        label: 'Settings',
-        href: '/dashboard/corporate/settings',
-        icon: Settings,
-        description: 'Account settings',
-        color: 'from-cyan-500 to-blue-600'
-    }
+    // {
+    //     label: 'Interviews',
+    //     href: '/dashboard/corporate/interviews',
+    //     icon: Calendar,
+    //     description: 'Schedule interviews',
+    //     color: 'from-rose-500 to-pink-600'
+    // },
+    // {
+    //     label: 'Analytics',
+    //     href: '/dashboard/corporate/analytics',
+    //     icon: BarChart3,
+    //     description: 'Hiring insights',
+    //     color: 'from-yellow-500 to-orange-600'
+    // },
+    // {
+    //     label: 'Talent Search',
+    //     href: '/dashboard/corporate/talent-search',
+    //     icon: Search,
+    //     description: 'Find candidates',
+    //     color: 'from-emerald-500 to-green-600'
+    // },
+    // {
+    //     label: 'Settings',
+    //     href: '/dashboard/corporate/settings',
+    //     icon: Settings,
+    //     description: 'Account settings',
+    //     color: 'from-cyan-500 to-blue-600'
+    // }
 ]
 
 interface CorporateSidebarProps {

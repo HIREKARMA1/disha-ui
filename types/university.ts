@@ -143,3 +143,117 @@ export interface StudentTemplateResponse {
   message: string
 }
 
+// University Management Types for Admin Dashboard
+export interface UniversityListItem {
+  id: string
+  university_name: string
+  email: string
+  phone?: string
+  institute_type: string
+  address?: string
+  website_url?: string
+  contact_person_name?: string
+  contact_designation?: string
+  verified: boolean
+  status: string
+  total_students?: number
+  total_faculty?: number
+  placement_rate?: number
+  average_package?: number
+  established_year?: number
+  courses_offered?: string
+  departments?: string
+  programs_offered?: string
+  top_recruiters?: string
+  created_at: string
+  updated_at?: string
+  last_login?: string
+  is_archived: boolean
+  email_verified?: boolean
+  phone_verified?: boolean
+  bio?: string
+  profile_picture?: string
+}
+
+export interface UniversityListResponse {
+  universities: UniversityListItem[]
+  total_universities: number
+  active_universities: number
+  archived_universities: number
+}
+
+export interface UniversityProfile {
+  id: string
+  email: string
+  name: string
+  phone?: string
+  status: string
+  email_verified: boolean
+  phone_verified: boolean
+  created_at: string
+  updated_at?: string
+  last_login?: string
+  profile_picture?: string
+  bio?: string
+  university_name: string
+  website_url?: string
+  institute_type: string
+  established_year?: number
+  contact_person_name?: string
+  contact_designation?: string
+  address?: string
+  courses_offered?: string
+  branch?: string
+  verified: boolean
+  verification_date?: string
+  total_students?: number
+  total_faculty?: number
+  departments?: string
+  programs_offered?: string
+  placement_rate?: number
+  average_package?: number
+  top_recruiters?: string
+}
+
+export interface CreateUniversityRequest {
+  university_name: string
+  email: string
+  phone?: string
+  institute_type: string
+  address?: string
+  website_url?: string
+  contact_person_name?: string
+  contact_designation?: string
+  established_year?: number
+  courses_offered?: string
+}
+
+export interface CreateUniversityResponse {
+  message: string
+  university_id: string
+  email: string
+  temporary_password: string
+}
+
+export interface UpdateUniversityRequest {
+  university_name?: string
+  email?: string
+  phone?: string
+  institute_type?: string
+  address?: string
+  website_url?: string
+  contact_person_name?: string
+  contact_designation?: string
+  established_year?: number
+  courses_offered?: string
+  departments?: string
+  programs_offered?: string
+  verified?: boolean
+  status?: string
+  bio?: string
+}
+
+export interface ArchiveUniversityRequest {
+  is_archived: boolean
+}
+
