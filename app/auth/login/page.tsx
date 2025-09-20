@@ -260,17 +260,29 @@ export default function LoginPage() {
                             </Button>
                         </form>
 
-                        <div className="mt-6 text-center">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Don't have an account?{' '}
-                                <Link
-                                    href={`/auth/register?type=${selectedUserType}`}
-                                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
-                                >
-                                    Create one
-                                </Link>
-                            </p>
-                        </div>
+                        {/* Only show "Create one" link for non-admin user types */}
+                        {selectedUserType !== 'admin' && (
+                            <div className="mt-6 text-center">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Don't have an account?{' '}
+                                    <Link
+                                        href={`/auth/register?type=${selectedUserType}`}
+                                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
+                                    >
+                                        Create one
+                                    </Link>
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Show admin-specific message when admin is selected */}
+                        {selectedUserType === 'admin' && (
+                            <div className="mt-6 text-center">
+                                <p className="text-sm text-gray-500 dark:text-gray-500 italic">
+                                    Admin accounts are created by authorized personnel only
+                                </p>
+                            </div>
+                        )}
 
                         <div className="mt-4 text-center">
                             <Link

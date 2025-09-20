@@ -35,15 +35,15 @@ import { Navbar } from '@/components/ui/navbar'
 const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
-    { value: 'university', label: 'University' },
-    { value: 'admin', label: 'Admin' }
+    { value: 'university', label: 'University' }
+    // Admin option removed for security - admin accounts must be created manually
 ]
 
 const userTypeIcons = {
     student: User,
     corporate: Building2,
-    university: GraduationCap,
-    admin: Shield
+    university: GraduationCap
+    // Admin icon removed for security
 }
 
 // Create schemas independently to avoid .extend() issues
@@ -102,17 +102,7 @@ const universitySchema = z.object({
     path: ["confirmPassword"],
 })
 
-const adminSchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string(),
-    user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    name: z.string().min(1, 'Name is required'),
-    role: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-})
+// Admin schema removed for security - admin accounts must be created manually
 
 export default function RegisterPage() {
     const router = useRouter()
@@ -137,8 +127,6 @@ export default function RegisterPage() {
                 return corporateSchema
             case 'university':
                 return universitySchema
-            case 'admin':
-                return adminSchema
             default:
                 return studentSchema
         }
@@ -209,9 +197,6 @@ export default function RegisterPage() {
                     break
                 case 'university':
                     response = await apiClient.registerUniversity(formData as any)
-                    break
-                case 'admin':
-                    response = await apiClient.registerAdmin(formData as any)
                     break
                 default:
                     throw new Error('Invalid user type')
@@ -481,7 +466,7 @@ export default function RegisterPage() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                             I am a
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {userTypeOptions.map((option) => {
                                 const Icon = userTypeIcons[option.value as UserType]
                                 const isSelected = selectedUserType === option.value
