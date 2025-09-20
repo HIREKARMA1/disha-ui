@@ -67,7 +67,7 @@ export function CorporateRecentActivities({ className = '' }: CorporateRecentAct
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}
         >
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -89,7 +89,7 @@ export function CorporateRecentActivities({ className = '' }: CorporateRecentAct
                 </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 blur-sm pointer-events-none">
                 {mockActivities.map((activity, index) => (
                     <motion.div
                         key={activity.id}
@@ -117,6 +117,21 @@ export function CorporateRecentActivities({ className = '' }: CorporateRecentAct
                         </div>
                     </motion.div>
                 ))}
+            </div>
+
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl">
+                <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
+                        <Clock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Coming Soon
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                        Recent Activities functionality is under development. Stay tuned for updates!
+                    </p>
+                </div>
             </div>
         </motion.div>
     )
