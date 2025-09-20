@@ -52,12 +52,12 @@ export class JobDescriptionPDFGenerator {
 
   // Simple professional colors
   private colors = {
-    primary: [0, 0, 0], // Black
-    secondary: [100, 100, 100], // Gray
-    accent: [0, 0, 255], // Blue
-    text: [0, 0, 0], // Black
-    textLight: [128, 128, 128], // Light gray
-    background: [255, 255, 255] // White
+    primary: [0, 0, 0] as const, // Black
+    secondary: [100, 100, 100] as const, // Gray
+    accent: [0, 0, 255] as const, // Blue
+    text: [0, 0, 0] as const, // Black
+    textLight: [128, 128, 128] as const, // Light gray
+    background: [255, 255, 255] as const // White
   }
 
   constructor() {

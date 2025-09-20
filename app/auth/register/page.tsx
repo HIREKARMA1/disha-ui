@@ -35,15 +35,15 @@ import { Navbar } from '@/components/ui/navbar'
 const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
-    { value: 'university', label: 'University' }
-    // Admin option removed for security - admin accounts must be created manually
+    { value: 'university', label: 'University' },
+    { value: 'admin', label: 'Admin' }
 ]
 
 const userTypeIcons = {
     student: User,
     corporate: Building2,
-    university: GraduationCap
-    // Admin icon removed for security
+    university: GraduationCap,
+    admin: Shield
 }
 
 // Create schemas independently to avoid .extend() issues
@@ -224,7 +224,7 @@ export default function RegisterPage() {
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
                 // Redirect to appropriate dashboard based on user type
-                switch (selectedUserType) {
+                switch (selectedUserType as UserType) {
                     case 'student':
                         router.push('/dashboard/student')
                         break

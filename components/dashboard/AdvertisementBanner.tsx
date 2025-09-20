@@ -70,7 +70,7 @@ export function AdvertisementBanner({ className = '' }: AdvertisementBannerProps
             {/* Featured Advertisements */}
             <div className="space-y-4 relative">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Events</h3>
-                <div className="space-y-4">
+                <div className="space-y-4 blur-sm pointer-events-none">
                     {advertisements.map((ad, index) => (
                         <motion.div
                             key={ad.id}
@@ -133,7 +133,7 @@ export function AdvertisementBanner({ className = '' }: AdvertisementBannerProps
             </div>
 
             {/* Quick Actions */}
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                     {quickActions.map((action, index) => (
@@ -188,7 +188,7 @@ export function AdvertisementBanner({ className = '' }: AdvertisementBannerProps
                         </motion.div>
                     ))}
                 </div>
-            </div>
+            </div> */}
 
             {/* Stats Summary */}
             {/* <div className="space-y-4">
