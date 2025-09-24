@@ -19,7 +19,8 @@ import {
     FileText,
     Edit,
     Save,
-    X
+    X,
+    Briefcase
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UniversityDashboardLayout } from './UniversityDashboardLayout'
@@ -31,6 +32,7 @@ import { FileUpload } from '../ui/file-upload'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { z } from "zod";
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -41,6 +43,56 @@ interface ProfileSection {
     fields: string[]
     completed: boolean
 }
+
+
+const allowedDomains = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "edu"];
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(5, "Email must be at least 5 characters long")
+  .max(100, "Email must be less than 100 characters")
+  .email("Please enter a valid email address")
+  .refine((val) => {
+    const domain = val.split("@")[1];
+    return allowedDomains.some((d) => domain.endsWith(d));
+  }, {
+    message: "Please use a valid email",
+  });
+
+
+const profileSchema = z.object({
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .optional()
+    .or(z.literal("")), // allow empty if optional
+phone: z
+        .string()
+        .regex(/^\d+$/, 'Phone number must contain only digits')
+        .refine(
+            (val) => {
+                if (val.length < 10) return false
+                if (val.startsWith('91')) {
+                    return val.length === 12
+                }
+                return val.length === 10
+            },
+            {
+                message:
+                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
+            }
+        )
+        .optional(),
+  website_url: z
+    .string()
+    .url("Please enter a valid website URL (must start with http:// or https://).")
+    .optional()
+    .or(z.literal("")),
+  name: z.string().optional(),
+  bio: z.string().optional(),
+  profile_picture: z.string().optional(),
+});
 
 export function UniversityProfile() {
     const [profile, setProfile] = useState<UniversityProfile | null>(null)
@@ -146,31 +198,31 @@ export function UniversityProfile() {
         }
     }
 
-    const handleSave = async (sectionId: string, formData: UniversityProfileUpdateData) => {
-        try {
-            setSaving(true)
-            setError(null)
-
-            // Try to save via API
-            try {
-                const updatedProfile = await universityProfileService.updateProfile(formData)
-                setProfile(updatedProfile)
-                console.log('Profile saved successfully')
-            } catch (apiError) {
-                console.log('API not available, simulating save')
-                // For now, just update local state if API is not available
-                if (profile) {
-                    setProfile({ ...profile, ...formData })
-                }
-            }
-
-            setEditing(null)
-        } catch (error: any) {
-            setError(error.message)
-        } finally {
-            setSaving(false)
-        }
+    
+const handleSave = async (sectionId: string, formData: UniversityProfileUpdateData) => {
+  try {
+    setSaving(true);
+    setError(null);
+    // 🔹 Try to save via API
+    try {
+      const updatedProfile = await universityProfileService.updateProfile(formData);
+      setProfile(updatedProfile);
+      console.log("Profile saved successfully");
+    } catch (apiError) {
+      console.log("API not available, simulating save");
+      if (profile) {
+        setProfile({ ...profile, ...formData });
+      }
     }
+
+    setEditing(null);
+  } catch (error: any) {
+    setError(error.message);
+  } finally {
+    setSaving(false);
+  }
+};
+
 
     const handleImageUpload = async (file: File) => {
         try {
@@ -418,7 +470,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
                                     <span className="text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                    <div className="p-1.5 bg-blue-500 rounded-full">
+                                    <div className="p-1.5 bg-green-500 rounded-full">
                                         <CheckCircle className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
@@ -535,7 +587,7 @@ export function UniversityProfile() {
 
                 {editing === 'basic' ? (
                     <ProfileSectionForm
-                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'phone', 'bio', 'website_url', 'profile_picture'], completed: false }}
+                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'website_url','bio', 'profile_picture'], completed: false }}
                         profile={profile}
                         onSave={(formData) => handleSave('basic', formData)}
                         saving={saving}
@@ -631,46 +683,90 @@ export function UniversityProfile() {
                         onEdit={handleEdit}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                    <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.established_year || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-orange-600 dark:text-orange-400">Established Year</p>
-                                </div>
-                            </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Left Column */}
+  <div className="space-y-4">
+    {/* University Name */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.name || 'Not specified'}
+        </p>
+        <p className="text-xs text-blue-600 dark:text-blue-400">University Name</p>
+      </div>
+    </div>
 
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                    <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.institute_type || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">University Type</p>
-                                </div>
-                            </div>
+    {/* Institute Type */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+        <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.institute_type || 'Not specified'}
+        </p>
+        <p className="text-xs text-indigo-600 dark:text-indigo-400">Institute Type</p>
+      </div>
+    </div>
 
-                        </div>
+    {/* Established Year */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+        <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.established_year || 'Not specified'}
+        </p>
+        <p className="text-xs text-orange-600 dark:text-orange-400">Established Year</p>
+      </div>
+    </div>
+  </div>
 
-                        <div className="space-y-4">
-                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    Address
-                                </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    {profile?.address || 'Not provided'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+  {/* Right Column */}
+  <div className="space-y-4">
+    {/* Contact Person Name */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        <User className="w-4 h-4 text-green-600 dark:text-green-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.contact_person_name || 'Not specified'}
+        </p>
+        <p className="text-xs text-green-600 dark:text-green-400">Contact Person</p>
+      </div>
+    </div>
+
+    {/* Contact Designation */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+        <Briefcase className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.contact_designation || 'Not specified'}
+        </p>
+        <p className="text-xs text-pink-600 dark:text-pink-400">Designation</p>
+      </div>
+    </div>
+
+    {/* Address */}
+    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+        <MapPin className="w-4 h-4" />
+        Address
+      </h4>
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        {profile?.address || 'Not provided'}
+      </p>
+    </div>
+  </div>
+</div>
+
                 )}
             </div>
         )

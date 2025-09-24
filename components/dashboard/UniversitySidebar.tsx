@@ -76,9 +76,8 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                 setIsLoadingProfile(true)
                 try {
                     // TODO: Replace with actual university profile API call
-                    // const data = await apiClient.getUniversityProfile()
-                    // setProfileData(data)
-                    setProfileData(null) // Placeholder for now
+                    const data = await apiClient.getUniversityProfile()
+                    setProfileData(data)
                 } catch (error) {
                     console.error('Failed to fetch profile:', error)
                 } finally {
@@ -105,10 +104,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
 
     // Get display name from profile data
     const getDisplayName = () => {
-        if (profileData?.name && profileData.name.trim()) {
-            return profileData.name
-        }
-        return user?.name || 'University Name'
+        return profileData?.name || user?.name || 'universityName'
     }
 
     // Get display email
