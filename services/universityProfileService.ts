@@ -116,6 +116,32 @@ export class UniversityProfileService {
     }
 
     /**
+     * Get university dashboard statistics
+     */
+    async getDashboardStats(): Promise<any> {
+        try {
+            if (!apiClient.isAuthenticated()) {
+                throw new Error('User not authenticated. Please log in.')
+            }
+
+            const response = await apiClient.client.get('/universities/dashboard')
+            return response.data
+        } catch (error: any) {
+            console.error('Error fetching university dashboard stats:', error)
+            
+            if (error.response?.status === 401) {
+                throw new Error('Authentication failed. Please log in again.')
+            } else if (error.response?.status === 404) {
+                throw new Error('Dashboard data not found.')
+            } else if (error.response?.status >= 500) {
+                throw new Error('Server error. Please try again later.')
+            } else {
+                throw new Error(error.response?.data?.detail || 'Failed to fetch dashboard data.')
+            }
+        }
+    }
+
+    /**
      * Upload profile picture
      */
     async uploadProfilePicture(file: File): Promise<FileUploadResponse> {
