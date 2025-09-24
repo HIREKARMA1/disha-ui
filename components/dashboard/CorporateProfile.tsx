@@ -624,6 +624,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        
+        // Validate phone number if provided
+        if (formData.phone && formData.phone.length !== 10) {
+            setUploadError('Phone number must be exactly 10 digits')
+            return
+        }
+        
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
             if (cleanedFormData[key] === '') {
@@ -790,6 +797,63 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     <option value="government">Government</option>
                     <option value="ngo">NGO</option>
                 </select>
+            )
+        }
+
+        // Handle name field with alphabet-only validation
+        if (field === 'name') {
+            return (
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => {
+                        const inputValue = e.target.value
+                        // Only allow alphabets, spaces, and common punctuation
+                        const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                        setFormData({ ...formData, [field]: sanitizedValue })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter your name (alphabets only)"
+                    maxLength={50}
+                />
+            )
+        }
+
+        // Handle email field - make it read-only
+        if (field === 'email') {
+            return (
+                <div className="space-y-2">
+                    <input
+                        type="email"
+                        value={value}
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="Email cannot be edited"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Email cannot be changed for security reasons
+                    </p>
+                </div>
+            )
+        }
+
+        // Handle phone field with numeric validation and max length
+        if (field === 'phone') {
+            return (
+                <input
+                    type="tel"
+                    value={value}
+                    onChange={(e) => {
+                        const inputValue = e.target.value
+                        // Only allow numbers and limit to 10 digits
+                        const numericValue = inputValue.replace(/[^0-9]/g, '').slice(0, 10)
+                        setFormData({ ...formData, [field]: numericValue })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter 10-digit phone number"
+                    maxLength={10}
+                />
             )
         }
 
