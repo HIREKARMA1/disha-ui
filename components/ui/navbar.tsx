@@ -157,7 +157,7 @@ export function Navbar({
                     <div className="flex items-center justify-between">
                         {/* Logo */}
                         <div className="flex items-center space-x-2">
-                            <Link href="/" className="flex items-center space-x-2">
+                            <Link href="/auth/login" className="flex items-center space-x-2">
                                 <Image
                                     src={getLogoSrc()}
                                     alt="HireKarma Logo"
@@ -186,7 +186,7 @@ export function Navbar({
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center space-x-2">
-                        <Link href="/" className="flex items-center space-x-2">
+                        <Link href={isAuthenticated ? getDashboardPath() : "/auth/login"} className="flex items-center space-x-2">
                             <Image
                                 src={getLogoSrc()}
                                 alt="HireKarma Logo"
@@ -200,7 +200,7 @@ export function Navbar({
                     {/* Desktop Navigation */}
                     <div className="hidden lg:flex items-center space-x-8">
                         {/* About Dropdown */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -231,10 +231,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Solutions Dropdown */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -289,10 +289,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Resources Dropdown */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -323,7 +323,7 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Auth Buttons */}
                         {isAuthenticated && user ? (
@@ -384,7 +384,7 @@ export function Navbar({
                     <div className="lg:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col space-y-3 p-4">
                             {/* About Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">About</div>
                                 <Link href="/about/why-hirekarma" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -398,10 +398,10 @@ export function Navbar({
                                         Mission & Vision
                                     </Button>
                                 </Link>
-                            </div>
+                            </div> */}
 
                             {/* Solutions Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Solutions</div>
                                 <Link href="/solutions/campus-placement" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -427,10 +427,10 @@ export function Navbar({
                                         General Staffing
                                     </Button>
                                 </Link>
-                            </div>
+                            </div> */}
 
                             {/* Resources Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Resources</div>
                                 <Link href="/resources/moments-corner" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -444,7 +444,7 @@ export function Navbar({
                                         Insights
                                     </Button>
                                 </Link>
-                            </div>
+                            </div> */}
 
                             {/* Auth Section */}
                             {isAuthenticated && user ? (
@@ -470,9 +470,9 @@ export function Navbar({
                                     </Button>
                                 </>
                             ) : (
-                                <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                                <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-6">
                                     <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
-                                        <Button variant="outline" className="w-full justify-start">
+                                        <Button variant="outline" className="w-full justify-start mb-4">
                                             Sign Up
                                         </Button>
                                     </Link>
@@ -483,10 +483,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                    </div>
                     </div>
                 )}
-            </div>
-        </nav>
+        </div>
+        </nav >
     )
 }
