@@ -11,6 +11,93 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
+// Industry options
+const industryOptions = [
+    { value: 'Technology', label: 'Technology' },
+    { value: 'Finance', label: 'Finance' },
+    { value: 'Healthcare', label: 'Healthcare' },
+    { value: 'Education', label: 'Education' },
+    { value: 'Manufacturing', label: 'Manufacturing' },
+    { value: 'Retail', label: 'Retail' },
+    { value: 'Real Estate', label: 'Real Estate' },
+    { value: 'Consulting', label: 'Consulting' },
+    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
+    { value: 'Telecommunications', label: 'Telecommunications' },
+    { value: 'Automotive', label: 'Automotive' },
+    { value: 'Aerospace', label: 'Aerospace' },
+    { value: 'Energy', label: 'Energy' },
+    { value: 'Government', label: 'Government' },
+    { value: 'Non-Profit', label: 'Non-Profit' },
+    { value: 'E-commerce', label: 'E-commerce' },
+    { value: 'Banking', label: 'Banking' },
+    { value: 'Insurance', label: 'Insurance' },
+    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
+    { value: 'Food & Beverage', label: 'Food & Beverage' },
+    { value: 'Transportation', label: 'Transportation' },
+    { value: 'Logistics', label: 'Logistics' },
+    { value: 'Hospitality', label: 'Hospitality' },
+    { value: 'Agriculture', label: 'Agriculture' },
+    { value: 'Construction', label: 'Construction' },
+    { value: 'Other', label: 'Other' }
+]
+
+// Degree options (same as student modal)
+const degreeOptions = [
+    { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
+    { value: 'Bachelor of Engineering', label: 'Bachelor of Engineering (B.E.)' },
+    { value: 'Bachelor of Science', label: 'Bachelor of Science (B.Sc)' },
+    { value: 'Bachelor of Computer Applications', label: 'Bachelor of Computer Applications (BCA)' },
+    { value: 'Bachelor of Business Administration', label: 'Bachelor of Business Administration (BBA)' },
+    { value: 'Bachelor of Commerce', label: 'Bachelor of Commerce (B.Com)' },
+    { value: 'Bachelor of Arts', label: 'Bachelor of Arts (B.A.)' },
+    { value: 'Master of Technology', label: 'Master of Technology (M.Tech)' },
+    { value: 'Master of Engineering', label: 'Master of Engineering (M.E.)' },
+    { value: 'Master of Science', label: 'Master of Science (M.Sc)' },
+    { value: 'Master of Computer Applications', label: 'Master of Computer Applications (MCA)' },
+    { value: 'Master of Business Administration', label: 'Master of Business Administration (MBA)' },
+    { value: 'Master of Commerce', label: 'Master of Commerce (M.Com)' },
+    { value: 'Master of Arts', label: 'Master of Arts (M.A.)' },
+    { value: 'Diploma', label: 'Diploma' },
+    { value: 'Post Graduate Diploma', label: 'Post Graduate Diploma (PGD)' },
+    { value: 'Doctor of Philosophy', label: 'Doctor of Philosophy (Ph.D)' },
+    { value: 'Any', label: 'Any' }
+]
+
+// Branch options (same as student modal)
+const branchOptions = [
+    { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
+    { value: 'Information Technology', label: 'Information Technology' },
+    { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
+    { value: 'Electrical Engineering', label: 'Electrical Engineering' },
+    { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
+    { value: 'Civil Engineering', label: 'Civil Engineering' },
+    { value: 'Chemical Engineering', label: 'Chemical Engineering' },
+    { value: 'Aerospace Engineering', label: 'Aerospace Engineering' },
+    { value: 'Biotechnology', label: 'Biotechnology' },
+    { value: 'Data Science', label: 'Data Science' },
+    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
+    { value: 'Machine Learning', label: 'Machine Learning' },
+    { value: 'Cybersecurity', label: 'Cybersecurity' },
+    { value: 'Software Engineering', label: 'Software Engineering' },
+    { value: 'Business Administration', label: 'Business Administration' },
+    { value: 'Finance', label: 'Finance' },
+    { value: 'Marketing', label: 'Marketing' },
+    { value: 'Human Resources', label: 'Human Resources' },
+    { value: 'Operations Management', label: 'Operations Management' },
+    { value: 'International Business', label: 'International Business' },
+    { value: 'Economics', label: 'Economics' },
+    { value: 'Mathematics', label: 'Mathematics' },
+    { value: 'Physics', label: 'Physics' },
+    { value: 'Chemistry', label: 'Chemistry' },
+    { value: 'Biology', label: 'Biology' },
+    { value: 'English Literature', label: 'English Literature' },
+    { value: 'History', label: 'History' },
+    { value: 'Psychology', label: 'Psychology' },
+    { value: 'Sociology', label: 'Sociology' },
+    { value: 'Political Science', label: 'Political Science' },
+    { value: 'All', label: 'All Branches' }
+]
+
 interface CreateJobModalProps {
     isOpen: boolean
     onClose: () => void
@@ -31,7 +118,7 @@ interface JobFormData {
     salary_currency: string
     experience_min: string
     experience_max: string
-    education_level: string
+    education_level: string[]
     skills_required: string[]
     application_deadline: string
     max_applications: string
@@ -45,8 +132,8 @@ interface JobFormData {
     mode_of_work: string
     perks_and_benefits: string
     eligibility_criteria: string
-    education_degree: string
-    education_branch: string
+    education_degree: string[]
+    education_branch: string[]
     service_agreement_details: string
     expiration_date: string
     ctc_with_probation: string
@@ -71,7 +158,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         salary_currency: 'INR',
         experience_min: '',
         experience_max: '',
-        education_level: '',
+        education_level: [],
         skills_required: [],
         application_deadline: '',
         max_applications: '100',
@@ -85,15 +172,15 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         mode_of_work: '',
         perks_and_benefits: '',
         eligibility_criteria: '',
-        education_degree: '',
-        education_branch: '',
+        education_degree: [],
+        education_branch: [],
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
         ctc_after_probation: ''
     })
 
-    const handleInputChange = (field: keyof JobFormData, value: string | boolean) => {
+    const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         console.log('📝 handleInputChange called:', { field, value })
 
         setFormData(prev => ({
@@ -108,6 +195,27 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 [field]: ''
             }))
         }
+    }
+
+    const handleMultiSelectChange = (field: 'education_degree' | 'education_branch' | 'education_level', value: string) => {
+        setFormData(prev => {
+            const currentValues = prev[field] as string[]
+            const isSelected = currentValues.includes(value)
+
+            if (isSelected) {
+                // Remove the value
+                return {
+                    ...prev,
+                    [field]: currentValues.filter(v => v !== value)
+                }
+            } else {
+                // Add the value
+                return {
+                    ...prev,
+                    [field]: [...currentValues, value]
+                }
+            }
+        })
     }
 
     const addSkill = () => {
@@ -179,7 +287,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 salary_currency: formData.salary_currency,
                 experience_min: formData.experience_min ? parseInt(formData.experience_min) : null,
                 experience_max: formData.experience_max ? parseInt(formData.experience_max) : null,
-                education_level: formData.education_level || null,
+                education_level: formData.education_level.length > 0 ? formData.education_level : null,
                 skills_required: formData.skills_required.length > 0 ? formData.skills_required : null,
                 application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 max_applications: parseInt(formData.max_applications),
@@ -193,8 +301,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 mode_of_work: formData.mode_of_work || null,
                 perks_and_benefits: formData.perks_and_benefits || null,
                 eligibility_criteria: formData.eligibility_criteria || null,
-                education_degree: formData.education_degree || null,
-                education_branch: formData.education_branch || null,
+                education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
+                education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: formData.expiration_date ? formData.expiration_date : null,
                 ctc_with_probation: formData.ctc_with_probation || null,
@@ -228,7 +336,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 salary_currency: 'INR',
                 experience_min: '',
                 experience_max: '',
-                education_level: '',
+                education_level: [],
                 skills_required: [],
                 application_deadline: '',
                 max_applications: '100',
@@ -242,8 +350,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 mode_of_work: '',
                 perks_and_benefits: '',
                 eligibility_criteria: '',
-                education_degree: '',
-                education_branch: '',
+                education_degree: [],
+                education_branch: [],
                 service_agreement_details: '',
                 expiration_date: '',
                 ctc_with_probation: '',
@@ -437,11 +545,18 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Industry
                                         </label>
-                                        <Input
-                                            value={formData.industry}
-                                            onChange={(e) => handleInputChange('industry', e.target.value)}
-                                            placeholder="e.g., Technology, Finance, Healthcare"
-                                        />
+                                        <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select industry" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {industryOptions.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
 
@@ -546,18 +661,43 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Education Level
                                         </label>
-                                        <Select value={formData.education_level} onValueChange={(value) => handleInputChange('education_level', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select education level" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="high_school">High School</SelectItem>
-                                                <SelectItem value="diploma">Diploma</SelectItem>
-                                                <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                                                <SelectItem value="master">Master's Degree</SelectItem>
-                                                <SelectItem value="phd">PhD</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="space-y-2">
+                                            <Select onValueChange={(value) => handleMultiSelectChange('education_level', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select education level(s)" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="high_school">High School</SelectItem>
+                                                    <SelectItem value="diploma">Diploma</SelectItem>
+                                                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                                                    <SelectItem value="master">Master's Degree</SelectItem>
+                                                    <SelectItem value="phd">PhD</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {formData.education_level.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {formData.education_level.map((level, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                        >
+                                                            {level === 'high_school' ? 'High School' :
+                                                                level === 'diploma' ? 'Diploma' :
+                                                                    level === 'bachelor' ? "Bachelor's Degree" :
+                                                                        level === 'master' ? "Master's Degree" :
+                                                                            level === 'phd' ? 'PhD' : level}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleMultiSelectChange('education_level', level)}
+                                                                className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -668,9 +808,12 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                     <Textarea
                                         value={formData.selection_process}
                                         onChange={(e) => handleInputChange('selection_process', e.target.value)}
-                                        placeholder="Describe the selection process (e.g., Online test, Technical interview, HR round)"
+                                        placeholder="Round 1: Online Test, Round 2: Technical Interview, Round 3: HR Round"
                                         rows={2}
                                     />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Use format: Round 1: Description, Round 2: Description, etc.
+                                    </p>
                                 </div>
 
                                 <div>
@@ -727,44 +870,78 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Education Degree
                                         </label>
-                                        <Select value={formData.education_degree} onValueChange={(value) => handleInputChange('education_degree', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select degree" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="B.Tech">B.Tech</SelectItem>
-                                                <SelectItem value="MCA">MCA</SelectItem>
-                                                <SelectItem value="B.E">B.E</SelectItem>
-                                                <SelectItem value="M.Tech">M.Tech</SelectItem>
-                                                <SelectItem value="B.Sc">B.Sc</SelectItem>
-                                                <SelectItem value="M.Sc">M.Sc</SelectItem>
-                                                <SelectItem value="BBA">BBA</SelectItem>
-                                                <SelectItem value="MBA">MBA</SelectItem>
-                                                <SelectItem value="Any">Any</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="space-y-2">
+                                            <Select onValueChange={(value) => handleMultiSelectChange('education_degree', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select degree(s)" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {degreeOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {formData.education_degree.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {formData.education_degree.map((degree, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                        >
+                                                            {degreeOptions.find(opt => opt.value === degree)?.label || degree}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleMultiSelectChange('education_degree', degree)}
+                                                                className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Education Branch
                                         </label>
-                                        <Select value={formData.education_branch} onValueChange={(value) => handleInputChange('education_branch', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select branch" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All Branches</SelectItem>
-                                                <SelectItem value="CSE">Computer Science</SelectItem>
-                                                <SelectItem value="ECE">Electronics & Communication</SelectItem>
-                                                <SelectItem value="EEE">Electrical & Electronics</SelectItem>
-                                                <SelectItem value="ME">Mechanical</SelectItem>
-                                                <SelectItem value="CE">Civil</SelectItem>
-                                                <SelectItem value="IT">Information Technology</SelectItem>
-                                                <SelectItem value="CS">Computer Science</SelectItem>
-                                                <SelectItem value="MCA">MCA</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="space-y-2">
+                                            <Select onValueChange={(value) => handleMultiSelectChange('education_branch', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select branch(es)" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {branchOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {formData.education_branch.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {formData.education_branch.map((branch, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                        >
+                                                            {branchOptions.find(opt => opt.value === branch)?.label || branch}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleMultiSelectChange('education_branch', branch)}
+                                                                className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
