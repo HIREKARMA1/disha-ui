@@ -30,6 +30,37 @@ import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
+// Industry options
+const industryOptions = [
+    { value: 'Technology', label: 'Technology' },
+    { value: 'Finance', label: 'Finance' },
+    { value: 'Healthcare', label: 'Healthcare' },
+    { value: 'Education', label: 'Education' },
+    { value: 'Manufacturing', label: 'Manufacturing' },
+    { value: 'Retail', label: 'Retail' },
+    { value: 'Real Estate', label: 'Real Estate' },
+    { value: 'Consulting', label: 'Consulting' },
+    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
+    { value: 'Telecommunications', label: 'Telecommunications' },
+    { value: 'Automotive', label: 'Automotive' },
+    { value: 'Aerospace', label: 'Aerospace' },
+    { value: 'Energy', label: 'Energy' },
+    { value: 'Government', label: 'Government' },
+    { value: 'Non-Profit', label: 'Non-Profit' },
+    { value: 'E-commerce', label: 'E-commerce' },
+    { value: 'Banking', label: 'Banking' },
+    { value: 'Insurance', label: 'Insurance' },
+    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
+    { value: 'Food & Beverage', label: 'Food & Beverage' },
+    { value: 'Transportation', label: 'Transportation' },
+    { value: 'Logistics', label: 'Logistics' },
+    { value: 'Hospitality', label: 'Hospitality' },
+    { value: 'Agriculture', label: 'Agriculture' },
+    { value: 'Construction', label: 'Construction' },
+    { value: 'Human Resources', label: 'Human Resources' },
+    { value: 'Other', label: 'Other' }
+]
+
 interface ProfileSection {
     id: string
     title: string
@@ -874,6 +905,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+
         // Handle name field with alphabet-only validation
         if (field === 'name') {
             return (
@@ -928,6 +960,22 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     placeholder="Enter 10-digit phone number"
                     maxLength={10}
                 />
+
+        if (field === 'industry') {
+            return (
+                <select
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                    <option value="">Select industry</option>
+                    {industryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
+
             )
         }
 
