@@ -94,6 +94,17 @@ class ApiClient {
     return response.data;
   }
 
+  // Email OTP for signup
+  async sendEmailOtp(email: string): Promise<{ message: string }> {
+    const response: AxiosResponse = await this.client.post('/auth/send-email-otp', { email });
+    return response.data;
+  }
+
+  async verifyEmailOtp(payload: { email: string; code: string }): Promise<{ message: string }> {
+    const response: AxiosResponse = await this.client.post('/auth/verify-email-otp', payload);
+    return response.data;
+  }
+
   // Admin registration removed for security - admin accounts must be created manually
   // async registerAdmin(data: AdminRegisterRequest): Promise<{ message: string; user_id: string; email: string }> {
   //   const response: AxiosResponse = await this.client.post('/auth/register/admin', data);
@@ -335,6 +346,11 @@ class ApiClient {
   // Corporate endpoints
   async getCorporateDashboard(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/corporates/dashboard');
+    return response.data;
+  }
+
+  async getCorporateProfile(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/corporates/profile');
     return response.data;
   }
 

@@ -72,15 +72,30 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
     // Fetch profile data when component mounts
     useEffect(() => {
         const fetchProfile = async () => {
+            // Debug: Check what's in localStorage
+            const userData = localStorage.getItem('user_data')
+            const token = localStorage.getItem('access_token')
+            console.log('LocalStorage user_data:', userData)
+            console.log('LocalStorage token:', token ? 'exists' : 'missing')
+            
             if (user?.user_type === 'university') {
                 setIsLoadingProfile(true)
                 try {
-                    // TODO: Replace with actual university profile API call
-                    // const data = await apiClient.getUniversityProfile()
-                    // setProfileData(data)
-                    setProfileData(null) // Placeholder for now
+                    const data = await apiClient.getUniversityProfile()
+                    console.log('University profile data:', data)
+                    
+                    // Map the API response to ensure we have the right field names
+                    const mappedData = {
+                        ...data,
+                        name: data.name || data.university_name || user?.name || 'University Name',
+                        university_name: data.name || user?.name || 'University Name',
+                        email: data.email || user?.email || 'university@example.edu'
+                    }
+                    console.log('Mapped profile data:', mappedData)
+                    setProfileData(mappedData)
                 } catch (error) {
                     console.error('Failed to fetch profile:', error)
+                    // Don't set fallback data, let it remain null
                 } finally {
                     setIsLoadingProfile(false)
                 }
@@ -105,15 +120,14 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
 
     // Get display name from profile data
     const getDisplayName = () => {
-        if (profileData?.name && profileData.name.trim()) {
-            return profileData.name
-        }
-        return user?.name || 'University Name'
+        console.log('Profile data for name:', profileData)
+        console.log('User data for name:', user)
+        return profileData?.name || profileData?.university_name || user?.name || 'Loading...'
     }
 
     // Get display email
     const getDisplayEmail = () => {
-        return profileData?.email || user?.email || 'university@example.edu'
+        return profileData?.email || user?.email || 'Loading...'
     }
 
     // Get profile picture

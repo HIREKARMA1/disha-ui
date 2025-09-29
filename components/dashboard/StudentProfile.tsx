@@ -24,6 +24,7 @@ import { ImageModal } from '../ui/image-modal'
 import { cn, getInitials, truncateText } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
+import toast from 'react-hot-toast'
 
 interface ProfileSection {
     id: string
@@ -125,31 +126,48 @@ export function StudentProfile() {
         }
     }
 
-    const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
-        try {
-            setSaving(true)
-            setError(null)
+const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
+    try {
+        setSaving(true)
+        setError(null)
 
-            console.log('Saving profile data for section:', sectionId)
-            console.log('Form data being sent:', formData)
+        console.log('Saving profile data for section:', sectionId)
+        console.log('Form data being sent:', formData)
 
-            const updatedProfile = await profileService.updateProfile(formData)
-            console.log('Profile updated successfully:', updatedProfile)
+        const updatedProfile = await profileService.updateProfile(formData)
+        console.log('Profile updated successfully:', updatedProfile)
 
-            setProfile(updatedProfile)
+        setProfile(updatedProfile)
 
-            // Refresh completion data after profile update
-            const completionData = await profileService.getProfileCompletion()
-            setProfileCompletion(completionData)
+        // Refresh completion data after profile update
+        const completionData = await profileService.getProfileCompletion()
+        setProfileCompletion(completionData)
 
-            setEditing(null)
-        } catch (error: any) {
-            console.error('Error saving profile:', error)
-            setError(error.message)
-        } finally {
-            setSaving(false)
+        setEditing(null)
+        
+        // Only show success toast if there were actual changes
+        // The form validation already ensures we only get here if there are changes
+        const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+        toast.success(`${sectionName} updated successfully!`)
+
+    } catch (error: any) {
+        console.error('Error saving profile:', error)
+        setError(error.message)
+
+        // Show error toast with specific message
+        if (error.message.includes('network') || error.message.includes('Internet')) {
+            toast.error('Network error. Please check your connection and try again.')
+        } else if (error.message.includes('auth') || error.message.includes('login')) {
+            toast.error('Authentication failed. Please log in again.')
+        } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+            toast.error('Invalid data provided. Please check your input.')
+        } else {
+            toast.error(`Failed to save: ${error.message}`)
         }
+    } finally {
+        setSaving(false)
     }
+}
 
     if (loading) {
         return (
@@ -309,7 +327,7 @@ export function StudentProfile() {
                                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
                                                     <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
                                                         <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
-                                                        {profile.email_verified ? (
+                                                        {(profile.email_verified || !!profile.email) ? (
                                                             <div className="p-1.5 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                             </div>
@@ -321,7 +339,7 @@ export function StudentProfile() {
                                                     </div>
                                                     <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
                                                         <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                                        {profile.phone_verified ? (
+                                                        {(profile.phone_verified || !!profile.phone) ? (
                                                             <div className="p-1.5 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                             </div>
@@ -1202,38 +1220,207 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
         })
 
-        // Validate social profile URLs before saving
+        // Remove error fields from the data being sent
+        Object.keys(cleanedFormData).forEach(key => {
+            if (key.endsWith('_error')) {
+                delete cleanedFormData[key]
+            }
+        })
+
+        // Check if there are any actual changes
+        const hasChanges = Object.keys(cleanedFormData).some(key => {
+            if (key === 'email') return false // Skip email field
+            const currentValue = cleanedFormData[key]
+            const originalValue = profile[key as keyof StudentProfile]
+            return currentValue !== originalValue
+        })
+
+        if (!hasChanges) {
+            onCancel() // Just close the form
+            return
+        }
+
+        // Field-specific validation
+        let hasValidationErrors = false
+        const validationErrors: string[] = []
+
+        // Basic Information Validation
+        if (section.id === 'basic') {
+            // Name validation
+            if (!cleanedFormData.name || cleanedFormData.name.trim().length === 0) {
+                validationErrors.push('Name is required')
+                hasValidationErrors = true
+            }
+
+            // Phone validation
+            if (cleanedFormData.phone && cleanedFormData.phone.length < 10) {
+                validationErrors.push('Phone number must be 10 digits')
+                hasValidationErrors = true
+            }
+
+            // Date of Birth validation
+            if (cleanedFormData.dob) {
+                const dobDate = new Date(cleanedFormData.dob)
+                const today = new Date()
+                const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate())
+                const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate()) // Minimum 16 years old
+
+                if (dobDate > today) {
+                    validationErrors.push('Date of birth cannot be in the future')
+                    hasValidationErrors = true
+                } else if (dobDate < minDate) {
+                    validationErrors.push('Please enter a valid date of birth')
+                    hasValidationErrors = true
+                } else if (dobDate > maxDate) {
+                    validationErrors.push('You must be at least 16 years old')
+                    hasValidationErrors = true
+                }
+            }
+        }
+
+        // Academic Information Validation
+        if (section.id === 'academic') {
+            // CGPA validation
+            if (cleanedFormData.btech_cgpa !== null && cleanedFormData.btech_cgpa !== undefined) {
+                const cgpa = parseFloat(cleanedFormData.btech_cgpa)
+                if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) {
+                    validationErrors.push('CGPA must be between 0 and 10')
+                    hasValidationErrors = true
+                }
+            }
+
+            // Percentage validation
+            if (cleanedFormData.tenth_grade_percentage !== null && cleanedFormData.tenth_grade_percentage !== undefined) {
+                const percentage = parseFloat(cleanedFormData.tenth_grade_percentage)
+                if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+                    validationErrors.push('10th percentage must be between 0 and 100')
+                    hasValidationErrors = true
+                }
+            }
+
+            if (cleanedFormData.twelfth_grade_percentage !== null && cleanedFormData.twelfth_grade_percentage !== undefined) {
+                const percentage = parseFloat(cleanedFormData.twelfth_grade_percentage)
+                if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+                    validationErrors.push('12th percentage must be between 0 and 100')
+                    hasValidationErrors = true
+                }
+            }
+
+            // Graduation year validation
+            if (cleanedFormData.graduation_year) {
+                const currentYear = new Date().getFullYear()
+                const gradYear = parseInt(cleanedFormData.graduation_year)
+                if (isNaN(gradYear) || gradYear < currentYear - 10 || gradYear > currentYear + 10) {
+                    validationErrors.push('Please enter a valid graduation year')
+                    hasValidationErrors = true
+                }
+            }
+        }
+
+        // Skills Validation
+        if (section.id === 'skills') {
+            // Technical skills validation
+            if (!cleanedFormData.technical_skills || cleanedFormData.technical_skills.trim().length === 0) {
+                validationErrors.push('Technical skills are required')
+                hasValidationErrors = true
+            }
+
+            // Preferred industry validation
+            if (!cleanedFormData.preferred_industry || cleanedFormData.preferred_industry.trim().length === 0) {
+                validationErrors.push('Preferred industry is required')
+                hasValidationErrors = true
+            }
+        }
+
+        // Experience Validation
+        if (section.id === 'experience') {
+            // At least one field should be filled
+            const experienceFields = ['internship_experience', 'project_details', 'extracurricular_activities']
+            const hasExperienceData = experienceFields.some(field =>
+                cleanedFormData[field] && cleanedFormData[field].trim().length > 0
+            )
+
+            if (!hasExperienceData) {
+                validationErrors.push('Please provide at least one experience, project, or extracurricular activity')
+                hasValidationErrors = true
+            }
+        }
+
+        // Social Profiles Validation
         if (section.id === 'social') {
             const socialFields = ['linkedin_profile', 'github_profile', 'personal_website']
-            let hasErrors = false
+            let socialErrors = false
 
             socialFields.forEach(field => {
                 const url = cleanedFormData[field]
-                if (url) {
+                if (url && url.trim().length > 0) {
                     try {
                         new URL(url)
-                        // Clear any existing error
                         setFormData((prev: any) => ({ ...prev, [`${field}_error`]: '' }))
                     } catch {
-                        // Set error for invalid URL
                         setFormData((prev: any) => ({ ...prev, [`${field}_error`]: 'Please enter a valid URL' }))
-                        hasErrors = true
+                        validationErrors.push(`Invalid URL format for ${field.replace('_', ' ')}`)
+                        socialErrors = true
                     }
                 }
             })
 
-            if (hasErrors) {
-                return // Don't save if there are validation errors
+            if (socialErrors) {
+                hasValidationErrors = true
+            }
+
+            // At least one social profile should be provided
+            const hasSocialProfiles = socialFields.some(field =>
+                cleanedFormData[field] && cleanedFormData[field].trim().length > 0
+            )
+
+            if (!hasSocialProfiles) {
+                validationErrors.push('Please provide at least one social profile (LinkedIn, GitHub, or personal website)')
+                hasValidationErrors = true
             }
         }
 
-        // For Academic section, allow partial updates - no validation required
-        // Users can fill any combination of College, Class XII, and Class X data
-        if (section.id === 'academic') {
-            console.log('Academic form data being submitted:', cleanedFormData)
+        // Documents Validation
+        if (section.id === 'documents') {
+            // Resume is required
+            if (!cleanedFormData.resume) {
+                validationErrors.push('Resume is required')
+                hasValidationErrors = true
+            }
+
+            // Validate file URLs if provided
+            const documentFields = ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates']
+            documentFields.forEach(field => {
+                const url = cleanedFormData[field]
+                if (url && !url.startsWith('http') && !url.startsWith('/')) {
+                    validationErrors.push(`Invalid file URL for ${field.replace('_', ' ')}`)
+                    hasValidationErrors = true
+                }
+            })
         }
 
-        onSave(cleanedFormData)
+        // If there are validation errors, show toast and return
+        if (hasValidationErrors) {
+            if (validationErrors.length > 0) {
+                validationErrors.forEach(error => {
+                    toast.error(error)
+                })
+            } else {
+                toast.error('Please fix the validation errors before saving')
+            }
+            return
+        }
+
+
+        try {
+            // Call onSave and handle the result
+            onSave(cleanedFormData)
+
+            // The onSave function should handle success/error toasts
+            // We'll update the handleSave function to properly handle toasts
+        } catch (error) {
+            toast.error('Failed to save changes')
+        }
     }
 
     const handleFileUpload = async (field: string, file: File) => {
@@ -1283,6 +1470,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             // Clear success message after 3 seconds
             setTimeout(() => setUploadSuccess(null), 3000)
 
+            // Persist immediately so top badges (photo/resume) update without extra save
+            try {
+                await onSave({ [field]: fileUrl } as any)
+            } catch (e) {
+                // non-blocking
+            }
+
         } catch (error) {
             console.error('File upload error:', error)
             setUploadError(error instanceof Error ? error.message : 'Upload failed')
@@ -1300,6 +1494,18 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const renderField = (field: string) => {
         const value = formData[field] || ''
 
+        if (field === 'email') {
+            return (
+                <input
+                    type="email"
+                    value={value}
+                    readOnly
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    placeholder="Email address"
+                />
+            )
+        }
         // Handle file upload fields
         if (field === 'profile_picture') {
             return (
@@ -1361,6 +1567,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         </div>
                     )}
                 </div>
+            )
+        }
+
+        // Handle phone field: enforce digits-only input
+        if (field === 'phone') {
+            return (
+                <input
+                    type="tel"
+                    value={value}
+                    onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '')
+                        const limited = digitsOnly.slice(0, 10)
+                        setFormData({ ...formData, [field]: limited })
+                    }}
+                    maxLength={10}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter your phone number"
+                />
             )
         }
 
