@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, ExternalLink, Users, BookOpen } from 'lucide-react';
@@ -9,7 +9,12 @@ import SSOService from '@/services/ssoService';
 import { SSOTestButton } from '@/components/sso/SSOTestButton';
 
 export default function SanghaPage() {
+    const [isClient, setIsClient] = useState(false);
     const { user, getToken } = useAuth();
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleSSORedirect = async () => {
         const token = getToken();
@@ -25,6 +30,19 @@ export default function SanghaPage() {
             console.error('SSO Error:', error);
         }
     };
+
+    if (!isClient) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
