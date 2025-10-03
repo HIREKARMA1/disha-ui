@@ -171,8 +171,8 @@ class SSOService {
   async redirectToResumeBuilder(): Promise<void> {
     try {
       const ssoData = await this.getResumeBuilderSSOUrl();
-      if (ssoData.success) {
-        window.location.href = ssoData.sso_url;
+      if (ssoData.redirect_url) {
+        window.location.href = ssoData.redirect_url;
       } else {
         throw new Error('Failed to generate SSO URL');
       }
@@ -188,8 +188,8 @@ class SSOService {
   async redirectToSadhana(): Promise<void> {
     try {
       const ssoData = await this.getSadhanaSSOUrl();
-      if (ssoData.success) {
-        window.location.href = ssoData.sso_url;
+      if (ssoData.redirect_url) {
+        window.location.href = ssoData.redirect_url;
       } else {
         throw new Error('Failed to generate SSO URL');
       }

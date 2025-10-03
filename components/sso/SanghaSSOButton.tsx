@@ -20,9 +20,10 @@ export const SanghaSSOButton: React.FC<SanghaSSOButtonProps> = ({
     children
 }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const { user, token } = useAuth();
+    const { user, getToken } = useAuth();
 
     const handleSanghaSSO = async () => {
+        const token = getToken();
         if (!user || !token) {
             console.error('User not authenticated');
             return;
