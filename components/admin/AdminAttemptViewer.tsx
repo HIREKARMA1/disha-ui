@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Search, Filter, Download, Eye, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, Search, Filter, Download, Eye, CheckCircle, XCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PracticeModule, StudentAttempt } from '@/types/practice'
+import { useModuleAttempts } from '@/hooks/useModuleAttempts'
 
 interface AdminAttemptViewerProps {
     module: PracticeModule
@@ -15,56 +16,91 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAttempt, setSelectedAttempt] = useState<StudentAttempt | null>(null)
 
-    // Mock data - replace with real API calls
-    const attempts: StudentAttempt[] = [
-        {
-            id: 'attempt-1',
-            student_id: 'student-1',
-            student_name: 'John Doe',
-            module_id: module.id,
-            module_title: module.title,
-            score_percent: 85.5,
-            time_taken_seconds: 3200,
-            started_at: '2024-01-15T10:00:00Z',
-            ended_at: '2024-01-15T10:53:20Z',
-            answers: [
-                { question_id: 'q1', answer: ['a'], time_spent: 120 },
-                { question_id: 'q2', answer: ['a', 'c'], time_spent: 180 },
-                { question_id: 'q3', answer: ['Binary search has O(log n) time complexity...'], time_spent: 300 }
-            ],
-            question_results: [
-                { question_id: 'q1', is_correct: true, explanation: 'Correct answer' },
-                { question_id: 'q2', is_correct: true, explanation: 'Both options are correct' },
-                { question_id: 'q3', is_correct: false, explanation: 'Incomplete explanation' }
-            ]
-        },
-        {
-            id: 'attempt-2',
-            student_id: 'student-2',
-            student_name: 'Jane Smith',
-            module_id: module.id,
-            module_title: module.title,
-            score_percent: 72.0,
-            time_taken_seconds: 2800,
-            started_at: '2024-01-15T14:30:00Z',
-            ended_at: '2024-01-15T15:16:40Z',
-            answers: [
-                { question_id: 'q1', answer: ['b'], time_spent: 90 },
-                { question_id: 'q2', answer: ['a'], time_spent: 150 },
-                { question_id: 'q3', answer: ['Binary search eliminates half...'], time_spent: 240 }
-            ],
-            question_results: [
-                { question_id: 'q1', is_correct: false, explanation: 'Incorrect answer' },
-                { question_id: 'q2', is_correct: true, explanation: 'Correct' },
-                { question_id: 'q3', is_correct: true, explanation: 'Good explanation' }
-            ]
-        }
-    ]
+    // Use real API calls to fetch attempts
+    const { data: attempts, isLoading, error, refetch } = useModuleAttempts(module.id)
+    
+    console.log('📊 AdminAttemptViewer - Module:', module.id, 'Attempts:', attempts)
 
-    const filteredAttempts = attempts.filter(attempt =>
-        attempt.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attempt.student_id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filteredAttempts = attempts?.filter(attempt =>
+        attempt.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        attempt.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || []
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Button
+                        onClick={onBack}
+                        variant="outline"
+                        size="sm"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Student Attempts
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            {module.title}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                        <p className="text-gray-600 dark:text-gray-400">Loading attempts...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Button
+                        onClick={onBack}
+                        variant="outline"
+                        size="sm"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Student Attempts
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            {module.title}
+                        </p>
+                    </div>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+                    <div className="text-center">
+                        <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                            Error Loading Attempts
+                        </h3>
+                        <p className="text-red-600 dark:text-red-400 mb-4">
+                            {error.message}
+                        </p>
+                        <Button
+                            onClick={() => refetch()}
+                            variant="outline"
+                            className="border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                            Try Again
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
@@ -103,6 +139,37 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
         return (
             <div className="space-y-6">
                 {/* Header */}
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
+                >
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                Practice Module Management 🧠
+                            </h1>
+                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                                Manage practice tests, questions, and view student attempts ✨
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                                    🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                    📚 Question Management
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                    🎯 Student Analytics
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button
@@ -173,6 +240,7 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
 
                 {/* Question Results */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                         Question Results
                     </h3>
@@ -300,6 +368,26 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
                         Attempts ({filteredAttempts.length})
                     </h2>
                 </div>
+                
+                {filteredAttempts.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <div className="text-gray-400 dark:text-gray-500 mb-4">
+                            <Users className="w-16 h-16 mx-auto mb-4" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            No Attempts Yet
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            No students have attempted this module yet.
+                        </p>
+                        <Button
+                            onClick={() => refetch()}
+                            variant="outline"
+                        >
+                            Refresh
+                        </Button>
+                    </div>
+                ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-700">
@@ -360,6 +448,7 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
                         </tbody>
                     </table>
                 </div>
+                )}
             </div>
         </div>
     )

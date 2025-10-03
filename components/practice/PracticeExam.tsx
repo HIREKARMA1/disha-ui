@@ -72,8 +72,10 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             }
         }
 
-        window.addEventListener('keydown', handleKeyPress)
-        return () => window.removeEventListener('keydown', handleKeyPress)
+        if (typeof window !== 'undefined') {
+            window.addEventListener('keydown', handleKeyPress)
+            return () => window.removeEventListener('keydown', handleKeyPress)
+        }
     }, [totalQuestions])
 
     const handleNext = () => {

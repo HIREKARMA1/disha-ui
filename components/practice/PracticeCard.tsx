@@ -1,16 +1,19 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Clock, Users, Brain, Play, Star } from 'lucide-react'
-import { PracticeModule } from '@/types/practice'
+import { Clock, Users, Brain, Play, Star, CheckCircle, Eye } from 'lucide-react'
+import { PracticeModule, SubmitAttemptResponse } from '@/types/practice'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface PracticeCardProps {
     module: PracticeModule
     onStart: () => void
+    isSubmitted?: boolean
+    result?: SubmitAttemptResponse
 }
 
-export function PracticeCard({ module, onStart }: PracticeCardProps) {
+export function PracticeCard({ module, onStart, isSubmitted = false, result }: PracticeCardProps) {
     const formatDuration = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
         const minutes = Math.floor((seconds % 3600) / 60)
@@ -45,84 +48,123 @@ export function PracticeCard({ module, onStart }: PracticeCardProps) {
         return colors[hash % colors.length]
     }
 
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return 'text-green-600 dark:text-green-400'
+        if (score >= 60) return 'text-yellow-600 dark:text-yellow-400'
+        return 'text-red-600 dark:text-red-400'
+    }
+
     return (
-        <motion.div
-            whileHover={{ y: -4 }}
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300"
-        >
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                        {module.title}
-                    </h3>
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(module.role)}`}>
-                            {module.role}
-                        </span>
-                        {module.difficulty && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}>
-                                {module.difficulty}
-                            </span>
-                        )}
+        <motion.div whileHover={{ y: -4 }} className="h-full">
+            <Card className="h-full hover:shadow-lg transition-all duration-300">
+                <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                                {module.title}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(module.role)}`}>
+                                    {module.role}
+                                </span>
+                                {module.difficulty && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}>
+                                        {module.difficulty}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
+                            <Brain className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                        </div>
                     </div>
-                </div>
-                <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                    <Brain className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                </div>
-            </div>
+                </CardHeader>
 
-            {/* Description */}
-            {module.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                    {module.description}
-                </p>
-            )}
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatDuration(module.duration_seconds)}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {module.questions_count} questions
-                    </span>
-                </div>
-            </div>
-
-            {/* Tags */}
-            {module.tags && module.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-4">
-                    {module.tags.slice(0, 3).map((tag, index) => (
-                        <span
-                            key={index}
-                            className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md"
-                        >
-                            {tag}
-                        </span>
-                    ))}
-                    {module.tags.length > 3 && (
-                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md">
-                            +{module.tags.length - 3} more
-                        </span>
+                <CardContent className="pt-0">
+                    {/* Description */}
+                    {module.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                            {module.description}
+                        </p>
                     )}
-                </div>
-            )}
 
-            {/* Action Button */}
-            <Button
-                onClick={onStart}
-                className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white"
-                size="lg"
-            >
-                <Play className="w-4 h-4 mr-2" />
-                Start Practice
-            </Button>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                                {formatDuration(module.duration_seconds)}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                                {module.questions_count} questions
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Tags */}
+                    {module.tags && module.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                            {module.tags.slice(0, 3).map((tag, index) => (
+                                <span
+                                    key={index}
+                                    className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                            {module.tags.length > 3 && (
+                                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-md">
+                                    +{module.tags.length - 3} more
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Action Button */}
+                    {isSubmitted && result ? (
+                        <div className="space-y-3">
+                            {/* Score Display */}
+                            <div className="text-center">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                        Completed
+                                    </span>
+                                </div>
+                                <div className={`text-2xl font-bold ${getScoreColor(result.score_percent)}`}>
+                                    {result.score_percent.toFixed(1)}%
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {result.question_results.filter(r => r.is_correct).length}/{result.question_results.length} correct
+                                </div>
+                            </div>
+                            
+                            <Button
+                                onClick={onStart}
+                                variant="success"
+                                className="w-full"
+                                size="lg"
+                            >
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Results
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button
+                            onClick={onStart}
+                            variant="gradient"
+                            className="w-full"
+                            size="lg"
+                        >
+                            <Play className="w-4 h-4 mr-2" />
+                            Start Practice
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
         </motion.div>
     )
 }

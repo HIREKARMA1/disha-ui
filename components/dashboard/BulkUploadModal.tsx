@@ -278,7 +278,6 @@ export function BulkUploadModal({
                                     e.stopPropagation()
                                 }}
                             >
-                                <div className="overflow-y-auto p-6 flex-1"></div>
                                 {/* Header */}
                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b-2 border-gray-200 dark:border-slate-600">
                                     <div className="flex items-center justify-between">

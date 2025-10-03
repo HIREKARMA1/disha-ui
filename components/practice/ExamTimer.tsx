@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Clock, AlertTriangle } from 'lucide-react'
 
 interface ExamTimerProps {
@@ -13,12 +13,23 @@ export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
     const [isWarning, setIsWarning] = useState(false)
     const [isCritical, setIsCritical] = useState(false)
 
+    const handleTimeUp = useCallback(() => {
+        onTimeUp()
+    }, [onTimeUp])
+
+    // Reset timer when duration changes
+    useEffect(() => {
+        setTimeLeft(duration)
+        setIsWarning(false)
+        setIsCritical(false)
+    }, [duration])
+
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 0) {
                     clearInterval(timer)
-                    onTimeUp()
+                    handleTimeUp()
                     return 0
                 }
                 return prev - 1
@@ -26,7 +37,7 @@ export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
         }, 1000)
 
         return () => clearInterval(timer)
-    }, [onTimeUp])
+    }, [handleTimeUp]) // Use handleTimeUp callback
 
     useEffect(() => {
         // Warning when 10 minutes left
@@ -38,12 +49,38 @@ export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
         else if (timeLeft <= 60) {
             setIsWarning(false)
             setIsCritical(true)
+            // Play warning sound
+            if (timeLeft === 60) {
+                playWarningSound()
+            }
         }
         else {
             setIsWarning(false)
             setIsCritical(false)
         }
     }, [timeLeft])
+
+    const playWarningSound = () => {
+        try {
+            // Create a simple beep sound using Web Audio API
+            if (typeof window === 'undefined') return
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+            
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+            
+            oscillator.start(audioContext.currentTime)
+            oscillator.stop(audioContext.currentTime + 0.5)
+        } catch (error) {
+            console.log('Audio not supported or blocked by browser')
+        }
+    }
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
@@ -69,7 +106,7 @@ export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
     }
 
     return (
-        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${getTimerColor()}`}>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${getTimerColor()} ${isCritical ? 'animate-pulse' : ''}`}>
             {isCritical ? (
                 <AlertTriangle className="w-5 h-5 animate-pulse" />
             ) : (
@@ -81,6 +118,11 @@ export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
             {isCritical && (
                 <span className="text-xs font-medium animate-pulse">
                     Time's up!
+                </span>
+            )}
+            {isWarning && !isCritical && (
+                <span className="text-xs font-medium">
+                    Warning!
                 </span>
             )}
         </div>
