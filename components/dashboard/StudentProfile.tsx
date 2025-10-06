@@ -21,6 +21,7 @@ import { Navbar } from '../ui/navbar'
 import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
+import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { cn, getInitials, truncateText } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
@@ -1734,6 +1735,19 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         </div>
                     )}
                 </div>
+            )
+        }
+
+        // Handle branch field with SingleBranchSelection component
+        if (field === 'branch') {
+            return (
+                <SingleBranchSelection
+                    selectedBranch={value || ''}
+                    onBranchChange={(branch) => setFormData({ ...formData, [field]: branch })}
+                    label=""
+                    placeholder="Select your branch..."
+                    className=""
+                />
             )
         }
 

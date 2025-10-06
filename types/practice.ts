@@ -1,3 +1,12 @@
+export interface TestCase {
+  id?: string
+  input_data: string
+  expected_output: string
+  is_hidden: boolean
+  points: number
+  order: number
+}
+
 export interface Question {
   id: string
   statement: string // HTML allowed
@@ -8,6 +17,7 @@ export interface Question {
   }>
   correct_options?: string[] // Only returned to admin / correct-check endpoints
   explanation?: string // HTML allowed
+  test_cases?: TestCase[] // Test cases for coding questions
   tags: string[]
   role: string
   difficulty: 'easy' | 'medium' | 'hard'
@@ -28,6 +38,31 @@ export interface PracticeModule {
   difficulty?: 'easy' | 'medium' | 'hard'
   tags?: string[]
   category?: PracticeCategory
+  
+  // Creator and targeting fields
+  creator_type?: 'admin' | 'university'
+  creator_id?: string
+  
+  // Targeting fields for filtering
+  target_all_colleges?: boolean
+  target_college_ids?: string[]  // University names
+  target_all_branches?: boolean
+  target_branch_ids?: string[]   // Branch names
+  
+  // University-specific targeting fields
+  university_target_all_branches?: boolean
+  university_target_branch_ids?: string[]
+  
+  // Date limits
+  start_date?: string
+  end_date?: string
+  
+  // Days remaining until expiration (calculated field)
+  days_remaining?: number | null
+  
+  // Timestamps
+  created_at?: string
+  updated_at?: string
 }
 
 export interface QuestionAnswer {
@@ -49,6 +84,7 @@ export interface QuestionResult {
   question_id: string
   is_correct: boolean
   explanation?: string
+  time_spent?: number
 }
 
 export interface WeakArea {
@@ -148,6 +184,7 @@ export interface CreateQuestionSchema {
   }>
   correct_options?: string[]
   explanation?: string
+  test_cases?: TestCase[]  // Test cases for coding questions
   tags: string[]
   role: string
   difficulty: 'easy' | 'medium' | 'hard'
@@ -164,6 +201,7 @@ export interface UpdateQuestionSchema {
   }>
   correct_options?: string[]
   explanation?: string
+  test_cases?: TestCase[]  // Test cases for coding questions
   tags?: string[]
   role?: string
   difficulty?: 'easy' | 'medium' | 'hard'

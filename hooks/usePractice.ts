@@ -353,7 +353,7 @@ export function usePracticeQuestions(moduleId: string) {
                 const response = await apiClient.client.get(`/practice/modules/${moduleId}`)
                 console.log('📚 Real questions received:', response.data.questions)
                 console.log('📚 Question count:', response.data.questions?.length || 0)
-                console.log('📚 Question IDs:', response.data.questions?.map(q => q.id) || [])
+                console.log('📚 Question IDs:', response.data.questions?.map((q: any) => q.id) || [])
                 setData(response.data.questions || [])
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch questions'))

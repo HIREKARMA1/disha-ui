@@ -5,21 +5,21 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Search, Filter, Download, Eye, CheckCircle, XCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PracticeModule, StudentAttempt } from '@/types/practice'
-import { useModuleAttempts } from '@/hooks/useModuleAttempts'
+import { useUniversityModuleAttempts } from '@/hooks/useUniversityModuleAttempts'
 
-interface AdminAttemptViewerProps {
+interface UniversityAttemptViewerProps {
     module: PracticeModule
     onBack: () => void
 }
 
-export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) {
+export function UniversityAttemptViewer({ module, onBack }: UniversityAttemptViewerProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAttempt, setSelectedAttempt] = useState<StudentAttempt | null>(null)
 
     // Use real API calls to fetch attempts
-    const { data: attempts, isLoading, error, refetch } = useModuleAttempts(module.id)
+    const { data: attempts, isLoading, error, refetch } = useUniversityModuleAttempts(module.id)
     
-    console.log('📊 AdminAttemptViewer - Module:', module.id, 'Attempts:', attempts)
+    console.log('📊 UniversityAttemptViewer - Module:', module.id, 'Attempts:', attempts)
 
     const filteredAttempts = attempts?.filter(attempt =>
         attempt.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,7 +139,6 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
         return (
             <div className="space-y-6">
                 {/* Header */}
-
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -168,7 +167,6 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
                         </div>
                     </div>
                 </motion.div>
-
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -240,7 +238,6 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
 
                 {/* Question Results */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                    
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                         Question Results
                     </h3>

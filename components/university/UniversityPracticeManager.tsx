@@ -21,28 +21,27 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AdminQuestionEditor } from './AdminQuestionEditor'
-import { AdminBulkUploader } from './AdminBulkUploader'
-import { AdminAttemptViewer } from './AdminAttemptViewer'
+import { AdminQuestionEditor } from '../admin/AdminQuestionEditor'
+import { UniversityBulkUploader } from './UniversityBulkUploader'
+import { UniversityAttemptViewer } from './UniversityAttemptViewer'
 import { PracticeModule, Question, PracticeCategory } from '@/types/practice'
 import {
-    useAdminPracticeModules,
-    useCreatePracticeModule,
-    useAdminQuestions,
-    useCreateQuestion,
-    useUpdateQuestion,
-    useAddQuestionToModule,
-    useDeleteQuestion,
-    useRemoveQuestionFromModule
-} from '@/hooks/useAdminPractice'
+    useAdminPracticeModules as useUniversityPracticeModules,
+    useCreatePracticeModule as useCreateUniversityPracticeModule,
+    useAdminQuestions as useUniversityQuestions,
+    useCreateQuestion as useCreateUniversityQuestion,
+    useUpdateQuestion as useUpdateUniversityQuestion,
+    useAddQuestionToModule as useAddQuestionToUniversityModule,
+    useDeleteQuestion as useDeleteUniversityQuestion,
+    useRemoveQuestionFromModule as useRemoveQuestionFromUniversityModule
+} from '@/hooks/useUniversityPractice'
 import {
-    useUpdatePracticeModule,
-    useDeletePracticeModule
-} from '@/hooks/useAdminPracticeActions'
-import { useUniversities } from '@/hooks/useUniversities'
-import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
-import { BranchSelection, branchOptions } from '@/components/ui/BranchSelection'
+    useUpdateUniversityPracticeModule,
+    useDeleteUniversityPracticeModule
+} from '@/hooks/useUniversityPracticeActions'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
+import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown'
+import { BranchSelection, branchOptions } from '@/components/ui/BranchSelection'
 import toast from 'react-hot-toast'
 import { LoadingSkeleton, TableSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
 
@@ -127,9 +126,7 @@ const categories = [
     }
 ]
 
-// Branch options are now imported from the shared component
-
-export function AdminPracticeManager() {
+export function UniversityPracticeManager() {
     const [currentView, setCurrentView] = useState<ViewState>('modules')
     const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(null)
     const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
@@ -153,23 +150,23 @@ export function AdminPracticeManager() {
     })
 
     // API hooks
-    const { data: modules, isLoading: modulesLoading, error: modulesError, refetch: refetchModules } = useAdminPracticeModules(
+    const { data: modules, isLoading: modulesLoading, error: modulesError, refetch: refetchModules } = useUniversityPracticeModules(
         selectedCategory === 'all' ? undefined : selectedCategory,
         undefined, // role filter
         undefined, // difficulty filter
         searchTerm || undefined
     )
 
-    const createModuleMutation = useCreatePracticeModule()
-    const createQuestionMutation = useCreateQuestion()
-    const updateQuestionMutation = useUpdateQuestion()
-    const addQuestionToModuleMutation = useAddQuestionToModule()
+    const createModuleMutation = useCreateUniversityPracticeModule()
+    const createQuestionMutation = useCreateUniversityQuestion()
+    const updateQuestionMutation = useUpdateUniversityQuestion()
+    const addQuestionToModuleMutation = useAddQuestionToUniversityModule()
 
     // Action hooks
-    const updateModuleMutation = useUpdatePracticeModule()
-    const deleteModuleMutation = useDeletePracticeModule()
-    const deleteQuestionMutation = useDeleteQuestion()
-    const removeQuestionFromModuleMutation = useRemoveQuestionFromModule()
+    const updateModuleMutation = useUpdateUniversityPracticeModule()
+    const deleteModuleMutation = useDeleteUniversityPracticeModule()
+    const deleteQuestionMutation = useDeleteUniversityQuestion()
+    const removeQuestionFromModuleMutation = useRemoveQuestionFromUniversityModule()
 
     // Filter modules based on search term and category (now handled by API)
     const filteredModules = modules || []
@@ -385,7 +382,7 @@ export function AdminPracticeManager() {
 
     if (currentView === 'bulk-upload') {
         return (
-            <AdminBulkUploader
+            <UniversityBulkUploader
                 onComplete={() => setCurrentView(selectedModule ? 'module-detail' : 'modules')}
                 onCancel={handleBackToModules}
                 moduleId={selectedModule?.id}
@@ -410,7 +407,7 @@ export function AdminPracticeManager() {
 
     if (currentView === 'attempts' && selectedModule) {
         return (
-            <AdminAttemptViewer
+            <UniversityAttemptViewer
                 module={selectedModule}
                 onBack={handleBackToModules}
             />
@@ -790,7 +787,7 @@ interface ModuleDetailViewProps {
 function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEditQuestion, onDeleteQuestion, refreshTrigger, deletedQuestionIds }: ModuleDetailViewProps) {
     console.log('📋 ModuleDetailView received module data:', module)
     // Use real API calls to fetch questions
-    const { data: questions, isLoading: questionsLoading, error: questionsError, refetch: refetchQuestions } = useAdminQuestions(module.id)
+    const { data: questions, isLoading: questionsLoading, error: questionsError, refetch: refetchQuestions } = useUniversityQuestions(module.id)
     console.log('📚 Questions data:', questions)
     console.log('📚 First question options:', questions?.[0]?.options)
     console.log('📚 First question options type:', typeof questions?.[0]?.options)
@@ -1017,25 +1014,12 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
         difficulty: 'medium' as 'easy' | 'medium' | 'hard',
         duration_seconds: 3600,
         tags: [] as string[],
-        university_ids: [] as string[],
-        branch_ids: [] as string[],
-        target_all_branches: false,
+        university_target_branch_ids: [] as string[],
+        university_target_all_branches: false,
         start_date: '',
         end_date: ''
     })
     const [newTag, setNewTag] = useState('')
-
-    // Fetch universities
-    const { data: universities, isLoading: universitiesLoading } = useUniversities()
-
-    // Convert universities to dropdown options
-    const universityOptions: MultiSelectOption[] = universities.map(uni => ({
-        id: uni.id,
-        label: uni.university_name,
-        value: uni.id
-    }))
-
-    // Branch options are now handled by the BranchSelection component
 
     const handleInputChange = (field: string, value: any) => {
         setFormData(prev => ({
@@ -1061,6 +1045,7 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
         }))
     }
 
+
     const handleSave = () => {
         // Validate date fields
         if (formData.start_date && formData.end_date) {
@@ -1075,19 +1060,13 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
             return
         }
 
-        // Convert university IDs to university names for better filtering
-        const selectedUniversityNames = formData.university_ids.map(uniId => {
-            const university = universities.find(uni => uni.id === uniId)
-            return university ? university.university_name : uniId
-        })
-
-        // Convert branch IDs to branch names for better filtering
-        const selectedBranchNames = formData.branch_ids.map(branchId => {
+        // Convert branch IDs to branch names for better filtering (same as admin)
+        const selectedBranchNames = formData.university_target_branch_ids.map(branchId => {
             const branch = branchOptions.find(branch => branch.value === branchId)
             return branch ? branch.label : branchId
         })
 
-        // Prepare the module data for the API
+        // Prepare the module data for the API (same structure as admin)
         const moduleData = {
             title: formData.title,
             description: formData.description,
@@ -1096,20 +1075,22 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
             difficulty: formData.difficulty,
             duration_seconds: formData.duration_seconds,
             tags: formData.tags,
-            // Targeting fields - save as text arrays for better filtering
-            target_all_colleges: formData.university_ids.length === 0,
-            target_college_ids: selectedUniversityNames, // Save as university names
-            target_all_branches: formData.branch_ids.length === 0,
-            target_branch_ids: selectedBranchNames, // Save as branch names
+            // Targeting fields - save as text arrays for better filtering (same as admin)
+            target_all_colleges: true, // University modules are for all colleges
+            target_college_ids: [], // Empty for university modules
+            target_all_branches: formData.university_target_branch_ids.length === 0,
+            target_branch_ids: selectedBranchNames, // Save as branch names (same as admin)
+            // University-specific targeting fields
+            university_target_all_branches: formData.university_target_branch_ids.length === 0,
+            university_target_branch_ids: selectedBranchNames, // Save as branch names
             // Date/time fields
             start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
             end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
             // Creator fields
-            creator_type: 'admin',
+            creator_type: 'university',
             creator_id: null // Will be set by the backend
         }
-
-        console.log('Creating module with data:', moduleData)
+        console.log('Creating university module:', moduleData)
         onSave(moduleData)
     }
 
@@ -1314,30 +1295,17 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                                     When the test becomes unavailable (optional)
                                 </p>
                             </div>
-
-                            <div>
-                                <MultiSelectDropdown
-                                    options={universityOptions}
-                                    selectedValues={formData.university_ids}
-                                    onSelectionChange={(values) => handleInputChange('university_ids', values)}
-                                    placeholder="Select universities..."
-                                    label="University Selection"
-                                    isLoading={universitiesLoading}
-                                    showAllOption={true}
-                                    allOptionLabel="All Universities"
-                                />
-                            </div>
+                        </div>
+                    </div>
 
                             <BranchSelection
-                                selectedBranches={formData.branch_ids}
-                                onBranchesChange={(values) => handleInputChange('branch_ids', values)}
-                                allBranchesSelected={formData.target_all_branches}
-                                onAllBranchesToggle={(selected) => handleInputChange('target_all_branches', selected)}
+                                selectedBranches={formData.university_target_branch_ids}
+                                onBranchesChange={(values) => handleInputChange('university_target_branch_ids', values)}
+                                allBranchesSelected={formData.university_target_all_branches}
+                                onAllBranchesToggle={(selected) => handleInputChange('university_target_all_branches', selected)}
                                 label="Branch Selection"
                                 placeholder="Select branches..."
                             />
-                        </div>
-                    </div>
 
                     {/* Actions */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Question } from '@/types/practice'
 import { Clock, Code, Image as ImageIcon } from 'lucide-react'
+import { TestCasesDisplay } from './TestCasesDisplay'
 
 interface QuestionPanelProps {
     question: Question
@@ -75,6 +76,13 @@ export function QuestionPanel({ question, questionNumber, onTimeSpent }: Questio
                     dangerouslySetInnerHTML={{ __html: question.statement }}
                 />
             </div>
+
+            {/* Test Cases for Coding Questions */}
+            {question.type === 'coding' && question.test_cases && (
+                <div className="mb-6">
+                    <TestCasesDisplay testCases={question.test_cases} />
+                </div>
+            )}
 
             {/* Question Type Indicator */}
             <div className="flex items-center gap-2 mb-4">

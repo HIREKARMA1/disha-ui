@@ -9,7 +9,8 @@ import {
     Briefcase,
     X,
     Menu,
-    LogOut
+    LogOut,
+    Brain
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -54,6 +55,13 @@ const navItems: NavItem[] = [
         icon: Briefcase,
         description: 'Browse and manage job opportunities',
         color: 'from-purple-500 to-pink-600'
+    },
+    {
+        label: 'Practice Tests',
+        href: '/dashboard/university/practice',
+        icon: Brain,
+        description: 'Manage practice tests & questions',
+        color: 'from-rose-500 to-pink-600'
     }
 ]
 

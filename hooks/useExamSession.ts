@@ -29,6 +29,10 @@ export function useExamSession(moduleId: string) {
                 const parsedSession = JSON.parse(savedSession)
                 // Convert flaggedQuestions Set back from array
                 parsedSession.flaggedQuestions = new Set(parsedSession.flaggedQuestions || [])
+                // Convert startTime string back to Date object
+                if (parsedSession.startTime && typeof parsedSession.startTime === 'string') {
+                    parsedSession.startTime = new Date(parsedSession.startTime)
+                }
                 setSession(parsedSession)
                 isInitialized.current = true
             } catch (error) {
@@ -158,12 +162,15 @@ export function useExamSession(moduleId: string) {
         // Use a default student ID if the user is an admin (for testing purposes)
         const studentId = user.user_type === 'admin' ? '33ecff0a-7e83-4177-b657-85fe38aec1e4' : user.id
         
+        // Ensure startTime is a Date object
+        const startTime = session.startTime instanceof Date ? session.startTime : new Date(session.startTime)
+        
         const request: SubmitAttemptRequest = {
             module_id: session.moduleId,
             student_id: studentId,
             attempt_id: `attempt_${Date.now()}`,
             answers: validAnswers,
-            started_at: session.startTime.toISOString(),
+            started_at: startTime.toISOString(),
             ended_at: new Date().toISOString()
         }
 

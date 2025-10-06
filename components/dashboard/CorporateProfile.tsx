@@ -960,6 +960,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     placeholder="Enter 10-digit phone number"
                     maxLength={10}
                 />
+            )
+        }
 
         if (field === 'industry') {
             return (
@@ -975,7 +977,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         </option>
                     ))}
                 </select>
-
             )
         }
 

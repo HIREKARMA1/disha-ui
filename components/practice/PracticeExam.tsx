@@ -22,7 +22,13 @@ interface PracticeExamProps {
 export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [showConfirmExit, setShowConfirmExit] = useState(false)
-    
+    const [questionResults, setQuestionResults] = useState<Record<string, {
+        correct: boolean
+        score: number
+        maxScore: number
+        feedback?: string
+    }>>({})
+
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
     const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam } = useExamSession(module.id)
 
@@ -117,6 +123,28 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
 
         try {
             const result = await submitExam()
+            
+            // Process question results from the submission response
+            if (result.question_results && Array.isArray(result.question_results)) {
+                const resultsMap: Record<string, {
+                    correct: boolean
+                    score: number
+                    maxScore: number
+                    feedback?: string
+                }> = {}
+                
+                result.question_results.forEach((qr: any) => {
+                    resultsMap[qr.question_id] = {
+                        correct: qr.correct || false,
+                        score: qr.score || 0,
+                        maxScore: qr.max_score || 1,
+                        feedback: qr.feedback
+                    }
+                })
+                
+                setQuestionResults(resultsMap)
+            }
+            
             onComplete(result)
         } catch (error) {
             toast.error('Failed to submit exam. Please try again.')
@@ -200,9 +228,9 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             />
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Question Panel */}
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* Question Panel - Smaller for coding questions */}
+                <div className={`${currentQuestion?.type === 'coding' ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
                     <QuestionPanel
                         question={currentQuestion!}
                         questionNumber={currentQuestionIndex + 1}
@@ -210,14 +238,17 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                     />
                 </div>
 
-                {/* Options Panel */}
-                <div className="lg:col-span-1">
+                {/* Options Panel - Larger for coding questions */}
+                <div className={`${currentQuestion?.type === 'coding' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
                     <OptionsPanel
+                        key={currentQuestion?.id}   // 👈 forces reset when question changes
                         question={currentQuestion!}
                         answer={session?.answers[currentQuestion?.id || ''] || []}
                         isFlagged={session?.flaggedQuestions.has(currentQuestion?.id || '') || false}
                         onAnswerChange={handleAnswerChange}
                         onFlagToggle={handleFlagToggle}
+                        isSubmitted={session?.isSubmitted || false}
+                        questionResult={currentQuestion ? questionResults[currentQuestion.id] : undefined}
                     />
                 </div>
             </div>

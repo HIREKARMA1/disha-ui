@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Question, PracticeCategory } from '@/types/practice'
 import { toast } from 'react-hot-toast'
+import { TestCasesManager } from './TestCasesManager'
 
 interface AdminQuestionEditorProps {
     question?: Question | null
@@ -25,6 +26,7 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
     ])
 
     const [newOption, setNewOption] = useState('')
+    const [testCases, setTestCases] = useState<any[]>([])
 
     useEffect(() => {
         if (question) {
@@ -139,48 +141,62 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
             }
         }
 
+        // Transform questions to match CreateQuestionSchema
+        const formattedQuestions = questions.map(q => ({
+            statement: q.statement.trim(),
+            type: q.type,
+            options: q.options.filter(opt => opt.text.trim() !== ''), // Remove empty options
+            correct_options: q.correct_options,
+            explanation: '', // Default empty explanation
+            test_cases: q.type === 'coding' ? testCases.map(tc => ({
+                ...tc,
+                id: tc.id?.startsWith('temp-') ? undefined : tc.id // Remove temp IDs for backend
+            })) : [], // Include test cases for coding questions
+            tags: [], // Default empty tags
+            role: 'Developer', // Default role
+            difficulty: 'medium' as const, // Default difficulty
+            time_limit_seconds: 120 // Default time limit
+            // Note: category is not part of CreateQuestionSchema in backend
+        }))
+
         // Save all questions
-        console.log('Saving questions:', questions)
-        toast.success(`${questions.length} question(s) created successfully`)
-        onSave(questions)
+        toast.success(`${formattedQuestions.length} question(s) created successfully`)
+        onSave(formattedQuestions)
     }
 
     return (
         <div className="space-y-6">
             {/* Header */}
-
-
-            {/* Question Editor */}
-
             <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Practice Module Management 🧠
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage practice tests, questions, and view student attempts ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📚 Question Management
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🎯 Student Analytics
-                                </span>
-                            </div>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
+            >
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            {question ? 'Edit Question' : 'Create Question'} 📝
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                            {question ? 'Modify the question details below' : 'Create a new practice question for the module'} ✨
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                                🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            </span>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                📚 Question Management
+                            </span>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                🎯 Student Analytics
+                            </span>
                         </div>
                     </div>
-                </motion.div>
+                </div>
+            </motion.div>
                 
+            {/* Action Bar */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Button
@@ -192,29 +208,31 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
                         Back
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            Create Multiple Questions
-                        </h1>
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                            {question ? 'Edit Question' : 'Create Multiple Questions'}
+                        </h2>
                         <p className="text-gray-600 dark:text-gray-400">
-                            Add multiple practice questions quickly
+                            {question ? 'Modify the question details' : 'Add multiple practice questions quickly'}
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button
-                        onClick={handleAddQuestion}
-                        variant="outline"
-                        className="border-green-500 text-green-600 hover:bg-green-50"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Question
-                    </Button>
+                    {!question && (
+                        <Button
+                            onClick={handleAddQuestion}
+                            variant="outline"
+                            className="border-green-500 text-green-600 hover:bg-green-50"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Question
+                        </Button>
+                    )}
                     <Button
                         onClick={handleSave}
                         className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
                     >
                         <Save className="w-4 h-4 mr-2" />
-                        Create All Questions ({questions.length})
+                        {question ? `Update Question` : `Create All Questions (${questions.length})`}
                     </Button>
                 </div>
             </div>
@@ -323,6 +341,21 @@ export function AdminQuestionEditor({ question, onSave, onCancel }: AdminQuestio
                                 </div>
                             )}
                         </div>
+
+                        {/* Test Cases Manager for Coding Questions */}
+                        {q.type === 'coding' && (
+                            <div className="mt-6">
+                                <TestCasesManager
+                                    questionId={question?.id || ''}
+                                    questionType={q.type}
+                                    onTestCasesChange={(testCases) => {
+                                        setTestCases(testCases)
+                                        // Update the question with test cases
+                                        handleQuestionChange(q.id, 'test_cases', testCases)
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                 ))}
 

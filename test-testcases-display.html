@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Cases Display Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Mock TestCase type
+        const TestCase = {
+            id: "test-1",
+            input_data: "1 2",
+            expected_output: "3",
+            is_hidden: false,
+            points: 1,
+            order: 0
+        };
+
+        // Mock TestCasesDisplay component
+        function TestCasesDisplay({ testCases, showResults = false, results = [] }) {
+            const [isExpanded, setIsExpanded] = useState(true);
+            const [showHidden, setShowHidden] = useState(false);
+
+            if (!testCases || testCases.length === 0) {
+                return (
+                    <div style={{backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', padding: '16px'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '8px', color: '#92400e'}}>
+                            <span style={{fontSize: '14px', fontWeight: '500'}}>No test cases available</span>
+                        </div>
+                    </div>
+                );
+            }
+
+            const visibleTestCases = testCases.filter(tc => !tc.is_hidden || showHidden);
+            const hiddenCount = testCases.length - visibleTestCases.length;
+
+            return (
+                <div style={{backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb'}}>
+                    {/* Header */}
+                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderBottom: '1px solid #e5e7eb'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                style={{background: 'none', border: 'none', cursor: 'pointer', padding: '0'}}
+                            >
+                                {isExpanded ? '▼' : '▶'}
+                            </button>
+                            <h3 style={{fontSize: '14px', fontWeight: '600', color: '#111827', margin: 0}}>
+                                Test Cases ({testCases.length})
+                            </h3>
+                            {hiddenCount > 0 && (
+                                <span style={{fontSize: '12px', color: '#6b7280'}}>
+                                    ({hiddenCount} hidden)
+                                </span>
+                            )}
+                        </div>
+                        
+                        {hiddenCount > 0 && (
+                            <button
+                                onClick={() => setShowHidden(!showHidden)}
+                                style={{fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer'}}
+                            >
+                                {showHidden ? '👁️‍🗨️ Hide Hidden' : '👁️ Show Hidden'}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Test Cases List */}
+                    {isExpanded && (
+                        <div style={{padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                            {visibleTestCases.map((testCase, index) => {
+                                const result = results.find(r => r.test_case_id === index + 1);
+                                const isPassed = result?.passed;
+                                const hasResult = result !== undefined;
+
+                                return (
+                                    <div
+                                        key={testCase.id || index}
+                                        style={{backgroundColor: 'white', borderRadius: '8px', border: '1px solid #d1d5db', padding: '16px'}}
+                                    >
+                                        {/* Test Case Header */}
+                                        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px'}}>
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                                <span style={{fontSize: '14px', fontWeight: '500', color: '#111827'}}>
+                                                    Test Case {index + 1}
+                                                </span>
+                                                {testCase.is_hidden && (
+                                                    <span style={{padding: '2px 8px', backgroundColor: '#fed7aa', color: '#9a3412', fontSize: '12px', borderRadius: '4px'}}>
+                                                        Hidden
+                                                    </span>
+                                                )}
+                                                <span style={{padding: '2px 8px', backgroundColor: '#dbeafe', color: '#1e40af', fontSize: '12px', borderRadius: '4px'}}>
+                                                    {testCase.points} point{testCase.points !== 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+                                            
+                                            {hasResult && (
+                                                <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                                                    {isPassed ? '✅' : '❌'}
+                                                    <span style={{fontSize: '12px', fontWeight: '500', color: isPassed ? '#059669' : '#dc2626'}}>
+                                                        {isPassed ? 'Passed' : 'Failed'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Input */}
+                                        <div style={{marginBottom: '12px'}}>
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
+                                                <span style={{fontSize: '14px', fontWeight: '500', color: '#374151'}}>Input:</span>
+                                            </div>
+                                            <div style={{backgroundColor: '#f3f4f6', borderRadius: '6px', padding: '12px', fontFamily: 'monospace', fontSize: '14px'}}>
+                                                <pre style={{margin: 0, whiteSpace: 'pre-wrap', color: '#111827'}}>
+                                                    {hasResult ? result.input : (testCase.input_data || '(no input)')}
+                                                </pre>
+                                            </div>
+                                        </div>
+
+                                        {/* Expected Output */}
+                                        <div style={{marginBottom: '12px'}}>
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
+                                                <span style={{fontSize: '14px', fontWeight: '500', color: '#374151'}}>Expected Output:</span>
+                                            </div>
+                                            <div style={{backgroundColor: '#f3f4f6', borderRadius: '6px', padding: '12px', fontFamily: 'monospace', fontSize: '14px'}}>
+                                                <pre style={{margin: 0, whiteSpace: 'pre-wrap', color: '#111827'}}>
+                                                    {hasResult ? result.expected_output : (testCase.expected_output || '(no output)')}
+                                                </pre>
+                                            </div>
+                                        </div>
+
+                                        {/* Actual Output (if available) */}
+                                        {hasResult && result?.actual_output !== undefined && (
+                                            <div style={{marginBottom: '12px'}}>
+                                                <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
+                                                    <span style={{fontSize: '14px', fontWeight: '500', color: '#374151'}}>Actual Output:</span>
+                                                </div>
+                                                <div style={{
+                                                    borderRadius: '6px', 
+                                                    padding: '12px', 
+                                                    fontFamily: 'monospace', 
+                                                    fontSize: '14px',
+                                                    backgroundColor: isPassed ? '#d1fae5' : '#fee2e2',
+                                                    border: `1px solid ${isPassed ? '#a7f3d0' : '#fecaca'}`
+                                                }}>
+                                                    <pre style={{
+                                                        margin: 0, 
+                                                        whiteSpace: 'pre-wrap', 
+                                                        color: isPassed ? '#065f46' : '#991b1b'
+                                                    }}>
+                                                        {result.actual_output}
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Test App
+        function TestApp() {
+            const testCases = [
+                {
+                    id: "tc1",
+                    input_data: "1 2",
+                    expected_output: "3",
+                    is_hidden: false,
+                    points: 1,
+                    order: 0
+                },
+                {
+                    id: "tc2",
+                    input_data: "3 7",
+                    expected_output: "10",
+                    is_hidden: false,
+                    points: 1,
+                    order: 1
+                },
+                {
+                    id: "tc3",
+                    input_data: "10 20",
+                    expected_output: "30",
+                    is_hidden: true,
+                    points: 2,
+                    order: 2
+                }
+            ];
+
+            const testResults = [
+                {
+                    test_case_id: 1,
+                    input: "1 2",
+                    expected_output: "3",
+                    actual_output: "3",
+                    passed: true,
+                    points: 1,
+                    is_hidden: false
+                },
+                {
+                    test_case_id: 2,
+                    input: "3 7",
+                    expected_output: "10",
+                    actual_output: "8",
+                    passed: false,
+                    points: 0,
+                    is_hidden: false
+                },
+                {
+                    test_case_id: 3,
+                    input: "10 20",
+                    expected_output: "30",
+                    actual_output: "30",
+                    passed: true,
+                    points: 2,
+                    is_hidden: true
+                }
+            ];
+
+            return (
+                <div className="container">
+                    <h1>Test Cases Display - Mock Test Results</h1>
+                    <p>This shows how the TestCasesDisplay component works with test results from the backend validation.</p>
+                    
+                    <h2>Before Testing (Question View)</h2>
+                    <TestCasesDisplay testCases={testCases} showResults={false} />
+                    
+                    <h2>After Testing (With Results)</h2>
+                    <TestCasesDisplay testCases={testCases} showResults={true} results={testResults} />
+                    
+                    <div style={{marginTop: '20px', padding: '16px', backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9', borderRadius: '8px'}}>
+                        <h3 style={{margin: '0 0 8px 0', color: '#0c4a6e'}}>Summary</h3>
+                        <p style={{margin: 0, color: '#0c4a6e'}}>
+                            <strong>Test Results:</strong> 2/3 passed (Test Case 2 failed)<br/>
+                            <strong>Total Points:</strong> 3/4 points earned<br/>
+                            <strong>Question Status:</strong> ❌ Incorrect (not all test cases passed)
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<TestApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
