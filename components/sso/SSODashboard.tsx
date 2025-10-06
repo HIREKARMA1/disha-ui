@@ -16,7 +16,8 @@ export const SSODashboard: React.FC<SSODashboardProps> = ({ className }) => {
     const [ssoStatus, setSsoStatus] = useState<SSOStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [loadingService, setLoadingService] = useState<string | null>(null);
-    const { user, token } = useAuth();
+    const { user, getToken } = useAuth();
+    const token = getToken();
 
     const ssoService = token ? new SSOService(token) : null;
 
@@ -181,7 +182,7 @@ export const SSODashboard: React.FC<SSODashboardProps> = ({ className }) => {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => window.open(service.profileUrl, '_blank')}
+                                                onClick={() => window.open(service.profileUrl!, '_blank')}
                                             >
                                                 <ExternalLink className="h-4 w-4" />
                                             </Button>
