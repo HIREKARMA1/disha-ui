@@ -48,10 +48,10 @@ class SSOService {
    */
   async getSanghaSSOUrl(): Promise<SSOResponse> {
     try {
-      console.log('SSOService: Making API call to /sso/sangha');
+      console.log('SSOService: Making API call to /sso/sangha/test');
       console.log('SSOService: Headers:', this.getHeaders());
       
-      const response = await apiClient.client.get('/sso/sangha', {
+      const response = await apiClient.client.get('/sso/sangha/test', {
         headers: this.getHeaders()
       });
       
