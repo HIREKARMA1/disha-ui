@@ -17,8 +17,8 @@ export const SSODashboard: React.FC<SSODashboardProps> = ({ className }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadingService, setLoadingService] = useState<string | null>(null);
     const { user, getToken } = useAuth();
-
     const token = getToken();
+
     const ssoService = token ? new SSOService(token) : null;
 
     useEffect(() => {
