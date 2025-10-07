@@ -86,29 +86,31 @@ export function OfferLetterViewerModal({
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+                            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl max-h-[95vh] overflow-y-auto"
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                                        <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center justify-between p-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                                            <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                                Offer Letter
+                                            </h2>
+                                            <p className="text-gray-600 dark:text-gray-400">
+                                                {application.job_title} • {application.corporate_name}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                            Offer Letter
-                                        </h2>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {application.job_title} - {application.corporate_name}
-                                        </p>
-                                    </div>
+                                    <button
+                                        onClick={onClose}
+                                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <X className="w-5 h-5 text-gray-500" />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-gray-500" />
-                                </button>
                             </div>
 
                             {/* Content */}
@@ -160,16 +162,51 @@ export function OfferLetterViewerModal({
 
                                 {/* Offer Letter */}
                                 <div>
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                                        Offer Letter
-                                    </h3>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                            Offer Letter
+                                        </h3>
+                                        {application.offer_letter_uploaded_at && (
+                                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                Uploaded: {formatDate(application.offer_letter_uploaded_at)}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                                         {application.offer_letter_url ? (
-                                            <iframe
-                                                src={application.offer_letter_url}
-                                                className="w-full h-96"
-                                                title="Offer Letter"
-                                            />
+                                            <div className="bg-gray-50 dark:bg-gray-700 p-6">
+                                                <div className="flex items-center justify-center mb-4">
+                                                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                                                        <FileText className="w-8 h-8 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                                        Offer Letter Available
+                                                    </h4>
+                                                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                                        Your offer letter has been uploaded by {application.corporate_name}
+                                                    </p>
+                                                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                                        <Button
+                                                            onClick={() => window.open(application.offer_letter_url, '_blank')}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <FileText className="w-4 h-4" />
+                                                            View Offer Letter
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={handleDownload}
+                                                            disabled={isLoading}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                            {isLoading ? 'Downloading...' : 'Download PDF'}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ) : (
                                             <div className="p-8 text-center">
                                                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -194,26 +231,6 @@ export function OfferLetterViewerModal({
                                         </div>
                                     </div>
                                 )}
-
-                                {application.interview_date && (
-                                    <div>
-                                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                            Interview Details
-                                        </h3>
-                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-                                            <div className="space-y-2">
-                                                <p className="text-gray-700 dark:text-gray-300">
-                                                    <strong>Date:</strong> {formatDate(application.interview_date)}
-                                                </p>
-                                                {application.interview_location && (
-                                                    <p className="text-gray-700 dark:text-gray-300">
-                                                        <strong>Location:</strong> {application.interview_location}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Actions */}
@@ -224,16 +241,6 @@ export function OfferLetterViewerModal({
                                 >
                                     Close
                                 </Button>
-                                {application.offer_letter_url && (
-                                    <Button
-                                        onClick={handleDownload}
-                                        disabled={isLoading}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                        {isLoading ? 'Downloading...' : 'Download Offer Letter'}
-                                    </Button>
-                                )}
                             </div>
                         </motion.div>
                     </div>
