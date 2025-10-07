@@ -49,7 +49,7 @@ export function useUniversities(includeArchived: boolean = false) {
             setIsLoading(true)
             setError(null)
             
-            const response = await apiClient.client.get('/admins/universities', {
+            const response = await apiClient.client.get('/practice/universities', {
                 params: {
                     include_archived: includeArchived
                 }

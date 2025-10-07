@@ -11,7 +11,8 @@ import {
     X,
     Menu,
     LogOut,
-    Building2
+    Building2,
+    Brain
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -63,6 +64,13 @@ const navItems: NavItem[] = [
         icon: FileText,
         description: 'Review applications',
         color: 'from-indigo-500 to-blue-600'
+    },
+    {
+        label: 'Practice',
+        href: '/dashboard/corporate/practice',
+        icon: Brain,
+        description: 'Manage practice modules',
+        color: 'from-purple-500 to-pink-600'
     },
     // {
     //     label: 'Interviews',
