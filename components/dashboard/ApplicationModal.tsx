@@ -6,6 +6,7 @@ import { X, FileText, Calendar, DollarSign, Send, Building, MapPin, Briefcase } 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { toast } from 'react-hot-toast'
 
 interface Job {
     id: string
@@ -48,14 +49,55 @@ Best regards,
         expected_salary: '',
         availability_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     })
+    
+    const [salaryError, setSalaryError] = useState<string>('')
+
+    const validateSalary = (salary: string): boolean => {
+        if (!salary.trim()) return true // Empty salary is allowed
+        
+        // Check if it contains range indicators (dash, hyphen, "to", etc.)
+        const rangePatterns = [
+            /-/,  // Contains dash
+            /to/i,  // Contains "to"
+            /range/i,  // Contains "range"
+            /between/i,  // Contains "between"
+            /upto/i,  // Contains "upto"
+            /up to/i,  // Contains "up to"
+            /,/  // Contains comma (multiple values)
+        ]
+        
+        if (rangePatterns.some(pattern => pattern.test(salary))) {
+            return false
+        }
+        
+        // Check if it's a valid number
+        const numericValue = parseFloat(salary.replace(/[,\s]/g, ''))
+        return !isNaN(numericValue) && numericValue > 0
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        
+        // Validate expected salary
+        if (formData.expected_salary && !validateSalary(formData.expected_salary)) {
+            toast.error('Invalid salary format!')
+            return
+        }
+        
         onSubmit(formData)
     }
 
     const handleInputChange = (field: keyof ApplicationData, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }))
+        
+        // Real-time validation for salary
+        if (field === 'expected_salary') {
+            if (value.trim() && !validateSalary(value)) {
+                setSalaryError('Invalid format! Enter a single amount like 30000. No ranges or multiple values.')
+            } else {
+                setSalaryError('')
+            }
+        }
     }
 
     return (
@@ -128,9 +170,19 @@ Best regards,
                                     type="text"
                                     value={formData.expected_salary}
                                     onChange={(e) => handleInputChange('expected_salary', e.target.value)}
-                                    placeholder={job.salary_min ? `${job.salary_min} - ${job.salary_max}` : "Enter expected salary"}
-                                    className="bg-white/10 backdrop-blur-sm border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                    placeholder="Enter expected salary (e.g., 30000)"
+                                    className={cn(
+                                        "bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400",
+                                        salaryError 
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-400/20" 
+                                            : "border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20"
+                                    )}
                                 />
+                                {salaryError && (
+                                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        {salaryError}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -161,7 +213,7 @@ Best regards,
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isApplying}
+                                disabled={isApplying || !!salaryError}
                                 className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isApplying ? (
