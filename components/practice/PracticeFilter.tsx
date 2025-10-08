@@ -6,6 +6,9 @@ import { Search, Filter, X, Brain, MessageCircle, Code, Trophy, GraduationCap } 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useStudentProfile } from '@/hooks/useStudentProfile'
+import { useUniversities } from '@/hooks/useUniversities'
+import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
+import { BRANCH_MULTI_SELECT_OPTIONS } from '@/components/ui/BranchSelection'
 
 export type PracticeCategory = 'all' | 'ai-mock-tests' | 'ai-mock-interviews' | 'coding-practice' | 'challenges-engagement'
 
@@ -14,6 +17,10 @@ interface PracticeFilterProps {
     onSearchChange: (value: string) => void
     selectedCategory: PracticeCategory
     onCategoryChange: (category: PracticeCategory) => void
+    selectedUniversities: string[]
+    onUniversitiesChange: (universities: string[]) => void
+    selectedBranches: string[]
+    onBranchesChange: (branches: string[]) => void
     onSearch: () => void
     onClearFilters: () => void
 }
@@ -62,11 +69,23 @@ export function PracticeFilter({
     onSearchChange,
     selectedCategory,
     onCategoryChange,
+    selectedUniversities,
+    onUniversitiesChange,
+    selectedBranches,
+    onBranchesChange,
     onSearch,
     onClearFilters
 }: PracticeFilterProps) {
     const [showFilters, setShowFilters] = useState(false)
     const { profile } = useStudentProfile()
+    const { data: universities, isLoading: universitiesLoading } = useUniversities()
+    
+    // Convert universities to MultiSelectOption format
+    const universityOptions: MultiSelectOption[] = universities.map(uni => ({
+        id: uni.id,
+        label: uni.university_name,
+        value: uni.id
+    }))
 
     return (
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300 p-6">
@@ -166,6 +185,57 @@ export function PracticeFilter({
                                     </motion.button>
                                 )
                             })}
+                        </div>
+                        
+                        {/* University and Branch Filters */}
+                        <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Additional Filters
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* University Filter */}
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Filter by University
+                                    </label>
+                                    <MultiSelectDropdown
+                                        options={universityOptions}
+                                        selectedValues={selectedUniversities}
+                                        onSelectionChange={onUniversitiesChange}
+                                        placeholder="Select universities..."
+                                        disabled={universitiesLoading}
+                                        className="w-full"
+                                    />
+                                    {universitiesLoading && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Loading universities...
+                                        </p>
+                                    )}
+                                </div>
+                                
+                                {/* Branch Filter */}
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Filter by Branch
+                                    </label>
+                                    <MultiSelectDropdown
+                                        options={BRANCH_MULTI_SELECT_OPTIONS}
+                                        selectedValues={selectedBranches}
+                                        onSelectionChange={onBranchesChange}
+                                        placeholder="Select branches..."
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Filter Info */}
+                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <strong>Note:</strong> These filters work in addition to the automatic filtering based on your profile. 
+                                    You can manually select specific universities and branches to see tests targeted to them.
+                                </p>
+                            </div>
                         </div>
                         
                         {/* Automatic Filtering Info */}

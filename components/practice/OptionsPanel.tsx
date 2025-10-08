@@ -144,14 +144,14 @@ export function OptionsPanel({
                             <label
                                 key={option.id}
                                 className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                                onClick={() => handleOptionSelect(option.id)}
                             >
-                                <div className="mt-1">
-                                    {isOptionSelected(option.id) ? (
-                                        <CheckSquare className="w-4 h-4 text-primary-600" />
-                                    ) : (
-                                        <Square className="w-4 h-4 text-gray-400" />
-                                    )}
-                                </div>
+                                <input
+                                    type="checkbox"
+                                    checked={isOptionSelected(option.id)}
+                                    onChange={() => handleOptionSelect(option.id)}
+                                    className="mt-1 w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                                />
                                 <span className="text-sm text-gray-900 dark:text-white">
                                     {option.text}
                                 </span>

@@ -21,6 +21,8 @@ export function PracticeDashboard() {
     const [examResult, setExamResult] = useState<SubmitAttemptResponse | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<PracticeCategory>('all')
+    const [selectedUniversities, setSelectedUniversities] = useState<string[]>([])
+    const [selectedBranches, setSelectedBranches] = useState<string[]>([])
     const [submittedModules, setSubmittedModules] = useState<Set<string>>(new Set())
     const [moduleResults, setModuleResults] = useState<Map<string, SubmitAttemptResponse>>(new Map())
     const [isClient, setIsClient] = useState(false)
@@ -101,38 +103,54 @@ export function PracticeDashboard() {
             )
         }
         
-        // Filter by university and branch targeting based on admin's targeting criteria
+        // Filter by university and branch targeting
         filtered = filtered.filter(module => {
-            // Check university targeting
-            const universityMatch = 
-                module.target_all_colleges || // Admin selected "All Universities"
-                (profile?.institution && module.target_college_ids?.includes(profile.institution)) // Student's university is in the targeted list
-            
-            // Check branch targeting  
-            const branchMatch = 
-                module.target_all_branches || // Admin selected "All Branches"
-                (profile?.branch && module.target_branch_ids?.includes(profile.branch)) // Student's branch is in the targeted list
-            
-            // Debug logging
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`Module: ${module.title}`, {
-                    target_all_colleges: module.target_all_colleges,
-                    target_college_ids: module.target_college_ids,
-                    target_all_branches: module.target_all_branches,
-                    target_branch_ids: module.target_branch_ids,
-                    student_institution: profile?.institution,
-                    student_branch: profile?.branch,
-                    universityMatch,
-                    branchMatch,
-                    finalMatch: universityMatch && branchMatch
-                })
+            // If manual filters are applied, use them instead of automatic profile-based filtering
+            if (selectedUniversities.length > 0 || selectedBranches.length > 0) {
+                // Manual university filter
+                const manualUniversityMatch = 
+                    selectedUniversities.length === 0 || // No university filter selected
+                    module.target_all_colleges || // Admin selected "All Universities"
+                    selectedUniversities.some(uniId => module.target_college_ids?.includes(uniId)) // Selected university is in targeted list
+                
+                // Manual branch filter
+                const manualBranchMatch = 
+                    selectedBranches.length === 0 || // No branch filter selected
+                    module.target_all_branches || // Admin selected "All Branches"
+                    selectedBranches.some(branch => module.target_branch_ids?.includes(branch)) // Selected branch is in targeted list
+                
+                return manualUniversityMatch && manualBranchMatch
+            } else {
+                // Use automatic filtering based on student's profile
+                const universityMatch = 
+                    module.target_all_colleges || // Admin selected "All Universities"
+                    (profile?.institution && module.target_college_ids?.includes(profile.institution)) // Student's university is in the targeted list
+                
+                const branchMatch = 
+                    module.target_all_branches || // Admin selected "All Branches"
+                    (profile?.branch && module.target_branch_ids?.includes(profile.branch)) // Student's branch is in the targeted list
+                
+                // Debug logging
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`Module: ${module.title}`, {
+                        target_all_colleges: module.target_all_colleges,
+                        target_college_ids: module.target_college_ids,
+                        target_all_branches: module.target_all_branches,
+                        target_branch_ids: module.target_branch_ids,
+                        student_institution: profile?.institution,
+                        student_branch: profile?.branch,
+                        universityMatch,
+                        branchMatch,
+                        finalMatch: universityMatch && branchMatch
+                    })
+                }
+                
+                return universityMatch && branchMatch
             }
-            
-            return universityMatch && branchMatch
         })
         
         return filtered
-    }, [allModules, selectedCategory, searchTerm, profile])
+    }, [allModules, selectedCategory, searchTerm, selectedUniversities, selectedBranches, profile])
 
     // Don't render until client is ready to prevent hydration mismatch
     if (!isClient) {
@@ -200,6 +218,8 @@ export function PracticeDashboard() {
     const handleClearFilters = () => {
         setSearchTerm('')
         setSelectedCategory('all')
+        setSelectedUniversities([])
+        setSelectedBranches([])
     }
 
     if (currentView === 'exam' && selectedModule) {
@@ -256,6 +276,10 @@ export function PracticeDashboard() {
                 onSearchChange={setSearchTerm}
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
+                selectedUniversities={selectedUniversities}
+                onUniversitiesChange={setSelectedUniversities}
+                selectedBranches={selectedBranches}
+                onBranchesChange={setSelectedBranches}
                 onSearch={handleSearch}
                 onClearFilters={handleClearFilters}
             />

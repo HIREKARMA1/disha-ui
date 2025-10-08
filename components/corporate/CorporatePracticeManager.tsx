@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CorporateQuestionEditor } from './CorporateQuestionEditor'
 import { CorporateBulkUploader } from './CorporateBulkUploader'
-// import { AdminAttemptViewer } from './AdminAttemptViewer'
+import { CorporateAttemptViewer } from './CorporateAttemptViewer'
 import { PracticeModule, Question, PracticeCategory } from '@/types/practice'
 import {
     useCorporatePracticeModules,
@@ -402,21 +402,10 @@ export function CorporatePracticeManager() {
 
     if (currentView === 'attempts' && selectedModule) {
         return (
-            <div className="space-y-6 main-content">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        Attempt Viewer
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        Attempt viewer component will be implemented here.
-                    </p>
-                    <div className="mt-4 flex gap-2">
-                        <Button onClick={handleBackToModules} variant="outline">
-                            Back to Modules
-                        </Button>
-                    </div>
-                </div>
-            </div>
+            <CorporateAttemptViewer
+                module={selectedModule}
+                onBack={handleBackToModules}
+            />
         )
     }
 

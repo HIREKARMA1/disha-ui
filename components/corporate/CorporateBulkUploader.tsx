@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Upload, Download, CheckCircle, XCircle, AlertTriangle, FileText, Database, Clock, AlertCircle, X } from 'lucide-react'
+import { ArrowLeft, Upload, Download, CheckCircle, XCircle, AlertTriangle, FileText, Database, Clock, AlertCircle as AlertCircleIcon, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BulkUploadResult } from '@/types/practice'
 import { toast } from 'react-hot-toast'
@@ -67,235 +67,478 @@ export function CorporateBulkUploader({ onComplete, onCancel, moduleId }: Corpor
     }
 
     const parseCSVLine = (line: string): string[] => {
-        const result: string[] = []
+        const result = []
         let current = ''
         let inQuotes = false
-        
-        for (let i = 0; i < line.length; i++) {
+        let i = 0
+
+        while (i < line.length) {
             const char = line[i]
-            
+
             if (char === '"') {
-                inQuotes = !inQuotes
+                if (inQuotes && line[i + 1] === '"') {
+                    // Handle escaped quotes ("")
+                    current += '"'
+                    i += 2
+                    continue
+                } else {
+                    inQuotes = !inQuotes
+                }
             } else if (char === ',' && !inQuotes) {
                 result.push(current.trim())
                 current = ''
             } else {
                 current += char
             }
+            i++
         }
-        
+
         result.push(current.trim())
         return result
     }
 
-    const processFile = async (file: File) => {
+    const validateCSVContent = async (file: File): Promise<{
+        isValid: boolean;
+        rowCount: number;
+        missingColumns: string[];
+        sampleData: any[];
+        error?: string;
+    }> => {
         try {
-            setIsProcessing(true)
-            setError(null)
-
-            // Validate file
-            const validationError = validateCSVFile(file)
-            if (validationError) {
-                setError(validationError)
-                return
-            }
-
-            // Read file content
             const text = await file.text()
             const lines = text.split('\n').filter(line => line.trim())
             
             if (lines.length < 2) {
-                setError('CSV file must have at least a header row and one data row')
-                return
+                return {
+                    isValid: false,
+                    rowCount: 0,
+                    missingColumns: [],
+                    sampleData: [],
+                    error: 'File must contain at least a header row and one data row'
+                }
             }
 
-            // Parse header
-            const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim())
+            const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase())
             const requiredColumns = ['statement', 'type', 'options', 'correct_options']
             const missingColumns = requiredColumns.filter(col => !headers.includes(col))
 
             if (missingColumns.length > 0) {
-                setFileValidation({
+                return {
                     isValid: false,
                     rowCount: lines.length - 1,
                     missingColumns,
                     sampleData: [],
                     error: `Missing required columns: ${missingColumns.join(', ')}`
+                }
+            }
+
+            // Parse sample data (first 5 rows)
+            const sampleData = lines.slice(1, 6).map((line, index) => {
+                const values = parseCSVLine(line)
+                const row: any = { row: index + 2 }
+                
+                headers.forEach((header, i) => {
+                    row[header] = values[i] || ''
                 })
+                
+                return row
+            })
+
+            return {
+                isValid: true,
+                rowCount: lines.length - 1,
+                missingColumns: [],
+                sampleData,
+                error: undefined
+            }
+        } catch (error) {
+            return {
+                isValid: false,
+                rowCount: 0,
+                missingColumns: [],
+                sampleData: [],
+                error: 'Failed to parse CSV file. Please check the format.'
+            }
+        }
+    }
+
+    const processFile = async (file: File) => {
+        setIsProcessing(true)
+        setError(null)
+        
+        try {
+            // Validate file
+            const fileError = validateCSVFile(file)
+            if (fileError) {
+                setError(fileError)
                 return
             }
 
-            // Parse data rows
-            const data = []
-            for (let i = 1; i < lines.length; i++) {
-                const values = parseCSVLine(lines[i])
-                if (values.length !== headers.length) continue
+            // Validate content
+            const validation = await validateCSVContent(file)
+            setFileValidation(validation)
 
-                const row: any = {}
-                headers.forEach((header, index) => {
-                    row[header] = values[index]
-                })
-
-                // Parse options and correct_options
-                try {
-                    row.options = JSON.parse(row.options || '[]')
-                    row.correct_options = JSON.parse(row.correct_options || '[]')
-                } catch (e) {
-                    // If JSON parsing fails, treat as pipe-separated strings
-                    row.options = (row.options || '').split('|').map((opt: string, idx: number) => ({
-                        id: String.fromCharCode(97 + idx),
-                        text: opt.trim()
-                    }))
-                    row.correct_options = (row.correct_options || '').split('|').map((opt: string) => opt.trim())
-                }
-
-                data.push(row)
+            if (validation.isValid) {
+                setPreviewData(validation.sampleData)
+                setUploadStep('preview')
+                toast.success(`File validated successfully. ${validation.rowCount} questions found.`)
+            } else {
+                setError(validation.error || 'File validation failed')
+                toast.error(validation.error || 'File validation failed')
             }
-
-            setFileValidation({
-                isValid: true,
-                rowCount: data.length,
-                missingColumns: [],
-                sampleData: data.slice(0, 3) // Show first 3 rows as preview
-            })
-
-            setPreviewData(data)
-            setUploadStep('preview')
-
-        } catch (err) {
-            console.error('Error processing file:', err)
-            setError('Failed to process CSV file. Please check the format and try again.')
+        } catch (error) {
+            const errorMessage = 'Failed to process file. Please check the format.'
+            setError(errorMessage)
+            toast.error(errorMessage)
+            console.error('File processing error:', error)
         } finally {
             setIsProcessing(false)
         }
     }
 
     const handleUpload = async () => {
-        if (!previewData.length) return
+        if (!selectedFile || !fileValidation?.isValid) return
 
+        setIsUploading(true)
+        setError(null)
+        
         try {
-            setIsUploading(true)
-            setError(null)
+            // Parse the full CSV file to get all questions
+            const text = await selectedFile.text()
+            const lines = text.split('\n').filter(line => line.trim())
+            const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase())
+            
+            const questions = lines.slice(1).map((line, index) => {
+                const values = parseCSVLine(line)
+                const question: any = { row: index + 2 }
+                
+                headers.forEach((header, i) => {
+                    const value = values[i] || ''
+                    
+                    // Handle special parsing for options and correct_options
+                    if (header === 'options' && value) {
+                        // Try to parse as JSON array first, fallback to pipe-separated
+                        try {
+                            const parsed = JSON.parse(value)
+                            if (Array.isArray(parsed)) {
+                                question[header] = parsed
+                            } else {
+                                question[header] = value
+                            }
+                        } catch {
+                            question[header] = value
+                        }
+                    } else if (header === 'correct_options' && value) {
+                        // Try to parse as JSON array first, fallback to pipe-separated
+                        try {
+                            const parsed = JSON.parse(value)
+                            if (Array.isArray(parsed)) {
+                                question[header] = parsed
+                            } else {
+                                question[header] = value
+                            }
+                        } catch {
+                            question[header] = value
+                        }
+                    } else {
+                        question[header] = value
+                    }
+                })
+                
+                return question
+            })
 
-            const results = {
-                total: previewData.length,
-                successful: 0,
-                failed: 0,
-                errors: [] as string[]
-            }
+            let successCount = 0
+            let errorCount = 0
+            const errors: any[] = []
 
             // Process each question
-            for (let i = 0; i < previewData.length; i++) {
-                const questionData = previewData[i]
+            for (let i = 0; i < questions.length; i++) {
+                const question = questions[i]
+                console.log('🔍 Processing question:', {
+                    row: question.row,
+                    statement: question.statement,
+                    options: question.options,
+                    correct_options: question.correct_options,
+                    optionsType: typeof question.options,
+                    optionsIsArray: Array.isArray(question.options)
+                })
                 
                 try {
-                    // Prepare question data for API
-                    const apiData = {
-                        statement: questionData.statement,
-                        type: questionData.type,
-                        options: questionData.options,
-                        correct_options: questionData.correct_options,
-                        difficulty: questionData.difficulty || 'medium',
-                        role: questionData.role || 'Developer',
-                        category: questionData.category || 'coding-practice',
-                        question_metadata: {
-                            test_cases: questionData.test_cases || []
-                        }
+                    // Validate question data
+                    if (!question.statement?.trim()) {
+                        errors.push({ row: question.row, field: 'statement', message: 'Question statement is required' })
+                        errorCount++
+                        continue
                     }
 
-                    // Create question
-                    const question = await createQuestionMutation.mutateAsync(apiData)
+                    if ((question.type === 'mcq_single' || question.type === 'mcq_multi') && !question.options) {
+                        errors.push({ row: question.row, field: 'options', message: 'Options are required for MCQ questions' })
+                        errorCount++
+                        continue
+                    }
+
+                    // Parse options and correct_options - handle both array format and pipe-separated strings
+                    let parsedOptions: Array<{ id: string; text: string }> = []
+                    let parsedCorrectOptions: string[] = []
                     
-                    // Add to module if moduleId is provided
-                    if (moduleId) {
-                        await addQuestionToModuleMutation.mutateAsync(moduleId, question.id)
+                    try {
+                        // Handle options - check if it's already an array or pipe-separated string
+                        if (question.options) {
+                            if (Array.isArray(question.options)) {
+                                // Already in array format with id and text
+                                parsedOptions = question.options.map((opt: any) => ({
+                                    id: opt.id || String.fromCharCode(97 + parsedOptions.length),
+                                    text: opt.text || opt
+                                }))
+                            } else if (typeof question.options === 'string' && question.options.trim()) {
+                                // Try to parse as JSON array first
+                                try {
+                                    const parsed = JSON.parse(question.options)
+                                    if (Array.isArray(parsed)) {
+                                        parsedOptions = parsed.map((opt: any, index: number) => ({
+                                            id: opt.id || String.fromCharCode(97 + index),
+                                            text: opt.text || opt
+                                        }))
+                                    } else {
+                                        // Fallback: treat as pipe-separated string
+                                        const optionTexts = question.options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                        parsedOptions = optionTexts.map((text: string, index: number) => ({
+                                            id: String.fromCharCode(97 + index),
+                                            text: text
+                                        }))
+                                    }
+                                } catch {
+                                    // Check if it's a string representation of an array (like "['A','B','C']")
+                                    if (question.options.startsWith('[') && question.options.endsWith(']')) {
+                                        try {
+                                            // Try to parse the string as a JavaScript array
+                                            const arrayString = question.options.replace(/'/g, '"') // Replace single quotes with double quotes
+                                            const parsed = JSON.parse(arrayString)
+                                            if (Array.isArray(parsed)) {
+                                                parsedOptions = parsed.map((text: string, index: number) => ({
+                                                    id: String.fromCharCode(97 + index),
+                                                    text: text
+                                                }))
+                                            } else {
+                                                // Fallback: treat as pipe-separated string
+                                                const optionTexts = question.options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                                parsedOptions = optionTexts.map((text: string, index: number) => ({
+                                                    id: String.fromCharCode(97 + index),
+                                                    text: text
+                                                }))
+                                            }
+                                        } catch {
+                                            // Final fallback: treat as pipe-separated string
+                                            const optionTexts = question.options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                            parsedOptions = optionTexts.map((text: string, index: number) => ({
+                                                id: String.fromCharCode(97 + index),
+                                                text: text
+                                            }))
+                                        }
+                                    } else {
+                                        // Fallback: treat as pipe-separated string
+                                        const optionTexts = question.options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                        parsedOptions = optionTexts.map((text: string, index: number) => ({
+                                            id: String.fromCharCode(97 + index),
+                                            text: text
+                                        }))
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Handle correct_options - check if it's already an array or pipe-separated string
+                        if (question.correct_options) {
+                            if (Array.isArray(question.correct_options)) {
+                                // Already in array format - check if it contains option IDs or text values
+                                parsedCorrectOptions = question.correct_options.map((correctOpt: any) => {
+                                    // If it's already an option ID (single character), use it as is
+                                    if (typeof correctOpt === 'string' && correctOpt.length === 1 && /[a-z]/.test(correctOpt)) {
+                                        return correctOpt
+                                    }
+                                    // If it's a text value, find the corresponding option ID
+                                    const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctOpt)
+                                    return option ? option.id : correctOpt
+                                })
+                            } else if (typeof question.correct_options === 'string' && question.correct_options.trim()) {
+                                // Try to parse as JSON array first
+                                try {
+                                    const parsed = JSON.parse(question.correct_options)
+                                    if (Array.isArray(parsed)) {
+                                        // Map each correct option to its ID
+                                        parsedCorrectOptions = parsed.map((correctOpt: any) => {
+                                            // If it's already an option ID (single character), use it as is
+                                            if (typeof correctOpt === 'string' && correctOpt.length === 1 && /[a-z]/.test(correctOpt)) {
+                                                return correctOpt
+                                            }
+                                            // If it's a text value, find the corresponding option ID
+                                            const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctOpt)
+                                            return option ? option.id : correctOpt
+                                        })
+                                    } else {
+                                        // Fallback: treat as pipe-separated string
+                                        const correctTexts = question.correct_options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                        // Map correct option texts to their corresponding IDs
+                                        parsedCorrectOptions = correctTexts.map((correctText: string) => {
+                                            const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctText)
+                                            return option ? option.id : correctText
+                                        })
+                                    }
+                                } catch {
+                                    // Check if it's a string representation of an array (like "['Linked List']")
+                                    if (question.correct_options.startsWith('[') && question.correct_options.endsWith(']')) {
+                                        try {
+                                            // Try to parse the string as a JavaScript array
+                                            const arrayString = question.correct_options.replace(/'/g, '"') // Replace single quotes with double quotes
+                                            const parsed = JSON.parse(arrayString)
+                                            if (Array.isArray(parsed)) {
+                                                // Map each correct option to its ID
+                                                parsedCorrectOptions = parsed.map((correctOpt: any) => {
+                                                    // If it's already an option ID (single character), use it as is
+                                                    if (typeof correctOpt === 'string' && correctOpt.length === 1 && /[a-z]/.test(correctOpt)) {
+                                                        return correctOpt
+                                                    }
+                                                    // If it's a text value, find the corresponding option ID
+                                                    const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctOpt)
+                                                    return option ? option.id : correctOpt
+                                                })
+                                            } else {
+                                                // Fallback: treat as pipe-separated string
+                                                const correctTexts = question.correct_options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                                parsedCorrectOptions = correctTexts.map((correctText: string) => {
+                                                    const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctText)
+                                                    return option ? option.id : correctText
+                                                })
+                                            }
+                                        } catch {
+                                            // Final fallback: treat as pipe-separated string
+                                            const correctTexts = question.correct_options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                            parsedCorrectOptions = correctTexts.map((correctText: string) => {
+                                                const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctText)
+                                                return option ? option.id : correctText
+                                            })
+                                        }
+                                    } else {
+                                        // Fallback: treat as pipe-separated string
+                                        const correctTexts = question.correct_options.split('|').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+                                        parsedCorrectOptions = correctTexts.map((correctText: string) => {
+                                            const option = parsedOptions.find((opt: { id: string; text: string }) => opt.text === correctText)
+                                            return option ? option.id : correctText
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // For descriptive questions, allow empty options
+                        if (question.type === 'descriptive') {
+                            parsedOptions = []
+                            parsedCorrectOptions = []
+                        }
+                    } catch (parseError) {
+                        errors.push({ row: question.row, field: 'options', message: 'Invalid format for options or correct_options. Expected array format or pipe-separated values.' })
+                        errorCount++
+                        continue
                     }
 
-                    results.successful++
-                } catch (err: any) {
-                    results.failed++
-                    results.errors.push(`Row ${i + 1}: ${err.message || 'Unknown error'}`)
+                    // Create question data (matching admin structure)
+                    const questionData = {
+                        statement: question.statement.trim(),
+                        type: question.type || 'mcq_single',
+                        options: parsedOptions,
+                        correct_options: parsedCorrectOptions,
+                        explanation: question.explanation || '',
+                        test_cases: [],
+                        tags: [],
+                        role: 'Developer',
+                        difficulty: (question.difficulty || 'medium') as 'easy' | 'medium' | 'hard',
+                        time_limit_seconds: 120
+                    }
+                    
+                    // Debug logging (can be removed in production)
+                    console.log('🔍 Parsed options before sending:', parsedOptions)
+                    console.log('🔍 Parsed correct options before sending:', parsedCorrectOptions)
+
+                    // Create the question
+                    const createdQuestion = await createQuestionMutation.mutateAsync(questionData)
+                    
+                    // Add question to module if moduleId is provided
+                    if (moduleId && createdQuestion?.id) {
+                        await addQuestionToModuleMutation.mutateAsync(moduleId, createdQuestion.id)
+                    }
+                    
+                    successCount++
+                } catch (questionError) {
+                    console.error(`Error creating question ${question.row}:`, questionError)
+                    errors.push({ 
+                        row: question.row, 
+                        field: 'general', 
+                        message: `Failed to create question: ${questionError instanceof Error ? questionError.message : 'Unknown error'}` 
+                    })
+                    errorCount++
                 }
             }
-
-            setUploadResult(results)
+            
+            const result: BulkUploadResult = {
+                success: successCount > 0,
+                totalRows: questions.length,
+                validRows: successCount,
+                invalidRows: errorCount,
+                errors: errors
+            }
+            
+            setUploadResult(result)
             setUploadStep('result')
-
-            if (results.successful > 0) {
-                toast.success(`Successfully uploaded ${results.successful} questions`)
+            
+            if (successCount > 0) {
+                toast.success(`Successfully uploaded ${successCount} questions!`)
+            } else {
+                toast.error('No questions were uploaded successfully')
             }
-            if (results.failed > 0) {
-                toast.error(`Failed to upload ${results.failed} questions`)
-            }
-
-        } catch (err) {
-            console.error('Error uploading questions:', err)
-            setError('Failed to upload questions. Please try again.')
+            
+        } catch (error) {
+            const errorMessage = 'Upload failed. Please try again.'
+            setError(errorMessage)
+            toast.error(errorMessage)
+            console.error('Upload error:', error)
         } finally {
             setIsUploading(false)
         }
     }
 
-    const handleDownloadTemplate = async () => {
+    const downloadTemplate = async () => {
+        setIsDownloadingTemplate(true)
         try {
-            setIsDownloadingTemplate(true)
+            // Create a sample CSV template with JSON array format for options and correct_options
+            const csvContent = `statement,type,options,correct_options,difficulty,explanation
+"Which data structure uses FIFO order?","mcq_single","[{\"id\":\"a\",\"text\":\"Stack\"},{\"id\":\"b\",\"text\":\"Queue\"},{\"id\":\"c\",\"text\":\"Tree\"},{\"id\":\"d\",\"text\":\"Graph\"}]","[\"b\"]","medium","Queue follows First In First Out (FIFO) principle."
+"Which sorting algorithm has worst case O(n²)?","mcq_single","[{\"id\":\"a\",\"text\":\"Merge Sort\"},{\"id\":\"b\",\"text\":\"Quick Sort\"},{\"id\":\"c\",\"text\":\"Heap Sort\"},{\"id\":\"d\",\"text\":\"Bubble Sort\"}]","[\"d\"]","medium","Bubble Sort has O(n²) worst case time complexity."
+"Which of these is a linear data structure?","mcq_single","[{\"id\":\"a\",\"text\":\"Array\"},{\"id\":\"b\",\"text\":\"Tree\"},{\"id\":\"c\",\"text\":\"Graph\"},{\"id\":\"d\",\"text\":\"Heap\"}]","[\"a\"]","easy","Array is a linear data structure where elements are stored in contiguous memory locations."
+"Which searching algorithm works on sorted arrays?","mcq_single","[{\"id\":\"a\",\"text\":\"Linear Search\"},{\"id\":\"b\",\"text\":\"Binary Search\"},{\"id\":\"c\",\"text\":\"DFS\"},{\"id\":\"d\",\"text\":\"BFS\"}]","[\"b\"]","easy","Binary Search works on sorted arrays and has O(log n) time complexity."
+"What is the capital of France?","mcq_single","[{\"id\":\"a\",\"text\":\"Paris\"},{\"id\":\"b\",\"text\":\"London\"},{\"id\":\"c\",\"text\":\"Berlin\"},{\"id\":\"d\",\"text\":\"Madrid\"}]","[\"a\"]","easy","Paris is the capital and largest city of France."`
             
-            const templateData = [
-                ['statement', 'type', 'options', 'correct_options', 'difficulty', 'role', 'category'],
-                [
-                    'What is the time complexity of binary search?',
-                    'mcq_single',
-                    '[{"id":"a","text":"O(n)"},{"id":"b","text":"O(log n)"},{"id":"c","text":"O(n²)"},{"id":"d","text":"O(1)"}]',
-                    '["b"]',
-                    'medium',
-                    'Developer',
-                    'coding-practice'
-                ],
-                [
-                    'Which data structure uses LIFO principle?',
-                    'mcq_single',
-                    '[{"id":"a","text":"Queue"},{"id":"b","text":"Stack"},{"id":"c","text":"Array"},{"id":"d","text":"Tree"}]',
-                    '["b"]',
-                    'easy',
-                    'Developer',
-                    'coding-practice'
-                ]
-            ]
-
-            const csvContent = templateData.map(row => 
-                row.map(cell => `"${cell}"`).join(',')
-            ).join('\n')
-
             const blob = new Blob([csvContent], { type: 'text/csv' })
             const url = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = 'questions_template.csv'
+            link.download = 'practice_questions_template.csv'
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
             window.URL.revokeObjectURL(url)
-
-            toast.success('Template downloaded successfully')
-        } catch (err) {
-            console.error('Error downloading template:', err)
+            
+            toast.success('Template downloaded successfully!')
+        } catch (error) {
+            console.error('Error downloading template:', error)
             toast.error('Failed to download template')
         } finally {
             setIsDownloadingTemplate(false)
         }
     }
 
-    const handleReset = () => {
-        setSelectedFile(null)
-        setPreviewData([])
-        setUploadResult(null)
-        setError(null)
-        setFileValidation(null)
-        setUploadStep('upload')
-    }
-
     return (
-        <div className="space-y-6 main-content">
+        <div className="space-y-6">
             {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -303,332 +546,347 @@ export function CorporateBulkUploader({ onComplete, onCancel, moduleId }: Corpor
                 transition={{ duration: 0.6 }}
                 className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
             >
-                <div className="flex items-center justify-between">
-                    <div>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                    <div className="flex-1 min-w-0">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Bulk Upload Questions 📤
+                            Practice Module Management 🧠
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg">
-                            Upload multiple questions at once using a CSV file
+                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                            Manage practice tests, questions, and view student attempts ✨
                         </p>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                                🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            </span>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                📚 Question Management
+                            </span>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                🎯 Student Analytics
+                            </span>
+                        </div>
                     </div>
+                </div>
+            </motion.div>
+
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
                     <Button
                         onClick={onCancel}
                         variant="outline"
-                        className="border-primary-200 dark:border-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                        size="sm"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back
                     </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Bulk Upload Questions
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Upload multiple questions via CSV file with validation
+                        </p>
+                    </div>
                 </div>
-            </motion.div>
+            </div>
 
-            <AnimatePresence mode="wait">
-                {uploadStep === 'upload' && (
-                    <motion.div
-                        key="upload"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
+            {/* Instructions */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                    <AlertCircleIcon className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                            Upload Instructions
+                        </h4>
+                        <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                            <li>• Use the CSV template provided below</li>
+                            <li>• Required columns: statement, type, options, correct_options</li>
+                            <li>• Optional columns: difficulty, explanation</li>
+                            <li>• Use pipe-separated values for options (e.g., "Paris|London|Berlin|Madrid")</li>
+                            <li>• For correct_options, use the exact text from options (e.g., "Paris" or "Paris|London")</li>
+                            <li>• Maximum file size: 5MB</li>
+                            <li>• Questions will be validated before upload</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {/* Template Download */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                            Download Template
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Get the CSV template with sample data using pipe-separated format
+                        </p>
+                    </div>
+                    <Button
+                        onClick={downloadTemplate}
+                        disabled={isDownloadingTemplate}
+                        variant="outline"
+                        size="sm"
+                        className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     >
-                        {/* Upload Section */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                            <div className="text-center">
-                                <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
-                                    <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                    Upload CSV File
-                                </h3>
-                                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                    Select a CSV file containing your questions
-                                </p>
-
-                                <div className="space-y-4">
-                                    <input
-                                        type="file"
-                                        accept=".csv"
-                                        onChange={handleFileSelect}
-                                        className="hidden"
-                                        id="csv-upload"
-                                    />
-                                    <label
-                                        htmlFor="csv-upload"
-                                        className="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                    >
-                                        <FileText className="w-5 h-5 mr-2" />
-                                        Choose CSV File
-                                    </label>
-
-                                    {selectedFile && (
-                                        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center">
-                                                    <FileText className="w-5 h-5 text-gray-500 mr-2" />
-                                                    <span className="text-sm text-gray-900 dark:text-white">
-                                                        {selectedFile.name}
-                                                    </span>
-                                                </div>
-                                                <span className="text-xs text-gray-500">
-                                                    {(selectedFile.size / 1024).toFixed(1)} KB
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {isProcessing && (
-                                        <div className="flex items-center justify-center">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 mr-2"></div>
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                                                Processing file...
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {error && (
-                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                                            <div className="flex items-center">
-                                                <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                                                <span className="text-sm text-red-700 dark:text-red-300">
-                                                    {error}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {fileValidation && !fileValidation.isValid && (
-                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                                            <div className="flex items-center mb-2">
-                                                <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
-                                                <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                                                    File Validation Failed
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-red-600 dark:text-red-400">
-                                                {fileValidation.error}
-                                            </p>
-                                            {fileValidation.missingColumns.length > 0 && (
-                                                <div className="mt-2">
-                                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                                        Missing columns: {fileValidation.missingColumns.join(', ')}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                        {isDownloadingTemplate ? (
+                            <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                Downloading...
                             </div>
+                        ) : (
+                            <>
+                                <Download className="w-4 h-4 mr-2" />
+                                Download Template
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </div>
+
+            {/* Upload Step */}
+            {uploadStep === 'upload' && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8"
+                >
+                    <div className="text-center">
+                        <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
                         </div>
+                        
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                            Upload Questions File
+                        </h3>
+                        
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">
+                            Upload a CSV or Excel file containing practice questions
+                        </p>
 
-                        {/* Template Download */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                Need a Template?
-                            </h3>
-                            <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                Download our CSV template to see the required format and structure.
-                            </p>
-                            <Button
-                                onClick={handleDownloadTemplate}
-                                variant="outline"
-                                disabled={isDownloadingTemplate}
-                                className="flex items-center gap-2"
-                            >
-                                <Download className="w-4 h-4" />
-                                {isDownloadingTemplate ? 'Downloading...' : 'Download Template'}
-                            </Button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {uploadStep === 'preview' && (
-                    <motion.div
-                        key="preview"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        {/* Preview Section */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Preview Questions ({previewData.length} found)
-                                </h3>
-                                <Button
-                                    onClick={handleReset}
-                                    variant="outline"
-                                    size="sm"
+                        <div className="space-y-4">
+                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 hover:border-primary-500 dark:hover:border-primary-400 transition-colors">
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    id="file-upload"
+                                />
+                                <label
+                                    htmlFor="file-upload"
+                                    className="cursor-pointer flex flex-col items-center"
                                 >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Change File
-                                </Button>
+                                    <Upload className="w-12 h-12 text-gray-400 mb-4" />
+                                    <span className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                                        Choose CSV file or drag and drop
+                                    </span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                        CSV files up to 5MB
+                                    </span>
+                                </label>
                             </div>
 
-                            <div className="space-y-4">
-                                {previewData.slice(0, 3).map((question, index) => (
-                                    <div key={index} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <h4 className="font-medium text-gray-900 dark:text-white">
-                                                Question {index + 1}
-                                            </h4>
-                                            <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
-                                                {question.type?.replace('_', ' ').toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                            {question.statement}
-                                        </p>
-                                        {question.options && question.options.length > 0 && (
-                                            <div className="space-y-1">
-                                                {question.options.map((option: any) => (
-                                                    <div key={option.id} className="flex items-center gap-2">
-                                                        <span className="w-4 h-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs">
-                                                            {option.id.toUpperCase()}
-                                                        </span>
-                                                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {option.text}
-                                                        </span>
-                                                        {question.correct_options?.includes(option.id) && (
-                                                            <CheckCircle className="w-4 h-4 text-green-500" />
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                
-                                {previewData.length > 3 && (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                                        ... and {previewData.length - 3} more questions
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex justify-end gap-3 mt-6">
-                                <Button
-                                    onClick={handleReset}
-                                    variant="outline"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleUpload}
-                                    disabled={isUploading}
-                                    className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
-                                >
-                                    {isUploading ? (
-                                        <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Uploading...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-4 h-4 mr-2" />
-                                            Upload Questions
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {uploadStep === 'result' && uploadResult && (
-                    <motion.div
-                        key="result"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        {/* Result Section */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                            <div className="text-center mb-6">
-                                <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-                                    {uploadResult.failed === 0 ? (
-                                        <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
-                                    ) : (
-                                        <AlertCircle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-                                    )}
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                    Upload Complete
-                                </h3>
-                                <p className="text-gray-600 dark:text-gray-400">
-                                    {uploadResult.failed === 0 
-                                        ? 'All questions uploaded successfully!' 
-                                        : 'Upload completed with some issues.'
-                                    }
-                                </p>
-                            </div>
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-3 gap-4 mb-6">
-                                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        {uploadResult.total}
-                                    </div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                        Total
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                        {uploadResult.successful}
-                                    </div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                        Successful
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                                        {uploadResult.failed}
-                                    </div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                        Failed
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Errors */}
-                            {uploadResult.errors.length > 0 && (
-                                <div className="mb-6">
-                                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                                        Errors:
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {uploadResult.errors.map((error, index) => (
-                                            <div key={index} className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-                                                <p className="text-sm text-red-700 dark:text-red-300">
-                                                    {error}
-                                                </p>
-                                            </div>
-                                        ))}
+                            {/* Error Display */}
+                            {error && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                                    <div className="flex items-center">
+                                        <XCircle className="w-4 h-4 text-red-600 mr-2" />
+                                        <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="flex justify-end gap-3">
+                            {/* Processing Indicator */}
+                            {isProcessing && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                                    <div className="flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                        <p className="text-sm text-blue-800 dark:text-blue-200">Processing file...</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-center gap-4">
                                 <Button
-                                    onClick={handleReset}
+                                    onClick={downloadTemplate}
                                     variant="outline"
                                 >
-                                    Upload More
-                                </Button>
-                                <Button
-                                    onClick={onComplete}
-                                    className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
-                                >
-                                    Done
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Template
                                 </Button>
                             </div>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+                        {isProcessing && (
+                            <div className="mt-6 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                                <span className="ml-3 text-gray-600 dark:text-gray-400">
+                                    Processing file...
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Preview Step */}
+            {uploadStep === 'preview' && fileValidation && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                >
+                    {/* Validation Summary */}
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                        <div className="flex items-center">
+                            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                            <div>
+                                <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
+                                    File Validation Successful
+                                </h4>
+                                <p className="text-sm text-green-800 dark:text-green-200">
+                                    {fileValidation.rowCount} questions found and validated
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            File Preview
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            Preview of the first 5 rows from your file:
+                        </p>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left">Row</th>
+                                        <th className="px-4 py-2 text-left">Statement</th>
+                                        <th className="px-4 py-2 text-left">Type</th>
+                                        <th className="px-4 py-2 text-left">Options</th>
+                                        <th className="px-4 py-2 text-left">Correct Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {previewData.map((row, index) => (
+                                        <tr key={index}>
+                                            <td className="px-4 py-2">{row.row}</td>
+                                            <td className="px-4 py-2 max-w-xs truncate">{row.statement}</td>
+                                            <td className="px-4 py-2">
+                                                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
+                                                    {row.type}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-2 max-w-xs truncate">{row.options}</td>
+                                            <td className="px-4 py-2 max-w-xs truncate">{row.correct_options}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <Button
+                            onClick={() => setUploadStep('upload')}
+                            variant="outline"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back
+                        </Button>
+                        <Button
+                            onClick={handleUpload}
+                            disabled={isUploading}
+                            className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
+                        >
+                            {isUploading ? (
+                                <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Uploading...
+                                </div>
+                            ) : (
+                                <>
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Upload {fileValidation.rowCount} Questions
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Result Step */}
+            {uploadStep === 'result' && uploadResult && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                >
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Upload Results
+                        </h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div className="text-center">
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                        {uploadResult.totalRows}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Rows</p>
+                            </div>
+                            
+                            <div className="text-center">
+                                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {uploadResult.validRows} Valid
+                                </p>
+                            </div>
+                            
+                            <div className="text-center">
+                                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {uploadResult.invalidRows} Invalid
+                                </p>
+                            </div>
+                        </div>
+
+                        {uploadResult.errors.length > 0 && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                                <h4 className="font-medium text-red-900 dark:text-red-100 mb-2 flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    Validation Errors
+                                </h4>
+                                <div className="space-y-2">
+                                    {uploadResult.errors.map((error, index) => (
+                                        <div key={index} className="text-sm text-red-700 dark:text-red-300">
+                                            Row {error.row}: {error.message}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-4">
+                        <Button
+                            onClick={onComplete}
+                            className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
+                        >
+                            Done
+                        </Button>
+                    </div>
+                </motion.div>
+            )}
         </div>
     )
 }

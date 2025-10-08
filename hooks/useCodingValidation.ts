@@ -30,11 +30,13 @@ export function useCodingValidation() {
         setValidationResult(null)
 
         try {
-            const response = await apiClient.client.post('/practice/validate-coding-answer', {
+            const params = new URLSearchParams({
                 question_id: questionId,
                 code: code,
                 language: language
             })
+            
+            const response = await apiClient.client.post(`/practice/validate-coding-answer?${params.toString()}`)
 
             setValidationResult(response.data)
             return response.data

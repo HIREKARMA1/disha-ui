@@ -40,7 +40,7 @@ export interface PracticeModule {
   category?: PracticeCategory
   
   // Creator and targeting fields
-  creator_type?: 'admin' | 'university'
+  creator_type?: 'admin' | 'university' | 'corporate'
   creator_id?: string
   
   // Targeting fields for filtering

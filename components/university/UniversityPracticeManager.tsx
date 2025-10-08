@@ -1055,10 +1055,6 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
             }
         }
 
-        if (formData.start_date && new Date(formData.start_date) < new Date()) {
-            toast.error('Start date cannot be in the past')
-            return
-        }
 
         // Convert branch IDs to branch names for better filtering (same as admin)
         const selectedBranchNames = formData.university_target_branch_ids.map(branchId => {

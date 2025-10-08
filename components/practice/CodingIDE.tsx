@@ -12,6 +12,7 @@ import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { apiClient } from '@/lib/api'
 import { useCodingValidation } from '@/hooks/useCodingValidation'
 import { TestCasesDisplay } from './TestCasesDisplay'
+import { TestResultsPopup } from './TestResultsPopup'
 import { Question, TestCase } from '@/types/practice'
 import toast from 'react-hot-toast'
 
@@ -82,15 +83,20 @@ export function CodingIDE({
     const [executionHistory, setExecutionHistory] = useState<ExecutionResult[]>([])
     const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1)
     const [testResults, setTestResults] = useState<Array<{
+        test_case_id: number
+        input: string
+        expected_output: string
+        actual_output: string
         passed: boolean
-        actualOutput?: string
-        error?: string
+        points: number
+        is_hidden: boolean
     }>>([])
     const [showTestResults, setShowTestResults] = useState(false)
+    const [showTestPopup, setShowTestPopup] = useState(false)
     const editorRef = useRef<any>(null)
     
     // Test case validation hook
-    const { mutate: validateCode, isLoading: isValidating } = useCodingValidation()
+    const { validateCode, isValidating } = useCodingValidation()
 
     // Update code when language changes
     useEffect(() => {
@@ -118,7 +124,7 @@ export function CodingIDE({
     }
 
     // Handle test case validation
-    const handleValidateAgainstTests = () => {
+    const handleValidateAgainstTests = async () => {
         if (!question?.test_cases || question.test_cases.length === 0) {
             toast.error('No test cases available for this question')
             return
@@ -129,39 +135,36 @@ export function CodingIDE({
             return
         }
 
+        // Show popup and start testing
+        setShowTestPopup(true)
+        setTestResults([])
+        
         // Notify parent that testing is starting
         onTestResults?.([], true)
 
-        validateCode({
-            questionId: questionId,
-            code: code,
-            language: selectedLanguage.id
-        }, {
-            onSuccess: (response) => {
-                const results = response.test_results || []
-                setTestResults(results)
-                setShowTestResults(true)
-                
-                // Notify parent with results
-                onTestResults?.(results, false)
-                
-                const passedTests = results.filter((result: any) => result.passed).length
-                const totalTests = results.length
-                
-                if (passedTests === totalTests) {
-                    toast.success(`All ${totalTests} test cases passed! 🎉`)
-                } else {
-                    toast.error(`${passedTests}/${totalTests} test cases passed`)
-                }
-            },
-            onError: (error) => {
-                console.error('Validation error:', error)
-                toast.error('Failed to validate code against test cases')
-                setTestResults([])
-                // Notify parent that testing failed
-                onTestResults?.([], false)
+        try {
+            const response = await validateCode(questionId, code, selectedLanguage.id)
+            const results = response.test_results || []
+            setTestResults(results)
+            
+            // Notify parent with results
+            onTestResults?.(results, false)
+            
+            const passedTests = results.filter((result: any) => result.passed).length
+            const totalTests = results.length
+            
+            if (passedTests === totalTests) {
+                toast.success(`All ${totalTests} test cases passed! 🎉`)
+            } else {
+                toast.error(`${passedTests}/${totalTests} test cases passed`)
             }
-        })
+        } catch (error: any) {
+            console.error('Validation error:', error)
+            toast.error('Failed to validate code against test cases')
+            setTestResults([])
+            // Notify parent that testing failed
+            onTestResults?.([], false)
+        }
     }
 
     // Handle code execution (test run)
@@ -688,16 +691,14 @@ export function CodingIDE({
                 </div>
             </div>
 
-            {/* Test Case Results */}
-            {showTestResults && question?.test_cases && testResults.length > 0 && (
-                <div className="mt-4">
-                    <TestCasesDisplay 
-                        testCases={question.test_cases} 
-                        showResults={true}
-                        results={testResults}
-                    />
-                </div>
-            )}
+            {/* Test Results Popup */}
+            <TestResultsPopup
+                isVisible={showTestPopup}
+                onClose={() => setShowTestPopup(false)}
+                results={testResults}
+                isRunning={isValidating}
+                autoHideDelay={5000}
+            />
 
             {/* Submission Status */}
             {(hasSubmitted || hasChanges) && (

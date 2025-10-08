@@ -166,10 +166,14 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
                                 {module.creator_type === 'admin' ? (
                                     <Shield className="w-4 h-4" />
+                                ) : (module.creator_type as string) === 'corporate' ? (
+                                    <Target className="w-4 h-4" />
                                 ) : (
                                     <GraduationCap className="w-4 h-4" />
                                 )}
-                                {module.creator_type === 'admin' ? 'Admin Practice Test' : 'University Practice Test'}
+                                {module.creator_type === 'admin' ? 'Admin Practice Test' : 
+                                 (module.creator_type as string) === 'corporate' ? 'Corporate Practice Test' : 
+                                 'University Practice Test'}
                             </p>
                         )}
                     </div>
