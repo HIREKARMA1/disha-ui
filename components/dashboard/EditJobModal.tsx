@@ -22,6 +22,7 @@ interface Job {
     location: string
     remote_work: boolean
     travel_required: boolean
+    onsite_office?: boolean
     salary_min?: number
     salary_max?: number
     salary_currency: string
@@ -61,6 +62,7 @@ interface JobFormData {
     location: string
     remote_work: boolean
     travel_required: boolean
+    onsite_office: boolean
     salary_min: string
     salary_max: string
     salary_currency: string
@@ -88,6 +90,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         location: '',
         remote_work: false,
         travel_required: false,
+        onsite_office: false,
         salary_min: '',
         salary_max: '',
         salary_currency: 'INR',
@@ -119,6 +122,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 location: job.location || '',
                 remote_work: job.remote_work || false,
                 travel_required: job.travel_required || false,
+                onsite_office: job.onsite_office || false,
                 salary_min: job.salary_min ? job.salary_min.toString() : '',
                 salary_max: job.salary_max ? job.salary_max.toString() : '',
                 salary_currency: job.salary_currency || 'INR',
@@ -208,6 +212,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 location: formData.location,
                 remote_work: formData.remote_work,
                 travel_required: formData.travel_required,
+                onsite_office: formData.onsite_office,
                 salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
                 salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
                 salary_currency: formData.salary_currency,
