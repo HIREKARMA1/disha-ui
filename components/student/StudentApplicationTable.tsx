@@ -63,7 +63,6 @@ export function StudentApplicationTable({
     sortOrder,
     onSort,
     onViewOfferLetter,
-    onDownloadOfferLetter,
     pagination,
     onPageChange
 }: StudentApplicationTableProps) {
@@ -258,15 +257,7 @@ export function StudentApplicationTable({
                                                     <Eye className="w-4 h-4" />
                                                     View
                                                 </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => onDownloadOfferLetter(application)}
-                                                    className="flex items-center gap-1"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                    Download
-                                                </Button>
+                        
                                             </>
                                         )}
                                         {!application.offer_letter_url && (
