@@ -183,6 +183,18 @@ class ApiClient {
     return response.data;
   }
 
+  async getUniversityApplications(params: {
+    status?: string;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/applications', { params });
+    return response.data;
+  }
+
   async getAvailableJobs(page: number = 1, limit: number = 20): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/jobs/?page=${page}&limit=${limit}`);
     return response.data;
