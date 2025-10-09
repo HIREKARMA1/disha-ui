@@ -17,7 +17,7 @@ interface Job {
     responsibilities?: string
     job_type: string
     status: string
-    location: string
+    location: string | string[]
     remote_work: boolean
     travel_required: boolean
     salary_min?: number
@@ -25,7 +25,9 @@ interface Job {
     salary_currency: string
     experience_min?: number
     experience_max?: number
-    education_level?: string
+    education_level?: string | string[]
+    education_degree?: string | string[]
+    education_branch?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -40,6 +42,14 @@ interface Job {
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
+    // Additional fields
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    expiration_date?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
 }
 
 interface CorporateProfile {
@@ -73,6 +83,99 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     const [corporateError, setCorporateError] = useState<string | null>(null)
     const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
 
+    // Helper function to parse and format education data
+    const parseEducationData = (data: string | string[] | undefined): string[] => {
+        if (!data) return []
+        
+        if (Array.isArray(data)) {
+            return data
+        }
+        
+        // Handle complex escaped JSON strings like '{"{\"[\\\"diploma\\\"\"" "\" \\\"bachelor\\\"\"" "\" \\\"master\\\"]\"}"}'
+        if (typeof data === 'string') {
+            let cleanData = data.trim()
+            
+            // First, try to extract values from complex escaped JSON format
+            // Look for patterns like: diploma, bachelor, master within the string
+            const valueMatches = cleanData.match(/([a-zA-Z\s]+)(?=\\?\"|$)/g)
+            if (valueMatches) {
+                const cleanValues = valueMatches
+                    .map(match => match.trim())
+                    .filter(match => match && match.length > 0 && !match.match(/^[{}[\]",\\]+$/))
+                    .map(match => match.replace(/\\/g, '').replace(/"/g, '').trim())
+                    .filter(match => match.length > 0)
+                
+                if (cleanValues.length > 0) {
+                    return cleanValues
+                }
+            }
+            
+            // Try to parse as JSON
+            try {
+                // Handle cases like '{"Bachelor of Engineering"}' or '{"Computer Science and Engineering"}'
+                if (cleanData.startsWith('{"') && cleanData.endsWith('"}')) {
+                    const innerContent = cleanData.slice(2, -2) // Remove '{" and '"}'
+                    return [innerContent]
+                }
+                
+                // Handle escaped JSON strings like '{"[\"diploma\",\"bachelor\",\"master\"]"}'
+                if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
+                    cleanData = cleanData.slice(1, -1)
+                }
+                
+                const parsed = JSON.parse(cleanData)
+                
+                if (Array.isArray(parsed)) {
+                    return parsed
+                }
+                
+                // If it's a string containing JSON, try to parse it
+                if (typeof parsed === 'string') {
+                    const innerParsed = JSON.parse(parsed)
+                    if (Array.isArray(innerParsed)) {
+                        return innerParsed
+                    }
+                    // Handle single string values
+                    return [innerParsed]
+                }
+                
+                // Handle single string values
+                if (typeof parsed === 'string') {
+                    return [parsed]
+                }
+            } catch (error) {
+                // If JSON parsing fails, try to extract clean values manually
+                console.warn('Failed to parse education data as JSON, extracting values manually:', data)
+                
+                // Extract text values from the string, ignoring JSON syntax
+                const textMatches = cleanData.match(/[a-zA-Z][a-zA-Z\s]*[a-zA-Z]|[a-zA-Z]/g)
+                if (textMatches) {
+                    return textMatches
+                        .map(match => match.trim())
+                        .filter(match => match.length > 0)
+                }
+            }
+            
+            // Final fallback: treat as comma-separated string
+            return cleanData.split(',').map(item => item.trim()).filter(item => item)
+        }
+        
+        return []
+    }
+
+    // Helper function to format education labels
+    const formatEducationLabel = (level: string): string => {
+        switch (level.toLowerCase()) {
+            case 'high_school': return 'High School'
+            case 'diploma': return 'Diploma'
+            case 'bachelor': return 'Bachelor\'s Degree'
+            case 'master': return 'Master\'s Degree'
+            case 'phd': return 'PhD'
+            case 'any': return 'Any'
+            default: return level
+        }
+    }
+
     useEffect(() => {
         const fetchCorporateProfile = async () => {
             if (!job.corporate_id) return
@@ -97,7 +200,48 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     const handleDownloadPDF = async () => {
         setIsDownloadingPDF(true)
         try {
-            const success = await downloadJobDescriptionPDF(job, corporateProfile || undefined)
+            // Helper function to convert education data to readable string
+            const formatEducationForPDF = (data: string | string[] | undefined): string => {
+                if (!data) return ''
+                const parsed = parseEducationData(data)
+                return parsed.map(item => formatEducationLabel(item)).join(', ')
+            }
+
+            // Convert job data to match PDF generator interface with all fields
+            const jobData = {
+                id: job.id,
+                title: job.title,
+                description: job.description,
+                requirements: job.requirements,
+                responsibilities: job.responsibilities,
+                job_type: job.job_type,
+                location: Array.isArray(job.location) ? job.location.join(', ') : job.location,
+                remote_work: job.remote_work,
+                travel_required: job.travel_required,
+                salary_min: job.salary_min,
+                salary_max: job.salary_max,
+                salary_currency: job.salary_currency,
+                experience_min: job.experience_min,
+                experience_max: job.experience_max,
+                education_level: formatEducationForPDF(job.education_level),
+                education_degree: formatEducationForPDF(job.education_degree),
+                education_branch: formatEducationForPDF(job.education_branch),
+                skills_required: job.skills_required,
+                application_deadline: job.application_deadline,
+                industry: job.industry,
+                selection_process: job.selection_process,
+                campus_drive_date: job.campus_drive_date,
+                corporate_name: job.corporate_name,
+                corporate_id: job.corporate_id,
+                created_at: job.created_at,
+                number_of_openings: job.number_of_openings,
+                perks_and_benefits: job.perks_and_benefits,
+                eligibility_criteria: job.eligibility_criteria,
+                service_agreement_details: job.service_agreement_details,
+            }
+            
+            console.log('Corporate Profile being passed to PDF:', corporateProfile)
+            const success = await downloadJobDescriptionPDF(jobData, corporateProfile || undefined)
             if (success) {
                 toast.success('Job description PDF downloaded successfully!')
             } else {
@@ -207,9 +351,22 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Location</p>
-                                        <p className="font-medium text-gray-900 dark:text-white">{job.location}</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {Array.isArray(job.location) ? (
+                                                job.location.map((loc, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm font-medium"
+                                                    >
+                                                        {loc}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <p className="font-medium text-gray-900 dark:text-white">{job.location}</p>
+                                            )}
+                                        </div>
                                         {job.remote_work && (
-                                            <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-1 rounded-full">
+                                            <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-1 rounded-full mt-2 inline-block">
                                                 Remote Available
                                             </span>
                                         )}
@@ -467,52 +624,247 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             </div>
                         )}
 
-                        {/* Additional Details */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Education & Experience */}
-                            <div className="space-y-4">
-                                {job.education_level && (
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <GraduationCap className="w-4 h-4 text-primary-500" />
-                                            Education Level
-                                        </h4>
-                                        <p className="text-gray-700 dark:text-gray-300">{job.education_level}</p>
-                                    </div>
-                                )}
+                        {/* Education Level */}
+                        {job.education_level && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <GraduationCap className="w-5 h-5 text-primary-500" />
+                                    Education Level
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {parseEducationData(job.education_level).map((level, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-lg font-medium border border-blue-200 dark:border-blue-700"
+                                        >
+                                            {formatEducationLabel(level)}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
-                                {job.industry && (
+                        {/* Education Degree */}
+                        {job.education_degree && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <GraduationCap className="w-5 h-5 text-primary-500" />
+                                    Education Degree
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {parseEducationData(job.education_degree).map((degree, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-lg font-medium border border-green-200 dark:border-green-700"
+                                        >
+                                            {degree}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Education Branch */}
+                        {job.education_branch && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <GraduationCap className="w-5 h-5 text-primary-500" />
+                                    Education Branch
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {parseEducationData(job.education_branch).map((branch, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-lg font-medium border border-purple-200 dark:border-purple-700"
+                                        >
+                                            {branch}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Industry */}
+                        {job.industry && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Building className="w-5 h-5 text-primary-500" />
+                                    Industry
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <p className="text-gray-700 dark:text-gray-300 font-medium text-lg">
+                                        {job.industry}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Number of Openings */}
+                        {job.number_of_openings && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-primary-500" />
+                                    Number of Openings
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <p className="text-gray-700 dark:text-gray-300 font-medium text-lg">
+                                        {job.number_of_openings} position{job.number_of_openings > 1 ? 's' : ''} available
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Perks and Benefits */}
+                        {job.perks_and_benefits && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-primary-500" />
+                                    Perks and Benefits
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {job.perks_and_benefits}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Eligibility Criteria */}
+                        {job.eligibility_criteria && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <CheckCircle className="w-5 h-5 text-primary-500" />
+                                    Eligibility Criteria
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {job.eligibility_criteria}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Service Agreement Details */}
+                        {job.service_agreement_details && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-primary-500" />
+                                    Service Agreement Details
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {job.service_agreement_details}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CTC Details */}
+                        {(job.ctc_with_probation || job.ctc_after_probation) && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <DollarSign className="w-5 h-5 text-primary-500" />
+                                    CTC Details
+                                </h3>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {job.ctc_with_probation && (
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 dark:text-white mb-1">During Probation</h4>
+                                                <p className="text-gray-700 dark:text-gray-300">{job.ctc_with_probation}</p>
+                                            </div>
+                                        )}
+                                        {job.ctc_after_probation && (
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 dark:text-white mb-1">Probation Duration</h4>
+                                                <p className="text-gray-700 dark:text-gray-300">{job.ctc_after_probation}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Additional Job Details */}
+                        <div className="mb-6">
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                <Briefcase className="w-5 h-5 text-primary-500" />
+                                Additional Job Details
+                            </h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Left Column */}
+                            <div className="space-y-4">
+                                        {/* Industry */}
                                     <div>
                                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                                             <Building className="w-4 h-4 text-primary-500" />
                                             Industry
                                         </h4>
-                                        <p className="text-gray-700 dark:text-gray-300">{job.industry}</p>
-                                    </div>
-                                )}
+                                            <p className="text-gray-700 dark:text-gray-300">
+                                                {job.industry || 'Not specified'}
+                                            </p>
                             </div>
 
-                            {/* Work Details */}
-                            <div className="space-y-4">
-                                {job.remote_work && (
+                                        {/* Remote Work */}
                                     <div>
                                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                                             <Globe className="w-4 h-4 text-primary-500" />
                                             Remote Work
                                         </h4>
-                                        <p className="text-gray-700 dark:text-gray-300">Available</p>
+                                            <p className="text-gray-700 dark:text-gray-300">
+                                                {job.remote_work ? 'Available' : 'Not available'}
+                                            </p>
                                     </div>
-                                )}
 
-                                {job.travel_required && (
+                                        {/* Travel Required */}
                                     <div>
                                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                                             <Car className="w-4 h-4 text-primary-500" />
                                             Travel Required
                                         </h4>
-                                        <p className="text-gray-700 dark:text-gray-300">Yes</p>
+                                            <p className="text-gray-700 dark:text-gray-300">
+                                                {job.travel_required ? 'Yes' : 'No'}
+                                            </p>
                                     </div>
-                                )}
+                                    </div>
+
+                                    {/* Right Column */}
+                                    <div className="space-y-4">
+                                        {/* Application Statistics */}
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-primary-500" />
+                                                Applications
+                                            </h4>
+                                            <p className="text-gray-700 dark:text-gray-300">
+                                                {job.current_applications} / {job.max_applications} applications
+                                            </p>
+                                        </div>
+
+                                        {/* Job Status */}
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <CheckCircle className="w-4 h-4 text-primary-500" />
+                                                Job Status
+                                            </h4>
+                                            <p className="text-gray-700 dark:text-gray-300 capitalize">
+                                                {job.status} {job.is_active ? '(Active)' : '(Inactive)'}
+                                            </p>
+                                        </div>
+
+                                        {/* Views Count */}
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-primary-500" />
+                                                Views
+                                            </h4>
+                                            <p className="text-gray-700 dark:text-gray-300">
+                                                {job.views_count} views
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -571,6 +923,36 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
                                     <p className="text-blue-800 dark:text-blue-200 font-medium">
                                         Campus Drive Date: {formatDate(job.campus_drive_date)}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Job Expiration */}
+                        {job.expiration_date && (
+                            <div className="mt-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary-500" />
+                                    Job Expiration
+                                </h3>
+                                <div className={cn(
+                                    "rounded-xl p-4 border",
+                                    new Date(job.expiration_date) < new Date()
+                                        ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                                        : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                                )}>
+                                    <p className={cn(
+                                        "font-medium",
+                                        new Date(job.expiration_date) < new Date()
+                                            ? "text-red-800 dark:text-red-200"
+                                            : "text-yellow-800 dark:text-yellow-200"
+                                    )}>
+                                        Expires: {formatDate(job.expiration_date)}
+                                        {new Date(job.expiration_date) < new Date() && (
+                                            <span className="ml-2 text-red-600 dark:text-red-400">
+                                                (Expired)
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
