@@ -13,6 +13,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
+import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
 
 interface Job {
     id: string
@@ -106,6 +107,8 @@ function JobOpportunitiesPageContent() {
     const [showFilters, setShowFilters] = useState(false)
     const [applyingJobs, setApplyingJobs] = useState<Set<string>>(new Set())
     const [applicationStatus, setApplicationStatus] = useState<Map<string, string>>(new Map()) // Track application status
+    const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
+    const [profileLoading, setProfileLoading] = useState(true)
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
     const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open') // New filter for job status
@@ -487,6 +490,21 @@ function JobOpportunitiesPageContent() {
         }
     }
 
+    // Fetch profile completion data
+    const fetchProfileCompletion = async () => {
+        try {
+            setProfileLoading(true)
+            const completionData = await profileService.getProfileCompletion()
+            setProfileCompletion(completionData)
+        } catch (error) {
+            console.error('Failed to fetch profile completion:', error)
+            // Set default completion to 0 if fetch fails
+            setProfileCompletion({ completion_percentage: 0 })
+        } finally {
+            setProfileLoading(false)
+        }
+    }
+
     // Handle job application initiation
     const handleApplyClick = (job: Job) => {
         if (!job.can_apply) {
@@ -497,6 +515,12 @@ function JobOpportunitiesPageContent() {
         // Check if already applied
         if (applicationStatus.get(job.id) === 'applied') {
             toast('You have already applied for this position')
+            return
+        }
+
+        // Check profile completion - must be at least 75%
+        if (!profileCompletion || profileCompletion.completion_percentage < 75) {
+            toast.error(`Profile completion must be at least 75%`)
             return
         }
 
@@ -872,6 +896,7 @@ function JobOpportunitiesPageContent() {
     useEffect(() => {
         fetchJobs(1, {})
         checkApplicationStatus()
+        fetchProfileCompletion()
     }, [])
 
     // Global error boundary for validation errors
@@ -1139,6 +1164,28 @@ function JobOpportunitiesPageContent() {
                         )}
                     </div>
                 </div>
+
+                {/* Profile Completion Banner */}
+                {profileCompletion && profileCompletion.completion_percentage < 75 && (
+                    <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                                <span className="text-amber-600 dark:text-amber-400 text-sm font-bold">!</span>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                                    Profile Completion Required
+                                </h3>
+                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                    Your profile is {profileCompletion.completion_percentage}% complete. You need at least 75% completion to apply for jobs. 
+                                    <a href="/dashboard/student/profile" className="text-amber-600 dark:text-amber-400 hover:underline ml-1 font-medium">
+                                        Complete your profile now →
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Jobs Grid */}
                 {loading ? (
