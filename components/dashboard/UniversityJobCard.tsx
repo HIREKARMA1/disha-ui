@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +26,9 @@ interface UniversityJob {
     benefits?: string
     selection_process?: string
     approved: boolean
+    rejected?: boolean
+    pending?: boolean
+    approval_status?: string
 }
 
 interface UniversityJobCardProps {
@@ -33,6 +36,7 @@ interface UniversityJobCardProps {
     onViewDescription: () => void
     onApprove?: () => void
     onReject?: () => void
+    onNotApprove?: () => void
     isProcessing?: boolean
     cardIndex?: number
 }
@@ -42,9 +46,11 @@ export function UniversityJobCard({
     onViewDescription,
     onApprove,
     onReject,
+    onNotApprove,
     isProcessing = false,
     cardIndex = 0
 }: UniversityJobCardProps) {
+    console.log('Rendering job card:', job.id, 'Status:', job.approval_status, 'Approved:', job.approved, 'Rejected:', job.rejected)
     // Safety check - ensure job object is valid
     if (!job || typeof job !== 'object') {
         console.error('Invalid job object:', job)
@@ -130,13 +136,19 @@ export function UniversityJobCard({
         return labels[jobType as keyof typeof labels] || jobType
     }
 
-    const getApprovalStatusColor = (approved: boolean) => {
+    const getApprovalStatusColor = (approved: boolean, rejected?: boolean) => {
+        if (rejected) {
+            return 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+        }
         return approved
             ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
             : 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
     }
 
-    const getApprovalStatusLabel = (approved: boolean) => {
+    const getApprovalStatusLabel = (approved: boolean, rejected?: boolean) => {
+        if (rejected) {
+            return 'Not Approved'
+        }
         return approved ? 'Approved' : 'Pending'
     }
 
@@ -202,9 +214,9 @@ export function UniversityJobCard({
                         </span>
                         <span className={cn(
                             "px-2 py-1 text-xs font-medium rounded-full",
-                            getApprovalStatusColor(job.approved)
+                            getApprovalStatusColor(job.approved, job.rejected)
                         )}>
-                            {getApprovalStatusLabel(job.approved)}
+                            {getApprovalStatusLabel(job.approved, job.rejected)}
                         </span>
                     </div>
                 </div>
@@ -323,7 +335,7 @@ export function UniversityJobCard({
                         View Details
                     </Button>
 
-                    {!job.approved && (
+                    {job.approval_status === 'pending' && (
                         <>
                             <Button
                                 onClick={onApprove}
@@ -343,14 +355,43 @@ export function UniversityJobCard({
                                     </>
                                 )}
                             </Button>
+                            {onNotApprove && (
+                                <Button
+                                    onClick={onNotApprove}
+                                    disabled={isProcessing}
+                                    size="sm"
+                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white transition-all duration-200 hover:shadow-md"
+                                >
+                                    {isProcessing ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <XCircle className="w-4 h-4" />
+                                            Not Approved
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </>
                     )}
 
-                    {job.approved && (
+                    {job.approval_status === 'approved' && (
                         <div className="flex-1 flex items-center justify-center">
                             <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
                                 <CheckCircle className="w-3 h-3" />
                                 Approved
+                            </span>
+                        </div>
+                    )}
+
+                    {job.approval_status === 'rejected' && (
+                        <div className="flex-1 flex items-center justify-center">
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                                <XCircle className="w-3 h-3" />
+                                Not Approved
                             </span>
                         </div>
                     )}

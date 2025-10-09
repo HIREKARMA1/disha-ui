@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 
 import { UniversityJobCard } from '@/components/dashboard/UniversityJobCard'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
@@ -34,6 +35,9 @@ interface UniversityJob {
     benefits?: string
     selection_process?: string
     approved: boolean
+    rejected?: boolean
+    pending?: boolean
+    approval_status?: string
     corporate_id?: string
 }
 
@@ -64,6 +68,8 @@ function UniversityJobsPageContent() {
     const [selectedJob, setSelectedJob] = useState<UniversityJob | null>(null)
     const [showFilters, setShowFilters] = useState(false)
     const [processingJobs, setProcessingJobs] = useState<Set<string>>(new Set())
+    const [showRejectModal, setShowRejectModal] = useState(false)
+    const [jobToReject, setJobToReject] = useState<UniversityJob | null>(null)
     const [stats, setStats] = useState({
         total_jobs: 0,
         pending_approval: 0,
@@ -115,8 +121,9 @@ function UniversityJobsPageContent() {
         const matchesJobType = !filters.job_type || job.job_type === filters.job_type
         const matchesIndustry = !filters.industry || job.industry?.toLowerCase().includes(filters.industry.toLowerCase())
         const matchesApproved = !filters.approved ||
-            (filters.approved === 'approved' && job.approved) ||
-            (filters.approved === 'pending' && !job.approved)
+            (filters.approved === 'approved' && job.approval_status === 'approved') ||
+            (filters.approved === 'pending' && job.approval_status === 'pending') ||
+            (filters.approved === 'rejected' && job.approval_status === 'rejected')
 
         return matchesSearch && matchesStatus && matchesJobType && matchesIndustry && matchesApproved
     })
@@ -147,7 +154,13 @@ function UniversityJobsPageContent() {
 
             // Update the local state
             setJobs(prev => prev.map(j =>
-                j.id === job.id ? { ...j, approved: true } : j
+                j.id === job.id ? { 
+                    ...j, 
+                    approved: true, 
+                    rejected: false, 
+                    pending: false,
+                    approval_status: 'approved'
+                } : j
             ))
 
             // Update stats
@@ -175,10 +188,24 @@ function UniversityJobsPageContent() {
         try {
             setProcessingJobs(prev => new Set(prev).add(job.id))
 
+            console.log('Rejecting job:', job.id, 'Current status:', job.approval_status)
+            
             await apiClient.rejectUniversityJob(job.id)
 
-            // Remove from the list
-            setJobs(prev => prev.filter(j => j.id !== job.id))
+            // Mark job as rejected instead of removing it
+            setJobs(prev => {
+                const updatedJobs = prev.map(j =>
+                    j.id === job.id ? { 
+                        ...j, 
+                        rejected: true, 
+                        approved: false, 
+                        pending: false,
+                        approval_status: 'rejected'
+                    } : j
+                )
+                console.log('Updated jobs after rejection:', updatedJobs.find(j => j.id === job.id))
+                return updatedJobs
+            })
 
             // Update stats
             setStats(prev => ({
@@ -187,10 +214,10 @@ function UniversityJobsPageContent() {
                 rejected: prev.rejected + 1
             }))
 
-            toast.success('Job rejected successfully!')
+            toast.success('Job not approved successfully!')
         } catch (error: any) {
             console.error('Error rejecting job:', error)
-            toast.error('Failed to reject job')
+            toast.error('Failed to not approve job')
         } finally {
             setProcessingJobs(prev => {
                 const newSet = new Set(prev)
@@ -198,6 +225,26 @@ function UniversityJobsPageContent() {
                 return newSet
             })
         }
+    }
+
+    // Handle not approved action (show confirmation modal)
+    const handleNotApproveJob = (job: UniversityJob) => {
+        setJobToReject(job)
+        setShowRejectModal(true)
+    }
+
+    // Handle confirmed rejection
+    const handleConfirmReject = async () => {
+        if (!jobToReject) return
+        await handleRejectJob(jobToReject)
+        setShowRejectModal(false)
+        setJobToReject(null)
+    }
+
+    // Handle modal close
+    const handleCloseRejectModal = () => {
+        setShowRejectModal(false)
+        setJobToReject(null)
     }
 
     // Handle filter changes
@@ -351,6 +398,7 @@ function UniversityJobsPageContent() {
                                 <option value="">All Status</option>
                                 <option value="pending">Pending Approval</option>
                                 <option value="approved">Approved</option>
+                                <option value="rejected">Not Approved</option>
                             </select>
                         </div>
 
@@ -419,6 +467,7 @@ function UniversityJobsPageContent() {
                                     onViewDescription={() => setSelectedJob(job)}
                                     onApprove={() => handleApproveJob(job)}
                                     onReject={() => handleRejectJob(job)}
+                                    onNotApprove={() => handleNotApproveJob(job)}
                                     isProcessing={processingJobs.has(job.id)}
                                     cardIndex={index}
                                 />
@@ -552,6 +601,19 @@ function UniversityJobsPageContent() {
                     showApplyButton={false} // Hide apply button in university context
                 />
             )}
+
+            {/* Rejection Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showRejectModal}
+                onClose={handleCloseRejectModal}
+                onConfirm={handleConfirmReject}
+                title="Not Approve Job"
+                message={`Are you sure you want to not approve this job? This action will remove the job from your university's job list and cannot be undone.`}
+                confirmText="Not Approve"
+                cancelText="Cancel"
+                isLoading={jobToReject ? processingJobs.has(jobToReject.id) : false}
+                variant="danger"
+            />
         </UniversityDashboardLayout>
     )
 }

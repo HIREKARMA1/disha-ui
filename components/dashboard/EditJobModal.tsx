@@ -182,6 +182,57 @@ interface JobFormData {
     ctc_after_probation: string
 }
 
+// Helper function to clean malformed JSON strings
+const cleanJsonString = (str: string): string => {
+    if (!str || typeof str !== 'string') return str
+    
+    const original = str
+    let cleaned = str.trim()
+    
+    // Handle various malformed patterns
+    // Remove leading { and trailing }
+    cleaned = cleaned.replace(/^\{/, '').replace(/\}$/, '')
+    
+    // Remove leading and trailing quotes
+    cleaned = cleaned.replace(/^"/, '').replace(/"$/, '')
+    
+    // Remove excessive JSON escaping
+    cleaned = cleaned.replace(/\\"/g, '"') // Replace \" with "
+    cleaned = cleaned.replace(/\\\\/g, '\\') // Replace \\ with \
+    
+    // Remove any remaining JSON array markers
+    cleaned = cleaned.replace(/^\[/, '').replace(/\]$/, '')
+    
+    // Clean up any remaining quotes and braces
+    cleaned = cleaned.replace(/^\{/, '').replace(/\}$/, '')
+    cleaned = cleaned.replace(/^"/, '').replace(/"$/, '')
+    
+    // Final trim
+    cleaned = cleaned.trim()
+    
+    // Debug logging for problematic strings
+    if (original !== cleaned) {
+        console.log('🧹 Cleaned string:', { original, cleaned })
+    }
+    
+    return cleaned
+}
+
+// Helper function to parse education fields safely
+const parseEducationField = (field: string | string[]): string[] => {
+    if (Array.isArray(field)) {
+        return field.map(item => cleanJsonString(item)).filter(item => item)
+    }
+    
+    if (typeof field === 'string' && field) {
+        // First clean the string, then split by comma
+        const cleaned = cleanJsonString(field)
+        return cleaned.split(',').map(item => item.trim()).filter(item => item)
+    }
+    
+    return []
+}
+
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false }: EditJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
@@ -233,15 +284,22 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             const locationArray = Array.isArray(job.location) ? job.location : 
                                  (typeof job.location === 'string' && job.location) ? job.location.split(',').map(l => l.trim()) : []
             
-            // Handle education fields - could be string or array
-            const educationLevelArray = Array.isArray(job.education_level) ? job.education_level : 
-                                       (typeof job.education_level === 'string' && job.education_level) ? [job.education_level] : []
+            // Handle education fields - use the safe parsing function
+            console.log('🔍 Education fields before parsing:', {
+                education_level: job.education_level,
+                education_degree: job.education_degree,
+                education_branch: job.education_branch
+            })
             
-            const educationDegreeArray = Array.isArray(job.education_degree) ? job.education_degree : 
-                                        (typeof job.education_degree === 'string' && job.education_degree) ? [job.education_degree] : []
+            const educationLevelArray = parseEducationField(job.education_level || [])
+            const educationDegreeArray = parseEducationField(job.education_degree || [])
+            const educationBranchArray = parseEducationField(job.education_branch || [])
             
-            const educationBranchArray = Array.isArray(job.education_branch) ? job.education_branch : 
-                                        (typeof job.education_branch === 'string' && job.education_branch) ? [job.education_branch] : []
+            console.log('🔍 Education fields after parsing:', {
+                educationLevelArray,
+                educationDegreeArray,
+                educationBranchArray
+            })
 
             setFormData({
                 title: job.title || '',

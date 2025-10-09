@@ -852,17 +852,6 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                                 {job.status} {job.is_active ? '(Active)' : '(Inactive)'}
                                             </p>
                                         </div>
-
-                                        {/* Views Count */}
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                                <Users className="w-4 h-4 text-primary-500" />
-                                                Views
-                                            </h4>
-                                            <p className="text-gray-700 dark:text-gray-300">
-                                                {job.views_count} views
-                                            </p>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
