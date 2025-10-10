@@ -1345,6 +1345,7 @@ function JobOpportunitiesPageContent() {
                         setSelectedJob(null)
                     }}
                     isApplying={applyingJobs.has(selectedJob.id)}
+                    hideSensitiveInfo={true}
                 />
             )}
 

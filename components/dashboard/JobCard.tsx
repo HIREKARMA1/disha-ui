@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, X } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, CheckCircle, Calendar, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { MatchScorePieChart } from './MatchScorePieChart'
@@ -376,9 +376,8 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                         onClick={onViewDescription}
                         variant="outline"
                         size="sm"
-                        className="flex-1 flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="flex-1 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
                     >
-                        <FileText className="w-4 h-4" />
                         View JD
                     </Button>
 

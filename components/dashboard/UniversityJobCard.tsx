@@ -10,13 +10,15 @@ interface UniversityJob {
     title: string
     description: string
     requirements?: string
+    responsibilities?: string
     company_name?: string
     company_verified?: boolean
     industry?: string
-    location: string
+    location: string | string[]
     job_type: string
     salary_min?: string
     salary_max?: string
+    salary_currency?: string
     application_deadline?: string
     campus_drive_date?: string
     venue?: string
@@ -29,6 +31,27 @@ interface UniversityJob {
     rejected?: boolean
     pending?: boolean
     approval_status?: string
+    corporate_id?: string
+    // Additional fields for complete job data
+    remote_work?: boolean
+    travel_required?: boolean
+    onsite_office?: boolean
+    mode_of_work?: string
+    experience_min?: number
+    experience_max?: number
+    education_level?: string | string[]
+    education_degree?: string | string[]
+    education_branch?: string | string[]
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
+    expiration_date?: string
+    created_at?: string
+    is_active?: boolean
+    can_apply?: boolean
 }
 
 interface UniversityJobCardProps {

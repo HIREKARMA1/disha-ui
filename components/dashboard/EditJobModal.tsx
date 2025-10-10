@@ -110,6 +110,7 @@ interface Job {
     remote_work: boolean
     travel_required: boolean
     onsite_office?: boolean
+    mode_of_work?: string
     salary_min?: number
     salary_max?: number
     salary_currency: string
@@ -275,10 +276,6 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
     // Populate form data when job changes
     useEffect(() => {
         if (job) {
-            console.log('🔍 EditJobModal Debug:')
-            console.log('Job object:', job)
-            console.log('Job type from job:', job.job_type)
-            console.log('Job type type:', typeof job.job_type)
 
             // Handle location - could be string or array
             const locationArray = Array.isArray(job.location) ? job.location : 
@@ -310,7 +307,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 location: locationArray,
                 remote_work: job.remote_work || false,
                 travel_required: job.travel_required || false,
-                onsite_office: job.onsite_office || false,
+                onsite_office: job.onsite_office || (job.mode_of_work === 'onsite') || false,
                 salary_min: job.salary_min ? job.salary_min.toString() : '',
                 salary_max: job.salary_max ? job.salary_max.toString() : '',
                 salary_currency: job.salary_currency || 'INR',
@@ -335,20 +332,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 ctc_after_probation: job.ctc_after_probation || ''
             })
 
-            console.log('Form data being set:', {
-                job_type: job.job_type || '',
-                education_level: job.education_level || ''
-            })
         }
     }, [job])
 
-    // Debug formData changes
-    useEffect(() => {
-        console.log('📝 FormData updated:', {
-            job_type: formData.job_type,
-            education_level: formData.education_level
-        })
-    }, [formData.job_type, formData.education_level])
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -465,6 +451,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 ctc_with_probation: formData.ctc_with_probation || null,
                 ctc_after_probation: formData.ctc_after_probation || null
             }
+
 
             if (isAdmin) {
                 await apiClient.updateJobAdmin(job.id, jobData)

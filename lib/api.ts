@@ -200,6 +200,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getJobById(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/jobs/${jobId}`);
+    return response.data;
+  }
+
   // Job application endpoint
   async applyForJob(jobId: string, applicationData: any): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/applications/apply/${jobId}`, applicationData);
@@ -460,6 +465,11 @@ class ApiClient {
   }
 
   // Public corporate profile endpoint
+  async getCorporateProfile(corporateId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/corporates/${corporateId}`);
+    return response.data;
+  }
+
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
     return response.data;

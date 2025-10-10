@@ -13,19 +13,22 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
+import { useState as useStateHook } from 'react'
 
 interface UniversityJob {
     id: string
     title: string
     description: string
     requirements?: string
+    responsibilities?: string
     company_name?: string
     company_verified?: boolean
     industry?: string
-    location: string
+    location: string | string[]
     job_type: string
     salary_min?: string
     salary_max?: string
+    salary_currency?: string
     application_deadline?: string
     campus_drive_date?: string
     venue?: string
@@ -39,6 +42,26 @@ interface UniversityJob {
     pending?: boolean
     approval_status?: string
     corporate_id?: string
+    // Additional fields for complete job data
+    remote_work?: boolean
+    travel_required?: boolean
+    onsite_office?: boolean
+    mode_of_work?: string
+    experience_min?: number
+    experience_max?: number
+    education_level?: string | string[]
+    education_degree?: string | string[]
+    education_branch?: string | string[]
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
+    expiration_date?: string
+    created_at?: string
+    is_active?: boolean
+    can_apply?: boolean
 }
 
 interface UniversityJobsResponse {
@@ -66,6 +89,8 @@ function UniversityJobsPageContent() {
         total_pages: 0
     })
     const [selectedJob, setSelectedJob] = useState<UniversityJob | null>(null)
+    const [completeJobData, setCompleteJobData] = useState<any>(null)
+    const [loadingJobDetails, setLoadingJobDetails] = useState(false)
     const [showFilters, setShowFilters] = useState(false)
     const [processingJobs, setProcessingJobs] = useState<Set<string>>(new Set())
     const [showRejectModal, setShowRejectModal] = useState(false)
@@ -114,7 +139,7 @@ function UniversityJobsPageContent() {
     const filteredJobs = jobs.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (Array.isArray(job.location) ? job.location.join(', ').toLowerCase() : job.location.toLowerCase()).includes(searchTerm.toLowerCase()) ||
             job.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
 
         const matchesStatus = !filters.status || job.status === filters.status
@@ -464,7 +489,23 @@ function UniversityJobsPageContent() {
                                 <UniversityJobCard
                                     key={job.id}
                                     job={job}
-                                    onViewDescription={() => setSelectedJob(job)}
+                                    onViewDescription={async () => {
+                                        setSelectedJob(job)
+                                        setLoadingJobDetails(true)
+                                        setCompleteJobData(null)
+                                        
+                                        try {
+                                            // Fetch complete job data from the jobs API
+                                            const response = await apiClient.getJobById(job.id)
+                                            setCompleteJobData(response)
+                                        } catch (error) {
+                                            console.error('Failed to fetch complete job data:', error)
+                                            toast.error('Failed to load complete job details')
+                                            // Still show the modal with limited data
+                                        } finally {
+                                            setLoadingJobDetails(false)
+                                        }
+                                    }}
                                     onApprove={() => handleApproveJob(job)}
                                     onReject={() => handleRejectJob(job)}
                                     onNotApprove={() => handleNotApproveJob(job)}
@@ -563,23 +604,26 @@ function UniversityJobsPageContent() {
             {/* Job Description Modal */}
             {selectedJob && (
                 <JobDescriptionModal
-                    job={{
+                    job={completeJobData || {
                         id: selectedJob.id,
                         title: selectedJob.title,
                         description: selectedJob.description,
                         requirements: selectedJob.requirements,
-                        responsibilities: '',
+                        responsibilities: selectedJob.responsibilities || '',
                         job_type: selectedJob.job_type,
                         status: selectedJob.status,
                         location: selectedJob.location,
-                        remote_work: false,
-                        travel_required: false,
+                        remote_work: selectedJob.remote_work || false,
+                        travel_required: selectedJob.travel_required || false,
+                        onsite_office: selectedJob.onsite_office || false,
                         salary_min: selectedJob.salary_min ? Number(selectedJob.salary_min) : undefined,
                         salary_max: selectedJob.salary_max ? Number(selectedJob.salary_max) : undefined,
-                        salary_currency: 'INR',
-                        experience_min: undefined,
-                        experience_max: undefined,
-                        education_level: undefined,
+                        salary_currency: selectedJob.salary_currency || 'INR',
+                        experience_min: selectedJob.experience_min,
+                        experience_max: selectedJob.experience_max,
+                        education_level: selectedJob.education_level,
+                        education_degree: selectedJob.education_degree,
+                        education_branch: selectedJob.education_branch,
                         skills_required: selectedJob.skills_required,
                         application_deadline: selectedJob.application_deadline,
                         max_applications: 0,
@@ -589,15 +633,25 @@ function UniversityJobsPageContent() {
                         campus_drive_date: selectedJob.campus_drive_date,
                         views_count: 0,
                         applications_count: 0,
-                        created_at: '',
+                        created_at: selectedJob.created_at || '',
                         corporate_id: selectedJob.corporate_id || '',
                         corporate_name: selectedJob.company_name,
-                        is_active: true,
-                        can_apply: false
+                        is_active: selectedJob.is_active || true,
+                        can_apply: selectedJob.can_apply || false,
+                        number_of_openings: selectedJob.number_of_openings,
+                        perks_and_benefits: selectedJob.perks_and_benefits,
+                        eligibility_criteria: selectedJob.eligibility_criteria,
+                        service_agreement_details: selectedJob.service_agreement_details,
+                        ctc_with_probation: selectedJob.ctc_with_probation,
+                        ctc_after_probation: selectedJob.ctc_after_probation,
+                        expiration_date: selectedJob.expiration_date
                     }}
-                    onClose={() => setSelectedJob(null)}
+                    onClose={() => {
+                        setSelectedJob(null)
+                        setCompleteJobData(null)
+                    }}
                     onApply={() => { }} // Not applicable for university view
-                    isApplying={false}
+                    isApplying={loadingJobDetails}
                     showApplyButton={false} // Hide apply button in university context
                 />
             )}

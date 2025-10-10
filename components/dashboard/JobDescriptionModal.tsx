@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, Briefcase, Clock, DollarSign, Users, Building, Calendar, Globe, Car, GraduationCap, Award, FileText, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
+import { X, MapPin, Briefcase, Clock, DollarSign, Users, Building, Calendar, Globe, Car, GraduationCap, Award, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api'
@@ -20,6 +20,8 @@ interface Job {
     location: string | string[]
     remote_work: boolean
     travel_required: boolean
+    onsite_office?: boolean
+    mode_of_work?: string
     salary_min?: number
     salary_max?: number
     salary_currency: string
@@ -75,9 +77,10 @@ interface JobDescriptionModalProps {
     isApplying?: boolean
     showApplyButton?: boolean // New prop to control apply button visibility
     applicationStatus?: string // Add application status prop
+    hideSensitiveInfo?: boolean // New prop to hide sensitive company information for students
 }
 
-export function JobDescriptionModal({ job, onClose, onApply, isApplying = false, showApplyButton = true, applicationStatus }: JobDescriptionModalProps) {
+export function JobDescriptionModal({ job, onClose, onApply, isApplying = false, showApplyButton = true, applicationStatus, hideSensitiveInfo = false }: JobDescriptionModalProps) {
     const [corporateProfile, setCorporateProfile] = useState<CorporateProfile | null>(null)
     const [loadingCorporate, setLoadingCorporate] = useState(false)
     const [corporateError, setCorporateError] = useState<string | null>(null)
@@ -218,6 +221,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 location: Array.isArray(job.location) ? job.location.join(', ') : job.location,
                 remote_work: job.remote_work,
                 travel_required: job.travel_required,
+                onsite_office: job.onsite_office || (job.mode_of_work === 'onsite'),
                 salary_min: job.salary_min,
                 salary_max: job.salary_max,
                 salary_currency: job.salary_currency,
@@ -238,6 +242,10 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 perks_and_benefits: job.perks_and_benefits,
                 eligibility_criteria: job.eligibility_criteria,
                 service_agreement_details: job.service_agreement_details,
+                expiration_date: job.expiration_date,
+                status: job.status,
+                ctc_with_probation: job.ctc_with_probation,
+                ctc_after_probation: job.ctc_after_probation,
             }
             
             console.log('Corporate Profile being passed to PDF:', corporateProfile)
@@ -254,6 +262,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
             setIsDownloadingPDF(false)
         }
     }
+
 
     const formatSalary = (currency: string, min?: number, max?: number) => {
         if (!min && !max) return 'Not specified'
@@ -429,6 +438,72 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Work Mode */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                                        <Building className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Work Mode</p>
+                                        <p className="font-medium text-gray-900 dark:text-white">
+                                            {job.mode_of_work ? job.mode_of_work.charAt(0).toUpperCase() + job.mode_of_work.slice(1) : 
+                                             (job.onsite_office ? 'Onsite' : job.remote_work ? 'Remote' : 'Not Specified')}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Job Status */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg ${job.status === 'active' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-gray-900/20'}`}>
+                                        <CheckCircle className={`w-5 h-5 ${job.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+                                        <p className="font-medium text-gray-900 dark:text-white capitalize">
+                                            {job.status} {job.is_active ? '(Active)' : '(Inactive)'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Number of Openings */}
+                            {job.number_of_openings && (
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+                                            <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">Openings</p>
+                                            <p className="font-medium text-gray-900 dark:text-white">
+                                                {job.number_of_openings} position{job.number_of_openings > 1 ? 's' : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Expiration Date */}
+                            {job.expiration_date && (
+                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${new Date(job.expiration_date) < new Date() ? 'bg-red-50 dark:bg-red-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
+                                            <Calendar className={`w-5 h-5 ${new Date(job.expiration_date) < new Date() ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">Expires</p>
+                                            <p className={`font-medium ${new Date(job.expiration_date) < new Date() ? 'text-red-900 dark:text-red-200' : 'text-yellow-900 dark:text-yellow-200'}`}>
+                                                {formatDate(job.expiration_date)}
+                                                {new Date(job.expiration_date) < new Date() && ' (Expired)'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Company Information */}
@@ -520,7 +595,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                                     </div>
                                                 )}
 
-                                                {corporateProfile.address && (
+                                                {corporateProfile.address && !hideSensitiveInfo && (
                                                     <div className="flex items-start gap-2 md:col-span-2">
                                                         <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
                                                         <div>
@@ -540,7 +615,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                                 </div>
                                             )}
 
-                                            {corporateProfile.contact_person && (
+                                            {corporateProfile.contact_person && !hideSensitiveInfo && (
                                                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                                     <h5 className="font-medium text-gray-900 dark:text-white mb-2">Contact Information</h5>
                                                     <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -564,7 +639,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         {/* Job Description */}
                         <div className="mb-6">
                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-primary-500" />
+                                <Briefcase className="w-5 h-5 text-primary-500" />
                                 Job Description
                             </h3>
                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -748,7 +823,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         {job.service_agreement_details && (
                             <div className="mb-6">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-primary-500" />
+                                    <Shield className="w-5 h-5 text-primary-500" />
                                     Service Agreement Details
                                 </h3>
                                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -825,6 +900,17 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
                                                 {job.travel_required ? 'Yes' : 'No'}
+                                            </p>
+                                    </div>
+
+                                        {/* Onsite Office */}
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                            <Building className="w-4 h-4 text-primary-500" />
+                                            Onsite Office
+                                        </h4>
+                                            <p className="text-gray-700 dark:text-gray-300">
+                                                {job.onsite_office || (job.mode_of_work === 'onsite') ? 'Available' : 'Not Available'}
                                             </p>
                                     </div>
                                     </div>
@@ -970,13 +1056,6 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         </>
                                     )}
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={onClose}
-                                    className="border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
-                                >
-                                    Close
-                                </Button>
                                 {showApplyButton && (
                                     <Button
                                         onClick={onApply}
@@ -1004,6 +1083,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     </div>
                 </motion.div>
             </motion.div>
+
         </AnimatePresence>
     )
 }

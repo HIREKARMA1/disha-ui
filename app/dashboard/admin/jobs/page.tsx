@@ -24,15 +24,19 @@ interface Job {
     responsibilities?: string
     job_type: string
     status: string
-    location: string
+    location: string | string[]
     remote_work: boolean
     travel_required: boolean
+    onsite_office?: boolean
+    mode_of_work?: string
     salary_min?: number
     salary_max?: number
     salary_currency: string
     experience_min?: number
     experience_max?: number
-    education_level?: string
+    education_level?: string | string[]
+    education_degree?: string | string[]
+    education_branch?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -47,6 +51,14 @@ interface Job {
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
+    // Additional fields
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    expiration_date?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
 }
 
 export default function AdminJobsPage() {
