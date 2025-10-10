@@ -183,8 +183,25 @@ class ApiClient {
     return response.data;
   }
 
+  async getUniversityApplications(params: {
+    status?: string;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/applications', { params });
+    return response.data;
+  }
+
   async getAvailableJobs(page: number = 1, limit: number = 20): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/jobs/?page=${page}&limit=${limit}`);
+    return response.data;
+  }
+
+  async getJobById(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/jobs/${jobId}`);
     return response.data;
   }
 
@@ -448,6 +465,11 @@ class ApiClient {
   }
 
   // Public corporate profile endpoint
+  async getCorporateProfile(corporateId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/corporates/${corporateId}`);
+    return response.data;
+  }
+
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
     return response.data;

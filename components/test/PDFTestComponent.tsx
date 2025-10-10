@@ -6,7 +6,7 @@ import { Download } from 'lucide-react'
 import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
 import { toast } from 'react-hot-toast'
 
-// Sample job data for testing
+// Sample job data for testing with ALL new fields
 const sampleJob = {
     id: 'test-job-1',
     title: 'Senior Software Engineer',
@@ -14,20 +14,31 @@ const sampleJob = {
     requirements: '• Bachelor\'s degree in Computer Science or related field\n• 3+ years of experience in software development\n• Proficiency in JavaScript, React.js, Node.js, and Python\n• Experience with cloud platforms (AWS, Azure, or GCP)\n• Strong problem-solving and analytical skills\n• Experience with database design and optimization\n• Knowledge of Agile development methodologies',
     responsibilities: '• Design and develop scalable web applications\n• Collaborate with cross-functional teams to define and implement new features\n• Write clean, maintainable, and efficient code\n• Participate in code reviews and technical discussions\n• Troubleshoot and debug applications\n• Mentor junior developers\n• Stay updated with latest technologies and best practices',
     job_type: 'full_time',
-    location: 'Bangalore, Karnataka',
+    location: ['Bangalore, Karnataka', 'Mumbai, Maharashtra'],
     remote_work: true,
     travel_required: false,
+    onsite_office: true,
     salary_min: 800000,
     salary_max: 1200000,
     salary_currency: 'INR',
     experience_min: 3,
     experience_max: 7,
-    education_level: 'bachelor',
+    education_level: ['bachelor', 'master'],
+    education_degree: ['B.Tech', 'M.Tech'],
+    education_branch: ['Computer Science', 'Information Technology'],
     skills_required: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker', 'MongoDB', 'Git', 'Agile'],
     application_deadline: '2025-12-31T23:59:59Z',
     industry: 'Technology',
-    selection_process: 'Online test, Technical interview, HR round',
-    campus_drive_date: '2025-03-15T10:00:00Z',
+    selection_process: 'Round 1: Online Test, Round 2: Technical Interview, Round 3: HR Round',
+    campus_drive_date: '2025-03-15T09:00:00Z',
+    status: 'active',
+    expiration_date: '2025-06-30T23:59:59Z',
+    number_of_openings: 5,
+    perks_and_benefits: '• Unlimited growth opportunities\n• Highly competitive pay\n• Learning and development programs\n• Health insurance\n• Flexible working hours',
+    eligibility_criteria: 'B.Tech, MCA, or equivalent degree in Computer Science or related field',
+    service_agreement_details: '2-year service agreement with company',
+    ctc_with_probation: '4k-10k per month during probation',
+    ctc_after_probation: '3-6 months probation period',
     corporate_name: 'TechCorp Solutions',
     corporate_id: 'corp-123'
 }

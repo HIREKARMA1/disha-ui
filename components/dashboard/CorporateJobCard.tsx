@@ -14,7 +14,7 @@ interface Job {
     responsibilities?: string
     job_type: string
     status: string
-    location: string
+    location: string | string[]
     remote_work: boolean
     travel_required: boolean
     salary_min?: number
@@ -22,7 +22,9 @@ interface Job {
     salary_currency: string
     experience_min?: number
     experience_max?: number
-    education_level?: string
+    education_level?: string | string[]
+    education_degree?: string | string[]
+    education_branch?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -37,6 +39,16 @@ interface Job {
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
+    // Additional fields
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    expiration_date?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
+    onsite_office?: boolean
+    mode_of_work?: string
 }
 
 interface CorporateJobCardProps {
@@ -318,7 +330,7 @@ export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onS
                 <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <MapPin className="w-4 h-4" />
-                        <span className="truncate">{typeof job.location === 'string' ? job.location : String(job.location || '')}</span>
+                        <span className="truncate">{Array.isArray(job.location) ? job.location.join(', ') : (job.location || '')}</span>
                         {job.remote_work && (
                             <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
                                 Remote

@@ -508,6 +508,10 @@ export default function RegisterPage() {
                                                 </button>
                                             }
                                             error={!!(errors as any).password}
+                                            onCopy={(e) => e.preventDefault()}
+                                            onPaste={(e) => e.preventDefault()}
+                                            onCut={(e) => e.preventDefault()}
+                                            onContextMenu={(e) => e.preventDefault()}
                                             {...register('password')}
                                         />
                                         {(errors as any).password && (
@@ -536,6 +540,10 @@ export default function RegisterPage() {
                                                 </button>
                                             }
                                             error={!!(errors as any).confirmPassword}
+                                            onCopy={(e) => e.preventDefault()}
+                                            onPaste={(e) => e.preventDefault()}
+                                            onCut={(e) => e.preventDefault()}
+                                            onContextMenu={(e) => e.preventDefault()}
                                             {...register('confirmPassword')}
                                         />
                                         {(errors as any).confirmPassword && (

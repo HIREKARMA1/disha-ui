@@ -8,23 +8,27 @@ import { Input } from '@/components/ui/input'
 
 import { UniversityJobCard } from '@/components/dashboard/UniversityJobCard'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
+import { useState as useStateHook } from 'react'
 
 interface UniversityJob {
     id: string
     title: string
     description: string
     requirements?: string
+    responsibilities?: string
     company_name?: string
     company_verified?: boolean
     industry?: string
-    location: string
+    location: string | string[]
     job_type: string
     salary_min?: string
     salary_max?: string
+    salary_currency?: string
     application_deadline?: string
     campus_drive_date?: string
     venue?: string
@@ -34,7 +38,30 @@ interface UniversityJob {
     benefits?: string
     selection_process?: string
     approved: boolean
+    rejected?: boolean
+    pending?: boolean
+    approval_status?: string
     corporate_id?: string
+    // Additional fields for complete job data
+    remote_work?: boolean
+    travel_required?: boolean
+    onsite_office?: boolean
+    mode_of_work?: string
+    experience_min?: number
+    experience_max?: number
+    education_level?: string | string[]
+    education_degree?: string | string[]
+    education_branch?: string | string[]
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
+    expiration_date?: string
+    created_at?: string
+    is_active?: boolean
+    can_apply?: boolean
 }
 
 interface UniversityJobsResponse {
@@ -62,8 +89,12 @@ function UniversityJobsPageContent() {
         total_pages: 0
     })
     const [selectedJob, setSelectedJob] = useState<UniversityJob | null>(null)
+    const [completeJobData, setCompleteJobData] = useState<any>(null)
+    const [loadingJobDetails, setLoadingJobDetails] = useState(false)
     const [showFilters, setShowFilters] = useState(false)
     const [processingJobs, setProcessingJobs] = useState<Set<string>>(new Set())
+    const [showRejectModal, setShowRejectModal] = useState(false)
+    const [jobToReject, setJobToReject] = useState<UniversityJob | null>(null)
     const [stats, setStats] = useState({
         total_jobs: 0,
         pending_approval: 0,
@@ -108,15 +139,16 @@ function UniversityJobsPageContent() {
     const filteredJobs = jobs.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (Array.isArray(job.location) ? job.location.join(', ').toLowerCase() : job.location.toLowerCase()).includes(searchTerm.toLowerCase()) ||
             job.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
 
         const matchesStatus = !filters.status || job.status === filters.status
         const matchesJobType = !filters.job_type || job.job_type === filters.job_type
         const matchesIndustry = !filters.industry || job.industry?.toLowerCase().includes(filters.industry.toLowerCase())
         const matchesApproved = !filters.approved ||
-            (filters.approved === 'approved' && job.approved) ||
-            (filters.approved === 'pending' && !job.approved)
+            (filters.approved === 'approved' && job.approval_status === 'approved') ||
+            (filters.approved === 'pending' && job.approval_status === 'pending') ||
+            (filters.approved === 'rejected' && job.approval_status === 'rejected')
 
         return matchesSearch && matchesStatus && matchesJobType && matchesIndustry && matchesApproved
     })
@@ -147,7 +179,13 @@ function UniversityJobsPageContent() {
 
             // Update the local state
             setJobs(prev => prev.map(j =>
-                j.id === job.id ? { ...j, approved: true } : j
+                j.id === job.id ? { 
+                    ...j, 
+                    approved: true, 
+                    rejected: false, 
+                    pending: false,
+                    approval_status: 'approved'
+                } : j
             ))
 
             // Update stats
@@ -175,10 +213,24 @@ function UniversityJobsPageContent() {
         try {
             setProcessingJobs(prev => new Set(prev).add(job.id))
 
+            console.log('Rejecting job:', job.id, 'Current status:', job.approval_status)
+            
             await apiClient.rejectUniversityJob(job.id)
 
-            // Remove from the list
-            setJobs(prev => prev.filter(j => j.id !== job.id))
+            // Mark job as rejected instead of removing it
+            setJobs(prev => {
+                const updatedJobs = prev.map(j =>
+                    j.id === job.id ? { 
+                        ...j, 
+                        rejected: true, 
+                        approved: false, 
+                        pending: false,
+                        approval_status: 'rejected'
+                    } : j
+                )
+                console.log('Updated jobs after rejection:', updatedJobs.find(j => j.id === job.id))
+                return updatedJobs
+            })
 
             // Update stats
             setStats(prev => ({
@@ -187,10 +239,10 @@ function UniversityJobsPageContent() {
                 rejected: prev.rejected + 1
             }))
 
-            toast.success('Job rejected successfully!')
+            toast.success('Job not approved successfully!')
         } catch (error: any) {
             console.error('Error rejecting job:', error)
-            toast.error('Failed to reject job')
+            toast.error('Failed to not approve job')
         } finally {
             setProcessingJobs(prev => {
                 const newSet = new Set(prev)
@@ -198,6 +250,26 @@ function UniversityJobsPageContent() {
                 return newSet
             })
         }
+    }
+
+    // Handle not approved action (show confirmation modal)
+    const handleNotApproveJob = (job: UniversityJob) => {
+        setJobToReject(job)
+        setShowRejectModal(true)
+    }
+
+    // Handle confirmed rejection
+    const handleConfirmReject = async () => {
+        if (!jobToReject) return
+        await handleRejectJob(jobToReject)
+        setShowRejectModal(false)
+        setJobToReject(null)
+    }
+
+    // Handle modal close
+    const handleCloseRejectModal = () => {
+        setShowRejectModal(false)
+        setJobToReject(null)
     }
 
     // Handle filter changes
@@ -351,6 +423,7 @@ function UniversityJobsPageContent() {
                                 <option value="">All Status</option>
                                 <option value="pending">Pending Approval</option>
                                 <option value="approved">Approved</option>
+                                <option value="rejected">Not Approved</option>
                             </select>
                         </div>
 
@@ -416,9 +489,26 @@ function UniversityJobsPageContent() {
                                 <UniversityJobCard
                                     key={job.id}
                                     job={job}
-                                    onViewDescription={() => setSelectedJob(job)}
+                                    onViewDescription={async () => {
+                                        setSelectedJob(job)
+                                        setLoadingJobDetails(true)
+                                        setCompleteJobData(null)
+                                        
+                                        try {
+                                            // Fetch complete job data from the jobs API
+                                            const response = await apiClient.getJobById(job.id)
+                                            setCompleteJobData(response)
+                                        } catch (error) {
+                                            console.error('Failed to fetch complete job data:', error)
+                                            toast.error('Failed to load complete job details')
+                                            // Still show the modal with limited data
+                                        } finally {
+                                            setLoadingJobDetails(false)
+                                        }
+                                    }}
                                     onApprove={() => handleApproveJob(job)}
                                     onReject={() => handleRejectJob(job)}
+                                    onNotApprove={() => handleNotApproveJob(job)}
                                     isProcessing={processingJobs.has(job.id)}
                                     cardIndex={index}
                                 />
@@ -514,23 +604,26 @@ function UniversityJobsPageContent() {
             {/* Job Description Modal */}
             {selectedJob && (
                 <JobDescriptionModal
-                    job={{
+                    job={completeJobData || {
                         id: selectedJob.id,
                         title: selectedJob.title,
                         description: selectedJob.description,
                         requirements: selectedJob.requirements,
-                        responsibilities: '',
+                        responsibilities: selectedJob.responsibilities || '',
                         job_type: selectedJob.job_type,
                         status: selectedJob.status,
                         location: selectedJob.location,
-                        remote_work: false,
-                        travel_required: false,
+                        remote_work: selectedJob.remote_work || false,
+                        travel_required: selectedJob.travel_required || false,
+                        onsite_office: selectedJob.onsite_office || false,
                         salary_min: selectedJob.salary_min ? Number(selectedJob.salary_min) : undefined,
                         salary_max: selectedJob.salary_max ? Number(selectedJob.salary_max) : undefined,
-                        salary_currency: 'INR',
-                        experience_min: undefined,
-                        experience_max: undefined,
-                        education_level: undefined,
+                        salary_currency: selectedJob.salary_currency || 'INR',
+                        experience_min: selectedJob.experience_min,
+                        experience_max: selectedJob.experience_max,
+                        education_level: selectedJob.education_level,
+                        education_degree: selectedJob.education_degree,
+                        education_branch: selectedJob.education_branch,
                         skills_required: selectedJob.skills_required,
                         application_deadline: selectedJob.application_deadline,
                         max_applications: 0,
@@ -540,18 +633,41 @@ function UniversityJobsPageContent() {
                         campus_drive_date: selectedJob.campus_drive_date,
                         views_count: 0,
                         applications_count: 0,
-                        created_at: '',
+                        created_at: selectedJob.created_at || '',
                         corporate_id: selectedJob.corporate_id || '',
                         corporate_name: selectedJob.company_name,
-                        is_active: true,
-                        can_apply: false
+                        is_active: selectedJob.is_active || true,
+                        can_apply: selectedJob.can_apply || false,
+                        number_of_openings: selectedJob.number_of_openings,
+                        perks_and_benefits: selectedJob.perks_and_benefits,
+                        eligibility_criteria: selectedJob.eligibility_criteria,
+                        service_agreement_details: selectedJob.service_agreement_details,
+                        ctc_with_probation: selectedJob.ctc_with_probation,
+                        ctc_after_probation: selectedJob.ctc_after_probation,
+                        expiration_date: selectedJob.expiration_date
                     }}
-                    onClose={() => setSelectedJob(null)}
+                    onClose={() => {
+                        setSelectedJob(null)
+                        setCompleteJobData(null)
+                    }}
                     onApply={() => { }} // Not applicable for university view
-                    isApplying={false}
+                    isApplying={loadingJobDetails}
                     showApplyButton={false} // Hide apply button in university context
                 />
             )}
+
+            {/* Rejection Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showRejectModal}
+                onClose={handleCloseRejectModal}
+                onConfirm={handleConfirmReject}
+                title="Not Approve Job"
+                message={`Are you sure you want to not approve this job? This action will remove the job from your university's job list and cannot be undone.`}
+                confirmText="Not Approve"
+                cancelText="Cancel"
+                isLoading={jobToReject ? processingJobs.has(jobToReject.id) : false}
+                variant="danger"
+            />
         </UniversityDashboardLayout>
     )
 }

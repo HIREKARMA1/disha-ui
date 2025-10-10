@@ -110,9 +110,10 @@ interface JobFormData {
     requirements: string
     responsibilities: string
     job_type: string
-    location: string
+    location: string[]
     remote_work: boolean
     travel_required: boolean
+    onsite_office: boolean
     salary_min: string
     salary_max: string
     salary_currency: string
@@ -121,15 +122,12 @@ interface JobFormData {
     education_level: string[]
     skills_required: string[]
     application_deadline: string
-    max_applications: string
     industry: string
     selection_process: string
     campus_drive_date: string
     status: string
     // New fields from JD template
     number_of_openings: string
-    joining_location: string
-    mode_of_work: string
     perks_and_benefits: string
     eligibility_criteria: string
     education_degree: string[]
@@ -143,6 +141,7 @@ interface JobFormData {
 export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
+    const [currentLocation, setCurrentLocation] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
@@ -150,9 +149,10 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         requirements: '',
         responsibilities: '',
         job_type: '',
-        location: '',
+        location: [],
         remote_work: false,
         travel_required: false,
+        onsite_office: false,
         salary_min: '',
         salary_max: '',
         salary_currency: 'INR',
@@ -161,15 +161,12 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         education_level: [],
         skills_required: [],
         application_deadline: '',
-        max_applications: '100',
         industry: '',
         selection_process: '',
         campus_drive_date: '',
         status: 'active',
         // New fields from JD template
         number_of_openings: '',
-        joining_location: '',
-        mode_of_work: '',
         perks_and_benefits: '',
         eligibility_criteria: '',
         education_degree: [],
@@ -235,6 +232,23 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         }))
     }
 
+    const addLocation = () => {
+        if (currentLocation.trim() && !formData.location.includes(currentLocation.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                location: [...prev.location, currentLocation.trim()]
+            }))
+            setCurrentLocation('')
+        }
+    }
+
+    const removeLocation = (locationToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            location: prev.location.filter(location => location !== locationToRemove)
+        }))
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -259,8 +273,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         if (!formData.job_type) {
             errors.job_type = 'Job type is required'
         }
-        if (!formData.location.trim()) {
-            errors.location = 'Location is required'
+        if (formData.location.length === 0) {
+            errors.location = 'At least one location is required'
         }
 
         // If there are validation errors, show them and return
@@ -279,9 +293,10 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 requirements: formData.requirements || null,
                 responsibilities: formData.responsibilities || null,
                 job_type: formData.job_type,
-                location: formData.location,
+                location: formData.location.length > 0 ? formData.location.join(', ') : null,
                 remote_work: formData.remote_work,
                 travel_required: formData.travel_required,
+                onsite_office: formData.onsite_office,
                 salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
                 salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
                 salary_currency: formData.salary_currency,
@@ -290,15 +305,12 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 education_level: formData.education_level.length > 0 ? formData.education_level : null,
                 skills_required: formData.skills_required.length > 0 ? formData.skills_required : null,
                 application_deadline: formData.application_deadline ? formData.application_deadline : null,
-                max_applications: parseInt(formData.max_applications),
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
                 campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
                 status: formData.status,
                 // New fields from JD template
                 number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
-                joining_location: formData.joining_location || null,
-                mode_of_work: formData.mode_of_work || null,
                 perks_and_benefits: formData.perks_and_benefits || null,
                 eligibility_criteria: formData.eligibility_criteria || null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
@@ -328,9 +340,10 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 requirements: '',
                 responsibilities: '',
                 job_type: '',
-                location: '',
+                location: [],
                 remote_work: false,
                 travel_required: false,
+                onsite_office: false,
                 salary_min: '',
                 salary_max: '',
                 salary_currency: 'INR',
@@ -339,15 +352,12 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 education_level: [],
                 skills_required: [],
                 application_deadline: '',
-                max_applications: '100',
                 industry: '',
                 selection_process: '',
                 campus_drive_date: '',
                 status: 'active',
                 // New fields from JD template
                 number_of_openings: '',
-                joining_location: '',
-                mode_of_work: '',
                 perks_and_benefits: '',
                 eligibility_criteria: '',
                 education_degree: [],
@@ -525,22 +535,50 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                     Location & Work Details
                                 </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Location *
                                         </label>
-                                        <Input
-                                            value={formData.location}
-                                            onChange={(e) => handleInputChange('location', e.target.value)}
-                                            placeholder={validationErrors.location || "e.g., Bangalore, Karnataka"}
-                                            className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
-                                        />
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={currentLocation}
+                                                onChange={(e) => setCurrentLocation(e.target.value)}
+                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
+                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
+                                            />
+                                            <Button type="button" onClick={addLocation} variant="outline">
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                         {validationErrors.location && (
                                             <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
                                         )}
                                     </div>
 
+                                    {formData.location.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {formData.location.map((location, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                                                >
+                                                    {location}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeLocation(location)}
+                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Industry
@@ -560,7 +598,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-6">
+                                <div className="flex items-center space-x-6 flex-wrap gap-4">
                                     <label className="flex items-center space-x-2">
                                         <input
                                             type="checkbox"
@@ -579,6 +617,16 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                             className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         <span className="text-sm text-gray-700 dark:text-gray-300">Travel required</span>
+                                    </label>
+
+                                    <label className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.onsite_office}
+                                            onChange={(e) => handleInputChange('onsite_office', e.target.checked)}
+                                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                        />
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Onsite office</span>
                                     </label>
                                 </div>
                             </div>
@@ -700,6 +748,38 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Probation Salary Details */}
+                                <div className="space-y-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <DollarSign className="w-5 h-5" />
+                                        Probation Salary Details
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Stipend During Probation
+                                            </label>
+                                            <Input
+                                                value={formData.ctc_with_probation}
+                                                onChange={(e) => handleInputChange('ctc_with_probation', e.target.value)}
+                                                placeholder="e.g., 4k-10k per month"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Probation Time
+                                            </label>
+                                            <Input
+                                                value={formData.ctc_after_probation}
+                                                onChange={(e) => handleInputChange('ctc_after_probation', e.target.value)}
+                                                placeholder="e.g., 3Months-6Months"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Skills */}
@@ -762,17 +842,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Max Applications
-                                        </label>
-                                        <Input
-                                            type="number"
-                                            value={formData.max_applications}
-                                            onChange={(e) => handleInputChange('max_applications', e.target.value)}
-                                            placeholder="e.g., 100"
-                                        />
-                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -836,34 +905,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                     Additional Job Details
                                 </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Joining Location
-                                        </label>
-                                        <Input
-                                            value={formData.joining_location}
-                                            onChange={(e) => handleInputChange('joining_location', e.target.value)}
-                                            placeholder="e.g., Ahmedabad, Gujarat"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Mode of Work
-                                        </label>
-                                        <Select value={formData.mode_of_work} onValueChange={(value) => handleInputChange('mode_of_work', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select mode of work" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="onsite">Onsite</SelectItem>
-                                                <SelectItem value="remote">Remote</SelectItem>
-                                                <SelectItem value="hybrid">Hybrid</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -982,37 +1023,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                                 </div>
                             </div>
 
-                            {/* Probation Salary Details */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <DollarSign className="w-5 h-5" />
-                                    Probation Salary Details
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            CTC During Probation
-                                        </label>
-                                        <Input
-                                            value={formData.ctc_with_probation}
-                                            onChange={(e) => handleInputChange('ctc_with_probation', e.target.value)}
-                                            placeholder="e.g., 4k-10k per month"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            CTC After Probation
-                                        </label>
-                                        <Input
-                                            value={formData.ctc_after_probation}
-                                            onChange={(e) => handleInputChange('ctc_after_probation', e.target.value)}
-                                            placeholder="e.g., 2LPA-3LPA"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Footer */}

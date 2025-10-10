@@ -80,7 +80,7 @@ export function StudentProfile() {
             id: 'documents',
             title: 'Documents & Certificates',
             icon: Shield,
-            fields: ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates'],
+            fields: ['resume', '10th_certificate', '12th_certificate', 'internship_certificates'],
             completed: false
         },
         {
@@ -914,7 +914,7 @@ export function StudentProfile() {
 
                                                 {editing === 'documents' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates'], completed: false }}
+                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', '10th_certificate', '12th_certificate', 'internship_certificates'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('documents', formData)}
                                                         saving={saving}
@@ -960,7 +960,7 @@ export function StudentProfile() {
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex items-center space-x-3">
-                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Class X:</span>
+                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">10th Certificate:</span>
                                                                         {profile.tenth_certificate ? (
                                                                             <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
                                                                         ) : (
@@ -981,7 +981,7 @@ export function StudentProfile() {
                                                                 </div>
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex items-center space-x-3">
-                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Class XII:</span>
+                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">12th Certificate:</span>
                                                                         {profile.twelfth_certificate ? (
                                                                             <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
                                                                         ) : (
@@ -1343,18 +1343,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        if (field === 'tenth_certificate' || field === 'twelfth_certificate' || field === 'internship_certificates') {
+        if (field === '10th_certificate' || field === '12th_certificate' || field === 'internship_certificates') {
+            // Map display field names to backend field names
+            const backendFieldName = field === '10th_certificate' ? 'tenth_certificate' : 
+                                   field === '12th_certificate' ? 'twelfth_certificate' : 
+                                   field
+            const displayName = field === '10th_certificate' ? '10th certificate' :
+                               field === '12th_certificate' ? '12th certificate' :
+                               field.replace(/_/g, ' ')
+            
             return (
                 <div className="space-y-3">
                     <FileUpload
                         type="document"
-                        onFileSelect={(file) => handleFileUpload(field, file)}
-                        onFileRemove={() => handleFileRemove(field)}
-                        currentFile={value}
-                        placeholder={`Upload your ${field.replace(/_/g, ' ')} (PDF only)`}
-                        disabled={uploading === field}
+                        onFileSelect={(file) => handleFileUpload(backendFieldName, file)}
+                        onFileRemove={() => handleFileRemove(backendFieldName)}
+                        currentFile={formData[backendFieldName] || ''}
+                        placeholder={`Upload your ${displayName} (PDF only)`}
+                        disabled={uploading === backendFieldName}
                     />
-                    {uploading === field && (
+                    {uploading === backendFieldName && (
                         <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
                             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                             <span>Uploading...</span>
@@ -1655,14 +1663,23 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             ) : (
                 // All Other Sections - Simple Grid Layout
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {section.fields.map((field) => (
-                        <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
-                                {field.replace(/_/g, ' ')}
-                            </label>
-                            {renderField(field)}
-                        </div>
-                    ))}
+                    {section.fields.map((field) => {
+                        // Map display field names to proper labels
+                        const getFieldLabel = (fieldName: string) => {
+                            if (fieldName === '10th_certificate') return '10th Certificate'
+                            if (fieldName === '12th_certificate') return '12th Certificate'
+                            return fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                        }
+                        
+                        return (
+                            <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {getFieldLabel(field)}
+                                </label>
+                                {renderField(field)}
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 
