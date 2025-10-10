@@ -118,9 +118,10 @@ export default function CorporateJobsPage() {
 
     // Filter jobs based on search and filters
     const filteredJobs = jobs.filter(job => {
+        const locationString = Array.isArray(job.location) ? job.location.join(' ') : job.location
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.location.toLowerCase().includes(searchTerm.toLowerCase())
+            locationString.toLowerCase().includes(searchTerm.toLowerCase())
 
         const matchesStatus = !filters.status || job.status === filters.status
         const matchesJobType = !filters.job_type || job.job_type === filters.job_type

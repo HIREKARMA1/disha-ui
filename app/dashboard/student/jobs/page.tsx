@@ -499,7 +499,13 @@ function JobOpportunitiesPageContent() {
         } catch (error) {
             console.error('Failed to fetch profile completion:', error)
             // Set default completion to 0 if fetch fails
-            setProfileCompletion({ completion_percentage: 0 })
+            setProfileCompletion({ 
+                completion_percentage: 0,
+                completed_fields: [],
+                missing_fields: [],
+                total_fields: 0,
+                completed_count: 0
+            })
         } finally {
             setProfileLoading(false)
         }
@@ -726,7 +732,8 @@ function JobOpportunitiesPageContent() {
             }
 
             // Search in location
-            if (job.location && job.location.toLowerCase().includes(searchTermLower)) {
+            const locationString = Array.isArray(job.location) ? job.location.join(' ') : job.location
+            if (locationString && locationString.toLowerCase().includes(searchTermLower)) {
                 console.log(`Found match in location: ${job.title}`)
                 return true
             }
