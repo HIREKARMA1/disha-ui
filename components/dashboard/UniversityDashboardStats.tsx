@@ -43,7 +43,7 @@ export function UniversityDashboardStats({
             bgColor: 'bg-blue-50 dark:bg-blue-900/20'
         },
         {
-            label: 'Placed Students',
+            label: 'Selected Students',
             value: formatNumber(studentStats?.placed_students || 0),
             icon: CheckCircle,
             color: 'text-green-600',
@@ -57,8 +57,8 @@ export function UniversityDashboardStats({
             bgColor: 'bg-purple-50 dark:bg-purple-900/20'
         },
         {
-            label: 'Campus Drives',
-            value: formatNumber(jobStats?.active_campus_drives || 0),
+            label: 'Total Jobs',
+            value: formatNumber((jobStats?.total_jobs_approved || 0) + (jobStats?.pending_approvals || 0)),
             icon: Building,
             color: 'text-orange-600',
             bgColor: 'bg-orange-50 dark:bg-orange-900/20'

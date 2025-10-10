@@ -7,6 +7,7 @@ import {
     User,
     Users,
     Briefcase,
+    FileText,
     X,
     Menu,
     LogOut
@@ -54,6 +55,13 @@ const navItems: NavItem[] = [
         icon: Briefcase,
         description: 'Browse and manage job opportunities',
         color: 'from-purple-500 to-pink-600'
+    },
+    {
+        label: 'Applications',
+        href: '/dashboard/university/applications',
+        icon: FileText,
+        description: 'Track student applications',
+        color: 'from-indigo-500 to-blue-600'
     }
 ]
 

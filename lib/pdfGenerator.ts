@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { config } from './config'
 
 interface JobData {
   id: string
@@ -8,15 +9,18 @@ interface JobData {
   requirements?: string
   responsibilities?: string
   job_type: string
-  location: string
+  location: string | string[]
   remote_work: boolean
   travel_required: boolean
+  onsite_office?: boolean
   salary_min?: number
   salary_max?: number
   salary_currency: string
   experience_min?: number
   experience_max?: number
-  education_level?: string
+  education_level?: string | string[]
+  education_degree?: string | string[]
+  education_branch?: string | string[]
   skills_required?: string[]
   application_deadline?: string
   industry?: string
@@ -24,11 +28,21 @@ interface JobData {
   campus_drive_date?: string
   corporate_name?: string
   corporate_id?: string
+  created_at?: string
+  number_of_openings?: number
+  perks_and_benefits?: string
+  eligibility_criteria?: string
+  service_agreement_details?: string
+  ctc_with_probation?: string
+  ctc_after_probation?: string
+  expiration_date?: string
+  status?: string
 }
 
 interface CorporateProfile {
   id: string
   company_name?: string
+  company_email?: string
   website_url?: string
   industry?: string
   company_size?: string
@@ -44,68 +58,76 @@ interface CorporateProfile {
 
 export class JobDescriptionPDFGenerator {
   private doc: jsPDF
-  private currentY: number = 0
   private pageHeight: number = 0
-  private margin: number = 20
-  private lineHeight: number = 5
   private pageWidth: number = 0
-
-  // Simple professional colors
-  private colors = {
-    primary: [0, 0, 0] as const, // Black
-    secondary: [100, 100, 100] as const, // Gray
-    accent: [0, 0, 255] as const, // Blue
-    text: [0, 0, 0] as const, // Black
-    textLight: [128, 128, 128] as const, // Light gray
-    background: [255, 255, 255] as const // White
-  }
 
   constructor() {
     this.doc = new jsPDF('p', 'mm', 'a4')
     this.pageHeight = this.doc.internal.pageSize.height
     this.pageWidth = this.doc.internal.pageSize.width
-    this.currentY = this.margin
   }
 
   async generatePDF(job: JobData, corporateProfile?: CorporateProfile): Promise<Blob> {
     try {
-      // Reset position
-      this.currentY = this.margin
-
-      // Add simple header
-      this.addSimpleHeader(corporateProfile)
-
-      // Add job title
-      this.addJobTitle(job)
-
-      // Add company info
-      if (corporateProfile) {
-        this.addCompanyInfo(corporateProfile)
+      // Preload company logo if available
+      let logoDataUrl = null
+      if (corporateProfile?.company_logo) {
+        try {
+          logoDataUrl = await this.loadImageAsDataUrl(corporateProfile.company_logo)
+        } catch (error) {
+          console.warn('Could not load company logo:', error)
+        }
       }
 
-      // Add job details
-      this.addJobDetails(job)
+      // Create HTML template with preloaded logo
+      const htmlTemplate = this.createHTMLTemplate(job, corporateProfile, logoDataUrl)
 
-      // Add requirements
-      if (job.requirements) {
-        this.addRequirements(job.requirements)
+      // Create a temporary container
+      const container = document.createElement('div')
+      container.innerHTML = htmlTemplate
+      container.style.position = 'absolute'
+      container.style.left = '-9999px'
+      container.style.top = '0'
+      container.style.width = '210mm' // A4 width
+      container.style.backgroundColor = 'white'
+      document.body.appendChild(container)
+
+      // Wait for any remaining images to load
+      await this.waitForImages(container)
+
+      // Convert HTML to canvas
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 794, // A4 width in pixels (210mm * 3.78)
+        height: container.scrollHeight
+      })
+
+      // Remove temporary container
+      document.body.removeChild(container)
+
+      // Create PDF from canvas
+      const imgData = canvas.toDataURL('image/png')
+      const imgWidth = 210 // A4 width in mm
+      const pageHeight = 297 // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+      let heightLeft = imgHeight
+      let position = 0
+
+      this.doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+
+      heightLeft -= pageHeight
+
+      // Add new pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight
+        this.doc.addPage()
+        this.doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
       }
-
-      // Add responsibilities
-      if (job.responsibilities) {
-        this.addResponsibilities(job.responsibilities)
-      }
-
-      // Add skills
-      if (job.skills_required && job.skills_required.length > 0) {
-        this.addSkills(job.skills_required)
-      }
-
-      // Add application info
-      this.addApplicationInfo(job)
-
-      // Add simple footer
-      this.addSimpleFooter()
 
       // Generate and return PDF blob
       const pdfBlob = this.doc.output('blob')
@@ -117,275 +139,742 @@ export class JobDescriptionPDFGenerator {
     }
   }
 
-  private addSimpleHeader(corporateProfile?: CorporateProfile) {
-    // Company name
-    if (corporateProfile?.company_name) {
-      this.doc.setFontSize(16)
-      this.doc.setTextColor(...this.colors.primary)
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text(corporateProfile.company_name, this.margin, this.currentY)
-      this.currentY += 8
-    }
+  private async loadImageAsDataUrl(imageUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      console.log('🖼️ Attempting to load image:', imageUrl)
 
-    // Document title
-    this.doc.setFontSize(20)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Job Description', this.margin, this.currentY)
-    this.currentY += 10
-
-    // Simple line
-    this.doc.setDrawColor(...this.colors.accent)
-    this.doc.line(this.margin, this.currentY, this.pageWidth - this.margin, this.currentY)
-    this.currentY += 8
-  }
-
-  private addJobTitle(job: JobData) {
-    // Job title
-    this.doc.setFontSize(18)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text(job.title, this.margin, this.currentY)
-    this.currentY += 8
-
-    // Job details in clean single-column format
-    this.doc.setFontSize(11)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-
-    const jobDetails = [
-      { label: 'Position', value: this.formatJobType(job.job_type) },
-      { label: 'Location', value: job.remote_work ? `${job.location} (Remote)` : job.location },
-      { label: 'Salary', value: this.formatSalary(job.salary_currency, job.salary_min, job.salary_max) },
-      { label: 'Experience', value: this.formatExperience(job.experience_min, job.experience_max) }
-    ]
-
-    jobDetails.forEach(detail => {
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text(`${detail.label}:`, this.margin, this.currentY)
-      this.doc.setFont('helvetica', 'normal')
-      this.doc.text(detail.value, this.margin + 30, this.currentY)
-      this.currentY += 6
-    })
-
-    this.currentY += 8
-  }
-
-  private addCompanyInfo(corporateProfile: CorporateProfile) {
-    // Section header
-    this.doc.setFontSize(14)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Company Information', this.margin, this.currentY)
-    this.currentY += 8
-
-    // Company details in clean single-column format
-    this.doc.setFontSize(10)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-
-    const companyDetails = [
-      { label: 'Industry', value: corporateProfile.industry || 'Not specified' },
-      { label: 'Company Size', value: corporateProfile.company_size || 'Not specified' },
-      { label: 'Founded', value: corporateProfile.founded_year?.toString() || 'Not specified' },
-      { label: 'Website', value: corporateProfile.website_url || 'Not specified' },
-      { label: 'Address', value: corporateProfile.address || 'Not specified' },
-      { label: 'Contact', value: corporateProfile.contact_person || 'Not specified' }
-    ]
-
-    companyDetails.forEach(detail => {
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text(`${detail.label}:`, this.margin, this.currentY)
-      this.doc.setFont('helvetica', 'normal')
-      this.doc.text(detail.value, this.margin + 35, this.currentY)
-      this.currentY += 6
-    })
-
-    this.currentY += 5
-
-    // Company description
-    if (corporateProfile.description) {
-      this.doc.setFontSize(10)
-      this.doc.setTextColor(...this.colors.text)
-      this.doc.setFont('helvetica', 'normal')
-      this.addWrappedText(corporateProfile.description, 0, 10)
-      this.currentY += 8
-    }
-  }
-
-  private addJobDetails(job: JobData) {
-    // Section header
-    this.doc.setFontSize(14)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Job Description', this.margin, this.currentY)
-    this.currentY += 8
-
-    // Job description
-    this.doc.setFontSize(10)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-    this.addWrappedText(job.description, 0, 10)
-    this.currentY += 10
-  }
-
-  private addRequirements(requirements: string) {
-    this.checkPageBreak(40)
-    
-    // Section header
-    this.doc.setFontSize(14)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Requirements', this.margin, this.currentY)
-    this.currentY += 8
-
-    // Requirements
-    this.doc.setFontSize(10)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-    this.addBulletedContent(requirements)
-    this.currentY += 8
-  }
-
-  private addResponsibilities(responsibilities: string) {
-    this.checkPageBreak(40)
-    
-    // Section header
-    this.doc.setFontSize(14)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Responsibilities', this.margin, this.currentY)
-    this.currentY += 8
-
-    // Responsibilities
-    this.doc.setFontSize(10)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-    this.addBulletedContent(responsibilities)
-    this.currentY += 8
-  }
-
-  private addSkills(skills: string[]) {
-    this.checkPageBreak(20)
-    
-    // Section header
-    this.doc.setFontSize(14)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Required Skills', this.margin, this.currentY)
-    this.currentY += 6
-
-    // Skills
-    this.doc.setFontSize(10)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-    const skillsText = skills.join(', ')
-    this.addWrappedText(skillsText, 0, 10)
-    this.currentY += 5
-  }
-
-  private addApplicationInfo(job: JobData) {
-    this.checkPageBreak(50)
-    
-    // Section header
-    this.doc.setFontSize(14)
-    this.doc.setTextColor(...this.colors.primary)
-    this.doc.setFont('helvetica', 'bold')
-    this.doc.text('Application Information', this.margin, this.currentY)
-    this.currentY += 8
-
-    this.doc.setFontSize(10)
-    this.doc.setTextColor(...this.colors.text)
-    this.doc.setFont('helvetica', 'normal')
-
-    // Application deadline
-    if (job.application_deadline) {
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text('Application Deadline:', this.margin, this.currentY)
-      this.doc.setFont('helvetica', 'normal')
-      this.doc.text(this.formatDate(job.application_deadline), this.margin + 40, this.currentY)
-      this.currentY += 6
-    }
-
-    // Campus drive date
-    if (job.campus_drive_date) {
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text('Campus Drive Date:', this.margin, this.currentY)
-      this.doc.setFont('helvetica', 'normal')
-      this.doc.text(this.formatDate(job.campus_drive_date), this.margin + 40, this.currentY)
-      this.currentY += 6
-    }
-
-    // Selection process with proper wrapping
-    if (job.selection_process) {
-      this.doc.setFont('helvetica', 'bold')
-      this.doc.text('Selection Process:', this.margin, this.currentY)
-      this.currentY += 6
-      
-      this.doc.setFont('helvetica', 'normal')
-      this.addWrappedText(job.selection_process, 0, 10)
-      this.currentY += 5
-    }
-
-    this.currentY += 8
-  }
-
-  private addBulletedContent(content: string) {
-    const lines = content.split('\n').filter(line => line.trim())
-    
-    lines.forEach(line => {
-      const cleanLine = line.replace(/^[•\-\*]\s*/, '').trim()
-      if (cleanLine) {
-        this.checkPageBreak(this.lineHeight + 2)
-        
-        // Simple bullet point
-        this.doc.text('•', this.margin, this.currentY)
-        
-        // Text with proper indentation
-        this.addWrappedText(cleanLine, 8, 10)
-        this.currentY += 2 // Add small spacing between bullet points
+      // Check if it's already a data URL
+      if (imageUrl.startsWith('data:')) {
+        console.log('✅ Image is already a data URL')
+        resolve(imageUrl)
+        return
       }
+
+      // Try fetching the image through fetch API to bypass CORS
+      const fetchImageAsBlob = async (url: string): Promise<string> => {
+        try {
+          console.log('🌐 Fetching image via fetch API...')
+
+          // First try direct fetch
+          let response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit'
+          })
+
+          if (!response.ok) {
+            // If direct fetch fails, try with no-cors mode
+            console.log('🔄 Direct fetch failed, trying no-cors mode...')
+            response = await fetch(url, {
+              mode: 'no-cors',
+              credentials: 'omit'
+            })
+          }
+
+          const blob = await response.blob()
+          console.log('✅ Image fetched as blob successfully')
+
+          return new Promise((resolveBlob, rejectBlob) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              console.log('✅ Image converted to data URL via FileReader')
+              resolveBlob(reader.result as string)
+            }
+            reader.onerror = () => {
+              rejectBlob(new Error('Failed to convert blob to data URL'))
+            }
+            reader.readAsDataURL(blob)
+          })
+        } catch (error) {
+          console.warn('❌ Fetch approach failed:', error)
+          throw error
+        }
+      }
+
+      // Try server-side proxy first, then client-side approaches
+      const tryServerProxy = async (): Promise<string> => {
+        try {
+          console.log('🌐 Trying server-side proxy...')
+          console.log('🔗 API Base URL:', config.api.baseUrl)
+          console.log('🔗 Full proxy URL:', `${config.api.baseUrl}/api/v1/corporates/proxy-image?url=${encodeURIComponent(imageUrl)}`)
+
+          // Use the correct API base URL from config
+          const response = await fetch(`${config.api.baseUrl}/api/v1/corporates/proxy-image?url=${encodeURIComponent(imageUrl)}`)
+
+          console.log('📡 Proxy response status:', response.status)
+
+          if (!response.ok) {
+            const errorText = await response.text()
+            console.error('❌ Proxy response error:', errorText)
+            throw new Error(`Proxy request failed: ${response.status} - ${errorText}`)
+          }
+
+          const data = await response.json()
+          console.log('✅ Image loaded via server proxy, data URL length:', data.data_url?.length || 0)
+          return data.data_url
+        } catch (error) {
+          console.warn('❌ Server proxy failed:', error)
+          throw error
+        }
+      }
+
+      // Try server proxy first, then client-side approaches
+      tryServerProxy()
+        .then(result => {
+          resolve(result)
+        })
+        .catch(() => {
+          // Fallback 1: Try client-side fetch
+          fetchImageAsBlob(imageUrl)
+            .then(result => {
+              resolve(result)
+            })
+            .catch(() => {
+              console.log('🔄 Trying direct image loading as final fallback...')
+
+              // Fallback 2: Try direct image loading
+              const img = new Image()
+              img.crossOrigin = 'anonymous'
+
+              img.onload = () => {
+                console.log('✅ Image loaded successfully via direct loading')
+                try {
+                  const canvas = document.createElement('canvas')
+                  const ctx = canvas.getContext('2d')
+
+                  if (!ctx) {
+                    throw new Error('Could not get canvas context')
+                  }
+
+                  canvas.width = img.width
+                  canvas.height = img.height
+                  ctx.drawImage(img, 0, 0)
+
+                  const dataUrl = canvas.toDataURL('image/png')
+                  console.log('✅ Image converted to data URL successfully')
+                  resolve(dataUrl)
+                } catch (error) {
+                  console.error('❌ Error converting image to data URL:', error)
+                  reject(error)
+                }
+              }
+
+              img.onerror = (error) => {
+                console.error('❌ All image loading methods failed:', error)
+                reject(new Error(`Could not load image: ${imageUrl}`))
+              }
+
+              img.src = imageUrl
+            })
+        })
     })
   }
 
-  private addSimpleFooter() {
-    const pageHeight = this.doc.internal.pageSize.height
-    const footerY = pageHeight - 15
-
-    // Simple line
-    this.doc.setDrawColor(...this.colors.textLight)
-    this.doc.line(this.margin, footerY - 5, this.pageWidth - this.margin, footerY - 5)
-
-    // Footer text
-    this.doc.setFontSize(9)
-    this.doc.setTextColor(...this.colors.textLight)
-    this.doc.setFont('helvetica', 'normal')
-    this.doc.text('Generated by HireKarma Job Portal', this.margin, footerY)
-    this.doc.text(new Date().toLocaleDateString(), this.pageWidth - this.margin - 20, footerY)
-  }
-
-  private addWrappedText(text: string, xOffset: number = 0, fontSize: number = 10) {
-    this.doc.setFontSize(fontSize)
-    const maxWidth = this.pageWidth - this.margin * 2 - xOffset
-    const lines = this.doc.splitTextToSize(text, maxWidth)
-    
-    lines.forEach((line: string) => {
-      this.checkPageBreak(this.lineHeight)
-      this.doc.text(line, this.margin + xOffset, this.currentY)
-      this.currentY += this.lineHeight
+  private async waitForImages(container: HTMLElement): Promise<void> {
+    const images = container.querySelectorAll('img')
+    const imagePromises = Array.from(images).map(img => {
+      return new Promise<void>((resolve) => {
+        if (img.complete) {
+          resolve()
+        } else {
+          img.onload = () => resolve()
+          img.onerror = () => resolve() // Resolve even if image fails to load
+        }
+      })
     })
+
+    await Promise.all(imagePromises)
   }
 
-  private checkPageBreak(requiredSpace: number) {
-    if (this.currentY + requiredSpace > this.pageHeight - this.margin - 20) {
-      this.doc.addPage()
-      this.currentY = this.margin
-    }
+  private createHTMLTemplate(job: JobData, corporateProfile?: CorporateProfile, logoDataUrl?: string | null): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #000;
+            background: white;
+            width: 210mm;
+            padding: 0;
+            margin: 0;
+          }
+          
+          .page {
+            min-height: 297mm;
+            position: relative;
+            page-break-after: always;
+          }
+          
+          .page:last-child {
+            page-break-after: auto;
+          }
+          
+          .header {
+            background: linear-gradient(to right, #d4f4ff, #e8f9ff);
+            padding: 20px 35px;
+            margin: 0;
+            width: 100%;
+            position: relative;
+          }
+          
+          .company-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+          }
+          
+          .company-logo {
+            width: 140px;
+            height: 60px;
+            object-fit: contain;
+            object-position: left center;
+            max-width: 140px;
+            max-height: 60px;
+          }
+          
+          .content-wrapper {
+            padding: 25px 30px;
+          }
+          
+          .section-title {
+            background: linear-gradient(to right, #b8e8f5, #d4f4ff);
+            color: #006b8f;
+            text-align: left;
+            justify-content: flex-start;
+            padding: 15px 20px;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+          }
+          
+          .company-name-label {
+            background: #00a9cc;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            margin-right: 8px;
+            border-radius: 5px;
+          }
+          
+          .company-name-value {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2d3748;
+            display: inline;
+          }
+          
+          .company-name-container {
+            margin-bottom: 8px;
+          }
+          
+          .info-line {
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          
+          .info-line strong {
+            font-weight: bold;
+          }
+          
+          .company-description {
+            margin: 5px 0 15px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: justify;
+          }
+          
+          .section-title {
+            background: linear-gradient(to right, #b8e8f5, #d4f4ff);
+            color: #006b8f;
+            text-align: left;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 20px;
+            margin: 0 0 20px 0;
+            width: 50%;
+            justify-content: flex-start;
+            align-items: center;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 30px;
+            margin-bottom: 20px;
+          }
+          
+          .info-item {
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          
+          .info-item strong {
+            font-weight: bold;
+          }
+          
+          .job-title-box {
+            background: linear-gradient(to right, #b8e8f5, #d4f4ff);
+            color: #006b8f;
+            padding: 12px 20px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+          }
+          
+          .job-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px;
+            margin-bottom: 25px;
+          }
+          
+          .job-detail-item {
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          
+          .job-detail-item strong {
+            font-weight: bold;
+          }
+          
+          .section-content {
+            font-size: 14px;
+            line-height: 1.7;
+            text-align: justify;
+            margin-bottom: 20px;
+          }
+          
+          .section-content-two-column {
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px;
+          }
+          
+          .section-content-two-column div {
+            position: relative;
+            padding-left: 15px;
+          }
+          
+          .section-content-two-column div::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+          }
+          
+          .bullet-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+          
+          .bullet-list li {
+            position: relative;
+            padding-left: 15px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          
+          .bullet-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+          }
+          
+          .skills-title {
+            background: #00a9cc;
+            color: white;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+            border-radius: 5px;
+          }
+          
+          .skills-grid {
+            display: grid;
+            gap: 10px 20px;
+            margin-bottom: 20px;
+          }
+          
+          .skills-grid.one-column {
+            grid-template-columns: 1fr;
+            justify-items: center;
+          }
+          
+          .skills-grid.two-columns {
+            grid-template-columns: 1fr 1fr;
+          }
+          
+          .skills-grid.three-columns {
+            grid-template-columns: 1fr 1fr 1fr;
+          }
+          
+          .skill-item {
+            font-size: 14px;
+            line-height: 1.6;
+            position: relative;
+            padding-left: 15px;
+          }
+          
+          .skill-item::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+          }
+          
+          .page-break {
+            page-break-after: always;
+          }
+          
+          .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to right, #d4f4ff, #e8f9ff);
+            padding: 15px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #006b8f;
+            border-top: 2px solid #b8e8f5;
+          }
+          
+          .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 100%;
+          }
+          
+          .footer-left {
+            text-align: left;
+          }
+          
+          .footer-center {
+            text-align: center;
+            font-weight: bold;
+          }
+          
+          .footer-right {
+            text-align: right;
+          }
+        </style>
+      </head>
+      <body>
+        <!-- Page 1 -->
+        <div class="page">
+          <div class="header">
+            <div class="company-logo-container">
+              ${logoDataUrl ?
+        `<img src="${logoDataUrl}" alt="Company Logo" class="company-logo">` :
+        '<div style="width: 140px; height: 60px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #718096; font-size: 12px;">LOGO</div>'
+      }
+            </div>
+          </div>
+
+          <div class="content-wrapper">
+            <!-- About Company Section -->
+            <h2 class="section-title padding-bottom-10">About Company</h2>
+            <br>
+            <div class="company-name-container">
+              <span>Company Name: </span>
+              <h4 style="display: inline; font-weight: bold; font-size: 16px; color: #2d3748; margin: 0;">${corporateProfile?.company_name || 'TCS'}</h4>
+            </div>
+            
+            <div class="company-description">
+              ${corporateProfile?.description || 'TCS, a global leader in IT services, consulting, and business solutions, leverages technology for business transformation and helps catalyze change.'}
+            </div>
+            
+            <div class="subsection-title">Company Information:</div>
+            
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Industry :</strong> ${corporateProfile?.industry || 'Not Specified'}
+              </div>
+              <div class="info-item">
+                <strong>Company Size:</strong> ${corporateProfile?.company_size || 'Not Specified'}
+              </div>
+              <div class="info-item">
+                <strong>Founded :</strong> ${corporateProfile?.founded_year || 'Not Specified'}
+              </div>
+              <div class="info-item">
+                <strong>Website :</strong> ${corporateProfile?.website_url || 'Not Specified'}
+              </div>
+            </div>
+
+            <!-- Job Title -->
+            <div class="section-title">${job.title}</div>
+            
+            <!-- Job Details Grid -->
+            <div class="job-details-grid">
+              <div class="job-detail-item">
+                <strong>Position :</strong> ${this.formatJobType(job.job_type)}
+              </div>
+              <div class="job-detail-item">
+                <strong>Location:</strong> ${this.parseCommaSeparated(job.location)}
+              </div>
+              <div class="job-detail-item">
+                <strong>Salary :</strong> ${this.formatSalary(job.salary_currency, job.salary_min, job.salary_max)}
+              </div>
+              <div class="job-detail-item">
+                <strong>Experience:</strong> ${this.formatExperience(job.experience_min, job.experience_max)}
+              </div>
+            </div>
+
+            <!-- Probation Salary Details -->
+            ${job.ctc_with_probation || job.ctc_after_probation ? `
+            <div class="section-title">Probation Salary Details</div>
+            <div class="info-grid">
+              ${job.ctc_with_probation ? `
+              <div class="info-item">
+                <strong>Stipend During Probation :</strong> ${job.ctc_with_probation}
+              </div>
+              ` : ''}
+              ${job.ctc_after_probation ? `
+              <div class="info-item">
+                <strong>Probation Time :</strong> ${job.ctc_after_probation}
+              </div>
+              ` : ''}
+            </div>
+            <br>
+            ` : ''}
+
+            <!-- Job Description Section -->
+            <div class="section-title">Job Description</div>
+            <div class="section-content">
+              ${job.description}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="page">
+          <div class="header">
+            <div class="company-logo-container">
+              ${logoDataUrl ?
+        `<img src="${logoDataUrl}" alt="Company Logo" class="company-logo">` :
+        '<div style="width: 140px; height: 60px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #718096; font-size: 12px;">LOGO</div>'
+      }
+            </div>
+          </div>
+
+          <div class="content-wrapper">
+
+            <!-- Requirements Section -->
+            ${job.requirements ? `
+            <div class="section-title">Requirements</div>
+            <ul class="bullet-list">
+              ${job.requirements.split('\n').filter(line => line.trim()).map(req =>
+        `<li>${req.replace(/^[•\-\*]\s*/, '').trim()}</li>`
+      ).join('')}
+            </ul>
+            <br>
+            ` : ''}
+
+            <!-- Required Skills Section -->
+            ${job.skills_required && job.skills_required.length > 0 ? `
+            <div class="section-title">Required Skills :</div>
+            <div class="skills-grid ${this.getSkillsGridClass(job.skills_required.length)}">
+              ${job.skills_required.map(skill => `<div class="skill-item">${skill}</div>`).join('')}
+            </div>
+            <br>
+            ` : ''}
+
+            <!-- Responsibilities Section -->
+            ${job.responsibilities ? `
+            <div class="section-title">Responsibilities</div>
+            <ul class="bullet-list">
+              ${job.responsibilities.split('\n').filter(line => line.trim()).map(resp =>
+        `<li>${resp.replace(/^[•\-\*]\s*/, '').trim()}</li>`
+      ).join('')}
+            </ul>
+            ` : ''}
+
+
+            <!-- Education Requirements Section -->
+            ${job.education_level || job.education_degree || job.education_branch ? `
+            <div class="section-title">Education Requirements</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Education Level :</strong> ${this.parseCommaSeparated(job.education_level)}
+              </div>
+              <div class="info-item">
+                <strong>Degree :</strong> ${this.parseCommaSeparated(job.education_degree)}
+              </div>
+              <div class="info-item">
+                <strong>Branch :</strong> ${this.parseCommaSeparated(job.education_branch)}
+              </div>
+            </div>
+            <br>
+            ` : ''}
+
+
+          </div>
+
+          
+        </div>
+
+        <!-- Page 3 -->
+        <div class="page">
+          <div class="header">
+            <div class="company-logo-container">
+              ${logoDataUrl ?
+        `<img src="${logoDataUrl}" alt="Company Logo" class="company-logo">` :
+        '<div style="width: 140px; height: 60px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #718096; font-size: 12px;">LOGO</div>'
+      }
+            </div>
+          </div>
+
+          <div class="content-wrapper">
+
+                                    <!-- Additional Job Details Section -->
+            <div class="section-title">Additional Job Details</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>No of Opening's :</strong> ${job.number_of_openings || 'No Specified'}
+              </div>
+              <div class="info-item">
+                <strong>Remote Work :</strong> ${job.remote_work ? 'Available' : 'Not Available'}
+              </div>
+              <div class="info-item">
+                <strong>Onsite Office :</strong> ${job.onsite_office ? 'Available' : 'Not Available'}
+              </div>
+              <div class="info-item">
+                <strong>Travel Required :</strong> ${job.travel_required ? 'Yes' : 'No'}
+              </div>
+            </div>
+            <br>
+
+            <!-- Perks and Benefits Section -->
+            ${job.perks_and_benefits ? `
+            <div class="section-title">Perks and Benefits</div>
+            <div class="section-content-two-column">
+              ${job.perks_and_benefits.split('\n').filter(line => line.trim()).map(perk =>
+        `<div>${perk.replace(/^[•\-\*]\s*/, '').trim()}</div>`
+      ).join('')}
+            </div>
+            ` : `
+            <div class="section-title">Perks and Benefits</div>
+            <div class="section-content-two-column">
+              <div>Competitive salary package</div>
+              <div>Health insurance coverage</div>
+              <div>Flexible working hours</div>
+              <div>Professional development opportunities</div>
+              <div>Team building activities</div>
+            </div>
+            `}
+            <br>
+
+            <!-- Eligibility Criteria Section -->
+            ${job.eligibility_criteria ? `
+            <div class="section-title">Eligibility Criteria</div>
+            <div class="section-content-two-column">
+              ${job.eligibility_criteria.split('\n').filter(line => line.trim()).map(criteria =>
+        `<div>${criteria.replace(/^[•\-\*]\s*/, '').trim()}</div>`
+      ).join('')}
+            </div>
+            ` : `
+            <div class="section-title">Eligibility Criteria</div>
+            <div class="section-content-two-column">
+              <div>Bachelor's degree in Computer Science or related field</div>
+              <div>Strong programming skills in relevant technologies</div>
+              <div>Good communication and problem-solving abilities</div>
+              <div>Ability to work in a team environment</div>
+              <div>Eagerness to learn and adapt to new technologies</div>
+            </div>
+            `}
+            <br>
+
+            <!-- Selection Process Section -->
+            ${job.selection_process ? `
+            <div class="section-title">Selection Process</div>
+            <div class="section-content">
+              ${job.selection_process}
+            </div>
+            ` : ''}
+
+            <!-- Service Agreement Details Section -->
+            ${job.service_agreement_details ? `
+            <div class="section-title">Service Agreement Details</div>
+            <div class="section-content">
+              ${job.service_agreement_details}
+            </div>
+            ` : ''}
+
+            <!-- Application Information Section -->
+            <div class="section-title">Application Information</div>
+            <div class="info-grid">
+              ${job.campus_drive_date ? `
+              <div class="info-item">
+                <strong>Campus Drive :</strong> ${this.formatDate(job.campus_drive_date)}
+              </div>
+              ` : ''}
+              ${job.application_deadline ? `
+              <div class="info-item">
+                <strong>Application Deadline :</strong> ${this.formatDate(job.application_deadline)}
+              </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+          <div class="footer-content">
+            <div class="footer-left">
+              <div>© ${new Date().getFullYear()} ${corporateProfile?.company_name || 'Company Name'}</div>
+              <div>All rights reserved</div>
+            </div>
+            <div class="footer-center">
+              <div>Job Description</div>
+              <div>Generated on ${new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}</div>
+            </div>
+            <div class="footer-right">
+              <div>${corporateProfile?.website_url || 'www.company.com'}</div>
+              <div>${corporateProfile?.company_email || 'contact@company.com'}</div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
   }
 
   private formatJobType(jobType: string): string {
     const types: { [key: string]: string } = {
-      'full_time': 'Full Time',
+      'full_time': 'Full time',
       'part_time': 'Part Time',
       'contract': 'Contract',
       'internship': 'Internship',
@@ -404,6 +893,7 @@ export class JobDescriptionPDFGenerator {
 
   private formatExperience(min?: number, max?: number): string {
     if (!min && !max) return 'Not specified'
+    if (min === 0 && max) return `Up to ${max} years`
     if (min && max) return `${min}-${max} years`
     if (min) return `${min}+ years`
     if (max) return `Up to ${max} years`
@@ -422,6 +912,34 @@ export class JobDescriptionPDFGenerator {
       return dateString
     }
   }
+
+  private getSkillsGridClass(skillsCount: number): string {
+    if (skillsCount === 1) {
+      return 'one-column'
+    } else if (skillsCount === 2) {
+      return 'two-columns'
+    } else {
+      return 'three-columns'
+    }
+  }
+
+  private parseCommaSeparated(value: string | string[] | undefined): string {
+    if (!value) return 'Not Specified'
+    if (Array.isArray(value)) return value.join(', ')
+    
+    // Handle string values that might be in various formats
+    let cleanValue = value.toString().trim()
+    
+    // Remove curly braces and quotes if present
+    cleanValue = cleanValue.replace(/^[{\[]|[\}\]']$/g, '')
+    
+    // Split by comma and clean each item
+    const items = cleanValue.split(',').map(item => {
+      return item.trim().replace(/^["']|["']$/g, '')
+    }).filter(item => item.length > 0)
+    
+    return items.join(', ')
+  }
 }
 
 // Utility function to download PDF
@@ -429,21 +947,21 @@ export const downloadJobDescriptionPDF = async (job: JobData, corporateProfile?:
   try {
     const pdfGenerator = new JobDescriptionPDFGenerator()
     const pdfBlob = await pdfGenerator.generatePDF(job, corporateProfile)
-    
+
     // Create download link
     const url = URL.createObjectURL(pdfBlob)
     const link = document.createElement('a')
     link.href = url
     link.download = `${job.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_job_description.pdf`
-    
+
     // Trigger download
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     // Clean up
     URL.revokeObjectURL(url)
-    
+
     return true
   } catch (error) {
     console.error('Error downloading PDF:', error)
