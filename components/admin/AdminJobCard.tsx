@@ -344,11 +344,45 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <MapPin className="w-4 h-4" />
                         <span className="truncate">{Array.isArray(job.location) ? job.location.join(', ') : (job.location || '')}</span>
-                        {job.remote_work && (
-                            <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
-                                Remote
-                            </span>
-                        )}
+                        {(() => {
+                            // Determine work mode display
+                            if (job.mode_of_work) {
+                                if (job.mode_of_work === 'hybrid') {
+                                    return (
+                                        <span className="text-xs bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 px-2 py-0.5 rounded">
+                                            Hybrid
+                                        </span>
+                                    )
+                                } else if (job.mode_of_work === 'onsite') {
+                                    return (
+                                        <span className="text-xs bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded">
+                                            Onsite
+                                        </span>
+                                    )
+                                } else if (job.mode_of_work === 'remote') {
+                                    return (
+                                        <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
+                                            Remote
+                                        </span>
+                                    )
+                                }
+                            } else {
+                                // Fallback for existing jobs
+                                if (job.remote_work) {
+                                    return (
+                                        <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
+                                            Remote
+                                        </span>
+                                    )
+                                } else {
+                                    return (
+                                        <span className="text-xs bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded">
+                                            Onsite
+                                        </span>
+                                    )
+                                }
+                            }
+                        })()}
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">

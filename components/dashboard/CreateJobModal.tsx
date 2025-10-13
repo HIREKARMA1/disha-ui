@@ -286,6 +286,24 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
         setIsLoading(true)
 
         try {
+            // Determine mode_of_work based on checkbox states
+            console.log('🔍 Create job - Form data checkboxes:', {
+                onsite_office: formData.onsite_office,
+                remote_work: formData.remote_work,
+                travel_required: formData.travel_required
+            })
+            
+            let modeOfWork = null
+            if (formData.onsite_office && formData.remote_work) {
+                modeOfWork = 'hybrid'
+            } else if (formData.onsite_office) {
+                modeOfWork = 'onsite'
+            } else if (formData.remote_work) {
+                modeOfWork = 'remote'
+            }
+            
+            console.log('🔍 Create job - Derived mode_of_work:', modeOfWork)
+
             // Prepare data for API - match backend schema exactly
             const jobData = {
                 title: formData.title,
@@ -296,7 +314,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 location: formData.location.length > 0 ? formData.location.join(', ') : null,
                 remote_work: formData.remote_work,
                 travel_required: formData.travel_required,
-                onsite_office: formData.onsite_office,
+                mode_of_work: modeOfWork,
                 salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
                 salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
                 salary_currency: formData.salary_currency,
