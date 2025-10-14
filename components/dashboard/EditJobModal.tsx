@@ -38,6 +38,15 @@ const industryOptions = [
     { value: 'Hospitality', label: 'Hospitality' },
     { value: 'Agriculture', label: 'Agriculture' },
     { value: 'Construction', label: 'Construction' },
+    { value: 'Electrical', label: 'Electrical' },
+    { value: 'Mechanical', label: 'Mechanical' },   
+    { value: 'Electronics', label: 'Electronics' },
+    { value: 'Computer Science', label: 'Computer Science' },
+    { value: 'Information Technology', label: 'Information Technology' },
+    { value: 'Chemical', label: 'Chemical' },
+    { value: 'Biotechnology', label: 'Biotechnology' },
+    { value: 'Data Science', label: 'Data Science' },
+    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
     { value: 'Other', label: 'Other' }
 ]
 
@@ -109,8 +118,7 @@ interface Job {
     location: string | string[]
     remote_work: boolean
     travel_required: boolean
-    onsite_office?: boolean
-    mode_of_work?: string
+    mode_of_work?: string  // 'onsite', 'remote', or 'hybrid'
     salary_min?: number
     salary_max?: number
     salary_currency: string
@@ -276,6 +284,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
     // Populate form data when job changes
     useEffect(() => {
         if (job) {
+            console.log('🔍 Full job object loaded:', job)
 
             // Handle location - could be string or array
             const locationArray = Array.isArray(job.location) ? job.location : 
@@ -298,6 +307,35 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 educationBranchArray
             })
 
+            // Determine checkbox states from mode_of_work
+            console.log('🔍 Job data for checkbox derivation:', {
+                mode_of_work: job.mode_of_work,
+                remote_work: job.remote_work,
+                travel_required: job.travel_required,
+                number_of_openings: job.number_of_openings
+            })
+            
+            // For existing jobs that might not have mode_of_work set, we need to handle the migration
+            let isOnsite = false
+            let isRemote = job.remote_work || false
+            
+            if (job.mode_of_work) {
+                // New logic: use mode_of_work if available
+                isOnsite = job.mode_of_work === 'onsite' || job.mode_of_work === 'hybrid'
+                isRemote = job.mode_of_work === 'remote' || job.mode_of_work === 'hybrid' || job.remote_work
+            } else {
+                // Fallback for existing jobs: if remote_work is false and no mode_of_work, assume onsite
+                // This handles the case where jobs were created before mode_of_work was added
+                isOnsite = !job.remote_work
+                isRemote = job.remote_work || false
+            }
+            
+            console.log('🔍 Derived checkbox states:', {
+                isOnsite,
+                isRemote,
+                travel_required: job.travel_required || false
+            })
+
             setFormData({
                 title: job.title || '',
                 description: job.description || '',
@@ -305,9 +343,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 responsibilities: job.responsibilities || '',
                 job_type: job.job_type || '',
                 location: locationArray,
-                remote_work: job.remote_work || false,
+                remote_work: isRemote,
                 travel_required: job.travel_required || false,
-                onsite_office: job.onsite_office || (job.mode_of_work === 'onsite') || false,
+                onsite_office: isOnsite,
                 salary_min: job.salary_min ? job.salary_min.toString() : '',
                 salary_max: job.salary_max ? job.salary_max.toString() : '',
                 salary_currency: job.salary_currency || 'INR',
@@ -323,7 +361,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : '',
                 status: job.status || 'active',
                 // Additional fields
-                number_of_openings: job.number_of_openings ? job.number_of_openings.toString() : '',
+                number_of_openings: job.number_of_openings !== null && job.number_of_openings !== undefined ? job.number_of_openings.toString() : '',
                 perks_and_benefits: job.perks_and_benefits || '',
                 eligibility_criteria: job.eligibility_criteria || '',
                 service_agreement_details: job.service_agreement_details || '',
@@ -338,6 +376,18 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
+        
+        // Log number of openings changes specifically
+        if (field === 'number_of_openings') {
+            console.log('🔢 Number of Openings Changed:', {
+                field,
+                oldValue: formData[field],
+                newValue: value,
+                jobId: job?.id,
+                timestamp: new Date().toISOString()
+            })
+        }
+        
         // Clear validation error for this field
         if (validationErrors[field]) {
             setValidationErrors(prev => ({ ...prev, [field]: '' }))
@@ -402,6 +452,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (!formData.description.trim()) errors.description = 'Job description is required'
         if (!formData.job_type) errors.job_type = 'Job type is required'
         if (formData.location.length === 0) errors.location = 'At least one location is required'
+        
+        // Validate number_of_openings if provided
+        if (formData.number_of_openings && formData.number_of_openings.trim() !== '') {
+            const numOpenings = parseInt(formData.number_of_openings)
+            if (isNaN(numOpenings) || numOpenings < 1) {
+                errors.number_of_openings = 'Number of openings must be a positive integer'
+            }
+        }
 
         setValidationErrors(errors)
         return Object.keys(errors).length === 0
@@ -418,6 +476,25 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
         setIsLoading(true)
         try {
+            // Determine mode_of_work based on checkbox states
+            console.log('🔍 Form data checkboxes before submit:', {
+                onsite_office: formData.onsite_office,
+                remote_work: formData.remote_work,
+                travel_required: formData.travel_required,
+                number_of_openings: formData.number_of_openings
+            })
+            
+            let modeOfWork = null
+            if (formData.onsite_office && formData.remote_work) {
+                modeOfWork = 'hybrid'
+            } else if (formData.onsite_office) {
+                modeOfWork = 'onsite'
+            } else if (formData.remote_work) {
+                modeOfWork = 'remote'
+            }
+            
+            console.log('🔍 Derived mode_of_work for submit:', modeOfWork)
+
             const jobData = {
                 title: formData.title,
                 description: formData.description,
@@ -427,7 +504,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 location: formData.location.length > 0 ? formData.location.join(', ') : null,
                 remote_work: formData.remote_work,
                 travel_required: formData.travel_required,
-                onsite_office: formData.onsite_office,
+                mode_of_work: modeOfWork,
                 salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
                 salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
                 salary_currency: formData.salary_currency,
@@ -443,7 +520,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
                 status: formData.status,
                 // Additional fields
-                number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
+                number_of_openings: formData.number_of_openings && formData.number_of_openings.trim() !== '' ? parseInt(formData.number_of_openings) : null,
                 perks_and_benefits: formData.perks_and_benefits || null,
                 eligibility_criteria: formData.eligibility_criteria || null,
                 service_agreement_details: formData.service_agreement_details || null,
@@ -452,17 +529,58 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 ctc_after_probation: formData.ctc_after_probation || null
             }
 
+            // Log the job update request with focus on number_of_openings
+            console.log('📝 Job Update Request:', {
+                jobId: job.id,
+                isAdmin: isAdmin,
+                number_of_openings: {
+                    formValue: formData.number_of_openings,
+                    parsedValue: jobData.number_of_openings,
+                    originalValue: job.number_of_openings
+                },
+                timestamp: new Date().toISOString(),
+                fullJobData: jobData
+            })
 
+
+            let response
             if (isAdmin) {
-                await apiClient.updateJobAdmin(job.id, jobData)
+                response = await apiClient.updateJobAdmin(job.id, jobData)
             } else {
-                await apiClient.updateJob(job.id, jobData)
+                response = await apiClient.updateJob(job.id, jobData)
             }
+            
+            // Log successful update response
+            console.log('✅ Job Update Success:', {
+                jobId: job.id,
+                isAdmin: isAdmin,
+                response: response,
+                number_of_openings: {
+                    requested: jobData.number_of_openings,
+                    returned: response?.number_of_openings
+                },
+                timestamp: new Date().toISOString()
+            })
+            
             toast.success('Job updated successfully!')
             onJobUpdated()
             onClose()
         } catch (error: any) {
-            console.error('Failed to update job:', error)
+            // Log detailed error information
+            console.error('❌ Job Update Failed:', {
+                jobId: job.id,
+                isAdmin: isAdmin,
+                error: error,
+                errorMessage: error.message,
+                errorResponse: error.response?.data,
+                errorStatus: error.response?.status,
+                number_of_openings: {
+                    requested: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
+                    formValue: formData.number_of_openings
+                },
+                timestamp: new Date().toISOString()
+            })
+            
             const errorMessage = error.response?.data?.detail || error.message || 'Failed to update job. Please try again.'
             toast.error(typeof errorMessage === 'string' ? errorMessage : 'Failed to update job. Please try again.')
         } finally {
@@ -1076,7 +1194,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             value={formData.number_of_openings}
                                             onChange={(e) => handleInputChange('number_of_openings', e.target.value)}
                                             placeholder="e.g., 3"
+                                            className={validationErrors.number_of_openings ? "border-red-500 placeholder-red-500" : ""}
                                         />
+                                        {validationErrors.number_of_openings && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.number_of_openings}</p>
+                                        )}
                                     </div>
 
                                     <div>
