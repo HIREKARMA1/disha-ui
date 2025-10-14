@@ -116,13 +116,8 @@ export class JobDescriptionPDFGenerator {
       // Remove temporary container
       document.body.removeChild(container)
 
-<<<<<<< HEAD
       // Create PDF from canvas with JPEG compression for smaller file size
       const imgData = canvas.toDataURL('image/jpeg', 0.85) // Using JPEG with 85% quality instead of PNG
-=======
-      // Create PDF from canvas with JPEG compression for much smaller file size
-      const imgData = canvas.toDataURL('image/jpeg', 0.85) // Use JPEG with 85% quality instead of PNG
->>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
       const imgWidth = 210 // A4 width in mm
       const pageHeight = 297 // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width
