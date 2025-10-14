@@ -49,8 +49,8 @@ export function StatusUpdateModal({
             case 'selected':
                 return {
                     corporateNotes: true,
-                    interviewDate: true,
-                    interviewLocation: true,
+                    interviewDate: false,
+                    interviewLocation: false,
                     offerLetterUpload: true
                 }
             case 'applied':

@@ -769,7 +769,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onSave(formData)
+        // Remove readonly fields and fields that don't exist in the backend model
+        const { 
+            name, // readonly field
+            total_students, 
+            total_faculty, 
+            departments, 
+            programs_offered, 
+            placement_rate, 
+            average_package, 
+            top_recruiters,
+            total_jobs,
+            total_jobs_approved,
+            ...saveableData 
+        } = formData
+        onSave(saveableData)
     }
 
     const handleImageUpload = async (file: File) => {
@@ -867,6 +881,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                     className="w-full"
                     placeholder="https://university.edu"
                 />
+            )
+        }
+
+        // Handle readonly fields (university name after account creation)
+        if (field === 'name') {
+            return (
+                <div className="space-y-2">
+                    <Input
+                        value={value as string}
+                        className="w-full bg-gray-50 dark:bg-gray-700 cursor-not-allowed border-gray-300"
+                        placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                        readOnly
+                        title="University name cannot be changed after account creation"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        University name cannot be changed after account creation
+                    </p>
+                </div>
             )
         }
 

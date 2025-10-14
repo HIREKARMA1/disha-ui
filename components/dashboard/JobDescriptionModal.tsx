@@ -221,7 +221,15 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 location: Array.isArray(job.location) ? job.location.join(', ') : job.location,
                 remote_work: job.remote_work,
                 travel_required: job.travel_required,
-                onsite_office: job.onsite_office || (job.mode_of_work === 'onsite'),
+                onsite_office: (() => {
+                    // Use the same logic as EditJobModal for consistency
+                    if (job.mode_of_work) {
+                        return job.mode_of_work === 'onsite' || job.mode_of_work === 'hybrid'
+                    } else {
+                        // Fallback for existing jobs: if remote_work is false and no mode_of_work, assume onsite
+                        return !job.remote_work
+                    }
+                })(),
                 salary_min: job.salary_min,
                 salary_max: job.salary_max,
                 salary_currency: job.salary_currency,
@@ -471,21 +479,22 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             </div>
 
                             {/* Number of Openings */}
-                            {job.number_of_openings && (
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
-                                            <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Openings</p>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {job.number_of_openings} position{job.number_of_openings > 1 ? 's' : ''}
-                                            </p>
-                                        </div>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+                                        <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Openings</p>
+                                        <p className="font-medium text-gray-900 dark:text-white">
+                                            {job.number_of_openings ? 
+                                                `${job.number_of_openings} position${job.number_of_openings > 1 ? 's' : ''}` : 
+                                                'Not specified'
+                                            }
+                                        </p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
 
                             {/* Expiration Date */}
                             {job.expiration_date && (
@@ -775,19 +784,20 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         )}
 
                         {/* Number of Openings */}
-                        {job.number_of_openings && (
-                            <div className="mb-6">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-primary-500" />
-                                    Number of Openings
-                                </h3>
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium text-lg">
-                                        {job.number_of_openings} position{job.number_of_openings > 1 ? 's' : ''} available
-                                    </p>
-                                </div>
+                        <div className="mb-6">
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                <Users className="w-5 h-5 text-primary-500" />
+                                Number of Openings
+                            </h3>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                <p className="text-gray-700 dark:text-gray-300 font-medium text-lg">
+                                    {job.number_of_openings ? 
+                                        `${job.number_of_openings} position${job.number_of_openings > 1 ? 's' : ''} available` : 
+                                        'Not specified'
+                                    }
+                                </p>
                             </div>
-                        )}
+                        </div>
 
                         {/* Perks and Benefits */}
                         {job.perks_and_benefits && (
@@ -910,7 +920,15 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                             Onsite Office
                                         </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
-                                                {job.onsite_office || (job.mode_of_work === 'onsite') ? 'Available' : 'Not Available'}
+                                                {(() => {
+                                                    // Use the same logic as EditJobModal for consistency
+                                                    if (job.mode_of_work) {
+                                                        return (job.mode_of_work === 'onsite' || job.mode_of_work === 'hybrid') ? 'Available' : 'Not Available'
+                                                    } else {
+                                                        // Fallback for existing jobs: if remote_work is false and no mode_of_work, assume onsite
+                                                        return !job.remote_work ? 'Available' : 'Not Available'
+                                                    }
+                                                })()}
                                             </p>
                                     </div>
                                     </div>

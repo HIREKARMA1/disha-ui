@@ -62,7 +62,13 @@ export class JobDescriptionPDFGenerator {
   private pageWidth: number = 0
 
   constructor() {
-    this.doc = new jsPDF('p', 'mm', 'a4')
+    // Initialize jsPDF with compression enabled
+    this.doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    })
     this.pageHeight = this.doc.internal.pageSize.height
     this.pageWidth = this.doc.internal.pageSize.width
   }
@@ -95,9 +101,9 @@ export class JobDescriptionPDFGenerator {
       // Wait for any remaining images to load
       await this.waitForImages(container)
 
-      // Convert HTML to canvas
+      // Convert HTML to canvas with optimized settings
       const canvas = await html2canvas(container, {
-        scale: 2,
+        scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
@@ -108,8 +114,8 @@ export class JobDescriptionPDFGenerator {
       // Remove temporary container
       document.body.removeChild(container)
 
-      // Create PDF from canvas
-      const imgData = canvas.toDataURL('image/png')
+      // Create PDF from canvas with JPEG compression for much smaller file size
+      const imgData = canvas.toDataURL('image/jpeg', 0.85) // Use JPEG with 85% quality instead of PNG
       const imgWidth = 210 // A4 width in mm
       const pageHeight = 297 // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width
@@ -117,7 +123,7 @@ export class JobDescriptionPDFGenerator {
       let heightLeft = imgHeight
       let position = 0
 
-      this.doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
 
       heightLeft -= pageHeight
 
@@ -125,7 +131,7 @@ export class JobDescriptionPDFGenerator {
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight
         this.doc.addPage()
-        this.doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
         heightLeft -= pageHeight
       }
 
@@ -249,6 +255,8 @@ export class JobDescriptionPDFGenerator {
                   canvas.height = img.height
                   ctx.drawImage(img, 0, 0)
 
+                  // Keep PNG for logos to preserve transparency if needed
+                  // Logos are typically small so file size impact is minimal
                   const dataUrl = canvas.toDataURL('image/png')
                   console.log('✅ Image converted to data URL successfully')
                   resolve(dataUrl)
@@ -942,11 +950,25 @@ export class JobDescriptionPDFGenerator {
   }
 }
 
-// Utility function to download PDF
+/**
+ * Utility function to download job description PDF
+ * 
+ * Optimizations applied:
+ * 1. Canvas scale reduced from 2 to 1.5 (44% reduction in pixel count)
+ * 2. Using JPEG format with 85% quality instead of PNG (typically 80-90% size reduction)
+ * 3. PDF compression enabled
+ * 
+ * Expected file size reduction: 85-95% compared to original
+ * Example: 43 MB → 2-6 MB (typical range)
+ */
 export const downloadJobDescriptionPDF = async (job: JobData, corporateProfile?: CorporateProfile) => {
   try {
     const pdfGenerator = new JobDescriptionPDFGenerator()
     const pdfBlob = await pdfGenerator.generatePDF(job, corporateProfile)
+
+    // Log file size for monitoring
+    const fileSizeMB = (pdfBlob.size / (1024 * 1024)).toFixed(2)
+    console.log(`📄 Generated PDF size: ${fileSizeMB} MB`)
 
     // Create download link
     const url = URL.createObjectURL(pdfBlob)

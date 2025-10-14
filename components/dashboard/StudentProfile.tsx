@@ -24,6 +24,8 @@ import { ImageModal } from '../ui/image-modal'
 import { cn, getInitials, truncateText } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
+import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
 
 interface ProfileSection {
     id: string
@@ -52,7 +54,7 @@ export function StudentProfile() {
             id: 'basic',
             title: 'Basic Information',
             icon: User,
-            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'profile_picture'],
+            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'institution', 'bio', 'profile_picture'],
             completed: false
         },
         {
@@ -1179,6 +1181,33 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+    
+    // Use professional lookup hook for branches
+    const { 
+        data: branches, 
+        loading: loadingBranches, 
+        error: branchesError 
+    } = useBranches({ 
+        enabled: section.id === 'academic' 
+    })
+
+    // Use professional lookup hook for degrees
+    const {
+        data: degrees,
+        loading: loadingDegrees,
+        error: degreesError
+    } = useDegrees({
+        enabled: section.id === 'academic'
+    })
+
+    // Use professional lookup hook for universities
+    const {
+        data: universities,
+        loading: loadingUniversities,
+        error: universitiesError
+    } = useUniversities({
+        enabled: section.id === 'basic' || section.id === 'academic'
+    })
 
     useEffect(() => {
         if (profile && section) {
@@ -1518,6 +1547,51 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         </div>
                     )}
                 </div>
+            )
+        }
+
+        // Handle branch field with professional lookup component
+        if (field === 'branch') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={branches}
+                    loading={loadingBranches}
+                    placeholder="Select your branch"
+                    error={branchesError || undefined}
+                    required
+                />
+            )
+        }
+
+        // Handle degree field with professional lookup component
+        if (field === 'degree') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={degrees}
+                    loading={loadingDegrees}
+                    placeholder="Select your degree"
+                    error={degreesError || undefined}
+                    required
+                />
+            )
+        }
+
+        // Handle institution field with professional lookup component
+        if (field === 'institution') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={universities}
+                    loading={loadingUniversities}
+                    placeholder="Select your institution"
+                    error={universitiesError || undefined}
+                    required
+                />
             )
         }
 
