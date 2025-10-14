@@ -227,21 +227,22 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
         try {
             setLoading(true)
 
-            // Configure PDF options
+            // Configure PDF options with optimized settings for smaller file size
             const options = {
                 margin: [10, 10, 10, 10] as [number, number, number, number],
                 filename: `${resumeData?.header?.fullName || 'resume'}_${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
+                image: { type: 'jpeg', quality: 0.85 }, // Reduced from 0.98 to 0.85 for smaller file size
                 enableLinks: true,
                 html2canvas: {
-                    scale: 2,
+                    scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
                     useCORS: true,
                     allowTaint: true
                 },
                 jsPDF: {
                     unit: 'mm',
                     format: 'a4',
-                    orientation: 'portrait'
+                    orientation: 'portrait',
+                    compress: true // Enable PDF compression
                 }
             }
 
