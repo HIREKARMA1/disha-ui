@@ -95,21 +95,23 @@ export class JobDescriptionPDFGenerator {
       // Wait for any remaining images to load
       await this.waitForImages(container)
 
-      // Convert HTML to canvas
+      // Convert HTML to canvas with optimized settings
       const canvas = await html2canvas(container, {
-        scale: 2,
+        scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         width: 794, // A4 width in pixels (210mm * 3.78)
-        height: container.scrollHeight
+        height: container.scrollHeight,
+        logging: false, // Disable logging for better performance
+        removeContainer: false
       })
 
       // Remove temporary container
       document.body.removeChild(container)
 
-      // Create PDF from canvas
-      const imgData = canvas.toDataURL('image/png')
+      // Create PDF from canvas with JPEG compression for smaller file size
+      const imgData = canvas.toDataURL('image/jpeg', 0.85) // Using JPEG with 85% quality instead of PNG
       const imgWidth = 210 // A4 width in mm
       const pageHeight = 297 // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width
@@ -117,7 +119,7 @@ export class JobDescriptionPDFGenerator {
       let heightLeft = imgHeight
       let position = 0
 
-      this.doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
 
       heightLeft -= pageHeight
 
@@ -125,7 +127,7 @@ export class JobDescriptionPDFGenerator {
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight
         this.doc.addPage()
-        this.doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
         heightLeft -= pageHeight
       }
 
@@ -312,6 +314,8 @@ export class JobDescriptionPDFGenerator {
             min-height: 297mm;
             position: relative;
             page-break-after: always;
+            margin: 0;
+            padding: 0;
           }
           
           .page:last-child {
@@ -343,6 +347,7 @@ export class JobDescriptionPDFGenerator {
           
           .content-wrapper {
             padding: 25px 30px;
+            padding-bottom: 60px;
           }
           
           .section-title {
@@ -554,16 +559,18 @@ export class JobDescriptionPDFGenerator {
           }
           
           .footer {
-            position: fixed;
+            background: linear-gradient(to right, #d4f4ff, #e8f9ff);
+            padding: 8px 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #006b8f;
+            border-top: 1px solid #b8e8f5;
+            margin: 0;
+            width: 100%;
+            position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(to right, #d4f4ff, #e8f9ff);
-            padding: 15px 30px;
-            text-align: center;
-            font-size: 12px;
-            color: #006b8f;
-            border-top: 2px solid #b8e8f5;
           }
           
           .footer-content {
@@ -571,19 +578,29 @@ export class JobDescriptionPDFGenerator {
             justify-content: space-between;
             align-items: center;
             max-width: 100%;
+            gap: 20px;
           }
           
           .footer-left {
             text-align: left;
+            flex: 1;
+            font-size: 9px;
+            line-height: 1.4;
           }
           
           .footer-center {
             text-align: center;
             font-weight: bold;
+            flex: 1;
+            font-size: 10px;
+            line-height: 1.4;
           }
           
           .footer-right {
             text-align: right;
+            flex: 1;
+            font-size: 9px;
+            line-height: 1.4;
           }
         </style>
       </head>
@@ -720,12 +737,9 @@ export class JobDescriptionPDFGenerator {
 
 
             <!-- Education Requirements Section -->
-            ${job.education_level || job.education_degree || job.education_branch ? `
-            <div class="section-title">Education Requirements</div>
+            ${job.education_degree || job.education_branch ? `
+            <div class="section-title" style="margin-top: 30px;">Education Requirements</div>
             <div class="info-grid">
-              <div class="info-item">
-                <strong>Education Level :</strong> ${this.parseCommaSeparated(job.education_level)}
-              </div>
               <div class="info-item">
                 <strong>Degree :</strong> ${this.parseCommaSeparated(job.education_degree)}
               </div>
@@ -843,27 +857,27 @@ export class JobDescriptionPDFGenerator {
               </div>
               ` : ''}
             </div>
-          </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-          <div class="footer-content">
-            <div class="footer-left">
-              <div>© ${new Date().getFullYear()} ${corporateProfile?.company_name || 'Company Name'}</div>
-              <div>All rights reserved</div>
-            </div>
-            <div class="footer-center">
-              <div>Job Description</div>
-              <div>Generated on ${new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}</div>
-            </div>
-            <div class="footer-right">
-              <div>${corporateProfile?.website_url || 'www.company.com'}</div>
-              <div>${corporateProfile?.company_email || 'contact@company.com'}</div>
+
+            <!-- Footer integrated into the last page -->
+            <div class="footer">
+              <div class="footer-content">
+                <div class="footer-left">
+                  <div>© ${new Date().getFullYear()} HiKarma</div>
+                  <div>All rights reserved</div>
+                </div>
+                <div class="footer-center">
+                  <div>Job Description</div>
+                  <div>Generated on ${new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}</div>
+                </div>
+                <div class="footer-right">
+                  <div>www.hikarma.com</div>
+                  <div>contact@hikarma.com</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
