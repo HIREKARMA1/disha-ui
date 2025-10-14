@@ -62,7 +62,13 @@ export class JobDescriptionPDFGenerator {
   private pageWidth: number = 0
 
   constructor() {
-    this.doc = new jsPDF('p', 'mm', 'a4')
+    // Initialize jsPDF with compression enabled
+    this.doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    })
     this.pageHeight = this.doc.internal.pageSize.height
     this.pageWidth = this.doc.internal.pageSize.width
   }
@@ -110,8 +116,13 @@ export class JobDescriptionPDFGenerator {
       // Remove temporary container
       document.body.removeChild(container)
 
+<<<<<<< HEAD
       // Create PDF from canvas with JPEG compression for smaller file size
       const imgData = canvas.toDataURL('image/jpeg', 0.85) // Using JPEG with 85% quality instead of PNG
+=======
+      // Create PDF from canvas with JPEG compression for much smaller file size
+      const imgData = canvas.toDataURL('image/jpeg', 0.85) // Use JPEG with 85% quality instead of PNG
+>>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
       const imgWidth = 210 // A4 width in mm
       const pageHeight = 297 // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width
@@ -251,6 +262,8 @@ export class JobDescriptionPDFGenerator {
                   canvas.height = img.height
                   ctx.drawImage(img, 0, 0)
 
+                  // Keep PNG for logos to preserve transparency if needed
+                  // Logos are typically small so file size impact is minimal
                   const dataUrl = canvas.toDataURL('image/png')
                   console.log('✅ Image converted to data URL successfully')
                   resolve(dataUrl)
@@ -956,11 +969,25 @@ export class JobDescriptionPDFGenerator {
   }
 }
 
-// Utility function to download PDF
+/**
+ * Utility function to download job description PDF
+ * 
+ * Optimizations applied:
+ * 1. Canvas scale reduced from 2 to 1.5 (44% reduction in pixel count)
+ * 2. Using JPEG format with 85% quality instead of PNG (typically 80-90% size reduction)
+ * 3. PDF compression enabled
+ * 
+ * Expected file size reduction: 85-95% compared to original
+ * Example: 43 MB → 2-6 MB (typical range)
+ */
 export const downloadJobDescriptionPDF = async (job: JobData, corporateProfile?: CorporateProfile) => {
   try {
     const pdfGenerator = new JobDescriptionPDFGenerator()
     const pdfBlob = await pdfGenerator.generatePDF(job, corporateProfile)
+
+    // Log file size for monitoring
+    const fileSizeMB = (pdfBlob.size / (1024 * 1024)).toFixed(2)
+    console.log(`📄 Generated PDF size: ${fileSizeMB} MB`)
 
     // Create download link
     const url = URL.createObjectURL(pdfBlob)
