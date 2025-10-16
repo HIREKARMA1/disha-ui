@@ -474,7 +474,7 @@ class ApiClient {
   }
 
   // Public corporate profile endpoint
-  async getCorporateProfile(corporateId: string): Promise<any> {
+  async getCorporateProfileById(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/${corporateId}`);
     return response.data;
   }

@@ -915,7 +915,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-<<<<<<< HEAD
         
         // Clear previous errors
         setFieldErrors({})
@@ -1008,8 +1007,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             return
         }
         
-        onSave(formData)
-=======
         // Remove readonly fields and fields that don't exist in the backend model
         const { 
             name, // readonly field
@@ -1025,7 +1022,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             ...saveableData 
         } = formData
         onSave(saveableData)
->>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
     }
 
     const handleImageUpload = async (file: File) => {
@@ -1207,9 +1203,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-<<<<<<< HEAD
-        // Default text input with validation
-=======
         // Handle readonly fields (university name after account creation)
         if (field === 'name') {
             return (
@@ -1228,8 +1221,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-        // Default text input
->>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
+        // Default text input with validation
         return (
             <div>
                 <Input

@@ -220,7 +220,7 @@ export function PracticeDetailsModal({
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                                                    {result.correct_answers}/{result.total_questions}
+                                                    {Math.round(result.score_percent / 100 * (result.question_results?.length || 0))}/{result.question_results?.length || 0}
                                                 </p>
                                                 <p className="text-xs text-green-700 dark:text-green-300">Correct</p>
                                             </div>

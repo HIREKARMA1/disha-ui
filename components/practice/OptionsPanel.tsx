@@ -89,25 +89,6 @@ export function OptionsPanel({
 
     return (
         <div className="space-y-4">
-            {/* Flag for Review */}
-            {/* Flag for Review */}
-            {question.type !== 'coding' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                    <Button
-                        onClick={onFlagToggle}
-                        variant={isFlagged ? "default" : "outline"}
-                        size="sm"
-                        className={`w-full ${isFlagged
-                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                            : 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
-                            }`}
-                    >
-                        <Flag className="w-4 h-4 mr-2" />
-                        {isFlagged ? 'Flagged for Review' : 'Mark for Review'}
-                    </Button>
-                </div>
-            )}
-
 
             {/* Answer Options */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
