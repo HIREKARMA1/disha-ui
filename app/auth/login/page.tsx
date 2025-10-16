@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Modal, TermsModalContent, PrivacyModalContent } from '@/components/ui/modal'
 import { apiClient } from '@/lib/api'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
@@ -48,6 +50,8 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [selectedUserType, setSelectedUserType] = useState<UserType>('student')
+    const [termsAndPrivacyAccepted, setTermsAndPrivacyAccepted] = useState(false)
+    const [showTermsModal, setShowTermsModal] = useState(false)
 
     // Redirect if user is already authenticated
     useEffect(() => {
@@ -88,6 +92,12 @@ export default function LoginPage() {
     }, [selectedUserType, setValue])
 
     const onSubmit = async (data: LoginFormData) => {
+        // Check if terms and conditions are accepted
+        if (!termsAndPrivacyAccepted) {
+            toast.error('Please accept Terms and Conditions to continue')
+            return
+        }
+
         setIsLoading(true)
         try {
             const response = await apiClient.login(data)
@@ -160,6 +170,11 @@ export default function LoginPage() {
         setTimeout(() => {
             setValue('user_type', userType)
         }, 0)
+    }
+
+    const handleTermsAndPrivacyAccept = () => {
+        setTermsAndPrivacyAccepted(true)
+        setShowTermsModal(false)
     }
 
     return (
@@ -259,6 +274,10 @@ export default function LoginPage() {
                                         </button>
                                     }
                                     error={!!errors.password}
+                                    onCopy={(e) => e.preventDefault()}
+                                    onPaste={(e) => e.preventDefault()}
+                                    onCut={(e) => e.preventDefault()}
+                                    onContextMenu={(e) => e.preventDefault()}
                                     {...register('password')}
                                 />
                                 {errors.password && (
@@ -266,6 +285,33 @@ export default function LoginPage() {
                                         {errors.password.message}
                                     </p>
                                 )}
+                            </div>
+
+                            {/* Terms and Privacy Policy Checkbox */}
+                            <div className="flex justify-center">
+                                <div 
+                                    className="cursor-pointer"
+                                    onClick={() => setShowTermsModal(true)}
+                                >
+                                    <Checkbox
+                                        id="terms-privacy"
+                                        checked={termsAndPrivacyAccepted}
+                                        onChange={() => setShowTermsModal(true)}
+                                        label={
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                <span className="text-primary-600 dark:text-primary-400 font-medium">
+                                                    Accept Terms and Conditions and Privacy Policy
+                                                </span>
+                                                {!termsAndPrivacyAccepted && <span className="text-red-500 ml-1">*</span>}
+                                            </span>
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Required fields notice */}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                * Required: You must accept Terms and Conditions to sign in
                             </div>
 
                             <Button
@@ -312,6 +358,22 @@ export default function LoginPage() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Terms and Conditions Modal */}
+            <Modal
+                isOpen={showTermsModal}
+                onClose={() => setShowTermsModal(false)}
+                title="Terms and Conditions"
+                maxWidth="2xl"
+            >
+                <TermsModalContent />
+                
+                <div className="mt-6 flex justify-end">
+                    <Button onClick={handleTermsAndPrivacyAccept} className="bg-primary-600 hover:bg-primary-700">
+                        Accept Terms and Conditions and Privacy Policy
+                    </Button>
+                </div>
+            </Modal>
         </div>
     )
 }

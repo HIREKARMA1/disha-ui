@@ -54,6 +54,8 @@ export interface UniversityProfileUpdateData {
     average_package?: number
     top_recruiters?: string
     profile_picture?: string
+    total_jobs?: number
+    total_jobs_approved?: number
 }
 
 export interface FileUploadResponse {

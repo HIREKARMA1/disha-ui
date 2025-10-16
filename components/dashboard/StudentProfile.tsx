@@ -25,7 +25,12 @@ import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { cn, getInitials, truncateText } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
+<<<<<<< HEAD
 import toast from 'react-hot-toast'
+=======
+import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
+>>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
 
 interface ProfileSection {
     id: string
@@ -54,7 +59,7 @@ export function StudentProfile() {
             id: 'basic',
             title: 'Basic Information',
             icon: User,
-            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'profile_picture'],
+            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'institution', 'bio', 'profile_picture'],
             completed: false
         },
         {
@@ -82,7 +87,7 @@ export function StudentProfile() {
             id: 'documents',
             title: 'Documents & Certificates',
             icon: Shield,
-            fields: ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates'],
+            fields: ['resume', '10th_certificate', '12th_certificate', 'internship_certificates'],
             completed: false
         },
         {
@@ -933,7 +938,7 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
 
                                                 {editing === 'documents' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates'], completed: false }}
+                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', '10th_certificate', '12th_certificate', 'internship_certificates'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('documents', formData)}
                                                         saving={saving}
@@ -979,7 +984,7 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex items-center space-x-3">
-                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Class X:</span>
+                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">10th Certificate:</span>
                                                                         {profile.tenth_certificate ? (
                                                                             <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
                                                                         ) : (
@@ -1000,7 +1005,7 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                                 </div>
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex items-center space-x-3">
-                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Class XII:</span>
+                                                                        <span className="text-sm text-gray-600 dark:text-gray-400">12th Certificate:</span>
                                                                         {profile.twelfth_certificate ? (
                                                                             <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
                                                                         ) : (
@@ -1198,6 +1203,33 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+    
+    // Use professional lookup hook for branches
+    const { 
+        data: branches, 
+        loading: loadingBranches, 
+        error: branchesError 
+    } = useBranches({ 
+        enabled: section.id === 'academic' 
+    })
+
+    // Use professional lookup hook for degrees
+    const {
+        data: degrees,
+        loading: loadingDegrees,
+        error: degreesError
+    } = useDegrees({
+        enabled: section.id === 'academic'
+    })
+
+    // Use professional lookup hook for universities
+    const {
+        data: universities,
+        loading: loadingUniversities,
+        error: universitiesError
+    } = useUniversities({
+        enabled: section.id === 'basic' || section.id === 'academic'
+    })
 
     useEffect(() => {
         if (profile && section) {
@@ -1550,18 +1582,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        if (field === 'tenth_certificate' || field === 'twelfth_certificate' || field === 'internship_certificates') {
+        if (field === '10th_certificate' || field === '12th_certificate' || field === 'internship_certificates') {
+            // Map display field names to backend field names
+            const backendFieldName = field === '10th_certificate' ? 'tenth_certificate' : 
+                                   field === '12th_certificate' ? 'twelfth_certificate' : 
+                                   field
+            const displayName = field === '10th_certificate' ? '10th certificate' :
+                               field === '12th_certificate' ? '12th certificate' :
+                               field.replace(/_/g, ' ')
+            
             return (
                 <div className="space-y-3">
                     <FileUpload
                         type="document"
-                        onFileSelect={(file) => handleFileUpload(field, file)}
-                        onFileRemove={() => handleFileRemove(field)}
-                        currentFile={value}
-                        placeholder={`Upload your ${field.replace(/_/g, ' ')} (PDF only)`}
-                        disabled={uploading === field}
+                        onFileSelect={(file) => handleFileUpload(backendFieldName, file)}
+                        onFileRemove={() => handleFileRemove(backendFieldName)}
+                        currentFile={formData[backendFieldName] || ''}
+                        placeholder={`Upload your ${displayName} (PDF only)`}
+                        disabled={uploading === backendFieldName}
                     />
-                    {uploading === field && (
+                    {uploading === backendFieldName && (
                         <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
                             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                             <span>Uploading...</span>
@@ -1738,6 +1778,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+<<<<<<< HEAD
         // Handle branch field with SingleBranchSelection component
         if (field === 'branch') {
             return (
@@ -1747,6 +1788,49 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     label=""
                     placeholder="Select your branch..."
                     className=""
+=======
+        // Handle branch field with professional lookup component
+        if (field === 'branch') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={branches}
+                    loading={loadingBranches}
+                    placeholder="Select your branch"
+                    error={branchesError || undefined}
+                    required
+                />
+            )
+        }
+
+        // Handle degree field with professional lookup component
+        if (field === 'degree') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={degrees}
+                    loading={loadingDegrees}
+                    placeholder="Select your degree"
+                    error={degreesError || undefined}
+                    required
+                />
+            )
+        }
+
+        // Handle institution field with professional lookup component
+        if (field === 'institution') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={universities}
+                    loading={loadingUniversities}
+                    placeholder="Select your institution"
+                    error={universitiesError || undefined}
+                    required
+>>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
                 />
             )
         }
@@ -1893,14 +1977,23 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             ) : (
                 // All Other Sections - Simple Grid Layout
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {section.fields.map((field) => (
-                        <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
-                                {field.replace(/_/g, ' ')}
-                            </label>
-                            {renderField(field)}
-                        </div>
-                    ))}
+                    {section.fields.map((field) => {
+                        // Map display field names to proper labels
+                        const getFieldLabel = (fieldName: string) => {
+                            if (fieldName === '10th_certificate') return '10th Certificate'
+                            if (fieldName === '12th_certificate') return '12th Certificate'
+                            return fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                        }
+                        
+                        return (
+                            <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {getFieldLabel(field)}
+                                </label>
+                                {renderField(field)}
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 

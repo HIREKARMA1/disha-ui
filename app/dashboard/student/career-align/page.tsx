@@ -333,13 +333,14 @@ function CareerAlignPageContent() {
     const filterJobs = (jobs: Job[], search: string) => {
         if (!search.trim()) return jobs
         const searchLower = search.toLowerCase()
-        return jobs.filter(job =>
-            job.title.toLowerCase().includes(searchLower) ||
-            job.corporate_name?.toLowerCase().includes(searchLower) ||
-            job.location.toLowerCase().includes(searchLower) ||
-            job.skills_required?.some(skill => skill.toLowerCase().includes(searchLower)) ||
-            job.description.toLowerCase().includes(searchLower)
-        )
+        return jobs.filter(job => {
+            const locationString = Array.isArray(job.location) ? job.location.join(' ') : job.location
+            return job.title.toLowerCase().includes(searchLower) ||
+                job.corporate_name?.toLowerCase().includes(searchLower) ||
+                locationString.toLowerCase().includes(searchLower) ||
+                job.skills_required?.some(skill => skill.toLowerCase().includes(searchLower)) ||
+                job.description.toLowerCase().includes(searchLower)
+        })
     }
 
     // Handle search

@@ -87,7 +87,7 @@ export function CorporateProfile() {
             id: 'basic',
             title: 'Basic Information',
             icon: Building2,
-            fields: ['name', 'email', 'phone', 'bio', 'company_logo'],
+            fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'bio', 'company_logo'],
             completed: false
         },
         {
@@ -95,13 +95,6 @@ export function CorporateProfile() {
             title: 'Company Information',
             icon: Building2,
             fields: ['company_name', 'website_url', 'industry', 'company_size', 'founded_year', 'company_type', 'description'],
-            completed: false
-        },
-        {
-            id: 'contact',
-            title: 'Contact Details',
-            icon: Users,
-            fields: ['contact_person', 'contact_designation', 'address'],
             completed: false
         },
         {
@@ -115,8 +108,7 @@ export function CorporateProfile() {
 
     const tabs = [
         { id: 'basic', label: 'Basic Info', icon: Building2 },
-        { id: 'company', label: 'Company', icon: Building2 },
-        { id: 'contact', label: 'Contact', icon: Users }
+        { id: 'company', label: 'Company', icon: Building2 }
     ]
 
     useEffect(() => {
@@ -414,7 +406,7 @@ export function CorporateProfile() {
 
                                         {editing === 'basic' ? (
                                             <ProfileSectionForm
-                                                section={{ id: 'basic', title: 'Basic Information', icon: Building2, fields: ['name', 'email', 'phone', 'bio', 'company_logo'], completed: false }}
+                                                section={{ id: 'basic', title: 'Basic Information', icon: Building2, fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'bio', 'company_logo'], completed: false }}
                                                 profile={profile}
                                                 onSave={(formData) => handleSave('basic', formData)}
                                                 saving={saving}
@@ -442,6 +434,23 @@ export function CorporateProfile() {
                                                         Phone: {profile.phone || 'Not provided'}
                                                     </div>
                                                 </div>
+                                                {(profile.contact_person || profile.contact_designation) && (
+                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                            Contact Person Details
+                                                        </div>
+                                                        {profile.contact_person && (
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                                                <span className="font-semibold">Contact Person Name:</span> {profile.contact_person}
+                                                            </div>
+                                                        )}
+                                                        {profile.contact_designation && (
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                <span className="font-semibold">Contact Person Designation:</span> {profile.contact_designation}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 {profile.bio && (
                                                     <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
@@ -556,69 +565,6 @@ export function CorporateProfile() {
                                     </div>
                                 )}
 
-                                {activeTab === 'contact' && (
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                    <Users className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Contact Details</h3>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Contact person and address information</p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setEditing('contact')}
-                                                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
-                                            >
-                                                <ChevronRight className="w-3 h-3 mr-1" />
-                                                Edit
-                                            </Button>
-                                        </div>
-
-                                        {editing === 'contact' ? (
-                                            <ProfileSectionForm
-                                                section={{ id: 'contact', title: 'Contact Details', icon: Users, fields: ['contact_person', 'contact_designation', 'address'], completed: false }}
-                                                profile={profile}
-                                                onSave={(formData) => handleSave('contact', formData)}
-                                                saving={saving}
-                                                onCancel={() => setEditing(null)}
-                                            />
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {(profile.contact_person || profile.contact_designation) && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Contact Person
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.contact_person || 'Not specified'}
-                                                        </div>
-                                                        {profile.contact_designation && (
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                                {profile.contact_designation}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {profile.address && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Address
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.address}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
                             </div>
                         </div>
@@ -980,13 +926,31 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+        // Handle specific field labels
+        let fieldLabel = field.replace(/_/g, ' ')
+        let placeholder = `Enter your ${field.replace(/_/g, ' ')}`
+        
+        if (field === 'name') {
+            fieldLabel = 'Company Name'
+            placeholder = 'Enter company name'
+        } else if (field === 'contact_person') {
+            fieldLabel = 'Contact Person Name'
+            placeholder = 'Enter contact person name'
+        } else if (field === 'contact_designation') {
+            fieldLabel = 'Contact Person Designation'
+            placeholder = 'Enter contact person designation'
+        } else if (field === 'address') {
+            fieldLabel = 'Email Address'
+            placeholder = 'Enter email address'
+        }
+
         return (
             <input
                 type="text"
                 value={value}
                 onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                placeholder={placeholder}
             />
         )
     }
@@ -1014,14 +978,29 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {section.fields.map((field) => (
-                    <div key={field} className={field.includes('bio') || field.includes('description') ? 'md:col-span-2' : ''}>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
-                            {field.replace(/_/g, ' ')}
-                        </label>
-                        {renderField(field)}
-                    </div>
-                ))}
+                {section.fields.map((field) => {
+                    // Handle specific field labels
+                    let fieldLabel = field.replace(/_/g, ' ')
+                    
+                    if (field === 'name') {
+                        fieldLabel = 'Company Name'
+                    } else if (field === 'contact_person') {
+                        fieldLabel = 'Contact Person Name'
+                    } else if (field === 'contact_designation') {
+                        fieldLabel = 'Contact Person Designation'
+                    } else if (field === 'address') {
+                        fieldLabel = 'Email Address'
+                    }
+                    
+                    return (
+                        <div key={field} className={field.includes('bio') || field.includes('description') ? 'md:col-span-2' : ''}>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {fieldLabel}
+                            </label>
+                            {renderField(field)}
+                        </div>
+                    )
+                })}
             </div>
 
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">

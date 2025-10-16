@@ -364,30 +364,6 @@ export function ApplicationTable({
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
-
-                                        {/* Offer Letter Upload Button (only for selected applications) */}
-                                        {application.status === 'selected' && (
-                                            <button
-                                                onClick={() => onOfferLetterUpload(application)}
-                                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                                                title="Upload Offer Letter"
-                                            >
-                                                <Upload className="w-4 h-4" />
-                                            </button>
-                                        )}
-
-                                        {/* View Offer Letter Button (if exists) */}
-                                        {application.offer_letter_url && (
-                                            <a
-                                                href={application.offer_letter_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                                                title="View Offer Letter"
-                                            >
-                                                <ExternalLink className="w-4 h-4" />
-                                            </a>
-                                        )}
                                     </div>
                                 </td>
                             </motion.tr>

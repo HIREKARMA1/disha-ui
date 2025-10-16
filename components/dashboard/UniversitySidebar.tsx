@@ -7,6 +7,7 @@ import {
     User,
     Users,
     Briefcase,
+    FileText,
     X,
     Menu,
     LogOut,
@@ -57,11 +58,19 @@ const navItems: NavItem[] = [
         color: 'from-purple-500 to-pink-600'
     },
     {
+<<<<<<< HEAD
         label: 'Practice Tests',
         href: '/dashboard/university/practice',
         icon: Brain,
         description: 'Manage practice tests & questions',
         color: 'from-rose-500 to-pink-600'
+=======
+        label: 'Applications',
+        href: '/dashboard/university/applications',
+        icon: FileText,
+        description: 'Track student applications',
+        color: 'from-indigo-500 to-blue-600'
+>>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
     }
 ]
 

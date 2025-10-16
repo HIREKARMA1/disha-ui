@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar, MapPin, FileText, Save, Loader } from 'lucide-react'
+import { X, Calendar, MapPin, FileText, Save, Loader, Upload } from 'lucide-react'
 import { ApplicationData } from '@/app/dashboard/corporate/applications/page'
+import { apiClient } from '@/lib/api'
+import { toast } from 'react-hot-toast'
 
 interface StatusUpdateModalProps {
     isOpen: boolean
@@ -31,7 +33,71 @@ export function StatusUpdateModal({
     const [corporateNotes, setCorporateNotes] = useState('')
     const [interviewDate, setInterviewDate] = useState('')
     const [interviewLocation, setInterviewLocation] = useState('')
+    const [offerLetterFile, setOfferLetterFile] = useState<File | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Dynamic field visibility based on status
+    const getVisibleFields = () => {
+        switch (status) {
+            case 'shortlisted':
+                return {
+                    corporateNotes: true,
+                    interviewDate: true,
+                    interviewLocation: true,
+                    offerLetterUpload: false
+                }
+            case 'selected':
+                return {
+                    corporateNotes: true,
+                    interviewDate: false,
+                    interviewLocation: false,
+                    offerLetterUpload: true
+                }
+            case 'applied':
+            case 'pending':
+            case 'rejected':
+                return {
+                    corporateNotes: true,
+                    interviewDate: false,
+                    interviewLocation: false,
+                    offerLetterUpload: false
+                }
+            default:
+                return {
+                    corporateNotes: true,
+                    interviewDate: false,
+                    interviewLocation: false,
+                    offerLetterUpload: false
+                }
+        }
+    }
+
+    const visibleFields = getVisibleFields()
+
+    // Upload offer letter function
+    const uploadOfferLetter = async (applicationId: string, file: File) => {
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            
+            const response = await apiClient.client.post(
+                `/applications/${applicationId}/offer-letter`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            )
+            
+            toast.success('Offer letter uploaded successfully!')
+            return response.data
+        } catch (error: any) {
+            console.error('Failed to upload offer letter:', error)
+            toast.error(error.response?.data?.detail || 'Failed to upload offer letter')
+            throw error
+        }
+    }
 
     // Reset form when application changes
     useState(() => {
@@ -49,13 +115,45 @@ export function StatusUpdateModal({
 
         setIsSubmitting(true)
         try {
-            const statusData = {
-                status,
-                corporate_notes: corporateNotes || null,
-                interview_date: interviewDate ? new Date(interviewDate).toISOString() : null,
-                interview_location: interviewLocation || null
+            // If we're uploading an offer letter, we need to update status first, then upload
+            if (offerLetterFile && status === 'selected') {
+                // First update the status to 'selected'
+                const statusData = {
+                    status,
+                    corporate_notes: corporateNotes || null,
+                    interview_date: interviewDate ? new Date(interviewDate).toISOString() : null,
+                    interview_location: interviewLocation || null
+                }
+                await onSubmit(application.id, statusData)
+                
+                // Wait a moment for the status update to be committed
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                
+                // Then upload the offer letter
+                try {
+                    await uploadOfferLetter(application.id, offerLetterFile)
+                } catch (uploadError) {
+                    console.error('Offer letter upload failed:', uploadError)
+                    toast.error('Status updated but offer letter upload failed. Please try uploading again.')
+                    // Don't close modal so user can retry offer letter upload
+                    return
+                }
+            } else {
+                // Normal status update without offer letter
+                const statusData = {
+                    status,
+                    corporate_notes: corporateNotes || null,
+                    interview_date: interviewDate ? new Date(interviewDate).toISOString() : null,
+                    interview_location: interviewLocation || null
+                }
+                await onSubmit(application.id, statusData)
             }
-            await onSubmit(application.id, statusData)
+            
+            // Close modal after successful submission
+            onClose()
+        } catch (error) {
+            console.error('Failed to update application status:', error)
+            // Don't close modal on error so user can retry
         } finally {
             setIsSubmitting(false)
         }
@@ -88,7 +186,7 @@ export function StatusUpdateModal({
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+                            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto"
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -110,7 +208,7 @@ export function StatusUpdateModal({
                             </div>
 
                             {/* Content */}
-                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                            <form onSubmit={handleSubmit} className="p-6 pb-8 space-y-6">
                                 {/* Status Selection */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -159,44 +257,94 @@ export function StatusUpdateModal({
                                     </div>
                                 </div>
 
-                                {/* Interview Details */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Interview Date */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Interview Date
-                                        </label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                            <input
-                                                type="date"
-                                                value={interviewDate}
-                                                onChange={(e) => setInterviewDate(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-                                            />
-                                        </div>
-                                    </div>
+                                {/* Interview Details - Only show for shortlisted and selected */}
+                                <AnimatePresence>
+                                    {(visibleFields.interviewDate || visibleFields.interviewLocation) && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                                        >
+                                        {/* Interview Date */}
+                                        {visibleFields.interviewDate && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                    Interview Date
+                                                </label>
+                                                <div className="relative">
+                                                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                    <input
+                                                        type="date"
+                                                        value={interviewDate}
+                                                        onChange={(e) => setInterviewDate(e.target.value)}
+                                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
 
-                                    {/* Interview Location */}
-                                    <div>
+                                        {/* Interview Location */}
+                                        {visibleFields.interviewLocation && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                    Interview Location
+                                                </label>
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={interviewLocation}
+                                                        onChange={(e) => setInterviewLocation(e.target.value)}
+                                                        placeholder="Office address or online"
+                                                        className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Offer Letter Upload - Only show for selected */}
+                                <AnimatePresence>
+                                    {visibleFields.offerLetterUpload && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="mb-4"
+                                        >
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Interview Location
+                                            Offer Letter Upload
                                         </label>
                                         <div className="relative">
-                                            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <Upload className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input
-                                                type="text"
-                                                value={interviewLocation}
-                                                onChange={(e) => setInterviewLocation(e.target.value)}
-                                                placeholder="Office address or online"
-                                                className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                                                type="file"
+                                                accept=".pdf,.doc,.docx"
+                                                onChange={(e) => setOfferLetterFile(e.target.files?.[0] || null)}
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                                             />
                                         </div>
-                                    </div>
-                                </div>
+                                        {offerLetterFile && (
+                                            <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
+                                                <p className="text-sm text-green-800 dark:text-green-200">
+                                                    Selected: {offerLetterFile.name}
+                                                </p>
+                                            </div>
+                                        )}
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Upload offer letter (PDF, DOC, DOCX)
+                                        </p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
                                 {/* Actions */}
-                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
                                     <button
                                         type="button"
                                         onClick={handleClose}

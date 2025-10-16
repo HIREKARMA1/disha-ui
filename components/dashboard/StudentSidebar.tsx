@@ -16,7 +16,8 @@ import {
     Menu,
     LogOut,
     Brain,
-    ClipboardList
+    ClipboardList,
+    MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -24,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import SSOService from '@/services/ssoService'
 
 interface NavItem {
     label: string
@@ -31,6 +33,7 @@ interface NavItem {
     icon: React.ComponentType<{ className?: string }>
     description?: string
     color?: string
+    isSSO?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -97,20 +100,14 @@ const navItems: NavItem[] = [
         description: 'Resources and materials',
         color: 'from-emerald-500 to-green-600'
     },
-    // {
-    //     label: 'Sadhana',
-    //     href: '/dashboard/student/sangha',
-    //     icon: Users,
-    //     description: 'Community and networking',
-    //     color: 'from-cyan-500 to-blue-600'
-    // },
-    // {
-    //     label: 'Sangha',
-    //     href: '/dashboard/student/sangha',
-    //     icon: Users,
-    //     description: 'Community and networking',
-    //     color: 'from-violet-500 to-purple-600'
-    // }
+    {
+        label: 'Sangha Community',
+        href: '/dashboard/student/sangha',
+        icon: MessageSquare,
+        description: 'Join community discussions',
+        color: 'from-violet-500 to-purple-600',
+        isSSO: true
+    }
 ]
 
 interface StudentSidebarProps {
@@ -123,7 +120,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
-    const { user, logout } = useAuth()
+    const { user, getToken, logout } = useAuth()
 
     // Fetch profile data when component mounts
     useEffect(() => {
@@ -180,6 +177,29 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
         setImageError(true)
     }
 
+    // Handle SSO redirect
+    const handleSSORedirect = async (item: NavItem) => {
+        console.log('SSO redirect triggered for:', item.label)
+
+        const token = getToken()
+        if (!token) {
+            console.error('User not authenticated - no token available')
+            alert('Please log in to access Sangha Community')
+            return
+        }
+
+        console.log('User token available, initiating SSO...')
+
+        try {
+            const ssoService = new SSOService(token)
+            console.log('SSO service created, calling redirectToSangha...')
+            await ssoService.redirectToSangha()
+        } catch (error) {
+            console.error('SSO Error:', error)
+            alert('Failed to connect to Sangha Community. Please try again.')
+        }
+    }
+
     return (
         <>
             {/* Desktop Sidebar */}
@@ -222,10 +242,47 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
 
-                        const handleClick = () => {
-                            if (!isActive) {
+                        const handleClick = (e: React.MouseEvent) => {
+                            if (item.isSSO) {
+                                e.preventDefault()
+                                handleSSORedirect(item)
+                            } else if (!isActive) {
                                 startLoading()
                             }
+                        }
+
+                        if (item.isSSO) {
+                            return (
+                                <button
+                                    key={item.href}
+                                    onClick={handleClick}
+                                    className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg w-full text-left ${isActive
+                                        ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    <div className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isActive
+                                        ? 'bg-white/20 backdrop-blur-sm'
+                                        : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-white/50 dark:group-hover:bg-gray-600/50'
+                                        }`}>
+                                        <item.icon className={`w-5 h-5 ${isActive
+                                            ? 'text-white'
+                                            : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                                            }`} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-medium">{item.label}</div>
+                                        {item.description && (
+                                            <div className={`text-xs mt-0.5 ${isActive
+                                                ? 'text-white/90'
+                                                : 'text-gray-600 dark:text-gray-300'
+                                                }`}>
+                                                {item.description}
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            )
                         }
 
                         return (
@@ -382,11 +439,37 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                     const isActive = pathname === item.href
                                     const { startLoading } = useLoading()
 
-                                    const handleClick = () => {
+                                    const handleClick = (e: React.MouseEvent) => {
                                         closeMobileMenu()
-                                        if (!isActive) {
+                                        if (item.isSSO) {
+                                            e.preventDefault()
+                                            handleSSORedirect(item)
+                                        } else if (!isActive) {
                                             startLoading()
                                         }
+                                    }
+
+                                    if (item.isSSO) {
+                                        return (
+                                            <button
+                                                key={item.href}
+                                                onClick={handleClick}
+                                                className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left ${isActive
+                                                    ? `bg-gradient-to-r ${item.color} text-white`
+                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                                                    }`}
+                                            >
+                                                <item.icon className="w-5 h-5 mr-3" />
+                                                <div>
+                                                    <div className="font-medium">{item.label}</div>
+                                                    {item.description && (
+                                                        <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                                                            {item.description}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        )
                                     }
 
                                     return (
@@ -394,7 +477,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                             key={item.href}
                                             href={item.href}
                                             onClick={handleClick}
-                                            className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                                            className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left ${isActive
                                                 ? `bg-gradient-to-r ${item.color} text-white`
                                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                                                 }`}
