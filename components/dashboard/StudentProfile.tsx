@@ -25,12 +25,9 @@ import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { cn, getInitials, truncateText } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
-<<<<<<< HEAD
 import toast from 'react-hot-toast'
-=======
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
->>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
 
 interface ProfileSection {
     id: string
@@ -1778,17 +1775,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-<<<<<<< HEAD
-        // Handle branch field with SingleBranchSelection component
-        if (field === 'branch') {
-            return (
-                <SingleBranchSelection
-                    selectedBranch={value || ''}
-                    onBranchChange={(branch) => setFormData({ ...formData, [field]: branch })}
-                    label=""
-                    placeholder="Select your branch..."
-                    className=""
-=======
         // Handle branch field with professional lookup component
         if (field === 'branch') {
             return (
@@ -1830,7 +1816,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     placeholder="Select your institution"
                     error={universitiesError || undefined}
                     required
->>>>>>> 7c8405a8aef68e40e9cab1c33cf0776ff7be6dfd
                 />
             )
         }

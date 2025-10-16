@@ -203,7 +203,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
     return (
         <>
             {/* Desktop Sidebar */}
-            <div className={`hidden lg:flex flex-col w-64 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${className}`}>
+            <div className={`student-sidebar hidden lg:flex flex-col w-64 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${className}`}>
                 {/* User Profile Section */}
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
                     <div className="flex items-center space-x-4">
@@ -335,7 +335,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
+            <div className="student-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
                 <div className="flex justify-around items-center py-1.5 px-1 w-full">
                     {navItems.slice(0, 5).map((item) => {
                         const isActive = pathname === item.href

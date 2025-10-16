@@ -19,6 +19,38 @@ interface PracticeExamProps {
     onBack: () => void
 }
 
+// Helper to add/remove a class to body for hiding sidebar
+function setSidebarHidden(hidden: boolean) {
+    if (typeof document !== 'undefined') {
+        if (hidden) {
+            document.body.classList.add('hide-sidebar')
+        } else {
+            document.body.classList.remove('hide-sidebar')
+        }
+    }
+}
+
+// Add this style block at the top-level of the file (after imports)
+const fullscreenExamStyle = `
+.fullscreen-exam {
+  position: fixed !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100vh;
+  z-index: 9999;
+  background: #f8fafc; /* fallback, can be overridden by theme */
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding:20px;
+  padding-bottom: 80px; /* Ensure space for navigation buttons */
+}
+@media (max-width: 1024px) {
+  .fullscreen-exam {
+    padding:20px;
+  }
+}
+`;
+
 export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [showConfirmExit, setShowConfirmExit] = useState(false)
@@ -28,6 +60,8 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
         maxScore: number
         feedback?: string
     }>>({})
+    // Fullscreen state
+    const [isFullscreen, setIsFullscreen] = useState(false)
 
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
     const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam } = useExamSession(module.id)
@@ -43,9 +77,55 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 console.log('Auto-saving exam progress...')
             }
         }, 10000)
-
         return () => clearInterval(interval)
     }, [session])
+
+    // Fullscreen logic
+    useEffect(() => {
+        // Enter fullscreen on mount
+        const enterFullscreen = () => {
+            const elem = document.documentElement
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen()
+            } else if ((elem as any).webkitRequestFullscreen) {
+                (elem as any).webkitRequestFullscreen()
+            } else if ((elem as any).msRequestFullscreen) {
+                (elem as any).msRequestFullscreen()
+            }
+        }
+        // Listen for fullscreen change
+        const fullscreenChange = () => {
+            const fs = document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement
+            setIsFullscreen(!!fs)
+            setSidebarHidden(!!fs)
+            // If exited fullscreen and exam is not submitted, submit automatically
+            if (!fs && session && !session.isSubmitted) {
+                toast.error("Exam submitted - Full screen mode was exited")
+                handleSubmit()
+            }
+        }
+        enterFullscreen()
+        setSidebarHidden(true)
+        document.addEventListener('fullscreenchange', fullscreenChange)
+        document.addEventListener('webkitfullscreenchange', fullscreenChange)
+        document.addEventListener('msfullscreenchange', fullscreenChange)
+        return () => {
+            document.removeEventListener('fullscreenchange', fullscreenChange)
+            document.removeEventListener('webkitfullscreenchange', fullscreenChange)
+            document.removeEventListener('msfullscreenchange', fullscreenChange)
+            setSidebarHidden(false)
+            // Exit fullscreen if still in
+            if (document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen()
+                } else if ((document as any).webkitExitFullscreen) {
+                    (document as any).webkitExitFullscreen()
+                } else if ((document as any).msExitFullscreen) {
+                    (document as any).msExitFullscreen()
+                }
+            }
+        }
+    }, [])
 
     // Keyboard navigation
     useEffect(() => {
@@ -120,10 +200,18 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
 
     const handleSubmit = async () => {
         if (!questions || !session) return
-
+        // Exit fullscreen on submit
+        if (document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement) {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen()
+            } else if ((document as any).webkitExitFullscreen) {
+                await (document as any).webkitExitFullscreen()
+            } else if ((document as any).msExitFullscreen) {
+                await (document as any).msExitFullscreen()
+            }
+        }
         try {
             const result = await submitExam()
-            
             // Process question results from the submission response
             if (result.question_results && Array.isArray(result.question_results)) {
                 const resultsMap: Record<string, {
@@ -132,7 +220,6 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                     maxScore: number
                     feedback?: string
                 }> = {}
-                
                 result.question_results.forEach((qr: any) => {
                     resultsMap[qr.question_id] = {
                         correct: qr.correct || false,
@@ -141,10 +228,8 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                         feedback: qr.feedback
                     }
                 })
-                
                 setQuestionResults(resultsMap)
             }
-            
             onComplete(result)
         } catch (error) {
             toast.error('Failed to submit exam. Please try again.')
@@ -165,6 +250,21 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
         onBack()
     }
 
+    // Inject style tag for fullscreen
+    useEffect(() => {
+        let styleTag: HTMLStyleElement | null = null;
+        if (typeof document !== 'undefined') {
+            styleTag = document.createElement('style');
+            styleTag.innerHTML = fullscreenExamStyle;
+            document.head.appendChild(styleTag);
+        }
+        return () => {
+            if (styleTag && document.head.contains(styleTag)) {
+                document.head.removeChild(styleTag);
+            }
+        };
+    }, []);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -182,27 +282,15 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 <p className="text-red-700 dark:text-red-300 mb-4">
                     This practice module doesn't have any questions yet.
                 </p>
-                <Button onClick={onBack} variant="outline">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Practice
-                </Button>
             </div>
         )
     }
 
     return (
-        <div className="space-y-6">
+        <div className={`space-y-6 ${isFullscreen ? 'fullscreen-exam' : ''}`}>
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button
-                        onClick={handleExit}
-                        variant="outline"
-                        size="sm"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back
-                    </Button>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                             {module.title}

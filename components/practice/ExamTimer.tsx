@@ -8,57 +8,56 @@ interface ExamTimerProps {
     onTimeUp: () => void
 }
 
+
 export function ExamTimer({ duration, onTimeUp }: ExamTimerProps) {
-    const [timeLeft, setTimeLeft] = useState(duration)
-    const [isWarning, setIsWarning] = useState(false)
-    const [isCritical, setIsCritical] = useState(false)
+    const [startTimestamp] = useState(() => Date.now());
+    const [timeLeft, setTimeLeft] = useState(duration);
+    const [isWarning, setIsWarning] = useState(false);
+    const [isCritical, setIsCritical] = useState(false);
 
-    const handleTimeUp = useCallback(() => {
-        onTimeUp()
-    }, [onTimeUp])
-
-    // Reset timer when duration changes
+    // Calculate time left based on real elapsed time
     useEffect(() => {
-        setTimeLeft(duration)
-        setIsWarning(false)
-        setIsCritical(false)
-    }, [duration])
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 0) {
-                    clearInterval(timer)
-                    handleTimeUp()
-                    return 0
-                }
-                return prev - 1
-            })
-        }, 1000)
-
-        return () => clearInterval(timer)
-    }, [handleTimeUp]) // Use handleTimeUp callback
+        let animationFrame: number;
+        let stopped = false;
+        function update() {
+            if (stopped) return;
+            const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+            const left = Math.max(duration - elapsed, 0);
+            setTimeLeft(left);
+            if (left > 0) {
+                animationFrame = window.requestAnimationFrame(update);
+            } else {
+                setIsCritical(true);
+                onTimeUp();
+            }
+        }
+        animationFrame = window.requestAnimationFrame(update);
+        return () => {
+            stopped = true;
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [duration, onTimeUp, startTimestamp]);
 
     useEffect(() => {
         // Warning when 10 minutes left
         if (timeLeft <= 600 && timeLeft > 60) {
-            setIsWarning(true)
-            setIsCritical(false)
+            setIsWarning(true);
+            setIsCritical(false);
         }
         // Critical when 1 minute left
         else if (timeLeft <= 60) {
-            setIsWarning(false)
-            setIsCritical(true)
+            setIsWarning(false);
+            setIsCritical(true);
             // Play warning sound
             if (timeLeft === 60) {
-                playWarningSound()
+                playWarningSound();
             }
         }
         else {
-            setIsWarning(false)
-            setIsCritical(false)
+            setIsWarning(false);
+            setIsCritical(false);
         }
-    }, [timeLeft])
+    }, [timeLeft]);
 
     const playWarningSound = () => {
         try {
