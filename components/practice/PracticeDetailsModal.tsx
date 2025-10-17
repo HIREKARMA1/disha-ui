@@ -220,7 +220,7 @@ export function PracticeDetailsModal({
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                                                    {Math.round(result.score_percent / 100 * (result.question_results?.length || 0))}/{result.question_results?.length || 0}
+                                                    {result.question_results?.filter(q => (q as any).is_correct ?? (q as any).correct)?.length}/{result.question_results?.length}
                                                 </p>
                                                 <p className="text-xs text-green-700 dark:text-green-300">Correct</p>
                                             </div>

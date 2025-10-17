@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Question } from '@/types/practice'
 import { Flag, CheckSquare, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -66,6 +66,11 @@ export function OptionsPanel({
         onAnswerChange(newAnswer)
     }
 
+    // Keep local state in sync with upstream answer (e.g., when clearing response)
+    useEffect(() => {
+        setLocalAnswer(answer)
+    }, [answer])
+
     const handleTextChange = useCallback((text: string) => {
         const newAnswer = text ? [text] : []
         setLocalAnswer(newAnswer)
@@ -91,7 +96,7 @@ export function OptionsPanel({
         <div className="space-y-4">
 
             {/* Answer Options */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/30 p-4">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
                     Your Answer
                 </h3>

@@ -7,6 +7,7 @@ import { PracticeModule, SubmitAttemptResponse } from '@/types/practice'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PracticeDetailsModal } from './PracticeDetailsModal'
+import { toast } from 'react-hot-toast'
 
 interface PracticeCardProps {
     module: PracticeModule
@@ -15,18 +16,47 @@ interface PracticeCardProps {
     result?: SubmitAttemptResponse
 }
 
+
+
 export function PracticeCard({ module, onStart, isSubmitted = false, result }: PracticeCardProps) {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
     const formatDuration = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
         const minutes = Math.floor((seconds % 3600) / 60)
-        
+
         if (hours > 0) {
             return `${hours}h ${minutes}m`
         }
         return `${minutes}m`
     }
+
+    const handleEnterFullscreen = async () => {
+        try {
+            const elem: any = document.documentElement
+            if (elem.requestFullscreen) {
+                // navigationUI: 'hide' is supported by some browsers (e.g., Firefox)
+                await elem.requestFullscreen({ navigationUI: 'hide' } as any)
+            } else if (elem.mozRequestFullScreen) {
+                await elem.mozRequestFullScreen()
+            } else if (elem.webkitRequestFullscreen) {
+                await elem.webkitRequestFullscreen()
+            } else if (elem.msRequestFullscreen) {
+                await elem.msRequestFullscreen()
+            }
+
+            // Verify that fullscreen actually engaged
+            const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
+            if (!becameFullscreen) {
+                toast.error('Fullscreen was blocked. Allow fullscreen for this site and try again.')
+            }
+        } catch (error) {
+            console.error('Failed to enter fullscreen:', error)
+            toast.error('Unable to enter fullscreen. Please click again or check browser settings.')
+        }
+    }
+
+
 
     const getDifficultyColor = (difficulty?: string) => {
         switch (difficulty) {
@@ -139,7 +169,7 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                 accent: 'text-slate-600 dark:text-slate-400'
             }
         ]
-        
+
         // Use a combination of module ID and title for better distribution
         const hash = (module.id + module.title).split('').reduce((a, b) => a + b.charCodeAt(0), 0)
         return colorSchemes[hash % colorSchemes.length]
@@ -171,9 +201,9 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                                 ) : (
                                     <GraduationCap className="w-4 h-4" />
                                 )}
-                                {module.creator_type === 'admin' ? 'Admin Practice Test' : 
-                                 (module.creator_type as string) === 'corporate' ? 'Corporate Practice Test' : 
-                                 'University Practice Test'}
+                                {module.creator_type === 'admin' ? 'Admin Practice Test' :
+                                    (module.creator_type as string) === 'corporate' ? 'Corporate Practice Test' :
+                                        'University Practice Test'}
                             </p>
                         )}
                     </div>
@@ -187,14 +217,13 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                                 {module.difficulty.charAt(0).toUpperCase() + module.difficulty.slice(1)}
                             </span>
                         )}
-                        
+
                         {/* Score Badge for completed tests */}
                         {isSubmitted && result && (
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
-                                result.score_percent >= 80 ? 'bg-green-500 text-white' :
-                                result.score_percent >= 60 ? 'bg-orange-500 text-white' :
-                                'bg-red-500 text-white'
-                            }`}>
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${result.score_percent >= 80 ? 'bg-green-500 text-white' :
+                                    result.score_percent >= 60 ? 'bg-orange-500 text-white' :
+                                        'bg-red-500 text-white'
+                                }`}>
                                 {result.score_percent.toFixed(1)}% Score
                             </div>
                         )}
@@ -230,10 +259,10 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                             <Clock className={`w-4 h-4 ${cardColors.accent}`} />
                             <span className="truncate">
-                                {module.days_remaining === 0 
-                                    ? 'Expires Today' 
-                                    : module.days_remaining === 1 
-                                        ? '1 Day Left' 
+                                {module.days_remaining === 0
+                                    ? 'Expires Today'
+                                    : module.days_remaining === 1
+                                        ? '1 Day Left'
                                         : `${module.days_remaining} Days Left`
                                 }
                             </span>
@@ -313,7 +342,13 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                     </Button>
 
                     <Button
-                        onClick={onStart}
+                        onClick={() => {
+                            if (!isSubmitted || !result) {
+                                // Only trigger fullscreen when it's a new practice session
+                                handleEnterFullscreen();
+                            }
+                            onStart();
+                        }}
                         disabled={isSubmitted && !result}
                         size="sm"
                         className={cn(
@@ -335,6 +370,7 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                             </>
                         )}
                     </Button>
+
                 </div>
             </div>
 

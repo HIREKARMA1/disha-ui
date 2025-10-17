@@ -1007,7 +1007,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             return
         }
         
-        // Remove readonly fields and fields that don't exist in the backend model
+        // Remove readonly fields and fields that don't exist in the backend model before saving
         const { 
             name, // readonly field
             total_students, 

@@ -20,7 +20,10 @@ export function QuestionPanel({ question, questionNumber, onTimeSpent }: Questio
         const interval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - startTime) / 1000)
             setTimeSpent(elapsed)
-            onTimeSpent(elapsed)
+            // Only call onTimeSpent every 5 seconds to avoid excessive updates
+            if (elapsed % 5 === 0) {
+                onTimeSpent(elapsed)
+            }
         }, 1000)
 
         return () => {
@@ -28,7 +31,7 @@ export function QuestionPanel({ question, questionNumber, onTimeSpent }: Questio
             const finalTime = Math.floor((Date.now() - startTime) / 1000)
             onTimeSpent(finalTime)
         }
-    }, [question.id, onTimeSpent])
+    }, [question.id]) // Remove onTimeSpent from dependency array to prevent infinite loops
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60)
@@ -50,7 +53,7 @@ export function QuestionPanel({ question, questionNumber, onTimeSpent }: Questio
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/30 p-6">
             {/* Question Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">

@@ -359,6 +359,7 @@ class ApiClient {
     return response.data;
   }
 
+  // Authenticated corporate profile of current user
   async getCorporateProfile(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/corporates/profile');
     return response.data;
@@ -473,7 +474,7 @@ class ApiClient {
     return response.data;
   }
 
-  // Public corporate profile endpoint
+  // Public corporate profile endpoint (by id)
   async getCorporateProfileById(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/${corporateId}`);
     return response.data;
