@@ -20,7 +20,8 @@ import {
     Database,
     Server,
     AlertTriangle,
-    Briefcase
+    Briefcase,
+    Brain
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -72,6 +73,13 @@ const navItems: NavItem[] = [
         icon: Briefcase,
         description: 'Manage all job postings',
         color: 'from-indigo-500 to-blue-600'
+    },
+    {
+        label: 'Practice Tests',
+        href: '/dashboard/admin/practice',
+        icon: Brain,
+        description: 'Manage practice tests & questions',
+        color: 'from-rose-500 to-pink-600'
     },
     {
         label: 'Analytics',

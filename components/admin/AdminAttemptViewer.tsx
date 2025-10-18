@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Search, Filter, Download, Eye, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, Search, Filter, Download, Eye, CheckCircle, XCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PracticeModule, StudentAttempt } from '@/types/practice'
+import { useModuleAttempts } from '@/hooks/useModuleAttempts'
+import { exportStudentAttemptsToCSV } from '@/utils/exportStudentAttempts'
 
 interface AdminAttemptViewerProps {
     module: PracticeModule
@@ -15,56 +17,91 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAttempt, setSelectedAttempt] = useState<StudentAttempt | null>(null)
 
-    // Mock data - replace with real API calls
-    const attempts: StudentAttempt[] = [
-        {
-            id: 'attempt-1',
-            student_id: 'student-1',
-            student_name: 'John Doe',
-            module_id: module.id,
-            module_title: module.title,
-            score_percent: 85.5,
-            time_taken_seconds: 3200,
-            started_at: '2024-01-15T10:00:00Z',
-            ended_at: '2024-01-15T10:53:20Z',
-            answers: [
-                { question_id: 'q1', answer: ['a'], time_spent: 120 },
-                { question_id: 'q2', answer: ['a', 'c'], time_spent: 180 },
-                { question_id: 'q3', answer: ['Binary search has O(log n) time complexity...'], time_spent: 300 }
-            ],
-            question_results: [
-                { question_id: 'q1', is_correct: true, explanation: 'Correct answer' },
-                { question_id: 'q2', is_correct: true, explanation: 'Both options are correct' },
-                { question_id: 'q3', is_correct: false, explanation: 'Incomplete explanation' }
-            ]
-        },
-        {
-            id: 'attempt-2',
-            student_id: 'student-2',
-            student_name: 'Jane Smith',
-            module_id: module.id,
-            module_title: module.title,
-            score_percent: 72.0,
-            time_taken_seconds: 2800,
-            started_at: '2024-01-15T14:30:00Z',
-            ended_at: '2024-01-15T15:16:40Z',
-            answers: [
-                { question_id: 'q1', answer: ['b'], time_spent: 90 },
-                { question_id: 'q2', answer: ['a'], time_spent: 150 },
-                { question_id: 'q3', answer: ['Binary search eliminates half...'], time_spent: 240 }
-            ],
-            question_results: [
-                { question_id: 'q1', is_correct: false, explanation: 'Incorrect answer' },
-                { question_id: 'q2', is_correct: true, explanation: 'Correct' },
-                { question_id: 'q3', is_correct: true, explanation: 'Good explanation' }
-            ]
-        }
-    ]
+    // Use real API calls to fetch attempts
+    const { data: attempts, isLoading, error, refetch } = useModuleAttempts(module.id)
+    
+    console.log('📊 AdminAttemptViewer - Module:', module.id, 'Attempts:', attempts)
 
-    const filteredAttempts = attempts.filter(attempt =>
-        attempt.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attempt.student_id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filteredAttempts = attempts?.filter(attempt =>
+        attempt.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        attempt.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || []
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Button
+                        onClick={onBack}
+                        variant="outline"
+                        size="sm"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Student Attempts
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            {module.title}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+                        <p className="text-gray-600 dark:text-gray-400">Loading attempts...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Button
+                        onClick={onBack}
+                        variant="outline"
+                        size="sm"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Student Attempts
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            {module.title}
+                        </p>
+                    </div>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+                    <div className="text-center">
+                        <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                            Error Loading Attempts
+                        </h3>
+                        <p className="text-red-600 dark:text-red-400 mb-4">
+                            {error.message}
+                        </p>
+                        <Button
+                            onClick={() => refetch()}
+                            variant="outline"
+                            className="border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                            Try Again
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
@@ -103,6 +140,37 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
         return (
             <div className="space-y-6">
                 {/* Header */}
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
+                >
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                Practice Module Management 🧠
+                            </h1>
+                            <div className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                                Manage practice tests, questions, and view student attempts ✨
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                                    🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                    📚 Question Management
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                    🎯 Student Analytics
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Button
@@ -173,12 +241,13 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
 
                 {/* Question Results */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                         Question Results
                     </h3>
                     <div className="space-y-4">
-                        {selectedAttempt.question_results.map((result, index) => {
-                            const answer = selectedAttempt.answers.find(a => a.question_id === result.question_id)
+                        {(selectedAttempt.question_results || []).map((result, index) => {
+                            const answer = (selectedAttempt.answers || []).find(a => a.question_id === result.question_id)
                             return (
                                 <div
                                     key={result.question_id}
@@ -246,7 +315,7 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Button
                         onClick={onBack}
@@ -254,28 +323,32 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
                         size="sm"
                     >
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back
+                        <span className="hidden sm:inline">Back</span>
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                             Student Attempts
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-400">
+                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                             {module.title}
                         </p>
                     </div>
                 </div>
                 <Button
                     variant="outline"
+                    onClick={() => exportStudentAttemptsToCSV(filteredAttempts, module.title)}
+                    disabled={filteredAttempts.length === 0}
+                    className="w-full sm:w-auto"
                 >
                     <Download className="w-4 h-4 mr-2" />
-                    Export Data
+                    <span className="hidden sm:inline">Export Data</span>
+                    <span className="sm:hidden">Export</span>
                 </Button>
             </div>
 
             {/* Search and Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="flex-1 relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
@@ -283,83 +356,111 @@ export function AdminAttemptViewer({ module, onBack }: AdminAttemptViewerProps) 
                             placeholder="Search by student name or ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                         />
                     </div>
-                    <Button variant="outline">
+                    <Button variant="outline" className="w-full sm:w-auto">
                         <Filter className="w-4 h-4 mr-2" />
-                        Filter
+                        <span className="hidden sm:inline">Filter</span>
+                        <span className="sm:hidden">Filter</span>
                     </Button>
                 </div>
             </div>
 
             {/* Attempts Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                         Attempts ({filteredAttempts.length})
                     </h2>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Student
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Score
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Time Taken
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Started
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {filteredAttempts.map((attempt) => (
-                                <tr key={attempt.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                
+                {filteredAttempts.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <div className="text-gray-400 dark:text-gray-500 mb-4">
+                            <Users className="w-16 h-16 mx-auto mb-4" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            No Attempts Yet
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            No students have attempted this module yet.
+                        </p>
+                        <Button
+                            onClick={() => refetch()}
+                            variant="outline"
+                        >
+                            Refresh
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full table-fixed min-w-[800px]">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th className="w-1/4 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Student
+                                    </th>
+                                    <th className="w-1/6 px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Score
+                                    </th>
+                                    <th className="w-1/6 px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Time Taken
+                                    </th>
+                                    <th className="w-1/4 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Started
+                                    </th>
+                                    <th className="w-1/6 px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {filteredAttempts.map((attempt) => (
+                                    <tr key={attempt.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                                        <td className="w-1/4 px-3 sm:px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                                 {attempt.student_name}
                                             </div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                {attempt.student_id}
+                                        </td>
+                                        <td className="w-1/6 px-2 sm:px-6 py-4 whitespace-nowrap">
+                                            <span className={`text-sm font-bold ${getScoreColor(attempt.score_percent)}`}>
+                                                {attempt.score_percent.toFixed(1)}%
+                                            </span>
+                                        </td>
+                                        <td className="w-1/6 px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <span className="hidden sm:inline">{formatTime(attempt.time_taken_seconds)}</span>
+                                            <span className="sm:hidden text-xs">{Math.floor(attempt.time_taken_seconds / 60)}m</span>
+                                        </td>
+                                        <td className="w-1/4 px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <div className="hidden sm:block">{formatDate(attempt.started_at)}</div>
+                                            <div className="sm:hidden text-xs">
+                                                {new Date(attempt.started_at).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`text-sm font-bold ${getScoreColor(attempt.score_percent)}`}>
-                                            {attempt.score_percent.toFixed(1)}%
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                        {formatTime(attempt.time_taken_seconds)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                        {formatDate(attempt.started_at)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <Button
-                                            onClick={() => setSelectedAttempt(attempt)}
-                                            variant="outline"
-                                            size="sm"
-                                        >
-                                            <Eye className="w-4 h-4 mr-2" />
-                                            View Details
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        </td>
+                                        <td className="w-1/6 px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <Button
+                                                onClick={() => setSelectedAttempt(attempt)}
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full justify-center text-xs sm:text-sm"
+                                            >
+                                                <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                                                <span className="hidden sm:inline">View Details</span>
+                                                <span className="sm:hidden">View</span>
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     )

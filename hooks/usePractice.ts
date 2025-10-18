@@ -11,7 +11,7 @@ import {
 } from '@/types/practice'
 
 // Check if we should use mock data
-const USE_MOCK_DATA = config.isDevelopment && (process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || true) // Temporarily enable mock data
+const USE_MOCK_DATA = false // Disable mock data to use real API
 
 // Mock data for development
 const mockModules: PracticeModule[] = [
@@ -25,7 +25,8 @@ const mockModules: PracticeModule[] = [
         is_archived: false,
         description: 'Comprehensive developer assessment covering programming fundamentals, algorithms, and system design.',
         difficulty: 'medium',
-        tags: ['programming', 'algorithms', 'system-design']
+        tags: ['programming', 'algorithms', 'system-design'],
+        category: 'ai-mock-tests'
     },
     {
         id: 'mod-apt-1',
@@ -37,7 +38,8 @@ const mockModules: PracticeModule[] = [
         is_archived: false,
         description: 'Quick aptitude test covering logical reasoning, quantitative analysis, and verbal ability.',
         difficulty: 'easy',
-        tags: ['aptitude', 'logical-reasoning', 'quantitative']
+        tags: ['aptitude', 'logical-reasoning', 'quantitative'],
+        category: 'ai-mock-tests'
     },
     {
         id: 'mod-coding-1',
@@ -49,7 +51,73 @@ const mockModules: PracticeModule[] = [
         is_archived: false,
         description: 'Intensive coding challenge with complex algorithmic problems and system design questions.',
         difficulty: 'hard',
-        tags: ['coding', 'algorithms', 'data-structures']
+        tags: ['coding', 'algorithms', 'data-structures'],
+        category: 'coding-practice'
+    },
+    {
+        id: 'mod-interview-1',
+        title: 'AI Mock Interview - Software Engineer',
+        role: 'Developer',
+        duration_seconds: 2700,
+        questions_count: 5,
+        question_ids: ['q7', 'q8', 'q9', 'q10', 'q11'],
+        is_archived: false,
+        description: 'Practice technical interviews with AI-powered feedback and evaluation.',
+        difficulty: 'medium',
+        tags: ['interview', 'technical', 'ai-feedback'],
+        category: 'ai-mock-interviews'
+    },
+    {
+        id: 'mod-challenge-1',
+        title: 'Weekly Coding Challenge',
+        role: 'Developer',
+        duration_seconds: 3600,
+        questions_count: 3,
+        question_ids: ['q12', 'q13', 'q14'],
+        is_archived: false,
+        description: 'Weekly coding challenges to improve problem-solving skills.',
+        difficulty: 'medium',
+        tags: ['challenge', 'problem-solving', 'weekly'],
+        category: 'challenges-engagement'
+    },
+    {
+        id: 'mod-interview-2',
+        title: 'AI Mock Interview - Data Scientist',
+        role: 'Data Scientist',
+        duration_seconds: 3000,
+        questions_count: 4,
+        question_ids: ['q15', 'q16', 'q17', 'q18'],
+        is_archived: false,
+        description: 'Data science interview practice with AI evaluation.',
+        difficulty: 'hard',
+        tags: ['interview', 'data-science', 'ai-feedback'],
+        category: 'ai-mock-interviews'
+    },
+    {
+        id: 'mod-coding-2',
+        title: 'Algorithm Practice Set',
+        role: 'Developer',
+        duration_seconds: 2400,
+        questions_count: 6,
+        question_ids: ['q19', 'q20', 'q21', 'q22', 'q23', 'q24'],
+        is_archived: false,
+        description: 'Practice various algorithms and data structures.',
+        difficulty: 'medium',
+        tags: ['algorithms', 'data-structures', 'practice'],
+        category: 'coding-practice'
+    },
+    {
+        id: 'mod-challenge-2',
+        title: 'Hackathon Practice',
+        role: 'General',
+        duration_seconds: 7200,
+        questions_count: 4,
+        question_ids: ['q25', 'q26', 'q27', 'q28'],
+        is_archived: false,
+        description: 'Simulate hackathon environment with time-pressured challenges.',
+        difficulty: 'hard',
+        tags: ['hackathon', 'time-pressure', 'teamwork'],
+        category: 'challenges-engagement'
     }
 ]
 
@@ -232,15 +300,11 @@ export function usePracticeModules() {
             try {
                 setIsLoading(true)
                 
-                if (USE_MOCK_DATA) {
-                    // Use mock data in development
-                    const modules = await mockApi.getModules()
-                    setData(modules)
-                } else {
-                    // Use real API calls
-                    const response = await apiClient.client.get('/api/v1/practice/modules')
-                    setData(response.data)
-                }
+                // Always use real API calls - no mock data
+                console.log('🔄 Fetching real practice modules')
+                const response = await apiClient.client.get('/practice/modules')
+                console.log('📚 Real modules received:', response.data)
+                setData(response.data)
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch modules'))
                 console.error('Error fetching practice modules:', err)
@@ -267,19 +331,30 @@ export function usePracticeQuestions(moduleId: string) {
             return
         }
 
+        // Clear any cached data
+        setData([])
+        setError(null)
+        
+        // Force clear any cached data in localStorage
+        const cacheKeys = ['practice-questions', 'practice-modules']
+        cacheKeys.forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key)
+                console.log('🗑️ Cleared cached data:', key)
+            }
+        })
+
         const fetchQuestions = async () => {
             try {
                 setIsLoading(true)
                 
-                if (USE_MOCK_DATA) {
-                    // Use mock data in development
-                    const questions = await mockApi.getQuestions(moduleId)
-                    setData(questions)
-                } else {
-                    // Use real API calls
-                    const response = await apiClient.client.get(`/api/v1/practice/modules/${moduleId}`)
-                    setData(response.data.questions || [])
-                }
+                // Always use real API calls - no mock data
+                console.log('🔄 Fetching real questions for module:', moduleId)
+                const response = await apiClient.client.get(`/practice/modules/${moduleId}`)
+                console.log('📚 Real questions received:', response.data.questions)
+                console.log('📚 Question count:', response.data.questions?.length || 0)
+                console.log('📚 Question IDs:', response.data.questions?.map((q: any) => q.id) || [])
+                setData(response.data.questions || [])
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch questions'))
                 console.error('Error fetching practice questions:', err)
@@ -303,19 +378,19 @@ export function useSubmitAttempt() {
             setIsPending(true)
             setError(null)
             
-            if (USE_MOCK_DATA) {
-                // Use mock data in development
-                const result = await mockApi.submitAttempt(request)
-                return result
-            } else {
-                // Use real API calls
-                const response = await apiClient.client.post('/api/v1/practice/submit', request)
-                return response.data
-            }
+            // Always use real API calls - no mock data
+            console.log('🚀 Submitting practice attempt:', request)
+            const response = await apiClient.client.post('/practice/submit', request)
+            console.log('✅ Practice attempt submitted successfully:', response.data)
+            return response.data
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to submit attempt')
             setError(error)
-            console.error('Error submitting practice attempt:', err)
+            console.error('❌ Error submitting practice attempt:', err)
+            if (err && typeof err === 'object' && 'response' in err) {
+                console.error('❌ Error response:', (err as any).response?.data)
+                console.error('❌ Error status:', (err as any).response?.status)
+            }
             throw error
         } finally {
             setIsPending(false)
@@ -335,15 +410,11 @@ export function usePracticeStats() {
             try {
                 setIsLoading(true)
                 
-                if (USE_MOCK_DATA) {
-                    // Use mock data in development
-                    const stats = await mockApi.getStats()
-                    setData(stats)
-                } else {
-                    // Use real API calls
-                    const response = await apiClient.client.get('/api/v1/practice/stats')
-                    setData(response.data)
-                }
+                // Always use real API calls - no mock data
+                console.log('🔄 Fetching real practice stats')
+                const response = await apiClient.client.get('/practice/stats')
+                console.log('📚 Real stats received:', response.data)
+                setData(response.data)
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to fetch stats'))
                 console.error('Error fetching practice stats:', err)
@@ -367,25 +438,5 @@ export function usePracticeModules() {
         staleTime: 5 * 60 * 1000,
     })
 }
-
-export function usePracticeQuestions(moduleId: string) {
-    return useQuery({
-        queryKey: ['practice-questions', moduleId],
-        queryFn: () => apiClient.client.get(`/api/practice/modules/${moduleId}/questions`),
-        enabled: !!moduleId,
-        staleTime: 10 * 60 * 1000,
-    })
-}
-
-export function useSubmitAttempt() {
-    const queryClient = useQueryClient()
-    
-    return useMutation({
-        mutationFn: (request: SubmitAttemptRequest) => 
-            apiClient.client.post('/api/practice/submit', request),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['practice-stats'] })
-        },
-    })
-}
 */
+

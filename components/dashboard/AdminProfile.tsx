@@ -32,6 +32,7 @@ import { cn, getInitials, truncateText } from '@/lib/utils'
 import { adminProfileService } from '@/services/adminProfileService'
 import { type AdminProfile, type AdminProfileUpdateData } from '@/types/admin'
 import { useAuth } from '@/hooks/useAuth'
+import toast from 'react-hot-toast'
 
 interface ProfileSection {
     id: string
@@ -106,9 +107,25 @@ export function AdminProfile() {
 
             setProfile(updatedProfile)
             setEditing(null) // Exit edit mode after saving
+            
+            // Show success toast
+            const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+            toast.success(`${sectionName} updated successfully!`)
+            
         } catch (error: any) {
             console.error('Error saving admin profile:', error)
             setError(error.message)
+            
+            // Show error toast with specific message
+            if (error.message.includes('network') || error.message.includes('Internet')) {
+                toast.error('Network error. Please check your connection and try again.')
+            } else if (error.message.includes('auth') || error.message.includes('login')) {
+                toast.error('Authentication failed. Please log in again.')
+            } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+                toast.error('Invalid data provided. Please check your input.')
+            } else {
+                toast.error(`Failed to save: ${error.message}`)
+            }
         } finally {
             setSaving(false)
         }
@@ -518,6 +535,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [formData, setFormData] = useState<any>({})
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
     useEffect(() => {
         if (profile && section) {
@@ -531,6 +549,35 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        
+        // Clear previous errors
+        setFieldErrors({})
+        
+        // Validation errors
+        const errors: Record<string, string> = {}
+        let hasValidationErrors = false
+        
+        // Name validation
+        if (formData.name && formData.name.trim().length < 2) {
+            errors.name = 'Name must be at least 2 characters long'
+            hasValidationErrors = true
+        }
+        
+        // Phone validation - exactly 10 digits
+        if (formData.phone && formData.phone.trim()) {
+            const phoneRegex = /^\d{10}$/
+            if (!phoneRegex.test(formData.phone)) {
+                errors.phone = 'Phone number must be exactly 10 digits'
+                hasValidationErrors = true
+            }
+        }
+        
+        // If there are validation errors, set field errors and return
+        if (hasValidationErrors) {
+            setFieldErrors(errors)
+            return
+        }
+        
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
             if (cleanedFormData[key] === '') {
@@ -547,6 +594,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             console.log('Starting file upload for field:', field)
             console.log('File details:', { name: file.name, size: file.size, type: file.type })
 
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size must be less than 5MB')
+                return
+            }
+
+            // Validate file type for profile pictures
+            if (field === 'profile_picture') {
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+                if (!allowedTypes.includes(file.type)) {
+                    toast.error('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+                    return
+                }
+            }
+
             let response
             switch (field) {
                 case 'profile_picture':
@@ -560,9 +622,23 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             setUploadError(null)
 
             console.log('File uploaded to S3:', fileUrl)
+            toast.success('Profile picture uploaded successfully!')
         } catch (error: any) {
             console.error('File upload error:', error)
             setUploadError(error.message || 'Failed to upload file.')
+            
+            // Show specific error messages
+            if (error.message.includes('network') || error.message.includes('Internet')) {
+                toast.error('Network error. Please check your connection and try again.')
+            } else if (error.message.includes('auth') || error.message.includes('login')) {
+                toast.error('Authentication failed. Please log in again.')
+            } else if (error.message.includes('size') || error.message.includes('large')) {
+                toast.error('File is too large. Please upload a smaller image.')
+            } else if (error.message.includes('format') || error.message.includes('type')) {
+                toast.error('Invalid file format. Please upload a valid image.')
+            } else {
+                toast.error(`Failed to upload image: ${error.message}`)
+            }
         } finally {
             setUploading(null)
         }
@@ -626,6 +702,76 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     placeholder="Email address"
                 />
+            )
+        }
+
+        // Handle phone field with numeric validation and max length
+        if (field === 'phone') {
+            return (
+                <div>
+                    <input
+                        type="tel"
+                        value={value}
+                        onChange={(e) => {
+                            const inputValue = e.target.value
+                            // Only allow numbers and limit to 10 digits
+                            const numericValue = inputValue.replace(/[^0-9]/g, '').slice(0, 10)
+                            setFormData({ ...formData, [field]: numericValue })
+                            // Clear error when user starts typing
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                            fieldErrors[field] 
+                                ? 'border-red-500 focus:border-red-500' 
+                                : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        placeholder="Enter 10-digit phone number"
+                        maxLength={10}
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
+            )
+        }
+
+        // Handle name field with alphabetic validation
+        if (field === 'name') {
+            return (
+                <div>
+                    <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => {
+                            let inputValue = e.target.value
+                            
+                            // Name field validation - only alphabets, spaces, and common punctuation
+                            const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                            if (sanitizedValue !== inputValue) {
+                                toast.error('Only letters, spaces, periods, and hyphens are allowed')
+                            }
+                            inputValue = sanitizedValue
+                            
+                            setFormData({ ...formData, [field]: inputValue })
+                            // Clear error when user starts typing
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                            fieldErrors[field] 
+                                ? 'border-red-500 focus:border-red-500' 
+                                : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                        maxLength={50}
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
             )
         }
 

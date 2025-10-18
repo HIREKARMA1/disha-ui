@@ -8,14 +8,11 @@ import {
     Briefcase,
     Users,
     FileText,
-    Calendar,
-    BarChart3,
-    Search,
-    Settings,
     X,
     Menu,
     LogOut,
-    Building2
+    Building2,
+    Brain
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -68,6 +65,13 @@ const navItems: NavItem[] = [
         description: 'Review applications',
         color: 'from-indigo-500 to-blue-600'
     },
+    {
+        label: 'Practice',
+        href: '/dashboard/corporate/practice',
+        icon: Brain,
+        description: 'Manage practice modules',
+        color: 'from-purple-500 to-pink-600'
+    },
     // {
     //     label: 'Interviews',
     //     href: '/dashboard/corporate/interviews',
@@ -117,9 +121,8 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                 setIsLoadingProfile(true)
                 try {
                     // TODO: Replace with actual corporate profile API call
-                    // const data = await apiClient.getCorporateProfile()
-                    // setProfileData(data)
-                    setProfileData(null) // Placeholder for now
+                    const data = await apiClient.getCorporateProfile()
+                    setProfileData(data)
                 } catch (error) {
                     console.error('Failed to fetch profile:', error)
                 } finally {
@@ -146,10 +149,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
 
     // Get display name from profile data
     const getDisplayName = () => {
-        if (profileData?.name && profileData.name.trim()) {
-            return profileData.name
-        }
-        return user?.name || 'Corporate Name'
+        return profileData?.name || user?.name || 'Corporate Name'
     }
 
     // Get display email
@@ -178,7 +178,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                             {getProfilePicture() && !imageError ? (
                                 <Image
                                     src={getProfilePicture()}
-                                    alt="Profile"
+                                    alt="Company Logo"
                                     width={48}
                                     height={48}
                                     className="w-full h-full object-cover"
@@ -338,7 +338,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                         {getProfilePicture() && !imageError ? (
                                             <Image
                                                 src={getProfilePicture()}
-                                                alt="Profile"
+                                                alt="Company Logo"
                                                 width={40}
                                                 height={40}
                                                 className="w-full h-full object-cover"

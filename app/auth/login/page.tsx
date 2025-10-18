@@ -133,9 +133,26 @@ export default function LoginPage() {
                     router.push('/dashboard')
             }
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Login failed. Please try again.'
+            let message = 'Login failed. Please try again.'
+        
+            if (error.response) {
+                const status = error.response.status
+                const detail = error.response.data?.detail
+        
+                if (status === 401) {
+                    message = 'Invalid password. Please try again.'
+                } else if (status === 404) {
+                    message = 'This email is not registered. Please create an account first.'
+                } else if (status === 400) {
+                    message = detail || 'Invalid login request.'
+                } else {
+                    message = detail || message
+                }
+            }
+        
             toast.error(message)
-        } finally {
+        }
+         finally {
             setIsLoading(false)
         }
     }
