@@ -102,7 +102,7 @@ const parseQuestionOptions = (options: any): Array<{ id: string; text: string }>
     return []
 }
 
-type ViewState = 'modules' | 'questions' | 'attempts' | 'create-question' | 'bulk-upload' | 'create-module' | 'module-detail'
+type ViewState = 'modules' | 'questions' | 'attempts' | 'create-question' | 'bulk-upload' | 'create-module' | 'edit-module' | 'module-detail'
 
 const categories = [
     {
@@ -183,6 +183,12 @@ export function AdminPracticeManager() {
         setCurrentView('create-module')
     }
 
+    const handleEditModule = (module: PracticeModule) => {
+        console.log('✏️ handleEditModule called with:', module)
+        setSelectedModule(module)
+        setCurrentView('edit-module')
+    }
+
     const handleEditQuestion = (question: Question) => {
         console.log('✏️ handleEditQuestion called with:', question)
         console.log('✏️ Question ID:', question.id)
@@ -233,6 +239,20 @@ export function AdminPracticeManager() {
         }
     }
 
+    const handleUpdateModule = async (moduleData: any) => {
+        try {
+            if (!selectedModule) return
+            
+            await updateModuleMutation.mutateAsync(selectedModule.id, moduleData)
+            setCurrentView('modules')
+            refetchModules()
+            toast.success('Module updated successfully!')
+        } catch (error) {
+            console.error('Failed to update module:', error)
+            toast.error('Failed to update module. Please try again.')
+        }
+    }
+
     const handleSaveQuestion = async (questionsData: any) => {
         try {
             // Handle both single question and multiple questions
@@ -268,11 +288,6 @@ export function AdminPracticeManager() {
         }
     }
 
-    // Edit Module Handler
-    const handleEditModule = (module: PracticeModule) => {
-        setSelectedModule(module)
-        setCurrentView('create-module') // Reuse the create module form for editing
-    }
 
 
     // Delete Module Handler
@@ -373,6 +388,16 @@ export function AdminPracticeManager() {
         )
     }
 
+    if (currentView === 'edit-module') {
+        return (
+            <CreateModuleForm
+                module={selectedModule}
+                onSave={(moduleData) => handleUpdateModule(moduleData)}
+                onCancel={handleBackToModules}
+            />
+        )
+    }
+
     if (currentView === 'create-question') {
         return (
             <AdminQuestionEditor
@@ -432,9 +457,9 @@ export function AdminPracticeManager() {
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                                 Practice Module Management 🧠
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                            <div className="text-gray-600 dark:text-gray-300 text-lg mb-3">
                                 Manage practice tests, questions, and view student attempts ✨
-                            </p>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
                                     🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -850,9 +875,9 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                             Practice Module Management 🧠
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                        <div className="text-gray-600 dark:text-gray-300 text-lg mb-3">
                             Manage practice tests, questions, and view student attempts ✨
-                        </p>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
                                 🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -1004,11 +1029,12 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
 
 // Create Module Form Component
 interface CreateModuleFormProps {
+    module?: PracticeModule | null
     onSave: (moduleData: any) => void
     onCancel: () => void
 }
 
-function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
+function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -1024,6 +1050,51 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
         end_date: ''
     })
     const [newTag, setNewTag] = useState('')
+
+    // Helper function to convert ISO date to datetime-local format
+    const convertToDateTimeLocal = (isoDate: string | undefined): string => {
+        if (!isoDate) return ''
+        try {
+            const date = new Date(isoDate)
+            // Convert to YYYY-MM-DDTHH:MM format for datetime-local input
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            const hours = String(date.getHours()).padStart(2, '0')
+            const minutes = String(date.getMinutes()).padStart(2, '0')
+            return `${year}-${month}-${day}T${hours}:${minutes}`
+        } catch (error) {
+            console.error('Error converting date:', error)
+            return ''
+        }
+    }
+
+    // Initialize form data when editing
+    React.useEffect(() => {
+        if (module) {
+            console.log('📅 Loading module for editing:', {
+                original_start_date: module.start_date,
+                original_end_date: module.end_date,
+                converted_start_date: convertToDateTimeLocal(module.start_date),
+                converted_end_date: convertToDateTimeLocal(module.end_date)
+            })
+            
+            setFormData({
+                title: module.title || '',
+                description: module.description || '',
+                role: module.role || 'Developer',
+                category: module.category || 'ai-mock-tests',
+                difficulty: module.difficulty || 'medium',
+                duration_seconds: module.duration_seconds || 3600,
+                tags: module.tags || [],
+                university_ids: module.target_college_ids || [],
+                branch_ids: module.target_branch_ids || [],
+                target_all_branches: module.target_all_branches || false,
+                start_date: convertToDateTimeLocal(module.start_date),
+                end_date: convertToDateTimeLocal(module.end_date)
+            })
+        }
+    }, [module])
 
     // Fetch universities
     const { data: universities, isLoading: universitiesLoading } = useUniversities()
@@ -1125,10 +1196,10 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Create New Module 🧠
+                            {module ? 'Edit Module 🧠' : 'Create New Module 🧠'}
                         </h1>
                         <p className="text-gray-600 dark:text-gray-300 text-lg">
-                            Set up a new practice test module for students
+                            {module ? 'Update the practice test module details' : 'Set up a new practice test module for students'}
                         </p>
                     </div>
                     <Button
@@ -1348,7 +1419,7 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                                 disabled={!formData.title.trim()}
                             >
                                 <Save className="w-4 h-4 mr-2" />
-                                Create Module
+                                {module ? 'Update Module' : 'Create Module'}
                             </Button>
                             <Button
                                 onClick={onCancel}
