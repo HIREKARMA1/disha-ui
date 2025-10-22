@@ -69,26 +69,14 @@ const passwordSchema = z
         if (digitCount < 3) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Password must include at least three digits' })
         }
-        const hasRepeatingCharacters = new Set(val).size !== val.length
-        if (hasRepeatingCharacters) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Password must not contain repeating characters' })
-        }
     })
 
-const allowedDomains = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "edu"];
-
 const emailSchema = z
-  .string()
-  .trim()
-  .min(5, "Email must be at least 5 characters long")
-  .max(100, "Email must be less than 100 characters")
-  .email("Please enter a valid email address")
-  .refine((val) => {
-    const domain = val.split("@")[1];
-    return allowedDomains.some((d) => domain.endsWith(d));
-  }, {
-    message: "Please use a valid email",
-  });
+    .string()
+    .trim()
+    .min(5, "Email must be at least 5 characters long")
+    .max(100, "Email must be less than 100 characters")
+    .email("Please enter a valid email address");
 
 
 
