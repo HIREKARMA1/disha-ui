@@ -28,6 +28,7 @@ import { cn, getInitials, truncateText } from '@/lib/utils'
 import { corporateProfileService } from '@/services/corporateProfileService'
 import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
 import { useAuth } from '@/hooks/useAuth'
+import toast from 'react-hot-toast'
 
 // Industry options
 const industryOptions = [
@@ -141,9 +142,25 @@ export function CorporateProfile() {
 
             setProfile(updatedProfile)
             setEditing(null)
+            
+            // Show success toast with section name
+            const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+            toast.success(`${sectionName} updated successfully!`)
+
         } catch (error: any) {
             console.error('Error saving corporate profile:', error)
             setError(error.message)
+
+            // Show error toast with specific message
+            if (error.message.includes('network') || error.message.includes('Internet')) {
+                toast.error('Network error. Please check your connection and try again.')
+            } else if (error.message.includes('auth') || error.message.includes('login')) {
+                toast.error('Authentication failed. Please log in again.')
+            } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+                toast.error('Invalid data provided. Please check your input.')
+            } else {
+                toast.error(`Failed to save: ${error.message}`)
+            }
         } finally {
             setSaving(false)
         }
@@ -601,6 +618,56 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        
+        // Validation errors array
+        const validationErrors: string[] = []
+        let hasValidationErrors = false
+        
+        // Validate phone number if provided
+        if (formData.phone && formData.phone.length !== 10) {
+            validationErrors.push('Phone number must be exactly 10 digits')
+            hasValidationErrors = true
+        }
+        
+        // Validate name field if provided
+        if (formData.name && formData.name.trim().length < 2) {
+            validationErrors.push('Name must be at least 2 characters long')
+            hasValidationErrors = true
+        }
+        
+        // Validate company name if provided (for company section)
+        if (formData.company_name && formData.company_name.trim().length < 2) {
+            validationErrors.push('Company name must be at least 2 characters long')
+            hasValidationErrors = true
+        }
+        
+        // Validate website URL if provided
+        if (formData.website_url && formData.website_url.trim()) {
+            const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+            if (!urlPattern.test(formData.website_url)) {
+                validationErrors.push('Please enter a valid website URL')
+                hasValidationErrors = true
+            }
+        }
+        
+        // Validate founded year if provided
+        if (formData.founded_year && (formData.founded_year < 1800 || formData.founded_year > new Date().getFullYear())) {
+            validationErrors.push(`Founded year must be between 1800 and ${new Date().getFullYear()}`)
+            hasValidationErrors = true
+        }
+        
+        // If there are validation errors, show toast and return
+        if (hasValidationErrors) {
+            if (validationErrors.length > 0) {
+                validationErrors.forEach(error => {
+                    toast.error(error)
+                })
+            } else {
+                toast.error('Please fix the validation errors before saving')
+            }
+            return
+        }
+        
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
             if (cleanedFormData[key] === '') {
@@ -635,11 +702,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             setFormData({ ...formData, [field]: fileUrl })
             setUploadSuccess(field)
             setUploadError(null)
+            
+            // Show success toast
+            const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+            toast.success(`${fieldName} uploaded successfully!`)
+            
             setTimeout(() => setUploadSuccess(null), 3000)
         } catch (error) {
             console.error('File upload error:', error)
-            setUploadError(error instanceof Error ? error.message : 'Upload failed')
+            const errorMessage = error instanceof Error ? error.message : 'Upload failed'
+            setUploadError(errorMessage)
             setUploadSuccess(null)
+            
+            // Show error toast
+            const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+            toast.error(`Failed to upload ${fieldName}: ${errorMessage}`)
         } finally {
             setUploading(null)
         }
@@ -648,6 +725,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const handleFileRemove = (field: string) => {
         setFormData({ ...formData, [field]: '' })
         setUploadError(null)
+        
+        // Show info toast
+        const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+        toast.success(`${fieldName} removed successfully!`)
     }
 
     const renderField = (field: string) => {
@@ -767,6 +848,64 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     <option value="government">Government</option>
                     <option value="ngo">NGO</option>
                 </select>
+            )
+        }
+
+
+        // Handle name field with alphabet-only validation
+        if (field === 'name') {
+            return (
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => {
+                        const inputValue = e.target.value
+                        // Only allow alphabets, spaces, and common punctuation
+                        const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                        setFormData({ ...formData, [field]: sanitizedValue })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter your name (alphabets only)"
+                    maxLength={50}
+                />
+            )
+        }
+
+        // Handle email field - make it read-only
+        if (field === 'email') {
+            return (
+                <div className="space-y-2">
+                    <input
+                        type="email"
+                        value={value}
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="Email cannot be edited"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Email cannot be changed for security reasons
+                    </p>
+                </div>
+            )
+        }
+
+        // Handle phone field with numeric validation and max length
+        if (field === 'phone') {
+            return (
+                <input
+                    type="tel"
+                    value={value}
+                    onChange={(e) => {
+                        const inputValue = e.target.value
+                        // Only allow numbers and limit to 10 digits
+                        const numericValue = inputValue.replace(/[^0-9]/g, '').slice(0, 10)
+                        setFormData({ ...formData, [field]: numericValue })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter 10-digit phone number"
+                    maxLength={10}
+                />
             )
         }
 

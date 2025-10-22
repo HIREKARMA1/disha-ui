@@ -152,7 +152,7 @@ export function Navbar({
     // Don't render until auth state is determined
     if (isLoading) {
         return (
-            <nav className={`${getNavbarClasses()} ${className}`}>
+            <nav className={`main-navbar ${getNavbarClasses()} ${className}`}>
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
@@ -181,7 +181,7 @@ export function Navbar({
     }
 
     return (
-        <nav className={`${getNavbarClasses()} ${className}`}>
+        <nav className={`main-navbar ${getNavbarClasses()} ${className}`}>
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}

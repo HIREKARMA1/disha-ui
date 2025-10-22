@@ -50,7 +50,7 @@ export function QuestionTabsBar({
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/30 p-4">
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                     Questions
@@ -61,11 +61,11 @@ export function QuestionTabsBar({
                         <span>Current</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-green-100 border border-green-300 rounded-full"></div>
+                        <div className="w-3 h-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-full"></div>
                         <span>Answered</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded-full"></div>
+                        <div className="w-3 h-3 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-full"></div>
                         <span>Flagged</span>
                     </div>
                 </div>
