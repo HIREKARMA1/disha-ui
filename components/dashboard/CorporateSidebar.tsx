@@ -65,13 +65,14 @@ const navItems: NavItem[] = [
         description: 'Review applications',
         color: 'from-indigo-500 to-blue-600'
     },
-    {
-        label: 'Practice',
-        href: '/dashboard/corporate/practice',
-        icon: Brain,
-        description: 'Manage practice modules',
-        color: 'from-purple-500 to-pink-600'
-    },
+    // TODO: Uncomment when practice module bugs are fixed
+    // {
+    //     label: 'Practice',
+    //     href: '/dashboard/corporate/practice',
+    //     icon: Brain,
+    //     description: 'Manage practice modules',
+    //     color: 'from-purple-500 to-pink-600'
+    // },
     // {
     //     label: 'Interviews',
     //     href: '/dashboard/corporate/interviews',

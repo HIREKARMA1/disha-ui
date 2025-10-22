@@ -57,13 +57,14 @@ const navItems: NavItem[] = [
         description: 'Browse and manage job opportunities',
         color: 'from-purple-500 to-pink-600'
     },
-    {
-        label: 'Practice Tests',
-        href: '/dashboard/university/practice',
-        icon: Brain,
-        description: 'Manage practice tests & questions',
-        color: 'from-rose-500 to-pink-600'
-    },
+    // TODO: Uncomment when practice module bugs are fixed
+    // {
+    //     label: 'Practice Tests',
+    //     href: '/dashboard/university/practice',
+    //     icon: Brain,
+    //     description: 'Manage practice tests & questions',
+    //     color: 'from-rose-500 to-pink-600'
+    // },
     {
         label: 'Applications',
         href: '/dashboard/university/applications',
@@ -93,13 +94,13 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
             const token = localStorage.getItem('access_token')
             console.log('LocalStorage user_data:', userData)
             console.log('LocalStorage token:', token ? 'exists' : 'missing')
-            
+
             if (user?.user_type === 'university') {
                 setIsLoadingProfile(true)
                 try {
                     const data = await apiClient.getUniversityProfile()
                     console.log('University profile data:', data)
-                    
+
                     // Map the API response to ensure we have the right field names
                     const mappedData = {
                         ...data,
