@@ -21,7 +21,7 @@ import { toast } from 'react-hot-toast'
 
 interface ResultReportProps {
     result: SubmitAttemptResponse
-    module: PracticeModule
+    module?: PracticeModule | null
     onBackToDashboard: () => void
     onBackToExam: () => void
 }
@@ -84,11 +84,18 @@ export function ResultReport({
     }
 
     const handleExportPDF = async () => {
+        if (!module) {
+            toast.error('Module data not available for export')
+            return
+        }
+        
         setIsExporting(true)
         try {
             await PDFExport.exportReport(result, module)
+            toast.success('Report downloaded successfully!')
         } catch (error) {
             console.error('Failed to export PDF:', error)
+            toast.error('Failed to download report')
         } finally {
             setIsExporting(false)
         }
@@ -112,7 +119,7 @@ export function ResultReport({
                             Exam Results
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400">
-                            {module.title}
+                            {module?.title || 'Practice Module'}
                         </p>
                     </div>
                 </div>

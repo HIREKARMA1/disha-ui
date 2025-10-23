@@ -358,3 +358,33 @@ export function useQuestionStatistics(questionId: string) {
 
     return { data, isLoading, error, refetch: fetchStatistics }
 }
+
+// University Practice Statistics Hook
+export function useUniversityPracticeStatistics() {
+    const [data, setData] = useState<any>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<Error | null>(null)
+
+    const fetchStatistics = useCallback(async () => {
+        try {
+            setIsLoading(true)
+            setError(null)
+            
+            const response = await apiClient.client.get('/practice/university/statistics')
+            console.log('🔄 Fetched university practice statistics:', response.data)
+            setData(response.data)
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to fetch university practice statistics')
+            setError(error)
+            console.error('Error fetching university practice statistics:', err)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchStatistics()
+    }, [fetchStatistics])
+
+    return { data, isLoading, error, refetch: fetchStatistics }
+}

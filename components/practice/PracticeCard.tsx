@@ -12,13 +12,14 @@ import { toast } from 'react-hot-toast'
 interface PracticeCardProps {
     module: PracticeModule
     onStart: () => void
+    onViewResults?: () => void
     isSubmitted?: boolean
     result?: SubmitAttemptResponse
 }
 
 
 
-export function PracticeCard({ module, onStart, isSubmitted = false, result }: PracticeCardProps) {
+export function PracticeCard({ module, onStart, onViewResults, isSubmitted = false, result }: PracticeCardProps) {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
     const formatDuration = (seconds: number) => {
@@ -30,33 +31,6 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
         }
         return `${minutes}m`
     }
-
-    const handleEnterFullscreen = async () => {
-        try {
-            const elem: any = document.documentElement
-            if (elem.requestFullscreen) {
-                // navigationUI: 'hide' is supported by some browsers (e.g., Firefox)
-                await elem.requestFullscreen({ navigationUI: 'hide' } as any)
-            } else if (elem.mozRequestFullScreen) {
-                await elem.mozRequestFullScreen()
-            } else if (elem.webkitRequestFullscreen) {
-                await elem.webkitRequestFullscreen()
-            } else if (elem.msRequestFullscreen) {
-                await elem.msRequestFullscreen()
-            }
-
-            // Verify that fullscreen actually engaged
-            const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
-            if (!becameFullscreen) {
-                toast.error('Fullscreen was blocked. Allow fullscreen for this site and try again.')
-            }
-        } catch (error) {
-            console.error('Failed to enter fullscreen:', error)
-            toast.error('Unable to enter fullscreen. Please click again or check browser settings.')
-        }
-    }
-
-
 
     const getDifficultyColor = (difficulty?: string) => {
         switch (difficulty) {
@@ -343,11 +317,11 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
 
                     <Button
                         onClick={() => {
-                            if (!isSubmitted || !result) {
-                                // Only trigger fullscreen when it's a new practice session
-                                handleEnterFullscreen();
+                            if (isSubmitted && result && onViewResults) {
+                                onViewResults()
+                            } else {
+                                onStart()
                             }
-                            onStart();
                         }}
                         disabled={isSubmitted && !result}
                         size="sm"
@@ -380,6 +354,7 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                 onClose={() => setIsDetailsModalOpen(false)}
                 module={module}
                 onStartPractice={onStart}
+                onViewResults={onViewResults}
                 isSubmitted={isSubmitted}
                 result={result}
             />

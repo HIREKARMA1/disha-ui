@@ -10,6 +10,7 @@ interface PracticeDetailsModalProps {
     onClose: () => void
     module: PracticeModule | null
     onStartPractice: () => void
+    onViewResults?: () => void
     isSubmitted?: boolean
     result?: SubmitAttemptResponse
 }
@@ -19,6 +20,7 @@ export function PracticeDetailsModal({
     onClose, 
     module, 
     onStartPractice, 
+    onViewResults,
     isSubmitted = false, 
     result 
 }: PracticeDetailsModalProps) {
@@ -260,17 +262,44 @@ export function PracticeDetailsModal({
                                 >
                                     Close
                                 </Button>
-                                <Button
-                                    onClick={() => {
-                                        onStartPractice()
-                                        onClose()
-                                    }}
-                                    className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
-                                    size="sm"
-                                >
-                                    <Play className="w-4 h-4 mr-1" />
-                                    {isSubmitted ? 'Retake' : 'Start'}
-                                </Button>
+                                {isSubmitted && result && onViewResults ? (
+                                    <>
+                                        <Button
+                                            onClick={() => {
+                                                onViewResults()
+                                                onClose()
+                                            }}
+                                            className="flex-1 py-2 text-sm bg-green-600 hover:bg-green-700 text-white"
+                                            size="sm"
+                                        >
+                                            <Eye className="w-4 h-4 mr-1" />
+                                            View Results
+                                        </Button>
+                                        <Button
+                                            onClick={() => {
+                                                onStartPractice()
+                                                onClose()
+                                            }}
+                                            className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                                            size="sm"
+                                        >
+                                            <Play className="w-4 h-4 mr-1" />
+                                            Retake
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button
+                                        onClick={() => {
+                                            onStartPractice()
+                                            onClose()
+                                        }}
+                                        className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                                        size="sm"
+                                    >
+                                        <Play className="w-4 h-4 mr-1" />
+                                        Start
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </motion.div>

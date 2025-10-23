@@ -297,6 +297,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
     }>>({})
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isExitingFullscreen, setIsExitingFullscreen] = useState(false)
+    const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false)
 
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
     const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam } = useExamSession(module.id)
@@ -327,6 +328,54 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
         }, 10000)
         return () => clearInterval(interval)
     }, [session])
+
+    // Auto-enter fullscreen when exam loads
+    useEffect(() => {
+        if (!session || session.isSubmitted) return;
+        
+        // Check if already in fullscreen
+        const alreadyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement);
+        if (alreadyFullscreen) {
+            setIsFullscreen(true);
+            setSidebarHidden(true);
+            setShowFullscreenPrompt(false);
+            return;
+        }
+        
+        // Small delay to ensure the page has fully loaded
+        const timer = setTimeout(async () => {
+            try {
+                const elem: any = document.documentElement;
+                if (elem.requestFullscreen) {
+                    await elem.requestFullscreen({ navigationUI: 'hide' } as any);
+                } else if (elem.mozRequestFullScreen) {
+                    await elem.mozRequestFullScreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    await elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    await elem.msRequestFullscreen();
+                }
+                
+                // Verify fullscreen engaged
+                const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement);
+                if (becameFullscreen) {
+                    setIsFullscreen(true);
+                    setSidebarHidden(true);
+                    setShowFullscreenPrompt(false);
+                    toast.success('Test started in fullscreen mode');
+                } else {
+                    // Show manual prompt if automatic fullscreen failed
+                    setShowFullscreenPrompt(true);
+                }
+            } catch (error) {
+                console.error('Failed to enter fullscreen:', error);
+                // Show manual prompt if automatic fullscreen failed
+                setShowFullscreenPrompt(true);
+            }
+        }, 300);
+        
+        return () => clearTimeout(timer);
+    }, [session]);
 
     // Updated fullscreen handling logic
     useEffect(() => {
@@ -494,36 +543,38 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
         if (!session?.flaggedQuestions.has(qid)) {
             toggleFlag(qid)
         }
-        if (!hasAnswer) {
-            toast.error('No answer selected. Marked for review.')
-        }
         handleNext()
     }
 
-    // const handleEnterFullscreen = async () => {
-    //     try {
-    //         const elem: any = document.documentElement
-    //         if (elem.requestFullscreen) {
-    //             // navigationUI: 'hide' is supported by some browsers (e.g., Firefox)
-    //             await elem.requestFullscreen({ navigationUI: 'hide' } as any)
-    //         } else if (elem.mozRequestFullScreen) {
-    //             await elem.mozRequestFullScreen()
-    //         } else if (elem.webkitRequestFullscreen) {
-    //             await elem.webkitRequestFullscreen()
-    //         } else if (elem.msRequestFullscreen) {
-    //             await elem.msRequestFullscreen()
-    //         }
+    const handleEnterFullscreen = async () => {
+        try {
+            const elem: any = document.documentElement
+            if (elem.requestFullscreen) {
+                // navigationUI: 'hide' is supported by some browsers (e.g., Firefox)
+                await elem.requestFullscreen({ navigationUI: 'hide' } as any)
+            } else if (elem.mozRequestFullScreen) {
+                await elem.mozRequestFullScreen()
+            } else if (elem.webkitRequestFullscreen) {
+                await elem.webkitRequestFullscreen()
+            } else if (elem.msRequestFullscreen) {
+                await elem.msRequestFullscreen()
+            }
 
-    //         // Verify that fullscreen actually engaged
-    //         const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
-    //         if (!becameFullscreen) {
-    //             toast.error('Fullscreen was blocked. Allow fullscreen for this site and try again.')
-    //         }
-    //     } catch (error) {
-    //         console.error('Failed to enter fullscreen:', error)
-    //         toast.error('Unable to enter fullscreen. Please click again or check browser settings.')
-    //     }
-    // }
+            // Verify that fullscreen actually engaged
+            const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
+            if (becameFullscreen) {
+                setIsFullscreen(true)
+                setSidebarHidden(true)
+                setShowFullscreenPrompt(false)
+                toast.success('Test started in fullscreen mode')
+            } else {
+                toast.error('Fullscreen was blocked. Please allow fullscreen for this site and try again.')
+            }
+        } catch (error) {
+            console.error('Failed to enter fullscreen:', error)
+            toast.error('Unable to enter fullscreen. Please click again or check browser settings.')
+        }
+    }
 
     const handleSubmit = async () => {
         if (!questions || !session) return
@@ -901,6 +952,55 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                     </div>
                 </div>
             </div>
+
+            {/* Fullscreen Prompt Overlay */}
+            {showFullscreenPrompt && (
+                <div className="fixed inset-0 z-[10000] bg-gradient-to-br from-blue-900/95 via-indigo-900/95 to-purple-900/95 backdrop-blur-md flex items-center justify-center">
+                    <div className="max-w-md w-full mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center transform transition-all duration-300 hover:scale-105">
+                        <div className="mb-6">
+                            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                                <Maximize2 className="w-10 h-10 text-white" />
+                            </div>
+                        </div>
+                        
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                            Start Test in Fullscreen
+                        </h2>
+                        
+                        <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+                            This test requires fullscreen mode for the best experience. 
+                            Click the button below to enter fullscreen and begin your test.
+                        </p>
+                        
+                        <div className="space-y-3">
+                            <Button
+                                onClick={handleEnterFullscreen}
+                                size="lg"
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transform transition-all duration-200 hover:-translate-y-1"
+                            >
+                                <Maximize2 className="w-5 h-5 mr-2" />
+                                Enter Fullscreen & Start Test
+                            </Button>
+                            
+                            <Button
+                                onClick={onBack}
+                                variant="outline"
+                                size="lg"
+                                className="w-full py-4 rounded-xl border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                                <ArrowLeft className="w-5 h-5 mr-2" />
+                                Back to Dashboard
+                            </Button>
+                        </div>
+                        
+                        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+                                <strong>Note:</strong> The test will automatically submit if you exit fullscreen mode during the exam.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

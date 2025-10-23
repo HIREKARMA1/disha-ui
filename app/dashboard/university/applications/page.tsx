@@ -6,6 +6,8 @@ import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDash
 import { StudentApplicationManagementHeader } from '@/components/student/StudentApplicationManagementHeader'
 import { StudentApplicationTable } from '@/components/student/StudentApplicationTable'
 import { OfferLetterViewerModal } from '@/components/student/OfferLetterViewerModal'
+import { UniversityStatusUpdateModal } from '@/components/university/UniversityStatusUpdateModal'
+import { ViewApplicationDetailsModal } from '@/components/university/ViewApplicationDetailsModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
@@ -28,6 +30,9 @@ interface ApplicationData {
     job_title?: string
     student_name?: string
     corporate_name?: string
+    creator_type?: string  // Explicit creator type ("University" or "Company")
+    is_university_created?: boolean  // Whether created by ANY university
+    can_update_status?: boolean  // Whether THIS university can update the status
 }
 
 export default function UniversityApplicationsPage() {
@@ -45,6 +50,9 @@ export default function UniversityApplicationsPage() {
     })
     const [selectedApplication, setSelectedApplication] = useState<ApplicationData | null>(null)
     const [showOfferLetterModal, setShowOfferLetterModal] = useState(false)
+    const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false)
+    const [showViewDetailsModal, setShowViewDetailsModal] = useState(false)
+    const [selectedApplicationForStatus, setSelectedApplicationForStatus] = useState<ApplicationData | null>(null)
 
     // Fetch university student applications
     const fetchApplications = async () => {
@@ -131,6 +139,23 @@ export default function UniversityApplicationsPage() {
         }
     }
 
+    const handleStatusUpdate = (application: ApplicationData) => {
+        setSelectedApplicationForStatus(application)
+        
+        // Check if THIS university can update the status (i.e., they created the job)
+        if (application.can_update_status) {
+            // This university created this job - allow status update
+            setShowStatusUpdateModal(true)
+        } else {
+            // Job was created by another entity - show read-only view
+            setShowViewDetailsModal(true)
+        }
+    }
+
+    const handleStatusUpdateSuccess = () => {
+        fetchApplications()
+    }
+
     // Calculate status counts
     const statusCounts = applications.reduce((acc, app) => {
         acc[app.status] = (acc[app.status] || 0) + 1
@@ -170,6 +195,7 @@ export default function UniversityApplicationsPage() {
                     onSort={handleSort}
                     onViewOfferLetter={handleViewOfferLetter}
                     onDownloadOfferLetter={handleDownloadOfferLetter}
+                    onStatusUpdate={handleStatusUpdate}
                     pagination={pagination}
                     onPageChange={handlePageChange}
                 />
@@ -187,6 +213,27 @@ export default function UniversityApplicationsPage() {
                     onDownload={() => handleDownloadOfferLetter(selectedApplication)}
                 />
             )}
+
+            {/* Status Update Modal - For university-created jobs */}
+            <UniversityStatusUpdateModal
+                isOpen={showStatusUpdateModal}
+                onClose={() => {
+                    setShowStatusUpdateModal(false)
+                    setSelectedApplicationForStatus(null)
+                }}
+                application={selectedApplicationForStatus}
+                onSuccess={handleStatusUpdateSuccess}
+            />
+
+            {/* View Details Modal - For corporate-created jobs (read-only) */}
+            <ViewApplicationDetailsModal
+                isOpen={showViewDetailsModal}
+                onClose={() => {
+                    setShowViewDetailsModal(false)
+                    setSelectedApplicationForStatus(null)
+                }}
+                application={selectedApplicationForStatus}
+            />
         </UniversityDashboardLayout>
     )
 }

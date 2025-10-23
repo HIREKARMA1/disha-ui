@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Brain, Clock, Users, Trophy, ArrowLeft, CalendarDays } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { PracticeCard } from './PracticeCard'
 import { PracticeExam } from './PracticeExam'
 import { ResultReport } from './ResultReport'
@@ -16,6 +17,7 @@ import { LoadingSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/Lo
 type ViewState = 'dashboard' | 'exam' | 'result'
 
 export function PracticeDashboard() {
+    const router = useRouter()
     const [currentView, setCurrentView] = useState<ViewState>('dashboard')
     const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(null)
     const [examResult, setExamResult] = useState<SubmitAttemptResponse | null>(null)
@@ -167,20 +169,15 @@ export function PracticeDashboard() {
     }
 
     const handleStartExam = (module: PracticeModule) => {
-        // Check if module has already been submitted
-        if (submittedModules.has(module.id)) {
-            // Show the result instead of starting the exam
-            const result = moduleResults.get(module.id)
-            if (result) {
-                setExamResult(result)
-                setSelectedModule(module)
-                setCurrentView('result')
-            }
-            return
-        }
-        
+        // Navigate to the practice module page with the module ID as a parameter
+        router.push(`/dashboard/student/practice/${module.id}`)
+    }
+
+    const handleViewResults = (module: PracticeModule, result: SubmitAttemptResponse) => {
+        // Show the results for a completed test
         setSelectedModule(module)
-        setCurrentView('exam')
+        setExamResult(result)
+        setCurrentView('result')
     }
 
     const handleExamComplete = (result: SubmitAttemptResponse) => {
@@ -236,7 +233,7 @@ export function PracticeDashboard() {
         return (
             <ResultReport
                 result={examResult}
-                module={selectedModule!}
+                module={selectedModule}
                 onBackToDashboard={handleBackToDashboard}
                 onBackToExam={handleBackToExam}
             />
@@ -375,6 +372,12 @@ export function PracticeDashboard() {
                                     <PracticeCard
                                         module={module}
                                         onStart={() => handleStartExam(module)}
+                                        onViewResults={() => {
+                                            const result = moduleResults.get(module.id)
+                                            if (result) {
+                                                handleViewResults(module, result)
+                                            }
+                                        }}
                                         isSubmitted={submittedModules.has(module.id)}
                                         result={moduleResults.get(module.id)}
                                     />

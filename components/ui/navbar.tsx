@@ -27,8 +27,12 @@ import {
     Briefcase,
     GraduationCap as Cap,
     Wrench,
-    Users2
+    Users2,
+    HeartHandshake
 } from 'lucide-react'
+import { FaHandshake } from "react-icons/fa6";
+import { apiClient } from '@/lib/api'
+import { UniversityProfile } from '@/types/university'
 
 interface NavbarProps {
     variant?: 'default' | 'transparent' | 'solid'
@@ -46,6 +50,66 @@ export function Navbar({
     const [isSolutionsOpen, setIsSolutionsOpen] = useState(false)
     const [isResourcesOpen, setIsResourcesOpen] = useState(false)
     const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+    const [profile, setProfile] = useState<UniversityProfile | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (isAuthenticated && user?.user_type === 'university') {
+            loadProfile()
+        } else {
+            setLoading(false)
+        }
+    }, [isAuthenticated, user])
+
+    const loadProfile = async () => {
+        try {
+            setLoading(true)
+            const profileData = await apiClient.getUniversityProfile()
+            console.log('Profile data received:', profileData)
+
+            const mergedProfile: UniversityProfile = {
+                id: profileData.id || user?.id || '1',
+                email: profileData.email || user?.email || '',
+                name: profileData.name || profileData.university_name || user?.name || '',
+                university_name: profileData.university_name || user?.name || '',
+                phone: profileData.phone || '',
+                status: profileData.status || 'active',
+                email_verified: profileData.email_verified || false,
+                phone_verified: profileData.phone_verified || false,
+                created_at: profileData.created_at || new Date().toISOString(),
+                updated_at: profileData.updated_at,
+                last_login: profileData.last_login,
+                profile_picture: profileData.profile_picture,
+                bio: profileData.bio,
+                website_url: profileData.website_url,
+                institute_type: profileData.institute_type,
+                established_year: profileData.established_year,
+                contact_person_name: profileData.contact_person_name,
+                contact_designation: profileData.contact_designation,
+                address: profileData.address,
+                courses_offered: profileData.courses_offered,
+                branch: profileData.branch,
+                verified: profileData.verified || false,
+                total_students: profileData.total_students || 0,
+                total_jobs: profileData.total_jobs || 0,
+                total_jobs_approved: profileData.total_jobs_approved || 0,
+                total_faculty: profileData.total_faculty,
+                departments: profileData.departments,
+                programs_offered: profileData.programs_offered,
+                placement_rate: profileData.placement_rate,
+                average_package: profileData.average_package,
+                top_recruiters: profileData.top_recruiters
+            }
+            console.log('Merged profile:', mergedProfile)
+            setProfile(mergedProfile)
+        } catch (apiError) {
+            console.error('Failed to fetch university profile:', apiError)
+            setError('Failed to load profile data from server')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleLogout = () => {
         logout()
@@ -143,14 +207,12 @@ export function Navbar({
         }
     }
 
-    // Determine which logo to use based on theme
     const getLogoSrc = () => {
         const isDark = resolvedTheme === 'dark' || (resolvedTheme === 'system' && theme === 'dark')
         return isDark ? '/images/HKlogowhite.png' : '/images/HKlogoblack.png'
     }
 
-    // Don't render until auth state is determined
-    if (isLoading) {
+    if (isLoading || (user?.user_type === 'university' && loading)) {
         return (
             <nav className={`main-navbar ${getNavbarClasses()} ${className}`}>
                 <div className="container mx-auto px-4 py-4">
@@ -195,12 +257,27 @@ export function Navbar({
                                 priority
                             />
                         </Link>
+                        <HeartHandshake className="h-6 w-6 text-primary-500 text-2xl" />
+                        <div className="ml-5">
+                            {user?.user_type === 'university' && (
+                                <Image
+                                    src={profile?.profile_picture || getLogoSrc()}
+                                    alt="University Logo"
+                                    width={150}
+                                    height={50}
+                                    priority
+                                    onError={(e) => {
+                                        e.currentTarget.src = getLogoSrc()
+                                    }}
+                                />
+                            )}
+                        </div>
                     </div>
 
                     {/* Desktop Navigation */}
                     <div className="hidden lg:flex items-center space-x-8">
                         {/* About Dropdown */}
-                        {/* <div className="relative group">
+                        <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -231,10 +308,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div> */}
+                        </div>
 
                         {/* Solutions Dropdown */}
-                        {/* <div className="relative group">
+                        <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -289,10 +366,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div> */}
+                        </div>
 
                         {/* Resources Dropdown */}
-                        {/* <div className="relative group">
+                        <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -323,7 +400,7 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div> */}
+                        </div>
 
                         {/* Auth Buttons */}
                         {isAuthenticated && user ? (
@@ -384,7 +461,7 @@ export function Navbar({
                     <div className="lg:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col space-y-3 p-4">
                             {/* About Section */}
-                            {/* <div className="space-y-2">
+                            <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">About</div>
                                 <Link href="/about/why-hirekarma" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -398,10 +475,10 @@ export function Navbar({
                                         Mission & Vision
                                     </Button>
                                 </Link>
-                            </div> */}
+                            </div>
 
                             {/* Solutions Section */}
-                            {/* <div className="space-y-2">
+                            <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Solutions</div>
                                 <Link href="/solutions/campus-placement" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -427,10 +504,10 @@ export function Navbar({
                                         General Staffing
                                     </Button>
                                 </Link>
-                            </div> */}
+                            </div>
 
                             {/* Resources Section */}
-                            {/* <div className="space-y-2">
+                            <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Resources</div>
                                 <Link href="/resources/moments-corner" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -444,7 +521,7 @@ export function Navbar({
                                         Insights
                                     </Button>
                                 </Link>
-                            </div> */}
+                            </div>
 
                             {/* Auth Section */}
                             {isAuthenticated && user ? (
@@ -483,10 +560,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                    </div>
+                        </div>
                     </div>
                 )}
-        </div>
-        </nav >
+            </div>
+        </nav>
     )
 }
