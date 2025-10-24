@@ -264,7 +264,7 @@ export function PracticeDetailsModal({
                                 </Button>
                                 {isSubmitted && result && onViewResults ? (
                                     <>
-                                        <Button
+                                        {/* <Button
                                             onClick={() => {
                                                 onViewResults()
                                                 onClose()
@@ -274,7 +274,7 @@ export function PracticeDetailsModal({
                                         >
                                             <Eye className="w-4 h-4 mr-1" />
                                             View Results
-                                        </Button>
+                                        </Button> */}
                                         {/* <Button
                                             onClick={() => {
                                                 onStartPractice()

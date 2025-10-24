@@ -28,7 +28,7 @@ export function PracticeDashboard() {
     const [submittedModules, setSubmittedModules] = useState<Set<string>>(new Set())
     const [moduleResults, setModuleResults] = useState<Map<string, SubmitAttemptResponse>>(new Map())
     const [isClient, setIsClient] = useState(false)
-    
+
     const { data: allModules, isLoading, error } = usePracticeModules()
     const { profile } = useStudentProfile()
 
@@ -40,7 +40,7 @@ export function PracticeDashboard() {
     // Load submitted modules from localStorage on mount (only on client)
     useEffect(() => {
         if (!isClient) return
-        
+
         // Clear cached results to force fresh calculation (temporary fix for result calculation bug)
         const clearCache = localStorage.getItem('clear_practice_cache')
         if (clearCache === 'true') {
@@ -56,13 +56,13 @@ export function PracticeDashboard() {
             localStorage.removeItem('clear_practice_cache')
             return
         }
-        
+
         const savedSubmittedModules = localStorage.getItem('submitted_practice_modules')
         if (savedSubmittedModules) {
             try {
                 const modulesArray = JSON.parse(savedSubmittedModules)
                 setSubmittedModules(new Set(modulesArray))
-                
+
                 // Load results for each submitted module
                 const resultsMap = new Map<string, SubmitAttemptResponse>()
                 modulesArray.forEach((moduleId: string) => {
@@ -86,52 +86,52 @@ export function PracticeDashboard() {
     // Filter modules based on search term, category, university, and branch
     const filteredModules = useMemo(() => {
         if (!allModules) return []
-        
+
         let filtered = allModules.filter(module => !module.is_archived)
-        
+
         // Filter by category
         if (selectedCategory !== 'all') {
             filtered = filtered.filter(module => module.category === selectedCategory)
         }
-        
+
         // Filter by search term
         if (searchTerm.trim()) {
             const searchLower = searchTerm.toLowerCase()
-            filtered = filtered.filter(module => 
+            filtered = filtered.filter(module =>
                 module.title.toLowerCase().includes(searchLower) ||
                 module.description?.toLowerCase().includes(searchLower) ||
                 module.role.toLowerCase().includes(searchLower) ||
                 module.tags?.some(tag => tag.toLowerCase().includes(searchLower))
             )
         }
-        
+
         // Filter by university and branch targeting
         filtered = filtered.filter(module => {
             // If manual filters are applied, use them instead of automatic profile-based filtering
             if (selectedUniversities.length > 0 || selectedBranches.length > 0) {
                 // Manual university filter
-                const manualUniversityMatch = 
+                const manualUniversityMatch =
                     selectedUniversities.length === 0 || // No university filter selected
                     module.target_all_colleges || // Admin selected "All Universities"
                     selectedUniversities.some(uniId => module.target_college_ids?.includes(uniId)) // Selected university is in targeted list
-                
+
                 // Manual branch filter
-                const manualBranchMatch = 
+                const manualBranchMatch =
                     selectedBranches.length === 0 || // No branch filter selected
                     module.target_all_branches || // Admin selected "All Branches"
                     selectedBranches.some(branch => module.target_branch_ids?.includes(branch)) // Selected branch is in targeted list
-                
+
                 return manualUniversityMatch && manualBranchMatch
             } else {
                 // Use automatic filtering based on student's profile
-                const universityMatch = 
+                const universityMatch =
                     module.target_all_colleges || // Admin selected "All Universities"
                     (profile?.institution && module.target_college_ids?.includes(profile.institution)) // Student's university is in the targeted list
-                
-                const branchMatch = 
+
+                const branchMatch =
                     module.target_all_branches || // Admin selected "All Branches"
                     (profile?.branch && module.target_branch_ids?.includes(profile.branch)) // Student's branch is in the targeted list
-                
+
                 // Debug logging
                 if (process.env.NODE_ENV === 'development') {
                     console.log(`Module: ${module.title}`, {
@@ -146,11 +146,11 @@ export function PracticeDashboard() {
                         finalMatch: universityMatch && branchMatch
                     })
                 }
-                
+
                 return universityMatch && branchMatch
             }
         })
-        
+
         return filtered
     }, [allModules, selectedCategory, searchTerm, selectedUniversities, selectedBranches, profile])
 
@@ -182,18 +182,22 @@ export function PracticeDashboard() {
 
     const handleExamComplete = (result: SubmitAttemptResponse) => {
         setExamResult(result)
-        setCurrentView('result')
-        
+        // Redirect to dashboard instead of showing results
+        setCurrentView('dashboard')
+
         // Track that this module has been submitted
         if (selectedModule) {
             setSubmittedModules(prev => new Set(prev).add(selectedModule.id))
             setModuleResults(prev => new Map(prev).set(selectedModule.id, result))
-            
+
             // Save to localStorage for persistence
             const submittedModulesArray = Array.from(new Set([...Array.from(submittedModules), selectedModule.id]))
             localStorage.setItem('submitted_practice_modules', JSON.stringify(submittedModulesArray))
             localStorage.setItem(`practice_result_${selectedModule.id}`, JSON.stringify(result))
         }
+
+        // Clear selected module to return to dashboard
+        setSelectedModule(null)
     }
 
     const handleBackToDashboard = () => {
@@ -349,9 +353,9 @@ export function PracticeDashboard() {
                     </h2>
                 </div>
                 <div className="p-6">
-                        {isLoading ? (
-                            <CardSkeleton count={6} />
-                        ) : error ? (
+                    {isLoading ? (
+                        <CardSkeleton count={6} />
+                    ) : error ? (
                         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
                             <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
                                 Error Loading Practice Modules
@@ -388,8 +392,8 @@ export function PracticeDashboard() {
                         <div className="bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-12 text-center">
                             <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                {searchTerm || selectedCategory !== 'all' 
-                                    ? 'No Practice Modules Found' 
+                                {searchTerm || selectedCategory !== 'all'
+                                    ? 'No Practice Modules Found'
                                     : 'No Practice Modules Available'
                                 }
                             </h3>

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { PracticeExam } from '@/components/practice/PracticeExam'
-import { ResultReport } from '@/components/practice/ResultReport'
 import { usePracticeModules, usePracticeQuestions } from '@/hooks/usePractice'
 import { PracticeModule, SubmitAttemptResponse } from '@/types/practice'
 import { Brain } from 'lucide-react'
@@ -15,13 +14,12 @@ export default function PracticeModulePage() {
     const router = useRouter()
     const moduleId = params.moduleId as string
 
-    const [currentView, setCurrentView] = useState<'loading' | 'exam' | 'result' | 'error'>('loading')
-    const [examResult, setExamResult] = useState<SubmitAttemptResponse | null>(null)
+    const [currentView, setCurrentView] = useState<'loading' | 'exam' | 'error'>('loading')
     const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(null)
 
     // Fetch all modules to find the one we need
     const { data: modules, isLoading: modulesLoading, error: modulesError } = usePracticeModules()
-    
+
     // Fetch questions for this module to check if it has any
     const { data: questions, isLoading: questionsLoading } = usePracticeQuestions(moduleId)
 
@@ -35,7 +33,7 @@ export default function PracticeModulePage() {
 
         // Find the module by ID
         const module = modules?.find(m => m.id === moduleId)
-        
+
         if (!module) {
             setCurrentView('error')
             return
@@ -52,26 +50,26 @@ export default function PracticeModulePage() {
     }, [modules, questions, moduleId, modulesLoading, questionsLoading, modulesError])
 
     const handleExamComplete = (result: SubmitAttemptResponse) => {
-        setExamResult(result)
-        setCurrentView('result')
-        
         // Save completion status to localStorage so it reflects on the practice dashboard
         if (selectedModule) {
             // Get existing submitted modules
             const existingModules = localStorage.getItem('submitted_practice_modules')
             const submittedModules = existingModules ? JSON.parse(existingModules) : []
-            
+
             // Add current module if not already submitted
             if (!submittedModules.includes(selectedModule.id)) {
                 submittedModules.push(selectedModule.id)
                 localStorage.setItem('submitted_practice_modules', JSON.stringify(submittedModules))
             }
-            
+
             // Save the result for this specific module
             localStorage.setItem(`practice_result_${selectedModule.id}`, JSON.stringify(result))
-            
+
             console.log('✅ Saved completion status for module:', selectedModule.id, result)
         }
+
+        // Redirect to practice dashboard instead of showing results
+        router.push('/dashboard/student/practice')
     }
 
     const handleBackToDashboard = () => {
@@ -109,7 +107,7 @@ export default function PracticeModulePage() {
                             Practice Module Not Available
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            {!questions || questions.length === 0 
+                            {!questions || questions.length === 0
                                 ? 'This practice module doesn\'t have any questions yet. Please contact your university administrator.'
                                 : 'The practice module you\'re trying to access could not be found or is no longer available.'}
                         </p>
@@ -129,19 +127,6 @@ export default function PracticeModulePage() {
                         </div>
                     </div>
                 </div>
-            </StudentDashboardLayout>
-        )
-    }
-
-    if (currentView === 'result' && examResult) {
-        return (
-            <StudentDashboardLayout>
-                <ResultReport
-                    result={examResult}
-                    module={selectedModule}
-                    onBackToDashboard={handleBackToDashboard}
-                    onBackToExam={() => setCurrentView('exam')}
-                />
             </StudentDashboardLayout>
         )
     }

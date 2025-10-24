@@ -192,15 +192,15 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                             </span>
                         )}
 
-                        {/* Score Badge for completed tests */}
-                        {isSubmitted && result && (
+                        {/* Score Badge for completed tests - COMMENTED OUT */}
+                        {/* {isSubmitted && result && (
                             <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${result.score_percent >= 80 ? 'bg-green-500 text-white' :
                                     result.score_percent >= 60 ? 'bg-orange-500 text-white' :
                                         'bg-red-500 text-white'
                                 }`}>
                                 {result.score_percent.toFixed(1)}% Score
                             </div>
-                        )}
+                        )} */}
                     </div>
                 </div>
 
@@ -281,14 +281,15 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                         </div>
                     )}
 
-                    {isSubmitted && result && (
+                    {/* Correct answers count - COMMENTED OUT */}
+                    {/* {isSubmitted && result && (
                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <CheckCircle className="w-3 h-3 text-green-500" />
                             <span>
                                 {result.question_results.filter(r => r.is_correct).length}/{result.question_results.length} correct answers
                             </span>
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 {/* Status Indicators */}
@@ -315,7 +316,19 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                         View Details
                     </Button>
 
-                    <Button
+                    {/* View Results / Start Practice button - Modified to only show "Start Practice" */}
+                    {!isSubmitted && (
+                        <Button
+                            onClick={onStart}
+                            size="sm"
+                            className="flex-1 flex items-center gap-2 transition-all duration-200 hover:shadow-md bg-primary-500 hover:bg-primary-600"
+                        >
+                            <Play className="w-4 h-4" />
+                            Start Practice
+                        </Button>
+                    )}
+                    {/* Original button with View Results - COMMENTED OUT */}
+                    {/* <Button
                         onClick={() => {
                             if (isSubmitted && result && onViewResults) {
                                 onViewResults()
@@ -343,7 +356,7 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                                 Start Practice
                             </>
                         )}
-                    </Button>
+                    </Button> */}
 
                 </div>
             </div>
