@@ -15,21 +15,21 @@ interface PracticeDetailsModalProps {
     result?: SubmitAttemptResponse
 }
 
-export function PracticeDetailsModal({ 
-    isOpen, 
-    onClose, 
-    module, 
-    onStartPractice, 
+export function PracticeDetailsModal({
+    isOpen,
+    onClose,
+    module,
+    onStartPractice,
     onViewResults,
-    isSubmitted = false, 
-    result 
+    isSubmitted = false,
+    result
 }: PracticeDetailsModalProps) {
     if (!module) return null
 
     const formatDuration = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
         const minutes = Math.floor((seconds % 3600) / 60)
-        
+
         if (hours > 0) {
             return `${hours}h ${minutes}m`
         }
@@ -75,7 +75,7 @@ export function PracticeDetailsModal({
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={onClose}
                     />
-                    
+
                     {/* Compact Modal */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -98,13 +98,13 @@ export function PracticeDetailsModal({
                                             </span>
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                                         {getCreatorIcon(module.creator_type)}
                                         <span>{getCreatorLabel(module.creator_type)}</span>
                                     </div>
                                 </div>
-                                
+
                                 <button
                                     onClick={onClose}
                                     className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -206,8 +206,8 @@ export function PracticeDetailsModal({
                                     )}
                                 </div>
 
-                                {/* Result Section (if submitted) */}
-                                {isSubmitted && result && (
+                                {/* Result Section (if submitted) - COMMENTED OUT */}
+                                {/* {isSubmitted && result && (
                                     <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                                         <h4 className="text-xs font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center gap-1">
                                             <CheckCircle className="w-3 h-3" />
@@ -234,7 +234,7 @@ export function PracticeDetailsModal({
                                             </div>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                                 {/* Instructions */}
                                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
