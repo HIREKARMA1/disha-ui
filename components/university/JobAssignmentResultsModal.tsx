@@ -1,32 +1,91 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Download, Eye, CheckCircle, XCircle, Users } from 'lucide-react'
+import { X, Search, Filter, Download, Eye, CheckCircle, XCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PracticeModule, StudentAttempt } from '@/types/practice'
-import { useCorporateModuleAttempts } from '@/hooks/useCorporateModuleAttempts'
+import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
-interface CorporateAttemptViewerProps {
-    isOpen: boolean
-    onClose: () => void
-    module: PracticeModule
+interface UniversityJob {
+    id: string
+    title: string
+    company_name?: string
 }
 
-export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAttemptViewerProps) {
+interface JobAssignmentResultsModalProps {
+    isOpen: boolean
+    onClose: () => void
+    job: UniversityJob
+}
+
+interface StudentAttempt {
+    id: string
+    student_id: string
+    student_name: string
+    score_percent: number
+    time_taken_seconds: number
+    started_at: string
+    ended_at: string
+    question_results?: Array<{
+        question_id: string
+        is_correct: boolean
+        explanation?: string
+    }>
+    answers?: Array<{
+        question_id: string
+        answer: string[]
+        time_spent: number
+    }>
+}
+
+export function JobAssignmentResultsModal({ isOpen, onClose, job }: JobAssignmentResultsModalProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedAttempt, setSelectedAttempt] = useState<StudentAttempt | null>(null)
+    const [attempts, setAttempts] = useState<StudentAttempt[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-    // Use corporate API calls to fetch attempts
-    const { data: attempts, isLoading, error, refetch } = useCorporateModuleAttempts(module.id)
-    
-    console.log('📊 CorporateAttemptViewer - Module:', module.id, 'Attempts:', attempts)
+    // Fetch assignment results for this job
+    useEffect(() => {
+        if (isOpen && job) {
+            fetchAttempts()
+        }
+    }, [isOpen, job])
 
-    const filteredAttempts = attempts?.filter(attempt =>
+    const fetchAttempts = async () => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            // Fetch assignment attempts for this job
+            const response = await apiClient.getJobAssignmentAttempts(job.id)
+            // Handle both array response and empty response
+            if (Array.isArray(response)) {
+                setAttempts(response)
+            } else if (response && Array.isArray(response.data)) {
+                setAttempts(response.data)
+            } else {
+                setAttempts([])
+            }
+        } catch (error: any) {
+            console.error('Failed to fetch assignment attempts:', error)
+            // Don't show error for 404 or empty results - just show empty state
+            if (error.response?.status === 404 || error.message?.includes('404')) {
+                setAttempts([])
+                setError(null)
+            } else {
+                setError(error.message || 'Failed to load assignment results')
+                setAttempts([])
+            }
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const filteredAttempts = attempts.filter(attempt =>
         attempt.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         attempt.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || []
+    )
 
     const formatTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600)
@@ -81,7 +140,7 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
 
         // CSV Rows
         const rows = attempts.map(attempt => {
-            const correctAnswers = attempt.question_results?.filter((r: { is_correct: boolean }) => r.is_correct).length || 0
+            const correctAnswers = attempt.question_results?.filter(r => r.is_correct).length || 0
             const totalQuestions = attempt.question_results?.length || 0
             
             return [
@@ -108,14 +167,14 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
         const url = URL.createObjectURL(blob)
         
         link.setAttribute('href', url)
-        link.setAttribute('download', `${module.title.replace(/[^a-z0-9]/gi, '_')}_practice_attempts_${new Date().toISOString().split('T')[0]}.csv`)
+        link.setAttribute('download', `${job.title.replace(/[^a-z0-9]/gi, '_')}_assignment_results_${new Date().toISOString().split('T')[0]}.csv`)
         link.style.visibility = 'hidden'
         
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
         
-        toast.success('Attempts exported successfully!')
+        toast.success('Results exported successfully!')
     }
 
     if (!isOpen) return null
@@ -150,7 +209,7 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
                                             Attempt Details
                                         </h2>
                                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                            {selectedAttempt.student_name} - {module.title}
+                                            {selectedAttempt.student_name} - {job.title}
                                         </p>
                                     </div>
                                     <Button
@@ -288,10 +347,10 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                            Student Attempts
+                                            Assignment Results
                                         </h2>
                                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                            {module.title}
+                                            {job.title}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -334,7 +393,7 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
                                     <div className="flex items-center justify-center py-12">
                                         <div className="text-center">
                                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
-                                            <p className="text-gray-600 dark:text-gray-400">Loading attempts...</p>
+                                            <p className="text-gray-600 dark:text-gray-400">Loading results...</p>
                                         </div>
                                     </div>
                                 )}
@@ -345,13 +404,13 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
                                         <div className="text-center">
                                             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                                             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
-                                                Error Loading Attempts
+                                                Error Loading Results
                                             </h3>
                                             <p className="text-red-600 dark:text-red-400 mb-4">
-                                                {error.message}
+                                                {error}
                                             </p>
                                             <Button
-                                                onClick={() => refetch()}
+                                                onClick={fetchAttempts}
                                                 variant="outline"
                                                 className="border-red-300 text-red-700 hover:bg-red-50"
                                             >
@@ -381,11 +440,11 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
                                                 <p className="text-gray-600 dark:text-gray-400 mb-2">
                                                     {searchTerm 
                                                         ? 'No students found matching your search.'
-                                                        : 'No students have attempted this practice module yet.'}
+                                                        : 'No students have attempted this assignment yet.'}
                                                 </p>
                                                 {!searchTerm && (
                                                     <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                                                        Students will appear here once they complete the practice module.
+                                                        Make sure you have created and sent a practice assignment for this job.
                                                     </p>
                                                 )}
                                             </div>
@@ -456,3 +515,4 @@ export function CorporateAttemptViewer({ isOpen, onClose, module }: CorporateAtt
         </AnimatePresence>
     )
 }
+

@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
     Brain,
@@ -102,7 +103,7 @@ const parseQuestionOptions = (options: any): Array<{ id: string; text: string }>
     return []
 }
 
-type ViewState = 'modules' | 'questions' | 'attempts' | 'create-question' | 'bulk-upload' | 'create-module' | 'edit-module' | 'module-detail'
+type ViewState = 'modules' | 'module-detail'
 
 const categories = [
     {
@@ -138,6 +139,17 @@ export function AdminPracticeManager() {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<PracticeCategory | 'all'>('all')
     const [showFilters, setShowFilters] = useState(false)
+    
+    // Modal states
+    const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false)
+    const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false)
+    const [isCreateModuleModalOpen, setIsCreateModuleModalOpen] = useState(false)
+    const [isEditModuleModalOpen, setIsEditModuleModalOpen] = useState(false)
+    const [moduleToEdit, setModuleToEdit] = useState<PracticeModule | null>(null)
+    const [isMounted, setIsMounted] = useState(false)
+    const [isAttemptsModalOpen, setIsAttemptsModalOpen] = useState(false)
+    const [attemptsModule, setAttemptsModule] = useState<PracticeModule | null>(null)
+    
     const [confirmationModal, setConfirmationModal] = useState<{
         isOpen: boolean
         title: string
@@ -151,6 +163,12 @@ export function AdminPracticeManager() {
         onConfirm: () => {},
         variant: 'danger'
     })
+
+    // Effect for portal mounting
+    useEffect(() => {
+        setIsMounted(true)
+        return () => setIsMounted(false)
+    }, [])
 
     // API hooks
     const { data: modules, isLoading: modulesLoading, error: modulesError, refetch: refetchModules } = useAdminPracticeModules(
@@ -176,29 +194,28 @@ export function AdminPracticeManager() {
 
     const handleCreateQuestion = () => {
         setSelectedQuestion(null)
-        setCurrentView('create-question')
+        setIsQuestionModalOpen(true)
     }
 
     const handleCreateModule = () => {
-        setCurrentView('create-module')
+        setIsCreateModuleModalOpen(true)
     }
 
     const handleEditModule = (module: PracticeModule) => {
         console.log('✏️ handleEditModule called with:', module)
-        setSelectedModule(module)
-        setCurrentView('edit-module')
+        setModuleToEdit(module)
+        setIsEditModuleModalOpen(true)
     }
 
     const handleEditQuestion = (question: Question) => {
         console.log('✏️ handleEditQuestion called with:', question)
         console.log('✏️ Question ID:', question.id)
         setSelectedQuestion(question)
-        setCurrentView('create-question')
-        console.log('✏️ View changed to create-question')
+        setIsQuestionModalOpen(true)
     }
 
     const handleBulkUpload = () => {
-        setCurrentView('bulk-upload')
+        setIsBulkUploadModalOpen(true)
     }
 
     const handleViewModule = (module: PracticeModule) => {
@@ -208,8 +225,13 @@ export function AdminPracticeManager() {
     }
 
     const handleViewAttempts = (module: PracticeModule) => {
-        setSelectedModule(module)
-        setCurrentView('attempts')
+        setAttemptsModule(module)
+        setIsAttemptsModalOpen(true)
+    }
+    
+    const handleCloseAttemptsModal = () => {
+        setIsAttemptsModalOpen(false)
+        setAttemptsModule(null)
     }
 
     const handleBackToModules = () => {
@@ -232,19 +254,22 @@ export function AdminPracticeManager() {
     const handleSaveModule = async (moduleData: any) => {
         try {
             await createModuleMutation.mutateAsync(moduleData)
-            setCurrentView('modules')
+            setIsCreateModuleModalOpen(false)
             refetchModules()
+            toast.success('Module created successfully!')
         } catch (error) {
             console.error('Failed to create module:', error)
+            toast.error('Failed to create module. Please try again.')
         }
     }
 
     const handleUpdateModule = async (moduleData: any) => {
         try {
-            if (!selectedModule) return
+            if (!moduleToEdit) return
             
-            await updateModuleMutation.mutateAsync(selectedModule.id, moduleData)
-            setCurrentView('modules')
+            await updateModuleMutation.mutateAsync(moduleToEdit.id, moduleData)
+            setIsEditModuleModalOpen(false)
+            setModuleToEdit(null)
             refetchModules()
             toast.success('Module updated successfully!')
         } catch (error) {
@@ -275,9 +300,9 @@ export function AdminPracticeManager() {
                 }
             }
 
-            // Clear selected question after save
+            // Clear selected question and close modal
             setSelectedQuestion(null)
-            setCurrentView('module-detail')
+            setIsQuestionModalOpen(false)
             // Refresh modules list to update question count
             refetchModules()
             // Trigger questions refresh
@@ -379,71 +404,22 @@ export function AdminPracticeManager() {
         })
     }
 
-    if (currentView === 'create-module') {
-        return (
-            <CreateModuleForm
-                onSave={(moduleData) => handleSaveModule(moduleData)}
-                onCancel={handleBackToModules}
-            />
-        )
-    }
-
-    if (currentView === 'edit-module') {
-        return (
-            <CreateModuleForm
-                module={selectedModule}
-                onSave={(moduleData) => handleUpdateModule(moduleData)}
-                onCancel={handleBackToModules}
-            />
-        )
-    }
-
-    if (currentView === 'create-question') {
-        return (
-            <AdminQuestionEditor
-                question={selectedQuestion}
-                onSave={(questionData) => handleSaveQuestion(questionData)}
-                onCancel={() => setCurrentView('module-detail')}
-            />
-        )
-    }
-
-    if (currentView === 'bulk-upload') {
-        return (
-            <AdminBulkUploader
-                onComplete={() => setCurrentView(selectedModule ? 'module-detail' : 'modules')}
-                onCancel={handleBackToModules}
-                moduleId={selectedModule?.id}
-            />
-        )
-    }
-
-    if (currentView === 'module-detail' && selectedModule) {
-        return (
-            <ModuleDetailView
-                module={selectedModule}
-                onBack={handleBackToModules}
-                onCreateQuestion={() => setCurrentView('create-question')}
-                onBulkUpload={handleBulkUpload}
-                onEditQuestion={handleEditQuestion}
-                onDeleteQuestion={handleDeleteQuestion}
-                refreshTrigger={refreshTrigger}
-                deletedQuestionIds={deletedQuestionIds}
-            />
-        )
-    }
-
-    if (currentView === 'attempts' && selectedModule) {
-        return (
-            <AdminAttemptViewer
-                module={selectedModule}
-                onBack={handleBackToModules}
-            />
-        )
-    }
-
     return (
-        <div className="space-y-6 main-content">
+        <>
+            {/* Main Content Area */}
+            {currentView === 'module-detail' && selectedModule ? (
+                <ModuleDetailView
+                    module={selectedModule}
+                    onBack={handleBackToModules}
+                    onCreateQuestion={handleCreateQuestion}
+                    onBulkUpload={handleBulkUpload}
+                    onEditQuestion={handleEditQuestion}
+                    onDeleteQuestion={handleDeleteQuestion}
+                    refreshTrigger={refreshTrigger}
+                    deletedQuestionIds={deletedQuestionIds}
+                />
+            ) : (
+                <div className="space-y-6 main-content">
             {/* Header - Only show on main modules view */}
             {currentView === 'modules' && (
                 <motion.div
@@ -478,7 +454,7 @@ export function AdminPracticeManager() {
 
             {/* Stats Cards - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
                     {
                         label: 'Total Modules',
@@ -501,13 +477,13 @@ export function AdminPracticeManager() {
                         color: 'text-purple-600',
                         bgColor: 'bg-purple-50 dark:bg-purple-900/20'
                     },
-                    {
-                        label: 'Total Attempts',
-                        value: '1,247',
-                        icon: Clock,
-                        color: 'text-orange-600',
-                        bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-                    }
+                    // {
+                    //     label: 'Total Attempts',
+                    //     value: '1,247',
+                    //     icon: Clock,
+                    //     color: 'text-orange-600',
+                    //     bgColor: 'bg-orange-50 dark:bg-orange-900/20'
+                    // }
                 ].map((stat, index) => (
                     <motion.div
                         key={stat.label}
@@ -523,13 +499,13 @@ export function AdminPracticeManager() {
                                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                                             {stat.label}
                                         </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
+                                        <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
                                             {modulesLoading ? (
                                                 <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
                                             ) : (
                                                 stat.value
                                             )}
-                                        </p>
+                                        </div>
                                     </div>
                                     <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
                                         <stat.icon className={`w-6 h-6 ${stat.color}`} />
@@ -784,8 +760,10 @@ export function AdminPracticeManager() {
                     </div>
                 </div>
             )}
+            </div>
+            )}
 
-
+            {/* Modals - Always render regardless of view */}
             {/* Confirmation Modal */}
             <ConfirmationModal
                 isOpen={confirmationModal.isOpen}
@@ -796,7 +774,81 @@ export function AdminPracticeManager() {
                 variant={confirmationModal.variant}
                 isLoading={deleteModuleMutation.isPending || deleteQuestionMutation.isPending}
             />
-        </div>
+            
+            {/* Question Editor Modal */}
+            {isMounted && isQuestionModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                        <AdminQuestionEditor
+                            question={selectedQuestion}
+                            onSave={(questionData) => handleSaveQuestion(questionData)}
+                            onCancel={() => {
+                                setIsQuestionModalOpen(false)
+                                setSelectedQuestion(null)
+                            }}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
+            
+            {/* Bulk Upload Modal */}
+            {isMounted && isBulkUploadModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                        <AdminBulkUploader
+                            onComplete={() => {
+                                setIsBulkUploadModalOpen(false)
+                                refetchModules()
+                                setRefreshTrigger(prev => prev + 1)
+                            }}
+                            onCancel={() => setIsBulkUploadModalOpen(false)}
+                            moduleId={selectedModule?.id}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
+            
+            {/* Attempt Viewer Modal */}
+            {isAttemptsModalOpen && attemptsModule && (
+                <AdminAttemptViewer
+                    isOpen={isAttemptsModalOpen}
+                    module={attemptsModule}
+                    onClose={handleCloseAttemptsModal}
+                />
+            )}
+            
+            {/* Create Module Modal */}
+            {isMounted && isCreateModuleModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                        <CreateModuleForm
+                            onSave={(moduleData) => handleSaveModule(moduleData)}
+                            onCancel={() => setIsCreateModuleModalOpen(false)}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
+            
+            {/* Edit Module Modal */}
+            {isMounted && isEditModuleModalOpen && moduleToEdit && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                        <CreateModuleForm
+                            module={moduleToEdit}
+                            onSave={(moduleData) => handleUpdateModule(moduleData)}
+                            onCancel={() => {
+                                setIsEditModuleModalOpen(false)
+                                setModuleToEdit(null)
+                            }}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
+        </>
     )
 }
 
@@ -1175,46 +1227,38 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
             // Date/time fields
             start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
             end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
-            // Creator fields
+            // Creator fields - preserve creator_id when editing
             creator_type: 'admin',
-            creator_id: null // Will be set by the backend
+            creator_id: module?.creator_id || null // Preserve existing creator_id when editing, null for new modules
         }
 
-        console.log('Creating module with data:', moduleData)
+        console.log(module ? 'Updating module with data:' : 'Creating module with data:', moduleData)
         onSave(moduleData)
     }
 
     return (
-        <div className="space-y-6 main-content">
+        <div className="p-6 space-y-4">
             {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-            >
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            {module ? 'Edit Module 🧠' : 'Create New Module 🧠'}
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg">
-                            {module ? 'Update the practice test module details' : 'Set up a new practice test module for students'}
-                        </p>
-                    </div>
-                    <Button
-                        onClick={onCancel}
-                        variant="outline"
-                        className="border-primary-200 dark:border-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Modules
-                    </Button>
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-4 border border-primary-200 dark:border-primary-700 relative">
+                <button
+                    onClick={onCancel}
+                    className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    aria-label="Close"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="pr-10">
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        {module ? 'Edit Module 🧠' : 'Create New Module 🧠'}
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        {module ? 'Update practice test module settings' : 'Set up a new practice test module for students'}
+                    </p>
                 </div>
-            </motion.div>
+            </div>
 
             {/* Form */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 space-y-6">
                     {/* Basic Information */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">

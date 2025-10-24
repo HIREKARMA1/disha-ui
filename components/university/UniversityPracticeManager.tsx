@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
     Brain,
@@ -17,13 +18,15 @@ import {
     ArrowLeft,
     X,
     Save,
-    XCircle
+    XCircle,
+    Briefcase
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AdminQuestionEditor } from '../admin/AdminQuestionEditor'
 import { UniversityBulkUploader } from './UniversityBulkUploader'
 import { UniversityAttemptViewer } from './UniversityAttemptViewer'
+import { UniversityAttemptViewerModal } from './UniversityAttemptViewerModal'
 import { PracticeModule, Question, PracticeCategory } from '@/types/practice'
 import {
     useAdminPracticeModules as useUniversityPracticeModules,
@@ -33,7 +36,8 @@ import {
     useUpdateQuestion as useUpdateUniversityQuestion,
     useAddQuestionToModule as useAddQuestionToUniversityModule,
     useDeleteQuestion as useDeleteUniversityQuestion,
-    useRemoveQuestionFromModule as useRemoveQuestionFromUniversityModule
+    useRemoveQuestionFromModule as useRemoveQuestionFromUniversityModule,
+    useUniversityPracticeStatistics
 } from '@/hooks/useUniversityPractice'
 import {
     useUpdateUniversityPracticeModule,
@@ -101,7 +105,7 @@ const parseQuestionOptions = (options: any): Array<{ id: string; text: string }>
     return []
 }
 
-type ViewState = 'modules' | 'questions' | 'attempts' | 'create-question' | 'bulk-upload' | 'create-module' | 'module-detail'
+type ViewState = 'modules' | 'questions' | 'attempts' | 'module-detail'
 
 const categories = [
     {
@@ -135,6 +139,15 @@ export function UniversityPracticeManager() {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<PracticeCategory | 'all'>('all')
     const [showFilters, setShowFilters] = useState(false)
+    const [jobContext, setJobContext] = useState<{ jobId: string; jobTitle: string; role: string } | null>(null)
+    const [currentDate, setCurrentDate] = useState<string>('')
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false)
+    const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false)
+    const [isAttemptsModalOpen, setIsAttemptsModalOpen] = useState(false)
+    const [selectedModuleForAttempts, setSelectedModuleForAttempts] = useState<PracticeModule | null>(null)
+    const [isMounted, setIsMounted] = useState(false)
     const [confirmationModal, setConfirmationModal] = useState<{
         isOpen: boolean
         title: string
@@ -149,6 +162,37 @@ export function UniversityPracticeManager() {
         variant: 'danger'
     })
 
+    // Set mounted state for portal
+    React.useEffect(() => {
+        setIsMounted(true)
+        return () => setIsMounted(false)
+    }, [])
+
+    // Set current date on client side only to avoid hydration mismatch
+    React.useEffect(() => {
+        setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))
+    }, [])
+
+    // Check for job context from URL parameters
+    React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const createModule = urlParams.get('createModule')
+        const jobContextParam = urlParams.get('jobContext')
+        
+        if (createModule === 'true' && jobContextParam) {
+            try {
+                const parsedJobContext = JSON.parse(decodeURIComponent(jobContextParam))
+                setJobContext(parsedJobContext)
+                setIsCreateModalOpen(true)
+                
+                // Clean up URL parameters
+                window.history.replaceState({}, '', window.location.pathname)
+            } catch (error) {
+                console.error('Failed to parse job context:', error)
+            }
+        }
+    }, [])
+
     // API hooks
     const { data: modules, isLoading: modulesLoading, error: modulesError, refetch: refetchModules } = useUniversityPracticeModules(
         selectedCategory === 'all' ? undefined : selectedCategory,
@@ -156,6 +200,16 @@ export function UniversityPracticeManager() {
         undefined, // difficulty filter
         searchTerm || undefined
     )
+
+    // Statistics hook for dashboard metrics
+    const { data: statistics, isLoading: statisticsLoading, error: statisticsError, refetch: refetchStatistics } = useUniversityPracticeStatistics()
+
+    // Debug logging for statistics
+    React.useEffect(() => {
+        console.log('📊 Statistics data:', statistics)
+        console.log('📊 Statistics loading:', statisticsLoading)
+        console.log('📊 Statistics error:', statisticsError)
+    }, [statistics, statisticsLoading, statisticsError])
 
     const createModuleMutation = useCreateUniversityPracticeModule()
     const createQuestionMutation = useCreateUniversityQuestion()
@@ -168,45 +222,115 @@ export function UniversityPracticeManager() {
     const deleteQuestionMutation = useDeleteUniversityQuestion()
     const removeQuestionFromModuleMutation = useRemoveQuestionFromUniversityModule()
 
+    // Check for module ID from URL parameters and restore module view
+    React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const moduleId = urlParams.get('moduleId')
+        const viewParam = urlParams.get('view')
+        
+        if (moduleId && modules) {
+            const module = modules.find(m => m.id === moduleId)
+            if (module) {
+                if (viewParam === 'attempts') {
+                    // Open attempts in modal instead of full page view
+                    setSelectedModuleForAttempts(module)
+                    setIsAttemptsModalOpen(true)
+                    // Clean up URL
+                    window.history.replaceState({}, '', window.location.pathname)
+                } else {
+                    setSelectedModule(module)
+                    setCurrentView('module-detail')
+                }
+            }
+        }
+    }, [modules])
+
+    // Handle browser back/forward buttons
+    React.useEffect(() => {
+        const handlePopState = () => {
+            const urlParams = new URLSearchParams(window.location.search)
+            const moduleId = urlParams.get('moduleId')
+            const viewParam = urlParams.get('view')
+            
+            if (!moduleId) {
+                // No module ID means we're back to the modules list
+                setCurrentView('modules')
+                setSelectedModule(null)
+                setSelectedQuestion(null)
+            } else if (modules) {
+                // Find and show the module from URL
+                const module = modules.find(m => m.id === moduleId)
+                if (module) {
+                    setSelectedModule(module)
+                    if (viewParam === 'attempts') {
+                        setCurrentView('attempts')
+                    } else {
+                        setCurrentView('module-detail')
+                    }
+                }
+            }
+        }
+
+        window.addEventListener('popstate', handlePopState)
+        
+        return () => {
+            window.removeEventListener('popstate', handlePopState)
+        }
+    }, [modules])
+
     // Filter modules based on search term and category (now handled by API)
     const filteredModules = modules || []
 
     const handleCreateQuestion = () => {
         setSelectedQuestion(null)
-        setCurrentView('create-question')
+        setIsQuestionModalOpen(true)
     }
 
     const handleCreateModule = () => {
-        setCurrentView('create-module')
+        setSelectedModule(null) // Clear selected module to ensure we're creating, not editing
+        setIsCreateModalOpen(true)
     }
 
     const handleEditQuestion = (question: Question) => {
         console.log('✏️ handleEditQuestion called with:', question)
         console.log('✏️ Question ID:', question.id)
         setSelectedQuestion(question)
-        setCurrentView('create-question')
-        console.log('✏️ View changed to create-question')
+        setIsQuestionModalOpen(true)
+        console.log('✏️ Opening question modal for editing')
     }
 
     const handleBulkUpload = () => {
-        setCurrentView('bulk-upload')
+        setIsBulkUploadModalOpen(true)
     }
 
     const handleViewModule = (module: PracticeModule) => {
         console.log('🔍 Viewing module with actual data:', module)
         setSelectedModule(module)
         setCurrentView('module-detail')
+        
+        // Update URL with module ID
+        const url = new URL(window.location.href)
+        url.searchParams.set('moduleId', module.id)
+        window.history.pushState({}, '', url)
     }
 
     const handleViewAttempts = (module: PracticeModule) => {
-        setSelectedModule(module)
-        setCurrentView('attempts')
+        console.log('🔍 Opening attempts modal for module:', module)
+        setSelectedModuleForAttempts(module)
+        setIsAttemptsModalOpen(true)
     }
 
     const handleBackToModules = () => {
         setCurrentView('modules')
         setSelectedModule(null)
         setSelectedQuestion(null)
+        setJobContext(null) // Clear job context when going back
+        
+        // Clear URL parameters
+        const url = new URL(window.location.href)
+        url.searchParams.delete('moduleId')
+        url.searchParams.delete('view')
+        window.history.pushState({}, '', url)
     }
 
     const handleSearch = () => {
@@ -222,11 +346,34 @@ export function UniversityPracticeManager() {
 
     const handleSaveModule = async (moduleData: any) => {
         try {
-            await createModuleMutation.mutateAsync(moduleData)
-            setCurrentView('modules')
-            refetchModules()
+            if (selectedModule) {
+                // Update existing module
+                console.log('🔄 Updating module:', selectedModule.id, moduleData)
+                await updateModuleMutation.mutateAsync(selectedModule.id, moduleData)
+                console.log('✅ Module updated successfully')
+                toast.success('Module updated successfully')
+            } else {
+                // Create new module
+                console.log('➕ Creating new module:', moduleData)
+                await createModuleMutation.mutateAsync(moduleData)
+                console.log('✅ Module created successfully')
+                toast.success('Module created successfully')
+            }
+            
+            // Close modals and clear state
+            setIsEditModalOpen(false)
+            setIsCreateModalOpen(false)
+            setSelectedModule(null)
+            setJobContext(null)
+            
+            // Refetch modules list and statistics immediately
+            console.log('🔄 Refetching modules and statistics...')
+            await Promise.all([refetchModules(), refetchStatistics()])
+            console.log('✅ Modules and statistics refetched successfully')
         } catch (error) {
-            console.error('Failed to create module:', error)
+            console.error('❌ Failed to save module:', error)
+            toast.error(selectedModule ? 'Failed to update module' : 'Failed to create module')
+            throw error
         }
     }
 
@@ -252,11 +399,11 @@ export function UniversityPracticeManager() {
                 }
             }
 
-            // Clear selected question after save
+            // Clear selected question and close modal
             setSelectedQuestion(null)
-            setCurrentView('module-detail')
+            setIsQuestionModalOpen(false)
             // Refresh modules list to update question count
-            refetchModules()
+            await refetchModules()
             // Trigger questions refresh
             setRefreshTrigger(prev => prev + 1)
         } catch (error) {
@@ -268,7 +415,7 @@ export function UniversityPracticeManager() {
     // Edit Module Handler
     const handleEditModule = (module: PracticeModule) => {
         setSelectedModule(module)
-        setCurrentView('create-module') // Reuse the create module form for editing
+        setIsEditModalOpen(true)
     }
 
 
@@ -284,7 +431,8 @@ export function UniversityPracticeManager() {
                     console.log('🗑️ Confirming deletion of module:', module.id)
                     await deleteModuleMutation.mutateAsync(module.id)
                     console.log('✅ Module deleted successfully')
-                    refetchModules()
+                    // Refetch both modules and statistics
+                    await Promise.all([refetchModules(), refetchStatistics()])
                     setConfirmationModal(prev => ({ ...prev, isOpen: false }))
                     // Show success message
                     const { toast } = require('react-hot-toast')
@@ -361,58 +509,62 @@ export function UniversityPracticeManager() {
         })
     }
 
-    if (currentView === 'create-module') {
-        return (
-            <CreateModuleForm
-                onSave={(moduleData) => handleSaveModule(moduleData)}
-                onCancel={handleBackToModules}
-            />
-        )
-    }
-
-    if (currentView === 'create-question') {
-        return (
-            <AdminQuestionEditor
-                question={selectedQuestion}
-                onSave={(questionData) => handleSaveQuestion(questionData)}
-                onCancel={() => setCurrentView('module-detail')}
-            />
-        )
-    }
-
-    if (currentView === 'bulk-upload') {
-        return (
-            <UniversityBulkUploader
-                onComplete={() => setCurrentView(selectedModule ? 'module-detail' : 'modules')}
-                onCancel={handleBackToModules}
-                moduleId={selectedModule?.id}
-            />
-        )
-    }
-
     if (currentView === 'module-detail' && selectedModule) {
         return (
-            <ModuleDetailView
-                module={selectedModule}
-                onBack={handleBackToModules}
-                onCreateQuestion={() => setCurrentView('create-question')}
-                onBulkUpload={handleBulkUpload}
-                onEditQuestion={handleEditQuestion}
-                onDeleteQuestion={handleDeleteQuestion}
-                refreshTrigger={refreshTrigger}
-                deletedQuestionIds={deletedQuestionIds}
-            />
+            <>
+                <ModuleDetailView
+                    module={selectedModule}
+                    onBack={handleBackToModules}
+                    onCreateQuestion={handleCreateQuestion}
+                    onBulkUpload={handleBulkUpload}
+                    onEditQuestion={handleEditQuestion}
+                    onDeleteQuestion={handleDeleteQuestion}
+                    refreshTrigger={refreshTrigger}
+                    deletedQuestionIds={deletedQuestionIds}
+                />
+                
+                {/* Create/Edit Question Modal */}
+                {isMounted && isQuestionModalOpen && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                            <AdminQuestionEditor
+                                question={selectedQuestion}
+                                onSave={(questionData) => handleSaveQuestion(questionData)}
+                                onCancel={() => {
+                                    setIsQuestionModalOpen(false)
+                                    setSelectedQuestion(null)
+                                }}
+                            />
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+                {/* Bulk Upload Questions Modal */}
+                {isMounted && isBulkUploadModalOpen && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                            <UniversityBulkUploader
+                                onComplete={() => {
+                                    setIsBulkUploadModalOpen(false)
+                                    refetchModules()
+                                    setRefreshTrigger(prev => prev + 1)
+                                }}
+                                onCancel={() => {
+                                    setIsBulkUploadModalOpen(false)
+                                }}
+                                moduleId={selectedModule?.id}
+                            />
+                        </div>
+                    </div>,
+                    document.body
+                )}
+            </>
         )
     }
 
-    if (currentView === 'attempts' && selectedModule) {
-        return (
-            <UniversityAttemptViewer
-                module={selectedModule}
-                onBack={handleBackToModules}
-            />
-        )
-    }
+    // Removed full-page attempt viewer - now using modal instead
+    // The attempts are now shown in a modal popup via UniversityAttemptViewerModal
 
     return (
         <div className="space-y-6 main-content">
@@ -434,7 +586,7 @@ export function UniversityPracticeManager() {
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                    🧠 {currentDate}
                                 </span>
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                                     📚 Question Management
@@ -454,28 +606,28 @@ export function UniversityPracticeManager() {
                 {[
                     {
                         label: 'Total Modules',
-                        value: filteredModules.length.toString(),
+                        value: statistics?.total_modules?.toString() || filteredModules.length.toString(),
                         icon: Brain,
                         color: 'text-blue-600',
                         bgColor: 'bg-blue-50 dark:bg-blue-900/20'
                     },
                     {
                         label: 'Total Questions',
-                        value: filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
+                        value: statistics?.total_questions?.toString() || filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
                         icon: Target,
                         color: 'text-green-600',
                         bgColor: 'bg-green-50 dark:bg-green-900/20'
                     },
                     {
                         label: 'Active Modules',
-                        value: filteredModules.length.toString(),
+                        value: statistics?.active_modules?.toString() || filteredModules.length.toString(),
                         icon: Users,
                         color: 'text-purple-600',
                         bgColor: 'bg-purple-50 dark:bg-purple-900/20'
                     },
                     {
                         label: 'Total Attempts',
-                        value: '1,247',
+                        value: statistics?.total_attempts?.toString() || '0',
                         icon: Clock,
                         color: 'text-orange-600',
                         bgColor: 'bg-orange-50 dark:bg-orange-900/20'
@@ -495,13 +647,13 @@ export function UniversityPracticeManager() {
                                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                                             {stat.label}
                                         </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                            {modulesLoading ? (
+                                        <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
+                                            {(modulesLoading || statisticsLoading) ? (
                                                 <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
                                             ) : (
                                                 stat.value
                                             )}
-                                        </p>
+                                        </div>
                                     </div>
                                     <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
                                         <stat.icon className={`w-6 h-6 ${stat.color}`} />
@@ -768,6 +920,54 @@ export function UniversityPracticeManager() {
                 variant={confirmationModal.variant}
                 isLoading={deleteModuleMutation.isPending || deleteQuestionMutation.isPending}
             />
+
+            {/* Edit Module Modal */}
+            {isMounted && isEditModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                        <CreateModuleForm
+                            module={selectedModule}
+                            onSave={(moduleData) => handleSaveModule(moduleData)}
+                            onCancel={() => {
+                                setIsEditModalOpen(false)
+                                setSelectedModule(null)
+                            }}
+                            jobContext={null}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Create Module Modal */}
+            {isMounted && isCreateModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                        <CreateModuleForm
+                            module={null}
+                            onSave={(moduleData) => handleSaveModule(moduleData)}
+                            onCancel={() => {
+                                setIsCreateModalOpen(false)
+                                setJobContext(null)
+                            }}
+                            jobContext={jobContext}
+                        />
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Attempts Viewer Modal */}
+            {selectedModuleForAttempts && (
+                <UniversityAttemptViewerModal
+                    isOpen={isAttemptsModalOpen}
+                    onClose={() => {
+                        setIsAttemptsModalOpen(false)
+                        setSelectedModuleForAttempts(null)
+                    }}
+                    module={selectedModuleForAttempts}
+                />
+            )}
         </div>
     )
 }
@@ -786,6 +986,13 @@ interface ModuleDetailViewProps {
 
 function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEditQuestion, onDeleteQuestion, refreshTrigger, deletedQuestionIds }: ModuleDetailViewProps) {
     console.log('📋 ModuleDetailView received module data:', module)
+    const [currentDate, setCurrentDate] = React.useState<string>('')
+    
+    // Set current date on client side only to avoid hydration mismatch
+    React.useEffect(() => {
+        setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))
+    }, [])
+    
     // Use real API calls to fetch questions
     const { data: questions, isLoading: questionsLoading, error: questionsError, refetch: refetchQuestions } = useUniversityQuestions(module.id)
     console.log('📚 Questions data:', questions)
@@ -833,17 +1040,6 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
             >
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Button
-                                onClick={onBack}
-                                variant="outline"
-                                size="sm"
-                                className="border-primary-200 dark:border-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20"
-                            >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Back to Modules
-                            </Button>
-                        </div>
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                             Practice Module Management 🧠
                         </h1>
@@ -852,7 +1048,7 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
                         </p>
                         <div className="flex flex-wrap gap-2">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                🧠 {currentDate}
                             </span>
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                                 📚 Question Management
@@ -1001,25 +1197,50 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
 
 // Create Module Form Component
 interface CreateModuleFormProps {
+    module?: PracticeModule | null
     onSave: (moduleData: any) => void
     onCancel: () => void
+    jobContext?: { jobId: string; jobTitle: string; role: string } | null
 }
 
-function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
+function CreateModuleForm({ module, onSave, onCancel, jobContext }: CreateModuleFormProps) {
+    const isEditing = !!module
+
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        role: 'Developer',
-        category: 'ai-mock-tests' as PracticeCategory,
-        difficulty: 'medium' as 'easy' | 'medium' | 'hard',
-        duration_seconds: 3600,
-        tags: [] as string[],
-        university_target_branch_ids: [] as string[],
-        university_target_all_branches: false,
-        start_date: '',
-        end_date: ''
+        title: module?.title || '',
+        description: module?.description || '',
+        role: module?.role || jobContext?.role || 'Developer',
+        category: (module?.category || 'ai-mock-tests') as PracticeCategory,
+        difficulty: (module?.difficulty || 'medium') as 'easy' | 'medium' | 'hard',
+        duration_seconds: module?.duration_seconds || 3600,
+        tags: module?.tags || [] as string[],
+        university_target_branch_ids: module?.university_target_branch_ids || [] as string[],
+        university_target_all_branches: module?.university_target_all_branches || false,
+        start_date: module?.start_date ? new Date(module.start_date).toISOString().slice(0, 16) : '',
+        end_date: module?.end_date ? new Date(module.end_date).toISOString().slice(0, 16) : '',
+        job_id: module?.job_id || jobContext?.jobId || null
     })
     const [newTag, setNewTag] = useState('')
+
+    // Update form data when module prop changes (important for editing)
+    React.useEffect(() => {
+        if (module) {
+            setFormData({
+                title: module.title || '',
+                description: module.description || '',
+                role: module.role || 'Developer',
+                category: (module.category || 'ai-mock-tests') as PracticeCategory,
+                difficulty: (module.difficulty || 'medium') as 'easy' | 'medium' | 'hard',
+                duration_seconds: module.duration_seconds || 3600,
+                tags: module.tags || [],
+                university_target_branch_ids: module.university_target_branch_ids || [],
+                university_target_all_branches: module.university_target_all_branches || false,
+                start_date: module.start_date ? new Date(module.start_date).toISOString().slice(0, 16) : '',
+                end_date: module.end_date ? new Date(module.end_date).toISOString().slice(0, 16) : '',
+                job_id: module.job_id || null
+            })
+        }
+    }, [module])
 
     const handleInputChange = (field: string, value: any) => {
         setFormData(prev => ({
@@ -1055,15 +1276,14 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
             }
         }
 
-
         // Convert branch IDs to branch names for better filtering (same as admin)
         const selectedBranchNames = formData.university_target_branch_ids.map(branchId => {
             const branch = branchOptions.find(branch => branch.value === branchId)
             return branch ? branch.label : branchId
         })
 
-        // Prepare the module data for the API (same structure as admin)
-        const moduleData = {
+        // Prepare the base module data
+        const baseModuleData = {
             title: formData.title,
             description: formData.description,
             role: formData.role,
@@ -1071,65 +1291,76 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
             difficulty: formData.difficulty,
             duration_seconds: formData.duration_seconds,
             tags: formData.tags,
-            // Targeting fields - save as text arrays for better filtering (same as admin)
+            // Targeting fields - save as text arrays for better filtering
             target_all_colleges: true, // University modules are for all colleges
             target_college_ids: [], // Empty for university modules
             target_all_branches: formData.university_target_branch_ids.length === 0,
-            target_branch_ids: selectedBranchNames, // Save as branch names (same as admin)
+            target_branch_ids: selectedBranchNames, // Save as branch names
             // University-specific targeting fields
             university_target_all_branches: formData.university_target_branch_ids.length === 0,
             university_target_branch_ids: selectedBranchNames, // Save as branch names
             // Date/time fields
             start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
             end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
-            // Creator fields
-            creator_type: 'university',
-            creator_id: null // Will be set by the backend
+            // Job association
+            job_id: formData.job_id
         }
-        console.log('Creating university module:', moduleData)
+
+        // For creating new modules, add creator fields; for editing, preserve existing creator fields
+        const moduleData = isEditing ? {
+            ...baseModuleData,
+            creator_type: module?.creator_type || 'university',
+            creator_id: module?.creator_id || null, // Preserve existing creator_id when editing
+        } : {
+            ...baseModuleData,
+            creator_type: 'university',
+            creator_id: null, // Will be set by the backend
+        }
+
+        console.log(isEditing ? 'Updating university module:' : 'Creating university module:', moduleData)
         onSave(moduleData)
     }
 
     return (
-        <div className="space-y-6 main-content">
+        <div className="p-6 space-y-4">
             {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-            >
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Create New Module 🧠
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg">
-                            Set up a new practice test module for students
-                        </p>
-                    </div>
-                    <Button
-                        onClick={onCancel}
-                        variant="outline"
-                        className="border-primary-200 dark:border-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Modules
-                    </Button>
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-4 border border-primary-200 dark:border-primary-700 relative">
+                <button
+                    onClick={onCancel}
+                    className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    aria-label="Close"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="pr-10">
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        {isEditing ? 'Edit Module 🧠' : 'Create New Module 🧠'}
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        {isEditing ? 'Update practice test module settings' : 'Set up a new practice test module for students'}
+                    </p>
+                    {jobContext && (
+                        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg">
+                            <Briefcase className="w-4 h-4" />
+                            <span className="text-xs font-medium">
+                                Creating module for job: <strong>{jobContext.jobTitle}</strong>
+                            </span>
+                        </div>
+                    )}
                 </div>
-            </motion.div>
+            </div>
 
             {/* Form */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
                     {/* Basic Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Basic Information
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Module Title *
                                 </label>
                                 <input
@@ -1137,40 +1368,40 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                                     value={formData.title}
                                     onChange={(e) => handleInputChange('title', e.target.value)}
                                     placeholder="e.g., Full-length Mock - Developer"
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Description
                                 </label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => handleInputChange('description', e.target.value)}
                                     placeholder="Describe what this module covers and its objectives..."
-                                    rows={4}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                                    rows={3}
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Tags */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Tags
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={newTag}
                                     onChange={(e) => setNewTag(e.target.value)}
                                     placeholder="Add a tag..."
-                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                                 />
-                                <Button onClick={handleAddTag} variant="outline">
+                                <Button onClick={handleAddTag} variant="outline" size="sm">
                                     <Plus className="w-4 h-4" />
                                 </Button>
                             </div>
@@ -1197,15 +1428,15 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                 </div>
 
                 {/* Sidebar */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {/* Module Properties */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Module Properties
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Role
                                 </label>
                                 <input
@@ -1213,18 +1444,18 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                                     value={formData.role}
                                     onChange={(e) => handleInputChange('role', e.target.value)}
                                     placeholder="e.g., Developer, Designer"
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Category
                                 </label>
                                 <select
                                     value={formData.category}
                                     onChange={(e) => handleInputChange('category', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 >
                                     <option value="ai-mock-tests">AI-Powered Mock Tests</option>
                                     <option value="ai-mock-interviews">AI-Powered Mock Interviews</option>
@@ -1234,13 +1465,13 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Difficulty
                                 </label>
                                 <select
                                     value={formData.difficulty}
                                     onChange={(e) => handleInputChange('difficulty', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 >
                                     <option value="easy">Easy</option>
                                     <option value="medium">Medium</option>
@@ -1249,7 +1480,7 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Duration (minutes)
                                 </label>
                                 <input
@@ -1258,19 +1489,19 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                                     onChange={(e) => handleInputChange('duration_seconds', parseInt(e.target.value) * 60 || 60)}
                                     min="5"
                                     max="180"
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Start Date & Time
                                 </label>
                                 <input
                                     type="datetime-local"
                                     value={formData.start_date}
                                     onChange={(e) => handleInputChange('start_date', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     When the test becomes available (optional)
@@ -1278,14 +1509,14 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     End Date & Time
                                 </label>
                                 <input
                                     type="datetime-local"
                                     value={formData.end_date}
                                     onChange={(e) => handleInputChange('end_date', e.target.value)}
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     When the test becomes unavailable (optional)
@@ -1294,25 +1525,25 @@ function CreateModuleForm({ onSave, onCancel }: CreateModuleFormProps) {
                         </div>
                     </div>
 
-                            <BranchSelection
-                                selectedBranches={formData.university_target_branch_ids}
-                                onBranchesChange={(values) => handleInputChange('university_target_branch_ids', values)}
-                                allBranchesSelected={formData.university_target_all_branches}
-                                onAllBranchesToggle={(selected) => handleInputChange('university_target_all_branches', selected)}
-                                label="Branch Selection"
-                                placeholder="Select branches..."
-                            />
+                    <BranchSelection
+                        selectedBranches={formData.university_target_branch_ids}
+                        onBranchesChange={(values) => handleInputChange('university_target_branch_ids', values)}
+                        allBranchesSelected={formData.university_target_all_branches}
+                        onAllBranchesToggle={(selected) => handleInputChange('university_target_all_branches', selected)}
+                        label="Branch Selection"
+                        placeholder="Select branches..."
+                    />
 
                     {/* Actions */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <div className="space-y-3">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="space-y-2">
                             <Button
                                 onClick={handleSave}
                                 className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
                                 disabled={!formData.title.trim()}
                             >
                                 <Save className="w-4 h-4 mr-2" />
-                                Create Module
+                                {isEditing ? 'Update Module' : 'Create Module'}
                             </Button>
                             <Button
                                 onClick={onCancel}

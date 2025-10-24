@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, X, GraduationCap, Calendar } from 'lucide-react'
+import { Search, Filter, MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, X, GraduationCap, Calendar, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -14,6 +14,11 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
 import { useState as useStateHook } from 'react'
+import { CreateJobModal } from '@/components/dashboard/CreateJobModal' // Imported CreateJobModal to handle creation
+import { UniversityAppliedStudentsModal } from '@/components/university/UniversityAppliedStudentsModal'
+import { EditJobModal } from '@/components/dashboard/EditJobModal'
+import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
+import { JobAssignmentResultsModal } from '@/components/university/JobAssignmentResultsModal'
 
 interface UniversityJob {
     id: string
@@ -42,6 +47,7 @@ interface UniversityJob {
     pending?: boolean
     approval_status?: string
     corporate_id?: string
+    university_id?: string
     // Additional fields for complete job data
     remote_work?: boolean
     travel_required?: boolean
@@ -101,6 +107,16 @@ function UniversityJobsPageContent() {
         approved: 0,
         rejected: 0
     })
+    const [showCreateModal, setShowCreateModal] = useState(false) // State for create modal
+    const [showAppliedStudentsModal, setShowAppliedStudentsModal] = useState(false)
+    const [selectedJobForStudents, setSelectedJobForStudents] = useState<UniversityJob | null>(null)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [editingJob, setEditingJob] = useState<UniversityJob | null>(null)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [jobToDelete, setJobToDelete] = useState<UniversityJob | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [showResultsModal, setShowResultsModal] = useState(false)
+    const [selectedJobForResults, setSelectedJobForResults] = useState<UniversityJob | null>(null)
 
     // Fetch jobs from API
     const fetchJobs = async (): Promise<void> => {
@@ -299,6 +315,84 @@ function UniversityJobsPageContent() {
         fetchJobs()
     }, [])
 
+    // Handle job created
+    const handleJobCreated = () => {
+        fetchJobs() // Refresh the jobs list
+    }
+
+    // Handle view applied students
+    const handleViewAppliedStudents = (job: UniversityJob) => {
+        setSelectedJobForStudents(job)
+        setShowAppliedStudentsModal(true)
+    }
+
+    // Handle edit job
+    const handleEditJob = (job: UniversityJob) => {
+        setEditingJob(job)
+        setShowEditModal(true)
+    }
+
+    // Handle delete job
+    const handleDeleteJob = (job: UniversityJob) => {
+        setJobToDelete(job)
+        setShowDeleteModal(true)
+    }
+
+    // Confirm delete job
+    const handleConfirmDelete = async () => {
+        if (!jobToDelete) return
+
+        try {
+            setIsDeleting(true)
+            await apiClient.deleteJobUniversity(jobToDelete.id)
+            
+            // Remove job from the list
+            setJobs(prev => prev.filter(j => j.id !== jobToDelete.id))
+            
+            // Update stats
+            setStats(prev => ({
+                ...prev,
+                total_jobs: prev.total_jobs - 1,
+                approved: jobToDelete.approved ? prev.approved - 1 : prev.approved,
+                pending_approval: jobToDelete.approval_status === 'pending' ? prev.pending_approval - 1 : prev.pending_approval,
+                rejected: jobToDelete.rejected ? prev.rejected - 1 : prev.rejected
+            }))
+
+            toast.success('Job deleted successfully!')
+            setShowDeleteModal(false)
+            setJobToDelete(null)
+        } catch (error: any) {
+            console.error('Error deleting job:', error)
+            toast.error('Failed to delete job')
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    // Handle send assignment - redirect to practice module creation
+    const handleSendAssignment = (job: UniversityJob) => {
+        // Navigate to practice module creation page with job context
+        const jobContext = encodeURIComponent(JSON.stringify({
+            jobId: job.id,
+            jobTitle: job.title,
+            role: job.title // Use job title as suggested role
+        }))
+        window.location.href = `/dashboard/university/practice?createModule=true&jobContext=${jobContext}`
+    }
+
+    // Handle view results - show assignment results for this job
+    const handleViewResults = (job: UniversityJob) => {
+        setSelectedJobForResults(job)
+        setShowResultsModal(true)
+    }
+
+    // Handle job updated
+    const handleJobUpdated = () => {
+        fetchJobs() // Refresh the jobs list
+        setShowEditModal(false)
+        setEditingJob(null)
+    }
+
     return (
         <UniversityDashboardLayout>
             {/* Header */}
@@ -343,6 +437,13 @@ function UniversityJobsPageContent() {
                             className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
                         />
                     </div>
+                    <Button
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Job
+                    </Button>
                     <Button
                         variant="outline"
                         onClick={() => setShowFilters(!showFilters)}
@@ -511,6 +612,11 @@ function UniversityJobsPageContent() {
                                     onNotApprove={() => handleNotApproveJob(job)}
                                     isProcessing={processingJobs.has(job.id)}
                                     cardIndex={index}
+                                    onViewApplications={() => handleViewAppliedStudents(job)}
+                                    onEdit={() => handleEditJob(job)}
+                                    onDelete={() => handleDeleteJob(job)}
+                                    onSendAssignment={() => handleSendAssignment(job)}
+                                    onViewResults={() => handleViewResults(job)}
                                 />
                             ))}
                         </div>
@@ -668,6 +774,107 @@ function UniversityJobsPageContent() {
                 isLoading={jobToReject ? processingJobs.has(jobToReject.id) : false}
                 variant="danger"
             />
+
+            {/* Create Job Modal */}
+            <CreateJobModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onJobCreated={handleJobCreated}
+                userType="university"
+            />
+
+            {/* Applied Students Modal */}
+            <UniversityAppliedStudentsModal
+                isOpen={showAppliedStudentsModal}
+                onClose={() => {
+                    setShowAppliedStudentsModal(false)
+                    setSelectedJobForStudents(null)
+                }}
+                job={selectedJobForStudents ? {
+                    id: selectedJobForStudents.id,
+                    title: selectedJobForStudents.title,
+                    company_name: selectedJobForStudents.company_name
+                } : null}
+            />
+
+            {/* Edit Job Modal */}
+            {editingJob && (
+                <EditJobModal
+                    isOpen={showEditModal}
+                    onClose={() => {
+                        setShowEditModal(false)
+                        setEditingJob(null)
+                    }}
+                    onJobUpdated={handleJobUpdated}
+                    isUniversity={true}
+                    job={{
+                        id: editingJob.id,
+                        title: editingJob.title,
+                        description: editingJob.description,
+                        requirements: editingJob.requirements || '',
+                        responsibilities: editingJob.responsibilities || '',
+                        job_type: editingJob.job_type,
+                        status: editingJob.status,
+                        location: editingJob.location,
+                        remote_work: editingJob.remote_work || false,
+                        travel_required: editingJob.travel_required || false,
+                        mode_of_work: editingJob.mode_of_work || 'onsite',
+                        salary_min: editingJob.salary_min ? Number(editingJob.salary_min) : undefined,
+                        salary_max: editingJob.salary_max ? Number(editingJob.salary_max) : undefined,
+                        salary_currency: editingJob.salary_currency || 'INR',
+                        experience_min: editingJob.experience_min,
+                        experience_max: editingJob.experience_max,
+                        education_level: editingJob.education_level,
+                        education_degree: editingJob.education_degree,
+                        education_branch: editingJob.education_branch,
+                        skills_required: editingJob.skills_required || [],
+                        application_deadline: editingJob.application_deadline,
+                        max_applications: editingJob.max_students || 0,
+                        current_applications: 0,
+                        industry: editingJob.industry,
+                        selection_process: editingJob.selection_process,
+                        campus_drive_date: editingJob.campus_drive_date,
+                        views_count: 0,
+                        applications_count: 0,
+                        created_at: editingJob.created_at || '',
+                        corporate_id: editingJob.corporate_id || '',
+                        corporate_name: editingJob.company_name,
+                        is_active: editingJob.is_active || true,
+                        can_apply: editingJob.can_apply || false,
+                        number_of_openings: editingJob.number_of_openings,
+                        perks_and_benefits: editingJob.perks_and_benefits,
+                        eligibility_criteria: editingJob.eligibility_criteria,
+                        service_agreement_details: editingJob.service_agreement_details,
+                        ctc_with_probation: editingJob.ctc_with_probation,
+                        ctc_after_probation: editingJob.ctc_after_probation,
+                        expiration_date: editingJob.expiration_date
+                    } as any}
+                />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false)
+                    setJobToDelete(null)
+                }}
+                onConfirm={handleConfirmDelete}
+                jobTitle={jobToDelete?.title || ''}
+                isDeleting={isDeleting}
+            />
+
+            {/* Assignment Results Modal */}
+            {selectedJobForResults && (
+                <JobAssignmentResultsModal
+                    isOpen={showResultsModal}
+                    onClose={() => {
+                        setShowResultsModal(false)
+                        setSelectedJobForResults(null)
+                    }}
+                    job={selectedJobForResults}
+                />
+            )}
         </UniversityDashboardLayout>
     )
 }
@@ -679,9 +886,3 @@ export default function UniversityJobs() {
         </ErrorBoundary>
     )
 }
-
-
-
-
-
-

@@ -12,13 +12,14 @@ import { toast } from 'react-hot-toast'
 interface PracticeCardProps {
     module: PracticeModule
     onStart: () => void
+    onViewResults?: () => void
     isSubmitted?: boolean
     result?: SubmitAttemptResponse
 }
 
 
 
-export function PracticeCard({ module, onStart, isSubmitted = false, result }: PracticeCardProps) {
+export function PracticeCard({ module, onStart, onViewResults, isSubmitted = false, result }: PracticeCardProps) {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
     const formatDuration = (seconds: number) => {
@@ -30,33 +31,6 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
         }
         return `${minutes}m`
     }
-
-    const handleEnterFullscreen = async () => {
-        try {
-            const elem: any = document.documentElement
-            if (elem.requestFullscreen) {
-                // navigationUI: 'hide' is supported by some browsers (e.g., Firefox)
-                await elem.requestFullscreen({ navigationUI: 'hide' } as any)
-            } else if (elem.mozRequestFullScreen) {
-                await elem.mozRequestFullScreen()
-            } else if (elem.webkitRequestFullscreen) {
-                await elem.webkitRequestFullscreen()
-            } else if (elem.msRequestFullscreen) {
-                await elem.msRequestFullscreen()
-            }
-
-            // Verify that fullscreen actually engaged
-            const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
-            if (!becameFullscreen) {
-                toast.error('Fullscreen was blocked. Allow fullscreen for this site and try again.')
-            }
-        } catch (error) {
-            console.error('Failed to enter fullscreen:', error)
-            toast.error('Unable to enter fullscreen. Please click again or check browser settings.')
-        }
-    }
-
-
 
     const getDifficultyColor = (difficulty?: string) => {
         switch (difficulty) {
@@ -218,15 +192,15 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                             </span>
                         )}
 
-                        {/* Score Badge for completed tests */}
-                        {isSubmitted && result && (
+                        {/* Score Badge for completed tests - COMMENTED OUT */}
+                        {/* {isSubmitted && result && (
                             <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${result.score_percent >= 80 ? 'bg-green-500 text-white' :
                                     result.score_percent >= 60 ? 'bg-orange-500 text-white' :
                                         'bg-red-500 text-white'
                                 }`}>
                                 {result.score_percent.toFixed(1)}% Score
                             </div>
-                        )}
+                        )} */}
                     </div>
                 </div>
 
@@ -307,14 +281,15 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                         </div>
                     )}
 
-                    {isSubmitted && result && (
+                    {/* Correct answers count - COMMENTED OUT */}
+                    {/* {isSubmitted && result && (
                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                             <CheckCircle className="w-3 h-3 text-green-500" />
                             <span>
                                 {result.question_results.filter(r => r.is_correct).length}/{result.question_results.length} correct answers
                             </span>
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 {/* Status Indicators */}
@@ -341,13 +316,25 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                         View Details
                     </Button>
 
-                    <Button
+                    {/* View Results / Start Practice button - Modified to only show "Start Practice" */}
+                    {!isSubmitted && (
+                        <Button
+                            onClick={onStart}
+                            size="sm"
+                            className="flex-1 flex items-center gap-2 transition-all duration-200 hover:shadow-md bg-primary-500 hover:bg-primary-600"
+                        >
+                            <Play className="w-4 h-4" />
+                            Start Practice
+                        </Button>
+                    )}
+                    {/* Original button with View Results - COMMENTED OUT */}
+                    {/* <Button
                         onClick={() => {
-                            if (!isSubmitted || !result) {
-                                // Only trigger fullscreen when it's a new practice session
-                                handleEnterFullscreen();
+                            if (isSubmitted && result && onViewResults) {
+                                onViewResults()
+                            } else {
+                                onStart()
                             }
-                            onStart();
                         }}
                         disabled={isSubmitted && !result}
                         size="sm"
@@ -369,7 +356,7 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                                 Start Practice
                             </>
                         )}
-                    </Button>
+                    </Button> */}
 
                 </div>
             </div>
@@ -380,6 +367,7 @@ export function PracticeCard({ module, onStart, isSubmitted = false, result }: P
                 onClose={() => setIsDetailsModalOpen(false)}
                 module={module}
                 onStartPractice={onStart}
+                onViewResults={onViewResults}
                 isSubmitted={isSubmitted}
                 result={result}
             />

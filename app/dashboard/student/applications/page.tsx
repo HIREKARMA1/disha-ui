@@ -28,6 +28,7 @@ interface ApplicationData {
     job_title?: string
     student_name?: string
     corporate_name?: string
+    creator_type?: string  // NEW: Explicit creator type from backend ("University" or "Company")
 }
 
 export default function StudentApplicationsPage() {

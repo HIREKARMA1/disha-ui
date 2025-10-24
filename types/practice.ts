@@ -43,6 +43,9 @@ export interface PracticeModule {
   creator_type?: 'admin' | 'university' | 'corporate'
   creator_id?: string
   
+  // Job association (optional - only for modules created from job assignments)
+  job_id?: string
+  
   // Targeting fields for filtering
   target_all_colleges?: boolean
   target_college_ids?: string[]  // University names

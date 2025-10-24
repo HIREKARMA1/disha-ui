@@ -14,9 +14,11 @@ import {
     CheckCircle,
     XCircle,
     UserCheck,
-    FileText
+    FileText,
+    ClipboardList
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ViewAssignmentModal } from './ViewAssignmentModal'
 
 interface ApplicationData {
     id: string
@@ -37,6 +39,10 @@ interface ApplicationData {
     job_title?: string
     student_name?: string
     corporate_name?: string
+    creator_type?: string  // NEW: Explicit creator type from backend ("University" or "Company")
+    is_university_created?: boolean
+    can_update_status?: boolean  // NEW: Whether current university can update this application
+    has_assignment?: boolean  // NEW: Whether this job has practice assignments
 }
 
 interface StudentApplicationTableProps {
@@ -47,6 +53,7 @@ interface StudentApplicationTableProps {
     onSort: (field: string) => void
     onViewOfferLetter: (application: ApplicationData) => void
     onDownloadOfferLetter: (application: ApplicationData) => void
+    onStatusUpdate?: (application: ApplicationData) => void
     pagination: {
         page: number
         limit: number
@@ -63,10 +70,18 @@ export function StudentApplicationTable({
     sortOrder,
     onSort,
     onViewOfferLetter,
+    onStatusUpdate,
     pagination,
     onPageChange
 }: StudentApplicationTableProps) {
     const [hoveredRow, setHoveredRow] = useState<string | null>(null)
+    const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
+    const [selectedApplication, setSelectedApplication] = useState<ApplicationData | null>(null)
+
+    const handleViewAssignment = (application: ApplicationData) => {
+        setSelectedApplication(application)
+        setAssignmentModalOpen(true)
+    }
 
     const getStatusIcon = (status: string) => {
         switch (status) {
@@ -169,10 +184,13 @@ export function StudentApplicationTable({
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
                             <th className="px-6 py-4 text-left">
+                                <SortButton field="student_name">Applicant Name</SortButton>
+                            </th>
+                            <th className="px-6 py-4 text-left">
                                 <SortButton field="job_title">Job Title</SortButton>
                             </th>
                             <th className="px-6 py-4 text-left">
-                                <SortButton field="corporate_name">Company</SortButton>
+                                <SortButton field="corporate_name">Created By</SortButton>
                             </th>
                             <th className="px-6 py-4 text-left">
                                 <SortButton field="status">Status</SortButton>
@@ -199,6 +217,21 @@ export function StudentApplicationTable({
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                            {application.student_name ? application.student_name.charAt(0).toUpperCase() : 'S'}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-900 dark:text-white">
+                                                {application.student_name || 'N/A'}
+                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                Student ID: {application.student_id.slice(0, 8)}...
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
                                             <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                                         </div>
@@ -213,11 +246,16 @@ export function StudentApplicationTable({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <Building className="w-4 h-4 text-gray-400" />
-                                        <span className="text-gray-900 dark:text-white">
-                                            {application.corporate_name || 'N/A'}
-                                        </span>
+                                    <div className="flex items-start gap-2">
+                                        <Building className="w-4 h-4 text-gray-400 mt-1" />
+                                        <div>
+                                            <p className="text-gray-900 dark:text-white font-medium">
+                                                {application.corporate_name || 'N/A'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {application.creator_type || 'N/A'}
+                                            </p>
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
@@ -246,25 +284,79 @@ export function StudentApplicationTable({
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
-                                        {application.offer_letter_url && (
+                                        {/* University/Corporate View - Status Update Actions */}
+                                        {onStatusUpdate && (
                                             <>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => onViewOfferLetter(application)}
-                                                    className="flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                    View
-                                                </Button>
-                        
+                                                {/* Corporate applications - Show "View" button */}
+                                                {application.creator_type === "Company" ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => onStatusUpdate(application)}
+                                                        className="flex items-center gap-1"
+                                                        title="View Application Details"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        <span>View</span>
+                                                    </Button>
+                                                ) : (
+                                                    /* University applications - Show only eye icon */
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => onStatusUpdate(application)}
+                                                        className="flex items-center gap-1"
+                                                        title={application.can_update_status ? "Update Application Status" : "View Application Details"}
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+                                                )}
                                             </>
                                         )}
-                                        {!application.offer_letter_url && (
-                                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                No offer letter
-                                            </span>
+                                        
+                                        {/* Student View - View Assignment Button (if job has assignments) */}
+                                        {!onStatusUpdate && application.has_assignment && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleViewAssignment(application)}
+                                                className="flex items-center gap-1 text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700"
+                                                title="View Practice Assignment"
+                                            >
+                                                <ClipboardList className="w-4 h-4" />
+                                                <span className="hidden sm:inline">View Assignment</span>
+                                            </Button>
                                         )}
+
+                                        {/* Student View - View Offer Letter (only for selected applications with offer letter) */}
+                                        {!onStatusUpdate && application.status === 'selected' && application.offer_letter_url && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onViewOfferLetter(application)}
+                                                className="flex items-center gap-1 text-green-600 hover:text-green-700 border-green-600 hover:border-green-700"
+                                                title="View Offer Letter"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                <span className="hidden sm:inline">View Offer</span>
+                                            </Button>
+                                        )}
+
+
+
+                                        {/* Student View - No offer letter available yet */}
+                                        {!onStatusUpdate && !application.has_assignment && (application.status !== 'selected' || !application.offer_letter_url) && (
+                                            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
+                                                {application.status === 'selected' ? (
+                                                    <span className="text-xs">Offer letter pending</span>
+                                                ) : application.status === 'rejected' ? (
+                                                    <span className="text-xs text-red-500">Application rejected</span>
+                                                ) : (
+                                                    <span className="text-xs">Application {application.status}</span>
+                                                )}
+                                            </div>
+                                        )}
+                     
                                     </div>
                                 </td>
                             </motion.tr>
@@ -303,6 +395,19 @@ export function StudentApplicationTable({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* View Assignment Modal */}
+            {selectedApplication && (
+                <ViewAssignmentModal
+                    isOpen={assignmentModalOpen}
+                    onClose={() => {
+                        setAssignmentModalOpen(false)
+                        setSelectedApplication(null)
+                    }}
+                    jobId={selectedApplication.job_id}
+                    jobTitle={selectedApplication.job_title || 'Job'}
+                />
             )}
         </div>
     )

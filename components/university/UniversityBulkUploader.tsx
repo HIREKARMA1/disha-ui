@@ -570,36 +570,28 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
     }
 
     return (
-        <div className="space-y-6 main-content">
+        <div className="p-6 space-y-4">
             {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-            >
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Bulk Upload Questions 📚
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg">
-                            Upload multiple questions via CSV file with validation
-                        </p>
-                    </div>
-                    <Button
-                        onClick={onCancel}
-                        variant="outline"
-                        className="border-primary-200 dark:border-primary-700 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back
-                    </Button>
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-4 border border-primary-200 dark:border-primary-700 relative">
+                <button
+                    onClick={onCancel}
+                    className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    aria-label="Close"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+                <div className="pr-10">
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        Bulk Upload Questions 📚
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        Upload multiple questions via CSV file with validation
+                    </p>
                 </div>
-            </motion.div>
+            </div>
 
             {/* Upload Instructions */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 p-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0">
                         <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
@@ -608,33 +600,32 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
                         <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
                             Upload Guidelines
                         </h3>
-                        <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                        <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
                             <li>• Use the CSV template provided below</li>
-                            <li>• Required columns: statement, type, options, correct_options</li>
-                            <li>• Optional columns: difficulty, explanation</li>
-                            <li>• Use pipe-separated values for options (e.g., "Paris|London|Berlin|Madrid")</li>
-                            <li>• For correct_options, use the exact text from options (e.g., "Paris" or "Paris|London")</li>
+                            <li>• Required: statement, type, options, correct_options</li>
+                            <li>• Optional: difficulty, explanation</li>
+                            <li>• Use pipe-separated values for options (e.g., "Paris|London|Berlin")</li>
                             <li>• Maximum file size: 5MB</li>
-                            <li>• Questions will be validated before upload</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             {/* Download Template */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
                             Download Template
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">
-                            Get the CSV template with sample data using pipe-separated format
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
+                            Get the CSV template with sample data
                         </p>
                     </div>
                     <Button
                         onClick={handleDownloadTemplate}
                         disabled={isDownloadingTemplate}
+                        size="sm"
                         className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                     >
                         {isDownloadingTemplate ? (
@@ -642,7 +633,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
                         ) : (
                             <Download className="w-4 h-4 mr-2" />
                         )}
-                        Download Template
+                        Download
                     </Button>
                 </div>
             </div>
@@ -655,7 +646,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
                     >
                         <div className="text-center">
                             <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
@@ -712,14 +703,14 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
                     >
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
                                     Preview & Upload
                                 </h3>
-                                <p className="text-gray-600 dark:text-gray-400">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
                                     Review your data before uploading
                                 </p>
                             </div>
@@ -734,7 +725,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
                         </div>
 
                         {/* Validation Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
