@@ -298,6 +298,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isExitingFullscreen, setIsExitingFullscreen] = useState(false)
     const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false)
+    const [isManualSubmit, setIsManualSubmit] = useState(false)
 
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
     const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam } = useExamSession(module.id)
@@ -332,7 +333,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
     // Auto-enter fullscreen when exam loads
     useEffect(() => {
         if (!session || session.isSubmitted) return;
-        
+
         // Check if already in fullscreen
         const alreadyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement);
         if (alreadyFullscreen) {
@@ -341,7 +342,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             setShowFullscreenPrompt(false);
             return;
         }
-        
+
         // Small delay to ensure the page has fully loaded
         const timer = setTimeout(async () => {
             try {
@@ -355,7 +356,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 } else if (elem.msRequestFullscreen) {
                     await elem.msRequestFullscreen();
                 }
-                
+
                 // Verify fullscreen engaged
                 const becameFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement);
                 if (becameFullscreen) {
@@ -373,7 +374,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 setShowFullscreenPrompt(true);
             }
         }, 300);
-        
+
         return () => clearTimeout(timer);
     }, [session]);
 
@@ -384,20 +385,20 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
         const fullscreenChange = async () => {
             const fs = document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement
             const isNowFullscreen = !!fs;
-            
+
             if (isNowFullscreen && !isFullscreen) {
                 setIsFullscreen(true)
                 setSidebarHidden(true)
                 return;
             }
-            
-            // Only auto-submit when exiting fullscreen mode
+
+            // Only auto-submit when exiting fullscreen mode AND it's not a manual submit
             if (!isNowFullscreen && isFullscreen) {
                 setIsFullscreen(false)
                 setSidebarHidden(false)
-                
-                // Auto-submit only when exiting fullscreen and not already submitted
-                if (session && !session.isSubmitted && !isExitingFullscreen) {
+
+                // Auto-submit only when exiting fullscreen and not already submitted and NOT a manual submit
+                if (session && !session.isSubmitted && !isExitingFullscreen && !isManualSubmit) {
                     setIsExitingFullscreen(true)
                     toast.error("Exam submitted - Full screen mode was exited")
                     try {
@@ -413,7 +414,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
         document.addEventListener('fullscreenchange', fullscreenChange)
         document.addEventListener('webkitfullscreenchange', fullscreenChange)
         document.addEventListener('msfullscreenchange', fullscreenChange)
-        
+
         return () => {
             document.removeEventListener('fullscreenchange', fullscreenChange)
             document.removeEventListener('webkitfullscreenchange', fullscreenChange)
@@ -421,7 +422,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             // Do not toggle sidebar visibility or exit fullscreen here, as this cleanup
             // runs on every dependency change and would immediately exit fullscreen.
         }
-    }, [session, isFullscreen, isExitingFullscreen])
+    }, [session, isFullscreen, isExitingFullscreen, isManualSubmit])
 
     // On component unmount only: restore sidebar and exit fullscreen if still active
     useEffect(() => {
@@ -449,7 +450,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
                 return
             }
-            
+
             switch (e.key.toLowerCase()) {
                 case 'n':
                     handleNext()
@@ -473,7 +474,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                     break
             }
         }
-        
+
         if (typeof window !== 'undefined') {
             window.addEventListener('keydown', handleKeyPress)
             return () => window.removeEventListener('keydown', handleKeyPress)
@@ -578,7 +579,10 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
 
     const handleSubmit = async () => {
         if (!questions || !session) return
-        
+
+        // Set flag to prevent auto-submit when exiting fullscreen
+        setIsManualSubmit(true)
+
         // Exit fullscreen before submitting
         if (document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement) {
             if (document.exitFullscreen) {
@@ -589,7 +593,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 await (document as any).msExitFullscreen()
             }
         }
-        
+
         try {
             const result = await submitExam()
             if (result.question_results && Array.isArray(result.question_results)) {
@@ -609,10 +613,15 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 })
                 setQuestionResults(resultsMap)
             }
+            // Show success message for manual submission
+            toast.success('Test submitted successfully! 🎉')
             onComplete(result)
         } catch (error) {
             toast.error('Failed to submit exam. Please try again.')
             console.error('Submit error:', error)
+        } finally {
+            // Reset the manual submit flag
+            setIsManualSubmit(false)
         }
     }
 
@@ -688,7 +697,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                             </p>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-6">
                         {/* {!isFullscreen && !session?.isSubmitted && (
                             <Button
@@ -701,8 +710,8 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                 Enter Fullscreen
                             </Button>
                         )} */}
-                        
-                        <ExamTimer 
+
+                        <ExamTimer
                             duration={module.duration_seconds}
                             onTimeUp={handleSubmit}
                         />
@@ -765,7 +774,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                     <ChevronLeft className="w-4 h-4 mr-2" />
                                     Previous
                                 </Button>
-                                
+
                                 {/* Removed standalone Mark for Review button */}
 
                                 <Button
@@ -777,7 +786,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                     <CheckCircle className="w-4 h-4 mr-2" />
                                     Mark for Review
                                 </Button>
-                                
+
                                 <Button
                                     onClick={handleClearResponse}
                                     variant="outline"
@@ -789,7 +798,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                     Clear Response
                                 </Button>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                                 {currentQuestionIndex === totalQuestions - 1 ? (
                                     <Button
@@ -821,9 +830,9 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                         <div className="border-b border-gray-200/50 dark:border-gray-700/50 p-4 flex items-center space-x-3">
                             <div className="flex-shrink-0">
                                 {profile?.profile_picture ? (
-                                    <img 
-                                        src={profile.profile_picture} 
-                                        alt={profile?.name || 'Student'} 
+                                    <img
+                                        src={profile.profile_picture}
+                                        alt={profile?.name || 'Student'}
                                         className="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${profile?.name || 'Student'}&background=1e40af&color=fff`;
@@ -893,12 +902,12 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                     const question = questions[i]
                                     const status = getQuestionStatus(question.id)
                                     const isCurrent = currentQuestionIndex === i
-                                    
+
                                     const getButtonStyle = () => {
                                         if (isCurrent) {
                                             return 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md hover:shadow-lg'
                                         }
-                                        
+
                                         switch (status) {
                                             case 'answered':
                                                 return 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-500 hover:from-green-600 hover:to-emerald-700'
@@ -962,16 +971,16 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                 <Maximize2 className="w-10 h-10 text-white" />
                             </div>
                         </div>
-                        
+
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                             Start Test in Fullscreen
                         </h2>
-                        
+
                         <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-                            This test requires fullscreen mode for the best experience. 
+                            This test requires fullscreen mode for the best experience.
                             Click the button below to enter fullscreen and begin your test.
                         </p>
-                        
+
                         <div className="space-y-3">
                             <Button
                                 onClick={handleEnterFullscreen}
@@ -981,7 +990,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                 <Maximize2 className="w-5 h-5 mr-2" />
                                 Enter Fullscreen & Start Test
                             </Button>
-                            
+
                             <Button
                                 onClick={onBack}
                                 variant="outline"
@@ -992,7 +1001,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                                 Back to Dashboard
                             </Button>
                         </div>
-                        
+
                         <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
                             <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
                                 <strong>Note:</strong> The test will automatically submit if you exit fullscreen mode during the exam.

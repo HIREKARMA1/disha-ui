@@ -80,13 +80,13 @@ const navItems: NavItem[] = [
         color: 'from-indigo-500 to-blue-600'
     },
     // TODO: Uncomment when practice module bugs are fixed
-    // {
-    //     label: 'Practice',
-    //     href: '/dashboard/student/practice',
-    //     icon: Brain,
-    //     description: 'Practice tests and assessments',
-    //     color: 'from-rose-500 to-pink-600'
-    // },
+    {
+        label: 'Practice',
+        href: '/dashboard/student/practice',
+        icon: Brain,
+        description: 'Practice tests and assessments',
+        color: 'from-rose-500 to-pink-600'
+    },
     {
         label: 'Video Search',
         href: '/dashboard/student/video-search',

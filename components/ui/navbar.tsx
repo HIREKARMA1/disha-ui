@@ -28,9 +28,9 @@ import {
     GraduationCap as Cap,
     Wrench,
     Users2,
-    HeartHandshake
+    // HeartHandshake
 } from 'lucide-react'
-import { FaHandshake } from "react-icons/fa6";
+// import { FaHandshake } from "react-icons/fa6";
 import { apiClient } from '@/lib/api'
 import { UniversityProfile } from '@/types/university'
 
@@ -257,7 +257,7 @@ export function Navbar({
                                 priority
                             />
                         </Link>
-                        <HeartHandshake className="h-6 w-6 text-primary-500 text-2xl" />
+                        {/* <HeartHandshake className="h-6 w-6 text-primary-500 text-2xl" />
                         <div className="ml-5">
                             {user?.user_type === 'university' && (
                                 <Image
@@ -271,13 +271,13 @@ export function Navbar({
                                     }}
                                 />
                             )}
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Desktop Navigation */}
                     <div className="hidden lg:flex items-center space-x-8">
                         {/* About Dropdown */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -308,10 +308,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Solutions Dropdown */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -366,10 +366,10 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Resources Dropdown */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <Button
                                 variant="ghost"
                                 className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
@@ -400,7 +400,7 @@ export function Navbar({
                                     </Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Auth Buttons */}
                         {isAuthenticated && user ? (
@@ -461,7 +461,7 @@ export function Navbar({
                     <div className="lg:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col space-y-3 p-4">
                             {/* About Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">About</div>
                                 <Link href="/about/why-hirekarma" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -475,10 +475,10 @@ export function Navbar({
                                         Mission & Vision
                                     </Button>
                                 </Link>
-                            </div>
+                            </div> */}
 
                             {/* Solutions Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Solutions</div>
                                 <Link href="/solutions/campus-placement" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -504,10 +504,10 @@ export function Navbar({
                                         General Staffing
                                     </Button>
                                 </Link>
-                            </div>
+                            </div> */}
 
                             {/* Resources Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Resources</div>
                                 <Link href="/resources/moments-corner" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="ghost" className="w-full justify-start">
@@ -521,7 +521,7 @@ export function Navbar({
                                         Insights
                                     </Button>
                                 </Link>
-                            </div>
+                            </div> */}
 
                             {/* Auth Section */}
                             {isAuthenticated && user ? (
