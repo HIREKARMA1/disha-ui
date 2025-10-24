@@ -135,6 +135,61 @@ export function UniversityAttemptViewer({ module, onBack }: UniversityAttemptVie
         return 'bg-red-100 dark:bg-red-900/20'
     }
 
+    const handleExportCSV = () => {
+        if (!attempts || attempts.length === 0) {
+            alert('No data to export')
+            return
+        }
+
+        // CSV Headers
+        const headers = [
+            'Student Name',
+            'Student ID',
+            'Score (%)',
+            'Time Taken',
+            'Started At',
+            'Ended At',
+            'Total Questions',
+            'Correct Answers'
+        ]
+
+        // CSV Rows
+        const rows = attempts.map(attempt => {
+            const correctAnswers = attempt.question_results?.filter((r: { is_correct: boolean }) => r.is_correct).length || 0
+            const totalQuestions = attempt.question_results?.length || 0
+            
+            return [
+                attempt.student_name || 'N/A',
+                attempt.student_id || 'N/A',
+                attempt.score_percent.toFixed(1),
+                formatTime(attempt.time_taken_seconds),
+                formatDate(attempt.started_at),
+                formatDate(attempt.ended_at),
+                totalQuestions.toString(),
+                correctAnswers.toString()
+            ]
+        })
+
+        // Combine headers and rows
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n')
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        
+        link.setAttribute('href', url)
+        link.setAttribute('download', `${module.title.replace(/[^a-z0-9]/gi, '_')}_attempts_${new Date().toISOString().split('T')[0]}.csv`)
+        link.style.visibility = 'hidden'
+        
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
     if (selectedAttempt) {
         return (
             <div className="space-y-6">
@@ -332,6 +387,8 @@ export function UniversityAttemptViewer({ module, onBack }: UniversityAttemptVie
                 </div>
                 <Button
                     variant="outline"
+                    onClick={handleExportCSV}
+                    disabled={!attempts || attempts.length === 0}
                 >
                     <Download className="w-4 h-4 mr-2" />
                     Export Data

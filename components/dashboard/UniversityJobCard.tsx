@@ -1,9 +1,10 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useState, useEffect, useRef } from 'react'
 
 interface UniversityJob {
     id: string
@@ -32,6 +33,7 @@ interface UniversityJob {
     pending?: boolean
     approval_status?: string
     corporate_id?: string
+    university_id?: string
     // Additional fields for complete job data
     remote_work?: boolean
     travel_required?: boolean
@@ -62,6 +64,11 @@ interface UniversityJobCardProps {
     onNotApprove?: () => void
     isProcessing?: boolean
     cardIndex?: number
+    onViewApplications?: () => void
+    onEdit?: () => void
+    onDelete?: () => void
+    onSendAssignment?: () => void
+    onViewResults?: () => void
 }
 
 export function UniversityJobCard({
@@ -71,8 +78,29 @@ export function UniversityJobCard({
     onReject,
     onNotApprove,
     isProcessing = false,
-    cardIndex = 0
+    cardIndex = 0,
+    onViewApplications,
+    onEdit,
+    onDelete,
+    onSendAssignment,
+    onViewResults
 }: UniversityJobCardProps) {
+    const [showDropdown, setShowDropdown] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [])
     console.log('Rendering job card:', job.id, 'Status:', job.approval_status, 'Approved:', job.approved, 'Rejected:', job.rejected)
     // Safety check - ensure job object is valid
     if (!job || typeof job !== 'object') {
@@ -217,30 +245,124 @@ export function UniversityJobCard({
                             {typeof job.title === 'string' ? job.title : String(job.title || '')}
                         </h3>
                         {job.company_name && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
                                 <Building className="w-4 h-4" />
-                                {typeof job.company_name === 'string' ? job.company_name : String(job.company_name || '')}
-                                {job.company_verified && (
-                                    <span className="text-green-600 dark:text-green-400">
-                                        <CheckCircle className="w-3 h-3" />
-                                    </span>
-                                )}
+                                <span className="flex items-center gap-2">
+                                    {typeof job.company_name === 'string' ? job.company_name : String(job.company_name || '')}
+                                    {job.company_verified && (
+                                        <span className="text-green-600 dark:text-green-400">
+                                            <CheckCircle className="w-3 h-3" />
+                                        </span>
+                                    )}
+                                    {job.university_id && !job.corporate_id && (
+                                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700">
+                                            🎓 On Campus
+                                        </span>
+                                    )}
+                                </span>
                             </p>
                         )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                        <span className={cn(
-                            "px-2 py-1 text-xs font-medium rounded-full",
-                            getJobTypeColor(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))
-                        )}>
-                            {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
-                        </span>
-                        <span className={cn(
-                            "px-2 py-1 text-xs font-medium rounded-full",
-                            getApprovalStatusColor(job.approved, job.rejected)
-                        )}>
-                            {getApprovalStatusLabel(job.approved, job.rejected)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className={cn(
+                                "px-2 py-1 text-xs font-medium rounded-full",
+                                getJobTypeColor(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))
+                            )}>
+                                {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
+                            </span>
+                            <span className={cn(
+                                "px-2 py-1 text-xs font-medium rounded-full",
+                                getApprovalStatusColor(job.approved, job.rejected)
+                            )}>
+                                {getApprovalStatusLabel(job.approved, job.rejected)}
+                            </span>
+                        </div>
+
+                        {/* 3-dots dropdown menu - only show if job was created by university (has university_id and no corporate_id) */}
+                        {job.university_id && !job.corporate_id && (
+                            <div className="relative" ref={dropdownRef}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                    <MoreVertical className="w-4 h-4" />
+                                </Button>
+
+                                {showDropdown && (
+                                    <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                                        <div className="py-1">
+                                            {onViewApplications && (
+                                                <button
+                                                    onClick={() => {
+                                                        onViewApplications()
+                                                        setShowDropdown(false)
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+                                                >
+                                                    <UserCheck className="w-4 h-4" />
+                                                    View Application
+                                                </button>
+                                            )}
+
+                                            {onEdit && (
+                                                <button
+                                                    onClick={() => {
+                                                        onEdit()
+                                                        setShowDropdown(false)
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                    Edit Job
+                                                </button>
+                                            )}
+
+                                            {onDelete && (
+                                                <button
+                                                    onClick={() => {
+                                                        onDelete()
+                                                        setShowDropdown(false)
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Delete Job
+                                                </button>
+                                            )}
+
+                                            {onSendAssignment && (
+                                                <button
+                                                    onClick={() => {
+                                                        onSendAssignment()
+                                                        setShowDropdown(false)
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                                                >
+                                                    <Send className="w-4 h-4" />
+                                                    Send Assignment
+                                                </button>
+                                            )}
+
+                                            {onViewResults && (
+                                                <button
+                                                    onClick={() => {
+                                                        onViewResults()
+                                                        setShowDropdown(false)
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    View Results
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

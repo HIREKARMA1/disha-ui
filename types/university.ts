@@ -207,6 +207,8 @@ export interface UniversityProfile {
   verified: boolean
   verification_date?: string
   total_students?: number
+  total_jobs?: number
+  total_jobs_approved?: number
   total_faculty?: number
   departments?: string
   programs_offered?: string

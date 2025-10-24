@@ -199,6 +199,25 @@ class ApiClient {
     return response.data;
   }
 
+  async updateUniversityApplicationStatus(
+    applicationId: string,
+    status: string,
+    notes?: string,
+    interviewDate?: string,
+    interviewLocation?: string
+  ): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('status', status);
+    if (notes) params.append('notes', notes);
+    if (interviewDate) params.append('interview_date', interviewDate);
+    if (interviewLocation) params.append('interview_location', interviewLocation);
+
+    const response: AxiosResponse = await this.client.put(
+      `/universities/applications/${applicationId}/status?${params.toString()}`
+    );
+    return response.data;
+  }
+
   async getAvailableJobs(page: number = 1, limit: number = 20): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/jobs/?page=${page}&limit=${limit}`);
     return response.data;
@@ -429,6 +448,16 @@ class ApiClient {
     return response.data;
   }
 
+  async getJobAssignmentAttempts(jobId: string): Promise<any> {
+    try {
+      const response: AxiosResponse = await this.client.get(`/practice/job/${jobId}/attempts`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch job assignment attempts:', error);
+      throw error;
+    }
+  }
+
   async approveUniversityJob(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/approve`);
     return response.data;
@@ -436,6 +465,26 @@ class ApiClient {
 
   async rejectUniversityJob(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/reject`);
+    return response.data;
+  }
+
+  async createUniversityJob(jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/jobs/university/create', jobData);
+    return response.data;
+  }
+
+  async updateJobUniversity(jobId: string, jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/jobs/university/${jobId}`, jobData);
+    return response.data;
+  }
+
+  async deleteJobUniversity(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/jobs/university/${jobId}`);
+    return response.data;
+  }
+
+  async getAppliedStudentsUniversity(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/universities/jobs/${jobId}/applied-students`);
     return response.data;
   }
 
@@ -482,6 +531,12 @@ class ApiClient {
 
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
+    return response.data;
+  }
+
+  // Practice Modules by Job ID
+  async getPracticeModulesByJobId(jobId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(`/practice/modules/by-job/${jobId}`);
     return response.data;
   }
 
