@@ -101,6 +101,10 @@ export class JobDescriptionPDFGenerator {
       // Wait for any remaining images to load
       await this.waitForImages(container)
 
+      // CRITICAL FIX: Wait for fonts and full rendering
+      // This ensures content is fully rendered on all systems
+      await this.waitForFullRendering()
+
       // Convert HTML to canvas with optimized settings
       const canvas = await html2canvas(container, {
         scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
@@ -108,7 +112,10 @@ export class JobDescriptionPDFGenerator {
         allowTaint: true,
         backgroundColor: '#ffffff',
         width: 794, // A4 width in pixels (210mm * 3.78)
-        height: container.scrollHeight
+        height: container.scrollHeight,
+        logging: false, // Disable console logs for cleaner output
+        windowWidth: 794,
+        windowHeight: container.scrollHeight
       })
 
       // Remove temporary container
@@ -291,6 +298,34 @@ export class JobDescriptionPDFGenerator {
     })
 
     await Promise.all(imagePromises)
+  }
+
+  /**
+   * Wait for fonts to load and browser to complete rendering
+   * This fixes the issue where PDFs show only headings on some systems
+   */
+  private async waitForFullRendering(): Promise<void> {
+    // Step 1: Wait for fonts to load
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready
+        console.log('✅ Fonts loaded successfully')
+      }
+    } catch (error) {
+      console.warn('⚠️ Font loading check failed, continuing anyway:', error)
+    }
+
+    // Step 2: Wait for multiple animation frames to ensure layout is complete
+    // This gives the browser time to compute CSS Grid, Flexbox, and other layout calculations
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => requestAnimationFrame(resolve))
+
+    // Step 3: Add a small delay to ensure rendering is stable
+    // This is especially important for slower systems
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    console.log('✅ Full rendering complete, ready to capture')
   }
 
   private createHTMLTemplate(job: JobData, corporateProfile?: CorporateProfile, logoDataUrl?: string | null): string {
