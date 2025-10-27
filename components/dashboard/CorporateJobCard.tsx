@@ -124,10 +124,10 @@ export function CorporateJobCard({ job, onViewDescription, onEdit, onDelete, onS
 
     const formatExperience = (min?: number, max?: number) => {
         try {
-            if (!min && !max) return 'Not specified'
-            if (min && max) return `${Number(min)}-${Number(max)} years`
-            if (min) return `${Number(min)}+ years`
-            if (max) return `Up to ${Number(max)} years`
+            if (min === undefined && max === undefined) return 'Not specified'
+            if (min !== undefined && max !== undefined) return `${Number(min)}-${Number(max)} years`
+            if (min !== undefined) return `${Number(min)}+ years`
+            if (max !== undefined) return `Up to ${Number(max)} years`
             return 'Not specified'
         } catch (error) {
             console.error('Error formatting experience:', error, { min, max })

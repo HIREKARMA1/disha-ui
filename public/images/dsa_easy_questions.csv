@@ -1,0 +1,11 @@
+statement,type,options,correct_options,difficulty,explanation
+Which data structure uses FIFO order?,mcq_single,"['Stack','Queue','Tree','Graph']",['Queue'],easy,Queue follows First-In First-Out order.
+Which sorting algorithm has worst case O(n²)?,mcq_single,"['Merge Sort','Quick Sort','Heap Sort','Bubble Sort']",['Bubble Sort'],easy,"Bubble Sort compares adjacent elements repeatedly, leading to O(n²)."
+Which of these is a linear data structure?,mcq_single,"['Array','Tree','Graph','Heap']",['Array'],easy,Array stores elements in a linear sequence.
+Which searching algorithm works on sorted arrays?,mcq_single,"['Linear Search','Binary Search','DFS','BFS']",['Binary Search'],easy,Binary Search works only on sorted arrays using divide and conquer.
+Which data structure is used for function call management?,mcq_single,"['Stack','Queue','HashMap','Heap']",['Stack'],easy,Stack is used for function calls via LIFO order.
+Which sorting algorithm is best for nearly sorted data?,mcq_single,"['Quick Sort','Merge Sort','Insertion Sort','Heap Sort']",['Insertion Sort'],easy,Insertion Sort works efficiently on nearly sorted arrays.
+Which of these is not a comparison-based sorting?,mcq_single,"['Merge Sort','Quick Sort','Heap Sort','Counting Sort']",['Counting Sort'],easy,"Counting Sort sorts using element counts, not comparisons."
+Which operation is not possible in O(1) for arrays?,mcq_single,"['Access','Update','Insertion','Traversal']",['Insertion'],easy,"Insertion in an array requires shifting elements, so O(n)."
+Which traversal is used in Binary Search Tree to get sorted order?,mcq_single,"['Preorder','Inorder','Postorder','Level order']",['Inorder'],easy,Inorder traversal of BST gives sorted sequence.
+Which of these is an example of dynamic data structure?,mcq_single,"['Array','Linked List','String','Matrix']",['Linked List'],easy,Linked List is dynamic as memory is allocated at runtime.

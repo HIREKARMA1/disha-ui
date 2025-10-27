@@ -469,15 +469,15 @@ export function UniversityJobCard({
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 mt-auto pt-4">
+                <div className="flex flex-wrap gap-2 mt-auto pt-4">
                     <Button
                         onClick={onViewDescription}
                         variant="outline"
                         size="sm"
-                        className="flex-1 flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 text-xs border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
                     >
-                        <FileText className="w-4 h-4" />
-                        View Details
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="truncate">View Details</span>
                     </Button>
 
                     {job.approval_status === 'pending' && (
@@ -486,17 +486,17 @@ export function UniversityJobCard({
                                 onClick={onApprove}
                                 disabled={isProcessing}
                                 size="sm"
-                                className="flex-1 bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md"
+                                className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md"
                             >
                                 {isProcessing ? (
                                     <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        Processing...
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span className="truncate">Processing...</span>
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle className="w-4 h-4" />
-                                        Approve
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        <span className="truncate">Approve</span>
                                     </>
                                 )}
                             </Button>
@@ -504,18 +504,19 @@ export function UniversityJobCard({
                                 <Button
                                     onClick={onNotApprove}
                                     disabled={isProcessing}
+                                    variant="outline"
                                     size="sm"
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white transition-all duration-200 hover:shadow-md"
+                                    className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 text-xs border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:border-red-400 dark:hover:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 hover:shadow-md"
                                 >
                                     {isProcessing ? (
                                         <>
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Processing...
+                                            <div className="w-3.5 h-3.5 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin" />
+                                            <span className="truncate">Processing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <XCircle className="w-4 h-4" />
-                                            Not Approved
+                                            <XCircle className="w-3.5 h-3.5" />
+                                            <span className="truncate">Not Approved</span>
                                         </>
                                     )}
                                 </Button>

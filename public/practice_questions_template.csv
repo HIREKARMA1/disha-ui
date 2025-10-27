@@ -1,6 +1,0 @@
-statement,type,options,correct_options,difficulty,explanation
-"What is output of console.log(typeof NaN)?","mcq_single","['number','NaN','undefined']","['number']","easy","Because NaN is a number in JS."
-"Choose all stable sorting algorithms.","mcq_multi","['Merge sort','Quick sort','Insertion sort']","['Merge sort','Insertion sort']","medium","Merge and insertion sort are stable if implemented normally."
-"Explain time complexity of binary search.","descriptive","[]","[]","easy","Binary search divides search space in half each step, O(log n)."
-"Implement function to reverse a linked list (coding).","coding","[]","[]","medium","Expected iterative and recursive solutions discussed in explanation."
-"Identify the Big-O of nested loops: for(i=0;i<n;i++){ for(j=0;j<n;j++){} }","mcq_single","['O(n)','O(n^2)','O(log n)']","['O(n^2)']","easy","Two nested loops both run n times, so O(n^2)."
