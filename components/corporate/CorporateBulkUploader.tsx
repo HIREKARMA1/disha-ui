@@ -506,37 +506,36 @@ export function CorporateBulkUploader({ onComplete, onCancel, moduleId }: Corpor
             setIsUploading(false)
         }
     }
-
     const downloadTemplate = async () => {
-        setIsDownloadingTemplate(true)
+        setIsDownloadingTemplate(true);
         try {
-            // Create a sample CSV template with JSON array format for options and correct_options
-            const csvContent = `statement,type,options,correct_options,difficulty,explanation
-"Which data structure uses FIFO order?","mcq_single","[{\"id\":\"a\",\"text\":\"Stack\"},{\"id\":\"b\",\"text\":\"Queue\"},{\"id\":\"c\",\"text\":\"Tree\"},{\"id\":\"d\",\"text\":\"Graph\"}]","[\"b\"]","medium","Queue follows First In First Out (FIFO) principle."
-"Which sorting algorithm has worst case O(n²)?","mcq_single","[{\"id\":\"a\",\"text\":\"Merge Sort\"},{\"id\":\"b\",\"text\":\"Quick Sort\"},{\"id\":\"c\",\"text\":\"Heap Sort\"},{\"id\":\"d\",\"text\":\"Bubble Sort\"}]","[\"d\"]","medium","Bubble Sort has O(n²) worst case time complexity."
-"Which of these is a linear data structure?","mcq_single","[{\"id\":\"a\",\"text\":\"Array\"},{\"id\":\"b\",\"text\":\"Tree\"},{\"id\":\"c\",\"text\":\"Graph\"},{\"id\":\"d\",\"text\":\"Heap\"}]","[\"a\"]","easy","Array is a linear data structure where elements are stored in contiguous memory locations."
-"Which searching algorithm works on sorted arrays?","mcq_single","[{\"id\":\"a\",\"text\":\"Linear Search\"},{\"id\":\"b\",\"text\":\"Binary Search\"},{\"id\":\"c\",\"text\":\"DFS\"},{\"id\":\"d\",\"text\":\"BFS\"}]","[\"b\"]","easy","Binary Search works on sorted arrays and has O(log n) time complexity."
-"What is the capital of France?","mcq_single","[{\"id\":\"a\",\"text\":\"Paris\"},{\"id\":\"b\",\"text\":\"London\"},{\"id\":\"c\",\"text\":\"Berlin\"},{\"id\":\"d\",\"text\":\"Madrid\"}]","[\"a\"]","easy","Paris is the capital and largest city of France."`
-            
-            const blob = new Blob([csvContent], { type: 'text/csv' })
-            const url = window.URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = url
-            link.download = 'practice_questions_template.csv'
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            window.URL.revokeObjectURL(url)
-            
-            toast.success('Template downloaded successfully!')
+          // Path to your CSV file inside the public folder
+          const response = await fetch('/images/dsa_easy_questions.csv');
+      
+          if (!response.ok) {
+            throw new Error('Failed to fetch the CSV template');
+          }
+      
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'dsa_easy_questions.csv'; // downloaded filename
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+      
+          toast.success('Template downloaded successfully!');
         } catch (error) {
-            console.error('Error downloading template:', error)
-            toast.error('Failed to download template')
+          console.error('Error downloading template:', error);
+          toast.error('Failed to download template');
         } finally {
-            setIsDownloadingTemplate(false)
+          setIsDownloadingTemplate(false);
         }
-    }
-
+      };
+      
+      
     return (
         <div className="p-6 space-y-4">
             {/* Header */}

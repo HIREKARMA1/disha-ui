@@ -28,9 +28,8 @@ import {
     GraduationCap as Cap,
     Wrench,
     Users2,
-    // HeartHandshake
+    HeartHandshake
 } from 'lucide-react'
-// import { FaHandshake } from "react-icons/fa6";
 import { apiClient } from '@/lib/api'
 import { UniversityProfile } from '@/types/university'
 
@@ -257,21 +256,23 @@ export function Navbar({
                                 priority
                             />
                         </Link>
-                        {/* <HeartHandshake className="h-6 w-6 text-primary-500 text-2xl" />
-                        <div className="ml-5">
-                            {user?.user_type === 'university' && (
-                                <Image
-                                    src={profile?.profile_picture || getLogoSrc()}
-                                    alt="University Logo"
-                                    width={150}
-                                    height={50}
-                                    priority
-                                    onError={(e) => {
-                                        e.currentTarget.src = getLogoSrc()
-                                    }}
-                                />
-                            )}
-                        </div> */}
+                        {user?.user_type === 'university' && profile?.profile_picture && (
+                            <>
+                                <HeartHandshake className="h-6 w-6 text-primary-500 ml-3" />
+                                <div className="ml-3">
+                                    <Image
+                                        src={profile.profile_picture}
+                                        alt="University Logo"
+                                        width={150}
+                                        height={50}
+                                        priority
+                                        onError={(e) => {
+                                            e.currentTarget.src = getLogoSrc()
+                                        }}
+                                    />
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Desktop Navigation */}

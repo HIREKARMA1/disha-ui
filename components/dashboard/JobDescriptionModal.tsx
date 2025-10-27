@@ -281,10 +281,10 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     }
 
     const formatExperience = (min?: number, max?: number) => {
-        if (!min && !max) return 'Not specified'
-        if (min && max) return `${min}-${max} years`
-        if (min) return `${min}+ years`
-        if (max) return `Up to ${max} years`
+        if (min === undefined && max === undefined) return 'Not specified'
+        if (min !== undefined && max !== undefined) return `${min}-${max} years`
+        if (min !== undefined) return `${min}+ years`
+        if (max !== undefined) return `Up to ${max} years`
         return 'Not specified'
     }
 

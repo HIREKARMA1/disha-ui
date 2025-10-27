@@ -540,34 +540,34 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
         }
     }
 
-    const handleDownloadTemplate = async () => {
-        setIsDownloadingTemplate(true)
+    const downloadTemplate = async () => {
+        setIsDownloadingTemplate(true);
         try {
-            // Create sample CSV content
-            const csvContent = [
-                'statement,type,options,correct_options,difficulty,explanation',
-                'What is the time complexity of binary search?,mcq_single,"O(n)|O(log n)|O(n²)|O(1)",O(log n),medium,Binary search eliminates half of the search space in each iteration.',
-                'Which of the following are sorting algorithms?,mcq_multi,"Bubble Sort|Quick Sort|Hash Map|Merge Sort","Bubble Sort|Quick Sort|Merge Sort",medium,Hash Map is a data structure, not a sorting algorithm.',
-                'Explain the concept of recursion,descriptive,,,medium,Recursion is a programming technique where a function calls itself.'
-            ].join('\n')
-
-            // Create blob and download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-            const link = document.createElement('a')
-            const url = URL.createObjectURL(blob)
-            link.setAttribute('href', url)
-            link.setAttribute('download', 'university_questions_template.csv')
-            link.style.visibility = 'hidden'
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
+          // Path to your CSV file inside the public folder
+          const response = await fetch('/images/dsa_easy_questions.csv');
+      
+          if (!response.ok) {
+            throw new Error('Failed to fetch the CSV template');
+          }
+      
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'dsa_easy_questions.csv'; // downloaded filename
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+      
+          toast.success('Template downloaded successfully!');
         } catch (error) {
-            console.error('Error downloading template:', error)
-            toast.error('Failed to download template')
+          console.error('Error downloading template:', error);
+          toast.error('Failed to download template');
         } finally {
-            setIsDownloadingTemplate(false)
+          setIsDownloadingTemplate(false);
         }
-    }
+      };
 
     return (
         <div className="p-6 space-y-4">
@@ -623,7 +623,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
                         </p>
                     </div>
                     <Button
-                        onClick={handleDownloadTemplate}
+                        onClick={downloadTemplate}
                         disabled={isDownloadingTemplate}
                         size="sm"
                         className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
