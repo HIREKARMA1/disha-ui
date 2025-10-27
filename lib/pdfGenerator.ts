@@ -91,15 +91,13 @@ export class JobDescriptionPDFGenerator {
       // Create a temporary container with improved visibility settings
       const container = document.createElement('div')
       container.innerHTML = htmlTemplate
-      // IMPORTANT: Keep container visible but off-screen for proper rendering
-      container.style.position = 'fixed'
+      // IMPORTANT: Keep container visible for html2canvas to capture it
+      container.style.position = 'absolute'
       container.style.left = '-9999px'
       container.style.top = '0'
       container.style.width = '210mm' // A4 width
       container.style.backgroundColor = 'white'
-      container.style.visibility = 'hidden' // Hidden but still rendered
-      container.style.opacity = '0' // Extra insurance
-      container.style.pointerEvents = 'none' // Prevent interaction
+      // DO NOT SET visibility:hidden or opacity:0 - html2canvas needs visible content!
       document.body.appendChild(container)
 
       // Force a synchronous reflow to ensure browser computes layout
@@ -128,17 +126,9 @@ export class JobDescriptionPDFGenerator {
         backgroundColor: '#ffffff',
         width: 794, // A4 width in pixels (210mm * 3.78)
         height: container.scrollHeight,
-        logging: true, // Enable logging to help debug issues
+        logging: false, // Disable logs for cleaner output
         windowWidth: 794,
-        windowHeight: container.scrollHeight,
-        onclone: (clonedDoc) => {
-          // Ensure cloned document has the same rendering
-          const clonedContainer = clonedDoc.body.querySelector('div')
-          if (clonedContainer) {
-            clonedContainer.style.visibility = 'visible'
-            clonedContainer.style.opacity = '1'
-          }
-        }
+        windowHeight: container.scrollHeight
       })
 
       // Remove temporary container
