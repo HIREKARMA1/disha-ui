@@ -88,45 +88,33 @@ export class JobDescriptionPDFGenerator {
       // Create HTML template with preloaded logo
       const htmlTemplate = this.createHTMLTemplate(job, corporateProfile, logoDataUrl)
 
-      // Create a temporary container with improved visibility settings
+      // Create a temporary container
       const container = document.createElement('div')
       container.innerHTML = htmlTemplate
-      // IMPORTANT: Keep container visible for html2canvas to capture it
       container.style.position = 'absolute'
       container.style.left = '-9999px'
       container.style.top = '0'
       container.style.width = '210mm' // A4 width
       container.style.backgroundColor = 'white'
-      // DO NOT SET visibility:hidden or opacity:0 - html2canvas needs visible content!
       document.body.appendChild(container)
-
-      // Force a synchronous reflow to ensure browser computes layout
-      const forceReflow = container.offsetHeight
-      console.log('📐 Container height after append:', forceReflow)
 
       // Wait for any remaining images to load
       await this.waitForImages(container)
 
-      // CRITICAL FIX: Wait for fonts and full rendering
-      // This ensures content is fully rendered on all systems
-      await this.waitForFullRendering(container)
-
-      // Verify content is actually in the container before capturing
-      const textContent = container.textContent || ''
-      console.log('📝 Container text length:', textContent.length)
-      if (textContent.length < 100) {
-        console.warn('⚠️ WARNING: Container has very little text content!')
-      }
-
       // Convert HTML to canvas with optimized settings
       const canvas = await html2canvas(container, {
-        scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
+        scale: 2, // Increased for better text clarity
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         width: 794, // A4 width in pixels (210mm * 3.78)
         height: container.scrollHeight,
-        logging: false, // Disable logs for cleaner output
+        logging: false,
+        // Ensure images are rendered properly
+        imageTimeout: 0,
+        // Handle scrollable content properly
+        scrollY: -window.scrollY,
+        scrollX: -window.scrollX,
         windowWidth: 794,
         windowHeight: container.scrollHeight
       })
@@ -134,8 +122,8 @@ export class JobDescriptionPDFGenerator {
       // Remove temporary container
       document.body.removeChild(container)
 
-      // Create PDF from canvas with JPEG compression for much smaller file size
-      const imgData = canvas.toDataURL('image/jpeg', 0.85) // Use JPEG with 85% quality instead of PNG
+      // Create PDF from canvas with better compression
+      const imgData = canvas.toDataURL('image/jpeg', 0.90) // Slightly higher quality for better text readability
       const imgWidth = 210 // A4 width in mm
       const pageHeight = 297 // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width
@@ -143,15 +131,16 @@ export class JobDescriptionPDFGenerator {
       let heightLeft = imgHeight
       let position = 0
 
-      this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+      // Add first page
+      this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST')
 
       heightLeft -= pageHeight
 
-      // Add new pages if needed
+      // Add new pages if needed with proper positioning
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight
         this.doc.addPage()
-        this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+        this.doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST')
         heightLeft -= pageHeight
       }
 
@@ -313,52 +302,6 @@ export class JobDescriptionPDFGenerator {
     await Promise.all(imagePromises)
   }
 
-  /**
-   * Wait for fonts to load and browser to complete rendering
-   * This fixes the issue where PDFs show only headings on some systems
-   */
-  private async waitForFullRendering(container: HTMLElement): Promise<void> {
-    console.log('⏳ Starting rendering wait sequence...')
-    
-    // Step 1: Wait for fonts to load
-    try {
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready
-        console.log('✅ Fonts loaded successfully')
-      }
-    } catch (error) {
-      console.warn('⚠️ Font loading check failed, continuing anyway:', error)
-    }
-
-    // Step 2: Force multiple reflows to ensure CSS is computed
-    // This is critical for CSS Grid and Flexbox layouts
-    for (let i = 0; i < 3; i++) {
-      const height = container.offsetHeight
-      const width = container.offsetWidth
-      console.log(`🔄 Reflow ${i + 1}: ${width}x${height}`)
-      await new Promise(resolve => requestAnimationFrame(resolve))
-    }
-
-    // Step 3: Wait additional frames for paint
-    await new Promise(resolve => requestAnimationFrame(resolve))
-    await new Promise(resolve => requestAnimationFrame(resolve))
-
-    // Step 4: Extended delay for slower systems (increased from 300ms to 1000ms)
-    // This is the most critical fix for cross-system compatibility
-    console.log('⏳ Waiting for complete render stabilization (1000ms)...')
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Step 5: Final verification - check if content is actually rendered
-    const allTextElements = container.querySelectorAll('div, p, span, li, h1, h2, h3, h4')
-    console.log(`📊 Found ${allTextElements.length} text elements in container`)
-    
-    // Force one more reflow to ensure everything is painted
-    const finalHeight = container.scrollHeight
-    console.log(`📏 Final container scroll height: ${finalHeight}px`)
-
-    console.log('✅ Full rendering complete, ready to capture')
-  }
-
   private createHTMLTemplate(job: JobData, corporateProfile?: CorporateProfile, logoDataUrl?: string | null): string {
     return `
       <!DOCTYPE html>
@@ -373,23 +316,20 @@ export class JobDescriptionPDFGenerator {
           }
           
           body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             line-height: 1.5;
             color: #000;
             background: white;
             width: 210mm;
             padding: 0;
             margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
           }
           
           .page {
-            min-height: 297mm;
             position: relative;
-            page-break-after: always;
-          }
-          
-          .page:last-child {
-            page-break-after: auto;
+            width: 100%;
           }
           
           .header {
@@ -423,14 +363,14 @@ export class JobDescriptionPDFGenerator {
             background: linear-gradient(to right, #b8e8f5, #d4f4ff);
             color: #006b8f;
             text-align: left;
-            justify-content: flex-start;
             padding: 15px 20px;
-            align-items: center;
             font-size: 18px;
             font-weight: bold;
             border-radius: 20px;
             margin-bottom: 20px;
             display: inline-block;
+            min-width: 40%;
+            max-width: 80%;
           }
           
           .company-name-label {
@@ -472,38 +412,19 @@ export class JobDescriptionPDFGenerator {
             font-size: 14px;
             line-height: 1.6;
             text-align: justify;
-            display: block;
-            visibility: visible;
-            opacity: 1;
           }
           
-          .section-title {
-            background: linear-gradient(to right, #b8e8f5, #d4f4ff);
-            color: #006b8f;
-            text-align: left;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 20px;
-            margin: 0 0 20px 0;
-            width: 50%;
-            justify-content: flex-start;
-            align-items: center;
-          }
           
           .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px 30px;
             margin-bottom: 20px;
-            visibility: visible;
           }
           
           .info-item {
             font-size: 14px;
             line-height: 1.6;
-            display: block;
-            visibility: visible;
-            opacity: 1;
           }
           
           .info-item strong {
@@ -542,9 +463,6 @@ export class JobDescriptionPDFGenerator {
             line-height: 1.7;
             text-align: justify;
             margin-bottom: 20px;
-            display: block;
-            visibility: visible;
-            opacity: 1;
           }
           
           .section-content-two-column {
@@ -572,8 +490,6 @@ export class JobDescriptionPDFGenerator {
             list-style: none;
             padding: 0;
             margin: 0;
-            display: block;
-            visibility: visible;
           }
           
           .bullet-list li {
@@ -582,9 +498,6 @@ export class JobDescriptionPDFGenerator {
             margin-bottom: 8px;
             font-size: 14px;
             line-height: 1.6;
-            display: list-item;
-            visibility: visible;
-            opacity: 1;
           }
           
           .bullet-list li::before {
@@ -638,21 +551,15 @@ export class JobDescriptionPDFGenerator {
             font-weight: bold;
           }
           
-          .page-break {
-            page-break-after: always;
-          }
-          
           .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             background: linear-gradient(to right, #d4f4ff, #e8f9ff);
             padding: 15px 30px;
             text-align: center;
             font-size: 12px;
             color: #006b8f;
             border-top: 2px solid #b8e8f5;
+            margin-top: 30px;
+            width: 100%;
           }
           
           .footer-content {
@@ -664,20 +571,29 @@ export class JobDescriptionPDFGenerator {
           
           .footer-left {
             text-align: left;
+            flex: 1;
           }
           
           .footer-center {
             text-align: center;
             font-weight: bold;
+            flex: 1;
           }
           
           .footer-right {
             text-align: right;
+            flex: 1;
+          }
+          
+          .subsection-title {
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            font-size: 14px;
+            color: #2d3748;
           }
         </style>
       </head>
       <body>
-        <!-- Page 1 -->
         <div class="page">
           <div class="header">
             <div class="company-logo-container">
@@ -690,7 +606,7 @@ export class JobDescriptionPDFGenerator {
 
           <div class="content-wrapper">
             <!-- About Company Section -->
-            <h2 class="section-title padding-bottom-10">About Company</h2>
+            <div class="section-title">About Company</div>
             <br>
             <div class="company-name-container">
               <span>Company Name: </span>
@@ -761,22 +677,6 @@ export class JobDescriptionPDFGenerator {
               ${job.description}
             </div>
 
-          </div>
-        </div>
-
-        <!-- Page 2 -->
-        <div class="page">
-          <div class="header">
-            <div class="company-logo-container">
-              ${logoDataUrl ?
-        `<img src="${logoDataUrl}" alt="Company Logo" class="company-logo">` :
-        '<div style="width: 140px; height: 60px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #718096; font-size: 12px;">LOGO</div>'
-      }
-            </div>
-          </div>
-
-          <div class="content-wrapper">
-
             <!-- Requirements Section -->
             ${job.requirements ? `
             <div class="section-title">Requirements</div>
@@ -790,7 +690,7 @@ export class JobDescriptionPDFGenerator {
 
             <!-- Required Skills Section -->
             ${job.skills_required && job.skills_required.length > 0 ? `
-            <div class="section-title">Required Skills :</div>
+            <div class="section-title">Required Skills</div>
             <div class="skills-grid ${this.getSkillsGridClass(job.skills_required.length)}">
               ${job.skills_required.map(skill => `<div class="skill-item">${skill}</div>`).join('')}
             </div>
@@ -805,8 +705,8 @@ export class JobDescriptionPDFGenerator {
         `<li>${resp.replace(/^[•\-\*]\s*/, '').trim()}</li>`
       ).join('')}
             </ul>
+            <br>
             ` : ''}
-
 
             <!-- Education Requirements Section -->
             ${job.education_level || job.education_degree || job.education_branch ? `
@@ -825,26 +725,7 @@ export class JobDescriptionPDFGenerator {
             <br>
             ` : ''}
 
-
-          </div>
-
-          
-        </div>
-
-        <!-- Page 3 -->
-        <div class="page">
-          <div class="header">
-            <div class="company-logo-container">
-              ${logoDataUrl ?
-        `<img src="${logoDataUrl}" alt="Company Logo" class="company-logo">` :
-        '<div style="width: 140px; height: 60px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #718096; font-size: 12px;">LOGO</div>'
-      }
-            </div>
-          </div>
-
-          <div class="content-wrapper">
-
-                                    <!-- Additional Job Details Section -->
+            <!-- Additional Job Details Section -->
             <div class="section-title">Additional Job Details</div>
             <div class="info-grid">
               <div class="info-item">
@@ -933,26 +814,26 @@ export class JobDescriptionPDFGenerator {
               ` : ''}
             </div>
           </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-          <div class="footer-content">
-            <div class="footer-left">
-              <div>© ${new Date().getFullYear()} ${corporateProfile?.company_name || 'Company Name'}</div>
-              <div>All rights reserved</div>
-            </div>
-            <div class="footer-center">
-              <div>Job Description</div>
-              <div>Generated on ${new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}</div>
-            </div>
-            <div class="footer-right">
-              <div>${corporateProfile?.website_url || 'www.company.com'}</div>
-              <div>${corporateProfile?.company_email || 'contact@company.com'}</div>
+          
+          <!-- Footer -->
+          <div class="footer">
+            <div class="footer-content">
+              <div class="footer-left">
+                <div>© ${new Date().getFullYear()} ${corporateProfile?.company_name || 'Company Name'}</div>
+                <div>All rights reserved</div>
+              </div>
+              <div class="footer-center">
+                <div>Job Description</div>
+                <div>Generated on ${new Date().toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}</div>
+              </div>
+              <div class="footer-right">
+                <div>${corporateProfile?.website_url || 'www.company.com'}</div>
+                <div>${corporateProfile?.company_email || 'contact@company.com'}</div>
+              </div>
             </div>
           </div>
         </div>
