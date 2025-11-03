@@ -589,6 +589,19 @@ class ApiClient {
     const response: AxiosResponse = await this.client.delete(`/practice/test-cases/${testCaseId}`);
     return response.data;
   }
+
+  // Image upload endpoint for company logos
+  async uploadImage(file: File): Promise<{ file_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post('/universities/upload-profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

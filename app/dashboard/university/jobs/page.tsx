@@ -68,6 +68,16 @@ interface UniversityJob {
     created_at?: string
     is_active?: boolean
     can_apply?: boolean
+    // Company information fields (for university-created jobs)
+    company_logo?: string
+    company_website?: string
+    company_address?: string
+    company_size?: string
+    company_type?: string
+    company_founded?: number
+    company_description?: string
+    contact_person?: string
+    contact_designation?: string
 }
 
 interface UniversityJobsResponse {
@@ -326,10 +336,68 @@ function UniversityJobsPageContent() {
         setShowAppliedStudentsModal(true)
     }
 
-    // Handle edit job
-    const handleEditJob = (job: UniversityJob) => {
-        setEditingJob(job)
-        setShowEditModal(true)
+    // Handle edit job - fetch complete job data
+    const handleEditJob = async (job: UniversityJob) => {
+        try {
+            // Fetch complete job data by ID to ensure we have all fields including company info
+            const completeJobData = await apiClient.getJobById(job.id)
+            console.log('Complete job data fetched for editing:', completeJobData)
+            
+            // Map the complete job data to UniversityJob format
+            const jobForEdit: UniversityJob = {
+                ...job,
+                ...completeJobData,
+                // Ensure all company information fields are included
+                company_name: completeJobData.company_name || job.company_name,
+                company_logo: completeJobData.company_logo,
+                company_website: completeJobData.company_website,
+                company_address: completeJobData.company_address,
+                company_size: completeJobData.company_size,
+                company_type: completeJobData.company_type,
+                company_founded: completeJobData.company_founded,
+                company_description: completeJobData.company_description,
+                contact_person: completeJobData.contact_person,
+                contact_designation: completeJobData.contact_designation,
+                // Map other fields
+                requirements: completeJobData.requirements || job.requirements,
+                responsibilities: completeJobData.responsibilities || job.responsibilities,
+                remote_work: completeJobData.remote_work ?? job.remote_work,
+                travel_required: completeJobData.travel_required ?? job.travel_required,
+                mode_of_work: completeJobData.mode_of_work || job.mode_of_work,
+                salary_min: completeJobData.salary_min?.toString() || job.salary_min,
+                salary_max: completeJobData.salary_max?.toString() || job.salary_max,
+                salary_currency: completeJobData.salary_currency || job.salary_currency,
+                experience_min: completeJobData.experience_min ?? job.experience_min,
+                experience_max: completeJobData.experience_max ?? job.experience_max,
+                education_level: completeJobData.education_level || job.education_level,
+                education_degree: completeJobData.education_degree || job.education_degree,
+                education_branch: completeJobData.education_branch || job.education_branch,
+                skills_required: completeJobData.skills_required || job.skills_required,
+                application_deadline: completeJobData.application_deadline || job.application_deadline,
+                industry: completeJobData.industry || job.industry,
+                selection_process: completeJobData.selection_process || job.selection_process,
+                campus_drive_date: completeJobData.campus_drive_date || job.campus_drive_date,
+                number_of_openings: completeJobData.number_of_openings ?? job.number_of_openings,
+                perks_and_benefits: completeJobData.perks_and_benefits || job.perks_and_benefits,
+                eligibility_criteria: completeJobData.eligibility_criteria || job.eligibility_criteria,
+                service_agreement_details: completeJobData.service_agreement_details || job.service_agreement_details,
+                ctc_with_probation: completeJobData.ctc_with_probation || job.ctc_with_probation,
+                ctc_after_probation: completeJobData.ctc_after_probation || job.ctc_after_probation,
+                expiration_date: completeJobData.expiration_date || job.expiration_date,
+                created_at: completeJobData.created_at || job.created_at,
+                is_active: completeJobData.is_active ?? job.is_active,
+                can_apply: completeJobData.can_apply ?? job.can_apply
+            }
+            
+            setEditingJob(jobForEdit)
+            setShowEditModal(true)
+        } catch (error: any) {
+            console.error('Error fetching complete job data:', error)
+            toast.error('Failed to load job details. Using available data.')
+            // Fallback to using the job data we already have
+            setEditingJob(job)
+            setShowEditModal(true)
+        }
     }
 
     // Handle delete job
@@ -847,7 +915,18 @@ function UniversityJobsPageContent() {
                         service_agreement_details: editingJob.service_agreement_details,
                         ctc_with_probation: editingJob.ctc_with_probation,
                         ctc_after_probation: editingJob.ctc_after_probation,
-                        expiration_date: editingJob.expiration_date
+                        expiration_date: editingJob.expiration_date,
+                        // Company information fields (for university-created jobs)
+                        company_name: editingJob.company_name,
+                        company_logo: editingJob.company_logo,
+                        company_website: editingJob.company_website,
+                        company_address: editingJob.company_address,
+                        company_size: editingJob.company_size,
+                        company_type: editingJob.company_type,
+                        company_founded: editingJob.company_founded,
+                        company_description: editingJob.company_description,
+                        contact_person: editingJob.contact_person,
+                        contact_designation: editingJob.contact_designation
                     } as any}
                 />
             )}

@@ -40,7 +40,7 @@ interface Job {
     views_count: number
     applications_count: number
     created_at: string
-    corporate_id: string
+    corporate_id?: string | null
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
@@ -52,6 +52,17 @@ interface Job {
     expiration_date?: string
     ctc_with_probation?: string
     ctc_after_probation?: string
+    // Company information fields (for university-created jobs)
+    company_name?: string
+    company_logo?: string
+    company_website?: string
+    company_address?: string
+    company_size?: string
+    company_type?: string
+    company_founded?: number
+    company_description?: string
+    contact_person?: string
+    contact_designation?: string
 }
 
 interface CorporateProfile {
@@ -181,7 +192,35 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
 
     useEffect(() => {
         const fetchCorporateProfile = async () => {
-            if (!job.corporate_id) return
+            // For university-created jobs, use company information from job fields
+            if (!job.corporate_id && (job.company_name || job.company_logo || job.company_website)) {
+                // Create corporate profile from job's company information fields
+                const profileFromJob: CorporateProfile = {
+                    id: job.id, // Use job ID as temporary ID
+                    company_name: job.company_name || job.corporate_name || 'Company',
+                    website_url: job.company_website,
+                    industry: job.industry,
+                    company_size: job.company_size,
+                    founded_year: job.company_founded,
+                    description: job.company_description,
+                    company_type: job.company_type,
+                    company_logo: job.company_logo,
+                    verified: false, // University-created jobs are not verified
+                    contact_person: job.contact_person,
+                    contact_designation: job.contact_designation,
+                    address: job.company_address
+                }
+                setCorporateProfile(profileFromJob)
+                setCorporateError(null)
+                setLoadingCorporate(false)
+                return
+            }
+
+            // For corporate-created jobs, fetch from corporate profile API
+            if (!job.corporate_id) {
+                setLoadingCorporate(false)
+                return
+            }
 
             setLoadingCorporate(true)
             setCorporateError(null)
@@ -198,7 +237,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
         }
 
         fetchCorporateProfile()
-    }, [job.corporate_id])
+    }, [job.corporate_id, job.company_name, job.company_logo, job.company_website])
 
     const handleDownloadPDF = async () => {
         setIsDownloadingPDF(true)
@@ -244,7 +283,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 selection_process: job.selection_process,
                 campus_drive_date: job.campus_drive_date,
                 corporate_name: job.corporate_name,
-                corporate_id: job.corporate_id,
+                corporate_id: job.corporate_id || undefined,
                 created_at: job.created_at,
                 number_of_openings: job.number_of_openings,
                 perks_and_benefits: job.perks_and_benefits,
@@ -341,10 +380,10 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{job.title}</h2>
-                                {job.corporate_name && (
+                                {(job.company_name || job.corporate_name) && (
                                     <p className="text-lg text-gray-600 dark:text-gray-300 flex items-center gap-2">
                                         <Building className="w-5 h-5" />
-                                        {job.corporate_name}
+                                        {job.company_name || job.corporate_name}
                                     </p>
                                 )}
                             </div>

@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
@@ -155,6 +156,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+    const [uploadingLogo, setUploadingLogo] = useState(false)
+    const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
         description: '',
@@ -270,6 +273,51 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             ...prev,
             location: prev.location.filter(location => location !== locationToRemove)
         }))
+    }
+
+    const handleLogoUpload = async (file: File) => {
+        setUploadingLogo(true)
+        try {
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size must be less than 5MB')
+                setUploadingLogo(false)
+                return
+            }
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+                setUploadingLogo(false)
+                return
+            }
+
+            // Upload the file
+            const result = await apiClient.uploadImage(file)
+            
+            // Update form data with the uploaded logo URL
+            handleInputChange('company_logo', result.file_url)
+            
+            // Create preview URL for display
+            const previewUrl = URL.createObjectURL(file)
+            setLogoPreview(previewUrl)
+            
+            toast.success('Company logo uploaded successfully!')
+        } catch (error: any) {
+            console.error('Logo upload error:', error)
+            toast.error(error.response?.data?.detail || 'Failed to upload logo. Please try again.')
+        } finally {
+            setUploadingLogo(false)
+        }
+    }
+
+    const handleLogoRemove = () => {
+        handleInputChange('company_logo', '')
+        setLogoPreview(null)
+        if (logoPreview) {
+            URL.revokeObjectURL(logoPreview)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -451,6 +499,11 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 contact_person: '',
                 contact_designation: ''
             })
+            // Reset logo preview
+            if (logoPreview) {
+                URL.revokeObjectURL(logoPreview)
+            }
+            setLogoPreview(null)
         } catch (error: any) {
             console.error('Failed to create job:', error)
             const errorMessage = error.response?.data?.detail || error.message || 'Failed to create job. Please try again.'
@@ -638,13 +691,23 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Company Logo URL
+                                                Company Logo
                                             </label>
-                                            <Input
-                                                value={formData.company_logo}
-                                                onChange={(e) => handleInputChange('company_logo', e.target.value)}
-                                                placeholder="https://example.com/logo.png"
+                                            <FileUpload
+                                                onFileSelect={handleLogoUpload}
+                                                onFileRemove={handleLogoRemove}
+                                                currentFile={formData.company_logo || logoPreview || null}
+                                                type="image"
+                                                maxSize={5}
+                                                disabled={uploadingLogo}
+                                                placeholder="Upload company logo"
+                                                className="w-full"
                                             />
+                                            {uploadingLogo && (
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                    Uploading logo...
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
