@@ -29,15 +29,8 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('access_token');
-        console.log('🔐 API Client: Auth token:', token ? 'Present' : 'Missing');
-        console.log('🔐 API Client: Token value:', token);
-        console.log('🔐 API Client: Request URL:', config.url);
-        console.log('🔐 API Client: Request method:', config.method);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log('🔐 API Client: Authorization header set');
-        } else {
-          console.log('🔐 API Client: No token found, request will be unauthenticated');
         }
         return config;
       },
@@ -91,6 +84,17 @@ class ApiClient {
 
   async registerUniversity(data: UniversityRegisterRequest): Promise<{ message: string; university_id: string; email: string }> {
     const response: AxiosResponse = await this.client.post('/auth/register/university', data);
+    return response.data;
+  }
+
+  // Email OTP for signup
+  async sendEmailOtp(email: string): Promise<{ message: string }> {
+    const response: AxiosResponse = await this.client.post('/auth/send-email-otp', { email });
+    return response.data;
+  }
+
+  async verifyEmailOtp(payload: { email: string; code: string }): Promise<{ message: string }> {
+    const response: AxiosResponse = await this.client.post('/auth/verify-email-otp', payload);
     return response.data;
   }
 
@@ -192,6 +196,25 @@ class ApiClient {
     limit?: number;
   } = {}): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/applications', { params });
+    return response.data;
+  }
+
+  async updateUniversityApplicationStatus(
+    applicationId: string,
+    status: string,
+    notes?: string,
+    interviewDate?: string,
+    interviewLocation?: string
+  ): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('status', status);
+    if (notes) params.append('notes', notes);
+    if (interviewDate) params.append('interview_date', interviewDate);
+    if (interviewLocation) params.append('interview_location', interviewLocation);
+
+    const response: AxiosResponse = await this.client.put(
+      `/universities/applications/${applicationId}/status?${params.toString()}`
+    );
     return response.data;
   }
 
@@ -355,6 +378,12 @@ class ApiClient {
     return response.data;
   }
 
+  // Authenticated corporate profile of current user
+  async getCorporateProfile(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/corporates/profile');
+    return response.data;
+  }
+
   async getUniversityStudents(includeArchived: boolean = false): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/students', {
       params: { include_archived: includeArchived }
@@ -419,6 +448,16 @@ class ApiClient {
     return response.data;
   }
 
+  async getJobAssignmentAttempts(jobId: string): Promise<any> {
+    try {
+      const response: AxiosResponse = await this.client.get(`/practice/job/${jobId}/attempts`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch job assignment attempts:', error);
+      throw error;
+    }
+  }
+
   async approveUniversityJob(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/approve`);
     return response.data;
@@ -426,6 +465,26 @@ class ApiClient {
 
   async rejectUniversityJob(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/universities/jobs/${jobId}/reject`);
+    return response.data;
+  }
+
+  async createUniversityJob(jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/jobs/university/create', jobData);
+    return response.data;
+  }
+
+  async updateJobUniversity(jobId: string, jobData: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/jobs/university/${jobId}`, jobData);
+    return response.data;
+  }
+
+  async deleteJobUniversity(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/jobs/university/${jobId}`);
+    return response.data;
+  }
+
+  async getAppliedStudentsUniversity(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/universities/jobs/${jobId}/applied-students`);
     return response.data;
   }
 
@@ -464,14 +523,70 @@ class ApiClient {
     return response.data;
   }
 
-  // Public corporate profile endpoint
-  async getCorporateProfile(corporateId: string): Promise<any> {
+  // Public corporate profile endpoint (by id)
+  async getCorporateProfileById(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/${corporateId}`);
     return response.data;
   }
 
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
+    return response.data;
+  }
+
+  // Practice Modules by Job ID
+  async getPracticeModulesByJobId(jobId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(`/practice/modules/by-job/${jobId}`);
+    return response.data;
+  }
+
+  // Coding Practice endpoints
+  async executeCodingCode(codeData: {
+    code: string;
+    language: string;
+    input?: string;
+    question_id?: string;
+  }): Promise<{
+    stdout: string;
+    stderr: string;
+    runtime: number;
+    memory: number;
+    status: string;
+  }> {
+    const response: AxiosResponse = await this.client.post('/practice/coding/execute', codeData);
+    return response.data;
+  }
+
+  // Test Case Management endpoints
+  async createTestCase(questionId: string, testCaseData: {
+    input_data: string;
+    expected_output: string;
+    is_hidden: boolean;
+    points: number;
+    order: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/practice/questions/${questionId}/test-cases`, testCaseData);
+    return response.data;
+  }
+
+  async getTestCases(questionId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(`/practice/questions/${questionId}/test-cases`);
+    return response.data;
+  }
+
+  async updateTestCase(testCaseId: string, testCaseData: {
+    input_data: string;
+    expected_output: string;
+    is_hidden: boolean;
+    points: number;
+    order: number;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.put(`/practice/test-cases/${testCaseId}`, testCaseData);
+    return response.data;
+  }
+
+  async deleteTestCase(testCaseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/practice/test-cases/${testCaseId}`);
     return response.data;
   }
 }

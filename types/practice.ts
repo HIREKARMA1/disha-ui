@@ -1,3 +1,12 @@
+export interface TestCase {
+  id?: string
+  input_data: string
+  expected_output: string
+  is_hidden: boolean
+  points: number
+  order: number
+}
+
 export interface Question {
   id: string
   statement: string // HTML allowed
@@ -8,11 +17,14 @@ export interface Question {
   }>
   correct_options?: string[] // Only returned to admin / correct-check endpoints
   explanation?: string // HTML allowed
+  test_cases?: TestCase[] // Test cases for coding questions
   tags: string[]
   role: string
   difficulty: 'easy' | 'medium' | 'hard'
   time_limit_seconds?: number
 }
+
+export type PracticeCategory = 'ai-mock-tests' | 'ai-mock-interviews' | 'coding-practice' | 'challenges-engagement'
 
 export interface PracticeModule {
   id: string
@@ -25,6 +37,35 @@ export interface PracticeModule {
   description?: string
   difficulty?: 'easy' | 'medium' | 'hard'
   tags?: string[]
+  category?: PracticeCategory
+  
+  // Creator and targeting fields
+  creator_type?: 'admin' | 'university' | 'corporate'
+  creator_id?: string
+  
+  // Job association (optional - only for modules created from job assignments)
+  job_id?: string
+  
+  // Targeting fields for filtering
+  target_all_colleges?: boolean
+  target_college_ids?: string[]  // University names
+  target_all_branches?: boolean
+  target_branch_ids?: string[]   // Branch names
+  
+  // University-specific targeting fields
+  university_target_all_branches?: boolean
+  university_target_branch_ids?: string[]
+  
+  // Date limits
+  start_date?: string
+  end_date?: string
+  
+  // Days remaining until expiration (calculated field)
+  days_remaining?: number | null
+  
+  // Timestamps
+  created_at?: string
+  updated_at?: string
 }
 
 export interface QuestionAnswer {
@@ -46,6 +87,7 @@ export interface QuestionResult {
   question_id: string
   is_correct: boolean
   explanation?: string
+  time_spent?: number
 }
 
 export interface WeakArea {
@@ -112,4 +154,61 @@ export interface StudentAttempt {
   ended_at: string
   answers: QuestionAnswer[]
   question_results: QuestionResult[]
+}
+
+// Schema types for API requests
+export interface CreatePracticeModuleSchema {
+  title: string
+  description?: string
+  role: string
+  category?: PracticeCategory
+  difficulty?: 'easy' | 'medium' | 'hard'
+  duration_seconds: number
+  tags?: string[]
+}
+
+export interface UpdatePracticeModuleSchema {
+  title?: string
+  description?: string
+  role?: string
+  category?: PracticeCategory
+  difficulty?: 'easy' | 'medium' | 'hard'
+  duration_seconds?: number
+  tags?: string[]
+  is_archived?: boolean
+}
+
+export interface CreateQuestionSchema {
+  statement: string
+  type: 'mcq_single' | 'mcq_multi' | 'descriptive' | 'coding'
+  options?: Array<{
+    id: string
+    text: string
+  }>
+  correct_options?: string[]
+  explanation?: string
+  test_cases?: TestCase[]  // Test cases for coding questions
+  tags: string[]
+  role: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  time_limit_seconds?: number
+  category?: PracticeCategory
+}
+
+export interface UpdateQuestionSchema {
+  statement?: string
+  type?: 'mcq_single' | 'mcq_multi' | 'descriptive' | 'coding'
+  options?: Array<{
+    id: string
+    text: string
+  }>
+  correct_options?: string[]
+  explanation?: string
+  test_cases?: TestCase[]  // Test cases for coding questions
+  tags?: string[]
+  role?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
+  time_limit_seconds?: number
+  category?: PracticeCategory
+  archived?: boolean
 }

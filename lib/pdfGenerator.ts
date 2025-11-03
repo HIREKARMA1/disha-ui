@@ -88,18 +88,35 @@ export class JobDescriptionPDFGenerator {
       // Create HTML template with preloaded logo
       const htmlTemplate = this.createHTMLTemplate(job, corporateProfile, logoDataUrl)
 
-      // Create a temporary container
+      // Create a temporary container with improved visibility settings
       const container = document.createElement('div')
       container.innerHTML = htmlTemplate
+      // IMPORTANT: Keep container visible for html2canvas to capture it
       container.style.position = 'absolute'
       container.style.left = '-9999px'
       container.style.top = '0'
       container.style.width = '210mm' // A4 width
       container.style.backgroundColor = 'white'
+      // DO NOT SET visibility:hidden or opacity:0 - html2canvas needs visible content!
       document.body.appendChild(container)
+
+      // Force a synchronous reflow to ensure browser computes layout
+      const forceReflow = container.offsetHeight
+      console.log('📐 Container height after append:', forceReflow)
 
       // Wait for any remaining images to load
       await this.waitForImages(container)
+
+      // CRITICAL FIX: Wait for fonts and full rendering
+      // This ensures content is fully rendered on all systems
+      await this.waitForFullRendering(container)
+
+      // Verify content is actually in the container before capturing
+      const textContent = container.textContent || ''
+      console.log('📝 Container text length:', textContent.length)
+      if (textContent.length < 100) {
+        console.warn('⚠️ WARNING: Container has very little text content!')
+      }
 
       // Convert HTML to canvas with optimized settings
       const canvas = await html2canvas(container, {
@@ -295,6 +312,52 @@ export class JobDescriptionPDFGenerator {
     await Promise.all(imagePromises)
   }
 
+  /**
+   * Wait for fonts to load and browser to complete rendering
+   * This fixes the issue where PDFs show only headings on some systems
+   */
+  private async waitForFullRendering(container: HTMLElement): Promise<void> {
+    console.log('⏳ Starting rendering wait sequence...')
+    
+    // Step 1: Wait for fonts to load
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready
+        console.log('✅ Fonts loaded successfully')
+      }
+    } catch (error) {
+      console.warn('⚠️ Font loading check failed, continuing anyway:', error)
+    }
+
+    // Step 2: Force multiple reflows to ensure CSS is computed
+    // This is critical for CSS Grid and Flexbox layouts
+    for (let i = 0; i < 3; i++) {
+      const height = container.offsetHeight
+      const width = container.offsetWidth
+      console.log(`🔄 Reflow ${i + 1}: ${width}x${height}`)
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
+
+    // Step 3: Wait additional frames for paint
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => requestAnimationFrame(resolve))
+
+    // Step 4: Extended delay for slower systems (increased from 300ms to 1000ms)
+    // This is the most critical fix for cross-system compatibility
+    console.log('⏳ Waiting for complete render stabilization (1000ms)...')
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // Step 5: Final verification - check if content is actually rendered
+    const allTextElements = container.querySelectorAll('div, p, span, li, h1, h2, h3, h4')
+    console.log(`📊 Found ${allTextElements.length} text elements in container`)
+    
+    // Force one more reflow to ensure everything is painted
+    const finalHeight = container.scrollHeight
+    console.log(`📏 Final container scroll height: ${finalHeight}px`)
+
+    console.log('✅ Full rendering complete, ready to capture')
+  }
+
   private createHTMLTemplate(job: JobData, corporateProfile?: CorporateProfile, logoDataUrl?: string | null): string {
     return `
       <!DOCTYPE html>
@@ -411,6 +474,9 @@ export class JobDescriptionPDFGenerator {
             font-size: 14px;
             line-height: 1.6;
             text-align: justify;
+            display: block;
+            visibility: visible;
+            opacity: 1;
           }
           
           .section-title {
@@ -431,11 +497,15 @@ export class JobDescriptionPDFGenerator {
             grid-template-columns: 1fr 1fr;
             gap: 12px 30px;
             margin-bottom: 20px;
+            visibility: visible;
           }
           
           .info-item {
             font-size: 14px;
             line-height: 1.6;
+            display: block;
+            visibility: visible;
+            opacity: 1;
           }
           
           .info-item strong {
@@ -474,6 +544,9 @@ export class JobDescriptionPDFGenerator {
             line-height: 1.7;
             text-align: justify;
             margin-bottom: 20px;
+            display: block;
+            visibility: visible;
+            opacity: 1;
           }
           
           .section-content-two-column {
@@ -501,6 +574,8 @@ export class JobDescriptionPDFGenerator {
             list-style: none;
             padding: 0;
             margin: 0;
+            display: block;
+            visibility: visible;
           }
           
           .bullet-list li {
@@ -509,6 +584,9 @@ export class JobDescriptionPDFGenerator {
             margin-bottom: 8px;
             font-size: 14px;
             line-height: 1.6;
+            display: list-item;
+            visibility: visible;
+            opacity: 1;
           }
           
           .bullet-list li::before {

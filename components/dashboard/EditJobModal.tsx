@@ -155,6 +155,7 @@ interface EditJobModalProps {
     onJobUpdated: () => void
     job: Job | null
     isAdmin?: boolean // Add prop to indicate if this is admin context
+    isUniversity?: boolean // Add prop to indicate if this is university context
 }
 
 interface JobFormData {
@@ -242,7 +243,7 @@ const parseEducationField = (field: string | string[]): string[] => {
     return []
 }
 
-export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false }: EditJobModalProps) {
+export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
@@ -533,6 +534,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             console.log('📝 Job Update Request:', {
                 jobId: job.id,
                 isAdmin: isAdmin,
+                isUniversity: isUniversity,
                 number_of_openings: {
                     formValue: formData.number_of_openings,
                     parsedValue: jobData.number_of_openings,
@@ -546,6 +548,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             let response
             if (isAdmin) {
                 response = await apiClient.updateJobAdmin(job.id, jobData)
+            } else if (isUniversity) {
+                response = await apiClient.updateJobUniversity(job.id, jobData)
             } else {
                 response = await apiClient.updateJob(job.id, jobData)
             }
@@ -554,6 +558,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             console.log('✅ Job Update Success:', {
                 jobId: job.id,
                 isAdmin: isAdmin,
+                isUniversity: isUniversity,
                 response: response,
                 number_of_openings: {
                     requested: jobData.number_of_openings,
@@ -570,6 +575,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             console.error('❌ Job Update Failed:', {
                 jobId: job.id,
                 isAdmin: isAdmin,
+                isUniversity: isUniversity,
                 error: error,
                 errorMessage: error.message,
                 errorResponse: error.response?.data,

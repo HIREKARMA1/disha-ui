@@ -19,7 +19,8 @@ import {
     FileText,
     Edit,
     Save,
-    X
+    X,
+    Briefcase
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UniversityDashboardLayout } from './UniversityDashboardLayout'
@@ -27,10 +28,13 @@ import { cn, getInitials } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { universityProfileService, type UniversityProfile, type UniversityProfileUpdateData } from '@/services/universityProfileService'
+import { type UniversityProfile as UniversityProfileType } from '@/types/university'
 import { FileUpload } from '../ui/file-upload'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { z } from "zod";
+import toast from 'react-hot-toast'
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -41,6 +45,56 @@ interface ProfileSection {
     fields: string[]
     completed: boolean
 }
+
+
+const allowedDomains = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "edu"];
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(5, "Email must be at least 5 characters long")
+  .max(100, "Email must be less than 100 characters")
+  .email("Please enter a valid email address")
+  .refine((val) => {
+    const domain = val.split("@")[1];
+    return allowedDomains.some((d) => domain.endsWith(d));
+  }, {
+    message: "Please use a valid email",
+  });
+
+
+const profileSchema = z.object({
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .optional()
+    .or(z.literal("")), // allow empty if optional
+phone: z
+        .string()
+        .regex(/^\d+$/, 'Phone number must contain only digits')
+        .refine(
+            (val) => {
+                if (val.length < 10) return false
+                if (val.startsWith('91')) {
+                    return val.length === 12
+                }
+                return val.length === 10
+            },
+            {
+                message:
+                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
+            }
+        )
+        .optional(),
+  website_url: z
+    .string()
+    .url("Please enter a valid website URL (must start with http:// or https://).")
+    .optional()
+    .or(z.literal("")),
+  name: z.string().optional(),
+  bio: z.string().optional(),
+  profile_picture: z.string().optional(),
+});
 
 export function UniversityProfile() {
     const [profile, setProfile] = useState<UniversityProfile | null>(null)
@@ -94,50 +148,49 @@ export function UniversityProfile() {
 
             // Try to fetch from API first
             try {
-                const profileData = await universityProfileService.getProfile()
-                // Merge API data with mock data for missing fields
+                console.log('Fetching university profile...')
+                console.log('User context:', user)
+                const profileData = await apiClient.getUniversityProfile()
+                console.log('Profile data received:', profileData)
+                
+                // Use API data directly without mock fallbacks
                 const mergedProfile: UniversityProfile = {
-                    ...profileData,
-                    // Ensure these fields are always present with mock data
-                    total_students: profileData.total_students || 15000,
-                    total_jobs: profileData.total_jobs || 8,
-                    total_jobs_approved: profileData.total_jobs_approved || 3,
-                    phone: profileData.phone || '+91 98765 43210',
-                    phone_verified: profileData.phone_verified !== undefined ? profileData.phone_verified : true
+                    id: profileData.id || user?.id || '1',
+                    email: profileData.email || user?.email || '',
+                    name: profileData.name || profileData.university_name || user?.name || '',
+                    university_name: profileData.university_name || user?.name || '',
+                    phone: profileData.phone || '',
+                    status: profileData.status || 'active',
+                    email_verified: profileData.email_verified || false,
+                    phone_verified: profileData.phone_verified || false,
+                    created_at: profileData.created_at || new Date().toISOString(),
+                    updated_at: profileData.updated_at,
+                    last_login: profileData.last_login,
+                    profile_picture: profileData.profile_picture,
+                    bio: profileData.bio,
+                    website_url: profileData.website_url,
+                    institute_type: profileData.institute_type,
+                    established_year: profileData.established_year,
+                    contact_person_name: profileData.contact_person_name,
+                    contact_designation: profileData.contact_designation,
+                    address: profileData.address,
+                    courses_offered: profileData.courses_offered,
+                    branch: profileData.branch,
+                    total_students: profileData.total_students || 0,
+                    total_jobs: profileData.total_jobs || 0,
+                    total_jobs_approved: profileData.total_jobs_approved || 0,
+                    total_faculty: profileData.total_faculty,
+                    departments: profileData.departments,
+                    programs_offered: profileData.programs_offered,
+                    placement_rate: profileData.placement_rate,
+                    average_package: profileData.average_package,
+                    top_recruiters: profileData.top_recruiters
                 }
+                console.log('Merged profile:', mergedProfile)
                 setProfile(mergedProfile)
             } catch (apiError) {
-                console.log('API not available, using fallback data')
-                // Fallback to mock data if API is not available
-                const mockProfile: UniversityProfile = {
-                    id: user?.id || '1',
-                    email: user?.email || 'university@example.edu',
-                    name: user?.name || 'University Name',
-                    phone: '+91 98765 43210',
-                    status: 'active',
-                    email_verified: true,
-                    phone_verified: true,
-                    created_at: '2023-01-01T00:00:00Z',
-                    updated_at: '2024-01-01T00:00:00Z',
-                    last_login: '2024-01-01T00:00:00Z',
-                    profile_picture: undefined,
-                    bio: 'A leading educational institution committed to excellence in teaching, research, and innovation.',
-                    university_name: 'University Name',
-                    website_url: 'https://university.edu',
-                    institute_type: 'Public',
-                    established_year: 1950,
-                    contact_person_name: 'John Smith',
-                    contact_designation: 'Registrar',
-                    address: '123 University Street, University City, State, Country',
-                    courses_offered: 'Engineering, Management, Arts, Science',
-                    branch: 'Multiple',
-                    departments: 'Engineering, Management, Arts, Science, Medicine',
-                    programs_offered: 'B.Tech, M.Tech, MBA, BBA, B.Sc, M.Sc, Ph.D',
-                    total_students: 15000,
-                    total_jobs: 8,
-                    total_jobs_approved: 3
-                }
-                setProfile(mockProfile)
+                console.error('Failed to fetch university profile:', apiError)
+                setError('Failed to load profile data from server')
             }
         } catch (error: any) {
             setError(error.message)
@@ -146,36 +199,69 @@ export function UniversityProfile() {
         }
     }
 
-    const handleSave = async (sectionId: string, formData: UniversityProfileUpdateData) => {
-        try {
-            setSaving(true)
-            setError(null)
-
-            // Try to save via API
-            try {
-                const updatedProfile = await universityProfileService.updateProfile(formData)
-                setProfile(updatedProfile)
-                console.log('Profile saved successfully')
-            } catch (apiError) {
-                console.log('API not available, simulating save')
-                // For now, just update local state if API is not available
-                if (profile) {
-                    setProfile({ ...profile, ...formData })
-                }
-            }
-
-            setEditing(null)
-        } catch (error: any) {
-            setError(error.message)
-        } finally {
-            setSaving(false)
-        }
+    
+const handleSave = async (sectionId: string, formData: UniversityProfileUpdateData) => {
+  try {
+    setSaving(true);
+    setError(null);
+    // 🔹 Try to save via API
+    try {
+      const updatedProfile = await universityProfileService.updateProfile(formData);
+      setProfile(updatedProfile);
+      console.log("Profile saved successfully");
+      
+      // Show success toast with section name
+      const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+      toast.success(`${sectionName} updated successfully!`)
+      
+    } catch (apiError) {
+      console.log("API not available, simulating save");
+      if (profile) {
+        setProfile({ ...profile, ...formData });
+      }
+      
+      // Show success toast even for simulated save
+      const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+      toast.success(`${sectionName} updated successfully!`)
     }
+
+    setEditing(null);
+  } catch (error: any) {
+    setError(error.message);
+    
+    // Show error toast with specific message
+    if (error.message.includes('network') || error.message.includes('Internet')) {
+      toast.error('Network error. Please check your connection and try again.')
+    } else if (error.message.includes('auth') || error.message.includes('login')) {
+      toast.error('Authentication failed. Please log in again.')
+    } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+      toast.error('Invalid data provided. Please check your input.')
+    } else {
+      toast.error(`Failed to save: ${error.message}`)
+    }
+  } finally {
+    setSaving(false);
+  }
+};
+
 
     const handleImageUpload = async (file: File) => {
         try {
             setUploadingImage(true)
             setError(null)
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size must be less than 5MB')
+                return
+            }
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+                return
+            }
 
             const result = await universityProfileService.uploadProfilePicture(file)
 
@@ -185,8 +271,23 @@ export function UniversityProfile() {
             }
 
             console.log('Profile picture uploaded successfully')
+            toast.success('Profile picture updated successfully!')
         } catch (error: any) {
             setError(error.message)
+            console.error('Image upload error:', error)
+            
+            // Show specific error messages
+            if (error.message.includes('network') || error.message.includes('Internet')) {
+                toast.error('Network error. Please check your connection and try again.')
+            } else if (error.message.includes('auth') || error.message.includes('login')) {
+                toast.error('Authentication failed. Please log in again.')
+            } else if (error.message.includes('size') || error.message.includes('large')) {
+                toast.error('File is too large. Please upload a smaller image.')
+            } else if (error.message.includes('format') || error.message.includes('type')) {
+                toast.error('Invalid file format. Please upload a valid image.')
+            } else {
+                toast.error(`Failed to upload image: ${error.message}`)
+            }
         } finally {
             setUploadingImage(false)
         }
@@ -418,7 +519,7 @@ export function UniversityProfile() {
                                 </div>
                                 <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
                                     <span className="text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                    <div className="p-1.5 bg-blue-500 rounded-full">
+                                    <div className="p-1.5 bg-green-500 rounded-full">
                                         <CheckCircle className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
@@ -535,7 +636,7 @@ export function UniversityProfile() {
 
                 {editing === 'basic' ? (
                     <ProfileSectionForm
-                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'phone', 'bio', 'website_url', 'profile_picture'], completed: false }}
+                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'website_url','bio', 'profile_picture'], completed: false }}
                         profile={profile}
                         onSave={(formData) => handleSave('basic', formData)}
                         saving={saving}
@@ -631,46 +732,90 @@ export function UniversityProfile() {
                         onEdit={handleEdit}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                    <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.established_year || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-orange-600 dark:text-orange-400">Established Year</p>
-                                </div>
-                            </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Left Column */}
+  <div className="space-y-4">
+    {/* University Name */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+        <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.name || 'Not specified'}
+        </p>
+        <p className="text-xs text-blue-600 dark:text-blue-400">University Name</p>
+      </div>
+    </div>
 
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                    <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.institute_type || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">University Type</p>
-                                </div>
-                            </div>
+    {/* Institute Type */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+        <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.institute_type || 'Not specified'}
+        </p>
+        <p className="text-xs text-indigo-600 dark:text-indigo-400">Institute Type</p>
+      </div>
+    </div>
 
-                        </div>
+    {/* Established Year */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+        <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.established_year || 'Not specified'}
+        </p>
+        <p className="text-xs text-orange-600 dark:text-orange-400">Established Year</p>
+      </div>
+    </div>
+  </div>
 
-                        <div className="space-y-4">
-                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    Address
-                                </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    {profile?.address || 'Not provided'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+  {/* Right Column */}
+  <div className="space-y-4">
+    {/* Contact Person Name */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+        <User className="w-4 h-4 text-green-600 dark:text-green-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.contact_person_name || 'Not specified'}
+        </p>
+        <p className="text-xs text-green-600 dark:text-green-400">Contact Person</p>
+      </div>
+    </div>
+
+    {/* Contact Designation */}
+    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+        <Briefcase className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {profile?.contact_designation || 'Not specified'}
+        </p>
+        <p className="text-xs text-pink-600 dark:text-pink-400">Designation</p>
+      </div>
+    </div>
+
+    {/* Address */}
+    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+        <MapPin className="w-4 h-4" />
+        Address
+      </h4>
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        {profile?.address || 'Not provided'}
+      </p>
+    </div>
+  </div>
+</div>
+
                 )}
             </div>
         )
@@ -755,6 +900,7 @@ interface ProfileSectionFormProps {
 function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editing, onEdit }: ProfileSectionFormProps) {
     const [formData, setFormData] = useState<UniversityProfileUpdateData>({})
     const [uploadingImage, setUploadingImage] = useState(false)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
     useEffect(() => {
         if (profile && section) {
@@ -769,7 +915,99 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        // Remove readonly fields and fields that don't exist in the backend model
+        
+        // Clear previous errors
+        setFieldErrors({})
+        
+        // Validation errors
+        const errors: Record<string, string> = {}
+        let hasValidationErrors = false
+        
+        // Basic Information validation
+        if (section.id === 'basic') {
+            // Name validation
+            if (formData.name && formData.name.trim().length < 2) {
+                errors.name = 'Name must be at least 2 characters long'
+                hasValidationErrors = true
+            }
+            
+            // Phone validation - exactly 10 digits
+            if (formData.phone && formData.phone.trim()) {
+                const phoneRegex = /^\d{10}$/
+                if (!phoneRegex.test(formData.phone)) {
+                    errors.phone = 'Phone number must be exactly 10 digits'
+                    hasValidationErrors = true
+                }
+            }
+            
+            // Website URL validation
+            if (formData.website_url && formData.website_url.trim()) {
+                const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+                if (!urlPattern.test(formData.website_url)) {
+                    errors.website_url = 'Please enter a valid website URL'
+                    hasValidationErrors = true
+                }
+            }
+        }
+        
+        // Institution Details validation
+        if (section.id === 'institution') {
+            // University name validation
+            if (formData.university_name && formData.university_name.trim().length < 2) {
+                errors.university_name = 'University name must be at least 2 characters long'
+                hasValidationErrors = true
+            }
+            
+            // Established year validation
+            if (formData.established_year) {
+                const currentYear = new Date().getFullYear()
+                if (formData.established_year < 1800 || formData.established_year > currentYear) {
+                    errors.established_year = `Established year must be between 1800 and ${currentYear}`
+                    hasValidationErrors = true
+                }
+            }
+            
+            // Contact person name validation
+            if (formData.contact_person_name && formData.contact_person_name.trim().length < 2) {
+                errors.contact_person_name = 'Contact person name must be at least 2 characters long'
+                hasValidationErrors = true
+            }
+            
+            // Contact designation validation
+            if (formData.contact_designation && formData.contact_designation.trim().length < 2) {
+                errors.contact_designation = 'Contact designation must be at least 2 characters long'
+                hasValidationErrors = true
+            }
+            
+            // Address validation
+            if (formData.address && formData.address.trim().length < 10) {
+                errors.address = 'Address must be at least 10 characters long'
+                hasValidationErrors = true
+            }
+        }
+        
+        // Academic Information validation
+        if (section.id === 'academic') {
+            // Courses offered validation
+            if (formData.courses_offered && formData.courses_offered.trim().length < 5) {
+                errors.courses_offered = 'Courses offered must be at least 5 characters long'
+                hasValidationErrors = true
+            }
+            
+            // Branch validation
+            if (formData.branch && formData.branch.trim().length < 2) {
+                errors.branch = 'Branch must be at least 2 characters long'
+                hasValidationErrors = true
+            }
+        }
+        
+        // If there are validation errors, set field errors and return
+        if (hasValidationErrors) {
+            setFieldErrors(errors)
+            return
+        }
+        
+        // Remove readonly fields and fields that don't exist in the backend model before saving
         const { 
             name, // readonly field
             total_students, 
@@ -822,32 +1060,102 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
+        // Handle email field - make it read-only
+        if (field === 'email') {
+            return (
+                <div className="space-y-2">
+                    <Input
+                        type="email"
+                        value={value as string}
+                        readOnly
+                        disabled
+                        className="w-full bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="Email cannot be edited"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Email cannot be changed for security reasons
+                    </p>
+                </div>
+            )
+        }
+
+        // Handle phone field with numeric validation and max length
+        if (field === 'phone') {
+            return (
+                <div>
+                    <Input
+                        type="tel"
+                        value={value as string}
+                        onChange={(e) => {
+                            const inputValue = e.target.value
+                            // Only allow numbers and limit to 10 digits
+                            const numericValue = inputValue.replace(/[^0-9]/g, '').slice(0, 10)
+                            setFormData({ ...formData, [field]: numericValue })
+                            // Clear error when user starts typing
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
+                        placeholder="Enter 10-digit phone number"
+                        maxLength={10}
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
+            )
+        }
+
         // Handle textarea fields
         if (field.includes('bio') || field.includes('address') || field.includes('courses_offered')) {
             return (
-                <Textarea
-                    value={value as string}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    rows={4}
-                    className="w-full"
-                    placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                />
+                <div>
+                    <Textarea
+                        value={value as string}
+                        onChange={(e) => {
+                            setFormData({ ...formData, [field]: e.target.value })
+                            // Clear error when user starts typing
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        rows={4}
+                        className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
+                        placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
             )
         }
 
         // Handle number fields
         if (field.includes('year') || field.includes('students') || field.includes('faculty') || field.includes('rate') || field.includes('package')) {
             return (
-                <Input
-                    type="number"
-                    value={value as number || ''}
-                    onChange={(e) => setFormData({ ...formData, [field]: field.includes('rate') || field.includes('package') ? parseFloat(e.target.value) || undefined : parseInt(e.target.value) || undefined })}
-                    className="w-full"
-                    placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                    min={field.includes('rate') ? 0 : field.includes('year') ? 1800 : 0}
-                    max={field.includes('rate') ? 100 : field.includes('year') ? 2100 : undefined}
-                    step={field.includes('rate') || field.includes('package') ? 0.1 : undefined}
-                />
+                <div>
+                    <Input
+                        type="number"
+                        value={value as number || ''}
+                        onChange={(e) => {
+                            const numericValue = field.includes('rate') || field.includes('package') ? parseFloat(e.target.value) || undefined : parseInt(e.target.value) || undefined
+                            setFormData({ ...formData, [field]: numericValue })
+                            // Clear error when user starts typing
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
+                        placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                        min={field.includes('rate') ? 0 : field.includes('year') ? 1800 : 0}
+                        max={field.includes('rate') ? 100 : field.includes('year') ? new Date().getFullYear() : undefined}
+                        step={field.includes('rate') || field.includes('package') ? 0.1 : undefined}
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
             )
         }
 
@@ -874,13 +1182,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         // Handle URL fields
         if (field === 'website_url') {
             return (
-                <Input
-                    type="url"
-                    value={value as string}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    className="w-full"
-                    placeholder="https://university.edu"
-                />
+                <div>
+                    <Input
+                        type="url"
+                        value={value as string}
+                        onChange={(e) => {
+                            setFormData({ ...formData, [field]: e.target.value })
+                            // Clear error when user starts typing
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
+                        placeholder="https://university.edu"
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
             )
         }
 
@@ -902,14 +1221,46 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-        // Default text input
+        // Default text input with validation
         return (
-            <Input
-                value={value as string}
-                onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                className="w-full"
-                placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-            />
+            <div>
+                <Input
+                    value={value as string}
+                    onChange={(e) => {
+                        let inputValue = e.target.value
+                        
+                        // Name field validation - only alphabets, spaces, and common punctuation
+                        if (field === 'name' || field === 'university_name' || field === 'contact_person_name' || field === 'contact_designation') {
+                            const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                            if (sanitizedValue !== inputValue) {
+                                toast.error('Only letters, spaces, periods, and hyphens are allowed')
+                            }
+                            inputValue = sanitizedValue
+                        }
+                        
+                        // Branch field validation - allow alphanumeric and common characters
+                        if (field === 'branch') {
+                            const sanitizedValue = inputValue.replace(/[^a-zA-Z0-9\s,.-]/g, '')
+                            if (sanitizedValue !== inputValue) {
+                                toast.error('Only letters, numbers, spaces, and common punctuation are allowed')
+                            }
+                            inputValue = sanitizedValue
+                        }
+                        
+                        setFormData({ ...formData, [field]: inputValue })
+                        // Clear error when user starts typing
+                        if (fieldErrors[field]) {
+                            setFieldErrors({ ...fieldErrors, [field]: '' })
+                        }
+                    }}
+                    className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
+                    placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                    maxLength={field === 'name' || field === 'university_name' ? 50 : field === 'contact_person_name' || field === 'contact_designation' ? 30 : field === 'branch' ? 20 : undefined}
+                />
+                {fieldErrors[field] && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                )}
+            </div>
         )
     }
 

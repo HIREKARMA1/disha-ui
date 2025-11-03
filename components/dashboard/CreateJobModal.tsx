@@ -102,6 +102,7 @@ interface CreateJobModalProps {
     isOpen: boolean
     onClose: () => void
     onJobCreated: () => void
+    userType?: 'corporate' | 'university' // Added to determine which API endpoint to use
 }
 
 interface JobFormData {
@@ -138,7 +139,7 @@ interface JobFormData {
     ctc_after_probation: string
 }
 
-export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModalProps) {
+export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corporate' }: CreateJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
@@ -339,7 +340,12 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated }: CreateJobModal
                 ctc_after_probation: formData.ctc_after_probation || null
             }
 
-            await apiClient.createJob(jobData)
+            // Use appropriate API endpoint based on userType
+            if (userType === 'university') {
+                await apiClient.createUniversityJob(jobData)
+            } else {
+                await apiClient.createJob(jobData)
+            }
 
             const successMessages = {
                 active: 'Job posted successfully!',

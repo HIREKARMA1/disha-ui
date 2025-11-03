@@ -1,3 +1,9 @@
+/* Hide sidebar and mobile nav in fullscreen exam mode */
+body.hide-sidebar .student-sidebar,
+body.hide-sidebar .student-mobile-nav,
+body.hide-sidebar .main-navbar {
+  display: none !important;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -46,14 +46,64 @@ const userTypeIcons = {
     // Admin icon removed for security
 }
 
+// for the error message input
+const getInputStatus = (name: keyof FormData, errors: any, value: any) => {
+    if (errors[name]) return "error";   // red border
+    if (value) return "success";        // green border if filled correctly
+    return "default";                   // gray border initially
+}
+
+
 // Create schemas independently to avoid .extend() issues
+const passwordSchema = z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .superRefine((val, ctx) => {
+        if (!/^[A-Z]/.test(val)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Password must start with an uppercase letter' })
+        }
+        if (!/[^A-Za-z0-9]/.test(val)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Password must include at least one special character' })
+        }
+        const digitCount = (val.match(/\d/g) || []).length
+        if (digitCount < 3) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Password must include at least three digits' })
+        }
+    })
+
+const emailSchema = z
+    .string()
+    .trim()
+    .min(5, "Email must be at least 5 characters long")
+    .max(100, "Email must be less than 100 characters")
+    .email("Please enter a valid email address");
+
+
+
+
 const studentSchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    email: emailSchema,
+    password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     name: z.string().min(1, 'Name is required'),
-    phone: z.string().optional(),
+    phone: z
+        .string()
+        .regex(/^\d+$/, 'Phone number must contain only digits')
+        .refine(
+            (val) => {
+                if (val.length < 10) return false
+                if (val.startsWith('91')) {
+                    return val.length === 12
+                }
+                return val.length === 10
+            },
+            {
+                message:
+                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
+            }
+        )
+        .optional(),
     dob: z.string().optional(),
     gender: z.string().optional(),
     graduation_year: z.number().optional(),
@@ -67,8 +117,8 @@ const studentSchema = z.object({
 })
 
 const corporateSchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    email: emailSchema,
+    password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     company_name: z.string().min(1, 'Company name is required'),
@@ -79,15 +129,37 @@ const corporateSchema = z.object({
     contact_person: z.string().optional(),
     contact_designation: z.string().optional(),
     address: z.string().optional(),
-    phone: z.string().optional(),
+    phone: z
+        .string()
+        .regex(/^\d+$/, "Phone number must contain only digits")
+        .refine(
+            (val) => {
+                // Must be at least 10 digits
+                if (val.length < 10) return false;
+
+                // Case 1: Starts with 91 -> should be 12 digits (91 + 10)
+                if (val.startsWith("91")) {
+                    return val.length === 12;
+                }
+
+                // Case 2: Not starting with 91 -> must be exactly 10 digits
+                return val.length === 10;
+            },
+            {
+                message:
+                    "Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.",
+            }
+        )
+        .optional(),
+
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
 })
 
 const universitySchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    email: emailSchema,
+    password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     university_name: z.string().min(1, 'University name is required'),
@@ -96,7 +168,23 @@ const universitySchema = z.object({
     established_year: z.number().optional(),
     contact_person_name: z.string().optional(),
     courses_offered: z.string().optional(),
-    phone: z.string().optional(),
+    phone: z
+        .string()
+        .regex(/^\d+$/, 'Phone number must contain only digits')
+        .refine(
+            (val) => {
+                if (val.length < 10) return false
+                if (val.startsWith('91')) {
+                    return val.length === 12
+                }
+                return val.length === 10
+            },
+            {
+                message:
+                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
+            }
+        )
+        .optional(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
@@ -140,6 +228,7 @@ export default function RegisterPage() {
         handleSubmit,
         setValue,
         reset,
+        watch,
         formState: { errors }
     } = useForm<FormData>({
         resolver: zodResolver(validationSchema),
@@ -180,42 +269,31 @@ export default function RegisterPage() {
     const onSubmit = async (data: FormData) => {
         setIsLoading(true)
         try {
-            // Prepare form data based on user type
-            const formData = {
-                ...data,
-                user_type: selectedUserType
-            }
-
-            // Register user
             let response: any
             switch (selectedUserType) {
                 case 'student':
-                    response = await apiClient.registerStudent(formData as any)
+                    response = await apiClient.registerStudent(data as any)
                     break
                 case 'corporate':
-                    response = await apiClient.registerCorporate(formData as any)
+                    response = await apiClient.registerCorporate(data as any)
                     break
                 case 'university':
-                    response = await apiClient.registerUniversity(formData as any)
+                    response = await apiClient.registerUniversity(data as any)
                     break
                 default:
                     throw new Error('Invalid user type')
             }
 
-            toast.success('Registration successful! Welcome to HireKarma!')
+            toast.success('Registration successful!')
 
-            // Automatically log in the user after successful registration
+            // Auto-login
             try {
                 const loginResponse = await apiClient.login({
                     email: data.email,
                     password: data.password,
                     user_type: selectedUserType
                 })
-
-                // Store tokens and user data
                 apiClient.setAuthTokens(loginResponse.access_token, loginResponse.refresh_token)
-
-                // Use the auth hook to manage login state
                 login({
                     id: loginResponse.user_id || 'temp-id',
                     email: data.email,
@@ -223,50 +301,31 @@ export default function RegisterPage() {
                     name: loginResponse.name || (data as any).name || (data as any).company_name || (data as any).university_name || data.email
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
-                // Redirect to appropriate dashboard based on user type
-                switch (selectedUserType as UserType) {
-                    case 'student':
-                        router.push('/dashboard/student')
-                        break
-                    case 'corporate':
-                        router.push('/dashboard/corporate')
-                        break
-                    case 'university':
-                        router.push('/dashboard/university')
-                        break
-                    default:
-                        router.push('/dashboard')
+                switch (selectedUserType) {
+                    case 'student': router.push('/dashboard/student'); break
+                    case 'corporate': router.push('/dashboard/corporate'); break
+                    case 'university': router.push('/dashboard/university'); break
+                    default: router.push('/dashboard')
                 }
-            } catch (loginError: any) {
-                console.error('Auto-login failed after registration:', loginError)
-                // If auto-login fails, redirect to login page with success message
-                toast.success('Registration successful! Please log in to continue.')
+            } catch (loginError) {
+                console.error('Auto-login failed:', loginError)
+                toast.success('Registration successful! Please log in.')
                 router.push(`/auth/login?type=${selectedUserType}&registered=true`)
             }
         } catch (error: any) {
             console.error('Registration error:', error)
-
             let message = 'Registration failed. Please try again.'
 
-            if (error.response?.data) {
-                const errorData = error.response.data
-
-                // Handle validation errors from backend
-                if (error.response.status === 422 && errorData.detail) {
-                    if (Array.isArray(errorData.detail)) {
-                        // Multiple validation errors
-                        const errorMessages = errorData.detail.map((err: any) => err.msg || err.message || 'Validation error').join(', ')
-                        message = errorMessages
-                    } else if (typeof errorData.detail === 'string') {
-                        // Single error message
-                        message = errorData.detail
-                    } else if (errorData.detail.msg) {
-                        // Error object with msg property
-                        message = errorData.detail.msg
-                    }
-                } else if (errorData.detail) {
-                    // Other error types
-                    message = errorData.detail
+            // ✅ Handle 500 duplicate email error
+            if (error.response?.data?.error?.includes('Email already registered')) {
+                message = 'User is already registered.'
+            } else if (error.response?.status === 422 && error.response.data.detail) {
+                if (Array.isArray(error.response.data.detail)) {
+                    message = error.response.data.detail.map((err: any) => err.msg || err.message).join(', ')
+                } else if (typeof error.response.data.detail === 'string') {
+                    message = error.response.data.detail
+                } else if (error.response.data.detail.msg) {
+                    message = error.response.data.detail.msg
                 }
             } else if (error.message) {
                 message = error.message
@@ -277,6 +336,7 @@ export default function RegisterPage() {
             setIsLoading(false)
         }
     }
+
 
     const renderStudentForm = () => (
         <div className="space-y-4">
@@ -304,10 +364,20 @@ export default function RegisterPage() {
                 </label>
                 <Input
                     id="phone"
+                    type="tel"
                     placeholder="+91-9876543210"
                     leftIcon={<Phone className="w-4 h-4" />}
-                    {...register('phone')}
+                    {...register('phone', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\D/g, '')
+                        }
+                    })}
                 />
+                {(errors as any).phone && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).phone.message === 'string' ? (errors as any).phone.message : 'Invalid phone number'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -478,9 +548,19 @@ export default function RegisterPage() {
                                         type="email"
                                         placeholder="Enter your email address"
                                         leftIcon={<Mail className="w-4 h-4" />}
-                                        error={!!(errors as any).email}
-                                        {...register('email')}
+                                        className={`${errors.email
+                                            ? "border-red-500 focus:ring-red-500"
+                                            : watch("email")
+                                                ? "border-green-500 focus:ring-green-500"
+                                                : "border-gray-300 focus:ring-primary-500"
+                                            }`}
+                                        {...register("email", {
+                                            onChange: (e) => {
+                                                e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
+                                            }
+                                        })}
                                     />
+
                                     {(errors as any).email && (
                                         <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                                             {typeof (errors as any).email.message === 'string' ? (errors as any).email.message : 'Email is required'}
