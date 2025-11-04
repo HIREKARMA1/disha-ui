@@ -474,14 +474,32 @@ export function UniversityJobCard({
                         onClick={onViewDescription}
                         variant="outline"
                         size="sm"
-                        className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 text-xs border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md order-1"
+                        className="w-full sm:flex-1 sm:min-w-[100px] flex items-center justify-center gap-1.5 text-xs border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
                     >
-                        <FileText className="w-3.5 h-3.5" />
+                        <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                         <span className="truncate">View Details</span>
                     </Button>
 
                     {job.approval_status === 'pending' && (
                         <>
+                            <Button
+                                onClick={onApprove}
+                                disabled={isProcessing}
+                                size="sm"
+                                className="w-full sm:flex-1 sm:min-w-[90px] flex items-center justify-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                                        <span className="truncate">Processing...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                        <span className="truncate">Approve</span>
+                                    </>
+                                )}
+                            </Button>
                             {onNotApprove && (
                                 <Button
                                     onClick={() => {
@@ -490,45 +508,28 @@ export function UniversityJobCard({
                                         }
                                     }}
                                     disabled={isProcessing}
+                                    variant="outline"
                                     size="sm"
-                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white transition-all duration-200 hover:shadow-md order-2"
+                                    className="w-full sm:flex-1 sm:min-w-[90px] flex items-center justify-center gap-1.5 text-xs border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
                                 >
                                     {isProcessing ? (
                                         <>
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Processing...
+                                            <div className="w-3.5 h-3.5 border-2 border-gray-600 dark:border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                                            <span className="truncate">Processing...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <XCircle className="w-4 h-4" />
-                                            Not Approved
+                                            <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                            <span className="truncate">Not Approve</span>
                                         </>
                                     )}
                                 </Button>
                             )}
-                            <Button
-                                onClick={onApprove}
-                                disabled={isProcessing}
-                                size="sm"
-                                className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md order-3"
-                            >
-                                {isProcessing ? (
-                                    <>
-                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        <span className="truncate">Processing...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle className="w-3.5 h-3.5" />
-                                        <span className="truncate">Approve</span>
-                                    </>
-                                )}
-                            </Button>
                         </>
                     )}
 
                     {job.approval_status === 'approved' && (
-                        <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full sm:flex-1 flex items-center justify-center">
                             <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
                                 <CheckCircle className="w-3 h-3" />
                                 Approved
@@ -537,7 +538,7 @@ export function UniversityJobCard({
                     )}
 
                     {job.approval_status === 'rejected' && (
-                        <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full sm:flex-1 flex items-center justify-center">
                             <span className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
                                 <XCircle className="w-3 h-3" />
                                 Not Approved
