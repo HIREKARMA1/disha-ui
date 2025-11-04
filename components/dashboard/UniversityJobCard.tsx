@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
 
@@ -87,7 +86,6 @@ export function UniversityJobCard({
     onViewResults
 }: UniversityJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
-    const [showNotApproveConfirm, setShowNotApproveConfirm] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     // Close dropdown when clicking outside
@@ -486,21 +484,24 @@ export function UniversityJobCard({
                         <>
                             {onNotApprove && (
                                 <Button
-                                    onClick={() => setShowNotApproveConfirm(true)}
+                                    onClick={() => {
+                                        if (onNotApprove) {
+                                            onNotApprove()
+                                        }
+                                    }}
                                     disabled={isProcessing}
-                                    variant="outline"
                                     size="sm"
-                                    className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 text-xs border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:border-red-400 dark:hover:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 hover:shadow-md order-2 sm:order-3"
+                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white transition-all duration-200 hover:shadow-md order-2"
                                 >
                                     {isProcessing ? (
                                         <>
-                                            <div className="w-3.5 h-3.5 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin" />
-                                            <span className="truncate">Processing...</span>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Processing...
                                         </>
                                     ) : (
                                         <>
-                                            <XCircle className="w-3.5 h-3.5" />
-                                            <span className="truncate">Not Approved</span>
+                                            <XCircle className="w-4 h-4" />
+                                            Not Approved
                                         </>
                                     )}
                                 </Button>
@@ -509,7 +510,7 @@ export function UniversityJobCard({
                                 onClick={onApprove}
                                 disabled={isProcessing}
                                 size="sm"
-                                className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md order-3 sm:order-2"
+                                className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md order-3"
                             >
                                 {isProcessing ? (
                                     <>
@@ -545,41 +546,6 @@ export function UniversityJobCard({
                     )}
                 </div>
             </div>
-
-            {/* Not Approve Confirmation Modal */}
-            <Modal
-                isOpen={showNotApproveConfirm}
-                onClose={() => setShowNotApproveConfirm(false)}
-                title="Confirm Not Approve"
-                maxWidth="md"
-            >
-                <div className="space-y-4">
-                    <p className="text-gray-700 dark:text-gray-300">
-                        Are you sure you want to not approve this job?
-                    </p>
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowNotApproveConfirm(false)}
-                            className="text-gray-700 dark:text-gray-300"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                if (onNotApprove) {
-                                    onNotApprove()
-                                }
-                                setShowNotApproveConfirm(false)
-                            }}
-                            disabled={isProcessing}
-                            className="bg-red-500 hover:bg-red-600 text-white"
-                        >
-                            {isProcessing ? 'Processing...' : 'Not Approve'}
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
         </motion.div>
     )
 }
