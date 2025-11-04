@@ -865,8 +865,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.salary_min}
-                                            onChange={(e) => handleInputChange('salary_min', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                                                    handleInputChange('salary_min', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 500000"
                                         />
                                     </div>
@@ -877,8 +883,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.salary_max}
-                                            onChange={(e) => handleInputChange('salary_max', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                                                    handleInputChange('salary_max', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 800000"
                                         />
                                     </div>
@@ -906,8 +918,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.experience_min}
-                                            onChange={(e) => handleInputChange('experience_min', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+                                                    handleInputChange('experience_min', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 2"
                                         />
                                     </div>
@@ -918,8 +936,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.experience_max}
-                                            onChange={(e) => handleInputChange('experience_max', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+                                                    handleInputChange('experience_max', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 5"
                                         />
                                     </div>
