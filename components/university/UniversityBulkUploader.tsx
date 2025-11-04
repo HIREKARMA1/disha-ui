@@ -544,7 +544,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
         setIsDownloadingTemplate(true);
         try {
           // Path to your CSV file inside the public folder
-          const response = await fetch('/images/dsa_easy_questions.csv');
+          const response = await fetch('/images/template.csv');
       
           if (!response.ok) {
             throw new Error('Failed to fetch the CSV template');
@@ -554,7 +554,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = 'dsa_easy_questions.csv'; // downloaded filename
+          link.download = 'template.csv'; // downloaded filename
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);

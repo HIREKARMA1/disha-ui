@@ -981,11 +981,13 @@ export class JobDescriptionPDFGenerator {
   }
 
   private formatExperience(min?: number, max?: number): string {
-    if (!min && !max) return 'Not specified'
-    if (min === 0 && max) return `Up to ${max} years`
-    if (min && max) return `${min}-${max} years`
-    if (min) return `${min}+ years`
-    if (max) return `Up to ${max} years`
+    if (min === undefined && max === undefined) return 'Not specified'
+    // If both min and max exist, show range (including 0-X)
+    if (min !== undefined && max !== undefined) return `${min}-${max} years`
+    // If only min exists (and min is not 0), show min+
+    if (min !== undefined && min !== 0 && max === undefined) return `${min}+ years`
+    // If only max exists, show "Up to X years"
+    if (max !== undefined && min === undefined) return `Up to ${max} years`
     return 'Not specified'
   }
 
