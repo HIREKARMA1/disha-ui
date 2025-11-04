@@ -197,6 +197,38 @@ class LookupService {
   }
 
   /**
+   * Get all job roles
+   */
+  async getJobRoles(options: LookupOptions = {}): Promise<LookupItem[]> {
+    try {
+      const response = await this.fetchLookupData<{ job_roles: LookupItem[]; total: number; skip: number; limit: number }>(
+        '/admin/lookups/job-roles',
+        options
+      )
+      return response.job_roles || []
+    } catch (error) {
+      console.error('Failed to fetch job roles:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get all location preferences
+   */
+  async getLocationPreferences(options: LookupOptions = {}): Promise<LookupItem[]> {
+    try {
+      const response = await this.fetchLookupData<{ location_preferences: LookupItem[]; total: number; skip: number; limit: number }>(
+        '/admin/lookups/location-preferences',
+        options
+      )
+      return response.location_preferences || []
+    } catch (error) {
+      console.error('Failed to fetch location preferences:', error)
+      return []
+    }
+  }
+
+  /**
    * Clear cache for specific endpoint or all cache
    */
   clearCache(endpoint?: string): void {

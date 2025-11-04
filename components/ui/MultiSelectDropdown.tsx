@@ -21,6 +21,7 @@ interface MultiSelectDropdownProps {
     className?: string
     showAllOption?: boolean
     allOptionLabel?: string
+    hideSelectedTags?: boolean
 }
 
 export function MultiSelectDropdown({
@@ -33,7 +34,8 @@ export function MultiSelectDropdown({
     isLoading = false,
     className = "",
     showAllOption = true,
-    allOptionLabel = "All"
+    allOptionLabel = "All",
+    hideSelectedTags = false
 }: MultiSelectDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
@@ -183,7 +185,7 @@ export function MultiSelectDropdown({
             </div>
 
             {/* Selected items display */}
-            {selectedValues.length > 0 && !isAllSelected && (
+            {!hideSelectedTags && selectedValues.length > 0 && !isAllSelected && (
                 <div className="mt-2 flex flex-wrap gap-1">
                     {selectedValues.map((value) => {
                         const option = options.find(opt => opt.value === value)
