@@ -395,8 +395,8 @@ function UniversityJobsPageContent() {
             console.error('Error fetching complete job data:', error)
             toast.error('Failed to load job details. Using available data.')
             // Fallback to using the job data we already have
-            setEditingJob(job)
-            setShowEditModal(true)
+        setEditingJob(job)
+        setShowEditModal(true)
         }
     }
 
