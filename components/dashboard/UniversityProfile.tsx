@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -35,6 +35,9 @@ import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { z } from "zod";
 import toast from 'react-hot-toast'
+import { BranchSelection } from '../ui/BranchSelection'
+import { MultiSelectDropdown, MultiSelectOption } from '../ui/MultiSelectDropdown'
+import { useBranches, useDegrees } from '@/hooks/useLookup'
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -126,7 +129,7 @@ export function UniversityProfile() {
             id: 'academic',
             title: 'Academic Information',
             icon: GraduationCap,
-            fields: ['courses_offered', 'branch'],
+            fields: ['degree', 'branch'],
             completed: false
         }
     ]
@@ -175,6 +178,7 @@ export function UniversityProfile() {
                     contact_designation: profileData.contact_designation,
                     address: profileData.address,
                     courses_offered: profileData.courses_offered,
+                    degree: profileData.degree,
                     branch: profileData.branch,
                     total_students: profileData.total_students || 0,
                     total_jobs: profileData.total_jobs || 0,
@@ -204,7 +208,43 @@ const handleSave = async (sectionId: string, formData: UniversityProfileUpdateDa
   try {
     setSaving(true);
     setError(null);
+    
+    // For academic section, ensure courses_offered is properly set and old data is cleared
+    if (sectionId === 'academic') {
+      // Ensure we're sending only the new data, not merging with old
+      const cleanData: UniversityProfileUpdateData = {
+        courses_offered: formData.courses_offered || '',
+        branch: formData.branch || ''
+      }
+      
     // 🔹 Try to save via API
+      try {
+        const updatedProfile = await universityProfileService.updateProfile(cleanData);
+        setProfile(updatedProfile);
+        console.log("Profile saved successfully");
+        
+        // Show success toast with section name
+        const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+        toast.success(`${sectionName} updated successfully!`)
+        
+      } catch (apiError) {
+        console.log("API not available, simulating save");
+        if (profile) {
+          // Replace the academic fields completely, don't merge
+          setProfile({ 
+            ...profile, 
+            courses_offered: cleanData.courses_offered,
+            branch: cleanData.branch,
+            degree: cleanData.courses_offered // Also update degree field for display compatibility
+          });
+        }
+        
+        // Show success toast even for simulated save
+        const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+        toast.success(`${sectionName} updated successfully!`)
+      }
+    } else {
+      // For other sections, use the formData as is
     try {
       const updatedProfile = await universityProfileService.updateProfile(formData);
       setProfile(updatedProfile);
@@ -223,6 +263,7 @@ const handleSave = async (sectionId: string, formData: UniversityProfileUpdateDa
       // Show success toast even for simulated save
       const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
       toast.success(`${sectionName} updated successfully!`)
+      }
     }
 
     setEditing(null);
@@ -315,7 +356,7 @@ const handleSave = async (sectionId: string, formData: UniversityProfileUpdateDa
                     initialData.address = profile.address
                     break
                 case 'academic':
-                    initialData.courses_offered = profile.courses_offered
+                    initialData.degree = profile.degree
                     initialData.branch = profile.branch
                     break
             }
@@ -822,6 +863,16 @@ const handleSave = async (sectionId: string, formData: UniversityProfileUpdateDa
     }
 
     function renderAcademicInfo() {
+        // Helper function to split comma-separated string into array
+        const stringToArray = (str: string | undefined): string[] => {
+            if (!str) return []
+            return str.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        }
+
+        const branches = stringToArray(profile?.branch)
+        // Use courses_offered for display, fallback to degree if courses_offered doesn't exist
+        const courses = stringToArray(profile?.courses_offered || profile?.degree)
+
         return (
             <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
@@ -844,7 +895,7 @@ const handleSave = async (sectionId: string, formData: UniversityProfileUpdateDa
 
                 {editing === 'academic' ? (
                     <ProfileSectionForm
-                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['courses_offered', 'branch'], completed: false }}
+                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['degree', 'branch'], completed: false }}
                         profile={profile}
                         onSave={(formData) => handleSave('academic', formData)}
                         saving={saving}
@@ -853,31 +904,73 @@ const handleSave = async (sectionId: string, formData: UniversityProfileUpdateDa
                         onEdit={handleEdit}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        {/* Courses Offered Card */}
+                        {courses.length > 0 && (
+                            <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-900/10 dark:to-cyan-900/10 rounded-xl shadow-sm border border-blue-200/50 dark:border-blue-800/50 p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                                        <GraduationCap className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.courses_offered || 'Not specified'}
-                                    </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">Courses Offered</p>
+                                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            Courses Offered
+                                        </h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Academic programs and courses available
+                                        </p>
                                 </div>
                             </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {courses.map((course, index) => (
+                                        <span
+                                            key={index}
+                                            className="inline-flex items-center px-3.5 py-1.5 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 text-blue-800 dark:text-blue-200 rounded-lg text-sm font-medium shadow-sm border border-blue-300/50 dark:border-blue-700/50"
+                                        >
+                                            {course}
+                                        </span>
+                                    ))}
                         </div>
+                            </div>
+                        )}
 
-                        <div className="space-y-4">
-                            {profile?.branch && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Branch</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        {profile.branch}
-                                    </p>
+                        {/* Branches Card */}
+                        {branches.length > 0 && (
+                            <div className="bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-xl shadow-sm border border-purple-200/50 dark:border-purple-800/50 p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                                        <FileText className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            Branches
+                                        </h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Academic departments and branches available
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {branches.map((branch, index) => (
+                                        <span
+                                            key={index}
+                                            className="inline-flex items-center px-3.5 py-1.5 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-800/50 text-purple-800 dark:text-purple-200 rounded-lg text-sm font-medium shadow-sm border border-purple-300/50 dark:border-purple-700/50"
+                                        >
+                                            {branch}
+                                        </span>
+                                    ))}
+                                </div>
                                 </div>
                             )}
+
+                        {/* Empty State */}
+                        {courses.length === 0 && branches.length === 0 && (
+                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    No academic information provided yet
                         </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -901,15 +994,37 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
     const [formData, setFormData] = useState<UniversityProfileUpdateData>({})
     const [uploadingImage, setUploadingImage] = useState(false)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+    const [allBranchesSelected, setAllBranchesSelected] = useState(false)
+
+    // Helper functions for string/array conversion
+    const stringToArray = (str: string | undefined): string[] => {
+        if (!str) return []
+        return str.split(',').map(s => s.trim()).filter(s => s.length > 0)
+    }
+
+    const arrayToString = (arr: string[]): string => {
+        return arr.filter(s => s.trim().length > 0).join(', ')
+    }
 
     useEffect(() => {
         if (profile && section) {
             // Initialize form data with current profile values
             const initialData: UniversityProfileUpdateData = {}
             section.fields.forEach(field => {
+                if (field === 'degree') {
+                    // For degree field, use courses_offered data if available, otherwise use degree
+                    initialData.degree = (profile.courses_offered || profile.degree || '') as any
+                } else {
                 initialData[field as keyof UniversityProfileUpdateData] = (profile[field as keyof UniversityProfile] || '') as any
+                }
             })
             setFormData(initialData)
+            
+            // Check if all branches are selected for academic section
+            if (section.id === 'academic' && initialData.branch) {
+                const branchValue = initialData.branch as string
+                setAllBranchesSelected(branchValue.toLowerCase().includes('all') || branchValue === '*')
+            }
         }
     }, [profile, section])
 
@@ -988,16 +1103,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         
         // Academic Information validation
         if (section.id === 'academic') {
-            // Courses offered validation
-            if (formData.courses_offered && formData.courses_offered.trim().length < 5) {
-                errors.courses_offered = 'Courses offered must be at least 5 characters long'
+            // Courses Offered (degree field) validation - check if at least one course is selected
+            if (formData.degree) {
+                const degreeStr = formData.degree as string
+                const degrees = stringToArray(degreeStr)
+                if (degrees.length === 0) {
+                    errors.degree = 'Please select at least one course'
                 hasValidationErrors = true
+                }
             }
             
-            // Branch validation
-            if (formData.branch && formData.branch.trim().length < 2) {
-                errors.branch = 'Branch must be at least 2 characters long'
+            // Branch validation - allow empty or check if at least one branch is selected
+            if (formData.branch) {
+                const branchStr = formData.branch as string
+                const branches = stringToArray(branchStr)
+                if (branches.length === 0 && !allBranchesSelected) {
+                    errors.branch = 'Please select at least one branch or select all branches'
                 hasValidationErrors = true
+                }
             }
         }
         
@@ -1007,7 +1130,19 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             return
         }
         
-        // Remove readonly fields and fields that don't exist in the backend model before saving
+        // For academic section, map degree field to courses_offered for saving
+        let saveableData: UniversityProfileUpdateData = {}
+        if (section.id === 'academic') {
+            // Map degree data to courses_offered field
+            if (formData.degree) {
+                saveableData.courses_offered = formData.degree as string
+            }
+            // Keep branch as is
+            if (formData.branch) {
+                saveableData.branch = formData.branch as string
+            }
+        } else {
+            // For other sections, remove readonly fields and fields that don't exist in the backend model before saving
         const { 
             name, // readonly field
             total_students, 
@@ -1019,8 +1154,12 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             top_recruiters,
             total_jobs,
             total_jobs_approved,
-            ...saveableData 
+                degree, // Remove degree field for non-academic sections
+                ...restData 
         } = formData
+            saveableData = restData
+        }
+        
         onSave(saveableData)
     }
 
@@ -1107,8 +1246,107 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-        // Handle textarea fields
-        if (field.includes('bio') || field.includes('address') || field.includes('courses_offered')) {
+        // Handle degree field as Courses Offered with MultiSelectDropdown for academic section
+        if (field === 'degree' && section.id === 'academic') {
+            // Fetch degrees from backend for dropdown options
+            const { data: degreesData, loading: loadingDegrees } = useDegrees({ limit: 1000 })
+            
+            // Transform degrees data to match MultiSelectDropdown format
+            const degreeOptions: MultiSelectOption[] = useMemo(() => {
+                return degreesData.map((degree) => ({
+                    id: degree.id,
+                    value: degree.name,
+                    label: degree.name
+                }))
+            }, [degreesData])
+
+            const selectedDegrees = stringToArray(value as string)
+
+            return (
+                <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-900/10 dark:to-cyan-900/10 rounded-xl p-5 border border-blue-200/50 dark:border-blue-800/50">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <GraduationCap className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                                Courses Offered
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Select academic programs and courses available
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* Display selected courses as tags */}
+                    {selectedDegrees.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {selectedDegrees.map((degree, index) => (
+                                <motion.span
+                                    key={index}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50 text-blue-800 dark:text-blue-200 rounded-lg text-sm font-medium shadow-sm border border-blue-300/50 dark:border-blue-700/50"
+                                >
+                                    {degree}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const newDegrees = selectedDegrees.filter((d) => d !== degree)
+                                            const degreeString = arrayToString(newDegrees)
+                                            setFormData({ ...formData, degree: degreeString })
+                                            // Clear error when user removes selection
+                                            if (fieldErrors.degree) {
+                                                setFieldErrors({ ...fieldErrors, degree: '' })
+                                            }
+                                        }}
+                                        className="ml-1 hover:opacity-70 focus:outline-none transition-opacity text-blue-800 dark:text-blue-200"
+                                        aria-label={`Remove ${degree}`}
+                                    >
+                                        ×
+                                    </button>
+                                </motion.span>
+                            ))}
+                        </div>
+                    )}
+
+                    <MultiSelectDropdown
+                        options={degreeOptions}
+                        selectedValues={selectedDegrees || []}
+                        onSelectionChange={(selected) => {
+                            // Convert array back to comma-separated string
+                            const degreeString = arrayToString(selected)
+                            setFormData({ ...formData, degree: degreeString })
+                            // Clear error when user makes selection
+                            if (fieldErrors.degree) {
+                                setFieldErrors({ ...fieldErrors, degree: '' })
+                            }
+                        }}
+                        placeholder={loadingDegrees ? "Loading courses..." : "Select courses..."}
+                        disabled={loadingDegrees}
+                        isLoading={loadingDegrees}
+                        showAllOption={false}
+                        hideSelectedTags={true}
+                        allowCreate={true}
+                        onCreateOption={(value) => {
+                            if (!selectedDegrees.includes(value)) {
+                                const newDegrees = [...selectedDegrees, value]
+                                const degreeString = arrayToString(newDegrees)
+                                setFormData({ ...formData, degree: degreeString })
+                            }
+                        }}
+                        className="w-full"
+                    />
+                    
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-2">{fieldErrors[field]}</p>
+                    )}
+                </div>
+            )
+        }
+
+        // Handle textarea fields (bio, address, etc.)
+        if (field.includes('bio') || field.includes('address')) {
             return (
                 <div>
                     <Textarea
@@ -1203,6 +1441,60 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
+        // Handle branch field with BranchSelection component for academic section
+        if (field === 'branch' && section.id === 'academic') {
+            const selectedBranches = stringToArray(value as string)
+            
+            return (
+                <div className="bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-xl p-5 border border-purple-200/50 dark:border-purple-800/50">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <FileText className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                                Branches
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Select academic departments and branches available
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <BranchSelection
+                        selectedBranches={selectedBranches}
+                        onBranchesChange={(branches) => {
+                            const branchString = arrayToString(branches)
+                            setFormData({ ...formData, branch: branchString })
+                            // Clear error when user makes selection
+                            if (fieldErrors.branch) {
+                                setFieldErrors({ ...fieldErrors, branch: '' })
+                            }
+                        }}
+                        allBranchesSelected={allBranchesSelected}
+                        onAllBranchesToggle={(selected) => {
+                            setAllBranchesSelected(selected)
+                            if (selected) {
+                                setFormData({ ...formData, branch: 'All Branches' })
+                            } else {
+                                setFormData({ ...formData, branch: '' })
+                            }
+                            // Clear error when user toggles
+                            if (fieldErrors.branch) {
+                                setFieldErrors({ ...fieldErrors, branch: '' })
+                            }
+                        }}
+                        label=""
+                        placeholder="Select branches..."
+                    />
+                    
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-2">{fieldErrors[field]}</p>
+                    )}
+                </div>
+            )
+        }
+
         // Handle readonly fields (university name after account creation)
         if (field === 'name') {
             return (
@@ -1238,15 +1530,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                             inputValue = sanitizedValue
                         }
                         
-                        // Branch field validation - allow alphanumeric and common characters
-                        if (field === 'branch') {
-                            const sanitizedValue = inputValue.replace(/[^a-zA-Z0-9\s,.-]/g, '')
-                            if (sanitizedValue !== inputValue) {
-                                toast.error('Only letters, numbers, spaces, and common punctuation are allowed')
-                            }
-                            inputValue = sanitizedValue
-                        }
-                        
                         setFormData({ ...formData, [field]: inputValue })
                         // Clear error when user starts typing
                         if (fieldErrors[field]) {
@@ -1255,7 +1538,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                     }}
                     className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
                     placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                    maxLength={field === 'name' || field === 'university_name' ? 50 : field === 'contact_person_name' || field === 'contact_designation' ? 30 : field === 'branch' ? 20 : undefined}
+                    maxLength={field === 'name' || field === 'university_name' ? 50 : field === 'contact_person_name' || field === 'contact_designation' ? 30 : undefined}
                 />
                 {fieldErrors[field] && (
                     <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
@@ -1266,6 +1549,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            {section.id === 'academic' ? (
+                // Academic Section - Enhanced layout similar to student profile skills
+                <div className="space-y-6">
+                    {/* Courses Offered (degree field) - Full Width */}
+                    <div>
+                        {renderField('degree')}
+                    </div>
+                    
+                    {/* Branches - Full Width */}
+                    <div>
+                        {renderField('branch')}
+                    </div>
+                </div>
+            ) : (
+                // All Other Sections - Standard Grid Layout
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {section.fields.map((field) => (
                     <div key={field} className={field.includes('bio') || field.includes('address') || field.includes('courses_offered') ? 'md:col-span-2' : ''}>
@@ -1276,6 +1574,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                     </div>
                 ))}
             </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button

@@ -97,6 +97,11 @@ export default function CorporateJobsPage() {
             if (response.length > 0) {
                 console.log('First job data:', response[0])
                 console.log('First job job_type:', response[0].job_type)
+                console.log('🔍 First job education fields:', {
+                    education_degree: response[0].education_degree,
+                    education_branch: response[0].education_branch,
+                    education_level: response[0].education_level
+                })
             }
             setJobs(response)
             setPagination(prev => ({
@@ -164,11 +169,49 @@ export default function CorporateJobsPage() {
         setShowJobModal(true)
     }
 
-    const handleEditJob = (job: Job) => {
+    // Handle edit job - fetch complete job data including education fields
+    const handleEditJob = async (job: Job) => {
         console.log('🔍 handleEditJob called with job:', job)
         console.log('Job type in handleEditJob:', job.job_type)
-        setEditingJob(job)
-        setShowEditModal(true)
+        console.log('🔍 Education fields in job object (before fetching):', {
+            education_degree: job.education_degree,
+            education_branch: job.education_branch,
+            education_level: job.education_level,
+            education_degree_type: typeof job.education_degree,
+            education_branch_type: typeof job.education_branch,
+            education_degree_isArray: Array.isArray(job.education_degree),
+            education_branch_isArray: Array.isArray(job.education_branch)
+        })
+        
+        try {
+            // Fetch complete job data from API to get all fields including education_degree and education_branch
+            const completeJobData = await apiClient.getJobById(job.id)
+            console.log('🔍 Complete job data fetched for editing:', completeJobData)
+            console.log('🔍 Education fields in complete job data:', {
+                education_degree: completeJobData.education_degree,
+                education_branch: completeJobData.education_branch,
+                education_level: completeJobData.education_level,
+                education_degree_type: typeof completeJobData.education_degree,
+                education_branch_type: typeof completeJobData.education_branch,
+                education_degree_isArray: Array.isArray(completeJobData.education_degree),
+                education_branch_isArray: Array.isArray(completeJobData.education_branch)
+            })
+            
+            // Merge the complete job data with the existing job data
+            const jobWithCompleteData = {
+                ...job,
+                ...completeJobData
+            }
+            
+            setEditingJob(jobWithCompleteData)
+            setShowEditModal(true)
+        } catch (error: any) {
+            console.error('Failed to fetch complete job data for editing:', error)
+            toast.error('Failed to load job details. Some fields may not be available.')
+            // Still allow editing with limited data
+            setEditingJob(job)
+            setShowEditModal(true)
+        }
     }
 
     const handleDeleteJob = (job: Job) => {

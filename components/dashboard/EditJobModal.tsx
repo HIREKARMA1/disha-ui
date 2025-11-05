@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,104 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown'
 import { apiClient } from '@/lib/api'
+import { useIndustries, useLocationPreferences, useSkills, useDegrees, useBranches } from '@/hooks/useLookup'
+import { lookupService } from '@/services/lookupService'
 import { toast } from 'react-hot-toast'
 
-// Industry options
-const industryOptions = [
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Manufacturing', label: 'Manufacturing' },
-    { value: 'Retail', label: 'Retail' },
-    { value: 'Real Estate', label: 'Real Estate' },
-    { value: 'Consulting', label: 'Consulting' },
-    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-    { value: 'Telecommunications', label: 'Telecommunications' },
-    { value: 'Automotive', label: 'Automotive' },
-    { value: 'Aerospace', label: 'Aerospace' },
-    { value: 'Energy', label: 'Energy' },
-    { value: 'Government', label: 'Government' },
-    { value: 'Non-Profit', label: 'Non-Profit' },
-    { value: 'E-commerce', label: 'E-commerce' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Insurance', label: 'Insurance' },
-    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-    { value: 'Food & Beverage', label: 'Food & Beverage' },
-    { value: 'Transportation', label: 'Transportation' },
-    { value: 'Logistics', label: 'Logistics' },
-    { value: 'Hospitality', label: 'Hospitality' },
-    { value: 'Agriculture', label: 'Agriculture' },
-    { value: 'Construction', label: 'Construction' },
-    { value: 'Electrical', label: 'Electrical' },
-    { value: 'Mechanical', label: 'Mechanical' },   
-    { value: 'Electronics', label: 'Electronics' },
-    { value: 'Computer Science', label: 'Computer Science' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Chemical', label: 'Chemical' },
-    { value: 'Biotechnology', label: 'Biotechnology' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
-    { value: 'Other', label: 'Other' }
-]
-
-// Degree options (same as student modal)
-const degreeOptions = [
-    { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
-    { value: 'Bachelor of Engineering', label: 'Bachelor of Engineering (B.E.)' },
-    { value: 'Bachelor of Science', label: 'Bachelor of Science (B.Sc)' },
-    { value: 'Bachelor of Computer Applications', label: 'Bachelor of Computer Applications (BCA)' },
-    { value: 'Bachelor of Business Administration', label: 'Bachelor of Business Administration (BBA)' },
-    { value: 'Bachelor of Commerce', label: 'Bachelor of Commerce (B.Com)' },
-    { value: 'Bachelor of Arts', label: 'Bachelor of Arts (B.A.)' },
-    { value: 'Master of Technology', label: 'Master of Technology (M.Tech)' },
-    { value: 'Master of Engineering', label: 'Master of Engineering (M.E.)' },
-    { value: 'Master of Science', label: 'Master of Science (M.Sc)' },
-    { value: 'Master of Computer Applications', label: 'Master of Computer Applications (MCA)' },
-    { value: 'Master of Business Administration', label: 'Master of Business Administration (MBA)' },
-    { value: 'Master of Commerce', label: 'Master of Commerce (M.Com)' },
-    { value: 'Master of Arts', label: 'Master of Arts (M.A.)' },
-    { value: 'Diploma', label: 'Diploma' },
-    { value: 'Post Graduate Diploma', label: 'Post Graduate Diploma (PGD)' },
-    { value: 'Doctor of Philosophy', label: 'Doctor of Philosophy (Ph.D)' },
-    { value: 'Any', label: 'Any' }
-]
-
-// Branch options (same as student modal)
-const branchOptions = [
-    { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
-    { value: 'Electrical Engineering', label: 'Electrical Engineering' },
-    { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
-    { value: 'Civil Engineering', label: 'Civil Engineering' },
-    { value: 'Chemical Engineering', label: 'Chemical Engineering' },
-    { value: 'Aerospace Engineering', label: 'Aerospace Engineering' },
-    { value: 'Biotechnology', label: 'Biotechnology' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
-    { value: 'Machine Learning', label: 'Machine Learning' },
-    { value: 'Cybersecurity', label: 'Cybersecurity' },
-    { value: 'Software Engineering', label: 'Software Engineering' },
-    { value: 'Business Administration', label: 'Business Administration' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Operations Management', label: 'Operations Management' },
-    { value: 'International Business', label: 'International Business' },
-    { value: 'Economics', label: 'Economics' },
-    { value: 'Mathematics', label: 'Mathematics' },
-    { value: 'Physics', label: 'Physics' },
-    { value: 'Chemistry', label: 'Chemistry' },
-    { value: 'Biology', label: 'Biology' },
-    { value: 'English Literature', label: 'English Literature' },
-    { value: 'History', label: 'History' },
-    { value: 'Psychology', label: 'Psychology' },
-    { value: 'Sociology', label: 'Sociology' },
-    { value: 'Political Science', label: 'Political Science' },
-    { value: 'All', label: 'All Branches' }
-]
+// Note: All lookup options (Industries, Degrees, Branches, Skills, Location Preferences) 
+// are now fetched from backend using respective hooks
 
 interface Job {
     id: string
@@ -127,7 +37,7 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
-    skills_required?: string[]
+    skills_required?: string[] | string
     application_deadline?: string
     industry?: string
     selection_process?: string
@@ -229,25 +139,136 @@ const cleanJsonString = (str: string): string => {
 }
 
 // Helper function to parse education fields safely
-const parseEducationField = (field: string | string[]): string[] => {
+const parseEducationField = (field: string | string[] | null | undefined): string[] => {
+    // Handle null/undefined
+    if (!field) return []
+    
+    // Handle array case - backend splits comma-separated strings into arrays
     if (Array.isArray(field)) {
-        return field.map(item => cleanJsonString(item)).filter(item => item)
+        return field.map(item => {
+            if (typeof item === 'string') {
+                // Clean JSON strings and trim whitespace
+                const cleaned = cleanJsonString(item).trim()
+                return cleaned
+            }
+            return String(item).trim()
+        }).filter(item => item.length > 0) // Remove empty strings
     }
     
-    if (typeof field === 'string' && field) {
-        // First clean the string, then split by comma
+    // Handle string case
+    if (typeof field === 'string' && field.trim()) {
         const cleaned = cleanJsonString(field)
-        return cleaned.split(',').map(item => item.trim()).filter(item => item)
+        
+        // Try to parse as JSON first (in case it's a JSON stringified array)
+        try {
+            const parsed = JSON.parse(cleaned)
+            if (Array.isArray(parsed)) {
+                return parsed.map(item => String(item).trim()).filter(item => item.length > 0)
+            }
+        } catch {
+            // Not JSON, continue with comma splitting
+        }
+        
+        // Split by comma and clean each item
+        return cleaned.split(',').map(item => item.trim()).filter(item => item.length > 0)
     }
     
     return []
 }
 
+// Helper function to normalize values to match option values
+const normalizeToOptions = (values: string[], options: Array<{ value: string; label: string }>): string[] => {
+    if (!values || values.length === 0) return []
+    if (!options || options.length === 0) return values // Return as-is if options not loaded yet
+    
+    return values.map(val => {
+        // Try exact match first
+        const exactMatch = options.find(opt => opt.value === val || opt.label === val)
+        if (exactMatch) return exactMatch.value
+        
+        // Try case-insensitive match
+        const caseInsensitiveMatch = options.find(opt => 
+            opt.value.toLowerCase().trim() === val.toLowerCase().trim() ||
+            opt.label.toLowerCase().trim() === val.toLowerCase().trim()
+        )
+        if (caseInsensitiveMatch) return caseInsensitiveMatch.value
+        
+        // If no match found, return original value (custom value)
+        return val.trim()
+    }).filter(val => val.length > 0)
+}
+
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const [currentSkill, setCurrentSkill] = useState('')
-    const [currentLocation, setCurrentLocation] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+    
+    // Track if we've cleared cache for this modal opening to prevent infinite loops
+    const hasClearedCacheRef = useRef(false)
+    
+    // Fetch degrees, branches, and other lookup data from backend API
+    const { data: degreesData, loading: loadingDegrees, refetch: refetchDegrees } = useDegrees({ limit: 1000 })
+    const { data: branchesData, loading: loadingBranches, refetch: refetchBranches } = useBranches({ limit: 1000 })
+    const { data: industriesData, loading: loadingIndustries, refetch: refetchIndustries } = useIndustries({ limit: 1000 })
+    const { data: locationPreferencesData, loading: loadingLocations, refetch: refetchLocations } = useLocationPreferences({ limit: 1000 })
+    const { data: skillsData, loading: loadingSkills, refetch: refetchSkills } = useSkills({ limit: 1000 })
+    
+    // Transform degrees data to match MultiSelectDropdown format
+    const degreeOptions = degreesData.map((degree) => ({
+        id: degree.id,
+        value: degree.name,
+        label: degree.name
+    }))
+    
+    // Transform branches data to match MultiSelectDropdown format
+    const branchOptions = branchesData.map((branch) => ({
+        id: branch.id,
+        value: branch.name,
+        label: branch.name
+    }))
+    
+    // Transform industries data to match select dropdown format
+    const industryOptions = industriesData.map((industry) => ({
+        id: industry.id,
+        value: industry.name,
+        label: industry.name
+    }))
+    
+    // Transform location preferences data to match MultiSelectDropdown format
+    const locationOptions = locationPreferencesData.map((location) => ({
+        id: location.id,
+        value: location.name,
+        label: location.name
+    }))
+    
+    // Transform skills data to match MultiSelectDropdown format
+    const skillOptions = skillsData.map((skill) => ({
+        id: skill.id,
+        value: skill.name,
+        label: skill.name
+    }))
+
+    const handleLocationChange = (selectedLocations: string[]) => {
+        setFormData(prev => ({
+            ...prev,
+            location: selectedLocations
+        }))
+        
+        // Clear validation error for location when user selects
+        if (validationErrors.location) {
+            setValidationErrors(prev => ({
+                ...prev,
+                location: ''
+            }))
+        }
+    }
+
+    const handleSkillsChange = (selectedSkills: string[]) => {
+        setFormData(prev => ({
+            ...prev,
+            skills_required: selectedSkills
+        }))
+    }
+    
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
         description: '',
@@ -282,30 +303,149 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         ctc_after_probation: ''
     })
 
+    // Refetch lookup data when modal opens to ensure latest data (only once per modal opening)
+    useEffect(() => {
+        if (isOpen && !hasClearedCacheRef.current) {
+            // Clear cache and refetch to get latest lookup data
+            lookupService.clearCache('/admin/lookups/degrees')
+            lookupService.clearCache('/admin/lookups/branches')
+            lookupService.clearCache('/admin/lookups/industries')
+            lookupService.clearCache('/admin/lookups/location-preferences')
+            lookupService.clearCache('/admin/lookups/skills')
+            
+            // Refetch all lookup data
+            refetchDegrees().catch(() => {})
+            refetchBranches().catch(() => {})
+            refetchIndustries().catch(() => {})
+            refetchLocations().catch(() => {})
+            refetchSkills().catch(() => {})
+            
+            hasClearedCacheRef.current = true
+        } else if (!isOpen) {
+            // Reset flag when modal closes
+            hasClearedCacheRef.current = false
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen])
+
     // Populate form data when job changes
     useEffect(() => {
+        console.log('🔵 EditJobModal useEffect triggered - job changed:', {
+            jobId: job?.id,
+            hasJob: !!job,
+            jobKeys: job ? Object.keys(job) : [],
+            education_degree: job?.education_degree,
+            education_branch: job?.education_branch
+        })
+        
         if (job) {
             console.log('🔍 Full job object loaded:', job)
 
             // Handle location - could be string or array
             const locationArray = Array.isArray(job.location) ? job.location : 
-                                 (typeof job.location === 'string' && job.location) ? job.location.split(',').map(l => l.trim()) : []
+                                 (typeof job.location === 'string' && job.location.trim()) ? 
+                                 job.location.split(',').map(l => l.trim()).filter(l => l.length > 0) : []
             
-            // Handle education fields - use the safe parsing function
-            console.log('🔍 Education fields before parsing:', {
-                education_level: job.education_level,
-                education_degree: job.education_degree,
-                education_branch: job.education_branch
+            // Handle skills - use the same safe parsing function as education fields
+            let skillsArray: string[] = []
+            if (Array.isArray(job.skills_required)) {
+                skillsArray = job.skills_required.map(item => {
+                    if (typeof item === 'string') {
+                        return cleanJsonString(item).trim()
+                    }
+                    return String(item).trim()
+                }).filter(item => item.length > 0)
+            } else if (job.skills_required && typeof job.skills_required === 'string') {
+                const skillsStr = job.skills_required as string
+                const cleaned = cleanJsonString(skillsStr)
+                
+                // Try to parse as JSON first (in case it's a JSON stringified array)
+                try {
+                    const parsed = JSON.parse(cleaned)
+                    if (Array.isArray(parsed)) {
+                        skillsArray = parsed.map(item => String(item).trim()).filter(item => item.length > 0)
+                    } else {
+                        // Not an array, treat as single skill
+                        skillsArray = cleaned.trim() ? [cleaned.trim()] : []
+                    }
+                } catch {
+                    // Not JSON, split by comma and clean each item
+                    skillsArray = cleaned.split(',').map(item => item.trim()).filter(item => item.length > 0)
+                }
+            }
+            
+            console.log('🔍 Skills field before parsing:', {
+                original: job.skills_required,
+                type: typeof job.skills_required,
+                isArray: Array.isArray(job.skills_required)
             })
             
-            const educationLevelArray = parseEducationField(job.education_level || [])
-            const educationDegreeArray = parseEducationField(job.education_degree || [])
-            const educationBranchArray = parseEducationField(job.education_branch || [])
+            console.log('🔍 Skills field after parsing:', {
+                skillsArray
+            })
             
-            console.log('🔍 Education fields after parsing:', {
+            // Handle education fields - use the safe parsing function
+            console.log('🔍 Education fields BEFORE parsing:', {
+                education_level: job.education_level,
+                education_degree: job.education_degree,
+                education_branch: job.education_branch,
+                education_level_type: typeof job.education_level,
+                education_degree_type: typeof job.education_degree,
+                education_branch_type: typeof job.education_branch,
+                education_level_isArray: Array.isArray(job.education_level),
+                education_degree_isArray: Array.isArray(job.education_degree),
+                education_branch_isArray: Array.isArray(job.education_branch),
+                education_level_isNull: job.education_level === null,
+                education_degree_isNull: job.education_degree === null,
+                education_branch_isNull: job.education_branch === null,
+                education_level_isUndefined: job.education_level === undefined,
+                education_degree_isUndefined: job.education_degree === undefined,
+                education_branch_isUndefined: job.education_branch === undefined
+            })
+            
+            // IMPORTANT: Handle undefined/null values - API might return undefined instead of null or []
+            const educationLevelArray = parseEducationField(job.education_level ?? null)
+            let educationDegreeArray = parseEducationField(job.education_degree ?? null)
+            let educationBranchArray = parseEducationField(job.education_branch ?? null)
+            
+            console.log('🔍 Education fields AFTER parsing (before normalization):', {
                 educationLevelArray,
                 educationDegreeArray,
-                educationBranchArray
+                educationBranchArray,
+                degreeOptionsLoaded: degreeOptions.length > 0,
+                branchOptionsLoaded: branchOptions.length > 0,
+                degreeOptionsSample: degreeOptions.slice(0, 3).map(opt => opt.value),
+                branchOptionsSample: branchOptions.slice(0, 3).map(opt => opt.value)
+            })
+            
+            // Normalize education degree and branch arrays to match available options
+            // This ensures selected values match the option values exactly
+            // Only normalize if options are already loaded
+            if (degreeOptions.length > 0 && educationDegreeArray.length > 0) {
+                const beforeNormalize = [...educationDegreeArray]
+                educationDegreeArray = normalizeToOptions(educationDegreeArray, degreeOptions)
+                console.log('🔍 Education Degree normalization:', {
+                    before: beforeNormalize,
+                    after: educationDegreeArray,
+                    changed: JSON.stringify(beforeNormalize) !== JSON.stringify(educationDegreeArray)
+                })
+            }
+            if (branchOptions.length > 0 && educationBranchArray.length > 0) {
+                const beforeNormalize = [...educationBranchArray]
+                educationBranchArray = normalizeToOptions(educationBranchArray, branchOptions)
+                console.log('🔍 Education Branch normalization:', {
+                    before: beforeNormalize,
+                    after: educationBranchArray,
+                    changed: JSON.stringify(beforeNormalize) !== JSON.stringify(educationBranchArray)
+                })
+            }
+            
+            console.log('🔍 Education fields FINAL (after normalization):', {
+                educationLevelArray,
+                educationDegreeArray,
+                educationBranchArray,
+                degreeOptionsCount: degreeOptions.length,
+                branchOptionsCount: branchOptions.length
             })
 
             // Determine checkbox states from mode_of_work
@@ -355,7 +495,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_level: educationLevelArray,
                 education_degree: educationDegreeArray,
                 education_branch: educationBranchArray,
-                skills_required: job.skills_required || [],
+                skills_required: skillsArray,
                 application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
                 industry: job.industry || '',
                 selection_process: job.selection_process || '',
@@ -371,8 +511,77 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 ctc_after_probation: job.ctc_after_probation || ''
             })
 
+            console.log('✅ FormData SET with education fields:', {
+                education_degree: educationDegreeArray,
+                education_branch: educationBranchArray,
+                education_degree_length: educationDegreeArray.length,
+                education_branch_length: educationBranchArray.length,
+                education_degree_in_formData: educationDegreeArray,
+                education_branch_in_formData: educationBranchArray
+            })
+            
+            // CRITICAL DEBUG: Log what will be set in formData
+            console.log('🔍 About to set formData with:', {
+                'education_degree array': educationDegreeArray,
+                'education_branch array': educationBranchArray,
+                'education_degree type': typeof educationDegreeArray,
+                'education_branch type': typeof educationBranchArray,
+                'education_degree isArray': Array.isArray(educationDegreeArray),
+                'education_branch isArray': Array.isArray(educationBranchArray)
+            })
+            
+            // WARNING: If arrays are empty, log a warning
+            if (educationDegreeArray.length === 0 && educationBranchArray.length === 0) {
+                console.warn('⚠️ WARNING: Both education_degree and education_branch are empty arrays!', {
+                    'Original job.education_degree': job.education_degree,
+                    'Original job.education_branch': job.education_branch,
+                    'Parsed educationDegreeArray': educationDegreeArray,
+                    'Parsed educationBranchArray': educationBranchArray,
+                    'Note': 'This means the job does not have education data stored in the database.'
+                })
+            }
+
         }
     }, [job])
+
+    // Re-normalize education fields when options become available
+    // This ensures values match options even if options load after job data
+    useEffect(() => {
+        if (!job || !degreeOptions.length || !branchOptions.length) return
+        
+        setFormData(prev => {
+            // Only normalize if we have values to normalize
+            const hasDegreesToNormalize = prev.education_degree.length > 0
+            const hasBranchesToNormalize = prev.education_branch.length > 0
+            
+            if (!hasDegreesToNormalize && !hasBranchesToNormalize) {
+                return prev // No changes needed
+            }
+            
+            const normalizedDegrees = hasDegreesToNormalize 
+                ? normalizeToOptions(prev.education_degree, degreeOptions)
+                : prev.education_degree
+                
+            const normalizedBranches = hasBranchesToNormalize
+                ? normalizeToOptions(prev.education_branch, branchOptions)
+                : prev.education_branch
+            
+            // Only update if values actually changed
+            const degreesChanged = JSON.stringify(normalizedDegrees) !== JSON.stringify(prev.education_degree)
+            const branchesChanged = JSON.stringify(normalizedBranches) !== JSON.stringify(prev.education_branch)
+            
+            if (degreesChanged || branchesChanged) {
+                return {
+                    ...prev,
+                    education_degree: normalizedDegrees,
+                    education_branch: normalizedBranches
+                }
+            }
+            
+            return prev
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [degreeOptions.length, branchOptions.length, job?.id]) // Re-run when options load or job changes
 
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
@@ -395,39 +604,6 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         }
     }
 
-    const addSkill = () => {
-        if (currentSkill.trim() && !formData.skills_required.includes(currentSkill.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                skills_required: [...prev.skills_required, currentSkill.trim()]
-            }))
-            setCurrentSkill('')
-        }
-    }
-
-    const removeSkill = (skillToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            skills_required: prev.skills_required.filter(skill => skill !== skillToRemove)
-        }))
-    }
-
-    const addLocation = () => {
-        if (currentLocation.trim() && !formData.location.includes(currentLocation.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                location: [...prev.location, currentLocation.trim()]
-            }))
-            setCurrentLocation('')
-        }
-    }
-
-    const removeLocation = (locationToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            location: prev.location.filter(location => location !== locationToRemove)
-        }))
-    }
 
     const handleMultiSelectChange = (field: 'education_degree' | 'education_branch' | 'education_level', value: string) => {
         setFormData(prev => {
@@ -444,6 +620,20 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 }
             }
         })
+    }
+
+    const handleEducationDegreeChange = (selectedDegrees: string[]) => {
+        setFormData(prev => ({
+            ...prev,
+            education_degree: selectedDegrees
+        }))
+    }
+
+    const handleEducationBranchChange = (selectedBranches: string[]) => {
+        setFormData(prev => ({
+            ...prev,
+            education_branch: selectedBranches
+        }))
     }
 
     const validateForm = () => {
@@ -760,42 +950,46 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Location *
                                         </label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={currentLocation}
-                                                onChange={(e) => setCurrentLocation(e.target.value)}
-                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
-                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
-                                            />
-                                            <Button type="button" onClick={addLocation} variant="outline">
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
+                                        
+                                        {/* Display selected location tags */}
+                                        {formData.location.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {formData.location.map((location, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                    >
+                                                        {locationOptions.find(opt => opt.value === location)?.label || location}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newLocations = formData.location.filter(l => l !== location)
+                                                                handleLocationChange(newLocations)
+                                                            }}
+                                                            className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        <MultiSelectDropdown
+                                            options={locationOptions}
+                                            selectedValues={formData.location}
+                                            onSelectionChange={handleLocationChange}
+                                            placeholder={loadingLocations ? "Loading locations..." : validationErrors.location || "Select location(s)"}
+                                            disabled={loadingLocations}
+                                            isLoading={loadingLocations}
+                                            showAllOption={false}
+                                            hideSelectedTags={true}
+                                            className="w-full"
+                                        />
                                         {validationErrors.location && (
                                             <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
                                         )}
                                     </div>
-
-                                    {formData.location.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {formData.location.map((location, index) => (
-                                                <span
-                                                    key={index}
-                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
-                                                >
-                                                    {location}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeLocation(location)}
-                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -803,13 +997,17 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Industry
                                         </label>
-                                        <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select industry" />
+                                        <Select 
+                                            value={formData.industry} 
+                                            onValueChange={(value) => handleInputChange('industry', value)}
+                                            disabled={loadingIndustries}
+                                        >
+                                            <SelectTrigger disabled={loadingIndustries}>
+                                                <SelectValue placeholder={loadingIndustries ? "Loading industries..." : "Select industry"} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {industryOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
+                                                    <SelectItem key={option.id} value={option.value}>
                                                         {option.label}
                                                     </SelectItem>
                                                 ))}
@@ -1008,20 +1206,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                     Required Skills
                                 </h3>
 
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={currentSkill}
-                                        onChange={(e) => setCurrentSkill(e.target.value)}
-                                        placeholder="Add a skill (e.g., Python, React, AWS)"
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                                    />
-                                    <Button type="button" onClick={addSkill} variant="outline">
-                                        <Plus className="w-4 h-4" />
-                                    </Button>
-                                </div>
-
+                                {/* Display selected skill tags */}
                                 {formData.skills_required.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-2 mb-3">
                                         {formData.skills_required.map((skill, index) => (
                                             <span
                                                 key={index}
@@ -1030,7 +1217,10 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                 {skill}
                                                 <button
                                                     type="button"
-                                                    onClick={() => removeSkill(skill)}
+                                                    onClick={() => {
+                                                        const newSkills = formData.skills_required.filter(s => s !== skill)
+                                                        handleSkillsChange(newSkills)
+                                                    }}
                                                     className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
                                                 >
                                                     <X className="w-3 h-3" />
@@ -1039,6 +1229,25 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         ))}
                                     </div>
                                 )}
+
+                                {/* Unified dropdown with create functionality */}
+                                <MultiSelectDropdown
+                                    options={skillOptions}
+                                    selectedValues={formData.skills_required}
+                                    onSelectionChange={handleSkillsChange}
+                                    placeholder={loadingSkills ? "Loading skills..." : "Select skills from list or type to add custom"}
+                                    disabled={loadingSkills}
+                                    isLoading={loadingSkills}
+                                    showAllOption={false}
+                                    hideSelectedTags={true}
+                                    allowCreate={true}
+                                    onCreateOption={(value) => {
+                                        if (!formData.skills_required.includes(value)) {
+                                            handleSkillsChange([...formData.skills_required, value])
+                                        }
+                                    }}
+                                    className="w-full"
+                                />
                             </div>
 
 
@@ -1055,78 +1264,96 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Education Degree
                                         </label>
-                                        <div className="space-y-2">
-                                            <Select onValueChange={(value) => handleMultiSelectChange('education_degree', value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select degree(s)" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {degreeOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {formData.education_degree.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {formData.education_degree.map((degree, index) => (
-                                                        <span
-                                                            key={index}
-                                                            className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                        
+                                        {/* Display selected degree tags */}
+                                        {formData.education_degree.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {formData.education_degree.map((degree, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                    >
+                                                        {degreeOptions.find(opt => opt.value === degree)?.label || degree}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newDegrees = formData.education_degree.filter(d => d !== degree)
+                                                                handleEducationDegreeChange(newDegrees)
+                                                            }}
+                                                            className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
                                                         >
-                                                            {degreeOptions.find(opt => opt.value === degree)?.label || degree}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleMultiSelectChange('education_degree', degree)}
-                                                                className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        <MultiSelectDropdown
+                                            options={degreeOptions}
+                                            selectedValues={formData.education_degree}
+                                            onSelectionChange={handleEducationDegreeChange}
+                                            placeholder={loadingDegrees ? "Loading degrees..." : "Select degree(s) or type to add custom"}
+                                            disabled={loadingDegrees}
+                                            isLoading={loadingDegrees}
+                                            showAllOption={false}
+                                            hideSelectedTags={true}
+                                            allowCreate={true}
+                                            onCreateOption={(value) => {
+                                                if (!formData.education_degree.includes(value)) {
+                                                    handleEducationDegreeChange([...formData.education_degree, value])
+                                                }
+                                            }}
+                                            className="w-full"
+                                        />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Education Branch
                                         </label>
-                                        <div className="space-y-2">
-                                            <Select onValueChange={(value) => handleMultiSelectChange('education_branch', value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select branch(es)" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {branchOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {formData.education_branch.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {formData.education_branch.map((branch, index) => (
-                                                        <span
-                                                            key={index}
-                                                            className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                        
+                                        {/* Display selected branch tags */}
+                                        {formData.education_branch.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {formData.education_branch.map((branch, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                    >
+                                                        {branchOptions.find(opt => opt.value === branch)?.label || branch}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newBranches = formData.education_branch.filter(b => b !== branch)
+                                                                handleEducationBranchChange(newBranches)
+                                                            }}
+                                                            className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
                                                         >
-                                                            {branchOptions.find(opt => opt.value === branch)?.label || branch}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleMultiSelectChange('education_branch', branch)}
-                                                                className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </button>
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        <MultiSelectDropdown
+                                            options={branchOptions}
+                                            selectedValues={formData.education_branch}
+                                            onSelectionChange={handleEducationBranchChange}
+                                            placeholder={loadingBranches ? "Loading branches..." : "Select branch(es) or type to add custom"}
+                                            disabled={loadingBranches}
+                                            isLoading={loadingBranches}
+                                            showAllOption={false}
+                                            hideSelectedTags={true}
+                                            allowCreate={true}
+                                            onCreateOption={(value) => {
+                                                if (!formData.education_branch.includes(value)) {
+                                                    handleEducationBranchChange([...formData.education_branch, value])
+                                                }
+                                            }}
+                                            className="w-full"
+                                        />
                                     </div>
                                 </div>
 

@@ -21,6 +21,7 @@ export interface UniversityProfile {
     contact_designation?: string
     address?: string
     courses_offered?: string
+    degree?: string
     branch?: string
     total_students?: number
     total_faculty?: number
@@ -45,6 +46,7 @@ export interface UniversityProfileUpdateData {
     contact_designation?: string
     address?: string
     courses_offered?: string
+    degree?: string
     branch?: string
     total_students?: number
     total_faculty?: number

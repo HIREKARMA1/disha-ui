@@ -203,6 +203,7 @@ export interface UniversityProfile {
   contact_designation?: string
   address?: string
   courses_offered?: string
+  degree?: string
   branch?: string
   verified: boolean
   verification_date?: string
