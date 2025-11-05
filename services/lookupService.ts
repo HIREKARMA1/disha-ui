@@ -42,7 +42,6 @@ class LookupService {
     // Check cache first
     const cached = this.cache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      console.log(`Using cached data for ${endpoint}`)
       return cached.data as unknown as T
     }
 
@@ -73,7 +72,51 @@ class LookupService {
         '/admin/lookups/branches',
         options
       )
-      return response.branches || []
+      
+      // Handle different response structures
+      let branches: any[] = []
+      
+      if (response) {
+        // If response has a branches property, use it
+        if (response.branches && Array.isArray(response.branches)) {
+          branches = response.branches
+        }
+        // If response is directly an array (shouldn't happen but handle it)
+        else if (Array.isArray(response)) {
+          branches = response
+        }
+        // If response has data property
+        else if ((response as any).data && Array.isArray((response as any).data)) {
+          branches = (response as any).data
+        }
+      }
+      
+      // Convert IDs to strings and ensure all required fields are present
+      const normalizedBranches = branches
+        .filter((branch: any) => {
+          // Only filter out entries that are completely invalid
+          if (!branch) return false
+          // Filter out entries without names
+          if (!branch.name) return false
+          return true
+        })
+        .map((branch: any) => ({
+          id: String(branch.id || branch.name || `branch-${branch.name?.replace(/\s+/g, '-') || 'unknown'}`), // Ensure ID is string
+          name: String(branch.name || '').trim(),
+          description: branch.description || '',
+          created_at: branch.created_at,
+          updated_at: branch.updated_at,
+          tenant_id: branch.tenant_id
+        }))
+        .filter((branch) => branch.name.length > 0) // Final filter to remove empty names
+      
+      const expectedCount = response.total || branches.length || 0
+      if (normalizedBranches.length !== expectedCount) {
+        // Clear cache for this endpoint to force fresh fetch next time
+        this.clearCache('/admin/lookups/branches')
+      }
+      
+      return normalizedBranches
     } catch (error) {
       console.error('Failed to fetch branches:', error)
       return []
@@ -89,7 +132,51 @@ class LookupService {
         '/admin/lookups/degrees',
         options
       )
-      return response.degrees || []
+      
+      // Handle different response structures
+      let degrees: any[] = []
+      
+      if (response) {
+        // If response has a degrees property, use it
+        if (response.degrees && Array.isArray(response.degrees)) {
+          degrees = response.degrees
+        }
+        // If response is directly an array (shouldn't happen but handle it)
+        else if (Array.isArray(response)) {
+          degrees = response
+        }
+        // If response has data property
+        else if ((response as any).data && Array.isArray((response as any).data)) {
+          degrees = (response as any).data
+        }
+      }
+      
+      // Convert IDs to strings and ensure all required fields are present
+      const normalizedDegrees = degrees
+        .filter((degree: any) => {
+          // Only filter out entries that are completely invalid
+          if (!degree) return false
+          // Filter out entries without names
+          if (!degree.name) return false
+          return true
+        })
+        .map((degree: any) => ({
+          id: String(degree.id || degree.name || `degree-${degree.name?.replace(/\s+/g, '-') || 'unknown'}`), // Ensure ID is string
+          name: String(degree.name || '').trim(),
+          description: degree.description || '',
+          created_at: degree.created_at,
+          updated_at: degree.updated_at,
+          tenant_id: degree.tenant_id
+        }))
+        .filter((degree) => degree.name.length > 0) // Final filter to remove empty names
+      
+      const expectedCount = response.total || degrees.length || 0
+      if (normalizedDegrees.length !== expectedCount) {
+        // Clear cache for this endpoint to force fresh fetch next time
+        this.clearCache('/admin/lookups/degrees')
+      }
+      
+      return normalizedDegrees
     } catch (error) {
       console.error('Failed to fetch degrees:', error)
       return []

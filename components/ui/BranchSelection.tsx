@@ -2,8 +2,9 @@
 
 import React from 'react'
 import { MultiSelectDropdown, MultiSelectOption } from './MultiSelectDropdown'
+import { useBranches } from '@/hooks/useLookup'
 
-// All available branch options
+// Legacy hardcoded branch options (kept for backward compatibility)
 export const BRANCH_OPTIONS = [
     { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
     { value: 'Information Technology', label: 'Information Technology' },
@@ -37,7 +38,7 @@ export const BRANCH_OPTIONS = [
     { value: 'Political Science', label: 'Political Science' }
 ]
 
-// Convert branch options to MultiSelectOption format
+// Legacy conversion (kept for backward compatibility)
 export const BRANCH_MULTI_SELECT_OPTIONS: MultiSelectOption[] = BRANCH_OPTIONS.map((option) => ({
     id: option.value,
     label: option.label,
@@ -65,6 +66,18 @@ export function BranchSelection({
     className = "",
     disabled = false
 }: BranchSelectionProps) {
+    // Fetch branches from backend API
+    const { data: branchesData, loading: loadingBranches } = useBranches({ limit: 1000 })
+    
+    // Transform branches data to match MultiSelectDropdown format
+    const branchOptions: MultiSelectOption[] = React.useMemo(() => {
+        return branchesData.map((branch) => ({
+            id: branch.id,
+            value: branch.name,
+            label: branch.name
+        }))
+    }, [branchesData])
+
     return (
         <div className={`space-y-4 ${className}`}>
             <div>
@@ -89,11 +102,18 @@ export function BranchSelection({
 
                 {/* Branch Selection Dropdown */}
                 <MultiSelectDropdown
-                    options={BRANCH_MULTI_SELECT_OPTIONS}
+                    options={branchOptions}
                     selectedValues={selectedBranches}
                     onSelectionChange={onBranchesChange}
-                    placeholder={placeholder}
+                    placeholder={loadingBranches ? "Loading branches..." : placeholder}
                     disabled={disabled || allBranchesSelected}
+                    isLoading={loadingBranches}
+                    allowCreate={true}
+                    onCreateOption={(value) => {
+                        if (!selectedBranches.includes(value)) {
+                            onBranchesChange([...selectedBranches, value])
+                        }
+                    }}
                     className="w-full"
                 />
             </div>
