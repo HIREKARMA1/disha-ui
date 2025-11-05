@@ -1306,12 +1306,6 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             }}
                                             className="w-full"
                                         />
-                                        {/* Debug info - remove in production */}
-                                        {process.env.NODE_ENV === 'development' && (
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                Debug: {formData.education_degree.length} degree(s) selected: {JSON.stringify(formData.education_degree)} | Options: {degreeOptions.length}
-                                            </div>
-                                        )}
                                     </div>
 
                                     <div>
@@ -1360,12 +1354,6 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             }}
                                             className="w-full"
                                         />
-                                        {/* Debug info - remove in production */}
-                                        {process.env.NODE_ENV === 'development' && (
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                Debug: {formData.education_branch.length} branch(es) selected: {JSON.stringify(formData.education_branch)} | Options: {branchOptions.length}
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
