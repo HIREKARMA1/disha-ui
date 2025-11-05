@@ -326,10 +326,38 @@ function UniversityJobsPageContent() {
         setShowAppliedStudentsModal(true)
     }
 
-    // Handle edit job
-    const handleEditJob = (job: UniversityJob) => {
-        setEditingJob(job)
-        setShowEditModal(true)
+    // Handle edit job - fetch complete job data including education fields
+    const handleEditJob = async (job: UniversityJob) => {
+        try {
+            // Fetch complete job data from API to get all fields including education_degree and education_branch
+            const completeJobData = await apiClient.getJobById(job.id)
+            console.log('🔍 Complete job data fetched for editing:', completeJobData)
+            console.log('🔍 Education fields in complete job data:', {
+                education_degree: completeJobData.education_degree,
+                education_branch: completeJobData.education_branch,
+                education_level: completeJobData.education_level
+            })
+            
+            // Merge the complete job data with the existing job data
+            const jobWithCompleteData = {
+                ...job,
+                ...completeJobData,
+                // Ensure we keep the approval status from the list
+                approved: job.approved,
+                rejected: job.rejected,
+                pending: job.pending,
+                approval_status: job.approval_status
+            }
+            
+            setEditingJob(jobWithCompleteData)
+            setShowEditModal(true)
+        } catch (error: any) {
+            console.error('Failed to fetch complete job data for editing:', error)
+            toast.error('Failed to load job details. Some fields may not be available.')
+            // Still allow editing with limited data
+            setEditingJob(job)
+            setShowEditModal(true)
+        }
     }
 
     // Handle delete job
