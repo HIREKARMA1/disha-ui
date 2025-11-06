@@ -35,6 +35,7 @@ import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { MultiSelectDropdown, type MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
+import { LocationSelector } from '@/components/ui/LocationSelector'
 import { lookupService } from '@/services/lookupService'
 
 interface ProfileSection {
@@ -1244,15 +1245,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         if (section.id === 'skills') {
             setLoadingLookups(true)
 
-            // Fetch all skills-related lookup data from backend
+            // Fetch all skills-related lookup data from backend (excluding location_preferences which uses country-state-city)
             Promise.all([
                 lookupService.getSkills({ limit: 1000 }),
                 lookupService.getSoftSkills({ limit: 1000 }),
                 lookupService.getIndustries({ limit: 1000 }),
-                lookupService.getJobRoles({ limit: 1000 }),
-                lookupService.getLocationPreferences({ limit: 1000 })
+                lookupService.getJobRoles({ limit: 1000 })
             ])
-                .then(([skills, softSkills, industries, jobRoles, locationPreferences]) => {
+                .then(([skills, softSkills, industries, jobRoles]) => {
                     // Transform API data to match the expected format
                     setLookupData({
                         technical_skills: {
@@ -1268,7 +1268,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             data: jobRoles.map(item => item.name)
                         },
                         location_preferences: {
-                            data: locationPreferences.map(item => item.name)
+                            data: [] // Not used anymore, kept for compatibility
                         }
                     })
                     setLoadingLookups(false)
@@ -1856,8 +1856,87 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+        // Handle location_preferences field separately with LocationSelector
+        if (field === 'location_preferences') {
+            // For location_preferences, use pipe delimiter since locations contain commas
+            const locationToString = (arr: string[]): string => {
+                return arr.filter(item => item.trim().length > 0).join('|')
+            }
+            const locationToArray = (str: string | null | undefined): string[] => {
+                if (!str || typeof str !== 'string') return []
+                // Handle both pipe delimiter (new format) and comma delimiter (old format for backward compatibility)
+                if (str.includes('|')) {
+                    return str.split('|').map(item => item.trim()).filter(item => item.length > 0)
+                }
+                // If it contains comma but no pipe, check if it looks like a single location with commas
+                // We'll check if splitting by comma creates valid location parts
+                // For now, treat comma-separated as multiple locations (backward compatibility)
+                return str.split(',').map(item => item.trim()).filter(item => item.length > 0)
+            }
+            
+            const selectedValues = locationToArray(value)
+            
+            return (
+                <div className="bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10 rounded-xl p-5 border border-pink-200/50 dark:border-pink-800/50">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                                Location Preferences
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Select your preferred work locations
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Display selected tags */}
+                    {selectedValues.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {selectedValues.map((tag, index) => (
+                                <motion.span
+                                    key={index}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-pink-100 to-pink-200 dark:from-pink-900/50 dark:to-pink-800/50 text-pink-800 dark:text-pink-200 rounded-lg text-sm font-medium shadow-sm border border-pink-300/50 dark:border-pink-700/50"
+                                >
+                                    {tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const newValues = selectedValues.filter(t => t !== tag)
+                                            const stringValue = locationToString(newValues)
+                                            setFormData({ ...formData, [field]: stringValue })
+                                        }}
+                                        className="ml-1 hover:opacity-70 focus:outline-none transition-opacity text-pink-600 dark:text-pink-400"
+                                        aria-label={`Remove ${tag}`}
+                                    >
+                                        ×
+                                    </button>
+                                </motion.span>
+                            ))}
+                        </div>
+                    )}
+
+                    <LocationSelector
+                        selectedLocations={selectedValues}
+                        onSelectionChange={(selected) => {
+                            // Convert array back to pipe-separated string
+                            const stringValue = locationToString(selected)
+                            setFormData({ ...formData, [field]: stringValue })
+                        }}
+                        placeholder="Select Location Preferences"
+                        disabled={false}
+                        className="w-full"
+                    />
+                </div>
+            )
+        }
+
         // Handle other skills fields with multi-select dropdown
-        const skillsFields = ['technical_skills', 'soft_skills', 'preferred_industry', 'job_roles_of_interest', 'location_preferences']
+        const skillsFields = ['technical_skills', 'soft_skills', 'preferred_industry', 'job_roles_of_interest']
         if (skillsFields.includes(field)) {
             const options = getOptionsForField(field)
             const selectedValues = stringToArray(value)
@@ -1865,16 +1944,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 'technical_skills': 'Technical Skills',
                 'soft_skills': 'Soft Skills',
                 'preferred_industry': 'Preferred Industry',
-                'job_roles_of_interest': 'Job Roles Of Interest',
-                'location_preferences': 'Location Preferences'
+                'job_roles_of_interest': 'Job Roles Of Interest'
             }
 
             const fieldIcons: Record<string, any> = {
                 'technical_skills': Code,
                 'soft_skills': Users,
                 'preferred_industry': Building2,
-                'job_roles_of_interest': Briefcase,
-                'location_preferences': MapPin
+                'job_roles_of_interest': Briefcase
             }
 
             const fieldColors: Record<string, { bg: string; border: string; iconBg: string; iconGradient: string; tagBg: string; tagBorder: string; tagText: string }> = {
@@ -1913,15 +1990,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     tagBg: 'from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50',
                     tagBorder: 'border-indigo-300/50 dark:border-indigo-700/50',
                     tagText: 'text-indigo-800 dark:text-indigo-200'
-                },
-                'location_preferences': {
-                    bg: 'from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10',
-                    border: 'border-pink-200/50 dark:border-pink-800/50',
-                    iconBg: 'from-pink-500 to-pink-600',
-                    iconGradient: 'from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800',
-                    tagBg: 'from-pink-100 to-pink-200 dark:from-pink-900/50 dark:to-pink-800/50',
-                    tagBorder: 'border-pink-300/50 dark:border-pink-700/50',
-                    tagText: 'text-pink-800 dark:text-pink-200'
                 }
             }
 
@@ -1948,7 +2016,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                                 {field === 'soft_skills' && 'Choose your interpersonal and communication skills'}
                                 {field === 'preferred_industry' && 'Select industries you\'re interested in'}
                                 {field === 'job_roles_of_interest' && 'Choose roles that match your career goals'}
-                                {field === 'location_preferences' && 'Select your preferred work locations'}
                             </p>
                         </div>
                     </div>
