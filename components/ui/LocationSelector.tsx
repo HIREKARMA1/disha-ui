@@ -266,6 +266,35 @@ export function LocationSelector({
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
+            {/* Display Selected Locations - Above Search Input */}
+            {selectedLocations.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                    {selectedLocations.map((location) => (
+                        <motion.span
+                            key={location}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-pink-100 to-pink-200 dark:from-pink-900/50 dark:to-pink-800/50 text-pink-800 dark:text-pink-200 rounded-lg text-sm font-medium shadow-sm border border-pink-300/50 dark:border-pink-700/50"
+                        >
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>{location}</span>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRemoveLocation(location)
+                                }}
+                                className="ml-1 hover:opacity-70 focus:outline-none transition-opacity text-pink-600 dark:text-pink-400 font-bold text-lg leading-none"
+                                aria-label={`Remove ${location}`}
+                            >
+                                ×
+                            </button>
+                        </motion.span>
+                    ))}
+                </div>
+            )}
+
             {/* Search Input */}
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -336,31 +365,6 @@ export function LocationSelector({
                             No locations found. Try a different search term.
                         </div>
                     )}
-                </div>
-            )}
-
-            {/* Display Selected Locations */}
-            {selectedLocations.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedLocations.map((location, index) => (
-                        <motion.span
-                            key={index}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-pink-100 to-pink-200 dark:from-pink-900/50 dark:to-pink-800/50 text-pink-800 dark:text-pink-200 rounded-lg text-sm font-medium shadow-sm border border-pink-300/50 dark:border-pink-700/50"
-                        >
-                            <MapPin className="w-3.5 h-3.5" />
-                            {location}
-                            <button
-                                type="button"
-                                onClick={() => handleRemoveLocation(location)}
-                                className="ml-1 hover:opacity-70 focus:outline-none transition-opacity text-pink-600 dark:text-pink-400"
-                                aria-label={`Remove ${location}`}
-                            >
-                                ×
-                            </button>
-                        </motion.span>
-                    ))}
                 </div>
             )}
         </div>

@@ -1864,14 +1864,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
             const locationToArray = (str: string | null | undefined): string[] => {
                 if (!str || typeof str !== 'string') return []
-                // Handle both pipe delimiter (new format) and comma delimiter (old format for backward compatibility)
+                // Use pipe delimiter to separate multiple locations
+                // Locations themselves can contain commas (e.g., "Bihar, India")
                 if (str.includes('|')) {
                     return str.split('|').map(item => item.trim()).filter(item => item.length > 0)
                 }
-                // If it contains comma but no pipe, check if it looks like a single location with commas
-                // We'll check if splitting by comma creates valid location parts
-                // For now, treat comma-separated as multiple locations (backward compatibility)
-                return str.split(',').map(item => item.trim()).filter(item => item.length > 0)
+                // If no pipe delimiter, treat the entire string as a single location
+                // This handles cases where old data might be stored as comma-separated
+                // but we want to preserve it as one location
+                return str.trim() ? [str.trim()] : []
             }
             
             const selectedValues = locationToArray(value)
@@ -1891,34 +1892,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             </p>
                         </div>
                     </div>
-
-                    {/* Display selected tags */}
-                    {selectedValues.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {selectedValues.map((tag, index) => (
-                                <motion.span
-                                    key={index}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-pink-100 to-pink-200 dark:from-pink-900/50 dark:to-pink-800/50 text-pink-800 dark:text-pink-200 rounded-lg text-sm font-medium shadow-sm border border-pink-300/50 dark:border-pink-700/50"
-                                >
-                                    {tag}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const newValues = selectedValues.filter(t => t !== tag)
-                                            const stringValue = locationToString(newValues)
-                                            setFormData({ ...formData, [field]: stringValue })
-                                        }}
-                                        className="ml-1 hover:opacity-70 focus:outline-none transition-opacity text-pink-600 dark:text-pink-400"
-                                        aria-label={`Remove ${tag}`}
-                                    >
-                                        ×
-                                    </button>
-                                </motion.span>
-                            ))}
-                        </div>
-                    )}
 
                     <LocationSelector
                         selectedLocations={selectedValues}
