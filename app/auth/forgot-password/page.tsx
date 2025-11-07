@@ -216,7 +216,7 @@ export default function ForgotPasswordPage() {
                     {currentStep !== 'success' && currentStep !== 'otp' && (
                         <div className="flex items-center justify-center mb-6 sm:mb-8 gap-2">
                             <div className={`h-2 w-12 sm:w-16 rounded-full ${currentStep === 'email' ? 'bg-primary-600' : 'bg-primary-300'}`} />
-                            <div className={`h-2 w-12 sm:w-16 rounded-full ${currentStep === 'otp' ? 'bg-primary-600' : currentStep === 'password' ? 'bg-primary-300' : 'bg-gray-300'}`} />
+                            <div className={`h-2 w-12 sm:w-16 rounded-full ${currentStep === 'password' ? 'bg-primary-300' : 'bg-gray-300'}`} />
                             <div className={`h-2 w-12 sm:w-16 rounded-full ${currentStep === 'password' ? 'bg-primary-600' : 'bg-gray-300'}`} />
                         </div>
                     )}
