@@ -24,6 +24,7 @@ import {
 import { UniversityListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
 import { UniversityProfileModal } from './UniversityProfileModal'
+import { StatusDropdown } from './UniversityStatusDropdown'
 
 interface UniversityTableProps {
     universities: UniversityListItem[]
@@ -73,6 +74,8 @@ export function UniversityTable({
                 return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
             case 'inactive':
                 return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+            case 'pending':
+                return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
             case 'suspended':
                 return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
             default:
@@ -84,6 +87,44 @@ export function UniversityTable({
         return verified
             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
             : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+    }
+
+    // Check if university is new (show badge for newly created universities that haven't been modified by admin)
+    // Badge disappears when admin updates the university (status change, profile edit, etc.)
+    const isNewUniversity = (university: UniversityListItem) => {
+        // Strategy: Show "New" badge if the university was created recently AND hasn't been modified by admin yet
+        // We detect "not modified" by checking if updated_at is either:
+        // 1. null/undefined (never updated)
+        // 2. Same as or very close to created_at (within 5 seconds - accounts for database timestamp precision)
+        
+        if (!university.created_at) {
+            return false // Can't determine if new without created_at
+        }
+        
+        const createdTime = new Date(university.created_at).getTime()
+        const now = Date.now()
+        const twentyFourHours = 24 * 60 * 60 * 1000
+        
+        // Only consider universities created in the last 24 hours as potentially "new"
+        const isRecentlyCreated = (now - createdTime) < twentyFourHours
+        if (!isRecentlyCreated) {
+            return false
+        }
+        
+        // Check if the university has been modified after creation
+        if (!university.updated_at) {
+            // Never updated - definitely new
+            return true
+        }
+        
+        // If updated_at exists, check if it's essentially the same as created_at
+        // (within 5 seconds to account for database operations during creation)
+        const updatedTime = new Date(university.updated_at).getTime()
+        const timeDiff = Math.abs(updatedTime - createdTime)
+        
+        // If time difference is less than 5 seconds, consider it as "not manually updated"
+        // This handles both admin-created (ACTIVE) and self-signup (INACTIVE) universities
+        return timeDiff < 5000
     }
 
     // Row color function - alternating transparent cool colors
@@ -329,15 +370,6 @@ export function UniversityTable({
                                 </th>
                                 <th
                                     className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                                    onClick={() => handleSort('status')}
-                                >
-                                    <div className="flex items-center space-x-1">
-                                        <span>Status</span>
-                                        {getSortIcon('status')}
-                                    </div>
-                                </th>
-                                <th
-                                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
                                     onClick={() => handleSort('total_students')}
                                 >
                                     <div className="flex items-center space-x-1">
@@ -352,6 +384,15 @@ export function UniversityTable({
                                     <div className="flex items-center space-x-1">
                                         <span>Created</span>
                                         {getSortIcon('created_at')}
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                    onClick={() => handleSort('status')}
+                                >
+                                    <div className="flex items-center space-x-1">
+                                        <span>Status</span>
+                                        {getSortIcon('status')}
                                     </div>
                                 </th>
                                 <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -378,8 +419,15 @@ export function UniversityTable({
                                                 </div>
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {university.university_name}
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {university.university_name}
+                                                    </div>
+                                                    {isNewUniversity(university) && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 text-white animate-pulse">
+                                                            New
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="text-sm text-gray-500 dark:text-gray-400">
                                                     {university.institute_type}
@@ -428,13 +476,6 @@ export function UniversityTable({
                                         </span>
                                     </td>
 
-                                    {/* Status */}
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(university.status)}`}>
-                                            {university.status}
-                                        </span>
-                                    </td>
-
                                     {/* Student Count */}
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -451,6 +492,15 @@ export function UniversityTable({
                                             <Calendar className="h-4 w-4 mr-2" />
                                             {formatDate(university.created_at)}
                                         </div>
+                                    </td>
+
+                                    {/* Status */}
+                                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                        <StatusDropdown
+                                            universityId={university.id}
+                                            currentStatus={university.status}
+                                            onStatusChange={onRetry}
+                                        />
                                     </td>
 
                                     {/* Actions */}

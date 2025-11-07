@@ -50,7 +50,9 @@ export default function UniversityStudents() {
 
         const matchesStatus = filterStatus === 'all' ||
             (filterStatus === 'placed' && student.placement_status === 'placed') ||
-            (filterStatus === 'unplaced' && student.placement_status === 'unplaced')
+            (filterStatus === 'unplaced' && student.placement_status === 'unplaced') ||
+            (filterStatus === 'inactive' && student.status === 'inactive') ||
+            (filterStatus === 'pending' && student.status === 'pending')
 
         // Filter by archive status based on includeArchived setting
         const matchesArchiveStatus = includeArchived ? student.is_archived : !student.is_archived
