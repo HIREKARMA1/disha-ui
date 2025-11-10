@@ -76,7 +76,34 @@ const emailSchema = z
     .trim()
     .min(5, "Email must be at least 5 characters long")
     .max(100, "Email must be less than 100 characters")
-    .email("Please enter a valid email address");
+    .email("Please enter a valid email address")
+    .refine((val) => {
+        const domain = val.split('@')[1]
+        if (!domain) return false
+        const domainParts = domain.split('.')
+        if (domainParts.length < 2) return false
+        const tld = domainParts.pop()
+        if (!tld || !/^[A-Za-z]{2,6}$/.test(tld)) return false
+        return domainParts.every((part) => /^[A-Za-z0-9-]+$/.test(part) && !part.startsWith('-') && !part.endsWith('-'))
+    }, "Please enter a valid email address");
+
+const isValidPublicUrl = (value: string) => {
+    try {
+        const trimmed = value.trim()
+        const url = new URL(trimmed)
+        if (!['http:', 'https:'].includes(url.protocol)) return false
+        const hostname = url.hostname
+        if (!hostname || hostname === 'localhost' || hostname.endsWith('.local')) return false
+        if (!/^[A-Za-z0-9.-]+$/.test(hostname)) return false
+        if (!hostname.includes('.')) return false
+        const parts = hostname.split('.')
+        const tld = parts.pop()
+        if (!tld || !/^[A-Za-z]{2,6}$/.test(tld)) return false
+        return parts.every((part) => /^[A-Za-z0-9-]+$/.test(part) && !part.startsWith('-') && !part.endsWith('-'))
+    } catch (error) {
+        return false
+    }
+}
 
 
 
@@ -128,7 +155,14 @@ const corporateSchema = z.object({
         .string()
         .min(1, 'Company name is required')
         .regex(/^[A-Za-z\s]+$/, 'Company name can only contain letters and spaces'),
-    website_url: z.string().url().optional().or(z.literal('')),
+    website_url: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => {
+            if (val === undefined || val === '') return true
+            return isValidPublicUrl(val)
+        }, { message: 'Please enter a valid website URL' }),
     industry: z.string().optional(),
     company_size: z.string().optional(),
     founded_year: z.number().optional(),
@@ -172,7 +206,14 @@ const universitySchema = z.object({
         .string()
         .min(1, 'University name is required')
         .regex(/^[A-Za-z\s]+$/, 'University name can only contain letters and spaces'),
-    website_url: z.string().url().optional().or(z.literal('')),
+    website_url: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => {
+            if (val === undefined || val === '') return true
+            return isValidPublicUrl(val)
+        }, { message: 'Please enter a valid website URL' }),
     institute_type: z.string().optional(),
     established_year: z.number().optional(),
     contact_person_name: z.string().optional(),
@@ -427,8 +468,18 @@ export default function RegisterPage() {
                     id="website_url"
                     placeholder="https://company.com"
                     leftIcon={<Globe className="w-4 h-4" />}
-                    {...register('website_url')}
+                    {...register('website_url', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\s/g, '')
+                        },
+                        setValueAs: (value) => (typeof value === 'string' ? value.trim() : value)
+                    })}
                 />
+                {(errors as any).website_url && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).website_url.message === 'string' ? (errors as any).website_url.message : 'Please enter a valid website URL'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -465,8 +516,18 @@ export default function RegisterPage() {
                     id="website_url"
                     placeholder="https://university.edu"
                     leftIcon={<Globe className="w-4 h-4" />}
-                    {...register('website_url')}
+                    {...register('website_url', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\s/g, '')
+                        },
+                        setValueAs: (value) => (typeof value === 'string' ? value.trim() : value)
+                    })}
                 />
+                {(errors as any).website_url && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).website_url.message === 'string' ? (errors as any).website_url.message : 'Please enter a valid website URL'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -578,7 +639,8 @@ export default function RegisterPage() {
                                         {...register("email", {
                                             onChange: (e) => {
                                                 e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
-                                            }
+                                            },
+                                            setValueAs: (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value)
                                         })}
                                     />
 
