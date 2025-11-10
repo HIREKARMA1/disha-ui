@@ -86,7 +86,10 @@ const studentSchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    name: z.string().min(1, 'Name is required'),
+    name: z
+        .string()
+        .min(1, 'Name is required')
+        .regex(/^[A-Za-z\s]+$/, 'Name can only contain letters and spaces'),
     phone: z
         .string()
         .regex(/^\d+$/, 'Phone number must contain only digits')
@@ -121,7 +124,10 @@ const corporateSchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    company_name: z.string().min(1, 'Company name is required'),
+    company_name: z
+        .string()
+        .min(1, 'Company name is required')
+        .regex(/^[A-Za-z\s]+$/, 'Company name can only contain letters and spaces'),
     website_url: z.string().url().optional().or(z.literal('')),
     industry: z.string().optional(),
     company_size: z.string().optional(),
@@ -162,7 +168,10 @@ const universitySchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    university_name: z.string().min(1, 'University name is required'),
+    university_name: z
+        .string()
+        .min(1, 'University name is required')
+        .regex(/^[A-Za-z\s]+$/, 'University name can only contain letters and spaces'),
     website_url: z.string().url().optional().or(z.literal('')),
     institute_type: z.string().optional(),
     established_year: z.number().optional(),
@@ -349,7 +358,11 @@ export default function RegisterPage() {
                     placeholder="Enter your full name"
                     leftIcon={<User className="w-4 h-4" />}
                     error={!!(errors as any).name}
-                    {...register('name')}
+                    {...register('name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -393,7 +406,11 @@ export default function RegisterPage() {
                     placeholder="Enter company name"
                     leftIcon={<Building2 className="w-4 h-4" />}
                     error={!!(errors as any).company_name}
-                    {...register('company_name')}
+                    {...register('company_name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).company_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -427,7 +444,11 @@ export default function RegisterPage() {
                     placeholder="Enter university name"
                     leftIcon={<GraduationCap className="w-4 h-4" />}
                     error={!!(errors as any).university_name}
-                    {...register('university_name')}
+                    {...register('university_name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).university_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
