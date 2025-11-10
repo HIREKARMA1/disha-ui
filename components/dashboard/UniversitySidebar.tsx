@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
@@ -85,6 +85,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
+    const desktopNavRef = useRef<HTMLDivElement>(null)
 
     // Fetch profile data when component mounts
     useEffect(() => {
@@ -134,6 +135,18 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
         logout()
         closeMobileMenu()
     }
+
+    useEffect(() => {
+        if (!desktopNavRef.current) return
+        const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
+        if (activeItem instanceof HTMLElement) {
+            activeItem.scrollIntoView({
+                block: 'nearest',
+                inline: 'nearest',
+                behavior: 'smooth'
+            })
+        }
+    }, [pathname])
 
     // Get display name from profile data
     const getDisplayName = () => {
@@ -194,7 +207,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
@@ -210,6 +223,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                                 key={item.href}
                                 href={item.href}
                                 onClick={handleClick}
+                                data-sidebar-item={isActive ? 'active' : 'inactive'}
                                 className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${isActive
                                     ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
