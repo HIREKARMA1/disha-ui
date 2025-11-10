@@ -133,6 +133,7 @@ interface JobFormData {
     eligibility_criteria: string
     education_degree: string[]
     education_branch: string[]
+    graduation_years: string[]
     service_agreement_details: string
     expiration_date: string
     ctc_with_probation: string
@@ -143,6 +144,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
+    const [currentGraduationYear, setCurrentGraduationYear] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
@@ -172,6 +174,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         eligibility_criteria: '',
         education_degree: [],
         education_branch: [],
+        graduation_years: [],
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
@@ -195,7 +198,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         }
     }
 
-    const handleMultiSelectChange = (field: 'education_degree' | 'education_branch' | 'education_level', value: string) => {
+    const handleMultiSelectChange = (field: 'education_degree' | 'education_branch' | 'education_level' | 'graduation_years', value: string) => {
         setFormData(prev => {
             const currentValues = prev[field] as string[]
             const isSelected = currentValues.includes(value)
@@ -247,6 +250,23 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         setFormData(prev => ({
             ...prev,
             location: prev.location.filter(location => location !== locationToRemove)
+        }))
+    }
+
+    const addGraduationYear = () => {
+        if (currentGraduationYear.trim() && !formData.graduation_years.includes(currentGraduationYear.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                graduation_years: [...prev.graduation_years, currentGraduationYear.trim()]
+            }))
+            setCurrentGraduationYear('')
+        }
+    }
+
+    const removeGraduationYear = (yearToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            graduation_years: prev.graduation_years.filter(year => year !== yearToRemove)
         }))
     }
 
@@ -334,6 +354,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: formData.eligibility_criteria || null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
+                graduation_years: formData.graduation_years.length > 0 ? formData.graduation_years : null,
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: formData.expiration_date ? formData.expiration_date : null,
                 ctc_with_probation: formData.ctc_with_probation || null,
@@ -386,6 +407,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: '',
                 education_degree: [],
                 education_branch: [],
+                graduation_years: [],
                 service_agreement_details: '',
                 expiration_date: '',
                 ctc_with_probation: '',
@@ -998,6 +1020,46 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleMultiSelectChange('education_branch', branch)}
+                                                                className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Graduation Years (Optional)
+                                        </label>
+                                        <div className="space-y-2">
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="text"
+                                                    value={currentGraduationYear}
+                                                    onChange={(e) => setCurrentGraduationYear(e.target.value)}
+                                                    placeholder="Add a graduation year (e.g., 2024, 2025, 2026)"
+                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGraduationYear())}
+                                                />
+                                                <Button type="button" onClick={addGraduationYear} variant="outline">
+                                                    <Plus className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+
+                                            {formData.graduation_years.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {formData.graduation_years.map((year, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
+                                                        >
+                                                            {year}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeGraduationYear(year)}
                                                                 className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
                                                             >
                                                                 <X className="w-3 h-3" />

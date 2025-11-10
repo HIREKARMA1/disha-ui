@@ -30,6 +30,7 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    graduation_years?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -762,6 +763,26 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                             className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-lg font-medium border border-purple-200 dark:border-purple-700"
                                         >
                                             {branch}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Graduation Years */}
+                        {job.graduation_years && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary-500" />
+                                    Graduation Years
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {parseEducationData(job.graduation_years).map((year, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-lg font-medium border border-blue-200 dark:border-blue-700"
+                                        >
+                                            {year}
                                         </span>
                                     ))}
                                 </div>
