@@ -13,7 +13,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
-import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
+import { profileService, type ProfileCompletionResponse, type StudentProfile } from '@/services/profileService'
 
 interface Job {
     id: string
@@ -32,6 +32,9 @@ interface Job {
     experience_min?: number
     experience_max?: number
     education_level?: string
+    education_degree?: string[] | string
+    education_branch?: string[] | string
+    graduation_years?: string[] | string
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -109,6 +112,7 @@ function JobOpportunitiesPageContent() {
     const [applicationStatus, setApplicationStatus] = useState<Map<string, string>>(new Map()) // Track application status
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
+    const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null)
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
     const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open') // New filter for job status
@@ -276,6 +280,8 @@ function JobOpportunitiesPageContent() {
                         experience_min: job.experience_min ? Number(job.experience_min) : undefined,
                         experience_max: job.experience_max ? Number(job.experience_max) : undefined,
                         education_level: job.education_level ? String(job.education_level) : undefined,
+                        education_degree: Array.isArray(job.education_degree) ? job.education_degree : (typeof job.education_degree === 'string' ? job.education_degree.split(',').map((d: string) => d.trim()) : []),
+                        education_branch: Array.isArray(job.education_branch) ? job.education_branch : (typeof job.education_branch === 'string' ? job.education_branch.split(',').map((b: string) => b.trim()) : []),
                         skills_required: Array.isArray(job.skills_required) ? job.skills_required.map((skill: any) => {
                             if (typeof skill === 'object' && skill !== null) {
                                 console.warn(`Warning: Skill is an object:`, skill)
@@ -421,6 +427,7 @@ function JobOpportunitiesPageContent() {
                     console.log(`Client-side search: ${ultraCleanJobs.length} -> ${searchFilteredJobs.length} jobs`)
                 }
 
+                // Note: Profile-based filtering will be applied in render to ensure profile is loaded
                 setJobs(searchFilteredJobs)
                 setPagination({
                     page: data.page || 1,
@@ -508,6 +515,17 @@ function JobOpportunitiesPageContent() {
             })
         } finally {
             setProfileLoading(false)
+        }
+    }
+
+    // Fetch student profile to get branch and degree
+    const fetchStudentProfile = async () => {
+        try {
+            const profile = await profileService.getProfile()
+            setStudentProfile(profile)
+        } catch (error) {
+            console.error('Failed to fetch student profile:', error)
+            // If profile fetch fails, we'll still show jobs but without filtering
         }
     }
 
@@ -856,6 +874,100 @@ function JobOpportunitiesPageContent() {
         return status === 'applied' || isJobExpired(job) || !job.can_apply
     }
 
+    // Filter jobs based on student's branch, degree, and graduation year
+    const filterJobsByProfile = (jobs: Job[]): Job[] => {
+        if (!studentProfile) {
+            // If no profile, show all jobs
+            return jobs
+        }
+
+        const studentDegree = studentProfile.degree?.trim().toLowerCase()
+        const studentBranch = studentProfile.branch?.trim().toLowerCase()
+        const studentGraduationYear = studentProfile.graduation_year
+
+        // If student doesn't have degree, branch, or graduation year, show all jobs
+        if (!studentDegree && !studentBranch && !studentGraduationYear) {
+            return jobs
+        }
+
+        return jobs.filter(job => {
+            // Normalize job education fields
+            const jobDegrees = Array.isArray(job.education_degree) 
+                ? job.education_degree.map(d => String(d).trim().toLowerCase())
+                : (job.education_degree ? String(job.education_degree).split(',').map(d => d.trim().toLowerCase()) : [])
+            
+            const jobBranches = Array.isArray(job.education_branch)
+                ? job.education_branch.map(b => String(b).trim().toLowerCase())
+                : (job.education_branch ? String(job.education_branch).split(',').map(b => b.trim().toLowerCase()) : [])
+
+            // Normalize job graduation years
+            const jobGraduationYears = Array.isArray(job.graduation_years)
+                ? job.graduation_years.map(y => String(y).trim())
+                : (job.graduation_years ? String(job.graduation_years).split(',').map(y => y.trim()) : [])
+
+            // Check if job has requirements
+            const hasDegreeRequirement = jobDegrees.length > 0
+            const hasBranchRequirement = jobBranches.length > 0
+            const hasGraduationYearRequirement = jobGraduationYears.length > 0
+
+            // If job has no requirements, show it
+            if (!hasDegreeRequirement && !hasBranchRequirement && !hasGraduationYearRequirement) {
+                return true
+            }
+
+            // Check degree match
+            let degreeMatches = true
+            if (hasDegreeRequirement) {
+                if (!studentDegree) {
+                    // Job requires degree but student doesn't have one
+                    degreeMatches = false
+                } else {
+                    // Check if student's degree matches any of the job's required degrees
+                    degreeMatches = jobDegrees.some(jobDegree => 
+                        studentDegree === jobDegree || 
+                        studentDegree.includes(jobDegree) || 
+                        jobDegree.includes(studentDegree)
+                    )
+                }
+            }
+
+            // Check branch match
+            let branchMatches = true
+            if (hasBranchRequirement) {
+                if (!studentBranch) {
+                    // Job requires branch but student doesn't have one
+                    branchMatches = false
+                } else {
+                    // Check if student's branch matches any of the job's required branches
+                    branchMatches = jobBranches.some(jobBranch => 
+                        studentBranch === jobBranch || 
+                        studentBranch.includes(jobBranch) || 
+                        jobBranch.includes(studentBranch)
+                    )
+                }
+            }
+
+            // Check graduation year match
+            let graduationYearMatches = true
+            if (hasGraduationYearRequirement) {
+                if (!studentGraduationYear) {
+                    // Job requires graduation year but student doesn't have one
+                    graduationYearMatches = false
+                } else {
+                    // Convert student's graduation year to string for comparison
+                    const studentYearString = String(studentGraduationYear).trim()
+                    // Check if student's graduation year matches any of the job's required graduation years (exact match)
+                    graduationYearMatches = jobGraduationYears.some(jobYear => 
+                        studentYearString === String(jobYear).trim()
+                    )
+                }
+            }
+
+            // Job should be shown if all requirements (degree, branch, graduation year) are met (or not required)
+            return degreeMatches && branchMatches && graduationYearMatches
+        })
+    }
+
     // Filter jobs based on job status filter
     const filterJobsByStatus = (jobs: Job[]) => {
         if (jobStatusFilter === 'all') return jobs
@@ -904,6 +1016,7 @@ function JobOpportunitiesPageContent() {
         fetchJobs(1, {})
         checkApplicationStatus()
         fetchProfileCompletion()
+        fetchStudentProfile()
     }, [])
 
     // Global error boundary for validation errors
@@ -1159,7 +1272,24 @@ function JobOpportunitiesPageContent() {
                             ) : (
                                 <span className="flex items-center gap-2">
                                     📊 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                                        Showing {filterJobsByStatus(jobs).length} of {jobs.length} jobs
+                                        {(() => {
+                                            const profileFilteredJobs = filterJobsByProfile(jobs)
+                                            const finalJobs = filterJobsByStatus(profileFilteredJobs)
+                                            const isFilteringApplied = studentProfile && 
+                                                (studentProfile.degree || studentProfile.branch || studentProfile.graduation_year) &&
+                                                profileFilteredJobs.length < jobs.length
+                                            
+                                            return (
+                                                <>
+                                                    Showing {finalJobs.length} of {jobs.length} jobs
+                                                    {isFilteringApplied && (
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                                            (filtered by your profile)
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )
+                                        })()}
                                     </span>
                                 </span>
                             )}
@@ -1212,7 +1342,7 @@ function JobOpportunitiesPageContent() {
                 ) : jobs.length > 0 ? (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filterJobsByStatus(jobs).map((job, index) => {
+                            {filterJobsByStatus(filterJobsByProfile(jobs)).map((job, index) => {
                                 // Final safety check before rendering
                                 if (!job || typeof job !== 'object') {
                                     console.error('Attempting to render invalid job:', job)

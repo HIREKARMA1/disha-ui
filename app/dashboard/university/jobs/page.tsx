@@ -58,6 +58,7 @@ interface UniversityJob {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    graduation_years?: string | string[]
     number_of_openings?: number
     perks_and_benefits?: string
     eligibility_criteria?: string
@@ -827,6 +828,7 @@ function UniversityJobsPageContent() {
                         education_level: editingJob.education_level,
                         education_degree: editingJob.education_degree,
                         education_branch: editingJob.education_branch,
+                        graduation_years: editingJob.graduation_years,
                         skills_required: editingJob.skills_required || [],
                         application_deadline: editingJob.application_deadline,
                         max_applications: editingJob.max_students || 0,

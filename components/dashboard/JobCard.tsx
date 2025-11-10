@@ -25,6 +25,7 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    graduation_years?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
