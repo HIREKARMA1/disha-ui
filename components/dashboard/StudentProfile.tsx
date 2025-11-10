@@ -429,15 +429,17 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Personal details and contact information</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEditing('basic')}
-                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
+                                                    {editing !== 'basic' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing('basic')}
+                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                        >
+                                                            <ChevronRight className="w-3 h-3 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                 </div>
 
                                                 {editing === 'basic' ? (
@@ -556,15 +558,17 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Educational background and achievements</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEditing('academic')}
-                                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
+                                                    {editing !== 'academic' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing('academic')}
+                                                            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
+                                                        >
+                                                            <ChevronRight className="w-3 h-3 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                 </div>
 
                                                 {editing === 'academic' ? (
@@ -691,15 +695,17 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Technical skills, soft skills, and career preferences</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEditing('skills')}
-                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
+                                                    {editing !== 'skills' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing('skills')}
+                                                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200"
+                                                        >
+                                                            <ChevronRight className="w-3 h-3 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                 </div>
 
                                                 {editing === 'skills' ? (
@@ -805,15 +811,17 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEditing('experience')}
-                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
+                                                    {editing !== 'experience' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing('experience')}
+                                                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
+                                                        >
+                                                            <ChevronRight className="w-3 h-3 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                 </div>
 
                                                 {editing === 'experience' ? (
@@ -922,15 +930,17 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Resume, certificates, and important documents</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEditing('documents')}
-                                                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
+                                                    {editing !== 'documents' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing('documents')}
+                                                            className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200"
+                                                        >
+                                                            <ChevronRight className="w-3 h-3 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                 </div>
 
                                                 {editing === 'documents' ? (
@@ -1071,15 +1081,17 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">LinkedIn, GitHub, and personal websites</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEditing('social')}
-                                                        className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
-                                                        Edit
-                                                    </Button>
+                                                    {editing !== 'social' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing('social')}
+                                                            className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200"
+                                                        >
+                                                            <ChevronRight className="w-3 h-3 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                 </div>
 
                                                 {editing === 'social' ? (
