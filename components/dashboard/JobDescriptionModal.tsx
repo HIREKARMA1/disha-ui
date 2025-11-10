@@ -217,7 +217,13 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
             }
 
             // For corporate-created jobs, fetch from corporate profile API
-            if (!job.corporate_id) {
+            // Validate corporate_id - check for null, undefined, empty string, or "None" string
+            const corporateId = job.corporate_id;
+            if (!corporateId || 
+                corporateId === 'None' || 
+                corporateId === 'null' || 
+                corporateId === 'undefined' ||
+                (typeof corporateId === 'string' && corporateId.trim() === '')) {
                 setLoadingCorporate(false)
                 return
             }

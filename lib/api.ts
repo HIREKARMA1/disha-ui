@@ -530,6 +530,14 @@ class ApiClient {
   }
 
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
+    // Validate corporateId before making the request
+    if (!corporateId || 
+        corporateId === 'None' || 
+        corporateId === 'null' || 
+        corporateId === 'undefined' ||
+        (typeof corporateId === 'string' && corporateId.trim() === '')) {
+      throw new Error('Invalid corporate ID provided');
+    }
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
     return response.data;
   }
