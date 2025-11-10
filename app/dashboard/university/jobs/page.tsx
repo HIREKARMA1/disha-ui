@@ -47,6 +47,7 @@ interface UniversityJob {
     pending?: boolean
     approval_status?: string
     corporate_id?: string
+    corporate_name?: string
     university_id?: string
     // Additional fields for complete job data
     remote_work?: boolean
@@ -347,17 +348,17 @@ function UniversityJobsPageContent() {
             const jobForEdit: UniversityJob = {
                 ...job,
                 ...completeJobData,
-                // Ensure all company information fields are included
+                // Ensure all company information fields are included with fallbacks
                 company_name: completeJobData.company_name || job.company_name,
-                company_logo: completeJobData.company_logo,
-                company_website: completeJobData.company_website,
-                company_address: completeJobData.company_address,
-                company_size: completeJobData.company_size,
-                company_type: completeJobData.company_type,
-                company_founded: completeJobData.company_founded,
-                company_description: completeJobData.company_description,
-                contact_person: completeJobData.contact_person,
-                contact_designation: completeJobData.contact_designation,
+                company_logo: completeJobData.company_logo || job.company_logo,
+                company_website: completeJobData.company_website || job.company_website,
+                company_address: completeJobData.company_address || job.company_address,
+                company_size: completeJobData.company_size || job.company_size,
+                company_type: completeJobData.company_type || job.company_type,
+                company_founded: completeJobData.company_founded ?? job.company_founded,
+                company_description: completeJobData.company_description || job.company_description,
+                contact_person: completeJobData.contact_person || job.contact_person,
+                contact_designation: completeJobData.contact_designation || job.contact_designation,
                 // Map other fields
                 requirements: completeJobData.requirements || job.requirements,
                 responsibilities: completeJobData.responsibilities || job.responsibilities,
@@ -388,6 +389,18 @@ function UniversityJobsPageContent() {
                 is_active: completeJobData.is_active ?? job.is_active,
                 can_apply: completeJobData.can_apply ?? job.can_apply
             }
+            
+            console.log('🔍 Job data mapped for editing:', {
+                industry: jobForEdit.industry,
+                company_size: jobForEdit.company_size,
+                company_type: jobForEdit.company_type,
+                completeJobData_industry: completeJobData.industry,
+                completeJobData_company_size: completeJobData.company_size,
+                completeJobData_company_type: completeJobData.company_type,
+                job_industry: job.industry,
+                job_company_size: job.company_size,
+                job_company_type: job.company_type
+            })
             
             setEditingJob(jobForEdit)
             setShowEditModal(true)
@@ -861,7 +874,9 @@ function UniversityJobsPageContent() {
                 job={selectedJobForStudents ? {
                     id: selectedJobForStudents.id,
                     title: selectedJobForStudents.title,
-                    company_name: selectedJobForStudents.company_name
+                    company_name: selectedJobForStudents.company_name,
+                    corporate_name: selectedJobForStudents.corporate_name,
+                    university_id: selectedJobForStudents.university_id
                 } : null}
             />
 

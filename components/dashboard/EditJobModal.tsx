@@ -11,45 +11,7 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
-
-// Industry options
-const industryOptions = [
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Manufacturing', label: 'Manufacturing' },
-    { value: 'Retail', label: 'Retail' },
-    { value: 'Real Estate', label: 'Real Estate' },
-    { value: 'Consulting', label: 'Consulting' },
-    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-    { value: 'Telecommunications', label: 'Telecommunications' },
-    { value: 'Automotive', label: 'Automotive' },
-    { value: 'Aerospace', label: 'Aerospace' },
-    { value: 'Energy', label: 'Energy' },
-    { value: 'Government', label: 'Government' },
-    { value: 'Non-Profit', label: 'Non-Profit' },
-    { value: 'E-commerce', label: 'E-commerce' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Insurance', label: 'Insurance' },
-    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-    { value: 'Food & Beverage', label: 'Food & Beverage' },
-    { value: 'Transportation', label: 'Transportation' },
-    { value: 'Logistics', label: 'Logistics' },
-    { value: 'Hospitality', label: 'Hospitality' },
-    { value: 'Agriculture', label: 'Agriculture' },
-    { value: 'Construction', label: 'Construction' },
-    { value: 'Electrical', label: 'Electrical' },
-    { value: 'Mechanical', label: 'Mechanical' },   
-    { value: 'Electronics', label: 'Electronics' },
-    { value: 'Computer Science', label: 'Computer Science' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Chemical', label: 'Chemical' },
-    { value: 'Biotechnology', label: 'Biotechnology' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
-    { value: 'Other', label: 'Other' }
-]
+import { useIndustries } from '@/hooks/useLookup'
 
 // Degree options (same as student modal)
 const degreeOptions = [
@@ -267,6 +229,16 @@ const parseEducationField = (field: string | string[]): string[] => {
 }
 
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
+    // Fetch industries from backend
+    const { data: industriesData, loading: industriesLoading } = useIndustries({ limit: 1000 })
+    
+    // Convert LookupItem[] to Select format { value, label }
+    // Use industry name as both value and label since that's what's stored in jobs
+    const industryOptions = industriesData.map(industry => ({
+        value: industry.name,
+        label: industry.name
+    }))
+    
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
@@ -373,6 +345,76 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 travel_required: job.travel_required || false
             })
 
+            // Helper function to normalize select values (trim and ensure they match SelectItem values)
+            const normalizeSelectValue = (value: string | null | undefined, options: { value: string }[]): string => {
+                if (!value) return ''
+                const trimmed = value.trim()
+                if (!trimmed) return ''
+                // Check if the trimmed value matches any option value (case-insensitive)
+                const matchedOption = options.find(opt => opt.value.toLowerCase() === trimmed.toLowerCase())
+                if (matchedOption) {
+                    console.log(`✅ Normalized "${trimmed}" to "${matchedOption.value}"`)
+                    return matchedOption.value
+                }
+                console.warn(`⚠️ Value "${trimmed}" does not match any option. Available options:`, options.map(o => o.value))
+                return trimmed // Return original if no match found
+            }
+
+            // Log company information fields for debugging
+            console.log('🔍 Company Information Fields from Job:', {
+                industry: job.industry,
+                industry_type: typeof job.industry,
+                industry_is_null: job.industry === null,
+                industry_is_undefined: job.industry === undefined,
+                company_size: job.company_size,
+                company_type: job.company_type,
+                company_name: job.company_name,
+                company_website: job.company_website,
+                company_address: job.company_address,
+                company_founded: job.company_founded,
+                company_description: job.company_description,
+                contact_person: job.contact_person,
+                contact_designation: job.contact_designation,
+                full_job_object_keys: Object.keys(job)
+            })
+
+            // Normalize select values to match SelectItem values exactly
+            // Only normalize if industries are loaded, otherwise use the job value as-is
+            console.log('🔍 Before Normalization - job.industry:', job.industry, 'Type:', typeof job.industry, 'Industries loaded:', industryOptions.length)
+            const normalizedIndustry = industryOptions.length > 0 
+                ? normalizeSelectValue(job.industry, industryOptions)
+                : (job.industry || '')
+            console.log('🔍 After Normalization - normalizedIndustry:', normalizedIndustry)
+            const normalizedCompanySize = normalizeSelectValue(job.company_size, [
+                { value: '1-10' },
+                { value: '11-50' },
+                { value: '51-200' },
+                { value: '201-500' },
+                { value: '501-1000' },
+                { value: '1001-5000' },
+                { value: '5001-10000' },
+                { value: '10000+' }
+            ])
+            const normalizedCompanyType = normalizeSelectValue(job.company_type, [
+                { value: 'Startup' },
+                { value: 'Small Business' },
+                { value: 'Medium Enterprise' },
+                { value: 'Large Enterprise' },
+                { value: 'Multinational' },
+                { value: 'Non-Profit' },
+                { value: 'Government' }
+            ])
+
+            console.log('🔍 Normalized Values:', {
+                original_industry: job.industry,
+                normalized_industry: normalizedIndustry,
+                original_company_size: job.company_size,
+                normalized_company_size: normalizedCompanySize,
+                original_company_type: job.company_type,
+                normalized_company_type: normalizedCompanyType
+            })
+
+            console.log('🔍 Setting formData with normalizedIndustry:', normalizedIndustry)
             setFormData({
                 title: job.title || '',
                 description: job.description || '',
@@ -393,7 +435,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_branch: educationBranchArray,
                 skills_required: job.skills_required || [],
                 application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
-                industry: job.industry || '',
+                industry: normalizedIndustry || (job.industry || ''),
                 selection_process: job.selection_process || '',
                 campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : '',
                 status: job.status || 'active',
@@ -406,16 +448,23 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 ctc_with_probation: job.ctc_with_probation || '',
                 ctc_after_probation: job.ctc_after_probation || '',
                 // Company information fields (for university-created jobs)
-                company_name: job.company_name || '',
+                company_name: (job.company_name && job.company_name.trim()) || '',
                 company_logo: job.company_logo || '',
-                company_website: job.company_website || '',
-                company_address: job.company_address || '',
-                company_size: job.company_size || '',
-                company_type: job.company_type || '',
+                company_website: (job.company_website && job.company_website.trim()) || '',
+                company_address: (job.company_address && job.company_address.trim()) || '',
+                company_size: normalizedCompanySize,
+                company_type: normalizedCompanyType,
                 company_founded: job.company_founded ? job.company_founded.toString() : '',
                 company_description: job.company_description || '',
-                contact_person: job.contact_person || '',
-                contact_designation: job.contact_designation || ''
+                contact_person: (job.contact_person && job.contact_person.trim()) || '',
+                contact_designation: (job.contact_designation && job.contact_designation.trim()) || ''
+            })
+            
+            // Log the form data after setting to verify values
+            console.log('🔍 Form Data After Setting:', {
+                industry: normalizedIndustry,
+                company_size: normalizedCompanySize,
+                company_type: normalizedCompanyType
             })
             
             // Set logo preview if logo exists
@@ -426,8 +475,17 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             }
 
         }
-    }, [job])
+    }, [job, industryOptions.length]) // Re-run when job changes or industries are loaded
 
+    // Debug: Log formData changes for industry, company_size, and company_type
+    useEffect(() => {
+        console.log('🔍 FormData Industry/Size/Type Changed:', {
+            industry: formData.industry,
+            company_size: formData.company_size,
+            company_type: formData.company_type,
+            jobId: job?.id
+        })
+    }, [formData.industry, formData.company_size, formData.company_type, job?.id])
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -922,18 +980,52 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Industry
                                             </label>
-                                            <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select industry" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {industryOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            {(() => {
+                                                const industryValue = formData.industry && formData.industry.trim() ? formData.industry : undefined
+                                                const hasMatch = industryValue && industryOptions.some(opt => opt.value === industryValue)
+                                                console.log('🎯 Industry Select Render:', {
+                                                    formData_industry: formData.industry,
+                                                    industryValue,
+                                                    hasMatch,
+                                                    industriesLoading,
+                                                    industriesCount: industryOptions.length,
+                                                    availableOptions: industryOptions.map(o => o.value).slice(0, 5)
+                                                })
+                                                
+                                                if (industriesLoading) {
+                                                    return (
+                                                        <Select disabled>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Loading industries..." />
+                                                            </SelectTrigger>
+                                                        </Select>
+                                                    )
+                                                }
+                                                
+                                                return (
+                                                    <Select 
+                                                        key={`industry-${job?.id || 'new'}-${industryValue || 'empty'}`}
+                                                        value={industryValue} 
+                                                        onValueChange={(value) => handleInputChange('industry', value)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select industry" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {industryOptions.length > 0 ? (
+                                                                industryOptions.map((option) => (
+                                                                    <SelectItem key={option.value} value={option.value}>
+                                                                        {option.label}
+                                                                    </SelectItem>
+                                                                ))
+                                                            ) : (
+                                                                <SelectItem value="" disabled>No industries available</SelectItem>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )
+                                            })()}
+          
                                         </div>
 
                                         <div>
@@ -982,7 +1074,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Company Size
                                             </label>
-                                            <Select value={formData.company_size} onValueChange={(value) => handleInputChange('company_size', value)}>
+                                            <Select 
+                                                key={`company_size-${job?.id || 'new'}-${formData.company_size || ''}`}
+                                                value={formData.company_size || ''} 
+                                                onValueChange={(value) => handleInputChange('company_size', value)}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select company size" />
                                                 </SelectTrigger>
@@ -1003,7 +1099,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Company Type
                                             </label>
-                                            <Select value={formData.company_type} onValueChange={(value) => handleInputChange('company_type', value)}>
+                                            <Select 
+                                                key={`company_type-${job?.id || 'new'}-${formData.company_type || ''}`}
+                                                value={formData.company_type || ''} 
+                                                onValueChange={(value) => handleInputChange('company_type', value)}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select company type" />
                                                 </SelectTrigger>

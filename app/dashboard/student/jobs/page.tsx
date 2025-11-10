@@ -23,7 +23,7 @@ interface Job {
     responsibilities?: string
     job_type: string
     status: string
-    location: string
+    location: string | string[]
     remote_work: boolean
     travel_required: boolean
     salary_min?: number
@@ -31,7 +31,7 @@ interface Job {
     salary_currency: string
     experience_min?: number
     experience_max?: number
-    education_level?: string
+    education_level?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -42,11 +42,35 @@ interface Job {
     views_count: number
     applications_count: number
     created_at: string
-    corporate_id: string
+    corporate_id?: string | null
     corporate_name?: string
+    university_id?: string | null
     is_active: boolean
     can_apply: boolean
     application_status?: string
+    // Additional fields
+    number_of_openings?: number
+    perks_and_benefits?: string
+    eligibility_criteria?: string
+    service_agreement_details?: string
+    expiration_date?: string
+    ctc_with_probation?: string
+    ctc_after_probation?: string
+    onsite_office?: boolean
+    mode_of_work?: string
+    education_degree?: string | string[]
+    education_branch?: string | string[]
+    // Company information fields (for university-created jobs)
+    company_name?: string
+    company_logo?: string
+    company_website?: string
+    company_address?: string
+    company_size?: string
+    company_type?: string
+    company_founded?: number
+    company_description?: string
+    contact_person?: string
+    contact_designation?: string
 }
 
 interface JobSearchResponse {
@@ -104,6 +128,8 @@ function JobOpportunitiesPageContent() {
         total_pages: 0
     })
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+    const [completeJobData, setCompleteJobData] = useState<Job | null>(null)
+    const [loadingJobDetails, setLoadingJobDetails] = useState(false)
     const [showFilters, setShowFilters] = useState(false)
     const [applyingJobs, setApplyingJobs] = useState<Set<string>>(new Set())
     const [applicationStatus, setApplicationStatus] = useState<Map<string, string>>(new Map()) // Track application status
@@ -292,10 +318,16 @@ function JobOpportunitiesPageContent() {
                         views_count: Number(job.views_count || 0),
                         applications_count: Number(job.applications_count || 0),
                         created_at: String(job.created_at || ''),
-                        corporate_id: String(job.corporate_id || ''),
+                        corporate_id: job.corporate_id ? String(job.corporate_id) : null,
                         corporate_name: job.corporate_name ? String(job.corporate_name) : undefined,
+                        university_id: job.university_id ? String(job.university_id) : null,
                         is_active: Boolean(job.is_active),
-                        can_apply: Boolean(job.can_apply)
+                        can_apply: Boolean(job.can_apply),
+                        // Company information fields (for university-created jobs)
+                        company_name: job.company_name ? String(job.company_name) : undefined,
+                        company_logo: job.company_logo ? String(job.company_logo) : undefined,
+                        company_website: job.company_website ? String(job.company_website) : undefined,
+                        company_address: job.company_address ? String(job.company_address) : undefined
                     }
                 })
             } catch (validationError) {
@@ -1231,7 +1263,23 @@ function JobOpportunitiesPageContent() {
                                     <JobCard
                                         key={job.id}
                                         job={job}
-                                        onViewDescription={() => setSelectedJob(job)}
+                                        onViewDescription={async () => {
+                                            setSelectedJob(job)
+                                            setLoadingJobDetails(true)
+                                            setCompleteJobData(null)
+                                            
+                                            try {
+                                                // Fetch complete job data from the jobs API to get all company information
+                                                const response = await apiClient.getJobById(job.id)
+                                                setCompleteJobData(response)
+                                            } catch (error) {
+                                                console.error('Failed to fetch complete job data:', error)
+                                                toast.error('Failed to load complete job details')
+                                                // Still show the modal with limited data
+                                            } finally {
+                                                setLoadingJobDetails(false)
+                                            }
+                                        }}
                                         onApply={() => handleApplyClick(job)}
                                         isApplying={applyingJobs.has(job.id)}
                                         cardIndex={index}
@@ -1345,11 +1393,15 @@ function JobOpportunitiesPageContent() {
             {/* Job Description Modal */}
             {selectedJob && (
                 <JobDescriptionModal
-                    job={selectedJob}
-                    onClose={() => setSelectedJob(null)}
+                    job={completeJobData || selectedJob}
+                    onClose={() => {
+                        setSelectedJob(null)
+                        setCompleteJobData(null)
+                    }}
                     onApply={() => {
                         handleApplyClick(selectedJob)
                         setSelectedJob(null)
+                        setCompleteJobData(null)
                     }}
                     isApplying={applyingJobs.has(selectedJob.id)}
                     hideSensitiveInfo={true}
@@ -1359,7 +1411,7 @@ function JobOpportunitiesPageContent() {
             {/* Application Modal */}
             {showApplicationModal && currentApplicationJob && (
                 <ApplicationModal
-                    job={currentApplicationJob}
+                    job={currentApplicationJob as any}
                     onClose={() => {
                         setShowApplicationModal(false)
                         setCurrentApplicationJob(null)

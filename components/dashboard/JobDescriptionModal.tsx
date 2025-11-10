@@ -192,9 +192,32 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
 
     useEffect(() => {
         const fetchCorporateProfile = async () => {
-            // For university-created jobs, use company information from job fields
-            if (!job.corporate_id && (job.company_name || job.company_logo || job.company_website)) {
+            // Validate corporate_id - check for null, undefined, empty string, or "None" string
+            const corporateId = job.corporate_id;
+            const hasValidCorporateId = corporateId && 
+                corporateId !== 'None' && 
+                corporateId !== 'null' && 
+                corporateId !== 'undefined' &&
+                (typeof corporateId === 'string' && corporateId.trim() !== '');
+            
+            // Store validated corporate ID as string for TypeScript
+            const validCorporateId: string | null = hasValidCorporateId ? (corporateId as string) : null;
+
+            // Check if this is a university-created job (on-campus job)
+            // University-created jobs have company information in job fields instead of corporate_id
+            const isUniversityCreatedJob = !hasValidCorporateId && (
+                job.company_name || 
+                job.company_logo || 
+                job.company_website || 
+                job.company_address || 
+                job.company_description ||
+                job.contact_person
+            );
+
+            // For university-created jobs (on-campus jobs), use company information from job fields
+            if (isUniversityCreatedJob) {
                 // Create corporate profile from job's company information fields
+                // This ensures university-created jobs display company info the same way as corporate jobs
                 const profileFromJob: CorporateProfile = {
                     id: job.id, // Use job ID as temporary ID
                     company_name: job.company_name || job.corporate_name || 'Company',
@@ -217,14 +240,9 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
             }
 
             // For corporate-created jobs, fetch from corporate profile API
-            // Validate corporate_id - check for null, undefined, empty string, or "None" string
-            const corporateId = job.corporate_id;
-            if (!corporateId || 
-                corporateId === 'None' || 
-                corporateId === 'null' || 
-                corporateId === 'undefined' ||
-                (typeof corporateId === 'string' && corporateId.trim() === '')) {
+            if (!validCorporateId) {
                 setLoadingCorporate(false)
+                setCorporateProfile(null)
                 return
             }
 
@@ -232,7 +250,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
             setCorporateError(null)
 
             try {
-                const profile = await apiClient.getPublicCorporateProfile(job.corporate_id)
+                const profile = await apiClient.getPublicCorporateProfile(validCorporateId)
                 setCorporateProfile(profile)
             } catch (error) {
                 console.error('Failed to fetch corporate profile:', error)
@@ -243,7 +261,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
         }
 
         fetchCorporateProfile()
-    }, [job.corporate_id, job.company_name, job.company_logo, job.company_website])
+    }, [job.corporate_id, job.company_name, job.company_logo, job.company_website, job.company_address, job.company_description, job.contact_person])
 
     const handleDownloadPDF = async () => {
         setIsDownloadingPDF(true)
@@ -601,73 +619,77 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                             </h4>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                                {corporateProfile.industry && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Building className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-gray-600 dark:text-gray-400">Industry:</span>
-                                                        <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.industry}</span>
-                                                    </div>
-                                                )}
-
-                                                {corporateProfile.company_size && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Users className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-gray-600 dark:text-gray-400">Size:</span>
-                                                        <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.company_size}</span>
-                                                    </div>
-                                                )}
-
-                                                {corporateProfile.founded_year && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-gray-600 dark:text-gray-400">Founded:</span>
-                                                        <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.founded_year}</span>
-                                                    </div>
-                                                )}
-
-                                                {corporateProfile.company_type && (
-                                                    <div className="flex items-center gap-2">
-                                                        <Briefcase className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-gray-600 dark:text-gray-400">Type:</span>
-                                                        <span className="text-gray-900 dark:text-white font-medium capitalize">{corporateProfile.company_type}</span>
-                                                    </div>
-                                                )}
-
-                                                {corporateProfile.website_url && (
-                                                    <div className="flex items-center gap-2 md:col-span-2">
-                                                        <Globe className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-gray-600 dark:text-gray-400">Website:</span>
-                                                        <a
-                                                            href={corporateProfile.website_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center gap-1"
-                                                        >
-                                                            Visit Website
-                                                            <ExternalLink className="w-3 h-3" />
-                                                        </a>
-                                                    </div>
-                                                )}
-
-                                                {corporateProfile.address && !hideSensitiveInfo && (
-                                                    <div className="flex items-start gap-2 md:col-span-2">
-                                                        <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
-                                                        <div>
-                                                            <span className="text-gray-600 dark:text-gray-400">Address:</span>
-                                                            <p className="text-gray-900 dark:text-white font-medium">{corporateProfile.address}</p>
+                                                {/* Left Column */}
+                                                <div className="space-y-3">
+                                                    {corporateProfile.industry && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Building className="w-4 h-4 text-gray-500" />
+                                                            <span className="text-gray-600 dark:text-gray-400">Industry:</span>
+                                                            <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.industry}</span>
                                                         </div>
-                                                    </div>
-                                                )}
+                                                    )}
+
+                                                    {corporateProfile.founded_year && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar className="w-4 h-4 text-gray-500" />
+                                                            <span className="text-gray-600 dark:text-gray-400">Founded:</span>
+                                                            <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.founded_year}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {corporateProfile.website_url && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Globe className="w-4 h-4 text-gray-500" />
+                                                            <span className="text-gray-600 dark:text-gray-400">Website:</span>
+                                                            <a
+                                                                href={corporateProfile.website_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center gap-1"
+                                                            >
+                                                                Visit Website
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </a>
+                                                        </div>
+                                                    )}
+
+                                                    {corporateProfile.address && (
+                                                        <div className="flex items-start gap-2">
+                                                            <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
+                                                            <div>
+                                                                <span className="text-gray-600 dark:text-gray-400">Address:</span>
+                                                                <p className="text-gray-900 dark:text-white font-medium">{corporateProfile.address}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Right Column */}
+                                                <div className="space-y-3">
+                                                    {corporateProfile.company_size && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Users className="w-4 h-4 text-gray-500" />
+                                                            <span className="text-gray-600 dark:text-gray-400">Size:</span>
+                                                            <span className="text-gray-900 dark:text-white font-medium">{corporateProfile.company_size}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {corporateProfile.company_type && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Briefcase className="w-4 h-4 text-gray-500" />
+                                                            <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                                                            <span className="text-gray-900 dark:text-white font-medium capitalize">{corporateProfile.company_type}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            {corporateProfile.description && (
-                                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                                    <h5 className="font-medium text-gray-900 dark:text-white mb-2">About {corporateProfile.company_name}</h5>
-                                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
-                                                        {corporateProfile.description}
-                                                    </p>
-                                                </div>
-                                            )}
+                                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                <h5 className="font-medium text-gray-900 dark:text-white mb-2">About {corporateProfile.company_name}</h5>
+                                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
+                                                    {corporateProfile.description || '.'}
+                                                </p>
+                                            </div>
 
                                             {corporateProfile.contact_person && !hideSensitiveInfo && (
                                                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
