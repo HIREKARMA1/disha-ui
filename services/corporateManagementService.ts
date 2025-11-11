@@ -1,82 +1,82 @@
 import { apiClient } from '@/lib/api'
 import { 
-  UniversityListResponse,
-  UniversityListItem,
-  UniversityProfile,
-  CreateUniversityRequest,
-  CreateUniversityResponse,
-  UpdateUniversityRequest,
-  ArchiveUniversityRequest
-} from '@/types/university'
+  CorporateListResponse,
+  CorporateListItem,
+  CorporateProfile,
+  CreateCorporateRequest,
+  CreateCorporateResponse,
+  UpdateCorporateRequest,
+  ArchiveCorporateRequest
+} from '@/types/corporate'
 
-export class UniversityManagementService {
+export class CorporateManagementService {
   /**
-   * Get all universities for admin management
+   * Get all corporates for admin management
    */
-  async getUniversities(includeArchived: boolean = false): Promise<UniversityListResponse> {
+  async getCorporates(includeArchived: boolean = false): Promise<CorporateListResponse> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.get('/admins/universities', {
+      const response = await apiClient.client.get('/admins/corporates', {
         params: {
           include_archived: includeArchived
         }
       })
       return response.data
     } catch (error: any) {
-      console.error('Error fetching universities:', error)
+      console.error('Error fetching corporates:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to fetch universities.')
+        throw new Error(error.response?.data?.detail || 'Failed to fetch corporates.')
       }
     }
   }
 
   /**
-   * Get university profile by ID
+   * Get corporate profile by ID
    */
-  async getUniversityProfile(universityId: string): Promise<UniversityProfile> {
+  async getCorporateProfile(corporateId: string): Promise<CorporateProfile> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.get(`/admins/universities/${universityId}`)
+      const response = await apiClient.client.get(`/admins/corporates/${corporateId}`)
       return response.data
     } catch (error: any) {
-      console.error('Error fetching university profile:', error)
+      console.error('Error fetching corporate profile:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status === 404) {
-        throw new Error('University not found.')
+        throw new Error('Corporate not found.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to fetch university profile.')
+        throw new Error(error.response?.data?.detail || 'Failed to fetch corporate profile.')
       }
     }
   }
 
   /**
-   * Create a new university
+   * Create a new corporate
    */
-  async createUniversity(data: CreateUniversityRequest): Promise<CreateUniversityResponse> {
+  async createCorporate(data: CreateCorporateRequest): Promise<CreateCorporateResponse> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.post('/admins/universities', data)
+      const response = await apiClient.client.post('/admins/corporates', data)
       return response.data
     } catch (error: any) {
-      console.error('Error creating university:', error)
+      console.error('Error creating corporate:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
@@ -85,131 +85,131 @@ export class UniversityManagementService {
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to create university.')
+        throw new Error(error.response?.data?.detail || 'Failed to create corporate.')
       }
     }
   }
 
   /**
-   * Update university profile
+   * Update corporate profile
    */
-  async updateUniversity(universityId: string, data: UpdateUniversityRequest): Promise<UniversityProfile> {
+  async updateCorporate(corporateId: string, data: UpdateCorporateRequest): Promise<CorporateProfile> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.put(`/admins/universities/${universityId}`, data)
+      const response = await apiClient.client.put(`/admins/corporates/${corporateId}`, data)
       return response.data
     } catch (error: any) {
-      console.error('Error updating university:', error)
+      console.error('Error updating corporate:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status === 404) {
-        throw new Error('University not found.')
+        throw new Error('Corporate not found.')
       } else if (error.response?.status === 422) {
         throw new Error('Invalid data provided. Please check your input.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to update university.')
+        throw new Error(error.response?.data?.detail || 'Failed to update corporate.')
       }
     }
   }
 
   /**
-   * Archive/Unarchive university (soft delete)
+   * Archive/Unarchive corporate (soft delete)
    */
-  async archiveUniversity(universityId: string, isArchived: boolean): Promise<{ message: string }> {
+  async archiveCorporate(corporateId: string, isArchived: boolean): Promise<{ message: string }> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.patch(`/admins/universities/${universityId}/archive`, {
+      const response = await apiClient.client.patch(`/admins/corporates/${corporateId}/archive`, {
         is_archived: isArchived
       })
       return response.data
     } catch (error: any) {
-      console.error('Error archiving university:', error)
+      console.error('Error archiving corporate:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status === 404) {
-        throw new Error('University not found.')
+        throw new Error('Corporate not found.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to archive university.')
+        throw new Error(error.response?.data?.detail || 'Failed to archive corporate.')
       }
     }
   }
 
   /**
-   * Delete university permanently (hard delete)
+   * Delete corporate permanently (hard delete)
    */
-  async deleteUniversity(universityId: string): Promise<{ message: string }> {
+  async deleteCorporate(corporateId: string): Promise<{ message: string }> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.delete(`/admins/universities/${universityId}`)
+      const response = await apiClient.client.delete(`/admins/corporates/${corporateId}`)
       return response.data
     } catch (error: any) {
-      console.error('Error deleting university:', error)
+      console.error('Error deleting corporate:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status === 404) {
-        throw new Error('University not found.')
+        throw new Error('Corporate not found.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to delete university.')
+        throw new Error(error.response?.data?.detail || 'Failed to delete corporate.')
       }
     }
   }
 
   /**
-   * Verify/Unverify university
+   * Verify/Unverify corporate
    */
-  async verifyUniversity(universityId: string, verified: boolean): Promise<{ message: string }> {
+  async verifyCorporate(corporateId: string, verified: boolean): Promise<{ message: string }> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.patch(`/admins/universities/${universityId}/verify`, {
+      const response = await apiClient.client.patch(`/admins/corporates/${corporateId}/verify`, {
         verified: verified
       })
       return response.data
     } catch (error: any) {
-      console.error('Error verifying university:', error)
+      console.error('Error verifying corporate:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status === 404) {
-        throw new Error('University not found.')
+        throw new Error('Corporate not found.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to verify university.')
+        throw new Error(error.response?.data?.detail || 'Failed to verify corporate.')
       }
     }
   }
 
   /**
-   * Export universities to CSV
+   * Export corporates to CSV
    */
-  async exportUniversities(includeArchived: boolean = false): Promise<Blob> {
+  async exportCorporates(includeArchived: boolean = false): Promise<Blob> {
     try {
       if (!apiClient.isAuthenticated()) {
         throw new Error('User not authenticated. Please log in.')
       }
 
-      const response = await apiClient.client.get('/admins/universities/export', {
+      const response = await apiClient.client.get('/admins/corporates/export', {
         params: {
           include_archived: includeArchived
         },
@@ -217,20 +217,19 @@ export class UniversityManagementService {
       })
       return response.data
     } catch (error: any) {
-      console.error('Error exporting universities:', error)
+      console.error('Error exporting corporates:', error)
       
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please log in again.')
       } else if (error.response?.status >= 500) {
         throw new Error('Server error. Please try again later.')
       } else {
-        throw new Error(error.response?.data?.detail || 'Failed to export universities.')
+        throw new Error(error.response?.data?.detail || 'Failed to export corporates.')
       }
     }
   }
 }
 
 // Export singleton instance
-export const universityManagementService = new UniversityManagementService()
-
+export const corporateManagementService = new CorporateManagementService()
 

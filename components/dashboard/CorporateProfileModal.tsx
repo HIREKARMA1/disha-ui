@@ -9,56 +9,32 @@ import {
     Phone,
     MapPin,
     Calendar,
-    Star,
     Globe,
-    FileText,
     X,
     CheckCircle,
     AlertCircle,
-    Camera,
-    Eye,
-    EyeOff,
-    ExternalLink,
-    Download,
-    Users,
-    GraduationCap,
     Shield,
-    Clock,
-    BarChart3,
-    Award,
-    BookOpen,
-    Printer,
-    Share2,
-    Copy,
+    Briefcase,
+    Users,
     User,
-    Zap,
-    Trophy,
+    ExternalLink,
+    Clock,
     TrendingUp,
-    Shield as ShieldIcon,
-    Globe as GlobeIcon,
-    CheckCircle2,
-    UserCheck,
-    XCircle
+    BarChart3,
+    FileText
 } from 'lucide-react'
-import { UniversityListItem, UniversityProfile } from '@/types/university'
+import { CorporateListItem, CorporateProfile } from '@/types/corporate'
 import { getInitials } from '@/lib/utils'
 
-// Extended interface that combines UniversityListItem with comprehensive profile data
-interface ExtendedUniversityProfile extends UniversityListItem {
-    // Additional fields that might not be in UniversityListItem
+// Extended interface that combines CorporateListItem with comprehensive profile data
+interface ExtendedCorporateProfile extends CorporateListItem {
+    // Additional fields that might not be in CorporateListItem
     bio?: string
-    contact_person_name?: string
+    contact_person?: string
     contact_designation?: string
     website_url?: string
-    established_year?: number
-    courses_offered?: string
-    departments?: string
-    programs_offered?: string
-    total_faculty?: number
-    placement_rate?: number
-    average_package?: number
-    top_recruiters?: string
-    verification_date?: string
+    founded_year?: number
+    description?: string
     email_verified?: boolean
     phone_verified?: boolean
     profile_picture?: string
@@ -66,61 +42,52 @@ interface ExtendedUniversityProfile extends UniversityListItem {
     last_login?: string
 }
 
-interface UniversityProfileModalProps {
+interface CorporateProfileModalProps {
     isOpen: boolean
     onClose: () => void
-    university: UniversityListItem | null
-    fullProfile?: UniversityProfile | null
+    corporate: CorporateListItem | null
+    fullProfile?: CorporateProfile | null
     isLoading?: boolean
 }
 
-export function UniversityProfileModal({
+export function CorporateProfileModal({
     isOpen,
     onClose,
-    university,
+    corporate,
     fullProfile,
     isLoading = false
-}: UniversityProfileModalProps) {
+}: CorporateProfileModalProps) {
     const [activeTab, setActiveTab] = useState('basic')
 
-    console.log('UniversityProfileModal rendered with:', { isOpen, university, fullProfile, isLoading })
+    console.log('CorporateProfileModal rendered with:', { isOpen, corporate, fullProfile, isLoading })
 
-    if (!isOpen || !university) {
-        console.log('UniversityProfileModal: Not rendering - isOpen:', isOpen, 'university:', university)
+    if (!isOpen || !corporate) {
+        console.log('CorporateProfileModal: Not rendering - isOpen:', isOpen, 'corporate:', corporate)
         return null
     }
 
-    // Safety check: ensure university has required properties
-    if (!university.id || !university.university_name || !university.email) {
-        console.error('UniversityProfileModal - Invalid university data:', university)
+    // Safety check: ensure corporate has required properties
+    if (!corporate.id || !corporate.company_name || !corporate.email) {
+        console.error('CorporateProfileModal - Invalid corporate data:', corporate)
         return null
     }
 
-    // Combine university data with full profile data if available
-    const extendedUniversity: ExtendedUniversityProfile = {
-        ...university,
+    // Combine corporate data with full profile data if available
+    const extendedCorporate: ExtendedCorporateProfile = {
+        ...corporate,
         ...fullProfile,
         // Ensure we have the most up-to-date data
-        email_verified: fullProfile?.email_verified ?? university.email_verified ?? false,
-        phone_verified: fullProfile?.phone_verified ?? university.phone_verified ?? false,
-        profile_picture: fullProfile?.profile_picture ?? university.profile_picture,
-        bio: university.bio ?? fullProfile?.bio ?? '',
-        contact_person_name: university.contact_person_name ?? fullProfile?.contact_person_name ?? '',
-        contact_designation: university.contact_designation ?? fullProfile?.contact_designation ?? '',
-        website_url: university.website_url ?? fullProfile?.website_url ?? '',
-        established_year: university.established_year ?? fullProfile?.established_year,
-        courses_offered: university.courses_offered ?? fullProfile?.courses_offered ?? '',
-        departments: university.departments ?? fullProfile?.departments ?? '',
-        programs_offered: university.programs_offered ?? fullProfile?.programs_offered ?? '',
-        total_students: university.total_students ?? fullProfile?.total_students ?? 0,
-        total_faculty: university.total_faculty ?? fullProfile?.total_faculty,
-        placement_rate: university.placement_rate ?? fullProfile?.placement_rate,
-        average_package: university.average_package ?? fullProfile?.average_package,
-        top_recruiters: university.top_recruiters ?? fullProfile?.top_recruiters ?? '',
-        verification_date: fullProfile?.verification_date,
-        placed_students: university.placed_students ?? fullProfile?.placed_students ?? 0,
-        shortlisted_students: university.shortlisted_students ?? fullProfile?.shortlisted_students ?? 0,
-        rejected_students: university.rejected_students ?? fullProfile?.rejected_students ?? 0
+        email_verified: fullProfile?.email_verified ?? corporate.email_verified ?? false,
+        phone_verified: fullProfile?.phone_verified ?? corporate.phone_verified ?? false,
+        profile_picture: fullProfile?.profile_picture ?? corporate.profile_picture,
+        bio: corporate.bio ?? fullProfile?.bio ?? '',
+        description: corporate.description ?? fullProfile?.description ?? '',
+        contact_person: corporate.contact_person ?? fullProfile?.contact_person ?? '',
+        contact_designation: corporate.contact_designation ?? fullProfile?.contact_designation ?? '',
+        website_url: corporate.website_url ?? fullProfile?.website_url ?? '',
+        founded_year: corporate.founded_year ?? fullProfile?.founded_year,
+        updated_at: fullProfile?.updated_at ?? corporate.updated_at,
+        last_login: fullProfile?.last_login ?? corporate.last_login
     }
 
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -136,15 +103,6 @@ export function UniversityProfileModal({
             month: 'long',
             day: 'numeric'
         })
-    }
-
-    const formatCurrency = (amount?: number) => {
-        if (!amount) return 'N/A'
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0
-        }).format(amount * 100000) // Assuming amount is in lakhs
     }
 
     const getStatusColor = (status: string) => {
@@ -168,13 +126,13 @@ export function UniversityProfileModal({
                     indicator: 'bg-blue-500',
                     icon: 'text-blue-600 dark:text-blue-400'
                 }
-            case 'academic':
+            case 'company':
                 return {
                     active: 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20',
                     indicator: 'bg-purple-500',
                     icon: 'text-purple-600 dark:text-purple-400'
                 }
-            case 'placement':
+            case 'jobs':
                 return {
                     active: 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
                     indicator: 'bg-green-500',
@@ -197,8 +155,8 @@ export function UniversityProfileModal({
 
     const tabs = [
         { id: 'basic', label: 'Basic Info', icon: User },
-        { id: 'academic', label: 'Academic', icon: GraduationCap },
-        { id: 'placement', label: 'Placement', icon: TrendingUp },
+        { id: 'company', label: 'Company', icon: Building2 },
+        { id: 'jobs', label: 'Jobs', icon: TrendingUp },
         { id: 'contact', label: 'Contact', icon: Mail }
     ]
 
@@ -209,12 +167,12 @@ export function UniversityProfileModal({
                 case 'basic':
                     console.log('Rendering basic info')
                     return renderBasicInfo()
-                case 'academic':
-                    console.log('Rendering academic info')
-                    return renderAcademicInfo()
-                case 'placement':
-                    console.log('Rendering placement info')
-                    return renderPlacementInfo()
+                case 'company':
+                    console.log('Rendering company info')
+                    return renderCompanyInfo()
+                case 'jobs':
+                    console.log('Rendering jobs info')
+                    return renderJobsInfo()
                 case 'contact':
                     console.log('Rendering contact info')
                     return renderContactInfo()
@@ -246,8 +204,8 @@ export function UniversityProfileModal({
     }
 
     const renderBasicInfo = () => {
-        if (!extendedUniversity) {
-            console.error('UniversityProfileModal - extendedUniversity is undefined in renderBasicInfo')
+        if (!extendedCorporate) {
+            console.error('CorporateProfileModal - extendedCorporate is undefined in renderBasicInfo')
             return (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div className="text-center py-8">
@@ -267,14 +225,14 @@ export function UniversityProfileModal({
 
         return (
             <div className="space-y-6">
-                {/* University Information */}
+                {/* Corporate Information */}
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-700 p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
                             <Building2 className="w-6 h-6 text-white" />
                         </div>
                         <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                            University Information
+                            Corporate Information
                         </h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -285,32 +243,32 @@ export function UniversityProfileModal({
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {extendedUniversity.university_name}
+                                        {extendedCorporate.company_name}
                                     </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">University Name</p>
+                                    <p className="text-xs text-blue-600 dark:text-blue-400">Company Name</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                 <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                    <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                    <Briefcase className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {extendedUniversity.institute_type || 'Not specified'}
+                                        {extendedCorporate.company_type || 'Not specified'}
                                     </p>
-                                    <p className="text-xs text-purple-600 dark:text-purple-400">Institute Type</p>
+                                    <p className="text-xs text-purple-600 dark:text-purple-400">Company Type</p>
                                 </div>
                             </div>
-                            {extendedUniversity.established_year && (
+                            {extendedCorporate.founded_year && (
                                 <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                     <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                                         <Calendar className="w-4 h-4 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {extendedUniversity.established_year}
+                                            {extendedCorporate.founded_year}
                                         </p>
-                                        <p className="text-xs text-green-600 dark:text-green-400">Established Year</p>
+                                        <p className="text-xs text-green-600 dark:text-green-400">Founded Year</p>
                                     </div>
                                 </div>
                             )}
@@ -322,20 +280,20 @@ export function UniversityProfileModal({
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {formatDate(extendedUniversity.created_at)}
+                                        {formatDate(extendedCorporate.created_at)}
                                     </p>
                                     <p className="text-xs text-orange-600 dark:text-orange-400">Joined Platform</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                 <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                    <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                    <Briefcase className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {extendedUniversity.total_students ?? 0}
+                                        {extendedCorporate.total_jobs || 0}
                                     </p>
-                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">Total Students</p>
+                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">Total Jobs</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
@@ -344,7 +302,7 @@ export function UniversityProfileModal({
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {extendedUniversity.verified ? 'Verified' : 'Unverified'}
+                                        {extendedCorporate.verified ? 'Verified' : 'Unverified'}
                                     </p>
                                     <p className="text-xs text-red-600 dark:text-red-400">Verification Status</p>
                                 </div>
@@ -354,27 +312,65 @@ export function UniversityProfileModal({
                 </div>
 
                 {/* Additional Information */}
-                {extendedUniversity.bio && (
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/20 dark:to-gray-700/20 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg">
-                                <FileText className="w-6 h-6 text-white" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                About
-                            </h3>
-                        </div>
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                            {extendedUniversity.bio}
+                {extendedCorporate.bio && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                            Bio
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {extendedCorporate.bio}
                         </p>
                     </div>
                 )}
+
+                {/* Status Information */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        Status & Verification
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Status</p>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(extendedCorporate.status)}`}>
+                                {extendedCorporate.status}
+                            </span>
+                        </div>
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Email Verified</p>
+                            <div className="flex items-center gap-2">
+                                {extendedCorporate.email_verified ? (
+                                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                ) : (
+                                    <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                                )}
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {extendedCorporate.email_verified ? 'Verified' : 'Not Verified'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Phone Verified</p>
+                            <div className="flex items-center gap-2">
+                                {extendedCorporate.phone_verified ? (
+                                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                ) : (
+                                    <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                                )}
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {extendedCorporate.phone_verified ? 'Verified' : 'Not Verified'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         )
     }
 
-    const renderAcademicInfo = () => {
-        if (!extendedUniversity) {
+    const renderCompanyInfo = () => {
+        if (!extendedCorporate) {
             return (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div className="text-center py-8">
@@ -382,37 +378,39 @@ export function UniversityProfileModal({
                             <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            Error Loading Academic Info
+                            Error Loading Company Info
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Unable to load academic information.
+                            Unable to load company information.
                         </p>
                     </div>
                 </div>
             )
         }
 
-        // Check if we have any academic data
-        const hasAcademicData = extendedUniversity.courses_offered ||
-            extendedUniversity.departments ||
-            extendedUniversity.programs_offered ||
-            extendedUniversity.total_faculty
+        // Check if we have any company data
+        const hasCompanyData = extendedCorporate.industry ||
+            extendedCorporate.company_size ||
+            extendedCorporate.founded_year ||
+            extendedCorporate.description ||
+            extendedCorporate.website_url ||
+            extendedCorporate.address
 
-        if (!hasAcademicData) {
+        if (!hasCompanyData) {
             return (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div className="text-center py-8">
                         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                            <GraduationCap className="w-8 h-8 text-gray-400" />
+                            <Building2 className="w-8 h-8 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            No Academic Data Available
+                            No Company Data Available
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            This university hasn't provided academic information yet.
+                            This corporate hasn't provided company information yet.
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Contact the university to add academic details.
+                            Contact the corporate to add company details.
                         </p>
                     </div>
                 </div>
@@ -421,64 +419,64 @@ export function UniversityProfileModal({
 
         return (
             <div className="space-y-6">
-                {/* Academic Programs */}
+                {/* Company Details */}
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl shadow-sm border border-purple-200 dark:border-purple-700 p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
-                            <GraduationCap className="w-6 h-6 text-white" />
+                            <Building2 className="w-6 h-6 text-white" />
                         </div>
                         <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
-                            Academic Programs
+                            Company Details
                         </h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {extendedUniversity.courses_offered && (
+                        {extendedCorporate.industry && (
                             <div className="space-y-3">
-                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Courses Offered</h4>
+                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Industry</h4>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg">
-                                    {extendedUniversity.courses_offered}
+                                    {extendedCorporate.industry}
                                 </p>
                             </div>
                         )}
-                        {extendedUniversity.departments && (
+                        {extendedCorporate.company_size && (
                             <div className="space-y-3">
-                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Departments</h4>
+                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Company Size</h4>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg">
-                                    {extendedUniversity.departments}
+                                    {extendedCorporate.company_size}
                                 </p>
                             </div>
                         )}
-                        {extendedUniversity.programs_offered && (
+                        {extendedCorporate.description && (
                             <div className="space-y-3 md:col-span-2">
-                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Programs Offered</h4>
+                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Description</h4>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg">
-                                    {extendedUniversity.programs_offered}
+                                    {extendedCorporate.description}
                                 </p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Faculty Information */}
-                {extendedUniversity.total_faculty && (
+                {/* Address */}
+                {extendedCorporate.address && (
                     <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-700 p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
-                                <Users className="w-6 h-6 text-white" />
+                                <MapPin className="w-6 h-6 text-white" />
                             </div>
                             <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">
-                                Faculty Information
+                                Address
                             </h3>
                         </div>
                         <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                <MapPin className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {extendedUniversity.total_faculty}
+                                    {extendedCorporate.address}
                                 </p>
-                                <p className="text-xs text-indigo-600 dark:text-indigo-400">Total Faculty</p>
+                                <p className="text-xs text-indigo-600 dark:text-indigo-400">Company Address</p>
                             </div>
                         </div>
                     </div>
@@ -487,8 +485,8 @@ export function UniversityProfileModal({
         )
     }
 
-    const renderPlacementInfo = () => {
-        if (!extendedUniversity) {
+    const renderJobsInfo = () => {
+        if (!extendedCorporate) {
             return (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div className="text-center py-8">
@@ -496,40 +494,34 @@ export function UniversityProfileModal({
                             <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            Error Loading Placement Info
+                            Error Loading Jobs Info
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Unable to load placement information.
+                            Unable to load jobs information.
                         </p>
                     </div>
                 </div>
             )
         }
 
-        // Check if we have any placement data
-        const hasPlacementData = extendedUniversity.placement_rate ||
-            extendedUniversity.average_package ||
-            extendedUniversity.total_students ||
-            extendedUniversity.top_recruiters ||
-            extendedUniversity.placed_students ||
-            extendedUniversity.shortlisted_students ||
-            extendedUniversity.rejected_students
+        // Check if we have any jobs data
+        const hasJobsData = extendedCorporate.total_jobs && extendedCorporate.total_jobs > 0
 
-        if (!hasPlacementData) {
+        if (!hasJobsData) {
             return (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div className="text-center py-8">
                         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                            <BarChart3 className="w-8 h-8 text-gray-400" />
+                            <Briefcase className="w-8 h-8 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            No Placement Data Available
+                            No Jobs Posted Yet
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            This university hasn't provided placement statistics yet.
+                            This corporate hasn't posted any job opportunities yet.
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Contact the university to add placement information.
+                            Contact the corporate to post job opportunities.
                         </p>
                     </div>
                 </div>
@@ -538,132 +530,26 @@ export function UniversityProfileModal({
 
         return (
             <div className="space-y-6">
-                {/* Student Placement Statistics */}
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-700 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
-                            <Users className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">
-                            Student Placement Statistics
-                        </h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Placed Students */}
-                        <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                </div>
-                                <h4 className="font-medium text-green-800 dark:text-green-200">Placed Students</h4>
-                            </div>
-                            <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                                {extendedUniversity.placed_students || 0}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Students with selected applications
-                            </p>
-                        </div>
-
-                        {/* Shortlisted Students */}
-                        <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <h4 className="font-medium text-blue-800 dark:text-blue-200">Shortlisted Students</h4>
-                            </div>
-                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                                {extendedUniversity.shortlisted_students || 0}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Students in selection process
-                            </p>
-                        </div>
-
-                        {/* Rejected Students */}
-                        <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-red-200 dark:border-red-700">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                                    <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                </div>
-                                <h4 className="font-medium text-red-800 dark:text-red-200">Rejected Students</h4>
-                            </div>
-                            <p className="text-3xl font-bold text-red-600 dark:text-red-400">
-                                {extendedUniversity.rejected_students || 0}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Students with rejected applications
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Placement Statistics */}
+                {/* Jobs Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {extendedUniversity.placement_rate && (
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-700 p-6">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <BarChart3 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                </div>
-                                <h4 className="font-medium text-green-800 dark:text-green-200">Placement Rate</h4>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-700 p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                <BarChart3 className="w-5 h-5 text-green-600 dark:text-green-400" />
                             </div>
-                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                {extendedUniversity.placement_rate}%
-                            </p>
+                            <h4 className="font-medium text-green-800 dark:text-green-200">Total Jobs</h4>
                         </div>
-                    )}
-                    {extendedUniversity.average_package && (
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-700 p-6">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <h4 className="font-medium text-blue-800 dark:text-blue-200">Average Package</h4>
-                            </div>
-                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                {formatCurrency(extendedUniversity.average_package)}
-                            </p>
-                        </div>
-                    )}
-                    {extendedUniversity.total_students && (
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl shadow-sm border border-purple-200 dark:border-purple-700 p-6">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                    <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                </div>
-                                <h4 className="font-medium text-purple-800 dark:text-purple-200">Total Students</h4>
-                            </div>
-                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                                {extendedUniversity.total_students}
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Top Recruiters */}
-                {extendedUniversity.top_recruiters && (
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl shadow-sm border border-orange-200 dark:border-orange-700 p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
-                                <Trophy className="w-6 h-6 text-white" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-100">
-                                Top Recruiters
-                            </h3>
-                        </div>
-                        <p className="text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-3 rounded-lg">
-                            {extendedUniversity.top_recruiters}
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {extendedCorporate.total_jobs || 0}
                         </p>
                     </div>
-                )}
+                </div>
             </div>
         )
     }
 
     const renderContactInfo = () => {
-        if (!extendedUniversity) {
+        if (!extendedCorporate) {
             return (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                     <div className="text-center py-8">
@@ -701,10 +587,10 @@ export function UniversityProfileModal({
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {extendedUniversity.email}
+                                        {extendedCorporate.email}
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400">Email Address</p>
-                                    {extendedUniversity.email_verified && (
+                                    {extendedCorporate.email_verified && (
                                         <span className="inline-flex items-center text-xs text-green-600 dark:text-green-400">
                                             <CheckCircle className="w-3 h-3 mr-1" />
                                             Verified
@@ -712,17 +598,17 @@ export function UniversityProfileModal({
                                     )}
                                 </div>
                             </div>
-                            {extendedUniversity.phone && (
+                            {extendedCorporate.phone && (
                                 <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                     <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                                         <Phone className="w-4 h-4 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {extendedUniversity.phone}
+                                            {extendedCorporate.phone}
                                         </p>
                                         <p className="text-xs text-green-600 dark:text-green-400">Phone Number</p>
-                                        {extendedUniversity.phone_verified && (
+                                        {extendedCorporate.phone_verified && (
                                             <span className="inline-flex items-center text-xs text-green-600 dark:text-green-400">
                                                 <CheckCircle className="w-3 h-3 mr-1" />
                                                 Verified
@@ -731,7 +617,7 @@ export function UniversityProfileModal({
                                     </div>
                                 </div>
                             )}
-                            {extendedUniversity.website_url && (
+                            {extendedCorporate.website_url && (
                                 <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                                         <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -739,12 +625,12 @@ export function UniversityProfileModal({
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                                             <a
-                                                href={extendedUniversity.website_url}
+                                                href={extendedCorporate.website_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 dark:text-blue-400 hover:underline"
                                             >
-                                                {extendedUniversity.website_url}
+                                                {extendedCorporate.website_url}
                                                 <ExternalLink className="w-3 h-3 inline ml-1" />
                                             </a>
                                         </p>
@@ -754,32 +640,32 @@ export function UniversityProfileModal({
                             )}
                         </div>
                         <div className="space-y-3">
-                            {extendedUniversity.address && (
+                            {extendedCorporate.address && (
                                 <div className="flex items-start gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                     <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                                         <MapPin className="w-4 h-4 text-red-600 dark:text-red-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {extendedUniversity.address}
+                                            {extendedCorporate.address}
                                         </p>
                                         <p className="text-xs text-red-600 dark:text-red-400">Address</p>
                                     </div>
                                 </div>
                             )}
-                            {extendedUniversity.contact_person_name && (
+                            {extendedCorporate.contact_person && (
                                 <div className="flex items-center gap-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
                                     <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                                         <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {extendedUniversity.contact_person_name}
+                                            {extendedCorporate.contact_person}
                                         </p>
                                         <p className="text-xs text-indigo-600 dark:text-indigo-400">Contact Person</p>
-                                        {extendedUniversity.contact_designation && (
+                                        {extendedCorporate.contact_designation && (
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                {extendedUniversity.contact_designation}
+                                                {extendedCorporate.contact_designation}
                                             </p>
                                         )}
                                     </div>
@@ -835,10 +721,10 @@ export function UniversityProfileModal({
                         <div className="text-center sm:text-left">
                             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto sm:mx-0 mb-2 sm:mb-3 relative">
                                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg overflow-hidden">
-                                    {extendedUniversity.profile_picture ? (
+                                    {extendedCorporate.profile_picture ? (
                                         <img
-                                            src={extendedUniversity.profile_picture}
-                                            alt={extendedUniversity.university_name}
+                                            src={extendedCorporate.profile_picture}
+                                            alt={extendedCorporate.company_name}
                                             className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover"
                                             onError={(e) => {
                                                 // Fallback to initials if image fails to load
@@ -846,25 +732,25 @@ export function UniversityProfileModal({
                                                 target.style.display = 'none';
                                                 const parent = target.parentElement;
                                                 if (parent) {
-                                                    parent.innerHTML = `<span class="text-xl font-bold text-white">${getInitials(extendedUniversity.university_name)}</span>`;
+                                                    parent.innerHTML = `<span class="text-xl font-bold text-white">${getInitials(extendedCorporate.company_name)}</span>`;
                                                 }
                                             }}
                                         />
                                     ) : (
                                         <span className="text-xl font-bold text-white">
-                                            {getInitials(extendedUniversity.university_name)}
+                                            {getInitials(extendedCorporate.company_name)}
                                         </span>
                                     )}
                                 </div>
                             </div>
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                                {extendedUniversity.university_name}
+                                {extendedCorporate.company_name}
                             </h3>
                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                {extendedUniversity.institute_type || 'Educational Institution'}
+                                {extendedCorporate.company_type || 'Corporate'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {extendedUniversity.established_year ? `Est. ${extendedUniversity.established_year}` : 'University'}
+                                {extendedCorporate.founded_year ? `Est. ${extendedCorporate.founded_year}` : 'Corporate'}
                             </p>
                         </div>
 
@@ -874,7 +760,7 @@ export function UniversityProfileModal({
                                 {/* Email Card - Blue Theme */}
                                 <div className="flex items-center justify-between p-2 sm:p-3 lg:p-4 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
                                     <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">Email</span>
-                                    {extendedUniversity.email_verified ? (
+                                    {extendedCorporate.email_verified ? (
                                         <div className="p-1.5 bg-green-500 rounded-full">
                                             <CheckCircle className="w-3 h-3 text-white" />
                                         </div>
@@ -888,7 +774,7 @@ export function UniversityProfileModal({
                                 {/* Phone Card - Purple Theme */}
                                 <div className="flex items-center justify-between p-2 sm:p-3 lg:p-4 bg-purple-50/80 dark:bg-purple-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50">
                                     <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">Phone</span>
-                                    {extendedUniversity.phone_verified ? (
+                                    {extendedCorporate.phone_verified ? (
                                         <div className="p-1.5 bg-green-500 rounded-full">
                                             <CheckCircle className="w-3 h-3 text-white" />
                                         </div>
@@ -902,8 +788,8 @@ export function UniversityProfileModal({
                                 {/* Status Card - Orange Theme */}
                                 <div className="flex items-center justify-between p-2 sm:p-3 lg:p-4 bg-orange-50/80 dark:bg-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
                                     <span className="text-xs text-orange-700 dark:text-orange-300 font-medium">Status</span>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(extendedUniversity.status)}`}>
-                                        {extendedUniversity.status}
+                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(extendedCorporate.status)}`}>
+                                        {extendedCorporate.status}
                                     </div>
                                 </div>
 
@@ -911,7 +797,7 @@ export function UniversityProfileModal({
                                 <div className="flex items-center justify-between p-2 sm:p-3 lg:p-4 bg-green-50/80 dark:bg-green-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50">
                                     <span className="text-xs text-green-700 dark:text-green-300 font-medium">Verified</span>
                                     <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                                        {extendedUniversity.verified ? 'Yes' : 'No'}
+                                        {extendedCorporate.verified ? 'Yes' : 'No'}
                                     </span>
                                 </div>
                             </div>

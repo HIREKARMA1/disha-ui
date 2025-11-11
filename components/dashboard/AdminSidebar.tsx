@@ -68,6 +68,13 @@ const navItems: NavItem[] = [
         color: 'from-purple-500 to-pink-600'
     },
     {
+        label: 'Corporates',
+        href: '/dashboard/admin/corporates',
+        icon: Building2,
+        description: 'Manage corporates',
+        color: 'from-cyan-500 to-blue-600'
+    },
+    {
         label: 'Job Management',
         href: '/dashboard/admin/jobs',
         icon: Briefcase,

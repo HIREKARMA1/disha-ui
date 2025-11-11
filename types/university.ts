@@ -173,6 +173,9 @@ export interface UniversityListItem {
   phone_verified?: boolean
   bio?: string
   profile_picture?: string
+  placed_students?: number
+  shortlisted_students?: number
+  rejected_students?: number
 }
 
 export interface UniversityListResponse {
@@ -215,6 +218,9 @@ export interface UniversityProfile {
   placement_rate?: number
   average_package?: number
   top_recruiters?: string
+  placed_students?: number
+  shortlisted_students?: number
+  rejected_students?: number
 }
 
 export interface CreateUniversityRequest {
