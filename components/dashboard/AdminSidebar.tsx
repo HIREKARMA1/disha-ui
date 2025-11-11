@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import { adminProfileService } from '@/services/adminProfileService'
 
 interface NavItem {
     label: string
@@ -151,12 +152,12 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
             if (user?.user_type === 'admin') {
                 setIsLoadingProfile(true)
                 try {
-                    // TODO: Replace with actual admin profile API call
-                    // const data = await apiClient.getAdminProfile()
-                    // setProfileData(data)
-                    setProfileData(null) // Placeholder for now
+                    const data = await adminProfileService.getProfile()
+                    setProfileData(data)
                 } catch (error) {
                     console.error('Failed to fetch profile:', error)
+                    // Set profileData to null on error so it falls back to user object
+                    setProfileData(null)
                 } finally {
                     setIsLoadingProfile(false)
                 }
@@ -193,10 +194,16 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
 
     // Get display name from profile data
     const getDisplayName = () => {
+        // Prioritize profile data name
         if (profileData?.name && profileData.name.trim()) {
             return profileData.name
         }
-        return user?.name || 'Admin Name'
+        // Fall back to user name, but only if it's not an email
+        if (user?.name && user.name.trim() && !user.name.includes('@')) {
+            return user.name
+        }
+        // If user.name is email or missing, use a default
+        return 'Admin'
     }
 
     // Get display email
