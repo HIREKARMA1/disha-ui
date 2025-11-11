@@ -330,11 +330,11 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl"
+                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500 flex-shrink-0">
                                 <h2 className="text-lg font-semibold text-white">
                                     Menu
                                 </h2>
@@ -347,7 +347,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                             </div>
 
                             {/* User Profile in Mobile */}
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center overflow-hidden">
                                         {getProfilePicture() && !imageError ? (
@@ -378,8 +378,8 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                 </div>
                             </div>
 
-                            {/* Navigation */}
-                            <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+                            {/* Navigation - Scrollable */}
+                            <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
                                 {navItems.map((item) => {
                                     const isActive = pathname === item.href
                                     const { startLoading } = useLoading()
@@ -416,7 +416,7 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                             </nav>
 
                             {/* Logout in Mobile */}
-                            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
