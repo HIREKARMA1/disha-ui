@@ -610,6 +610,20 @@ class ApiClient {
     });
     return response.data;
   }
+
+  // Upload company logo for university-created jobs (uses corporate folder structure)
+  async uploadCompanyLogo(file: File): Promise<{ file_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post('/universities/upload-company-logo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    // The endpoint returns {file_url, message}, but we only need file_url for consistency
+    return { file_url: response.data.file_url };
+  }
 }
 
 export const apiClient = new ApiClient();

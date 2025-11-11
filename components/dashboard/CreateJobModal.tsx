@@ -293,8 +293,15 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 return
             }
 
-            // Upload the file
-            const result = await apiClient.uploadImage(file)
+            // Upload the file - use company logo endpoint for university users, regular image upload for others
+            let result
+            if (userType === 'university') {
+                // University users: upload to corporate folder structure
+                result = await apiClient.uploadCompanyLogo(file)
+            } else {
+                // Corporate users: use regular image upload (though they shouldn't be using this for company logos)
+                result = await apiClient.uploadImage(file)
+            }
             
             // Update form data with the uploaded logo URL
             handleInputChange('company_logo', result.file_url)
