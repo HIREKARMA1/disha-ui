@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Filter, Download, Eye, CheckCircle, XCircle, Users, RefreshCw } from 'lucide-react'
+import { X, Search, Filter, Download, Eye, CheckCircle, XCircle, Users, RefreshCw, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PracticeModule, StudentAttempt } from '@/types/practice'
+import { PracticeModule, StudentAttempt, Question } from '@/types/practice'
 import { useUniversityModuleAttempts } from '@/hooks/useUniversityModuleAttempts'
+import { useAdminQuestions } from '@/hooks/useUniversityPractice'
 
 interface UniversityAttemptViewerModalProps {
     isOpen: boolean
@@ -20,6 +21,9 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
     // Use real API calls to fetch attempts
     const { data: attempts, isLoading, error, refetch } = useUniversityModuleAttempts(module.id)
     
+    // Fetch all questions for the module
+    const { data: allQuestions, isLoading: questionsLoading } = useAdminQuestions(module.id)
+    
     console.log('📊 UniversityAttemptViewerModal - Module:', module.id, 'Attempts:', attempts)
 
     const filteredAttempts = attempts?.filter(attempt =>
@@ -32,22 +36,45 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
             return
         }
 
-        // Prepare CSV data
-        const headers = ['Student Name', 'Student ID', 'Score (%)', 'Time Taken', 'Started At', 'Ended At', 'Status']
-        const rows = attempts.map(attempt => [
-            attempt.student_name || 'N/A',
-            attempt.student_id || 'N/A',
-            attempt.score_percent?.toFixed(2) || '0',
-            formatTimeTaken(attempt.time_taken_seconds),
-            new Date(attempt.started_at).toLocaleString(),
-            attempt.ended_at ? new Date(attempt.ended_at).toLocaleString() : 'In Progress',
-            attempt.ended_at ? 'Completed' : 'In Progress'
-        ])
+        if (!allQuestions || allQuestions.length === 0) {
+            alert('Questions not loaded yet')
+            return
+        }
+
+        // CSV Headers - summary only, no individual questions
+        const headers = [
+            'Student Name',
+            'Total Questions',
+            'Attempted Questions',
+            'Correct Answers',
+            'Score (%)',
+            'Started At',
+            'Ended At',
+            'Time Taken'
+        ]
+
+        // CSV Rows
+        const rows = attempts.map(attempt => {
+            const correctAnswers = attempt.question_results?.filter((r: { is_correct: boolean }) => r.is_correct).length || 0
+            const attemptedQuestions = attempt.question_results?.length || 0
+            const totalQuestions = allQuestions.length
+
+            return [
+                attempt.student_name || 'N/A',
+                totalQuestions.toString(),
+                attemptedQuestions.toString(),
+                correctAnswers.toString(),
+                formatScore(attempt.score_percent || 0),
+                new Date(attempt.started_at).toLocaleString(),
+                attempt.ended_at ? new Date(attempt.ended_at).toLocaleString() : 'In Progress',
+                formatTimeTaken(attempt.time_taken_seconds)
+            ]
+        })
 
         // Create CSV content
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
         ].join('\n')
 
         // Create and trigger download
@@ -76,6 +103,12 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
             hour: '2-digit',
             minute: '2-digit'
         })
+    }
+
+    const formatScore = (score: number) => {
+        // Remove trailing zeros - show whole numbers without decimals
+        const rounded = Math.round(score * 10) / 10
+        return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1)
     }
 
     if (!isOpen) return null
@@ -196,7 +229,7 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
                                         <div>
                                             <p className="text-sm text-gray-600 dark:text-gray-400">Score</p>
                                             <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                                                {selectedAttempt.score_percent.toFixed(2)}%
+                                                {formatScore(selectedAttempt.score_percent)}%
                                             </p>
                                         </div>
                                         <div>
@@ -215,41 +248,78 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
                                 </div>
 
                                 {/* Question-by-Question Results */}
-                                {selectedAttempt.question_results && selectedAttempt.question_results.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Question Results</h3>
-                                        {selectedAttempt.question_results.map((result, index) => (
-                                            <div
-                                                key={result.question_id}
-                                                className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-gray-600 dark:text-gray-400 font-medium">
-                                                            Question {index + 1}
-                                                        </span>
-                                                        {result.is_correct ? (
-                                                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                                                <CheckCircle className="w-4 h-4" />
-                                                                Correct
+                                <div className="space-y-3">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        Question Results ({allQuestions?.length || 0} total questions)
+                                    </h3>
+                                    {questionsLoading ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                                        </div>
+                                    ) : (
+                                        (allQuestions || []).map((question, index) => {
+                                            const result = (selectedAttempt.question_results || []).find(r => r.question_id === question.id)
+                                            const answer = (selectedAttempt.answers || []).find(a => a.question_id === question.id)
+                                            const isAttempted = !!result
+                                            
+                                            return (
+                                                <div
+                                                    key={question.id}
+                                                    className={`rounded-lg p-4 border ${
+                                                        !isAttempted
+                                                            ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                                                            : result.is_correct
+                                                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                                                                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-gray-600 dark:text-gray-400 font-medium">
+                                                                Question {index + 1}
                                                             </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                                                                <XCircle className="w-4 h-4" />
-                                                                Incorrect
-                                                            </span>
-                                                        )}
+                                                            {!isAttempted ? (
+                                                                <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                                                                    <HelpCircle className="w-4 h-4" />
+                                                                    Not Attempted
+                                                                </span>
+                                                            ) : result.is_correct ? (
+                                                                <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                                                    <CheckCircle className="w-4 h-4" />
+                                                                    Correct
+                                                                </span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                                                                    <XCircle className="w-4 h-4" />
+                                                                    Incorrect
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
+                                                    {question.statement && (
+                                                        <div className="mt-2">
+                                                            <p className="text-sm text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: question.statement }} />
+                                                        </div>
+                                                    )}
+                                                    {isAttempted && (
+                                                        <>
+                                                            {answer && (
+                                                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                                                    <span className="font-medium">Student Answer:</span> {answer.answer.join(', ') || 'No answer'}
+                                                                </p>
+                                                            )}
+                                                            {result.explanation && (
+                                                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                                                    <span className="font-medium">Explanation:</span> {result.explanation}
+                                                                </p>
+                                                            )}
+                                                        </>
+                                                    )}
                                                 </div>
-                                                {result.explanation && (
-                                                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                        {result.explanation}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            )
+                                        })
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             /* List View */
@@ -311,7 +381,7 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
                                                                 attempt.score_percent >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
                                                                 'text-red-600 dark:text-red-400'
                                                             }`}>
-                                                                {attempt.score_percent.toFixed(2)}%
+                                                                {formatScore(attempt.score_percent)}%
                                                             </div>
                                                         </div>
                                                     </td>
