@@ -874,6 +874,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                 }
                                             }}
                                             placeholder="e.g., 500000"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
@@ -892,6 +893,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                 }
                                             }}
                                             placeholder="e.g., 800000"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
@@ -927,6 +929,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                 }
                                             }}
                                             placeholder="e.g., 2"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
@@ -945,6 +948,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                 }
                                             }}
                                             placeholder="e.g., 5"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
