@@ -272,11 +272,14 @@ const formatSalary = (currency: string, min?: number, max?: number): string => {
 }
 
 const formatExperience = (min?: number, max?: number): string => {
-  if (!min && !max) return 'Not specified'
-  if (min === 0 && max) return `Up to ${max} years`
-  if (min && max) return `${min}-${max} years`
-  if (min) return `${min}+ years`
-  if (max) return `Up to ${max} years`
+  // Check if values are actually provided (0 is a valid value)
+  const hasMin = min !== undefined && min !== null
+  const hasMax = max !== undefined && max !== null
+  
+  if (!hasMin && !hasMax) return 'Not specified'
+  if (hasMin && hasMax) return `${min}-${max} years`
+  if (hasMin) return `${min} years`
+  if (hasMax) return `${max} years`
   return 'Not specified'
 }
 
