@@ -59,9 +59,9 @@ interface CorporateProfile {
 // Define styles
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 60, // Space for header
-    paddingBottom: 50, // Space for footer
-    paddingHorizontal: 30,
+    paddingTop: 80, // Space for header + extra space after page break
+    paddingBottom: 60, // Space for footer + extra space before page break
+    paddingHorizontal: 25,
     fontSize: 12,
     fontFamily: 'Helvetica',
   },
@@ -114,23 +114,23 @@ const styles = StyleSheet.create({
   sectionTitle: {
     backgroundColor: '#b8e8f5',
     color: '#006b8f',
-    padding: '12',
+    padding: '10',
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 15,
+    marginTop: 4,
     marginBottom: 12,
     borderRadius: 5,
-    minPresenceAhead: 400, // Increased: Footer height (50) + section title height (~67) + minimum content space (~150) + larger buffer (~133)
+    minPresenceAhead: 200, // Footer height (50) + section title height (~50) + minimum content space (~100)
   },
   content: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   infoGrid: {
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 15,
-    gap: 15,
+    marginBottom: 0,
+    gap: 12,
   },
   infoItem: {
     width: '48%',
@@ -141,38 +141,38 @@ const styles = StyleSheet.create({
   jobTitle: {
     backgroundColor: '#b8e8f5',
     color: '#006b8f',
-    padding: '12 20',
+    padding: '10 15',
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 8,
     borderRadius: 5,
     textAlign: 'left',
   },
   textContent: {
     fontSize: 11,
-    lineHeight: 1.7,
-    marginBottom: 20,
+    lineHeight: 1.6,
+    marginBottom: 0,
     textAlign: 'justify',
   },
   companyName: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#2d3748',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   companyDescription: {
     fontSize: 11,
     lineHeight: 1.6,
-    marginBottom: 15,
+    marginBottom: 8,
     textAlign: 'justify',
   },
   bulletList: {
-    marginBottom: 15,
+    marginBottom: 0,
   },
   bulletItem: {
     fontSize: 11,
-    lineHeight: 1.6,
-    marginBottom: 6,
+    lineHeight: 1.5,
+    marginBottom: 4,
     paddingLeft: 10,
   },
   skillsGrid: {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 15,
+    marginBottom: 0,
   },
   skillItem: {
     fontSize: 11,
@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 15,
-    marginBottom: 15,
+    gap: 12,
+    marginBottom: 0,
   },
   twoColumnItem: {
     width: '48%',
@@ -203,10 +203,11 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
   },
   pageBreak: {
+    paddingTop: 20,
     marginBottom: 20,
   },
   sectionContainer: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
 })
 
@@ -263,18 +264,22 @@ const formatJobType = (jobType: string): string => {
 
 const formatSalary = (currency: string, min?: number, max?: number): string => {
   if (!min && !max) return 'Not specified'
-  if (min && max) return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`
-  if (min) return `${currency} ${min.toLocaleString()}+`
-  if (max) return `${currency} Up to ${max.toLocaleString()}`
+  const formatNumber = (num: number) => Math.round(num).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  if (min && max) return `${currency} ${formatNumber(min)} - ${formatNumber(max)}`
+  if (min) return `${currency} ${formatNumber(min)}+`
+  if (max) return `${currency} Up to ${formatNumber(max)}`
   return 'Not specified'
 }
 
 const formatExperience = (min?: number, max?: number): string => {
-  if (!min && !max) return 'Not specified'
-  if (min === 0 && max) return `Up to ${max} years`
-  if (min && max) return `${min}-${max} years`
-  if (min) return `${min}+ years`
-  if (max) return `Up to ${max} years`
+  // Check if values are actually provided (0 is a valid value)
+  const hasMin = min !== undefined && min !== null
+  const hasMax = max !== undefined && max !== null
+  
+  if (!hasMin && !hasMax) return 'Not specified'
+  if (hasMin && hasMax) return `${min}-${max} years`
+  if (hasMin) return `${min} years`
+  if (hasMax) return `${max} years`
   return 'Not specified'
 }
 
@@ -327,15 +332,15 @@ const JobDescriptionDocument = ({
 
   const perksList = job.perks_and_benefits
     ? job.perks_and_benefits.split('\n').filter(line => line.trim())
-    : [
-       
-      ]
+    : []
 
   const eligibilityList = job.eligibility_criteria
     ? job.eligibility_criteria.split('\n').filter(line => line.trim())
-    : [
-       
-      ]
+    : []
+
+  const selectionProcessList = job.selection_process
+    ? job.selection_process.split('\n').filter(line => line.trim())
+    : []
 
   const skillsCount = job.skills_required?.length || 0
   const skillsPerColumn = skillsCount <= 1 ? 1 : skillsCount <= 2 ? 2 : 3
@@ -348,34 +353,50 @@ const JobDescriptionDocument = ({
         <PDFFooter hirekarmaLogoUrl={hirekarmaLogoUrl} />
         
         {/* About Company Section */}
-        <View style={styles.content}>
-          {/* <Text style={styles.sectionTitle}>About Company</Text> */}
-          <Text style={styles.companyName}>
-            Company Name: {corporateProfile?.company_name || 'TCS'}
-          </Text>
-          <Text style={styles.companyDescription}>
-            {corporateProfile?.description }
-          </Text>
-        </View>
+        {(corporateProfile?.company_name || corporateProfile?.description) && (
+          <View style={styles.content}>
+            {/* <Text style={styles.sectionTitle}>About Company</Text> */}
+            {corporateProfile?.company_name && (
+              <Text style={styles.companyName}>
+                Company Name: {corporateProfile.company_name}
+              </Text>
+            )}
+            {corporateProfile?.description && (
+              <Text style={styles.companyDescription}>
+                {corporateProfile.description}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Company Information Grid */}
-        <View style={styles.content}>
-          <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 10 }}>Company Information:</Text>
-          <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Industry:</Text> {corporateProfile?.industry || 'Not Specified'}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Company Size:</Text> {corporateProfile?.company_size || 'Not Specified'}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Founded:</Text> {corporateProfile?.founded_year || 'Not Specified'}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Website:</Text> {corporateProfile?.website_url || 'Not Specified'}</Text>
+        {(corporateProfile?.industry || corporateProfile?.company_size || corporateProfile?.founded_year || corporateProfile?.website_url) && (
+          <View style={styles.content}>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 8 }}>Company Information:</Text>
+            <View style={styles.infoGrid}>
+              {corporateProfile?.industry && (
+                <View style={styles.infoItem}>
+                  <Text><Text style={{ fontWeight: 'bold' }}>Industry:</Text> {corporateProfile.industry}</Text>
+                </View>
+              )}
+              {corporateProfile?.company_size && (
+                <View style={styles.infoItem}>
+                  <Text><Text style={{ fontWeight: 'bold' }}>Company Size:</Text> {corporateProfile.company_size}</Text>
+                </View>
+              )}
+              {corporateProfile?.founded_year && (
+                <View style={styles.infoItem}>
+                  <Text><Text style={{ fontWeight: 'bold' }}>Founded:</Text> {corporateProfile.founded_year}</Text>
+                </View>
+              )}
+              {corporateProfile?.website_url && (
+                <View style={styles.infoItem}>
+                  <Text><Text style={{ fontWeight: 'bold' }}>Website:</Text> {corporateProfile.website_url}</Text>
+                </View>
+              )}
             </View>
           </View>
-        </View>
+        )}
 
         {/* Job Title */}
         <View style={styles.content}>
@@ -422,10 +443,14 @@ const JobDescriptionDocument = ({
         )}
 
         {/* Job Description - This will automatically break across pages if content is too long */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle} break={false}>Job Description</Text>
-          <Text style={styles.textContent} wrap={true}>{job.description}</Text>
-        </View>
+        {job.description && (
+          <View style={styles.sectionContainer}>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Job Description</Text>
+            </View>
+            <Text style={styles.textContent} wrap={true}>{job.description}</Text>
+          </View>
+        )}
 
         {/* Requirements */}
         {requirementsList.length > 0 && (
@@ -455,17 +480,12 @@ const JobDescriptionDocument = ({
           <View style={styles.sectionContainer}>
             <View wrap={false}>
               <Text style={styles.sectionTitle} break={false}>Required Skills:</Text>
-              {job.skills_required.length > 0 && (
-                <Text style={styles.skillItem} wrap={true}>• {job.skills_required[0]}</Text>
-              )}
             </View>
-            {job.skills_required.length > 1 && (
-              <View style={styles.skillsGrid}>
-                {job.skills_required.slice(1).map((skill, idx) => (
-                  <Text key={idx + 1} style={styles.skillItem} wrap={true}>• {skill}</Text>
-                ))}
-              </View>
-            )}
+            <View style={styles.skillsGrid}>
+              {job.skills_required.map((skill, idx) => (
+                <Text key={idx} style={styles.skillItem} wrap={true}>• {skill}</Text>
+              ))}
+            </View>
           </View>
         )}
 
@@ -497,124 +517,133 @@ const JobDescriptionDocument = ({
           <View style={styles.sectionContainer}>
             <View wrap={false}>
               <Text style={styles.sectionTitle} break={false}>Education Requirements</Text>
-              <View style={styles.infoItem}>
-                <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Education Level:</Text> {parseCommaSeparated(job.education_level)}</Text>
-              </View>
             </View>
             <View style={styles.infoGrid}>
-              {(job.education_degree || job.education_branch) && (
-                <>
-                  {job.education_degree && (
-                    <View style={styles.infoItem}>
-                      <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Degree:</Text> {parseCommaSeparated(job.education_degree)}</Text>
-                    </View>
-                  )}
-                  {job.education_branch && (
-                    <View style={styles.infoItem}>
-                      <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Branch:</Text> {parseCommaSeparated(job.education_branch)}</Text>
-                    </View>
-                  )}
-                </>
+              {job.education_level && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Education Level:</Text> {parseCommaSeparated(job.education_level)}</Text>
+                </View>
+              )}
+              {job.education_degree && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Degree:</Text> {parseCommaSeparated(job.education_degree)}</Text>
+                </View>
+              )}
+              {job.education_branch && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Branch:</Text> {parseCommaSeparated(job.education_branch)}</Text>
+                </View>
               )}
             </View>
           </View>
         )}
 
         {/* Additional Job Details */}
-        <View style={styles.sectionContainer}>
-          <View wrap={false}>
-            <Text style={styles.sectionTitle} break={false}>Additional Job Details</Text>
+        {(job.number_of_openings || job.remote_work !== undefined || job.onsite_office !== undefined || job.travel_required !== undefined) && (
+          <View style={styles.sectionContainer}>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Additional Job Details</Text>
+            </View>
             <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>No of Opening's:</Text> {job.number_of_openings || 'Not Specified'}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Remote Work:</Text> {job.remote_work ? 'Available' : 'Not Available'}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Onsite Office:</Text> {job.onsite_office ? 'Available' : 'Not Available'}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Travel Required:</Text> {job.travel_required ? 'Yes' : 'No'}</Text>
-              </View>
+              {job.number_of_openings && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>No of Opening's:</Text> {job.number_of_openings}</Text>
+                </View>
+              )}
+              {job.remote_work !== undefined && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Remote Work:</Text> {job.remote_work ? 'Available' : 'Not Available'}</Text>
+                </View>
+              )}
+              {job.onsite_office !== undefined && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Onsite Office:</Text> {job.onsite_office ? 'Available' : 'Not Available'}</Text>
+                </View>
+              )}
+              {job.travel_required !== undefined && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Travel Required:</Text> {job.travel_required ? 'Yes' : 'No'}</Text>
+                </View>
+              )}
             </View>
           </View>
-        </View>
+        )}
 
         {/* Perks and Benefits */}
-        <View style={styles.sectionContainer}>
-          <View wrap={false}>
-            <Text style={styles.sectionTitle} break={false}>Perks and Benefits</Text>
-            {perksList.length > 0 && (
-              <View style={styles.twoColumnContent}>
-                <View style={styles.twoColumnItem}>
-                  <Text style={{ fontSize: 11, lineHeight: 1.6 }} wrap={true}>
-                    • {perksList[0].replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-          {perksList.length > 1 && (
+        {perksList.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Perks and Benefits</Text>
+            </View>
             <View style={styles.twoColumnContent}>
-              {perksList.slice(1).map((perk, idx) => (
-                <View key={idx + 1} style={styles.twoColumnItem}>
+              {perksList.map((perk, idx) => (
+                <View key={idx} style={styles.twoColumnItem}>
                   <Text style={{ fontSize: 11, lineHeight: 1.6 }} wrap={true}>
                     • {perk.replace(/^[•\-\*]\s*/, '').trim()}
                   </Text>
                 </View>
               ))}
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Eligibility Criteria */}
-        <View style={styles.sectionContainer}>
-          <View wrap={false}>
-            <Text style={styles.sectionTitle} break={false}>Eligibility Criteria</Text>
-            {eligibilityList.length > 0 && (
-              <View style={styles.twoColumnContent}>
-                <View style={styles.twoColumnItem}>
-                  <Text style={{ fontSize: 11, lineHeight: 1.6 }} wrap={true}>
-                    • {eligibilityList[0].replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-          {eligibilityList.length > 1 && (
+        {eligibilityList.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Eligibility Criteria</Text>
+            </View>
             <View style={styles.twoColumnContent}>
-              {eligibilityList.slice(1).map((criteria, idx) => (
-                <View key={idx + 1} style={styles.twoColumnItem}>
+              {eligibilityList.map((criteria, idx) => (
+                <View key={idx} style={styles.twoColumnItem}>
                   <Text style={{ fontSize: 11, lineHeight: 1.6 }} wrap={true}>
                     • {criteria.replace(/^[•\-\*]\s*/, '').trim()}
                   </Text>
                 </View>
               ))}
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Selection Process */}
-        {job.selection_process && (
+        {selectionProcessList.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle} break={false}>Selection Process</Text>
-            <Text style={styles.textContent} wrap={true}>{job.selection_process}</Text>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Selection Process</Text>
+              {selectionProcessList.length > 0 && (
+                <Text style={styles.bulletItem} wrap={true}>
+                  • {selectionProcessList[0].replace(/^[•\-\*]\s*/, '').trim()}
+                </Text>
+              )}
+            </View>
+            {selectionProcessList.length > 1 && (
+              <View style={styles.bulletList}>
+                {selectionProcessList.slice(1).map((process, idx) => (
+                  <Text key={idx + 1} style={styles.bulletItem} wrap={true}>
+                    • {process.replace(/^[•\-\*]\s*/, '').trim()}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
         {/* Service Agreement Details */}
         {job.service_agreement_details && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle} break={false}>Service Agreement Details</Text>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Service Agreement Details</Text>
+            </View>
             <Text style={styles.textContent} wrap={true}>{job.service_agreement_details}</Text>
           </View>
         )}
 
         {/* Application Information */}
-        <View style={styles.sectionContainer}>
-          <View wrap={false}>
-            <Text style={styles.sectionTitle} break={false}>Application Information</Text>
+        {(job.campus_drive_date || job.application_deadline) && (
+          <View style={styles.sectionContainer}>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle} break={false}>Application Information</Text>
+            </View>
             <View style={styles.infoGrid}>
               {job.campus_drive_date && (
                 <View style={styles.infoItem}>
@@ -628,7 +657,7 @@ const JobDescriptionDocument = ({
               )}
             </View>
           </View>
-        </View>
+        )}
       </Page>
     </Document>
   )
