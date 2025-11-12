@@ -264,9 +264,10 @@ const formatJobType = (jobType: string): string => {
 
 const formatSalary = (currency: string, min?: number, max?: number): string => {
   if (!min && !max) return 'Not specified'
-  if (min && max) return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`
-  if (min) return `${currency} ${min.toLocaleString()}+`
-  if (max) return `${currency} Up to ${max.toLocaleString()}`
+  const formatNumber = (num: number) => Math.round(num).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  if (min && max) return `${currency} ${formatNumber(min)} - ${formatNumber(max)}`
+  if (min) return `${currency} ${formatNumber(min)}+`
+  if (max) return `${currency} Up to ${formatNumber(max)}`
   return 'Not specified'
 }
 
