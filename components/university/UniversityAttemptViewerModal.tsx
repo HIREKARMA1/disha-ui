@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Filter, Download, Eye, CheckCircle, XCircle, Users, RefreshCw, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -113,14 +114,27 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
 
     if (!isOpen) return null
 
-    return (
+    if (typeof document === 'undefined') return null
+
+    return createPortal(
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                {/* Backdrop */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/70"
+                    onClick={onClose}
+                />
+                
+                {/* Modal Content */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative w-full max-w-6xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                    className="relative w-full max-w-6xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden flex flex-col z-10"
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -412,7 +426,8 @@ export function UniversityAttemptViewerModal({ isOpen, onClose, module }: Univer
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     )
 }
 
