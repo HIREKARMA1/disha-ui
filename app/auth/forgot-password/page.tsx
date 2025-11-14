@@ -57,6 +57,7 @@ export default function ForgotPasswordPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [countdown, setCountdown] = useState(0)
+    const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
 
     // Initialize user type from URL
     useEffect(() => {
@@ -71,8 +72,21 @@ export default function ForgotPasswordPage() {
         if (countdown > 0) {
             const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
             return () => clearTimeout(timer)
+        } else if (countdown === 0 && isResendCooldown) {
+            // Reset cooldown flag when countdown reaches 0
+            setIsResendCooldown(false)
         }
-    }, [countdown])
+    }, [countdown, isResendCooldown])
+
+    // Auto-redirect to login after 3 seconds when password reset is successful
+    useEffect(() => {
+        if (currentStep === 'success') {
+            const timer = setTimeout(() => {
+                router.push(`/auth/login?type=${userType}`)
+            }, 3000) // 3 seconds
+            return () => clearTimeout(timer)
+        }
+    }, [currentStep, router, userType])
 
     // Form handlers
     const emailForm = useForm<EmailFormData>({
@@ -98,7 +112,8 @@ export default function ForgotPasswordPage() {
             
             setEmail(data.email)
             setCurrentStep('otp')
-            setCountdown(60) // Start 60 second countdown
+            setCountdown(0) // No cooldown for first OTP request
+            setIsResendCooldown(false)
             toast.success('OTP sent to your email address')
         } catch (error: any) {
             const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
@@ -119,11 +134,33 @@ export default function ForgotPasswordPage() {
                 user_type: userType
             })
             
-            setCountdown(60)
+            // No cooldown countdown after successful resend (cooldown only applies after 3 resends)
+            setCountdown(0)
+            setIsResendCooldown(false)
             toast.success('OTP resent to your email address')
         } catch (error: any) {
             const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
+            
+            // If it's a cooldown error (after 3 resends), extract the remaining time and set countdown
+            if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
+                // Extract minutes and seconds from error message
+                const minutesMatch = message.match(/(\d+)\s*minute/)
+                const secondsMatch = message.match(/(\d+)\s*second/)
+                
+                let remainingSeconds = 0
+                if (minutesMatch) {
+                    remainingSeconds += parseInt(minutesMatch[1]) * 60
+                }
+                if (secondsMatch) {
+                    remainingSeconds += parseInt(secondsMatch[1])
+                }
+                
+                if (remainingSeconds > 0) {
+                    setCountdown(remainingSeconds)
+                    setIsResendCooldown(true)
+                }
+            }
         } finally {
             setIsLoading(false)
         }
@@ -191,23 +228,18 @@ export default function ForgotPasswordPage() {
                     transition={{ duration: 0.6 }}
                     className="w-full max-w-md"
                 >
-                    {/* Header - Only show for non-OTP steps */}
-                    {currentStep !== 'otp' && (
+                    {/* Header - Only show for non-OTP and non-success steps */}
+                    {currentStep !== 'otp' && currentStep !== 'success' && (
                         <div className="text-center mb-8">
                             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl mb-3 sm:mb-4">
-                                {currentStep === 'success' ? (
-                                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                                ) : (
-                                    <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                                )}
+                                <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                             </div>
                             <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                                {currentStep === 'success' ? 'Password Reset!' : 'Reset Password'}
+                                Reset Password
                             </h1>
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
                                 {currentStep === 'email' && 'Enter your email to receive a verification code'}
                                 {currentStep === 'password' && 'Create a new secure password'}
-                                {currentStep === 'success' && 'Your password has been reset successfully'}
                             </p>
                         </div>
                     )}
@@ -221,11 +253,12 @@ export default function ForgotPasswordPage() {
                         </div>
                     )}
 
-                    {/* Form Card */}
-                    <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}`}>
-                        <AnimatePresence mode="wait">
-                            {/* Step 1: Email Input */}
-                            {currentStep === 'email' && (
+                    {/* Form Card - Hidden on success */}
+                    {currentStep !== 'success' && (
+                        <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}`}>
+                            <AnimatePresence mode="wait">
+                                {/* Step 1: Email Input */}
+                                {currentStep === 'email' && (
                                 <motion.div
                                     key="email"
                                     initial={{ opacity: 0, x: 20 }}
@@ -349,7 +382,7 @@ export default function ForgotPasswordPage() {
                                                 Code sent to: <strong>{email}</strong>
                                             </p>
                                             <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                                                The code will expire in 15 minutes
+                                                The code will expire in 2 minutes
                                             </p>
                                         </div>
 
@@ -380,7 +413,11 @@ export default function ForgotPasswordPage() {
                                                     }`}
                                                 >
                                                     <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
-                                                    {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
+                                                    {countdown > 0 
+                                                        ? countdown >= 60 
+                                                            ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                            : `Resend in ${countdown}s`
+                                                        : 'Resend OTP'}
                                                 </button>
                                             </div>
                                         </div>
@@ -500,37 +537,9 @@ export default function ForgotPasswordPage() {
                                 </motion.div>
                             )}
 
-                            {/* Success State */}
-                            {currentStep === 'success' && (
-                                <motion.div
-                                    key="success"
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="text-center py-8"
-                                >
-                                    <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
-                                        <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                        Password Reset Successful!
-                                    </h2>
-                                    
-                                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                        You can now log in with your new password
-                                    </p>
-
-                                    <Button
-                                        onClick={() => router.push(`/auth/login?type=${userType}`)}
-                                        className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
-                                    >
-                                        Go to Login
-                                    </Button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                            </AnimatePresence>
+                        </div>
+                    )}
 
                     {/* Security Notice - Hide for OTP step */}
                     {currentStep !== 'success' && currentStep !== 'otp' && (
