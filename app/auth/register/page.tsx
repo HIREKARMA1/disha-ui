@@ -204,6 +204,7 @@ export default function RegisterPage() {
     const [formData, setFormData] = useState<FormData | null>(null)
     const [otp, setOtp] = useState('')
     const [countdown, setCountdown] = useState(0)
+    const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
 
     // Redirect if user is already authenticated
     useEffect(() => {
@@ -275,8 +276,11 @@ export default function RegisterPage() {
         if (countdown > 0) {
             const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
             return () => clearTimeout(timer)
+        } else if (countdown === 0 && isResendCooldown) {
+            // Reset cooldown flag when countdown reaches 0
+            setIsResendCooldown(false)
         }
-    }, [countdown])
+    }, [countdown, isResendCooldown])
 
     const onSubmit = async (data: FormData) => {
         setIsLoading(true)
@@ -285,7 +289,8 @@ export default function RegisterPage() {
             await apiClient.sendEmailOtp(data.email)
             setFormData(data)
             setCurrentStep('otp')
-            setCountdown(60) // 60 second countdown
+            setCountdown(0) // No cooldown for first OTP request
+            setIsResendCooldown(false)
             toast.success('OTP sent to your email address')
         } catch (error: any) {
             console.error('Send OTP error:', error)
@@ -309,11 +314,34 @@ export default function RegisterPage() {
         setIsLoading(true)
         try {
             await apiClient.sendEmailOtp(formData.email)
-            setCountdown(60)
+            // No cooldown countdown after successful resend (cooldown only applies after 3 resends)
+            setCountdown(0)
+            setIsResendCooldown(false)
             toast.success('OTP resent to your email address')
         } catch (error: any) {
             console.error('Resend OTP error:', error)
-            toast.error('Failed to resend OTP. Please try again.')
+            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            toast.error(message)
+            
+            // If it's a cooldown error (after 3 resends), extract the remaining time and set countdown
+            if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
+                // Extract minutes and seconds from error message
+                const minutesMatch = message.match(/(\d+)\s*minute/)
+                const secondsMatch = message.match(/(\d+)\s*second/)
+                
+                let remainingSeconds = 0
+                if (minutesMatch) {
+                    remainingSeconds += parseInt(minutesMatch[1]) * 60
+                }
+                if (secondsMatch) {
+                    remainingSeconds += parseInt(secondsMatch[1])
+                }
+                
+                if (remainingSeconds > 0) {
+                    setCountdown(remainingSeconds)
+                    setIsResendCooldown(true)
+                }
+            }
         } finally {
             setIsLoading(false)
         }
@@ -752,6 +780,16 @@ export default function RegisterPage() {
                                     </p>
                                 </div>
 
+                                {/* Information Box */}
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                                    <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
+                                        Code sent to: <strong>{formData?.email}</strong>
+                                    </p>
+                                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                                        The code will expire in 2 minutes
+                                    </p>
+                                </div>
+
                                 {/* Verify Button */}
                                 <Button
                                     type="button"
@@ -780,7 +818,11 @@ export default function RegisterPage() {
                                             }`}
                                         >
                                             <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
-                                            {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
+                                            {countdown > 0 
+                                                ? countdown >= 60 
+                                                    ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                    : `Resend in ${countdown}s`
+                                                : 'Resend OTP'}
                                         </button>
                                     </div>
                                 </div>
