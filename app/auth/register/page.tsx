@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, ArrowLeft, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen, ShieldCheck, RotateCcw } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen, ShieldCheck, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -770,25 +770,55 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
 
-                                {/* OTP Input Field */}
+                                {/* OTP Input Field - Box Style */}
                                 <div>
                                     <label htmlFor="otp" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Verification Code
                                     </label>
-                                    <Input
-                                        id="otp"
-                                        type="text"
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        value={otp}
-                                        onChange={(e) => {
-                                            const value = e.target.value.replace(/\D/g, '')
-                                            setOtp(value)
-                                        }}
-                                        className="text-center text-2xl sm:text-3xl tracking-[0.3em] sm:tracking-[0.5em] font-mono font-semibold h-12 sm:h-14 placeholder:text-gray-300 dark:placeholder:text-gray-600"
-                                        autoFocus
-                                        inputMode="numeric"
-                                    />
+                                    <div className="flex justify-center gap-2 sm:gap-3 mb-2">
+                                        {[0, 1, 2, 3, 4, 5].map((index) => (
+                                            <input
+                                                key={index}
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={1}
+                                                value={otp[index] || ''}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.replace(/\D/g, '')
+                                                    if (value.length <= 1) {
+                                                        const newOtp = otp.split('')
+                                                        newOtp[index] = value
+                                                        setOtp(newOtp.join('').slice(0, 6))
+                                                        
+                                                        // Auto-focus next input
+                                                        if (value && index < 5) {
+                                                            const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
+                                                            nextInput?.focus()
+                                                        }
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                                                        const prevInput = document.querySelector(`input[data-otp-index="${index - 1}"]`) as HTMLInputElement
+                                                        prevInput?.focus()
+                                                    }
+                                                }}
+                                                onPaste={(e) => {
+                                                    e.preventDefault()
+                                                    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+                                                    if (pastedData) {
+                                                        setOtp(pastedData)
+                                                        const lastIndex = Math.min(index + pastedData.length - 1, 5)
+                                                        const lastInput = document.querySelector(`input[data-otp-index="${lastIndex}"]`) as HTMLInputElement
+                                                        lastInput?.focus()
+                                                    }
+                                                }}
+                                                data-otp-index={index}
+                                                className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
+                                                autoFocus={index === 0}
+                                            />
+                                        ))}
+                                    </div>
                                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center px-2">
                                         Enter the 6-digit code sent to your email address
                                     </p>
@@ -839,22 +869,6 @@ export default function RegisterPage() {
                                                 : 'Resend OTP'}
                                         </button>
                                     </div>
-                                </div>
-
-                                {/* Back to Form Link */}
-                                <div className="text-center pt-1 sm:pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCurrentStep('form')
-                                            setOtp('')
-                                            setCountdown(0)
-                                        }}
-                                        className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors touch-manipulation"
-                                    >
-                                        <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        Back to form
-                                    </button>
                                 </div>
                             </motion.div>
                         )}

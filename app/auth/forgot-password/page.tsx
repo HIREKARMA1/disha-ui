@@ -219,15 +219,6 @@ export default function ForgotPasswordPage() {
         }
     }
 
-    // Go back to previous step
-    const handleBack = () => {
-        if (currentStep === 'otp') {
-            setCurrentStep('email')
-        } else if (currentStep === 'password') {
-            setCurrentStep('otp')
-        }
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
             <Navbar variant="solid" />
@@ -355,29 +346,63 @@ export default function ForgotPasswordPage() {
                                     </div>
 
                                     <form onSubmit={otpForm.handleSubmit(onSubmitOtp)} className="space-y-4 sm:space-y-6">
-                                        {/* OTP Input Field */}
+                                        {/* OTP Input Field - Box Style */}
                                         <div>
                                             <label htmlFor="otp" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Verification Code
                                             </label>
-                                            <Input
-                                                id="otp"
-                                                type="text"
-                                                placeholder="000000"
-                                                maxLength={6}
-                                                error={!!otpForm.formState.errors.otp}
-                                                className="text-center text-2xl sm:text-3xl tracking-[0.3em] sm:tracking-[0.5em] font-mono font-semibold h-12 sm:h-14 placeholder:text-gray-300 dark:placeholder:text-gray-600"
-                                                autoFocus
-                                                inputMode="numeric"
-                                                {...otpForm.register('otp', {
-                                                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                        const value = e.target.value.replace(/\D/g, '')
-                                                        otpForm.setValue('otp', value, { shouldValidate: true })
-                                                    }
-                                                })}
-                                            />
+                                            <div className="flex justify-center gap-2 sm:gap-3 mb-2">
+                                                {[0, 1, 2, 3, 4, 5].map((index) => (
+                                                    <input
+                                                        key={index}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        maxLength={1}
+                                                        value={otpForm.watch('otp')?.[index] || ''}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value.replace(/\D/g, '')
+                                                            if (value.length <= 1) {
+                                                                const currentOtp = otpForm.watch('otp') || ''
+                                                                const newOtp = currentOtp.split('')
+                                                                newOtp[index] = value
+                                                                const updatedOtp = newOtp.join('').slice(0, 6)
+                                                                otpForm.setValue('otp', updatedOtp, { shouldValidate: true })
+                                                                
+                                                                // Auto-focus next input
+                                                                if (value && index < 5) {
+                                                                    const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
+                                                                    nextInput?.focus()
+                                                                }
+                                                            }
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Backspace' && !otpForm.watch('otp')?.[index] && index > 0) {
+                                                                const prevInput = document.querySelector(`input[data-otp-index="${index - 1}"]`) as HTMLInputElement
+                                                                prevInput?.focus()
+                                                            }
+                                                        }}
+                                                        onPaste={(e) => {
+                                                            e.preventDefault()
+                                                            const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+                                                            if (pastedData) {
+                                                                otpForm.setValue('otp', pastedData, { shouldValidate: true })
+                                                                const lastIndex = Math.min(index + pastedData.length - 1, 5)
+                                                                const lastInput = document.querySelector(`input[data-otp-index="${lastIndex}"]`) as HTMLInputElement
+                                                                lastInput?.focus()
+                                                            }
+                                                        }}
+                                                        data-otp-index={index}
+                                                        className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                                                            otpForm.formState.errors.otp
+                                                                ? 'border-red-500 dark:border-red-400'
+                                                                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+                                                        }`}
+                                                        autoFocus={index === 0}
+                                                    />
+                                                ))}
+                                            </div>
                                             {otpForm.formState.errors.otp && (
-                                                <p className="mt-1 text-xs sm:text-sm text-red-600 dark:text-red-400">
+                                                <p className="mt-1 text-xs sm:text-sm text-red-600 dark:text-red-400 text-center">
                                                     {otpForm.formState.errors.otp.message}
                                                 </p>
                                             )}
@@ -430,18 +455,6 @@ export default function ForgotPasswordPage() {
                                                         : 'Resend OTP'}
                                                 </button>
                                             </div>
-                                        </div>
-
-                                        {/* Back to Email Link */}
-                                        <div className="text-center pt-1 sm:pt-2">
-                                            <button
-                                                type="button"
-                                                onClick={handleBack}
-                                                className="inline-flex items-center gap-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors touch-manipulation"
-                                            >
-                                                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                Back
-                                            </button>
                                         </div>
                                     </form>
                                 </motion.div>
@@ -532,17 +545,6 @@ export default function ForgotPasswordPage() {
                                         >
                                             Reset Password
                                         </Button>
-
-                                        <div className="text-center">
-                                            <button
-                                                type="button"
-                                                onClick={handleBack}
-                                                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-1 transition-colors"
-                                            >
-                                                <ArrowLeft className="w-4 h-4" />
-                                                Back
-                                            </button>
-                                        </div>
                                     </form>
                                 </motion.div>
                             )}
