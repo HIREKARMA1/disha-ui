@@ -58,6 +58,7 @@ export default function ForgotPasswordPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [countdown, setCountdown] = useState(0)
     const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
+    const [resendCount, setResendCount] = useState(0) // Track number of resends
 
     // Initialize user type from URL
     useEffect(() => {
@@ -112,6 +113,7 @@ export default function ForgotPasswordPage() {
             setCurrentStep('otp')
             setCountdown(0) // No cooldown for first OTP request
             setIsResendCooldown(false)
+            setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
         } catch (error: any) {
             const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
@@ -132,15 +134,26 @@ export default function ForgotPasswordPage() {
                 user_type: userType
             })
             
-            // No cooldown countdown after successful resend (cooldown only applies after 3 resends)
-            setCountdown(0)
-            setIsResendCooldown(false)
-            toast.success('OTP resent to your email address')
+            // Increment resend count
+            const newResendCount = resendCount + 1
+            setResendCount(newResendCount)
+            
+            // After 3 resends, start 5-minute cooldown countdown
+            if (newResendCount >= 3) {
+                setCountdown(300) // 5 minutes = 300 seconds
+                setIsResendCooldown(true)
+                toast.success('OTP resent to your email address. Please wait 5 minutes before requesting again.')
+            } else {
+                // No cooldown for first 2 resends
+                setCountdown(0)
+                setIsResendCooldown(false)
+                toast.success('OTP resent to your email address')
+            }
         } catch (error: any) {
             const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
             
-            // If it's a cooldown error (after 3 resends), extract the remaining time and set countdown
+            // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
             if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
                 // Extract minutes and seconds from error message
                 const minutesMatch = message.match(/(\d+)\s*minute/)
