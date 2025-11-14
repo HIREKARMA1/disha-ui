@@ -78,13 +78,11 @@ export default function ForgotPasswordPage() {
         }
     }, [countdown, isResendCooldown])
 
-    // Auto-redirect to login after 3 seconds when password reset is successful
+    // Auto-redirect to login immediately when password reset is successful
     useEffect(() => {
         if (currentStep === 'success') {
-            const timer = setTimeout(() => {
-                router.push(`/auth/login?type=${userType}`)
-            }, 3000) // 3 seconds
-            return () => clearTimeout(timer)
+            // Redirect immediately without delay
+            router.push(`/auth/login?type=${userType}`)
         }
     }, [currentStep, router, userType])
 
@@ -253,12 +251,11 @@ export default function ForgotPasswordPage() {
                         </div>
                     )}
 
-                    {/* Form Card - Hidden on success */}
-                    {currentStep !== 'success' && (
-                        <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}`}>
-                            <AnimatePresence mode="wait">
-                                {/* Step 1: Email Input */}
-                                {currentStep === 'email' && (
+                    {/* Form Card */}
+                    <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}`}>
+                        <AnimatePresence mode="wait">
+                            {/* Step 1: Email Input */}
+                            {currentStep === 'email' && (
                                 <motion.div
                                     key="email"
                                     initial={{ opacity: 0, x: 20 }}
@@ -537,9 +534,14 @@ export default function ForgotPasswordPage() {
                                 </motion.div>
                             )}
 
-                            </AnimatePresence>
-                        </div>
-                    )}
+                            {/* Success State - Completely hidden, auto-redirects after 3 seconds */}
+                            {currentStep === 'success' && (
+                                <div className="hidden">
+                                    {/* Empty hidden div - redirect happens automatically */}
+                                </div>
+                            )}
+                        </AnimatePresence>
+                    </div>
 
                     {/* Security Notice - Hide for OTP step */}
                     {currentStep !== 'success' && currentStep !== 'otp' && (
