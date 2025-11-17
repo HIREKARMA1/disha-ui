@@ -288,9 +288,9 @@ export default function LoginPage() {
                             </div>
 
                             {/* Terms and Privacy Policy Checkbox */}
-                            <div className="flex justify-center">
+                            <div className="flex items-center justify-between">
                                 <div 
-                                    className="cursor-pointer"
+                                    className="cursor-pointer flex-1"
                                     onClick={() => setShowTermsModal(true)}
                                 >
                                     <Checkbox
@@ -300,18 +300,23 @@ export default function LoginPage() {
                                         label={
                                             <span className="text-sm text-gray-700 dark:text-gray-300">
                                                 <span className="text-primary-600 dark:text-primary-400 font-medium">
-                                                    Accept Terms and Conditions and Privacy Policy
+                                                    Accept Terms & Conditions
                                                 </span>
                                                 {!termsAndPrivacyAccepted && <span className="text-red-500 ml-1">*</span>}
                                             </span>
                                         }
                                     />
                                 </div>
-                            </div>
-
-                            {/* Required fields notice */}
-                            <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                                * Required: You must accept Terms and Conditions to sign in
+                                
+                                {/* Forgot Password Link - Only show for non-admin users */}
+                                {selectedUserType !== 'admin' && (
+                                    <Link
+                                        href={`/auth/forgot-password?type=${selectedUserType}`}
+                                        className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors whitespace-nowrap"
+                                    >
+                                        Forgot Password?
+                                    </Link>
+                                )}
                             </div>
 
                             <Button

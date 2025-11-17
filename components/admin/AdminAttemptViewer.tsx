@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Download, Eye, CheckCircle, XCircle, Users } from 'lucide-react'
+import { X, Search, Download, Eye, CheckCircle, XCircle, Users, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PracticeModule, StudentAttempt } from '@/types/practice'
+import { PracticeModule, StudentAttempt, Question } from '@/types/practice'
 import { useModuleAttempts } from '@/hooks/useModuleAttempts'
+import { useAdminQuestions } from '@/hooks/useAdminPractice'
 import { toast } from 'react-hot-toast'
 
 interface AdminAttemptViewerProps {
@@ -20,6 +21,9 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
 
     // Use real API calls to fetch attempts
     const { data: attempts, isLoading, error, refetch } = useModuleAttempts(module.id)
+    
+    // Fetch all questions for the module
+    const { data: allQuestions, isLoading: questionsLoading } = useAdminQuestions(module.id)
     
     console.log('📊 AdminAttemptViewer - Module:', module.id, 'Attempts:', attempts)
 
@@ -67,7 +71,12 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
             return
         }
 
-        // CSV Headers
+        if (!allQuestions || allQuestions.length === 0) {
+            toast.error('Questions not loaded yet')
+            return
+        }
+
+        // CSV Headers - summary only, no individual questions
         const headers = [
             'Student Name',
             'Student ID',
@@ -76,14 +85,16 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
             'Started At',
             'Ended At',
             'Total Questions',
+            'Attempted Questions',
             'Correct Answers'
         ]
 
         // CSV Rows
         const rows = attempts.map(attempt => {
             const correctAnswers = attempt.question_results?.filter((r: { is_correct: boolean }) => r.is_correct).length || 0
-            const totalQuestions = attempt.question_results?.length || 0
-            
+            const attemptedQuestions = attempt.question_results?.length || 0
+            const totalQuestions = allQuestions.length
+
             return [
                 attempt.student_name || 'N/A',
                 attempt.student_id || 'N/A',
@@ -92,6 +103,7 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                 formatDate(attempt.started_at),
                 formatDate(attempt.ended_at),
                 totalQuestions.toString(),
+                attemptedQuestions.toString(),
                 correctAnswers.toString()
             ]
         })
@@ -99,7 +111,7 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
         // Combine headers and rows
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
         ].join('\n')
 
         // Create blob and download
@@ -213,51 +225,90 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                                 {/* Question Results */}
                                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                                        Question-by-Question Breakdown
+                                        Question-by-Question Breakdown ({allQuestions?.length || 0} total questions)
                                     </h3>
-                                    <div className="space-y-4">
-                                        {selectedAttempt.question_results && selectedAttempt.question_results.length > 0 ? (
-                                            selectedAttempt.question_results.map((result, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={`p-4 rounded-lg border ${result.is_correct
-                                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
-                                                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                                    {questionsLoading ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {(allQuestions || []).map((question, index) => {
+                                                const result = (selectedAttempt.question_results || []).find(r => r.question_id === question.id)
+                                                const answer = (selectedAttempt.answers || []).find(a => a.question_id === question.id)
+                                                const isAttempted = !!result
+                                                
+                                                return (
+                                                    <div
+                                                        key={question.id}
+                                                        className={`p-4 rounded-lg border ${
+                                                            !isAttempted
+                                                                ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700'
+                                                                : result.is_correct
+                                                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                                                                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
                                                         }`}
-                                                >
-                                                    <div className="flex items-start gap-3">
-                                                        {result.is_correct ? (
-                                                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-                                                        ) : (
-                                                            <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-                                                        )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                                                                Question {index + 1}
-                                                            </p>
-                                                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                                {result.is_correct ? 'Correct Answer' : 'Incorrect Answer'}
-                                                            </p>
-                                                            {(result as any).question_text && (
-                                                                <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-                                                                    {(result as any).question_text}
-                                                                </p>
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            {!isAttempted ? (
+                                                                <HelpCircle className="w-5 h-5 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                                                            ) : result.is_correct ? (
+                                                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                                                            ) : (
+                                                                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                                                             )}
-                                                            {(result as any).student_answer && (
-                                                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                                                                    <span className="font-medium">Student Answer:</span> {(result as any).student_answer}
-                                                                </p>
-                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                        Question {index + 1}
+                                                                    </p>
+                                                                    {isAttempted ? (
+                                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                            result.is_correct
+                                                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                                                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                                                        }`}>
+                                                                            {result.is_correct ? 'Correct' : 'Incorrect'}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                                                            Not Attempted
+                                                                        </span>
+                                                                    )}
+                                                                    {answer && (
+                                                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                                            Time: {answer.time_spent || 0}s
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                {question.statement && (
+                                                                    <div className="mb-2">
+                                                                        <p className="text-sm text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={{ __html: question.statement }} />
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {isAttempted && (
+                                                                    <>
+                                                                        {answer && (
+                                                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                                                                <span className="font-medium">Student Answer:</span> {answer.answer.join(', ') || 'No answer'}
+                                                                            </p>
+                                                                        )}
+                                                                        {result.explanation && (
+                                                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                                                                <span className="font-medium">Explanation:</span> {result.explanation}
+                                                                            </p>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                                                No question results available
-                                            </p>
-                                        )}
-                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (

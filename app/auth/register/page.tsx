@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, ArrowLeft, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen, ShieldCheck, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -200,6 +200,12 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [selectedUserType, setSelectedUserType] = useState<UserType>('student')
+    const [currentStep, setCurrentStep] = useState<'form' | 'otp'>('form')
+    const [formData, setFormData] = useState<FormData | null>(null)
+    const [otp, setOtp] = useState('')
+    const [countdown, setCountdown] = useState(0)
+    const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
+    const [resendCount, setResendCount] = useState(0) // Track number of resends
 
     // Redirect if user is already authenticated
     useEffect(() => {
@@ -266,19 +272,113 @@ export default function RegisterPage() {
         setValue('user_type', userType)
     }
 
+    // Countdown timer for OTP resend
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+            return () => clearTimeout(timer)
+        } else if (countdown === 0 && isResendCooldown) {
+            // Reset cooldown flag when countdown reaches 0
+            setIsResendCooldown(false)
+        }
+    }, [countdown, isResendCooldown])
+
     const onSubmit = async (data: FormData) => {
+        setIsLoading(true)
+        try {
+            // Step 1: Send OTP to email
+            await apiClient.sendEmailOtp(data.email)
+            setFormData(data)
+            setCurrentStep('otp')
+            setCountdown(0) // No cooldown for first OTP request
+            setIsResendCooldown(false)
+            setResendCount(0) // Reset resend count for new email
+            toast.success('OTP sent to your email address')
+        } catch (error: any) {
+            console.error('Send OTP error:', error)
+            let message = 'Failed to send OTP. Please try again.'
+            
+            if (error.response?.data?.detail) {
+                message = error.response.data.detail
+            } else if (error.message) {
+                message = error.message
+            }
+            
+            toast.error(message)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleResendOtp = async () => {
+        if (countdown > 0 || !formData) return
+        
+        setIsLoading(true)
+        try {
+            await apiClient.sendEmailOtp(formData.email)
+            
+            // Increment resend count
+            const newResendCount = resendCount + 1
+            setResendCount(newResendCount)
+            
+            // After 3 resends, start 5-minute cooldown countdown
+            if (newResendCount >= 3) {
+                setCountdown(300) // 5 minutes = 300 seconds
+                setIsResendCooldown(true)
+                toast.success('OTP resent to your email address. Please wait 5 minutes before requesting again.')
+            } else {
+                // No cooldown for first 2 resends
+                setCountdown(0)
+                setIsResendCooldown(false)
+                toast.success('OTP resent to your email address')
+            }
+        } catch (error: any) {
+            console.error('Resend OTP error:', error)
+            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            toast.error(message)
+            
+            // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
+            if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
+                // Extract minutes and seconds from error message
+                const minutesMatch = message.match(/(\d+)\s*minute/)
+                const secondsMatch = message.match(/(\d+)\s*second/)
+                
+                let remainingSeconds = 0
+                if (minutesMatch) {
+                    remainingSeconds += parseInt(minutesMatch[1]) * 60
+                }
+                if (secondsMatch) {
+                    remainingSeconds += parseInt(secondsMatch[1])
+                }
+                
+                if (remainingSeconds > 0) {
+                    setCountdown(remainingSeconds)
+                    setIsResendCooldown(true)
+                }
+            }
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleVerifyOtp = async () => {
+        if (!otp || otp.length !== 6 || !formData) {
+            toast.error('Please enter a valid 6-digit OTP')
+            return
+        }
+
         setIsLoading(true)
         try {
             let response: any
             switch (selectedUserType) {
                 case 'student':
-                    response = await apiClient.registerStudent(data as any)
+                    response = await apiClient.verifyOtpAndRegisterStudent(otp, formData as any)
                     break
                 case 'corporate':
-                    response = await apiClient.registerCorporate(data as any)
+                    response = await apiClient.verifyOtpAndRegisterCorporate(otp, formData as any)
                     break
                 case 'university':
-                    response = await apiClient.registerUniversity(data as any)
+                    response = await apiClient.verifyOtpAndRegisterUniversity(otp, formData as any)
                     break
                 default:
                     throw new Error('Invalid user type')
@@ -289,16 +389,16 @@ export default function RegisterPage() {
             // Auto-login
             try {
                 const loginResponse = await apiClient.login({
-                    email: data.email,
-                    password: data.password,
+                    email: formData.email,
+                    password: formData.password,
                     user_type: selectedUserType
                 })
                 apiClient.setAuthTokens(loginResponse.access_token, loginResponse.refresh_token)
                 login({
                     id: loginResponse.user_id || 'temp-id',
-                    email: data.email,
+                    email: formData.email,
                     user_type: selectedUserType,
-                    name: loginResponse.name || (data as any).name || (data as any).company_name || (data as any).university_name || data.email
+                    name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
                 switch (selectedUserType) {
@@ -313,20 +413,11 @@ export default function RegisterPage() {
                 router.push(`/auth/login?type=${selectedUserType}&registered=true`)
             }
         } catch (error: any) {
-            console.error('Registration error:', error)
-            let message = 'Registration failed. Please try again.'
+            console.error('OTP verification error:', error)
+            let message = 'Invalid or expired OTP. Please try again.'
 
-            // ✅ Handle 500 duplicate email error
-            if (error.response?.data?.error?.includes('Email already registered')) {
-                message = 'User is already registered.'
-            } else if (error.response?.status === 422 && error.response.data.detail) {
-                if (Array.isArray(error.response.data.detail)) {
-                    message = error.response.data.detail.map((err: any) => err.msg || err.message).join(', ')
-                } else if (typeof error.response.data.detail === 'string') {
-                    message = error.response.data.detail
-                } else if (error.response.data.detail.msg) {
-                    message = error.response.data.detail.msg
-                }
+            if (error.response?.data?.detail) {
+                message = error.response.data.detail
             } else if (error.message) {
                 message = error.message
             }
@@ -470,186 +561,324 @@ export default function RegisterPage() {
             <Navbar variant="solid" />
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-8 pt-24">
+            <div className={currentStep === 'otp' 
+                ? 'min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12' 
+                : 'container mx-auto px-4 py-12 pt-24 sm:pt-24'}
+            >
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="max-w-2xl mx-auto"
+                    className={currentStep === 'otp' ? 'w-full max-w-md' : 'max-w-2xl mx-auto'}
                 >
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-6">
-                            {(() => {
-                                const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
-                                return <IconComponent className="w-10 h-10 text-white" />
-                            })()}
-                        </div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                            Create Your {selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)} Account
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-400">
-                            Join HireKarma and start your journey today
-                        </p>
-                    </div>
-
-                    {/* User Type Selector - Using login page design */}
-                    <div className="mb-8">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                            I am a
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {userTypeOptions.map((option) => {
-                                const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
-                                const isSelected = selectedUserType === option.value
-
-                                return (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        onClick={() => handleUserTypeChange(option.value)}
-                                        className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${isSelected
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-400'
-                                            }`}
-                                    >
-                                        <Icon className={`w-6 h-6 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                                        <span className="text-sm font-medium">{option.label}</span>
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Registration Form */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            {/* Hidden user_type field */}
-                            <input type="hidden" {...register('user_type')} />
-
-                            {/* Dynamic Form Fields */}
-                            <motion.div
-                                key={selectedUserType}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                {renderFormFields()}
-                            </motion.div>
-
-                            {/* Common Fields */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Email Address *
-                                    </label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="Enter your email address"
-                                        leftIcon={<Mail className="w-4 h-4" />}
-                                        className={`${errors.email
-                                            ? "border-red-500 focus:ring-red-500"
-                                            : watch("email")
-                                                ? "border-green-500 focus:ring-green-500"
-                                                : "border-gray-300 focus:ring-primary-500"
-                                            }`}
-                                        {...register("email", {
-                                            onChange: (e) => {
-                                                e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
-                                            }
-                                        })}
-                                    />
-
-                                    {(errors as any).email && (
-                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                            {typeof (errors as any).email.message === 'string' ? (errors as any).email.message : 'Email is required'}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                    <div>
-                                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Password *
-                                        </label>
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder="Create a strong password"
-                                            leftIcon={<Lock className="w-4 h-4" />}
-                                            rightIcon={
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                                >
-                                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </button>
-                                            }
-                                            error={!!(errors as any).password}
-                                            onCopy={(e) => e.preventDefault()}
-                                            onPaste={(e) => e.preventDefault()}
-                                            onCut={(e) => e.preventDefault()}
-                                            onContextMenu={(e) => e.preventDefault()}
-                                            {...register('password')}
-                                        />
-                                        {(errors as any).password && (
-                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                {typeof (errors as any).password.message === 'string' ? (errors as any).password.message : 'Password is required'}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Confirm Password *
-                                        </label>
-                                        <Input
-                                            id="confirmPassword"
-                                            type={showConfirmPassword ? 'text' : 'password'}
-                                            placeholder="Confirm your password"
-                                            leftIcon={<Lock className="w-4 h-4" />}
-                                            rightIcon={
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                                >
-                                                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </button>
-                                            }
-                                            error={!!(errors as any).confirmPassword}
-                                            onCopy={(e) => e.preventDefault()}
-                                            onPaste={(e) => e.preventDefault()}
-                                            onCut={(e) => e.preventDefault()}
-                                            onContextMenu={(e) => e.preventDefault()}
-                                            {...register('confirmPassword')}
-                                        />
-                                        {(errors as any).confirmPassword && (
-                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                {typeof (errors as any).confirmPassword.message === 'string' ? (errors as any).confirmPassword.message : 'Please confirm your password'}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
+                    {/* Header - Only show on form step */}
+                    {currentStep === 'form' && (
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-6">
+                                {(() => {
+                                    const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
+                                    return <IconComponent className="w-10 h-10 text-white" />
+                                })()}
                             </div>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                                Create Your {selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)} Account
+                            </h1>
+                            <p className="text-lg text-gray-600 dark:text-gray-400">
+                                Join HireKarma and start your journey today
+                            </p>
+                        </div>
+                    )}
 
-                            <Button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
-                                loading={isLoading}
+                    {/* User Type Selector - Only show on form step */}
+                    {currentStep === 'form' && (
+                        <div className="mb-8">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                I am a
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {userTypeOptions.map((option) => {
+                                    const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
+                                    const isSelected = selectedUserType === option.value
+
+                                    return (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            onClick={() => handleUserTypeChange(option.value)}
+                                            className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${isSelected
+                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-400'
+                                                }`}
+                                        >
+                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                                            <span className="text-sm font-medium">{option.label}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Registration Form or OTP Verification */}
+                    <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-12 sm:p-8'}`}>
+                        {currentStep === 'form' ? (
+                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                {/* Hidden user_type field */}
+                                <input type="hidden" {...register('user_type')} />
+
+                                {/* Dynamic Form Fields */}
+                                <motion.div
+                                    key={selectedUserType}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    {renderFormFields()}
+                                </motion.div>
+
+                                {/* Common Fields */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Email Address *
+                                        </label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="Enter your email address"
+                                            leftIcon={<Mail className="w-4 h-4" />}
+                                            className={`${errors.email
+                                                ? "border-red-500 focus:ring-red-500"
+                                                : watch("email")
+                                                    ? "border-green-500 focus:ring-green-500"
+                                                    : "border-gray-300 focus:ring-primary-500"
+                                                }`}
+                                            {...register("email", {
+                                                onChange: (e) => {
+                                                    e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
+                                                }
+                                            })}
+                                        />
+
+                                        {(errors as any).email && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {typeof (errors as any).email.message === 'string' ? (errors as any).email.message : 'Email is required'}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div>
+                                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Password *
+                                            </label>
+                                            <Input
+                                                id="password"
+                                                type={showPassword ? 'text' : 'password'}
+                                                placeholder="Create a strong password"
+                                                leftIcon={<Lock className="w-4 h-4" />}
+                                                rightIcon={
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                    >
+                                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                }
+                                                error={!!(errors as any).password}
+                                                onCopy={(e) => e.preventDefault()}
+                                                onPaste={(e) => e.preventDefault()}
+                                                onCut={(e) => e.preventDefault()}
+                                                onContextMenu={(e) => e.preventDefault()}
+                                                {...register('password')}
+                                            />
+                                            {(errors as any).password && (
+                                                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                    {typeof (errors as any).password.message === 'string' ? (errors as any).password.message : 'Password is required'}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Confirm Password *
+                                            </label>
+                                            <Input
+                                                id="confirmPassword"
+                                                type={showConfirmPassword ? 'text' : 'password'}
+                                                placeholder="Confirm your password"
+                                                leftIcon={<Lock className="w-4 h-4" />}
+                                                rightIcon={
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                    >
+                                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                }
+                                                error={!!(errors as any).confirmPassword}
+                                                onCopy={(e) => e.preventDefault()}
+                                                onPaste={(e) => e.preventDefault()}
+                                                onCut={(e) => e.preventDefault()}
+                                                onContextMenu={(e) => e.preventDefault()}
+                                                {...register('confirmPassword')}
+                                            />
+                                            {(errors as any).confirmPassword && (
+                                                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                    {typeof (errors as any).confirmPassword.message === 'string' ? (errors as any).confirmPassword.message : 'Please confirm your password'}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                                    loading={isLoading}
+                                >
+                                    Send OTP
+                                </Button>
+                            </form>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="space-y-4 sm:space-y-6"
                             >
-                                Create Account
-                            </Button>
-                        </form>
+                                {/* Header with Icon */}
+                                <div className="text-center">
+                                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl mb-3 sm:mb-4">
+                                        <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                                    </div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        Verify Your Email
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
+                                        We've sent a 6-digit verification code to
+                                    </p>
+                                    <div className="w-full max-w-full px-2 sm:px-0">
+                                        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800 w-full sm:w-auto max-w-full">
+                                            <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+                                            <p className="text-primary-600 dark:text-primary-400 font-medium text-xs sm:text-sm truncate min-w-0 flex-1">
+                                                {formData?.email}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <div className="mt-6 text-center">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {/* OTP Input Field - Box Style */}
+                                <div>
+                                    <label htmlFor="otp" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Verification Code
+                                    </label>
+                                    <div className="flex justify-center gap-2 sm:gap-3 mb-2">
+                                        {[0, 1, 2, 3, 4, 5].map((index) => (
+                                            <input
+                                                key={index}
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={1}
+                                                value={otp[index] || ''}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.replace(/\D/g, '')
+                                                    if (value.length <= 1) {
+                                                        const newOtp = otp.split('')
+                                                        newOtp[index] = value
+                                                        setOtp(newOtp.join('').slice(0, 6))
+                                                        
+                                                        // Auto-focus next input
+                                                        if (value && index < 5) {
+                                                            const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
+                                                            nextInput?.focus()
+                                                        }
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                                                        const prevInput = document.querySelector(`input[data-otp-index="${index - 1}"]`) as HTMLInputElement
+                                                        prevInput?.focus()
+                                                    }
+                                                }}
+                                                onPaste={(e) => {
+                                                    e.preventDefault()
+                                                    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+                                                    if (pastedData) {
+                                                        setOtp(pastedData)
+                                                        const lastIndex = Math.min(index + pastedData.length - 1, 5)
+                                                        const lastInput = document.querySelector(`input[data-otp-index="${lastIndex}"]`) as HTMLInputElement
+                                                        lastInput?.focus()
+                                                    }
+                                                }}
+                                                data-otp-index={index}
+                                                className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
+                                                autoFocus={index === 0}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center px-2">
+                                        Enter the 6-digit code sent to your email address
+                                    </p>
+                                </div>
+
+                                {/* Information Box */}
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                                    <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
+                                        Code sent to: <strong>{formData?.email}</strong>
+                                    </p>
+                                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                                        The code will expire in 2 minutes
+                                    </p>
+                                </div>
+
+                                {/* Verify Button */}
+                                <Button
+                                    type="button"
+                                    onClick={handleVerifyOtp}
+                                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 h-10 sm:h-11 text-sm sm:text-base font-medium"
+                                    loading={isLoading}
+                                    disabled={otp.length !== 6 || isLoading}
+                                >
+                                    Verify & Register
+                                </Button>
+
+                                {/* Resend OTP Section */}
+                                <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                            Didn't receive the code?
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleResendOtp}
+                                            disabled={countdown > 0 || isLoading}
+                                            className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${
+                                                countdown > 0 || isLoading
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                            }`}
+                                        >
+                                            <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
+                                            {countdown > 0 
+                                                ? countdown >= 60 
+                                                    ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                    : `Resend in ${countdown}s`
+                                                : 'Resend OTP'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        <div className="mt-4 sm:mt-6 text-center">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                 Already have an account?{' '}
                                 <Link
                                     href={`/auth/login?type=${selectedUserType}`}
-                                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
+                                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors touch-manipulation"
                                 >
                                     Sign in
                                 </Link>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
     ChevronUp,
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ViewAssignmentModal } from './ViewAssignmentModal'
+import { ViewApplicationDetailsModal } from '@/components/university/ViewApplicationDetailsModal'
+import { apiClient } from '@/lib/api'
 
 interface ApplicationData {
     id: string
@@ -77,10 +79,81 @@ export function StudentApplicationTable({
     const [hoveredRow, setHoveredRow] = useState<string | null>(null)
     const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
     const [selectedApplication, setSelectedApplication] = useState<ApplicationData | null>(null)
+    const [submittedJobModules, setSubmittedJobModules] = useState<Map<string, boolean>>(new Map())
+    const [showApplicationDetailsModal, setShowApplicationDetailsModal] = useState(false)
+    const [selectedApplicationForDetails, setSelectedApplicationForDetails] = useState<ApplicationData | null>(null)
+
+    // Fetch modules for on-campus jobs and check submission status
+    useEffect(() => {
+        const checkSubmissions = async () => {
+            // Get submitted modules from localStorage
+            const submittedModulesStr = localStorage.getItem('submitted_practice_modules')
+            if (!submittedModulesStr) {
+                return
+            }
+
+            try {
+                const submittedModuleIds = JSON.parse(submittedModulesStr) as string[]
+                if (submittedModuleIds.length === 0) {
+                    return
+                }
+
+                // Find all on-campus jobs with assignments
+                const onCampusJobs = applications.filter(
+                    app => (app.creator_type === "University" || app.is_university_created === true) && app.has_assignment
+                )
+
+                // Check each job's modules
+                const submissionStatus = new Map<string, boolean>()
+                for (const job of onCampusJobs) {
+                    try {
+                        // Fetch modules for this job
+                        const modules = await apiClient.getPracticeModulesByJobId(job.job_id)
+                        
+                        // Check if any module for this job is submitted
+                        const hasSubmittedModule = modules.some((module: any) => 
+                            submittedModuleIds.includes(module.id)
+                        )
+                        
+                        submissionStatus.set(job.job_id, hasSubmittedModule)
+                    } catch (error) {
+                        console.error(`Error checking modules for job ${job.job_id}:`, error)
+                        submissionStatus.set(job.job_id, false)
+                    }
+                }
+
+                setSubmittedJobModules(submissionStatus)
+            } catch (error) {
+                console.error('Error checking submitted modules:', error)
+            }
+        }
+
+        if (applications.length > 0) {
+            checkSubmissions()
+        }
+    }, [applications])
+
+    // Check if exam is submitted for on-campus jobs
+    const checkExamSubmitted = (application: ApplicationData): boolean => {
+        // Only check for on-campus features (university-created jobs)
+        const isOnCampus = application.creator_type === "University" || application.is_university_created === true
+        
+        if (!isOnCampus || !application.has_assignment) {
+            return false
+        }
+
+        // Check cached submission status
+        return submittedJobModules.get(application.job_id) || false
+    }
 
     const handleViewAssignment = (application: ApplicationData) => {
         setSelectedApplication(application)
         setAssignmentModalOpen(true)
+    }
+
+    const handleViewApplicationDetails = (application: ApplicationData) => {
+        setSelectedApplicationForDetails(application)
+        setShowApplicationDetailsModal(true)
     }
 
     const getStatusIcon = (status: string) => {
@@ -316,16 +389,46 @@ export function StudentApplicationTable({
                                         
                                         {/* Student View - View Assignment Button (if job has assignments) */}
                                         {!onStatusUpdate && application.has_assignment && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleViewAssignment(application)}
-                                                className="flex items-center gap-1 text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700"
-                                                title="View Practice Assignment"
-                                            >
-                                                <ClipboardList className="w-4 h-4" />
-                                                <span className="hidden sm:inline">View Assignment</span>
-                                            </Button>
+                                            <>
+                                                {/* For on-campus features: show "coming soon" ONLY if exam is submitted AND status is still "applied" (university hasn't updated yet) */}
+                                                {(application.creator_type === "University" || application.is_university_created === true) && 
+                                                 checkExamSubmitted(application) && 
+                                                 application.status === 'applied' ? (
+                                                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                                                        <span className="text-xs">Coming Soon</span>
+                                                    </div>
+                                                ) : /* For on-campus features: show eye icon if exam is submitted AND status has been updated (shortlisted, etc.) BUT NOT selected */
+                                                (application.creator_type === "University" || application.is_university_created === true) && 
+                                                 checkExamSubmitted(application) && 
+                                                 application.status !== 'applied' && 
+                                                 application.status !== 'selected' ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleViewApplicationDetails(application)}
+                                                        className="flex items-center gap-1"
+                                                        title="View Application Details"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        <span className="hidden sm:inline">View Details</span>
+                                                    </Button>
+                                                ) : (
+                                                    /* For regular jobs OR on-campus jobs without special conditions: show View Assignment button */
+                                                    /* Only hide View Assignment for on-campus jobs when status is selected */
+                                                    !((application.creator_type === "University" || application.is_university_created === true) && application.status === 'selected') && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleViewAssignment(application)}
+                                                            className="flex items-center gap-1 text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700"
+                                                            title="View Practice Assignment"
+                                                        >
+                                                            <ClipboardList className="w-4 h-4" />
+                                                            <span className="hidden sm:inline">View Assignment</span>
+                                                        </Button>
+                                                    )
+                                                )}
+                                            </>
                                         )}
 
                                         {/* Student View - View Offer Letter (only for selected applications with offer letter) */}
@@ -407,8 +510,19 @@ export function StudentApplicationTable({
                     }}
                     jobId={selectedApplication.job_id}
                     jobTitle={selectedApplication.job_title || 'Job'}
+                    isOnCampus={selectedApplication.creator_type === "University" || selectedApplication.is_university_created === true}
                 />
             )}
+
+            {/* View Application Details Modal */}
+            <ViewApplicationDetailsModal
+                isOpen={showApplicationDetailsModal}
+                onClose={() => {
+                    setShowApplicationDetailsModal(false)
+                    setSelectedApplicationForDetails(null)
+                }}
+                application={selectedApplicationForDetails}
+            />
         </div>
     )
 }
