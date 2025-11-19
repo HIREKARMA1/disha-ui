@@ -18,26 +18,22 @@ import {
     ChevronDown,
     ChevronsUpDown,
     Shield,
-    GraduationCap,
-    Edit,
-    Trash2
+    Users,
+    GraduationCap
 } from 'lucide-react'
 import { UniversityListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
 import { UniversityProfileModal } from './UniversityProfileModal'
-import { UniversityDeleteConfirmationModal } from './UniversityDeleteConfirmationModal'
 
 interface UniversityTableProps {
     universities: UniversityListItem[]
     isLoading: boolean
     error: string | null
     onArchiveUniversity: (universityId: string, archive: boolean) => void
-    onDeleteUniversity: (universityId: string) => void
-    onEditUniversity: (university: UniversityListItem) => void
     onRetry: () => void
 }
 
-type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at'
+type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'total_students' | 'placement_rate' | 'created_at'
 type SortDirection = 'asc' | 'desc' | null
 
 export function UniversityTable({
@@ -45,8 +41,6 @@ export function UniversityTable({
     isLoading,
     error,
     onArchiveUniversity,
-    onDeleteUniversity,
-    onEditUniversity,
     onRetry
 }: UniversityTableProps) {
     const [sortField, setSortField] = useState<SortField | null>('created_at')
@@ -58,11 +52,6 @@ export function UniversityTable({
     const [showArchiveModal, setShowArchiveModal] = useState(false)
     const [selectedUniversity, setSelectedUniversity] = useState<{ id: string; name: string; isArchived: boolean } | null>(null)
     const [isArchiveLoading, setIsArchiveLoading] = useState(false)
-
-    // Delete confirmation modal state
-    const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [selectedDeleteUniversity, setSelectedDeleteUniversity] = useState<{ id: string; name: string } | null>(null)
-    const [isDeleteLoading, setIsDeleteLoading] = useState(false)
 
     // Profile modal state
     const [showProfileModal, setShowProfileModal] = useState(false)
@@ -152,7 +141,7 @@ export function UniversityTable({
                 let bValue: any = b[sortField]
 
                 // Handle numeric fields
-                if (['placement_rate', 'average_package'].includes(sortField)) {
+                if (['total_students', 'placement_rate', 'average_package'].includes(sortField)) {
                     aValue = Number(aValue) || 0
                     bValue = Number(bValue) || 0
                 } else if (sortField === 'created_at') {
@@ -215,36 +204,6 @@ export function UniversityTable({
     const handleArchiveCancel = () => {
         setShowArchiveModal(false)
         setSelectedUniversity(null)
-    }
-
-    // Delete modal handlers
-    const handleDeleteClick = (university: UniversityListItem) => {
-        setSelectedDeleteUniversity({
-            id: university.id,
-            name: university.university_name
-        })
-        setShowDeleteModal(true)
-    }
-
-    const handleDeleteConfirm = async () => {
-        if (!selectedDeleteUniversity) return
-
-        setIsDeleteLoading(true)
-        try {
-            await onDeleteUniversity(selectedDeleteUniversity.id)
-            setShowDeleteModal(false)
-            setSelectedDeleteUniversity(null)
-        } catch (error) {
-            console.error('Failed to delete university:', error)
-            // Don't close modal on error, let user retry
-        } finally {
-            setIsDeleteLoading(false)
-        }
-    }
-
-    const handleDeleteCancel = () => {
-        setShowDeleteModal(false)
-        setSelectedDeleteUniversity(null)
     }
 
     // Profile modal handlers
@@ -379,6 +338,15 @@ export function UniversityTable({
                                 </th>
                                 <th
                                     className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                    onClick={() => handleSort('total_students')}
+                                >
+                                    <div className="flex items-center space-x-1">
+                                        <span>Students</span>
+                                        {getSortIcon('total_students')}
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
                                     onClick={() => handleSort('created_at')}
                                 >
                                     <div className="flex items-center space-x-1">
@@ -467,6 +435,16 @@ export function UniversityTable({
                                         </span>
                                     </td>
 
+                                    {/* Student Count */}
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <Users className="h-4 w-4 text-gray-400 mr-2" />
+                                            <span className="text-sm text-gray-900 dark:text-white">
+                                                {university.total_students || 0}
+                                            </span>
+                                        </div>
+                                    </td>
+
                                     {/* Created Date */}
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
@@ -481,16 +459,6 @@ export function UniversityTable({
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    onEditUniversity(university)
-                                                }}
-                                                className="p-2 rounded-lg transition-colors duration-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                                title="Edit University"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
                                                     handleArchiveClick(university)
                                                 }}
                                                 className={`p-2 rounded-lg transition-colors duration-200 ${university.is_archived
@@ -500,16 +468,6 @@ export function UniversityTable({
                                                 title={university.is_archived ? 'Unarchive University' : 'Archive University'}
                                             >
                                                 {university.is_archived ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    handleDeleteClick(university)
-                                                }}
-                                                className="p-2 rounded-lg transition-colors duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                title="Delete University"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
                                     </td>
@@ -610,15 +568,6 @@ export function UniversityTable({
                 university={selectedProfileUniversity}
                 fullProfile={fullProfileData}
                 isLoading={isLoadingProfile}
-            />
-
-            {/* Delete Confirmation Modal */}
-            <UniversityDeleteConfirmationModal
-                isOpen={showDeleteModal}
-                onClose={handleDeleteCancel}
-                onConfirm={handleDeleteConfirm}
-                universityName={selectedDeleteUniversity?.name || ''}
-                isDeleting={isDeleteLoading}
             />
         </>
     )

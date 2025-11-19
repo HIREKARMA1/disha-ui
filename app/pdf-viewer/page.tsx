@@ -116,14 +116,8 @@ export default function PDFViewerPage() {
       const jobResponse = await apiClient.getJobById(jobId)
       setJob(jobResponse)
 
-      // Fetch corporate profile if available (validate it's not None/null/empty)
-      const corporateId = jobResponse.corporate_id;
-      if (corporateId && 
-          corporateId !== 'None' && 
-          corporateId !== 'null' && 
-          corporateId !== 'undefined' &&
-          typeof corporateId === 'string' &&
-          corporateId.trim() !== '') {
+      // Fetch corporate profile if available
+      if (jobResponse.corporate_id) {
         try {
           const corporateResponse = await apiClient.getPublicCorporateProfile(jobResponse.corporate_id)
           setCorporateProfile(corporateResponse)

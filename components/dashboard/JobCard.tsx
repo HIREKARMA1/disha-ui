@@ -25,6 +25,7 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    graduation_years?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -35,11 +36,8 @@ interface Job {
     views_count: number
     applications_count: number
     created_at: string
-    corporate_id?: string | null
+    corporate_id: string
     corporate_name?: string
-    university_id?: string | null
-    // Company information fields (for university-created jobs)
-    company_name?: string
     is_active: boolean
     can_apply: boolean
     application_status?: string
@@ -194,12 +192,6 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         return !job.application_status && !isDeadlineExpired() && job.can_apply
     }
 
-    // Check if job is university-created (on-campus job)
-    // Matches the logic from UniversityJobCard: university_id exists and no corporate_id
-    const isOnCampusJob = () => {
-        return job.university_id && !job.corporate_id
-    }
-
     const getApplicationStatusDisplay = (status: string) => {
         switch (status) {
             case 'applied':
@@ -264,20 +256,12 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                         )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                            {/* On Campus Badge - matches UniversityJobCard styling */}
-                            {isOnCampusJob() && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700">
-                                    🎓 On Campus
-                                </span>
-                            )}
-                            <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                getJobTypeColor(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))
-                            )}>
-                                {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
-                            </span>
-                        </div>
+                        <span className={cn(
+                            "px-2 py-1 text-xs font-medium rounded-full",
+                            getJobTypeColor(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))
+                        )}>
+                            {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
+                        </span>
                         {/* Prominent Match Score Badge */}
                         {showMatchScore && matchScore !== undefined && (
                             <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${matchScore >= 80 ? 'bg-green-500 text-white' :

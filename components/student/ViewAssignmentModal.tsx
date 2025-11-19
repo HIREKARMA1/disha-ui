@@ -24,10 +24,9 @@ interface ViewAssignmentModalProps {
     onClose: () => void
     jobId: string
     jobTitle: string
-    isOnCampus?: boolean  // Whether this is an on-campus feature (university-created job)
 }
 
-export function ViewAssignmentModal({ isOpen, onClose, jobId, jobTitle, isOnCampus = false }: ViewAssignmentModalProps) {
+export function ViewAssignmentModal({ isOpen, onClose, jobId, jobTitle }: ViewAssignmentModalProps) {
     const [modules, setModules] = useState<PracticeModule[]>([])
     const [loading, setLoading] = useState(false)
     const router = useRouter()
@@ -105,9 +104,7 @@ export function ViewAssignmentModal({ isOpen, onClose, jobId, jobTitle, isOnCamp
                                         <FileText className="w-6 h-6 text-white" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-bold text-white">
-                                            {isOnCampus ? 'Exam Assignments' : 'Practice Assignments'}
-                                        </h2>
+                                        <h2 className="text-xl font-bold text-white">Practice Assignments</h2>
                                         <p className="text-sm text-white/80">{jobTitle}</p>
                                     </div>
                                 </div>

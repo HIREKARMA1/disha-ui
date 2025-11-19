@@ -199,35 +199,6 @@ export class UniversityManagementService {
       }
     }
   }
-
-  /**
-   * Export universities to CSV
-   */
-  async exportUniversities(includeArchived: boolean = false): Promise<Blob> {
-    try {
-      if (!apiClient.isAuthenticated()) {
-        throw new Error('User not authenticated. Please log in.')
-      }
-
-      const response = await apiClient.client.get('/admins/universities/export', {
-        params: {
-          include_archived: includeArchived
-        },
-        responseType: 'blob'
-      })
-      return response.data
-    } catch (error: any) {
-      console.error('Error exporting universities:', error)
-      
-      if (error.response?.status === 401) {
-        throw new Error('Authentication failed. Please log in again.')
-      } else if (error.response?.status >= 500) {
-        throw new Error('Server error. Please try again later.')
-      } else {
-        throw new Error(error.response?.data?.detail || 'Failed to export universities.')
-      }
-    }
-  }
 }
 
 // Export singleton instance

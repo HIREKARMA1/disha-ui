@@ -35,10 +35,7 @@ import {
     Trophy,
     TrendingUp,
     Shield as ShieldIcon,
-    Globe as GlobeIcon,
-    CheckCircle2,
-    UserCheck,
-    XCircle
+    Globe as GlobeIcon
 } from 'lucide-react'
 import { UniversityListItem, UniversityProfile } from '@/types/university'
 import { getInitials } from '@/lib/utils'
@@ -112,15 +109,11 @@ export function UniversityProfileModal({
         courses_offered: university.courses_offered ?? fullProfile?.courses_offered ?? '',
         departments: university.departments ?? fullProfile?.departments ?? '',
         programs_offered: university.programs_offered ?? fullProfile?.programs_offered ?? '',
-        total_students: university.total_students ?? fullProfile?.total_students ?? 0,
         total_faculty: university.total_faculty ?? fullProfile?.total_faculty,
         placement_rate: university.placement_rate ?? fullProfile?.placement_rate,
         average_package: university.average_package ?? fullProfile?.average_package,
         top_recruiters: university.top_recruiters ?? fullProfile?.top_recruiters ?? '',
-        verification_date: fullProfile?.verification_date,
-        placed_students: university.placed_students ?? fullProfile?.placed_students ?? 0,
-        shortlisted_students: university.shortlisted_students ?? fullProfile?.shortlisted_students ?? 0,
-        rejected_students: university.rejected_students ?? fullProfile?.rejected_students ?? 0
+        verification_date: fullProfile?.verification_date
     }
 
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -333,7 +326,7 @@ export function UniversityProfileModal({
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {extendedUniversity.total_students ?? 0}
+                                        {extendedUniversity.total_students || 'N/A'}
                                     </p>
                                     <p className="text-xs text-indigo-600 dark:text-indigo-400">Total Students</p>
                                 </div>
@@ -510,10 +503,7 @@ export function UniversityProfileModal({
         const hasPlacementData = extendedUniversity.placement_rate ||
             extendedUniversity.average_package ||
             extendedUniversity.total_students ||
-            extendedUniversity.top_recruiters ||
-            extendedUniversity.placed_students ||
-            extendedUniversity.shortlisted_students ||
-            extendedUniversity.rejected_students
+            extendedUniversity.top_recruiters
 
         if (!hasPlacementData) {
             return (
@@ -538,67 +528,6 @@ export function UniversityProfileModal({
 
         return (
             <div className="space-y-6">
-                {/* Student Placement Statistics */}
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-700 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
-                            <Users className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">
-                            Student Placement Statistics
-                        </h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Placed Students */}
-                        <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                </div>
-                                <h4 className="font-medium text-green-800 dark:text-green-200">Placed Students</h4>
-                            </div>
-                            <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                                {extendedUniversity.placed_students || 0}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Students with selected applications
-                            </p>
-                        </div>
-
-                        {/* Shortlisted Students */}
-                        <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <h4 className="font-medium text-blue-800 dark:text-blue-200">Shortlisted Students</h4>
-                            </div>
-                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                                {extendedUniversity.shortlisted_students || 0}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Students in selection process
-                            </p>
-                        </div>
-
-                        {/* Rejected Students */}
-                        <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-red-200 dark:border-red-700">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                                    <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                                </div>
-                                <h4 className="font-medium text-red-800 dark:text-red-200">Rejected Students</h4>
-                            </div>
-                            <p className="text-3xl font-bold text-red-600 dark:text-red-400">
-                                {extendedUniversity.rejected_students || 0}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Students with rejected applications
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Placement Statistics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {extendedUniversity.placement_rate && (

@@ -1,8 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { createPortal } from 'react-dom'
 import { AlertTriangle, Archive, Eye, X } from 'lucide-react'
 
 interface ArchiveConfirmationModalProps {
@@ -22,13 +20,7 @@ export function ArchiveConfirmationModal({
     isArchiving,
     isLoading = false
 }: ArchiveConfirmationModalProps) {
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
-
-    if (!isOpen || !mounted) return null
+    if (!isOpen) return null
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
@@ -40,20 +32,16 @@ export function ArchiveConfirmationModal({
         onConfirm()
     }
 
-    const modalContent = (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            {/* Backdrop - Full Screen */}
+    return (
+        <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleBackdropClick}
+        >
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black bg-opacity-50"
-                onClick={handleBackdropClick}
-            />
-            
-            {/* Modal Content */}
-            <motion.div
-                className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
@@ -168,8 +156,6 @@ export function ArchiveConfirmationModal({
                     </div>
                 </div>
             </motion.div>
-        </div>
+        </motion.div>
     )
-
-    return createPortal(modalContent, document.body)
 }
