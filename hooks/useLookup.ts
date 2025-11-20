@@ -131,3 +131,10 @@ export function useJobCategories(options: UseLookupOptions = {}) {
   return useLookup(() => lookupService.getJobCategories(options), options)
 }
 
+/**
+ * Hook for fetching location preferences
+ */
+export function useLocationPreferences(options: UseLookupOptions = {}) {
+  return useLookup(() => lookupService.getLocationPreferences(options), options)
+}
+

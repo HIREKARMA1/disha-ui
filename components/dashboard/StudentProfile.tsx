@@ -13,7 +13,13 @@ import {
     CheckCircle,
     AlertCircle,
     Camera,
-    FileText
+    FileText,
+    Code,
+    Award,
+    Briefcase,
+    MapPin,
+    Building2,
+    Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StudentSidebar } from './StudentSidebar'
@@ -28,6 +34,9 @@ import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
+import { MultiSelectDropdown, type MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
+import { LocationSelector } from '@/components/ui/LocationSelector'
+import { lookupService } from '@/services/lookupService'
 
 interface ProfileSection {
     id: string
@@ -1200,6 +1209,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+    const [lookupData, setLookupData] = useState<any>(null)
+    const [loadingLookups, setLoadingLookups] = useState(false)
+    const [customCertification, setCustomCertification] = useState('')
     
     // Use professional lookup hook for branches
     const { 
@@ -1228,16 +1240,89 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         enabled: section.id === 'basic' || section.id === 'academic'
     })
 
+    // Load lookup data from backend API for skills section
+    useEffect(() => {
+        if (section.id === 'skills') {
+            setLoadingLookups(true)
+
+            // Fetch all skills-related lookup data from backend (excluding location_preferences which uses country-state-city)
+            Promise.all([
+                lookupService.getSkills({ limit: 1000 }),
+                lookupService.getSoftSkills({ limit: 1000 }),
+                lookupService.getIndustries({ limit: 1000 }),
+                lookupService.getJobRoles({ limit: 1000 })
+            ])
+                .then(([skills, softSkills, industries, jobRoles]) => {
+                    // Transform API data to match the expected format
+                    setLookupData({
+                        technical_skills: {
+                            data: skills.map(item => item.name)
+                        },
+                        soft_skills: {
+                            data: softSkills.map(item => item.name)
+                        },
+                        preferred_industry: {
+                            data: industries.map(item => item.name)
+                        },
+                        job_roles_of_interest: {
+                            data: jobRoles.map(item => item.name)
+                        },
+                        location_preferences: {
+                            data: [] // Not used anymore, kept for compatibility
+                        }
+                    })
+                    setLoadingLookups(false)
+                })
+                .catch(err => {
+                    console.error('Failed to load lookup data from API:', err)
+                    setLoadingLookups(false)
+                    // Fallback to empty data structure
+                    setLookupData({
+                        technical_skills: { data: [] },
+                        soft_skills: { data: [] },
+                        preferred_industry: { data: [] },
+                        job_roles_of_interest: { data: [] },
+                        location_preferences: { data: [] }
+                    })
+                })
+        }
+    }, [section.id])
+
     useEffect(() => {
         if (profile && section) {
             // Initialize form data with current profile values
             const initialData: any = {}
             section.fields.forEach(field => {
-                initialData[field] = profile[field as keyof StudentProfile] || ''
+                const value = profile[field as keyof StudentProfile] || ''
+                // For skills fields, keep as string (will be converted for display)
+                initialData[field] = value
             })
             setFormData(initialData)
         }
     }, [profile, section])
+
+    // Helper function to convert comma-separated string to array
+    const stringToArray = (str: string | null | undefined): string[] => {
+        if (!str || typeof str !== 'string') return []
+        return str.split(',').map(item => item.trim()).filter(item => item.length > 0)
+    }
+
+    // Helper function to convert array to comma-separated string
+    const arrayToString = (arr: string[]): string => {
+        return arr.filter(item => item.trim().length > 0).join(', ')
+    }
+
+    // Get options for a skills field
+    const getOptionsForField = (field: string): MultiSelectOption[] => {
+        if (!lookupData) return []
+        const fieldKey = field as keyof typeof lookupData
+        const data = lookupData[fieldKey]?.data || []
+        return data.map((item: string, index: number) => ({
+            id: `${field}-${index}`,
+            label: item,
+            value: item
+        }))
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -1349,17 +1434,35 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
         // Skills Validation
         if (section.id === 'skills') {
-            // Technical skills validation
+            // Technical skills validation - convert array to string if needed
+            if (cleanedFormData.technical_skills) {
+                if (Array.isArray(cleanedFormData.technical_skills)) {
+                    cleanedFormData.technical_skills = arrayToString(cleanedFormData.technical_skills)
+                }
+            }
             if (!cleanedFormData.technical_skills || cleanedFormData.technical_skills.trim().length === 0) {
                 validationErrors.push('Technical skills are required')
                 hasValidationErrors = true
             }
 
-            // Preferred industry validation
+            // Preferred industry validation - convert array to string if needed
+            if (cleanedFormData.preferred_industry) {
+                if (Array.isArray(cleanedFormData.preferred_industry)) {
+                    cleanedFormData.preferred_industry = arrayToString(cleanedFormData.preferred_industry)
+                }
+            }
             if (!cleanedFormData.preferred_industry || cleanedFormData.preferred_industry.trim().length === 0) {
                 validationErrors.push('Preferred industry is required')
                 hasValidationErrors = true
             }
+
+            // Convert other skills fields from array to string if needed
+            const otherSkillsFields = ['soft_skills', 'certifications', 'job_roles_of_interest', 'location_preferences']
+            otherSkillsFields.forEach(skillField => {
+                if (cleanedFormData[skillField] && Array.isArray(cleanedFormData[skillField])) {
+                    cleanedFormData[skillField] = arrayToString(cleanedFormData[skillField])
+                }
+            })
         }
 
         // Experience Validation
@@ -1667,19 +1770,271 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        // Handle location preferences field (textarea for multiple locations)
-        if (field === 'location_preferences') {
+        // Handle certifications field with manual entry only (no dropdown)
+        if (field === 'certifications') {
+            const selectedValues = stringToArray(value)
+
+            const handleAddCustomCertification = () => {
+                if (customCertification.trim() && !selectedValues.includes(customCertification.trim())) {
+                    const newValues = [...selectedValues, customCertification.trim()]
+                    const stringValue = arrayToString(newValues)
+                    setFormData({ ...formData, [field]: stringValue })
+                    setCustomCertification('')
+                }
+            }
+
+            const handleRemoveCertification = (certToRemove: string) => {
+                const newValues = selectedValues.filter(cert => cert !== certToRemove)
+                const stringValue = arrayToString(newValues)
+                            setFormData({ ...formData, [field]: stringValue })
+            }
+
             return (
-                <textarea
-                    value={value}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    placeholder="Enter your preferred locations (e.g., Mumbai, Delhi, Remote, Bangalore)"
-                />
+                <div className="bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-900/10 dark:to-blue-900/10 rounded-xl p-5 border border-purple-200/50 dark:border-purple-800/50">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <Award className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                                Certifications
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Add your professional certifications</p>
+                        </div>
+                    </div>
+
+                    {/* Display selected certifications as removable tags */}
+                    {selectedValues.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {selectedValues.map((cert, index) => (
+                                <motion.span
+                                    key={index}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-800/50 text-purple-800 dark:text-purple-200 rounded-lg text-sm font-medium shadow-sm border border-purple-300/50 dark:border-purple-700/50"
+                                >
+                                    <Award className="w-3.5 h-3.5" />
+                                    {cert}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveCertification(cert)}
+                                        className="ml-1 hover:text-purple-600 dark:hover:text-purple-300 focus:outline-none transition-colors text-purple-600 dark:text-purple-400"
+                                        aria-label={`Remove ${cert}`}
+                                    >
+                                        ×
+                                    </button>
+                                </motion.span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Manual input field */}
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={customCertification}
+                            onChange={(e) => setCustomCertification(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    handleAddCustomCertification()
+                                }
+                            }}
+                            placeholder="Type certification name and press Enter or click Add"
+                            className="flex-1 px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white transition-all duration-200"
+                        />
+                        <Button
+                            type="button"
+                            onClick={handleAddCustomCertification}
+                            disabled={!customCertification.trim() || selectedValues.includes(customCertification.trim())}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm transition-all duration-200"
+                        >
+                            Add
+                        </Button>
+                    </div>
+                </div>
             )
         }
 
+        // Handle location_preferences field separately with LocationSelector
+        if (field === 'location_preferences') {
+            // For location_preferences, use pipe delimiter since locations contain commas
+            const locationToString = (arr: string[]): string => {
+                return arr.filter(item => item.trim().length > 0).join('|')
+            }
+            const locationToArray = (str: string | null | undefined): string[] => {
+                if (!str || typeof str !== 'string') return []
+                // Use pipe delimiter to separate multiple locations
+                // Locations themselves can contain commas (e.g., "Bihar, India")
+                if (str.includes('|')) {
+                    return str.split('|').map(item => item.trim()).filter(item => item.length > 0)
+                }
+                // If no pipe delimiter, treat the entire string as a single location
+                // This handles cases where old data might be stored as comma-separated
+                // but we want to preserve it as one location
+                return str.trim() ? [str.trim()] : []
+            }
+            
+            const selectedValues = locationToArray(value)
+            
+            return (
+                <div className="bg-gradient-to-br from-pink-50/50 to-rose-50/50 dark:from-pink-900/10 dark:to-rose-900/10 rounded-xl p-5 border border-pink-200/50 dark:border-pink-800/50">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-sm">
+                            <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                                Location Preferences
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Select your preferred work locations
+                            </p>
+                        </div>
+                    </div>
+
+                    <LocationSelector
+                        selectedLocations={selectedValues}
+                        onSelectionChange={(selected) => {
+                            // Convert array back to pipe-separated string
+                            const stringValue = locationToString(selected)
+                            setFormData({ ...formData, [field]: stringValue })
+                        }}
+                        placeholder="Select Location Preferences"
+                        disabled={false}
+                        className="w-full"
+                    />
+                </div>
+            )
+        }
+
+        // Handle other skills fields with multi-select dropdown
+        const skillsFields = ['technical_skills', 'soft_skills', 'preferred_industry', 'job_roles_of_interest']
+        if (skillsFields.includes(field)) {
+            const options = getOptionsForField(field)
+            const selectedValues = stringToArray(value)
+            const fieldLabels: Record<string, string> = {
+                'technical_skills': 'Technical Skills',
+                'soft_skills': 'Soft Skills',
+                'preferred_industry': 'Preferred Industry',
+                'job_roles_of_interest': 'Job Roles Of Interest'
+            }
+
+            const fieldIcons: Record<string, any> = {
+                'technical_skills': Code,
+                'soft_skills': Users,
+                'preferred_industry': Building2,
+                'job_roles_of_interest': Briefcase
+            }
+
+            const fieldColors: Record<string, { bg: string; border: string; iconBg: string; iconGradient: string; tagBg: string; tagBorder: string; tagText: string }> = {
+                'technical_skills': {
+                    bg: 'from-blue-50/50 to-cyan-50/50 dark:from-blue-900/10 dark:to-cyan-900/10',
+                    border: 'border-blue-200/50 dark:border-blue-800/50',
+                    iconBg: 'from-blue-500 to-blue-600',
+                    iconGradient: 'from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800',
+                    tagBg: 'from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-800/50',
+                    tagBorder: 'border-blue-300/50 dark:border-blue-700/50',
+                    tagText: 'text-blue-800 dark:text-blue-200'
+                },
+                'soft_skills': {
+                    bg: 'from-green-50/50 to-emerald-50/50 dark:from-green-900/10 dark:to-emerald-900/10',
+                    border: 'border-green-200/50 dark:border-green-800/50',
+                    iconBg: 'from-green-500 to-green-600',
+                    iconGradient: 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800',
+                    tagBg: 'from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-800/50',
+                    tagBorder: 'border-green-300/50 dark:border-green-700/50',
+                    tagText: 'text-green-800 dark:text-green-200'
+                },
+                'preferred_industry': {
+                    bg: 'from-orange-50/50 to-amber-50/50 dark:from-orange-900/10 dark:to-amber-900/10',
+                    border: 'border-orange-200/50 dark:border-orange-800/50',
+                    iconBg: 'from-orange-500 to-orange-600',
+                    iconGradient: 'from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800',
+                    tagBg: 'from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50',
+                    tagBorder: 'border-orange-300/50 dark:border-orange-700/50',
+                    tagText: 'text-orange-800 dark:text-orange-200'
+                },
+                'job_roles_of_interest': {
+                    bg: 'from-indigo-50/50 to-violet-50/50 dark:from-indigo-900/10 dark:to-violet-900/10',
+                    border: 'border-indigo-200/50 dark:border-indigo-800/50',
+                    iconBg: 'from-indigo-500 to-indigo-600',
+                    iconGradient: 'from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800',
+                    tagBg: 'from-indigo-100 to-indigo-200 dark:from-indigo-900/50 dark:to-indigo-800/50',
+                    tagBorder: 'border-indigo-300/50 dark:border-indigo-700/50',
+                    tagText: 'text-indigo-800 dark:text-indigo-200'
+                }
+            }
+
+            const Icon = fieldIcons[field]
+            const colors = fieldColors[field]
+            const handleRemoveTag = (tagToRemove: string) => {
+                const newValues = selectedValues.filter(tag => tag !== tagToRemove)
+                const stringValue = arrayToString(newValues)
+                setFormData({ ...formData, [field]: stringValue })
+            }
+
+            return (
+                <div className={`bg-gradient-to-br ${colors.bg} rounded-xl p-5 border ${colors.border}`}>
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className={`w-10 h-10 bg-gradient-to-br ${colors.iconBg} rounded-lg flex items-center justify-center shadow-sm`}>
+                            <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {fieldLabels[field]}
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {field === 'technical_skills' && 'Select your programming languages and technologies'}
+                                {field === 'soft_skills' && 'Choose your interpersonal and communication skills'}
+                                {field === 'preferred_industry' && 'Select industries you\'re interested in'}
+                                {field === 'job_roles_of_interest' && 'Choose roles that match your career goals'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Display selected tags */}
+                    {selectedValues.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {selectedValues.map((tag, index) => (
+                                <motion.span
+                                    key={index}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r ${colors.tagBg} ${colors.tagText} rounded-lg text-sm font-medium shadow-sm border ${colors.tagBorder}`}
+                                >
+                                    {tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTag(tag)}
+                                        className={`ml-1 hover:opacity-70 focus:outline-none transition-opacity ${colors.tagText}`}
+                                        aria-label={`Remove ${tag}`}
+                                    >
+                                        ×
+                                    </button>
+                                </motion.span>
+                            ))}
+                        </div>
+                    )} 
+
+                    <MultiSelectDropdown
+                        options={options}
+                        selectedValues={selectedValues || []}
+                        onSelectionChange={(selected) => {
+                            // Convert array back to comma-separated string
+                            const stringValue = arrayToString(selected)
+                            setFormData({ ...formData, [field]: stringValue })
+                        }}
+                        placeholder={`Select ${fieldLabels[field] || field.replace(/_/g, ' ')}`}
+                        disabled={loadingLookups}
+                        isLoading={loadingLookups}
+                        showAllOption={false}
+                        hideSelectedTags={true}
+                        className="w-full"
+                    />
+                </div>
+            )
+        }
         if (field.includes('year')) {
             return (
                 <input
@@ -1959,6 +2314,27 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         </div>
                     </div>
                 </>
+            ) : section.id === 'skills' ? (
+                // Skills Section - All items in 2-column grid layout
+                <div className="space-y-6">
+                    {/* Row 1: Technical Skills and Soft Skills (2 items side by side) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {renderField('technical_skills')}
+                        {renderField('soft_skills')}
+                    </div>
+
+                    {/* Row 2: Preferred Industry and Job Roles Of Interest (2 items side by side) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {renderField('preferred_industry')}
+                        {renderField('job_roles_of_interest')}
+                    </div>
+
+                    {/* Row 3: Location Preferences and Certifications (2 items side by side) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {renderField('location_preferences')}
+                        {renderField('certifications')}
+                    </div>
+                </div>
             ) : (
                 // All Other Sections - Simple Grid Layout
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

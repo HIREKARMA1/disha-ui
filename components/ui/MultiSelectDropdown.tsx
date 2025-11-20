@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { ChevronDown, X, Check } from 'lucide-react'
+import { ChevronDown, X, Check, Plus } from 'lucide-react'
 import { Button } from './button'
 
 export interface MultiSelectOption {
@@ -21,6 +21,9 @@ interface MultiSelectDropdownProps {
     className?: string
     showAllOption?: boolean
     allOptionLabel?: string
+    hideSelectedTags?: boolean
+    allowCreate?: boolean
+    onCreateOption?: (value: string) => void
 }
 
 export function MultiSelectDropdown({
@@ -33,11 +36,50 @@ export function MultiSelectDropdown({
     isLoading = false,
     className = "",
     showAllOption = true,
-    allOptionLabel = "All"
+    allOptionLabel = "All",
+    hideSelectedTags = false,
+    allowCreate = false,
+    onCreateOption
 }: MultiSelectDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
+    const [openUpward, setOpenUpward] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+    const buttonRef = useRef<HTMLButtonElement>(null)
+    const menuRef = useRef<HTMLDivElement>(null)
+
+    // Calculate dropdown position when opening
+    useEffect(() => {
+        if (isOpen && buttonRef.current) {
+            const calculatePosition = () => {
+                if (!buttonRef.current) return
+                
+                const buttonRect = buttonRef.current.getBoundingClientRect()
+                const viewportHeight = window.innerHeight
+                const spaceBelow = viewportHeight - buttonRect.bottom
+                const spaceAbove = buttonRect.top
+                const dropdownHeight = 280 // Approximate max height (max-h-60 = 240px + padding)
+                
+                // Open upward if not enough space below, but enough space above
+                if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                    setOpenUpward(true)
+                } else {
+                    setOpenUpward(false)
+                }
+            }
+            
+            calculatePosition()
+            
+            // Recalculate on scroll or resize
+            window.addEventListener('scroll', calculatePosition, true)
+            window.addEventListener('resize', calculatePosition)
+            
+            return () => {
+                window.removeEventListener('scroll', calculatePosition, true)
+                window.removeEventListener('resize', calculatePosition)
+            }
+        }
+    }, [isOpen])
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -48,16 +90,37 @@ export function MultiSelectDropdown({
             }
         }
 
-        document.addEventListener('mousedown', handleClickOutside)
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
-    }, [])
+    }, [isOpen])
 
     // Filter options based on search term
     const filteredOptions = options.filter(option =>
         option.label.toLowerCase().includes(searchTerm.toLowerCase())
     )
+
+    // Check if search term doesn't match any option (for allowCreate)
+    const canCreateNew = allowCreate && 
+        searchTerm.trim().length > 0 && 
+        !filteredOptions.some(opt => opt.value.toLowerCase() === searchTerm.trim().toLowerCase()) &&
+        !selectedValues.includes(searchTerm.trim())
+
+    const handleCreateNew = () => {
+        if (canCreateNew && onCreateOption) {
+            onCreateOption(searchTerm.trim())
+            setSearchTerm('')
+        } else if (canCreateNew) {
+            // If no onCreateOption callback, directly add to selection
+            if (!selectedValues.includes(searchTerm.trim())) {
+                onSelectionChange([...selectedValues, searchTerm.trim()])
+            }
+            setSearchTerm('')
+        }
+    }
 
     // Check if "All" is selected
     const isAllSelected = selectedValues.length === options.length && options.length > 0
@@ -106,6 +169,7 @@ export function MultiSelectDropdown({
             
             <div className="relative">
                 <button
+                    ref={buttonRef}
                     type="button"
                     onClick={() => !disabled && !isLoading && setIsOpen(!isOpen)}
                     disabled={disabled || isLoading}
@@ -121,12 +185,17 @@ export function MultiSelectDropdown({
                         <span className={selectedValues.length === 0 ? 'text-gray-500 dark:text-gray-400' : ''}>
                             {isLoading ? 'Loading...' : getDisplayText()}
                         </span>
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? (openUpward ? 'rotate-0' : 'rotate-180') : ''}`} />
                     </div>
                 </button>
 
                 {isOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    <div 
+                        ref={menuRef}
+                        className={`absolute z-50 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-hidden ${
+                            openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
+                        }`}
+                    >
                         {/* Search input */}
                         <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                             <input
@@ -172,7 +241,21 @@ export function MultiSelectDropdown({
                                 )
                             })}
 
-                            {filteredOptions.length === 0 && (
+                            {/* Create new option */}
+                            {canCreateNew && (
+                                <button
+                                    type="button"
+                                    onClick={handleCreateNew}
+                                    className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 border-t border-gray-200 dark:border-gray-700"
+                                >
+                                    <Plus className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                    <span className="text-primary-600 dark:text-primary-400 font-medium">
+                                        Create "{searchTerm.trim()}"
+                                    </span>
+                                </button>
+                            )}
+
+                            {filteredOptions.length === 0 && !canCreateNew && (
                                 <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                                     No options found
                                 </div>
@@ -183,7 +266,7 @@ export function MultiSelectDropdown({
             </div>
 
             {/* Selected items display */}
-            {selectedValues.length > 0 && !isAllSelected && (
+            {!hideSelectedTags && selectedValues.length > 0 && !isAllSelected && (
                 <div className="mt-2 flex flex-wrap gap-1">
                     {selectedValues.map((value) => {
                         const option = options.find(opt => opt.value === value)

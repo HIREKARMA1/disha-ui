@@ -28,38 +28,8 @@ import { cn, getInitials, truncateText } from '@/lib/utils'
 import { corporateProfileService } from '@/services/corporateProfileService'
 import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
 import { useAuth } from '@/hooks/useAuth'
+import { useIndustries } from '@/hooks/useLookup'
 import toast from 'react-hot-toast'
-
-// Industry options
-const industryOptions = [
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Manufacturing', label: 'Manufacturing' },
-    { value: 'Retail', label: 'Retail' },
-    { value: 'Real Estate', label: 'Real Estate' },
-    { value: 'Consulting', label: 'Consulting' },
-    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-    { value: 'Telecommunications', label: 'Telecommunications' },
-    { value: 'Automotive', label: 'Automotive' },
-    { value: 'Aerospace', label: 'Aerospace' },
-    { value: 'Energy', label: 'Energy' },
-    { value: 'Government', label: 'Government' },
-    { value: 'Non-Profit', label: 'Non-Profit' },
-    { value: 'E-commerce', label: 'E-commerce' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Insurance', label: 'Insurance' },
-    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-    { value: 'Food & Beverage', label: 'Food & Beverage' },
-    { value: 'Transportation', label: 'Transportation' },
-    { value: 'Logistics', label: 'Logistics' },
-    { value: 'Hospitality', label: 'Hospitality' },
-    { value: 'Agriculture', label: 'Agriculture' },
-    { value: 'Construction', label: 'Construction' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Other', label: 'Other' }
-]
 
 interface ProfileSection {
     id: string
@@ -604,6 +574,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+    
+    // Fetch industries from backend API
+    const { data: industriesData, loading: loadingIndustries } = useIndustries({ limit: 1000 })
+    
+    // Transform industries data to match select dropdown format
+    const industryOptions = industriesData.map((industry) => ({
+        value: industry.name,
+        label: industry.name
+    }))
 
     useEffect(() => {
         if (profile && section) {
@@ -914,9 +893,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 <select
                     value={value}
                     onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    disabled={loadingIndustries}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <option value="">Select industry</option>
+                    <option value="">{loadingIndustries ? 'Loading industries...' : 'Select industry'}</option>
                     {industryOptions.map((option) => (
                         <option key={option.value} value={option.value}>
                             {option.label}
