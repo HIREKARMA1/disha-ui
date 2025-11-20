@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown'
+import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { useIndustries, useLocationPreferences, useSkills, useDegrees, useBranches } from '@/hooks/useLookup'
 import { toast } from 'react-hot-toast'
@@ -52,11 +53,24 @@ interface JobFormData {
     expiration_date: string
     ctc_with_probation: string
     ctc_after_probation: string
+    // Company information fields (for university-created jobs)
+    company_name: string
+    company_logo: string
+    company_website: string
+    company_address: string
+    company_size: string
+    company_type: string
+    company_founded: string
+    company_description: string
+    contact_person: string
+    contact_designation: string
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corporate' }: CreateJobModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+    const [uploadingLogo, setUploadingLogo] = useState(false)
+    const [logoPreview, setLogoPreview] = useState<string | null>(null)
     
     // Fetch industries, location preferences, skills, degrees, and branches from backend API
     const { data: industriesData, loading: loadingIndustries } = useIndustries({ limit: 1000 })
@@ -130,7 +144,18 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
-        ctc_after_probation: ''
+        ctc_after_probation: '',
+        // Company information fields (for university-created jobs)
+        company_name: '',
+        company_logo: '',
+        company_website: '',
+        company_address: '',
+        company_size: '',
+        company_type: '',
+        company_founded: '',
+        company_description: '',
+        contact_person: '',
+        contact_designation: ''
     })
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
@@ -203,15 +228,60 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
     const handleSkillsChange = (selectedSkills: string[]) => {
         setFormData(prev => ({
             ...prev,
-            skills_required: selectedSkills
+            location: prev.location.filter(location => location !== locationToRemove)
         }))
     }
 
-    const removeSkill = (skillToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            skills_required: prev.skills_required.filter(skill => skill !== skillToRemove)
-        }))
+    const handleLogoUpload = async (file: File) => {
+        setUploadingLogo(true)
+        try {
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size must be less than 5MB')
+                setUploadingLogo(false)
+                return
+            }
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+                setUploadingLogo(false)
+                return
+            }
+
+            // Upload the file - use company logo endpoint for university users, regular image upload for others
+            let result
+            if (userType === 'university') {
+                // University users: upload to corporate folder structure
+                result = await apiClient.uploadCompanyLogo(file)
+            } else {
+                // Corporate users: use regular image upload (though they shouldn't be using this for company logos)
+                result = await apiClient.uploadImage(file)
+            }
+            
+            // Update form data with the uploaded logo URL
+            handleInputChange('company_logo', result.file_url)
+            
+            // Create preview URL for display
+            const previewUrl = URL.createObjectURL(file)
+            setLogoPreview(previewUrl)
+            
+            toast.success('Company logo uploaded successfully!')
+        } catch (error: any) {
+            console.error('Logo upload error:', error)
+            toast.error(error.response?.data?.detail || 'Failed to upload logo. Please try again.')
+        } finally {
+            setUploadingLogo(false)
+        }
+    }
+
+    const handleLogoRemove = () => {
+        handleInputChange('company_logo', '')
+        setLogoPreview(null)
+        if (logoPreview) {
+            URL.revokeObjectURL(logoPreview)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -242,6 +312,19 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             errors.location = 'At least one location is required'
         }
 
+        // Validate company information fields for university-created jobs
+        if (userType === 'university') {
+            if (!formData.company_name.trim()) {
+                errors.company_name = 'Company name is required'
+            }
+            if (formData.company_website && formData.company_website.trim()) {
+                const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+                if (!urlPattern.test(formData.company_website.trim())) {
+                    errors.company_website = 'Please enter a valid website URL'
+                }
+            }
+        }
+
         // If there are validation errors, show them and return
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors)
@@ -270,7 +353,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             console.log('🔍 Create job - Derived mode_of_work:', modeOfWork)
 
             // Prepare data for API - match backend schema exactly
-            const jobData = {
+            const jobData: any = {
                 title: formData.title,
                 description: formData.description,
                 requirements: formData.requirements || null,
@@ -302,6 +385,20 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 expiration_date: formData.expiration_date ? formData.expiration_date : null,
                 ctc_with_probation: formData.ctc_with_probation || null,
                 ctc_after_probation: formData.ctc_after_probation || null
+            }
+
+            // Add company information fields for university-created jobs
+            if (userType === 'university') {
+                jobData.company_name = formData.company_name.trim() || null
+                jobData.company_logo = formData.company_logo.trim() || null
+                jobData.company_website = formData.company_website.trim() || null
+                jobData.company_address = formData.company_address.trim() || null
+                jobData.company_size = formData.company_size.trim() || null
+                jobData.company_type = formData.company_type.trim() || null
+                jobData.company_founded = formData.company_founded ? parseInt(formData.company_founded) : null
+                jobData.company_description = formData.company_description.trim() || null
+                jobData.contact_person = formData.contact_person.trim() || null
+                jobData.contact_designation = formData.contact_designation.trim() || null
             }
 
             // Use appropriate API endpoint based on userType
@@ -353,8 +450,24 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 service_agreement_details: '',
                 expiration_date: '',
                 ctc_with_probation: '',
-                ctc_after_probation: ''
+                ctc_after_probation: '',
+                // Company information fields (for university-created jobs)
+                company_name: '',
+                company_logo: '',
+                company_website: '',
+                company_address: '',
+                company_size: '',
+                company_type: '',
+                company_founded: '',
+                company_description: '',
+                contact_person: '',
+                contact_designation: ''
             })
+            // Reset logo preview
+            if (logoPreview) {
+                URL.revokeObjectURL(logoPreview)
+            }
+            setLogoPreview(null)
         } catch (error: any) {
             console.error('Failed to create job:', error)
             const errorMessage = error.response?.data?.detail || error.message || 'Failed to create job. Please try again.'
@@ -516,58 +629,242 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 </div>
                             </div>
 
-                            {/* Location & Work Details */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <MapPin className="w-5 h-5" />
-                                    Location & Work Details
-                                </h3>
+                            {/* Company Information Section - Only for University */}
+                            {userType === 'university' && (
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Building className="w-5 h-5" />
+                                        Company Information
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Name *
+                                            </label>
+                                            <Input
+                                                value={formData.company_name}
+                                                onChange={(e) => handleInputChange('company_name', e.target.value)}
+                                                placeholder={validationErrors.company_name || "e.g., TechCorp Inc."}
+                                                className={validationErrors.company_name ? "border-red-500 placeholder-red-500" : ""}
+                                            />
+                                            {validationErrors.company_name && (
+                                                <p className="text-red-500 text-sm mt-1">{validationErrors.company_name}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Logo
+                                            </label>
+                                            <FileUpload
+                                                onFileSelect={handleLogoUpload}
+                                                onFileRemove={handleLogoRemove}
+                                                currentFile={formData.company_logo || logoPreview || null}
+                                                type="image"
+                                                maxSize={5}
+                                                disabled={uploadingLogo}
+                                                placeholder="Upload company logo"
+                                                className="w-full"
+                                            />
+                                            {uploadingLogo && (
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                    Uploading logo...
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Industry
+                                            </label>
+                                            <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select industry" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {industryOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Founded Year
+                                            </label>
+                                            <Input
+                                                type="number"
+                                                value={formData.company_founded}
+                                                onChange={(e) => handleInputChange('company_founded', e.target.value)}
+                                                placeholder="e.g., 2000"
+                                                min="1900"
+                                                max={new Date().getFullYear()}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Website
+                                        </label>
+                                        <Input
+                                            value={formData.company_website}
+                                            onChange={(e) => handleInputChange('company_website', e.target.value)}
+                                            placeholder={validationErrors.company_website || "https://www.example.com"}
+                                            className={validationErrors.company_website ? "border-red-500 placeholder-red-500" : ""}
+                                        />
+                                        {validationErrors.company_website && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.company_website}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Address
+                                        </label>
+                                        <Input
+                                            value={formData.company_address}
+                                            onChange={(e) => handleInputChange('company_address', e.target.value)}
+                                            placeholder="e.g., 123 Main St, City, State, ZIP"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Size
+                                            </label>
+                                            <Select value={formData.company_size} onValueChange={(value) => handleInputChange('company_size', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select company size" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1-10">1-10</SelectItem>
+                                                    <SelectItem value="11-50">11-50</SelectItem>
+                                                    <SelectItem value="51-200">51-200</SelectItem>
+                                                    <SelectItem value="201-500">201-500</SelectItem>
+                                                    <SelectItem value="501-1000">501-1000</SelectItem>
+                                                    <SelectItem value="1001-5000">1001-5000</SelectItem>
+                                                    <SelectItem value="5001-10000">5001-10000</SelectItem>
+                                                    <SelectItem value="10000+">10000+</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Type
+                                            </label>
+                                            <Select value={formData.company_type} onValueChange={(value) => handleInputChange('company_type', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select company type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Startup">Startup</SelectItem>
+                                                    <SelectItem value="Small Business">Small Business</SelectItem>
+                                                    <SelectItem value="Medium Enterprise">Medium Enterprise</SelectItem>
+                                                    <SelectItem value="Large Enterprise">Large Enterprise</SelectItem>
+                                                    <SelectItem value="Multinational">Multinational</SelectItem>
+                                                    <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+                                                    <SelectItem value="Government">Government</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            About Company
+                                        </label>
+                                        <Textarea
+                                            value={formData.company_description}
+                                            onChange={(e) => handleInputChange('company_description', e.target.value)}
+                                            placeholder="Describe the company, its mission, values, and what makes it special..."
+                                            rows={4}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Contact Person
+                                            </label>
+                                            <Input
+                                                value={formData.contact_person}
+                                                onChange={(e) => handleInputChange('contact_person', e.target.value)}
+                                                placeholder="e.g., John Doe"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Designation
+                                            </label>
+                                            <Input
+                                                value={formData.contact_designation}
+                                                onChange={(e) => handleInputChange('contact_designation', e.target.value)}
+                                                placeholder="e.g., HR Manager"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Company Information Section - Only for University */}
+                            {userType === 'university' && (
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Building className="w-5 h-5" />
+                                        Company Information
+                                    </h3>
 
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Location *
                                         </label>
-                                        
-                                        {/* Display selected location tags */}
-                                        {formData.location.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {formData.location.map((location, index) => (
-                                                    <span
-                                                        key={index}
-                                                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
-                                                    >
-                                                        {location}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newLocations = formData.location.filter(loc => loc !== location)
-                                                                handleLocationChange(newLocations)
-                                                            }}
-                                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        
-                                        <MultiSelectDropdown
-                                            options={locationOptions}
-                                            selectedValues={formData.location}
-                                            onSelectionChange={handleLocationChange}
-                                            placeholder={loadingLocations ? "Loading locations..." : validationErrors.location || "Select location(s)"}
-                                            disabled={loadingLocations}
-                                            isLoading={loadingLocations}
-                                            showAllOption={false}
-                                            hideSelectedTags={true}
-                                            className="w-full"
-                                        />
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={currentLocation}
+                                                onChange={(e) => setCurrentLocation(e.target.value)}
+                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
+                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
+                                            />
+                                            <Button type="button" onClick={addLocation} variant="outline">
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                         {validationErrors.location && (
                                             <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
                                         )}
                                     </div>
+
+                                    {formData.location.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {formData.location.map((location, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                                                >
+                                                    {location}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeLocation(location)}
+                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -641,8 +938,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.salary_min}
-                                            onChange={(e) => handleInputChange('salary_min', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                                                    handleInputChange('salary_min', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 500000"
                                         />
                                     </div>
@@ -653,8 +956,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.salary_max}
-                                            onChange={(e) => handleInputChange('salary_max', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                                                    handleInputChange('salary_max', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 1000000"
                                         />
                                     </div>
@@ -683,8 +992,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.experience_min}
-                                            onChange={(e) => handleInputChange('experience_min', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+                                                    handleInputChange('experience_min', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 2"
                                         />
                                     </div>
@@ -695,8 +1010,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.experience_max}
-                                            onChange={(e) => handleInputChange('experience_max', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+                                                    handleInputChange('experience_max', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 5"
                                         />
                                     </div>

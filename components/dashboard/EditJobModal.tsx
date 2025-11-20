@@ -2,20 +2,76 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
+import { FileUpload } from '@/components/ui/file-upload'
 import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown'
 import { apiClient } from '@/lib/api'
 import { useIndustries, useLocationPreferences, useSkills, useDegrees, useBranches } from '@/hooks/useLookup'
 import { lookupService } from '@/services/lookupService'
 import { toast } from 'react-hot-toast'
+import { useIndustries } from '@/hooks/useLookup'
 
-// Note: All lookup options (Industries, Degrees, Branches, Skills, Location Preferences) 
-// are now fetched from backend using respective hooks
+// Degree options (same as student modal)
+const degreeOptions = [
+    { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
+    { value: 'Bachelor of Engineering', label: 'Bachelor of Engineering (B.E.)' },
+    { value: 'Bachelor of Science', label: 'Bachelor of Science (B.Sc)' },
+    { value: 'Bachelor of Computer Applications', label: 'Bachelor of Computer Applications (BCA)' },
+    { value: 'Bachelor of Business Administration', label: 'Bachelor of Business Administration (BBA)' },
+    { value: 'Bachelor of Commerce', label: 'Bachelor of Commerce (B.Com)' },
+    { value: 'Bachelor of Arts', label: 'Bachelor of Arts (B.A.)' },
+    { value: 'Master of Technology', label: 'Master of Technology (M.Tech)' },
+    { value: 'Master of Engineering', label: 'Master of Engineering (M.E.)' },
+    { value: 'Master of Science', label: 'Master of Science (M.Sc)' },
+    { value: 'Master of Computer Applications', label: 'Master of Computer Applications (MCA)' },
+    { value: 'Master of Business Administration', label: 'Master of Business Administration (MBA)' },
+    { value: 'Master of Commerce', label: 'Master of Commerce (M.Com)' },
+    { value: 'Master of Arts', label: 'Master of Arts (M.A.)' },
+    { value: 'Diploma', label: 'Diploma' },
+    { value: 'Post Graduate Diploma', label: 'Post Graduate Diploma (PGD)' },
+    { value: 'Doctor of Philosophy', label: 'Doctor of Philosophy (Ph.D)' },
+    { value: 'Any', label: 'Any' }
+]
+
+// Branch options (same as student modal)
+const branchOptions = [
+    { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
+    { value: 'Information Technology', label: 'Information Technology' },
+    { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
+    { value: 'Electrical Engineering', label: 'Electrical Engineering' },
+    { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
+    { value: 'Civil Engineering', label: 'Civil Engineering' },
+    { value: 'Chemical Engineering', label: 'Chemical Engineering' },
+    { value: 'Aerospace Engineering', label: 'Aerospace Engineering' },
+    { value: 'Biotechnology', label: 'Biotechnology' },
+    { value: 'Data Science', label: 'Data Science' },
+    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
+    { value: 'Machine Learning', label: 'Machine Learning' },
+    { value: 'Cybersecurity', label: 'Cybersecurity' },
+    { value: 'Software Engineering', label: 'Software Engineering' },
+    { value: 'Business Administration', label: 'Business Administration' },
+    { value: 'Finance', label: 'Finance' },
+    { value: 'Marketing', label: 'Marketing' },
+    { value: 'Human Resources', label: 'Human Resources' },
+    { value: 'Operations Management', label: 'Operations Management' },
+    { value: 'International Business', label: 'International Business' },
+    { value: 'Economics', label: 'Economics' },
+    { value: 'Mathematics', label: 'Mathematics' },
+    { value: 'Physics', label: 'Physics' },
+    { value: 'Chemistry', label: 'Chemistry' },
+    { value: 'Biology', label: 'Biology' },
+    { value: 'English Literature', label: 'English Literature' },
+    { value: 'History', label: 'History' },
+    { value: 'Psychology', label: 'Psychology' },
+    { value: 'Sociology', label: 'Sociology' },
+    { value: 'Political Science', label: 'Political Science' },
+    { value: 'All', label: 'All Branches' }
+]
 
 interface Job {
     id: string
@@ -57,6 +113,17 @@ interface Job {
     expiration_date?: string
     ctc_with_probation?: string
     ctc_after_probation?: string
+    // Company information fields (for university-created jobs)
+    company_name?: string
+    company_logo?: string
+    company_website?: string
+    company_address?: string
+    company_size?: string
+    company_type?: string
+    company_founded?: number
+    company_description?: string
+    contact_person?: string
+    contact_designation?: string
 }
 
 interface EditJobModalProps {
@@ -100,6 +167,17 @@ interface JobFormData {
     expiration_date: string
     ctc_with_probation: string
     ctc_after_probation: string
+    // Company information fields (for university-created jobs)
+    company_name: string
+    company_logo: string
+    company_website: string
+    company_address: string
+    company_size: string
+    company_type: string
+    company_founded: string
+    company_description: string
+    contact_person: string
+    contact_designation: string
 }
 
 // Helper function to clean malformed JSON strings
@@ -199,76 +277,20 @@ const normalizeToOptions = (values: string[], options: Array<{ value: string; la
 }
 
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
-    const [isLoading, setIsLoading] = useState(false)
-    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+    // Fetch industries from backend
+    const { data: industriesData, loading: industriesLoading } = useIndustries({ limit: 1000 })
     
-    // Track if we've cleared cache for this modal opening to prevent infinite loops
-    const hasClearedCacheRef = useRef(false)
-    
-    // Fetch degrees, branches, and other lookup data from backend API
-    const { data: degreesData, loading: loadingDegrees, refetch: refetchDegrees } = useDegrees({ limit: 1000 })
-    const { data: branchesData, loading: loadingBranches, refetch: refetchBranches } = useBranches({ limit: 1000 })
-    const { data: industriesData, loading: loadingIndustries, refetch: refetchIndustries } = useIndustries({ limit: 1000 })
-    const { data: locationPreferencesData, loading: loadingLocations, refetch: refetchLocations } = useLocationPreferences({ limit: 1000 })
-    const { data: skillsData, loading: loadingSkills, refetch: refetchSkills } = useSkills({ limit: 1000 })
-    
-    // Transform degrees data to match MultiSelectDropdown format
-    const degreeOptions = degreesData.map((degree) => ({
-        id: degree.id,
-        value: degree.name,
-        label: degree.name
-    }))
-    
-    // Transform branches data to match MultiSelectDropdown format
-    const branchOptions = branchesData.map((branch) => ({
-        id: branch.id,
-        value: branch.name,
-        label: branch.name
-    }))
-    
-    // Transform industries data to match select dropdown format
-    const industryOptions = industriesData.map((industry) => ({
-        id: industry.id,
+    // Convert LookupItem[] to Select format { value, label }
+    // Use industry name as both value and label since that's what's stored in jobs
+    const industryOptions = industriesData.map(industry => ({
         value: industry.name,
         label: industry.name
     }))
     
-    // Transform location preferences data to match MultiSelectDropdown format
-    const locationOptions = locationPreferencesData.map((location) => ({
-        id: location.id,
-        value: location.name,
-        label: location.name
-    }))
-    
-    // Transform skills data to match MultiSelectDropdown format
-    const skillOptions = skillsData.map((skill) => ({
-        id: skill.id,
-        value: skill.name,
-        label: skill.name
-    }))
-
-    const handleLocationChange = (selectedLocations: string[]) => {
-        setFormData(prev => ({
-            ...prev,
-            location: selectedLocations
-        }))
-        
-        // Clear validation error for location when user selects
-        if (validationErrors.location) {
-            setValidationErrors(prev => ({
-                ...prev,
-                location: ''
-            }))
-        }
-    }
-
-    const handleSkillsChange = (selectedSkills: string[]) => {
-        setFormData(prev => ({
-            ...prev,
-            skills_required: selectedSkills
-        }))
-    }
-    
+    const [isLoading, setIsLoading] = useState(false)
+    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+    const [uploadingLogo, setUploadingLogo] = useState(false)
+    const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
         description: '',
@@ -300,33 +322,19 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
-        ctc_after_probation: ''
+        ctc_after_probation: '',
+        // Company information fields (for university-created jobs)
+        company_name: '',
+        company_logo: '',
+        company_website: '',
+        company_address: '',
+        company_size: '',
+        company_type: '',
+        company_founded: '',
+        company_description: '',
+        contact_person: '',
+        contact_designation: ''
     })
-
-    // Refetch lookup data when modal opens to ensure latest data (only once per modal opening)
-    useEffect(() => {
-        if (isOpen && !hasClearedCacheRef.current) {
-            // Clear cache and refetch to get latest lookup data
-            lookupService.clearCache('/admin/lookups/degrees')
-            lookupService.clearCache('/admin/lookups/branches')
-            lookupService.clearCache('/admin/lookups/industries')
-            lookupService.clearCache('/admin/lookups/location-preferences')
-            lookupService.clearCache('/admin/lookups/skills')
-            
-            // Refetch all lookup data
-            refetchDegrees().catch(() => {})
-            refetchBranches().catch(() => {})
-            refetchIndustries().catch(() => {})
-            refetchLocations().catch(() => {})
-            refetchSkills().catch(() => {})
-            
-            hasClearedCacheRef.current = true
-        } else if (!isOpen) {
-            // Reset flag when modal closes
-            hasClearedCacheRef.current = false
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen])
 
     // Populate form data when job changes
     useEffect(() => {
@@ -477,6 +485,76 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 travel_required: job.travel_required || false
             })
 
+            // Helper function to normalize select values (trim and ensure they match SelectItem values)
+            const normalizeSelectValue = (value: string | null | undefined, options: { value: string }[]): string => {
+                if (!value) return ''
+                const trimmed = value.trim()
+                if (!trimmed) return ''
+                // Check if the trimmed value matches any option value (case-insensitive)
+                const matchedOption = options.find(opt => opt.value.toLowerCase() === trimmed.toLowerCase())
+                if (matchedOption) {
+                    console.log(`✅ Normalized "${trimmed}" to "${matchedOption.value}"`)
+                    return matchedOption.value
+                }
+                console.warn(`⚠️ Value "${trimmed}" does not match any option. Available options:`, options.map(o => o.value))
+                return trimmed // Return original if no match found
+            }
+
+            // Log company information fields for debugging
+            console.log('🔍 Company Information Fields from Job:', {
+                industry: job.industry,
+                industry_type: typeof job.industry,
+                industry_is_null: job.industry === null,
+                industry_is_undefined: job.industry === undefined,
+                company_size: job.company_size,
+                company_type: job.company_type,
+                company_name: job.company_name,
+                company_website: job.company_website,
+                company_address: job.company_address,
+                company_founded: job.company_founded,
+                company_description: job.company_description,
+                contact_person: job.contact_person,
+                contact_designation: job.contact_designation,
+                full_job_object_keys: Object.keys(job)
+            })
+
+            // Normalize select values to match SelectItem values exactly
+            // Only normalize if industries are loaded, otherwise use the job value as-is
+            console.log('🔍 Before Normalization - job.industry:', job.industry, 'Type:', typeof job.industry, 'Industries loaded:', industryOptions.length)
+            const normalizedIndustry = industryOptions.length > 0 
+                ? normalizeSelectValue(job.industry, industryOptions)
+                : (job.industry || '')
+            console.log('🔍 After Normalization - normalizedIndustry:', normalizedIndustry)
+            const normalizedCompanySize = normalizeSelectValue(job.company_size, [
+                { value: '1-10' },
+                { value: '11-50' },
+                { value: '51-200' },
+                { value: '201-500' },
+                { value: '501-1000' },
+                { value: '1001-5000' },
+                { value: '5001-10000' },
+                { value: '10000+' }
+            ])
+            const normalizedCompanyType = normalizeSelectValue(job.company_type, [
+                { value: 'Startup' },
+                { value: 'Small Business' },
+                { value: 'Medium Enterprise' },
+                { value: 'Large Enterprise' },
+                { value: 'Multinational' },
+                { value: 'Non-Profit' },
+                { value: 'Government' }
+            ])
+
+            console.log('🔍 Normalized Values:', {
+                original_industry: job.industry,
+                normalized_industry: normalizedIndustry,
+                original_company_size: job.company_size,
+                normalized_company_size: normalizedCompanySize,
+                original_company_type: job.company_type,
+                normalized_company_type: normalizedCompanyType
+            })
+
+            console.log('🔍 Setting formData with normalizedIndustry:', normalizedIndustry)
             setFormData({
                 title: job.title || '',
                 description: job.description || '',
@@ -497,7 +575,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_branch: educationBranchArray,
                 skills_required: skillsArray,
                 application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
-                industry: job.industry || '',
+                industry: normalizedIndustry || (job.industry || ''),
                 selection_process: job.selection_process || '',
                 campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : '',
                 status: job.status || 'active',
@@ -508,81 +586,46 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 service_agreement_details: job.service_agreement_details || '',
                 expiration_date: job.expiration_date ? new Date(job.expiration_date).toISOString().slice(0, 10) : '',
                 ctc_with_probation: job.ctc_with_probation || '',
-                ctc_after_probation: job.ctc_after_probation || ''
-            })
-
-            console.log('✅ FormData SET with education fields:', {
-                education_degree: educationDegreeArray,
-                education_branch: educationBranchArray,
-                education_degree_length: educationDegreeArray.length,
-                education_branch_length: educationBranchArray.length,
-                education_degree_in_formData: educationDegreeArray,
-                education_branch_in_formData: educationBranchArray
-            })
-            
-            // CRITICAL DEBUG: Log what will be set in formData
-            console.log('🔍 About to set formData with:', {
-                'education_degree array': educationDegreeArray,
-                'education_branch array': educationBranchArray,
-                'education_degree type': typeof educationDegreeArray,
-                'education_branch type': typeof educationBranchArray,
-                'education_degree isArray': Array.isArray(educationDegreeArray),
-                'education_branch isArray': Array.isArray(educationBranchArray)
+                ctc_after_probation: job.ctc_after_probation || '',
+                // Company information fields (for university-created jobs)
+                company_name: (job.company_name && job.company_name.trim()) || '',
+                company_logo: job.company_logo || '',
+                company_website: (job.company_website && job.company_website.trim()) || '',
+                company_address: (job.company_address && job.company_address.trim()) || '',
+                company_size: normalizedCompanySize,
+                company_type: normalizedCompanyType,
+                company_founded: job.company_founded ? job.company_founded.toString() : '',
+                company_description: job.company_description || '',
+                contact_person: (job.contact_person && job.contact_person.trim()) || '',
+                contact_designation: (job.contact_designation && job.contact_designation.trim()) || ''
             })
             
-            // WARNING: If arrays are empty, log a warning
-            if (educationDegreeArray.length === 0 && educationBranchArray.length === 0) {
-                console.warn('⚠️ WARNING: Both education_degree and education_branch are empty arrays!', {
-                    'Original job.education_degree': job.education_degree,
-                    'Original job.education_branch': job.education_branch,
-                    'Parsed educationDegreeArray': educationDegreeArray,
-                    'Parsed educationBranchArray': educationBranchArray,
-                    'Note': 'This means the job does not have education data stored in the database.'
-                })
+            // Log the form data after setting to verify values
+            console.log('🔍 Form Data After Setting:', {
+                industry: normalizedIndustry,
+                company_size: normalizedCompanySize,
+                company_type: normalizedCompanyType
+            })
+            
+            // Set logo preview if logo exists
+            if (job.company_logo) {
+                setLogoPreview(job.company_logo)
+            } else {
+                setLogoPreview(null)
             }
 
         }
-    }, [job])
+    }, [job, industryOptions.length]) // Re-run when job changes or industries are loaded
 
-    // Re-normalize education fields when options become available
-    // This ensures values match options even if options load after job data
+    // Debug: Log formData changes for industry, company_size, and company_type
     useEffect(() => {
-        if (!job || !degreeOptions.length || !branchOptions.length) return
-        
-        setFormData(prev => {
-            // Only normalize if we have values to normalize
-            const hasDegreesToNormalize = prev.education_degree.length > 0
-            const hasBranchesToNormalize = prev.education_branch.length > 0
-            
-            if (!hasDegreesToNormalize && !hasBranchesToNormalize) {
-                return prev // No changes needed
-            }
-            
-            const normalizedDegrees = hasDegreesToNormalize 
-                ? normalizeToOptions(prev.education_degree, degreeOptions)
-                : prev.education_degree
-                
-            const normalizedBranches = hasBranchesToNormalize
-                ? normalizeToOptions(prev.education_branch, branchOptions)
-                : prev.education_branch
-            
-            // Only update if values actually changed
-            const degreesChanged = JSON.stringify(normalizedDegrees) !== JSON.stringify(prev.education_degree)
-            const branchesChanged = JSON.stringify(normalizedBranches) !== JSON.stringify(prev.education_branch)
-            
-            if (degreesChanged || branchesChanged) {
-                return {
-                    ...prev,
-                    education_degree: normalizedDegrees,
-                    education_branch: normalizedBranches
-                }
-            }
-            
-            return prev
+        console.log('🔍 FormData Industry/Size/Type Changed:', {
+            industry: formData.industry,
+            company_size: formData.company_size,
+            company_type: formData.company_type,
+            jobId: job?.id
         })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [degreeOptions.length, branchOptions.length, job?.id]) // Re-run when options load or job changes
-
+    }, [formData.industry, formData.company_size, formData.company_type, job?.id])
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -604,6 +647,91 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         }
     }
 
+    const addSkill = () => {
+        if (currentSkill.trim() && !formData.skills_required.includes(currentSkill.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                skills_required: [...prev.skills_required, currentSkill.trim()]
+            }))
+            setCurrentSkill('')
+        }
+    }
+
+    const removeSkill = (skillToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            skills_required: prev.skills_required.filter(skill => skill !== skillToRemove)
+        }))
+    }
+
+    const addLocation = () => {
+        if (currentLocation.trim() && !formData.location.includes(currentLocation.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                location: [...prev.location, currentLocation.trim()]
+            }))
+            setCurrentLocation('')
+        }
+    }
+
+    const removeLocation = (locationToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            location: prev.location.filter(location => location !== locationToRemove)
+        }))
+    }
+
+    const handleLogoUpload = async (file: File) => {
+        setUploadingLogo(true)
+        try {
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size must be less than 5MB')
+                setUploadingLogo(false)
+                return
+            }
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+                setUploadingLogo(false)
+                return
+            }
+
+            // Upload the file - use company logo endpoint for university users, regular image upload for others
+            let result
+            if (isUniversity) {
+                // University users: upload to corporate folder structure
+                result = await apiClient.uploadCompanyLogo(file)
+            } else {
+                // Corporate users: use regular image upload (though they shouldn't be using this for company logos)
+                result = await apiClient.uploadImage(file)
+            }
+            
+            // Update form data with the uploaded logo URL
+            handleInputChange('company_logo', result.file_url)
+            
+            // Create preview URL for display
+            const previewUrl = URL.createObjectURL(file)
+            setLogoPreview(previewUrl)
+            
+            toast.success('Company logo uploaded successfully!')
+        } catch (error: any) {
+            console.error('Logo upload error:', error)
+            toast.error(error.response?.data?.detail || 'Failed to upload logo. Please try again.')
+        } finally {
+            setUploadingLogo(false)
+        }
+    }
+
+    const handleLogoRemove = () => {
+        handleInputChange('company_logo', '')
+        setLogoPreview(null)
+        if (logoPreview) {
+            URL.revokeObjectURL(logoPreview)
+        }
+    }
 
     const handleMultiSelectChange = (field: 'education_degree' | 'education_branch' | 'education_level', value: string) => {
         setFormData(prev => {
@@ -643,6 +771,19 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (!formData.description.trim()) errors.description = 'Job description is required'
         if (!formData.job_type) errors.job_type = 'Job type is required'
         if (formData.location.length === 0) errors.location = 'At least one location is required'
+        
+        // Validate company information for university-created jobs
+        if (isUniversity && !formData.company_name.trim()) {
+            errors.company_name = 'Company name is required'
+        }
+        
+        // Validate website URL format if provided
+        if (formData.company_website && formData.company_website.trim()) {
+            const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+            if (!urlPattern.test(formData.company_website)) {
+                errors.company_website = 'Please enter a valid URL (e.g., https://www.example.com)'
+            }
+        }
         
         // Validate number_of_openings if provided
         if (formData.number_of_openings && formData.number_of_openings.trim() !== '') {
@@ -717,7 +858,18 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: formData.expiration_date ? formData.expiration_date : null,
                 ctc_with_probation: formData.ctc_with_probation || null,
-                ctc_after_probation: formData.ctc_after_probation || null
+                ctc_after_probation: formData.ctc_after_probation || null,
+                // Company information fields (for university-created jobs)
+                company_name: isUniversity ? (formData.company_name || null) : null,
+                company_logo: isUniversity ? (formData.company_logo || null) : null,
+                company_website: isUniversity ? (formData.company_website || null) : null,
+                company_address: isUniversity ? (formData.company_address || null) : null,
+                company_size: isUniversity ? (formData.company_size || null) : null,
+                company_type: isUniversity ? (formData.company_type || null) : null,
+                company_founded: isUniversity && formData.company_founded ? parseInt(formData.company_founded) : null,
+                company_description: isUniversity ? (formData.company_description || null) : null,
+                contact_person: isUniversity ? (formData.contact_person || null) : null,
+                contact_designation: isUniversity ? (formData.contact_designation || null) : null
             }
 
             // Log the job update request with focus on number_of_openings
@@ -938,58 +1090,284 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                 </div>
                             </div>
 
-                            {/* Location & Work Details */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <MapPin className="w-5 h-5" />
-                                    Location & Work Details
-                                </h3>
+                            {/* Company Information Section - Only for University */}
+                            {isUniversity && (
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Building className="w-5 h-5" />
+                                        Company Information
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Name *
+                                            </label>
+                                            <Input
+                                                value={formData.company_name}
+                                                onChange={(e) => handleInputChange('company_name', e.target.value)}
+                                                placeholder={validationErrors.company_name || "e.g., TechCorp Inc."}
+                                                className={validationErrors.company_name ? "border-red-500 placeholder-red-500" : ""}
+                                            />
+                                            {validationErrors.company_name && (
+                                                <p className="text-red-500 text-sm mt-1">{validationErrors.company_name}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Logo
+                                            </label>
+                                            <FileUpload
+                                                onFileSelect={handleLogoUpload}
+                                                onFileRemove={handleLogoRemove}
+                                                currentFile={formData.company_logo || logoPreview || null}
+                                                type="image"
+                                                maxSize={5}
+                                                disabled={uploadingLogo}
+                                                placeholder="Upload company logo"
+                                                className="w-full"
+                                            />
+                                            {uploadingLogo && (
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                    Uploading logo...
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Industry
+                                            </label>
+                                            {(() => {
+                                                const industryValue = formData.industry && formData.industry.trim() ? formData.industry : undefined
+                                                const hasMatch = industryValue && industryOptions.some(opt => opt.value === industryValue)
+                                                console.log('🎯 Industry Select Render:', {
+                                                    formData_industry: formData.industry,
+                                                    industryValue,
+                                                    hasMatch,
+                                                    industriesLoading,
+                                                    industriesCount: industryOptions.length,
+                                                    availableOptions: industryOptions.map(o => o.value).slice(0, 5)
+                                                })
+                                                
+                                                if (industriesLoading) {
+                                                    return (
+                                                        <Select disabled>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Loading industries..." />
+                                                            </SelectTrigger>
+                                                        </Select>
+                                                    )
+                                                }
+                                                
+                                                return (
+                                                    <Select 
+                                                        key={`industry-${job?.id || 'new'}-${industryValue || 'empty'}`}
+                                                        value={industryValue} 
+                                                        onValueChange={(value) => handleInputChange('industry', value)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select industry" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {industryOptions.length > 0 ? (
+                                                                industryOptions.map((option) => (
+                                                                    <SelectItem key={option.value} value={option.value}>
+                                                                        {option.label}
+                                                                    </SelectItem>
+                                                                ))
+                                                            ) : (
+                                                                <SelectItem value="" disabled>No industries available</SelectItem>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )
+                                            })()}
+          
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Founded Year
+                                            </label>
+                                            <Input
+                                                type="number"
+                                                value={formData.company_founded}
+                                                onChange={(e) => handleInputChange('company_founded', e.target.value)}
+                                                placeholder="e.g., 2000"
+                                                min="1900"
+                                                max={new Date().getFullYear()}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Website
+                                        </label>
+                                        <Input
+                                            value={formData.company_website}
+                                            onChange={(e) => handleInputChange('company_website', e.target.value)}
+                                            placeholder={validationErrors.company_website || "https://www.example.com"}
+                                            className={validationErrors.company_website ? "border-red-500 placeholder-red-500" : ""}
+                                        />
+                                        {validationErrors.company_website && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.company_website}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Address
+                                        </label>
+                                        <Input
+                                            value={formData.company_address}
+                                            onChange={(e) => handleInputChange('company_address', e.target.value)}
+                                            placeholder="e.g., 123 Main St, City, State, ZIP"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Size
+                                            </label>
+                                            <Select 
+                                                key={`company_size-${job?.id || 'new'}-${formData.company_size || ''}`}
+                                                value={formData.company_size || ''} 
+                                                onValueChange={(value) => handleInputChange('company_size', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select company size" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1-10">1-10</SelectItem>
+                                                    <SelectItem value="11-50">11-50</SelectItem>
+                                                    <SelectItem value="51-200">51-200</SelectItem>
+                                                    <SelectItem value="201-500">201-500</SelectItem>
+                                                    <SelectItem value="501-1000">501-1000</SelectItem>
+                                                    <SelectItem value="1001-5000">1001-5000</SelectItem>
+                                                    <SelectItem value="5001-10000">5001-10000</SelectItem>
+                                                    <SelectItem value="10000+">10000+</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Company Type
+                                            </label>
+                                            <Select 
+                                                key={`company_type-${job?.id || 'new'}-${formData.company_type || ''}`}
+                                                value={formData.company_type || ''} 
+                                                onValueChange={(value) => handleInputChange('company_type', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select company type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Startup">Startup</SelectItem>
+                                                    <SelectItem value="Small Business">Small Business</SelectItem>
+                                                    <SelectItem value="Medium Enterprise">Medium Enterprise</SelectItem>
+                                                    <SelectItem value="Large Enterprise">Large Enterprise</SelectItem>
+                                                    <SelectItem value="Multinational">Multinational</SelectItem>
+                                                    <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+                                                    <SelectItem value="Government">Government</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            About Company
+                                        </label>
+                                        <Textarea
+                                            value={formData.company_description}
+                                            onChange={(e) => handleInputChange('company_description', e.target.value)}
+                                            placeholder="Describe the company, its mission, values, and what makes it special..."
+                                            rows={4}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Contact Person
+                                            </label>
+                                            <Input
+                                                value={formData.contact_person}
+                                                onChange={(e) => handleInputChange('contact_person', e.target.value)}
+                                                placeholder="e.g., John Doe"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Designation
+                                            </label>
+                                            <Input
+                                                value={formData.contact_designation}
+                                                onChange={(e) => handleInputChange('contact_designation', e.target.value)}
+                                                placeholder="e.g., HR Manager"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Company Information Section - Only for University */}
+                            {isUniversity && (
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Building className="w-5 h-5" />
+                                        Company Information
+                                    </h3>
 
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Location *
                                         </label>
-                                        
-                                        {/* Display selected location tags */}
-                                        {formData.location.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                                {formData.location.map((location, index) => (
-                                                    <span
-                                                        key={index}
-                                                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
-                                                    >
-                                                        {locationOptions.find(opt => opt.value === location)?.label || location}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newLocations = formData.location.filter(l => l !== location)
-                                                                handleLocationChange(newLocations)
-                                                            }}
-                                                            className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        
-                                        <MultiSelectDropdown
-                                            options={locationOptions}
-                                            selectedValues={formData.location}
-                                            onSelectionChange={handleLocationChange}
-                                            placeholder={loadingLocations ? "Loading locations..." : validationErrors.location || "Select location(s)"}
-                                            disabled={loadingLocations}
-                                            isLoading={loadingLocations}
-                                            showAllOption={false}
-                                            hideSelectedTags={true}
-                                            className="w-full"
-                                        />
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={currentLocation}
+                                                onChange={(e) => setCurrentLocation(e.target.value)}
+                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
+                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
+                                            />
+                                            <Button type="button" onClick={addLocation} variant="outline">
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                         {validationErrors.location && (
                                             <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
                                         )}
                                     </div>
+
+                                    {formData.location.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {formData.location.map((location, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                                                >
+                                                    {location}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeLocation(location)}
+                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1063,9 +1441,16 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.salary_min}
-                                            onChange={(e) => handleInputChange('salary_min', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                                                    handleInputChange('salary_min', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 500000"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
@@ -1075,9 +1460,16 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.salary_max}
-                                            onChange={(e) => handleInputChange('salary_max', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0)) {
+                                                    handleInputChange('salary_max', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 800000"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
@@ -1104,9 +1496,16 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.experience_min}
-                                            onChange={(e) => handleInputChange('experience_min', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+                                                    handleInputChange('experience_min', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 2"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
@@ -1116,9 +1515,16 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         </label>
                                         <Input
                                             type="number"
+                                            min="0"
                                             value={formData.experience_max}
-                                            onChange={(e) => handleInputChange('experience_max', e.target.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+                                                    handleInputChange('experience_max', value);
+                                                }
+                                            }}
                                             placeholder="e.g., 5"
+                                            className="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield"
                                         />
                                     </div>
 
