@@ -180,36 +180,36 @@ interface JobFormData {
 // Helper function to clean malformed JSON strings
 const cleanJsonString = (str: string): string => {
     if (!str || typeof str !== 'string') return str
-    
+
     const original = str
     let cleaned = str.trim()
-    
+
     // Handle various malformed patterns
     // Remove leading { and trailing }
     cleaned = cleaned.replace(/^\{/, '').replace(/\}$/, '')
-    
+
     // Remove leading and trailing quotes
     cleaned = cleaned.replace(/^"/, '').replace(/"$/, '')
-    
+
     // Remove excessive JSON escaping
     cleaned = cleaned.replace(/\\"/g, '"') // Replace \" with "
     cleaned = cleaned.replace(/\\\\/g, '\\') // Replace \\ with \
-    
+
     // Remove any remaining JSON array markers
     cleaned = cleaned.replace(/^\[/, '').replace(/\]$/, '')
-    
+
     // Clean up any remaining quotes and braces
     cleaned = cleaned.replace(/^\{/, '').replace(/\}$/, '')
     cleaned = cleaned.replace(/^"/, '').replace(/"$/, '')
-    
+
     // Final trim
     cleaned = cleaned.trim()
-    
+
     // Debug logging for problematic strings
     if (original !== cleaned) {
         console.log('🧹 Cleaned string:', { original, cleaned })
     }
-    
+
     return cleaned
 }
 
@@ -218,27 +218,27 @@ const parseEducationField = (field: string | string[]): string[] => {
     if (Array.isArray(field)) {
         return field.map(item => cleanJsonString(item)).filter(item => item)
     }
-    
+
     if (typeof field === 'string' && field) {
         // First clean the string, then split by comma
         const cleaned = cleanJsonString(field)
         return cleaned.split(',').map(item => item.trim()).filter(item => item)
     }
-    
+
     return []
 }
 
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
     // Fetch industries from backend
     const { data: industriesData, loading: industriesLoading } = useIndustries({ limit: 1000 })
-    
+
     // Convert LookupItem[] to Select format { value, label }
     // Use industry name as both value and label since that's what's stored in jobs
     const industryOptions = industriesData.map(industry => ({
         value: industry.name,
         label: industry.name
     }))
-    
+
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
@@ -296,20 +296,20 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             console.log('🔍 Full job object loaded:', job)
 
             // Handle location - could be string or array
-            const locationArray = Array.isArray(job.location) ? job.location : 
-                                 (typeof job.location === 'string' && job.location) ? job.location.split(',').map(l => l.trim()) : []
-            
+            const locationArray = Array.isArray(job.location) ? job.location :
+                (typeof job.location === 'string' && job.location) ? job.location.split(',').map(l => l.trim()) : []
+
             // Handle education fields - use the safe parsing function
             console.log('🔍 Education fields before parsing:', {
                 education_level: job.education_level,
                 education_degree: job.education_degree,
                 education_branch: job.education_branch
             })
-            
+
             const educationLevelArray = parseEducationField(job.education_level || [])
             const educationDegreeArray = parseEducationField(job.education_degree || [])
             const educationBranchArray = parseEducationField(job.education_branch || [])
-            
+
             console.log('🔍 Education fields after parsing:', {
                 educationLevelArray,
                 educationDegreeArray,
@@ -323,11 +323,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 travel_required: job.travel_required,
                 number_of_openings: job.number_of_openings
             })
-            
+
             // For existing jobs that might not have mode_of_work set, we need to handle the migration
             let isOnsite = false
             let isRemote = job.remote_work || false
-            
+
             if (job.mode_of_work) {
                 // New logic: use mode_of_work if available
                 isOnsite = job.mode_of_work === 'onsite' || job.mode_of_work === 'hybrid'
@@ -338,7 +338,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 isOnsite = !job.remote_work
                 isRemote = job.remote_work || false
             }
-            
+
             console.log('🔍 Derived checkbox states:', {
                 isOnsite,
                 isRemote,
@@ -381,7 +381,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             // Normalize select values to match SelectItem values exactly
             // Only normalize if industries are loaded, otherwise use the job value as-is
             console.log('🔍 Before Normalization - job.industry:', job.industry, 'Type:', typeof job.industry, 'Industries loaded:', industryOptions.length)
-            const normalizedIndustry = industryOptions.length > 0 
+            const normalizedIndustry = industryOptions.length > 0
                 ? normalizeSelectValue(job.industry, industryOptions)
                 : (job.industry || '')
             console.log('🔍 After Normalization - normalizedIndustry:', normalizedIndustry)
@@ -459,14 +459,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 contact_person: (job.contact_person && job.contact_person.trim()) || '',
                 contact_designation: (job.contact_designation && job.contact_designation.trim()) || ''
             })
-            
+
             // Log the form data after setting to verify values
             console.log('🔍 Form Data After Setting:', {
                 industry: normalizedIndustry,
                 company_size: normalizedCompanySize,
                 company_type: normalizedCompanyType
             })
-            
+
             // Set logo preview if logo exists
             if (job.company_logo) {
                 setLogoPreview(job.company_logo)
@@ -489,7 +489,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
-        
+
         // Log number of openings changes specifically
         if (field === 'number_of_openings') {
             console.log('🔢 Number of Openings Changed:', {
@@ -500,7 +500,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 timestamp: new Date().toISOString()
             })
         }
-        
+
         // Clear validation error for this field
         if (validationErrors[field]) {
             setValidationErrors(prev => ({ ...prev, [field]: '' }))
@@ -568,14 +568,14 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 // Corporate users: use regular image upload (though they shouldn't be using this for company logos)
                 result = await apiClient.uploadImage(file)
             }
-            
+
             // Update form data with the uploaded logo URL
             handleInputChange('company_logo', result.file_url)
-            
+
             // Create preview URL for display
             const previewUrl = URL.createObjectURL(file)
             setLogoPreview(previewUrl)
-            
+
             toast.success('Company logo uploaded successfully!')
         } catch (error: any) {
             console.error('Logo upload error:', error)
@@ -617,12 +617,12 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (!formData.description.trim()) errors.description = 'Job description is required'
         if (!formData.job_type) errors.job_type = 'Job type is required'
         if (formData.location.length === 0) errors.location = 'At least one location is required'
-        
+
         // Validate company information for university-created jobs
         if (isUniversity && !formData.company_name.trim()) {
             errors.company_name = 'Company name is required'
         }
-        
+
         // Validate website URL format if provided
         if (formData.company_website && formData.company_website.trim()) {
             const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
@@ -630,7 +630,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 errors.company_website = 'Please enter a valid URL (e.g., https://www.example.com)'
             }
         }
-        
+
         // Validate number_of_openings if provided
         if (formData.number_of_openings && formData.number_of_openings.trim() !== '') {
             const numOpenings = parseInt(formData.number_of_openings)
@@ -661,7 +661,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 travel_required: formData.travel_required,
                 number_of_openings: formData.number_of_openings
             })
-            
+
             let modeOfWork = null
             if (formData.onsite_office && formData.remote_work) {
                 modeOfWork = 'hybrid'
@@ -670,7 +670,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             } else if (formData.remote_work) {
                 modeOfWork = 'remote'
             }
-            
+
             console.log('🔍 Derived mode_of_work for submit:', modeOfWork)
 
             const jobData = {
@@ -741,7 +741,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             } else {
                 response = await apiClient.updateJob(job.id, jobData)
             }
-            
+
             // Log successful update response
             console.log('✅ Job Update Success:', {
                 jobId: job.id,
@@ -754,7 +754,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 },
                 timestamp: new Date().toISOString()
             })
-            
+
             toast.success('Job updated successfully!')
             onJobUpdated()
             onClose()
@@ -774,7 +774,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 },
                 timestamp: new Date().toISOString()
             })
-            
+
             const errorMessage = error.response?.data?.detail || error.message || 'Failed to update job. Please try again.'
             toast.error(typeof errorMessage === 'string' ? errorMessage : 'Failed to update job. Please try again.')
         } finally {
@@ -998,7 +998,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                     industriesCount: industryOptions.length,
                                                     availableOptions: industryOptions.map(o => o.value).slice(0, 5)
                                                 })
-                                                
+
                                                 if (industriesLoading) {
                                                     return (
                                                         <Select disabled>
@@ -1008,11 +1008,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                         </Select>
                                                     )
                                                 }
-                                                
+
                                                 return (
-                                                    <Select 
+                                                    <Select
                                                         key={`industry-${job?.id || 'new'}-${industryValue || 'empty'}`}
-                                                        value={industryValue} 
+                                                        value={industryValue}
                                                         onValueChange={(value) => handleInputChange('industry', value)}
                                                     >
                                                         <SelectTrigger>
@@ -1026,13 +1026,13 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                                                     </SelectItem>
                                                                 ))
                                                             ) : (
-                                                                <SelectItem value="" disabled>No industries available</SelectItem>
+                                                                <SelectItem value="no_industry" disabled>No industries available</SelectItem>
                                                             )}
                                                         </SelectContent>
                                                     </Select>
                                                 )
                                             })()}
-          
+
                                         </div>
 
                                         <div>
@@ -1081,9 +1081,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Company Size
                                             </label>
-                                            <Select 
+                                            <Select
                                                 key={`company_size-${job?.id || 'new'}-${formData.company_size || ''}`}
-                                                value={formData.company_size || ''} 
+                                                value={formData.company_size || ''}
                                                 onValueChange={(value) => handleInputChange('company_size', value)}
                                             >
                                                 <SelectTrigger>
@@ -1106,9 +1106,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Company Type
                                             </label>
-                                            <Select 
+                                            <Select
                                                 key={`company_type-${job?.id || 'new'}-${formData.company_type || ''}`}
-                                                value={formData.company_type || ''} 
+                                                value={formData.company_type || ''}
                                                 onValueChange={(value) => handleInputChange('company_type', value)}
                                             >
                                                 <SelectTrigger>
@@ -1434,7 +1434,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Probation Time
+                                                Probation Time
                                             </label>
                                             <Input
                                                 value={formData.ctc_after_probation}
