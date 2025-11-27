@@ -98,6 +98,22 @@ class ApiClient {
     return response.data;
   }
 
+  // OTP verification during registration
+  async verifyOtpAndRegisterStudent(code: string, data: StudentRegisterRequest): Promise<{ message: string; student_id: string; email: string }> {
+    const response: AxiosResponse = await this.client.post(`/auth/register/student/verify-otp?code=${code}`, data);
+    return response.data;
+  }
+
+  async verifyOtpAndRegisterCorporate(code: string, data: CorporateRegisterRequest): Promise<{ message: string; corporate_id: string; email: string }> {
+    const response: AxiosResponse = await this.client.post(`/auth/register/corporate/verify-otp?code=${code}`, data);
+    return response.data;
+  }
+
+  async verifyOtpAndRegisterUniversity(code: string, data: UniversityRegisterRequest): Promise<{ message: string; university_id: string; email: string }> {
+    const response: AxiosResponse = await this.client.post(`/auth/register/university/verify-otp?code=${code}`, data);
+    return response.data;
+  }
+
   // Admin registration removed for security - admin accounts must be created manually
   // async registerAdmin(data: AdminRegisterRequest): Promise<{ message: string; user_id: string; email: string }> {
   //   const response: AxiosResponse = await this.client.post('/auth/register/admin', data);
@@ -530,6 +546,14 @@ class ApiClient {
   }
 
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
+    // Validate corporateId before making the request
+    if (!corporateId || 
+        corporateId === 'None' || 
+        corporateId === 'null' || 
+        corporateId === 'undefined' ||
+        (typeof corporateId === 'string' && corporateId.trim() === '')) {
+      throw new Error('Invalid corporate ID provided');
+    }
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
     return response.data;
   }
@@ -588,6 +612,33 @@ class ApiClient {
   async deleteTestCase(testCaseId: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/practice/test-cases/${testCaseId}`);
     return response.data;
+  }
+
+  // Image upload endpoint for company logos
+  async uploadImage(file: File): Promise<{ file_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post('/universities/upload-profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  // Upload company logo for university-created jobs (uses corporate folder structure)
+  async uploadCompanyLogo(file: File): Promise<{ file_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response: AxiosResponse = await this.client.post('/universities/upload-company-logo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    // The endpoint returns {file_url, message}, but we only need file_url for consistency
+    return { file_url: response.data.file_url };
   }
 }
 

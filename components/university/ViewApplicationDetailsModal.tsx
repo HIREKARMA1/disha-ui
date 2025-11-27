@@ -164,7 +164,7 @@ export function ViewApplicationDetailsModal({
                                 </div>
 
                                 {/* Application Details */}
-                                <div className="space-y-4">
+                                {/* <div className="space-y-4">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Application Details</h3>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -200,9 +200,9 @@ export function ViewApplicationDetailsModal({
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </div> */}
 
-                                {/* Cover Letter */}
+                                {/* Cover Letter
                                 {application.cover_letter && (
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Cover Letter</h3>
@@ -212,10 +212,11 @@ export function ViewApplicationDetailsModal({
                                             </p>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
-                                {/* Interview Details - if available */}
-                                {(application.interview_date || application.interview_location) && (
+                                {/* Interview Details - show for "shortlisted" or "selected" status */}
+                                {(application.status === 'shortlisted' || application.status === 'selected') && 
+                                 (application.interview_date || application.interview_location) && (
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Interview Details</h3>
                                         <div className="space-y-3">
@@ -258,8 +259,8 @@ export function ViewApplicationDetailsModal({
                                     </div>
                                 )}
 
-                                {/* Offer Letter - if available */}
-                                {application.offer_letter_url && (
+                                {/* Offer Letter - only show if status is "selected" */}
+                                {application.offer_letter_url && application.status === 'selected' && (
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Offer Letter</h3>
                                         <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
@@ -297,16 +298,6 @@ export function ViewApplicationDetailsModal({
                                         Only the company can update the application status.
                                     </p>
                                 </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                                <button
-                                    onClick={onClose}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-                                >
-                                    Close
-                                </button>
                             </div>
                         </motion.div>
                     </div>

@@ -12,7 +12,7 @@ interface Job {
     id: string
     title: string
     company_name?: string
-    location: string
+    location: string | string[]
     job_type: string
     salary_min?: number
     salary_max?: number
@@ -123,7 +123,7 @@ Best regards,
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <MapPin className="w-4 h-4" />
-                                        <span>{job.location}</span>
+                                        <span>{Array.isArray(job.location) ? job.location.join(', ') : job.location}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Briefcase className="w-4 h-4" />

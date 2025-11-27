@@ -54,6 +54,16 @@ interface UniversityJob {
     created_at?: string
     is_active?: boolean
     can_apply?: boolean
+    // Company information fields (for university-created jobs)
+    company_logo?: string
+    company_website?: string
+    company_address?: string
+    company_size?: string
+    company_type?: string
+    company_founded?: number
+    company_description?: string
+    contact_person?: string
+    contact_designation?: string
 }
 
 interface UniversityJobCardProps {

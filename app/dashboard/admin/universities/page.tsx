@@ -5,8 +5,9 @@ import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayou
 import { UniversityManagementHeader } from '@/components/dashboard/UniversityManagementHeader'
 import { UniversityTable } from '@/components/dashboard/UniversityTable'
 import { CreateUniversityModal } from '@/components/dashboard/CreateUniversityModal'
+import { EditUniversityModal } from '@/components/dashboard/EditUniversityModal'
 import { universityManagementService } from '@/services/universityManagementService'
-import { UniversityListResponse, UniversityListItem } from '@/types/university'
+import { UniversityListResponse, UniversityListItem, UniversityProfile, UpdateUniversityRequest } from '@/types/university'
 import { toast } from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-handler'
 import { motion } from 'framer-motion'
@@ -18,6 +19,8 @@ export default function AdminUniversities() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [selectedUniversity, setSelectedUniversity] = useState<UniversityProfile | null>(null)
     const [includeArchived, setIncludeArchived] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
@@ -82,13 +85,63 @@ export default function AdminUniversities() {
         }
     }
 
+    const handleDeleteUniversity = async (universityId: string) => {
+        try {
+            await universityManagementService.deleteUniversity(universityId)
+            toast.success('University and all associated data deleted successfully!')
+            fetchUniversities() // Refresh the list
+        } catch (error: any) {
+            console.error('Failed to delete university:', error)
+            toast.error(getErrorMessage(error))
+            throw error // Re-throw to let the modal handle it
+        }
+    }
+
+    const handleEditUniversity = async (university: UniversityListItem) => {
+        try {
+            // Fetch full university profile
+            const profile = await universityManagementService.getUniversityProfile(university.id)
+            setSelectedUniversity(profile)
+            setShowEditModal(true)
+        } catch (error: any) {
+            console.error('Failed to fetch university profile:', error)
+            toast.error(getErrorMessage(error))
+        }
+    }
+
+    const handleUpdateUniversity = async (universityId: string, data: UpdateUniversityRequest): Promise<UniversityProfile> => {
+        try {
+            const updated = await universityManagementService.updateUniversity(universityId, data)
+            toast.success('University updated successfully!')
+            setShowEditModal(false)
+            setSelectedUniversity(null)
+            fetchUniversities() // Refresh the list
+            return updated
+        } catch (error: any) {
+            console.error('Failed to update university:', error)
+            toast.error(getErrorMessage(error))
+            throw error
+        }
+    }
+
     const handleExportUniversities = async () => {
         try {
-            // TODO: Implement export functionality
-            toast('Export functionality coming soon!')
+            const blob = await universityManagementService.exportUniversities(includeArchived)
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `universities_export_${new Date().toISOString().split('T')[0]}.csv`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            
+            toast.success('Universities exported successfully!')
         } catch (error: any) {
             console.error('Failed to export universities:', error)
-            toast.error('Failed to export universities.')
+            toast.error(getErrorMessage(error))
         }
     }
 
@@ -182,6 +235,8 @@ export default function AdminUniversities() {
                     isLoading={isLoading}
                     error={error}
                     onArchiveUniversity={handleArchiveUniversity}
+                    onDeleteUniversity={handleDeleteUniversity}
+                    onEditUniversity={handleEditUniversity}
                     onRetry={fetchUniversities}
                 />
 
@@ -190,6 +245,15 @@ export default function AdminUniversities() {
                     isOpen={showCreateModal}
                     onClose={() => setShowCreateModal(false)}
                     onSubmit={handleCreateUniversity}
+                />
+                <EditUniversityModal
+                    isOpen={showEditModal}
+                    onClose={() => {
+                        setShowEditModal(false)
+                        setSelectedUniversity(null)
+                    }}
+                    onSubmit={handleUpdateUniversity}
+                    university={selectedUniversity}
                 />
             </div>
         </AdminDashboardLayout>

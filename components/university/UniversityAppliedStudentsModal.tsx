@@ -15,10 +15,12 @@ interface Job {
     title: string
     corporate_name?: string
     company_name?: string
+    university_id?: string | null
 }
 
 interface AppliedStudent extends AppliedStudentExport {
     profile_picture?: string
+    university_name?: string
 }
 
 interface UniversityAppliedStudentsModalProps {
@@ -35,13 +37,35 @@ export function UniversityAppliedStudentsModal({ isOpen, onClose, job }: Univers
     const [selectedStudent, setSelectedStudent] = useState<StudentListItem | null>(null)
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [fullProfileData, setFullProfileData] = useState<any>(null)
+    const [completeJobData, setCompleteJobData] = useState<Job | null>(null)
 
-    // Fetch applied students when modal opens
+    // Fetch complete job data and applied students when modal opens
     useEffect(() => {
         if (isOpen && job) {
+            fetchCompleteJobData()
             fetchAppliedStudents()
         }
     }, [isOpen, job])
+
+    // Fetch complete job data from API to get company_name
+    const fetchCompleteJobData = async () => {
+        if (!job) return
+
+        try {
+            const jobData = await apiClient.getJobById(job.id)
+            setCompleteJobData({
+                id: jobData.id,
+                title: jobData.title,
+                corporate_name: jobData.corporate_name,
+                company_name: jobData.company_name,
+                university_id: jobData.university_id
+            })
+        } catch (error) {
+            console.error('Failed to fetch complete job data:', error)
+            // If API call fails, use the job data passed as prop
+            setCompleteJobData(job)
+        }
+    }
 
     const fetchAppliedStudents = async () => {
         if (!job) return
@@ -61,6 +85,7 @@ export function UniversityAppliedStudentsModal({ isOpen, onClose, job }: Univers
                     email: app.student_email,
                     phone: app.phone || '',
                     university_id: app.university_id || '',
+                    university_name: app.university_name || '',
                     degree: app.degree || '',
                     branch: app.branch || '',
                     graduation_year: app.graduation_year || 0,
@@ -273,6 +298,7 @@ export function UniversityAppliedStudentsModal({ isOpen, onClose, job }: Univers
         setError(null)
         setSelectedStudent(null)
         setFullProfileData(null)
+        setCompleteJobData(null)
         onClose()
     }
 
@@ -319,10 +345,20 @@ export function UniversityAppliedStudentsModal({ isOpen, onClose, job }: Univers
                             {/* Job Info */}
                             <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                                 <h3 className="font-medium text-gray-900 dark:text-white">{job?.title}</h3>
-                                {(job?.corporate_name || job?.company_name) && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                        Company: {job.corporate_name || job.company_name}
-                                    </p>
+                                {/* Show University for university-created jobs, Company for corporate jobs */}
+                                {/* Use completeJobData from API if available, otherwise fallback to job prop */}
+                                {(completeJobData || job) && (
+                                    <>
+                                        {(completeJobData?.university_id || job?.university_id) && !(completeJobData?.corporate_name || job?.corporate_name) ? (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                University: {(completeJobData?.company_name || job?.company_name) || 'University'}
+                                            </p>
+                                        ) : (completeJobData?.corporate_name || job?.corporate_name || completeJobData?.company_name || job?.company_name) ? (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                Company: {(completeJobData?.corporate_name || job?.corporate_name) || (completeJobData?.company_name || job?.company_name)}
+                                            </p>
+                                        ) : null}
+                                    </>
                                 )}
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                     Total Applications: {students.length}
@@ -392,7 +428,7 @@ export function UniversityAppliedStudentsModal({ isOpen, onClose, job }: Univers
                                                     <td className="py-4 px-4">
                                                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                             <Building className="w-4 h-4" />
-                                                            <span>{student.university_id || 'Not specified'}</span>
+                                                            <span>{student.university_name || student.university_id || 'Not specified'}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
