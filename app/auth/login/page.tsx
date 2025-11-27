@@ -134,11 +134,11 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             let message = 'Login failed. Please try again.'
-        
+
             if (error.response) {
                 const status = error.response.status
                 const detail = error.response.data?.detail
-        
+
                 if (status === 401) {
                     message = 'Invalid password. Please try again.'
                 } else if (status === 404) {
@@ -149,10 +149,10 @@ export default function LoginPage() {
                     message = detail || message
                 }
             }
-        
+
             toast.error(message)
         }
-         finally {
+        finally {
             setIsLoading(false)
         }
     }
@@ -274,10 +274,6 @@ export default function LoginPage() {
                                         </button>
                                     }
                                     error={!!errors.password}
-                                    onCopy={(e) => e.preventDefault()}
-                                    onPaste={(e) => e.preventDefault()}
-                                    onCut={(e) => e.preventDefault()}
-                                    onContextMenu={(e) => e.preventDefault()}
                                     {...register('password')}
                                 />
                                 {errors.password && (
@@ -289,7 +285,7 @@ export default function LoginPage() {
 
                             {/* Terms and Privacy Policy Checkbox */}
                             <div className="flex items-center justify-between">
-                                <div 
+                                <div
                                     className="cursor-pointer flex-1"
                                     onClick={() => setShowTermsModal(true)}
                                 >
@@ -307,7 +303,7 @@ export default function LoginPage() {
                                         }
                                     />
                                 </div>
-                                
+
                                 {/* Forgot Password Link - Only show for non-admin users */}
                                 {selectedUserType !== 'admin' && (
                                     <Link
@@ -372,7 +368,7 @@ export default function LoginPage() {
                 maxWidth="2xl"
             >
                 <TermsModalContent />
-                
+
                 <div className="mt-6 flex justify-end">
                     <Button onClick={handleTermsAndPrivacyAccept} className="bg-primary-600 hover:bg-primary-700">
                         Accept Terms and Conditions and Privacy Policy

@@ -18,24 +18,32 @@ interface CorporateDashboardLayoutProps {
 
 export function CorporateDashboardContent({ children }: CorporateDashboardLayoutProps) {
     const [dashboardData, setDashboardData] = useState<any>(null)
+    const [corporateProfile, setCorporateProfile] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const { user } = useAuth()
 
-    // Fetch corporate dashboard data
+    // Fetch corporate dashboard data and profile
     useEffect(() => {
         const fetchDashboardData = async () => {
             if (user?.user_type === 'corporate') {
                 try {
                     setIsLoading(true)
-                    const data = await apiClient.getCorporateDashboard()
-                    console.log('🎯 Corporate Dashboard Data:', data)
-                    setDashboardData(data)
+                    // Fetch dashboard data and profile in parallel
+                    const [dashboardDataResult, profileData] = await Promise.all([
+                        apiClient.getCorporateDashboard(),
+                        apiClient.getCorporateProfile()
+                    ])
+                    console.log('🎯 Corporate Dashboard Data:', dashboardDataResult)
+                    console.log('🎯 Corporate Profile Data:', profileData)
+                    setDashboardData(dashboardDataResult)
+                    setCorporateProfile(profileData)
                     setError(null)
                 } catch (error) {
                     console.error('Failed to fetch corporate dashboard data:', error)
                     setError('Failed to load dashboard data')
                     setDashboardData(null)
+                    setCorporateProfile(null)
                 } finally {
                     setIsLoading(false)
                 }
@@ -80,7 +88,7 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
                             {/* Dashboard Content */}
                             {!isLoading && (
                                 <>
-                                    <CorporateWelcomeMessage />
+                                    <CorporateWelcomeMessage companyName={corporateProfile?.company_name || corporateProfile?.name || 'Company'} />
 
                                     <CorporateDashboardStats dashboardData={dashboardData} isLoading={isLoading} />
 

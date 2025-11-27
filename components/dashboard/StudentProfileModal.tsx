@@ -1500,14 +1500,14 @@ export function StudentProfileModal({
 
     return (
         <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleBackdropClick}
         >
             <motion.div
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-5xl w-full mx-2 sm:mx-4 h-[90vh] sm:h-[80vh] lg:h-[75vh] overflow-hidden flex flex-col"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-6xl w-full mx-2 sm:mx-4 max-h-[95vh] h-[95vh] overflow-hidden flex flex-col"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
@@ -1695,7 +1695,7 @@ export function StudentProfileModal({
                 </div>
 
                 {/* Tab Content */}
-                <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
                             <div className="text-center">
