@@ -51,7 +51,7 @@ export function StudentProfile() {
         imageUrl: '',
         altText: ''
     })
-    const basicFormRef = useRef(null);
+    const basicFormRef = useRef<HTMLDivElement>(null);
 
     const profileSections: ProfileSection[] = [
         {

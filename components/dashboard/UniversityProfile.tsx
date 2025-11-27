@@ -35,7 +35,6 @@ import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { z } from "zod";
 import toast from 'react-hot-toast'
-import { useRef } from 'react'
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -46,6 +45,7 @@ interface ProfileSection {
     fields: string[]
     completed: boolean
 }
+
 
 const allowedDomains = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "edu"];
 
@@ -106,8 +106,6 @@ export function UniversityProfile() {
     const [uploadingImage, setUploadingImage] = useState(false)
     const [formData, setFormData] = useState<UniversityProfileUpdateData>({})
     const { user } = useAuth()
-    const basicFormRef = useRef<HTMLDivElement | null>(null);
-
 
     const profileSections: ProfileSection[] = [
         {
@@ -489,17 +487,7 @@ export function UniversityProfile() {
                                     </div>
                                     <button
                                         className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
-                                        onClick={() => {
-                                            setEditing('basic');
-
-                                            // Wait for edit section to render, then scroll
-                                            setTimeout(() => {
-                                                basicFormRef.current?.scrollIntoView({
-                                                    behavior: "smooth",
-                                                    block: "center"
-                                                });
-                                            }, 150);
-                                        }}
+                                        onClick={() => setEditing('basic')}
                                         title="Change profile picture"
                                         disabled={uploadingImage}
                                     >
@@ -509,7 +497,6 @@ export function UniversityProfile() {
                                             <Camera className="w-3 h-3" />
                                         )}
                                     </button>
-
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                                     {profile.name}
@@ -649,7 +636,6 @@ export function UniversityProfile() {
 
                 {editing === 'basic' ? (
                     <ProfileSectionForm
-                        ref={basicFormRef}
                         section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'website_url', 'bio', 'profile_picture'], completed: false }}
                         profile={profile}
                         onSave={(formData) => handleSave('basic', formData)}
@@ -659,7 +645,7 @@ export function UniversityProfile() {
                         onEdit={handleEdit}
                     />
                 ) : (
-                    <div ref={basicFormRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
