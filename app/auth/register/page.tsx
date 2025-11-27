@@ -770,10 +770,7 @@ export default function RegisterPage() {
                                                     </button>
                                                 }
                                                 error={!!(errors as any).password}
-                                                onCopy={(e) => e.preventDefault()}
-                                                onPaste={(e) => e.preventDefault()}
-                                                onCut={(e) => e.preventDefault()}
-                                                onContextMenu={(e) => e.preventDefault()}
+
                                                 {...register('password')}
                                             />
                                             {(errors as any).password && (
@@ -802,10 +799,7 @@ export default function RegisterPage() {
                                                     </button>
                                                 }
                                                 error={!!(errors as any).confirmPassword}
-                                                onCopy={(e) => e.preventDefault()}
-                                                onPaste={(e) => e.preventDefault()}
-                                                onCut={(e) => e.preventDefault()}
-                                                onContextMenu={(e) => e.preventDefault()}
+
                                                 {...register('confirmPassword')}
                                             />
                                             {(errors as any).confirmPassword && (
@@ -939,8 +933,8 @@ export default function RegisterPage() {
                                             onClick={handleResendOtp}
                                             disabled={countdown > 0 || isLoading}
                                             className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                                ? 'text-gray-400 cursor-not-allowed'
+                                                : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
                                                 }`}
                                         >
                                             <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
