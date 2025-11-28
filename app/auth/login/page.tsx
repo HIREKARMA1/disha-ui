@@ -33,7 +33,7 @@ const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
     { value: 'university', label: 'University' },
-    { value: 'admin', label: 'Admin' }
+    // { value: 'admin', label: 'Admin' }
 ]
 
 const userTypeIcons = {
@@ -134,11 +134,11 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             let message = 'Login failed. Please try again.'
-        
+
             if (error.response) {
                 const status = error.response.status
                 const detail = error.response.data?.detail
-        
+
                 if (status === 401) {
                     message = 'Invalid password. Please try again.'
                 } else if (status === 404) {
@@ -149,10 +149,10 @@ export default function LoginPage() {
                     message = detail || message
                 }
             }
-        
+
             toast.error(message)
         }
-         finally {
+        finally {
             setIsLoading(false)
         }
     }
@@ -207,7 +207,13 @@ export default function LoginPage() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             I am a
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="
+                                        grid 
+                                        sm:grid-cols-3
+                                        grid-cols-1
+                                        gap-3
+                                        w-full
+                                    ">
                             {userTypeOptions.map((option) => {
                                 const Icon = userTypeIcons[option.value as UserType]
                                 const isSelected = selectedUserType === option.value
@@ -289,7 +295,7 @@ export default function LoginPage() {
 
                             {/* Terms and Privacy Policy Checkbox */}
                             <div className="flex items-center justify-between">
-                                <div 
+                                <div
                                     className="cursor-pointer flex-1"
                                     onClick={() => setShowTermsModal(true)}
                                 >
@@ -307,7 +313,7 @@ export default function LoginPage() {
                                         }
                                     />
                                 </div>
-                                
+
                                 {/* Forgot Password Link - Only show for non-admin users */}
                                 {selectedUserType !== 'admin' && (
                                     <Link
@@ -372,7 +378,7 @@ export default function LoginPage() {
                 maxWidth="2xl"
             >
                 <TermsModalContent />
-                
+
                 <div className="mt-6 flex justify-end">
                     <Button onClick={handleTermsAndPrivacyAccept} className="bg-primary-600 hover:bg-primary-700">
                         Accept Terms and Conditions and Privacy Policy
