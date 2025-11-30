@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import { RefreshCw, Download, FileText, Award } from 'lucide-react'
+import { RefreshCw, FileText, Award, Search, ChevronDown } from 'lucide-react'
 import { LicenseRequestModal } from '@/components/admin/LicenseRequestModal'
 import { LicenseStatsCards } from '@/components/admin/LicenseStatsCards'
 import { LicenseRequestsTable } from '@/components/admin/LicenseRequestsTable'
 import { ActiveLicensesTable } from '@/components/admin/ActiveLicensesTable'
 import { EditLicenseModal } from '@/components/admin/EditLicenseModal'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
+import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationModal'
 
 interface LicenseRequest {
     id: string
@@ -47,10 +47,18 @@ export default function AdminLicensesPage() {
     const [licenses, setLicenses] = useState<License[]>([])
     const [loading, setLoading] = useState(true)
     const [statusFilter, setStatusFilter] = useState<string>('')
+    const [searchQuery, setSearchQuery] = useState('')
+
+    // Modal states
     const [selectedRequest, setSelectedRequest] = useState<LicenseRequest | null>(null)
     const [showModal, setShowModal] = useState(false)
     const [selectedLicense, setSelectedLicense] = useState<License | null>(null)
     const [showEditModal, setShowEditModal] = useState(false)
+
+    // Delete modal states
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleteItem, setDeleteItem] = useState<{ id: string, type: 'request' | 'license' } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         loadData()
@@ -59,27 +67,41 @@ export default function AdminLicensesPage() {
     const loadData = async () => {
         try {
             setLoading(true)
-            if (activeTab === 'requests') {
-                const response = await apiClient.getLicenseRequests({
+
+            // Fetch both requests and licenses to ensure stats are correct
+            const [requestsResponse, licensesResponse] = await Promise.all([
+                apiClient.getLicenseRequests({
                     status: statusFilter || undefined,
                     page: 1,
                     page_size: 50
-                })
-                setRequests(response.requests || [])
-            } else {
-                const response = await apiClient.getLicenses({
+                }),
+                apiClient.getLicenses({
                     page: 1,
                     page_size: 50
                 })
-                setLicenses(response.licenses || [])
-            }
+            ])
+
+            setRequests(requestsResponse.requests || [])
+            setLicenses(licensesResponse.licenses || [])
         } catch (error: any) {
-            toast.error(`Failed to load ${activeTab}`)
+            toast.error('Failed to load data')
             console.error(error)
         } finally {
             setLoading(false)
         }
     }
+
+    // Filter data based on search query
+    const filteredRequests = requests.filter(req =>
+        req.university_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        req.university_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        req.batch?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const filteredLicenses = licenses.filter(lic =>
+        lic.university_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lic.batch?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     const handleViewRequest = (requestId: string) => {
         setSelectedRequest(requests.find(r => r.id === requestId) || null)
@@ -107,29 +129,31 @@ export default function AdminLicensesPage() {
         }
     }
 
-    const handleDeleteRequest = async (requestId: string) => {
-        if (!confirm('Are you sure you want to delete this license request? This action cannot be undone.')) return
-
-        try {
-            await apiClient.deleteLicenseRequest(requestId)
-            toast.success('License request deleted successfully')
-            loadData()
-        } catch (error: any) {
-            toast.error('Failed to delete license request')
-            console.error(error)
-        }
+    const confirmDelete = (id: string, type: 'request' | 'license') => {
+        setDeleteItem({ id, type })
+        setShowDeleteModal(true)
     }
 
-    const handleDeleteLicense = async (licenseId: string) => {
-        if (!confirm('Are you sure you want to delete this license? This action cannot be undone.')) return
+    const handleDelete = async () => {
+        if (!deleteItem) return
 
         try {
-            await apiClient.deleteLicense(licenseId)
-            toast.success('License deleted successfully')
+            setIsDeleting(true)
+            if (deleteItem.type === 'request') {
+                await apiClient.deleteLicenseRequest(deleteItem.id)
+                toast.success('License request deleted successfully')
+            } else {
+                await apiClient.deleteLicense(deleteItem.id)
+                toast.success('License deleted successfully')
+            }
             loadData()
+            setShowDeleteModal(false)
+            setDeleteItem(null)
         } catch (error: any) {
-            toast.error('Failed to delete license')
+            toast.error(`Failed to delete ${deleteItem.type}`)
             console.error(error)
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -199,57 +223,67 @@ export default function AdminLicensesPage() {
                     </nav>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                    {activeTab === 'requests' && (
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {/* Action Buttons & Search */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+                    <div className="relative w-full sm:w-96">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search by university, email or batch..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        {activeTab === 'requests' && (
+                            <div className="relative">
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="appearance-none w-full sm:w-40 px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                >
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                                </div>
+                            </div>
+                        )}
+
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={loadData}
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium shadow-sm"
                         >
-                            <option value="">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
-                    )}
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={loadData}
-                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium shadow-sm"
-                    >
-                        <RefreshCw className="w-5 h-5" />
-                        <span>Refresh</span>
-                    </motion.button>
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => toast('Export functionality coming soon!')}
-                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium shadow-sm"
-                    >
-                        <Download className="w-5 h-5" />
-                        <span>Export Data</span>
-                    </motion.button>
+                            <RefreshCw className="w-5 h-5" />
+                            <span>Refresh</span>
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Table Content */}
                 {activeTab === 'requests' ? (
                     <LicenseRequestsTable
-                        requests={requests}
+                        requests={filteredRequests}
                         loading={loading}
                         onViewRequest={handleViewRequest}
-                        onDeleteRequest={handleDeleteRequest}
+                        onDeleteRequest={(id) => confirmDelete(id, 'request')}
                     />
                 ) : (
                     <ActiveLicensesTable
-                        licenses={licenses}
+                        licenses={filteredLicenses}
                         loading={loading}
                         onEditLicense={handleEditLicense}
                         onDeactivateLicense={handleDeactivateLicense}
-                        onDeleteLicense={handleDeleteLicense}
+                        onDeleteLicense={(id) => confirmDelete(id, 'license')}
                     />
                 )}
 
@@ -281,6 +315,19 @@ export default function AdminLicensesPage() {
                         setShowEditModal(false)
                         setSelectedLicense(null)
                     }}
+                />
+
+                {/* Delete Confirmation Modal */}
+                <DeleteConfirmationModal
+                    isOpen={showDeleteModal}
+                    onClose={() => {
+                        setShowDeleteModal(false)
+                        setDeleteItem(null)
+                    }}
+                    onConfirm={handleDelete}
+                    title={`Delete ${deleteItem?.type === 'request' ? 'License Request' : 'License'}`}
+                    message={`Are you sure you want to delete this ${deleteItem?.type === 'request' ? 'license request' : 'license'}? This action cannot be undone.`}
+                    isDeleting={isDeleting}
                 />
             </div>
         </AdminDashboardLayout>
