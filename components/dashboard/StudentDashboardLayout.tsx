@@ -8,9 +8,11 @@ import { DashboardStats } from './DashboardStats'
 import { AnalyticsChart } from './AnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { RecentActivities } from './RecentActivities'
+import { StudentLockScreen } from './StudentLockScreen'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
+import { usePathname } from 'next/navigation'
 
 interface StudentDashboardLayoutProps {
     children?: React.ReactNode
@@ -18,31 +20,66 @@ interface StudentDashboardLayoutProps {
 
 function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     const [studentName, setStudentName] = useState<string>('Student')
+    const [isLocked, setIsLocked] = useState(false)
+    const [lockReason, setLockReason] = useState<string>('')
+    const [universityName, setUniversityName] = useState<string>('')
+    const [universityEmail, setUniversityEmail] = useState<string>('')
     const { user } = useAuth()
+    const pathname = usePathname()
 
-    // Fetch student profile data to get the name
+    // Check student access and fetch profile
     useEffect(() => {
-        const fetchStudentName = async () => {
-            if (user?.user_type === 'student') {
+        const checkAccessAndFetchProfile = async () => {
+            if (user?.user_type === 'student' && user?.id) {
                 try {
                     const profileData = await apiClient.getStudentProfile()
+
                     if (profileData?.name && profileData.name.trim()) {
                         setStudentName(profileData.name)
                     } else if (user?.name) {
                         setStudentName(user.name)
                     }
-                } catch (error) {
-                    console.error('Failed to fetch student profile:', error)
-                    // Fallback to user name from auth
-                    if (user?.name) {
-                        setStudentName(user.name)
+
+                    // Check if student has university and if license is active
+                    if (profileData?.university_id) {
+                        setUniversityName(profileData.institution || '')
+                    }
+                } catch (error: any) {
+                    console.error('Failed to fetch student profile or access denied:', error)
+
+                    // If 403, it means license expired
+                    if (error.response?.status === 403) {
+                        setIsLocked(true)
+
+                        // Handle nested detail object structure
+                        const errorData = error.response?.data?.detail
+                        if (typeof errorData === 'object' && errorData !== null) {
+                            // Backend returns detail as object with nested fields
+                            setLockReason(errorData.detail || 'Your university license has expired. Please contact your university administrator.')
+                            if (errorData.university_name) {
+                                setUniversityName(errorData.university_name)
+                            }
+                            if (errorData.university_email) {
+                                setUniversityEmail(errorData.university_email)
+                            }
+                        } else {
+                            // Fallback for string detail
+                            setLockReason(errorData || 'Your university license has expired. Please contact your university administrator.')
+                        }
+                    } else {
+                        if (user?.name) {
+                            setStudentName(user.name)
+                        }
                     }
                 }
             }
         }
 
-        fetchStudentName()
-    }, [user?.id])
+        checkAccessAndFetchProfile()
+    }, [user?.id, user?.user_type])
+
+    const isProfilePage = pathname === '/dashboard/student/profile'
+    const shouldLock = isLocked && !isProfilePage
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -54,23 +91,45 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className="p-6 pb-safe lg:pb-6 min-h-screen">
+                <main className={`p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
                     {children ? (
-                        children
+                        <>
+                            <div className={shouldLock ? 'opacity-40' : ''}>
+                                {children}
+                            </div>
+                            {shouldLock && (
+                                <StudentLockScreen
+                                    isOpen={shouldLock}
+                                    universityName={universityName}
+                                    universityEmail={universityEmail}
+                                    reason={lockReason}
+                                />
+                            )}
+                        </>
                     ) : (
-                        <div className="space-y-6">
-                            <WelcomeMessage studentName={studentName} />
-                            <DashboardStats />
-                            <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
-                                <div className="xl:col-span-7 space-y-6">
-                                    <AnalyticsChart />
-                                    <RecentActivities />
-                                </div>
-                                <div className="xl:col-span-3">
-                                    <AdvertisementBanner />
+                        <>
+                            <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
+                                <WelcomeMessage studentName={studentName} />
+                                <DashboardStats />
+                                <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
+                                    <div className="xl:col-span-7 space-y-6">
+                                        <AnalyticsChart />
+                                        <RecentActivities />
+                                    </div>
+                                    <div className="xl:col-span-3">
+                                        <AdvertisementBanner />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                            {shouldLock && (
+                                <StudentLockScreen
+                                    isOpen={shouldLock}
+                                    universityName={universityName}
+                                    universityEmail={universityEmail}
+                                    reason={lockReason}
+                                />
+                            )}
+                        </>
                     )}
                 </main>
             </div>

@@ -20,11 +20,13 @@ import {
     Shield,
     GraduationCap,
     Edit,
-    Trash2
+    Trash2,
+    Users 
 } from 'lucide-react'
 import { UniversityListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
 import { UniversityProfileModal } from './UniversityProfileModal'
+import { UniversityDeleteConfirmationModal } from './UniversityDeleteConfirmationModal'
 import { StatusDropdown } from './UniversityStatusDropdown'
 
 interface UniversityTableProps {

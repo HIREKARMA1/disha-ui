@@ -136,6 +136,13 @@ const navItems: NavItem[] = [
         icon: Settings,
         description: 'System configuration',
         color: 'from-gray-500 to-gray-600'
+    },
+    {
+        label: 'Licenses',
+        href: '/dashboard/admin/licenses',
+        icon: FileText,
+        description: 'Manage license requests and licenses',
+        color: 'from-indigo-500 to-purple-600'
     }
 ]
 

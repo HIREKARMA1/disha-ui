@@ -115,12 +115,13 @@ export interface StudentListResponse {
 }
 
 export interface CreateStudentRequest {
-  name: string
-  email: string
-  phone: string
-  degree?: string
-  branch?: string
-  graduation_year?: number
+    name: string
+    email: string
+    phone: string
+    degree?: string
+    branch?: string
+    graduation_year?: number
+    batch?: string
 }
 
 export interface CreateStudentResponse {
