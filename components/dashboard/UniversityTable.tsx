@@ -21,7 +21,7 @@ import {
     GraduationCap,
     Edit,
     Trash2,
-    Users 
+    Users
 } from 'lucide-react'
 import { UniversityListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
@@ -39,7 +39,7 @@ interface UniversityTableProps {
     onRetry: () => void
 }
 
-type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at'
+type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at' | 'total_students'
 type SortDirection = 'asc' | 'desc' | null
 
 export function UniversityTable({
@@ -108,32 +108,32 @@ export function UniversityTable({
         // We detect "not modified" by checking if updated_at is either:
         // 1. null/undefined (never updated)
         // 2. Same as or very close to created_at (within 5 seconds - accounts for database timestamp precision)
-        
+
         if (!university.created_at) {
             return false // Can't determine if new without created_at
         }
-        
+
         const createdTime = new Date(university.created_at).getTime()
         const now = Date.now()
         const twentyFourHours = 24 * 60 * 60 * 1000
-        
+
         // Only consider universities created in the last 24 hours as potentially "new"
         const isRecentlyCreated = (now - createdTime) < twentyFourHours
         if (!isRecentlyCreated) {
             return false
         }
-        
+
         // Check if the university has been modified after creation
         if (!university.updated_at) {
             // Never updated - definitely new
             return true
         }
-        
+
         // If updated_at exists, check if it's essentially the same as created_at
         // (within 5 seconds to account for database operations during creation)
         const updatedTime = new Date(university.updated_at).getTime()
         const timeDiff = Math.abs(updatedTime - createdTime)
-        
+
         // If time difference is less than 5 seconds, consider it as "not manually updated"
         // This handles both admin-created (ACTIVE) and self-signup (INACTIVE) universities
         return timeDiff < 5000
@@ -194,7 +194,7 @@ export function UniversityTable({
                 let bValue: any = b[sortField]
 
                 // Handle numeric fields
-                if (['placement_rate', 'average_package'].includes(sortField)) {
+                if (['placement_rate', 'average_package', 'total_students'].includes(sortField)) {
                     aValue = Number(aValue) || 0
                     bValue = Number(bValue) || 0
                 } else if (sortField === 'created_at') {
