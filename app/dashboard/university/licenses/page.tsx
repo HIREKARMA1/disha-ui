@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { UniversityDashboardLayout } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import { UniversityLicenseRequestModal } from '@/components/dashboard/UniversityLicenseRequestModal'
-import { Award, Calendar, Users, CheckCircle, Clock, AlertCircle, Plus, Briefcase } from 'lucide-react'
+import { Award, Calendar, CheckCircle, Clock, AlertCircle, Plus, Briefcase, Search, Filter } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface License {
@@ -25,6 +26,7 @@ export default function UniversityLicensesPage() {
     const [loading, setLoading] = useState(true)
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
     const [selectedBatch, setSelectedBatch] = useState<string | undefined>(undefined)
+    const [searchTerm, setSearchTerm] = useState('')
 
     useEffect(() => {
         fetchLicenses()
@@ -70,35 +72,17 @@ export default function UniversityLicensesPage() {
     const activeBatches = licenses.filter(l => l.status.toLowerCase() === 'active').length
     const studentsLicensed = licenses.reduce((sum, l) => sum + (l.total_licenses - l.remaining_licenses), 0)
 
-    const statsCards = [
-        {
-            label: 'Total Licenses',
-            value: totalLicenses,
-            icon: Award,
-            color: 'text-blue-600',
-            bgColor: 'bg-blue-50 dark:bg-blue-900/20'
-        },
-        {
-            label: 'Active Batches',
-            value: activeBatches,
-            icon: CheckCircle,
-            color: 'text-green-600',
-            bgColor: 'bg-green-50 dark:bg-green-900/20'
-        },
-        {
-            label: 'Students Licensed',
-            value: studentsLicensed,
-            icon: Users,
-            color: 'text-purple-600',
-            bgColor: 'bg-purple-50 dark:bg-purple-900/20'
-        }
-    ]
+    // Filter licenses based on search
+    const filteredLicenses = licenses.filter(license =>
+        license.batch.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        license.status.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
     return (
         <UniversityDashboardLayout>
-            <div className="space-y-8">
+            <div className="space-y-6">
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
+                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
                         <div className="flex-1 min-w-0">
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -107,46 +91,42 @@ export default function UniversityLicensesPage() {
                             <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
                                 View and manage your student licenses ✨
                             </p>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                    <Award className="w-3 h-3 mr-1" /> {totalLicenses} Total Licenses
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                    <CheckCircle className="w-3 h-3 mr-1" /> {activeBatches} Active Batches
+                                </span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+                                    <Briefcase className="w-3 h-3 mr-1" /> {studentsLicensed} Students Licensed
+                                </span>
+                            </div>
                         </div>
-                        <Button
-                            onClick={() => setIsRequestModalOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
-                        >
-                            <Plus className="w-5 h-5 mr-2" />
-                            Request License
-                        </Button>
                     </div>
                 </div>
 
-                {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {statsCards.map((stat, index) => (
-                        <motion.div
-                            key={stat.label}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: index * 0.1 }}
-                            className="w-full"
+                {/* Search and Actions Bar */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input
+                                type="text"
+                                placeholder="Search licenses by batch or status..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
+                            />
+                        </div>
+                        <Button
+                            onClick={() => setIsRequestModalOpen(true)}
+                            className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                         >
-                            <div className="block group w-full">
-                                <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                                {stat.label}
-                                            </p>
-                                            <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                                {stat.value}
-                                            </p>
-                                        </div>
-                                        <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                            <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
+                            <Plus className="w-4 h-4 mr-2" />
+                            Request License
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -154,27 +134,32 @@ export default function UniversityLicensesPage() {
                     <div className="flex justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                     </div>
-                ) : licenses.length === 0 ? (
+                ) : filteredLicenses.length === 0 ? (
                     <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Award className="w-8 h-8 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Licenses Found</h3>
                         <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
-                            You don't have any active licenses yet. Request a license to start adding students.
+                            {searchTerm ? 'No licenses match your search.' : "You don't have any active licenses yet. Request a license to start adding students."}
                         </p>
-                        <Button onClick={() => setIsRequestModalOpen(true)}>
-                            Request Your First License
-                        </Button>
+                        {!searchTerm && (
+                            <Button onClick={() => setIsRequestModalOpen(true)}>
+                                Request Your First License
+                            </Button>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Briefcase className="w-5 h-5 text-gray-500" />
-                            Your Licenses
-                        </h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Briefcase className="w-5 h-5 text-gray-500" />
+                                Your Licenses ({filteredLicenses.length})
+                            </h2>
+                        </div>
+
                         <div className="grid gap-6">
-                            {licenses.map((license, index) => {
+                            {filteredLicenses.map((license, index) => {
                                 const usedLicenses = license.total_licenses - license.remaining_licenses
                                 const usagePercent = Math.round((usedLicenses / license.total_licenses) * 100)
                                 const isExhausted = license.remaining_licenses <= 0

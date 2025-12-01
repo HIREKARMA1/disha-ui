@@ -34,42 +34,42 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                 try {
                     const profileData = await apiClient.getStudentProfile()
 
+                    // Debug logging
+                    console.log('Profile Data:', profileData)
+                    console.log('has_active_license:', profileData?.has_active_license)
+
                     if (profileData?.name && profileData.name.trim()) {
                         setStudentName(profileData.name)
                     } else if (user?.name) {
                         setStudentName(user.name)
                     }
 
-                    // Check if student has university and if license is active
-                    if (profileData?.university_id) {
-                        setUniversityName(profileData.institution || '')
-                    }
-                } catch (error: any) {
-                    console.error('Failed to fetch student profile or access denied:', error)
-
-                    // If 403, it means license expired
-                    if (error.response?.status === 403) {
+                    // Check license status from profile response
+                    if (profileData?.has_active_license === false) {
+                        console.log('Setting locked to TRUE')
                         setIsLocked(true)
-
-                        // Handle nested detail object structure
-                        const errorData = error.response?.data?.detail
-                        if (typeof errorData === 'object' && errorData !== null) {
-                            // Backend returns detail as object with nested fields
-                            setLockReason(errorData.detail || 'Your university license has expired. Please contact your university administrator.')
-                            if (errorData.university_name) {
-                                setUniversityName(errorData.university_name)
-                            }
-                            if (errorData.university_email) {
-                                setUniversityEmail(errorData.university_email)
-                            }
-                        } else {
-                            // Fallback for string detail
-                            setLockReason(errorData || 'Your university license has expired. Please contact your university administrator.')
+                        setLockReason(profileData.license_status_reason || 'Your university license has expired. Please contact your university administrator.')
+                        if (profileData.university_name_for_contact) {
+                            setUniversityName(profileData.university_name_for_contact)
+                        }
+                        if (profileData.university_email_for_contact) {
+                            setUniversityEmail(profileData.university_email_for_contact)
                         }
                     } else {
-                        if (user?.name) {
-                            setStudentName(user.name)
-                        }
+                        // Has active license
+                        console.log('Setting locked to FALSE')
+                        setIsLocked(false)
+                    }
+
+                    // Set university name if available
+                    if (profileData?.university_id && profileData?.institution) {
+                        setUniversityName(profileData.institution)
+                    }
+                } catch (error: any) {
+                    console.error('Failed to fetch student profile:', error)
+                    // If profile fetch fails completely, use user name if available
+                    if (user?.name) {
+                        setStudentName(user.name)
                     }
                 }
             }
