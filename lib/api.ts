@@ -648,6 +648,8 @@ class ApiClient {
     period_from: string;
     period_to: string;
     message?: string;
+    degree?: string;
+    branches?: string[];
   }): Promise<any> {
     const response: AxiosResponse = await this.client.post('/universities/license-requests', data);
     return response.data;
@@ -658,8 +660,17 @@ class ApiClient {
     return response.data;
   }
 
-  async checkBatchEligibility(batch: string): Promise<any> {
-    const response: AxiosResponse = await this.client.get(`/universities/licenses/batch/${batch}/eligibility`);
+  async checkBatchEligibility(batch: string, degree?: string, branches?: string[]): Promise<any> {
+    const params: Record<string, string | string[]> = {};
+    if (degree) {
+      params.degree = degree;
+    }
+    if (branches && branches.length > 0) {
+      params.branches = branches;
+    }
+    const response: AxiosResponse = await this.client.get(`/universities/licenses/batch/${batch}/eligibility`, {
+      params
+    });
     return response.data;
   }
 

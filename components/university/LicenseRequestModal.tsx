@@ -1,11 +1,14 @@
 "use client"
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
+import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
 
 interface LicenseRequestModalProps {
     isOpen: boolean
@@ -17,11 +20,20 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
     const [formData, setFormData] = useState({
         requested_total: '',
         batch: '',
+        degree: '',
+        branches: [] as string[],
         period_from: '',
         period_to: '',
         message: ''
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const branchDropdownOptions: MultiSelectOption[] = useMemo(() => (
+        branchOptions.map(option => ({
+            id: option.value,
+            value: option.value,
+            label: option.label
+        }))
+    ), [])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -42,11 +54,16 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
             return
         }
 
+        const degreeValue = formData.degree.trim()
+        const branchesList = formData.branches
+
         setIsSubmitting(true)
         try {
             await apiClient.createLicenseRequest({
                 requested_total: requestedTotal,
                 batch: formData.batch.trim(),
+                degree: degreeValue || undefined,
+                branches: branchesList.length ? branchesList : undefined,
                 period_from: new Date(formData.period_from).toISOString(),
                 period_to: new Date(formData.period_to).toISOString(),
                 message: formData.message.trim() || undefined
@@ -56,6 +73,8 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
             setFormData({
                 requested_total: '',
                 batch: '',
+                degree: '',
+                branches: [],
                 period_from: '',
                 period_to: '',
                 message: ''
@@ -72,7 +91,7 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
         }
     }
 
-    const handleChange = (field: string, value: string) => {
+    const handleChange = <K extends keyof typeof formData>(field: K, value: typeof formData[K]) => {
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
@@ -121,6 +140,42 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         Batch identifier (e.g., graduation year or batch code)
                     </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Degree (Optional)
+                        </label>
+                        <Select
+                            value={formData.degree || undefined}
+                            onValueChange={(value) => handleChange('degree', value === '__clear__' ? '' : value)}
+                            disabled={isSubmitting}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select degree" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__clear__">Clear selection</SelectItem>
+                                {degreeOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <MultiSelectDropdown
+                            label="Branches (Optional)"
+                            options={branchDropdownOptions}
+                            selectedValues={formData.branches}
+                            onSelectionChange={(values) => handleChange('branches', values)}
+                            placeholder="Select branches"
+                            disabled={isSubmitting}
+                            allOptionLabel="All branches"
+                        />
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
