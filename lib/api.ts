@@ -458,6 +458,12 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteStudent(studentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/universities/students/${studentId}`);
+    return response.data;
+  }
+
+
   // University job management endpoints
   async getUniversityJobs(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/jobs');

@@ -128,6 +128,18 @@ export default function UniversityStudents() {
         }
     }
 
+    const handleDeleteStudent = async (studentId: string) => {
+        try {
+            await apiClient.deleteStudent(studentId)
+            toast.success('Student deleted successfully!')
+            fetchStudents()
+        } catch (err: any) {
+            console.error('Failed to delete student:', err)
+            toast.error(err.response?.data?.detail || 'Failed to delete student.')
+        }
+    }
+
+
     return (
         <UniversityDashboardLayout>
             <div className="space-y-6">
@@ -217,6 +229,7 @@ export default function UniversityStudents() {
                     isLoading={isLoading}
                     error={error}
                     onArchiveStudent={handleArchiveStudent}
+                    onDeleteStudent={handleDeleteStudent}
                     onRetry={fetchStudents}
                 />
 
