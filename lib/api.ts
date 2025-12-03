@@ -717,6 +717,8 @@ class ApiClient {
     period_to?: string;
     status?: string;
     note?: string;
+    degree?: string[];
+    branches?: string[];
   }): Promise<any> {
     const response: AxiosResponse = await this.client.patch(`/admin/licenses/${licenseId}`, data);
     return response.data;

@@ -8,12 +8,16 @@ import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { FileText, Calendar, Users, MessageSquare, CheckCircle2, XCircle, X, Shield } from 'lucide-react'
+import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
+import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
 
 interface License {
     id: string
     university_id: string
     university_name: string
     batch: string
+    degree?: string[]
+    branches?: string[]
     total_licenses: number
     remaining_licenses: number
     period_from: string
@@ -33,6 +37,8 @@ export function EditLicenseModal({ isOpen, onClose, license, onSuccess }: EditLi
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         total_licenses: '',
+        degree: [] as string[],
+        branches: [] as string[],
         period_from: '',
         period_to: '',
         status: '',
@@ -43,6 +49,8 @@ export function EditLicenseModal({ isOpen, onClose, license, onSuccess }: EditLi
         if (license) {
             setFormData({
                 total_licenses: license.total_licenses.toString(),
+                degree: Array.isArray(license.degree) ? license.degree : (license.degree ? [license.degree] : []),
+                branches: license.branches || [],
                 period_from: new Date(license.period_from).toISOString().split('T')[0],
                 period_to: new Date(license.period_to).toISOString().split('T')[0],
                 status: license.status,
@@ -74,6 +82,8 @@ export function EditLicenseModal({ isOpen, onClose, license, onSuccess }: EditLi
         try {
             await apiClient.updateLicense(license.id, {
                 total_licenses: total,
+                degree: formData.degree.length > 0 ? formData.degree : undefined,
+                branches: formData.branches.length > 0 ? formData.branches : undefined,
                 period_from: new Date(formData.period_from).toISOString(),
                 period_to: new Date(formData.period_to).toISOString(),
                 status: formData.status,
@@ -205,6 +215,22 @@ export function EditLicenseModal({ isOpen, onClose, license, onSuccess }: EditLi
                                                 />
                                             </div>
                                         </div>
+                                        <MultiSearchableSelect
+                                            label="Degree (Optional)"
+                                            values={formData.degree}
+                                            onChange={(values) => setFormData(prev => ({ ...prev, degree: values }))}
+                                            options={degreeOptions}
+                                            placeholder="Select degrees"
+                                            searchPlaceholder="Search degrees..."
+                                        />
+                                        <MultiSearchableSelect
+                                            label="Branches (Optional)"
+                                            values={formData.branches}
+                                            onChange={(values) => setFormData(prev => ({ ...prev, branches: values }))}
+                                            options={branchOptions}
+                                            placeholder="Select branches"
+                                            searchPlaceholder="Search branches..."
+                                        />
                                     </div>
                                 </div>
 
