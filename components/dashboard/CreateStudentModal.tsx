@@ -8,7 +8,7 @@ import { getErrorMessage } from '@/lib/error-handler'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // Degree options
-const degreeOptions = [
+export const degreeOptions = [
     { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
     { value: 'Bachelor of Engineering', label: 'Bachelor of Engineering (B.E.)' },
     { value: 'Bachelor of Science', label: 'Bachelor of Science (B.Sc)' },
@@ -30,7 +30,7 @@ const degreeOptions = [
 ]
 
 // Branch options
-const branchOptions = [
+export const branchOptions = [
     { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
     { value: 'Information Technology', label: 'Information Technology' },
     { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
