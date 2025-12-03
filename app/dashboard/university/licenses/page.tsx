@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import { UniversityLicenseRequestModal } from '@/components/dashboard/UniversityLicenseRequestModal'
-import { Award, Calendar, CheckCircle, Clock, AlertCircle, Plus, Briefcase, Search, Filter } from 'lucide-react'
+import { Award, Calendar, CheckCircle, Clock, AlertCircle, Plus, Briefcase, Search, Filter, GraduationCap } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface License {
@@ -18,6 +18,8 @@ interface License {
     period_to: string
     status: string
     note?: string
+    degree?: string | string[]
+    branches?: string[]
     created_at: string
 }
 
@@ -245,6 +247,49 @@ export default function UniversityLicensesPage() {
                                                             <span className="font-medium">{formatDate(license.period_to)}</span>
                                                         </div>
                                                     </div>
+
+                                                    {/* Scope: Degree & Branches */}
+                                                    {(license.degree || (license.branches && license.branches.length > 0)) && (
+                                                        <div>
+                                                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                                                <GraduationCap className="w-4 h-4 text-gray-500" />
+                                                                License Scope
+                                                            </h4>
+                                                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm space-y-3">
+                                                                {license.degree && (
+                                                                    <div className="flex flex-col gap-1.5">
+                                                                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Degree</span>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {Array.isArray(license.degree) ? (
+                                                                                license.degree.map((d, i) => (
+                                                                                    <span key={i} className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-medium border border-indigo-100 dark:border-indigo-800">
+                                                                                        {d}
+                                                                                    </span>
+                                                                                ))
+                                                                            ) : (
+                                                                                <span className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-medium border border-indigo-100 dark:border-indigo-800">
+                                                                                    {license.degree}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {license.branches && license.branches.length > 0 && (
+                                                                    <div className="flex flex-col gap-1.5">
+                                                                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Branches</span>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {license.branches.map((b, i) => (
+                                                                                <span key={i} className="px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs font-medium border border-orange-100 dark:border-orange-800">
+                                                                                    {b}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     <div>
                                                         <div className="flex justify-between text-sm mb-2">

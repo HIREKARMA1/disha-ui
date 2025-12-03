@@ -16,7 +16,7 @@ interface LicenseRequest {
     university_email: string
     requested_total: number
     batch: string
-    degree?: string
+    degree?: string[] | string
     branches?: string[]
     period_from: string
     period_to: string
@@ -275,15 +275,28 @@ export function LicenseRequestModal({ isOpen, onClose, requestId, onSuccess }: L
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {request.degree && (
                                                         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                                            <div className="flex items-center gap-3">
+                                                            <div className="flex items-start gap-3">
                                                                 <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
                                                                     <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Degree</p>
-                                                                    <p className="font-medium text-gray-900 dark:text-white text-sm">
-                                                                        {request.degree}
-                                                                    </p>
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Degree</p>
+                                                                    {Array.isArray(request.degree) ? (
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {request.degree.map((deg, idx) => (
+                                                                                <span
+                                                                                    key={idx}
+                                                                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300"
+                                                                                >
+                                                                                    {deg}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                                                            {request.degree}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
