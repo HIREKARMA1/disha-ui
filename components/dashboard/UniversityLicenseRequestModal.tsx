@@ -14,9 +14,10 @@ interface UniversityLicenseRequestModalProps {
     onClose: () => void
     onSuccess?: () => void
     initialBatch?: string
+    isRenewalFlow?: boolean
 }
 
-export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, initialBatch }: UniversityLicenseRequestModalProps) {
+export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, initialBatch, isRenewalFlow }: UniversityLicenseRequestModalProps) {
     const [loading, setLoading] = useState(false)
     const [checkingEligibility, setCheckingEligibility] = useState(false)
     const [eligibility, setEligibility] = useState<{
@@ -85,7 +86,8 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     }
 
     const handleSubmit = async () => {
-        const isRenewal = eligibility?.request_type === 'RENEWAL'
+        // Consider it a renewal if the API says so OR if we are in the renewal flow
+        const isRenewal = eligibility?.request_type === 'RENEWAL' || isRenewalFlow
 
         // For renewal, we don't need dates from form
         if (!formData.requested_total || !formData.batch || (!isRenewal && (!formData.period_from || !formData.period_to))) {
@@ -173,7 +175,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                             <div className="flex items-start justify-between">
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                                        {eligibility?.request_type === 'RENEWAL' ? "Request License Renewal" : "Request New License"}
+                                        {eligibility?.request_type === 'RENEWAL' || isRenewalFlow ? "Request License Renewal" : "Request New License"}
                                     </h2>
                                     <p className="text-gray-600 dark:text-gray-300 flex items-center gap-2">
                                         <FileText className="w-4 h-4" />
@@ -196,7 +198,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex items-start gap-3">
                                     <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                                     <p className="text-sm text-blue-800 dark:text-blue-200">
-                                        {eligibility?.request_type === 'RENEWAL'
+                                        {eligibility?.request_type === 'RENEWAL' || isRenewalFlow
                                             ? "You are requesting a renewal for an exhausted batch. This will be reviewed by the admin."
                                             : "Submit a request for student licenses. The admin will review your request and approve the licenses."
                                         }
@@ -280,7 +282,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                                 />
                                             </div>
                                         </div>
-                                        {eligibility?.request_type !== 'RENEWAL' && (
+                                        {eligibility?.request_type !== 'RENEWAL' && !isRenewalFlow && (
                                             <>
                                                 <div>
                                                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -354,9 +356,9 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                 onClick={handleSubmit}
                                 disabled={loading || (eligibility !== null && !eligibility.eligible)}
                                 loading={loading}
-                                className={eligibility?.request_type === 'RENEWAL' ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-primary-600 hover:bg-primary-700 text-white"}
+                                className={eligibility?.request_type === 'RENEWAL' || isRenewalFlow ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-primary-600 hover:bg-primary-700 text-white"}
                             >
-                                {eligibility?.request_type === 'RENEWAL' ? "Request Renewal" : "Submit Request"}
+                                {eligibility?.request_type === 'RENEWAL' || isRenewalFlow ? "Request Renewal" : "Submit Request"}
                             </Button>
                         </div>
                     </motion.div>

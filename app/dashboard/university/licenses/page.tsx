@@ -297,6 +297,7 @@ export default function UniversityLicensesPage() {
                     }}
                     onSuccess={fetchLicenses}
                     initialBatch={selectedBatch}
+                    isRenewalFlow={!!selectedBatch}
                 />
             </div>
         </UniversityDashboardLayout >
