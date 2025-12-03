@@ -10,6 +10,8 @@ import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { FileText, Calendar, Users, MessageSquare, X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
 
 interface UniversityLicenseRequestModalProps {
@@ -33,16 +35,15 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     const [formData, setFormData] = useState({
         requested_total: '',
         batch: '',
-        degree: '',
+        degree: [] as string[],
         branches: [] as string[],
         period_from: '',
         period_to: '',
         message: ''
     })
 
-    const branchDropdownOptions: MultiSelectOption[] = useMemo(() => (
+    const branchDropdownOptions = useMemo(() => (
         branchOptions.map(option => ({
-            id: option.value,
             value: option.value,
             label: option.label
         }))
@@ -54,7 +55,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             setFormData({
                 requested_total: '',
                 batch: initialBatch || '',
-                degree: '',
+                degree: [],
                 branches: [],
                 period_from: '',
                 period_to: '',
@@ -63,7 +64,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             setEligibility(null)
 
             if (initialBatch) {
-                checkEligibility(initialBatch, '', [])
+                checkEligibility(initialBatch, [], [])
             }
         }
     }, [isOpen, initialBatch])
@@ -71,14 +72,17 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     // Check eligibility when batch changes
     const checkEligibility = async (
         batch: string,
-        degreeValue?: string,
+        degreeValue?: string[],
         branchesValue?: string[]
     ) => {
         if (!batch || batch.length < 4) {
             setEligibility(null)
             return
         }
-        const normalizedDegree = (degreeValue ?? formData.degree)?.trim() || undefined
+        const candidateDegrees = degreeValue ?? formData.degree
+        const normalizedDegrees = candidateDegrees
+            .map(degree => degree.trim())
+            .filter(degree => degree.length > 0)
         const candidateBranches = branchesValue ?? formData.branches
         const normalizedBranches = candidateBranches
             .map(branch => branch.trim())
@@ -88,7 +92,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
         try {
             const result = await apiClient.checkBatchEligibility(
                 batch,
-                normalizedDegree,
+                normalizedDegrees.length ? normalizedDegrees[0] : undefined,
                 normalizedBranches.length ? normalizedBranches : undefined
             )
             setEligibility(result)
@@ -116,10 +120,10 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
         checkEligibility(batch, formData.degree, formData.branches)
     }
 
-    const handleDegreeChange = (degreeValue: string) => {
-        setFormData(prev => ({ ...prev, degree: degreeValue }))
+    const handleDegreeChange = (selectedDegrees: string[]) => {
+        setFormData(prev => ({ ...prev, degree: selectedDegrees }))
         if (formData.batch && formData.batch.length >= 4) {
-            checkEligibility(formData.batch, degreeValue, formData.branches)
+            checkEligibility(formData.batch, selectedDegrees, formData.branches)
         }
     }
 
@@ -157,7 +161,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             return
         }
 
-        const degreeValue = formData.degree.trim()
+        const degreesList = formData.degree
         const branchesList = formData.branches
 
         setLoading(true)
@@ -174,7 +178,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             await apiClient.createLicenseRequest({
                 requested_total: total,
                 batch: formData.batch,
-                degree: degreeValue || undefined,
+                degree: degreesList.length ? degreesList[0] : undefined,
                 branches: branchesList.length ? branchesList : undefined,
                 period_from: periodFrom,
                 period_to: periodTo,
@@ -189,7 +193,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             setFormData({
                 requested_total: '',
                 batch: '',
-                degree: '',
+                degree: [],
                 branches: [],
                 period_from: '',
                 period_to: '',
@@ -334,39 +338,23 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                                 />
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                Degree (Optional)
-                                            </label>
-                                            <Select
-                                                value={formData.degree || undefined}
-                                                onValueChange={(value) => handleDegreeChange(value === '__clear__' ? '' : value)}
-                                            >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="e.g. B.Tech" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="__clear__">
-                                                        Clear selection
-                                                    </SelectItem>
-                                                    {degreeOptions.map(option => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div>
-                                            <MultiSelectDropdown
-                                                label="Branches (Optional)"
-                                                options={branchDropdownOptions}
-                                                selectedValues={formData.branches}
-                                                onSelectionChange={handleBranchesChange}
-                                                placeholder="Select branches"
-                                                allOptionLabel="All branches"
-                                            />
-                                        </div>
+                                        <MultiSearchableSelect
+                                            label="Degree (Optional)"
+                                            values={formData.degree}
+                                            onChange={handleDegreeChange}
+                                            options={degreeOptions}
+                                            placeholder="Select degrees"
+                                            searchPlaceholder="Search degrees..."
+                                        />
+                                        <MultiSearchableSelect
+                                            label="Branches (Optional)"
+                                            options={branchDropdownOptions}
+                                            values={formData.branches}
+                                            onChange={handleBranchesChange}
+                                            placeholder="Select branches"
+                                            searchPlaceholder="Search branches..."
+                                        />
+
                                         {eligibility?.request_type !== 'RENEWAL' && !isRenewalFlow && (
                                             <>
                                                 <div>

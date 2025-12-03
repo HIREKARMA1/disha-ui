@@ -16,6 +16,8 @@ interface LicenseRequest {
     university_email: string
     requested_total: number
     batch: string
+    degree?: string
+    branches?: string[]
     period_from: string
     period_to: string
     message?: string
@@ -268,6 +270,49 @@ export function LicenseRequestModal({ isOpen, onClose, requestId, onSuccess }: L
                                                 </div>
                                             </div>
 
+                                            {/* Degree and Branches */}
+                                            {(request.degree || (request.branches && request.branches.length > 0)) && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {request.degree && (
+                                                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+                                                                    <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Degree</p>
+                                                                    <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                                                        {request.degree}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {request.branches && request.branches.length > 0 && (
+                                                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                                                                    <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Branches</p>
+                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                        {request.branches.map((branch, idx) => (
+                                                                            <span
+                                                                                key={idx}
+                                                                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300"
+                                                                            >
+                                                                                {branch}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* University Details */}
                                             <div>
                                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
@@ -495,8 +540,9 @@ export function LicenseRequestModal({ isOpen, onClose, requestId, onSuccess }: L
                         ) : null}
                     </motion.div>
                 </motion.div>
-            )}
-        </AnimatePresence>
+            )
+            }
+        </AnimatePresence >
     )
 
     return typeof window !== 'undefined' ? createPortal(modalContent, document.body) : null
