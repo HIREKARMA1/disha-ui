@@ -100,15 +100,15 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     // Helper function to parse and format education data
     const parseEducationData = (data: string | string[] | undefined): string[] => {
         if (!data) return []
-        
+
         if (Array.isArray(data)) {
             return data
         }
-        
+
         // Handle complex escaped JSON strings like '{"{\"[\\\"diploma\\\"\"" "\" \\\"bachelor\\\"\"" "\" \\\"master\\\"]\"}"}'
         if (typeof data === 'string') {
             let cleanData = data.trim()
-            
+
             // First, try to extract values from complex escaped JSON format
             // Look for patterns like: diploma, bachelor, master within the string
             const valueMatches = cleanData.match(/([a-zA-Z\s]+)(?=\\?\"|$)/g)
@@ -118,12 +118,12 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     .filter(match => match && match.length > 0 && !match.match(/^[{}[\]",\\]+$/))
                     .map(match => match.replace(/\\/g, '').replace(/"/g, '').trim())
                     .filter(match => match.length > 0)
-                
+
                 if (cleanValues.length > 0) {
                     return cleanValues
                 }
             }
-            
+
             // Try to parse as JSON
             try {
                 // Handle cases like '{"Bachelor of Engineering"}' or '{"Computer Science and Engineering"}'
@@ -131,18 +131,18 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     const innerContent = cleanData.slice(2, -2) // Remove '{" and '"}'
                     return [innerContent]
                 }
-                
+
                 // Handle escaped JSON strings like '{"[\"diploma\",\"bachelor\",\"master\"]"}'
                 if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
                     cleanData = cleanData.slice(1, -1)
                 }
-                
+
                 const parsed = JSON.parse(cleanData)
-                
+
                 if (Array.isArray(parsed)) {
                     return parsed
                 }
-                
+
                 // If it's a string containing JSON, try to parse it
                 if (typeof parsed === 'string') {
                     const innerParsed = JSON.parse(parsed)
@@ -152,7 +152,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     // Handle single string values
                     return [innerParsed]
                 }
-                
+
                 // Handle single string values
                 if (typeof parsed === 'string') {
                     return [parsed]
@@ -160,7 +160,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
             } catch (error) {
                 // If JSON parsing fails, try to extract clean values manually
                 console.warn('Failed to parse education data as JSON, extracting values manually:', data)
-                
+
                 // Extract text values from the string, ignoring JSON syntax
                 const textMatches = cleanData.match(/[a-zA-Z][a-zA-Z\s]*[a-zA-Z]|[a-zA-Z]/g)
                 if (textMatches) {
@@ -169,11 +169,11 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         .filter(match => match.length > 0)
                 }
             }
-            
+
             // Final fallback: treat as comma-separated string
             return cleanData.split(',').map(item => item.trim()).filter(item => item)
         }
-        
+
         return []
     }
 
@@ -194,22 +194,22 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
         const fetchCorporateProfile = async () => {
             // Validate corporate_id - check for null, undefined, empty string, or "None" string
             const corporateId = job.corporate_id;
-            const hasValidCorporateId = corporateId && 
-                corporateId !== 'None' && 
-                corporateId !== 'null' && 
+            const hasValidCorporateId = corporateId &&
+                corporateId !== 'None' &&
+                corporateId !== 'null' &&
                 corporateId !== 'undefined' &&
                 (typeof corporateId === 'string' && corporateId.trim() !== '');
-            
+
             // Store validated corporate ID as string for TypeScript
             const validCorporateId: string | null = hasValidCorporateId ? (corporateId as string) : null;
 
             // Check if this is a university-created job (on-campus job)
             // University-created jobs have company information in job fields instead of corporate_id
             const isUniversityCreatedJob = !hasValidCorporateId && (
-                job.company_name || 
-                job.company_logo || 
-                job.company_website || 
-                job.company_address || 
+                job.company_name ||
+                job.company_logo ||
+                job.company_website ||
+                job.company_address ||
                 job.company_description ||
                 job.contact_person
             );
@@ -318,7 +318,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 ctc_with_probation: job.ctc_with_probation,
                 ctc_after_probation: job.ctc_after_probation,
             }
-            
+
             console.log('Corporate Profile being passed to PDF:', corporateProfile)
             const success = await downloadJobDescriptionPDF(jobData, corporateProfile || undefined)
             if (success) {
@@ -388,7 +388,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
                 onClick={onClose}
             >
                 <motion.div
@@ -519,8 +519,8 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Work Mode</p>
                                         <p className="font-medium text-gray-900 dark:text-white">
-                                            {job.mode_of_work ? job.mode_of_work.charAt(0).toUpperCase() + job.mode_of_work.slice(1) : 
-                                             (job.onsite_office ? 'Onsite' : job.remote_work ? 'Remote' : 'Not Specified')}
+                                            {job.mode_of_work ? job.mode_of_work.charAt(0).toUpperCase() + job.mode_of_work.slice(1) :
+                                                (job.onsite_office ? 'Onsite' : job.remote_work ? 'Remote' : 'Not Specified')}
                                         </p>
                                     </div>
                                 </div>
@@ -550,8 +550,8 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Openings</p>
                                         <p className="font-medium text-gray-900 dark:text-white">
-                                            {job.number_of_openings ? 
-                                                `${job.number_of_openings} position${job.number_of_openings > 1 ? 's' : ''}` : 
+                                            {job.number_of_openings ?
+                                                `${job.number_of_openings} position${job.number_of_openings > 1 ? 's' : ''}` :
                                                 'Not specified'
                                             }
                                         </p>
@@ -858,8 +858,8 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             </h3>
                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                                 <p className="text-gray-700 dark:text-gray-300 font-medium text-lg">
-                                    {job.number_of_openings ? 
-                                        `${job.number_of_openings} position${job.number_of_openings > 1 ? 's' : ''} available` : 
+                                    {job.number_of_openings ?
+                                        `${job.number_of_openings} position${job.number_of_openings > 1 ? 's' : ''} available` :
                                         'Not specified'
                                     }
                                 </p>
@@ -944,48 +944,48 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                 Additional Job Details
                             </h3>
                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Left Column */}
-                            <div className="space-y-4">
+                                    <div className="space-y-4">
                                         {/* Industry */}
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <Building className="w-4 h-4 text-primary-500" />
-                                            Industry
-                                        </h4>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <Building className="w-4 h-4 text-primary-500" />
+                                                Industry
+                                            </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
                                                 {job.industry || 'Not specified'}
                                             </p>
-                            </div>
+                                        </div>
 
                                         {/* Remote Work */}
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <Globe className="w-4 h-4 text-primary-500" />
-                                            Remote Work
-                                        </h4>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <Globe className="w-4 h-4 text-primary-500" />
+                                                Remote Work
+                                            </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
                                                 {job.remote_work ? 'Available' : 'Not available'}
                                             </p>
-                                    </div>
+                                        </div>
 
                                         {/* Travel Required */}
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <Car className="w-4 h-4 text-primary-500" />
-                                            Travel Required
-                                        </h4>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <Car className="w-4 h-4 text-primary-500" />
+                                                Travel Required
+                                            </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
                                                 {job.travel_required ? 'Yes' : 'No'}
                                             </p>
-                                    </div>
+                                        </div>
 
                                         {/* Onsite Office */}
-                                    <div>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <Building className="w-4 h-4 text-primary-500" />
-                                            Onsite Office
-                                        </h4>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                                <Building className="w-4 h-4 text-primary-500" />
+                                                Onsite Office
+                                            </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
                                                 {(() => {
                                                     // Use the same logic as EditJobModal for consistency
@@ -997,7 +997,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                                     }
                                                 })()}
                                             </p>
-                                    </div>
+                                        </div>
                                     </div>
 
                                     {/* Right Column */}

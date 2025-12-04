@@ -33,7 +33,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
 
 const userTypeOptions = [
-    { value: 'student', label: 'Student' },
+    // { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
     { value: 'university', label: 'University' }
     // Admin option removed for security - admin accounts must be created manually
@@ -297,13 +297,13 @@ export default function RegisterPage() {
         } catch (error: any) {
             console.error('Send OTP error:', error)
             let message = 'Failed to send OTP. Please try again.'
-            
+
             if (error.response?.data?.detail) {
                 message = error.response.data.detail
             } else if (error.message) {
                 message = error.message
             }
-            
+
             toast.error(message)
         } finally {
             setIsLoading(false)
@@ -312,15 +312,15 @@ export default function RegisterPage() {
 
     const handleResendOtp = async () => {
         if (countdown > 0 || !formData) return
-        
+
         setIsLoading(true)
         try {
             await apiClient.sendEmailOtp(formData.email)
-            
+
             // Increment resend count
             const newResendCount = resendCount + 1
             setResendCount(newResendCount)
-            
+
             // After 3 resends, start 5-minute cooldown countdown
             if (newResendCount >= 3) {
                 setCountdown(300) // 5 minutes = 300 seconds
@@ -336,13 +336,13 @@ export default function RegisterPage() {
             console.error('Resend OTP error:', error)
             const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
-            
+
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
             if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
                 // Extract minutes and seconds from error message
                 const minutesMatch = message.match(/(\d+)\s*minute/)
                 const secondsMatch = message.match(/(\d+)\s*second/)
-                
+
                 let remainingSeconds = 0
                 if (minutesMatch) {
                     remainingSeconds += parseInt(minutesMatch[1]) * 60
@@ -350,7 +350,7 @@ export default function RegisterPage() {
                 if (secondsMatch) {
                     remainingSeconds += parseInt(secondsMatch[1])
                 }
-                
+
                 if (remainingSeconds > 0) {
                     setCountdown(remainingSeconds)
                     setIsResendCooldown(true)
@@ -561,8 +561,8 @@ export default function RegisterPage() {
             <Navbar variant="solid" />
 
             {/* Main Content */}
-            <div className={currentStep === 'otp' 
-                ? 'min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12' 
+            <div className={currentStep === 'otp'
+                ? 'min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12'
                 : 'container mx-auto px-4 py-12 pt-24 sm:pt-24'}
             >
                 <motion.div
@@ -595,7 +595,8 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                                 I am a
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
                                 {userTypeOptions.map((option) => {
                                     const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
                                     const isSelected = selectedUserType === option.value
@@ -789,7 +790,7 @@ export default function RegisterPage() {
                                                         const newOtp = otp.split('')
                                                         newOtp[index] = value
                                                         setOtp(newOtp.join('').slice(0, 6))
-                                                        
+
                                                         // Auto-focus next input
                                                         if (value && index < 5) {
                                                             const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
@@ -855,15 +856,14 @@ export default function RegisterPage() {
                                             type="button"
                                             onClick={handleResendOtp}
                                             disabled={countdown > 0 || isLoading}
-                                            className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${
-                                                countdown > 0 || isLoading
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
-                                            }`}
+                                            className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
+                                                ? 'text-gray-400 cursor-not-allowed'
+                                                : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                                }`}
                                         >
                                             <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
-                                            {countdown > 0 
-                                                ? countdown >= 60 
+                                            {countdown > 0
+                                                ? countdown >= 60
                                                     ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
                                                     : `Resend in ${countdown}s`
                                                 : 'Resend OTP'}
