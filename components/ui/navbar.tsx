@@ -28,7 +28,7 @@ import {
     GraduationCap as Cap,
     Wrench,
     Users2,
-    // HeartHandshake
+ HeartHandshake
 } from 'lucide-react'
 // import { FaHandshake } from "react-icons/fa6";
 import { apiClient } from '@/lib/api'
@@ -218,14 +218,14 @@ export function Navbar({
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
-                        <div className="flex items-center space-x-2">
-                            <Link href="/auth/login" className="flex items-center space-x-2">
+                        <div className="flex items-center">
+                            <Link href="/auth/login" className="flex items-center">
                                 <Image
                                     src={getLogoSrc()}
                                     alt="HireKarma Logo"
-                                    width={160}
+                                    width={150}
                                     height={50}
-                                    className="h-12 w-auto"
+                                    className="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
                                     priority
                                 />
                             </Link>
@@ -247,31 +247,35 @@ export function Navbar({
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
-                    <div className="flex items-center space-x-2">
-                        <Link href={isAuthenticated ? getDashboardPath() : "/auth/login"} className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                        <Link href={isAuthenticated ? getDashboardPath() : "/auth/login"} className="flex items-center">
                             <Image
                                 src={getLogoSrc()}
                                 alt="HireKarma Logo"
                                 width={150}
                                 height={50}
+                                className="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
                                 priority
                             />
                         </Link>
-                        {/* <HeartHandshake className="h-6 w-6 text-primary-500 text-2xl" />
-                        <div className="ml-5">
-                            {user?.user_type === 'university' && (
-                                <Image
-                                    src={profile?.profile_picture || getLogoSrc()}
-                                    alt="University Logo"
-                                    width={150}
-                                    height={50}
-                                    priority
-                                    onError={(e) => {
-                                        e.currentTarget.src = getLogoSrc()
-                                    }}
-                                />
-                            )}
-                        </div> */}
+                        {user?.user_type === 'university' && (
+                            <>
+                                <HeartHandshake className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary-500 flex-shrink-0" />
+                                <div className="flex items-center">
+                                    <Image
+                                        src={profile?.profile_picture || getLogoSrc()}
+                                        alt="University Logo"
+                                        width={150}
+                                        height={50}
+                                        className="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
+                                        priority
+                                        onError={(e) => {
+                                            e.currentTarget.src = getLogoSrc()
+                                        }}
+                                    />
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Desktop Navigation */}

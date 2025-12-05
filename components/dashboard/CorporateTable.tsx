@@ -18,38 +18,41 @@ import {
     ChevronDown,
     ChevronsUpDown,
     Shield,
-    GraduationCap,
-    Edit,
-    Trash2
+    Briefcase,
+    Users,
+    Trash2,
+    Edit
 } from 'lucide-react'
-import { UniversityListItem } from '@/types/university'
+import { CorporateListItem } from '@/types/corporate'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
-import { UniversityProfileModal } from './UniversityProfileModal'
-import { UniversityDeleteConfirmationModal } from './UniversityDeleteConfirmationModal'
-import { StatusDropdown } from './UniversityStatusDropdown'
+import { CorporateDeleteConfirmationModal } from './CorporateDeleteConfirmationModal'
+import { CorporateProfileModal } from './CorporateProfileModal'
+import { corporateManagementService } from '@/services/corporateManagementService'
+import { getErrorMessage } from '@/lib/error-handler'
+import toast from 'react-hot-toast'
 
-interface UniversityTableProps {
-    universities: UniversityListItem[]
+interface CorporateTableProps {
+    corporates: CorporateListItem[]
     isLoading: boolean
     error: string | null
-    onArchiveUniversity: (universityId: string, archive: boolean) => void
-    onDeleteUniversity: (universityId: string) => void
-    onEditUniversity: (university: UniversityListItem) => void
+    onArchiveCorporate: (corporateId: string, archive: boolean) => void
+    onDeleteCorporate: (corporateId: string) => void
+    onEditCorporate: (corporate: CorporateListItem) => void
     onRetry: () => void
 }
 
-type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at'
+type SortField = 'company_name' | 'email' | 'phone' | 'industry' | 'verified' | 'status' | 'total_jobs' | 'created_at'
 type SortDirection = 'asc' | 'desc' | null
 
-export function UniversityTable({
-    universities,
+export function CorporateTable({
+    corporates,
     isLoading,
     error,
-    onArchiveUniversity,
-    onDeleteUniversity,
-    onEditUniversity,
+    onArchiveCorporate,
+    onDeleteCorporate,
+    onEditCorporate,
     onRetry
-}: UniversityTableProps) {
+}: CorporateTableProps) {
     const [sortField, setSortField] = useState<SortField | null>('created_at')
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
     const [currentPage, setCurrentPage] = useState(1)
@@ -57,17 +60,17 @@ export function UniversityTable({
 
     // Archive confirmation modal state
     const [showArchiveModal, setShowArchiveModal] = useState(false)
-    const [selectedUniversity, setSelectedUniversity] = useState<{ id: string; name: string; isArchived: boolean } | null>(null)
+    const [selectedCorporate, setSelectedCorporate] = useState<{ id: string; name: string; isArchived: boolean } | null>(null)
     const [isArchiveLoading, setIsArchiveLoading] = useState(false)
 
     // Delete confirmation modal state
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [selectedDeleteUniversity, setSelectedDeleteUniversity] = useState<{ id: string; name: string } | null>(null)
+    const [selectedDeleteCorporate, setSelectedDeleteCorporate] = useState<{ id: string; name: string } | null>(null)
     const [isDeleteLoading, setIsDeleteLoading] = useState(false)
 
     // Profile modal state
     const [showProfileModal, setShowProfileModal] = useState(false)
-    const [selectedProfileUniversity, setSelectedProfileUniversity] = useState<UniversityListItem | null>(null)
+    const [selectedProfileCorporate, setSelectedProfileCorporate] = useState<CorporateListItem | null>(null)
     const [fullProfileData, setFullProfileData] = useState<any>(null)
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
 
@@ -85,8 +88,6 @@ export function UniversityTable({
                 return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
             case 'inactive':
                 return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
-            case 'pending':
-                return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
             case 'suspended':
                 return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
             default:
@@ -98,44 +99,6 @@ export function UniversityTable({
         return verified
             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
             : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
-    }
-
-    // Check if university is new (show badge for newly created universities that haven't been modified by admin)
-    // Badge disappears when admin updates the university (status change, profile edit, etc.)
-    const isNewUniversity = (university: UniversityListItem) => {
-        // Strategy: Show "New" badge if the university was created recently AND hasn't been modified by admin yet
-        // We detect "not modified" by checking if updated_at is either:
-        // 1. null/undefined (never updated)
-        // 2. Same as or very close to created_at (within 5 seconds - accounts for database timestamp precision)
-
-        if (!university.created_at) {
-            return false // Can't determine if new without created_at
-        }
-
-        const createdTime = new Date(university.created_at).getTime()
-        const now = Date.now()
-        const twentyFourHours = 24 * 60 * 60 * 1000
-
-        // Only consider universities created in the last 24 hours as potentially "new"
-        const isRecentlyCreated = (now - createdTime) < twentyFourHours
-        if (!isRecentlyCreated) {
-            return false
-        }
-
-        // Check if the university has been modified after creation
-        if (!university.updated_at) {
-            // Never updated - definitely new
-            return true
-        }
-
-        // If updated_at exists, check if it's essentially the same as created_at
-        // (within 5 seconds to account for database operations during creation)
-        const updatedTime = new Date(university.updated_at).getTime()
-        const timeDiff = Math.abs(updatedTime - createdTime)
-
-        // If time difference is less than 5 seconds, consider it as "not manually updated"
-        // This handles both admin-created (ACTIVE) and self-signup (INACTIVE) universities
-        return timeDiff < 5000
     }
 
     // Row color function - alternating transparent cool colors
@@ -183,8 +146,8 @@ export function UniversityTable({
     }
 
     // Sort and paginate data
-    const { sortedUniversities, totalPages, paginatedUniversities } = useMemo(() => {
-        let sorted = [...universities]
+    const { sortedCorporates, totalPages, paginatedCorporates } = useMemo(() => {
+        let sorted = [...corporates]
 
         // Apply sorting
         if (sortField && sortDirection) {
@@ -193,7 +156,7 @@ export function UniversityTable({
                 let bValue: any = b[sortField]
 
                 // Handle numeric fields
-                if (['placement_rate', 'average_package'].includes(sortField)) {
+                if (['total_jobs', 'total_applications'].includes(sortField)) {
                     aValue = Number(aValue) || 0
                     bValue = Number(bValue) || 0
                 } else if (sortField === 'created_at') {
@@ -222,31 +185,31 @@ export function UniversityTable({
         const totalPages = Math.ceil(sorted.length / itemsPerPage)
         const startIndex = (currentPage - 1) * itemsPerPage
         const endIndex = startIndex + itemsPerPage
-        const paginatedUniversities = sorted.slice(startIndex, endIndex)
+        const paginatedCorporates = sorted.slice(startIndex, endIndex)
 
-        return { sortedUniversities: sorted, totalPages, paginatedUniversities }
-    }, [universities, sortField, sortDirection, currentPage, itemsPerPage])
+        return { sortedCorporates: sorted, totalPages, paginatedCorporates }
+    }, [corporates, sortField, sortDirection, currentPage, itemsPerPage])
 
     // Archive modal handlers
-    const handleArchiveClick = (university: UniversityListItem) => {
-        setSelectedUniversity({
-            id: university.id,
-            name: university.university_name,
-            isArchived: university.is_archived
+    const handleArchiveClick = (corporate: CorporateListItem) => {
+        setSelectedCorporate({
+            id: corporate.id,
+            name: corporate.company_name,
+            isArchived: corporate.is_archived
         })
         setShowArchiveModal(true)
     }
 
     const handleArchiveConfirm = async () => {
-        if (!selectedUniversity) return
+        if (!selectedCorporate) return
 
         setIsArchiveLoading(true)
         try {
-            await onArchiveUniversity(selectedUniversity.id, !selectedUniversity.isArchived)
+            await onArchiveCorporate(selectedCorporate.id, !selectedCorporate.isArchived)
             setShowArchiveModal(false)
-            setSelectedUniversity(null)
+            setSelectedCorporate(null)
         } catch (error) {
-            console.error('Failed to archive/unarchive university:', error)
+            console.error('Failed to archive/unarchive corporate:', error)
             // Don't close modal on error, let user retry
         } finally {
             setIsArchiveLoading(false)
@@ -255,28 +218,28 @@ export function UniversityTable({
 
     const handleArchiveCancel = () => {
         setShowArchiveModal(false)
-        setSelectedUniversity(null)
+        setSelectedCorporate(null)
     }
 
     // Delete modal handlers
-    const handleDeleteClick = (university: UniversityListItem) => {
-        setSelectedDeleteUniversity({
-            id: university.id,
-            name: university.university_name
+    const handleDeleteClick = (corporate: CorporateListItem) => {
+        setSelectedDeleteCorporate({
+            id: corporate.id,
+            name: corporate.company_name
         })
         setShowDeleteModal(true)
     }
 
     const handleDeleteConfirm = async () => {
-        if (!selectedDeleteUniversity) return
+        if (!selectedDeleteCorporate) return
 
         setIsDeleteLoading(true)
         try {
-            await onDeleteUniversity(selectedDeleteUniversity.id)
+            await onDeleteCorporate(selectedDeleteCorporate.id)
             setShowDeleteModal(false)
-            setSelectedDeleteUniversity(null)
+            setSelectedDeleteCorporate(null)
         } catch (error) {
-            console.error('Failed to delete university:', error)
+            console.error('Failed to delete corporate:', error)
             // Don't close modal on error, let user retry
         } finally {
             setIsDeleteLoading(false)
@@ -285,33 +248,41 @@ export function UniversityTable({
 
     const handleDeleteCancel = () => {
         setShowDeleteModal(false)
-        setSelectedDeleteUniversity(null)
+        setSelectedDeleteCorporate(null)
     }
 
     // Profile modal handlers
-    const handleRowClick = (university: UniversityListItem) => {
-        setSelectedProfileUniversity(university)
+    const handleViewClick = async (corporate: CorporateListItem) => {
+        setSelectedProfileCorporate(corporate)
         setShowProfileModal(true)
-        setIsLoadingProfile(false)
+        setIsLoadingProfile(true)
 
-        // Create profile data from existing university data
-        const fullProfile = {
-            ...university,
-            // Additional fields that might be needed for the profile modal
-            name: university.university_name,
-            bio: university.bio || '',
-            profile_picture: university.profile_picture || '',
-            email_verified: university.email_verified || false,
-            phone_verified: university.phone_verified || false,
-            status: university.status || 'active'
+        try {
+            // Fetch full corporate profile for more details
+            const fullProfile = await corporateManagementService.getCorporateProfile(corporate.id)
+            setFullProfileData(fullProfile)
+        } catch (error: any) {
+            console.error('Failed to fetch corporate profile:', error)
+            toast.error(getErrorMessage(error))
+            // Fallback to using basic corporate data
+            const basicProfile = {
+                ...corporate,
+                name: corporate.company_name,
+                bio: corporate.bio || '',
+                profile_picture: corporate.profile_picture || '',
+                email_verified: corporate.email_verified || false,
+                phone_verified: corporate.phone_verified || false,
+                status: corporate.status || 'active'
+            }
+            setFullProfileData(basicProfile)
+        } finally {
+            setIsLoadingProfile(false)
         }
-
-        setFullProfileData(fullProfile)
     }
 
     const handleProfileClose = () => {
         setShowProfileModal(false)
-        setSelectedProfileUniversity(null)
+        setSelectedProfileCorporate(null)
         setFullProfileData(null)
     }
 
@@ -321,7 +292,7 @@ export function UniversityTable({
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="p-8 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-400">Loading universities...</p>
+                    <p className="text-gray-600 dark:text-gray-400">Loading corporates...</p>
                 </div>
             </div>
         )
@@ -337,7 +308,7 @@ export function UniversityTable({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Universities</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Corporates</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
                     <button
                         onClick={onRetry}
@@ -351,15 +322,15 @@ export function UniversityTable({
     }
 
     // Empty state
-    if (universities.length === 0) {
+    if (corporates.length === 0) {
         return (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="p-8 text-center">
                     <div className="text-gray-400 mb-4">
                         <Building2 className="w-12 h-12 mx-auto" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Universities Found</h3>
-                    <p className="text-gray-600 dark:text-gray-400">There are no universities to display at the moment.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Corporates Found</h3>
+                    <p className="text-gray-600 dark:text-gray-400">There are no corporates to display at the moment.</p>
                 </div>
             </div>
         )
@@ -375,11 +346,11 @@ export function UniversityTable({
                             <tr>
                                 <th
                                     className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                                    onClick={() => handleSort('university_name')}
+                                    onClick={() => handleSort('company_name')}
                                 >
                                     <div className="flex items-center space-x-1">
-                                        <span>University</span>
-                                        {getSortIcon('university_name')}
+                                        <span>Corporate</span>
+                                        {getSortIcon('company_name')}
                                     </div>
                                 </th>
                                 <th
@@ -393,11 +364,11 @@ export function UniversityTable({
                                 </th>
                                 <th
                                     className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                                    onClick={() => handleSort('institute_type')}
+                                    onClick={() => handleSort('industry')}
                                 >
                                     <div className="flex items-center space-x-1">
-                                        <span>Type</span>
-                                        {getSortIcon('institute_type')}
+                                        <span>Industry</span>
+                                        {getSortIcon('industry')}
                                     </div>
                                 </th>
                                 <th
@@ -411,11 +382,20 @@ export function UniversityTable({
                                 </th>
                                 <th
                                     className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                                    onClick={() => handleSort('total_students')}
+                                    onClick={() => handleSort('status')}
                                 >
                                     <div className="flex items-center space-x-1">
-                                        <span>Students</span>
-                                        {getSortIcon('total_students')}
+                                        <span>Status</span>
+                                        {getSortIcon('status')}
+                                    </div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                    onClick={() => handleSort('total_jobs')}
+                                >
+                                    <div className="flex items-center space-x-1">
+                                        <span>Jobs</span>
+                                        {getSortIcon('total_jobs')}
                                     </div>
                                 </th>
                                 <th
@@ -427,51 +407,35 @@ export function UniversityTable({
                                         {getSortIcon('created_at')}
                                     </div>
                                 </th>
-                                <th
-                                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                                    onClick={() => handleSort('status')}
-                                >
-                                    <div className="flex items-center space-x-1">
-                                        <span>Status</span>
-                                        {getSortIcon('status')}
-                                    </div>
-                                </th>
                                 <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {paginatedUniversities.map((university, index) => (
+                            {paginatedCorporates.map((corporate, index) => (
                                 <motion.tr
-                                    key={university.id}
+                                    key={corporate.id}
                                     className={`${getRowColor(index)} hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer`}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.2, delay: index * 0.05 }}
-                                    onClick={() => handleRowClick(university)}
+                                    onClick={() => handleViewClick(corporate)}
                                 >
-                                    {/* University Name */}
+                                    {/* Corporate Name */}
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="flex-shrink-0 h-10 w-10">
-                                                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                                                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                                                     <Building2 className="h-5 w-5 text-white" />
                                                 </div>
                                             </div>
                                             <div className="ml-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {university.university_name}
-                                                    </div>
-                                                    {isNewUniversity(university) && (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-pink-500 to-purple-600 text-white animate-pulse">
-                                                            New
-                                                        </span>
-                                                    )}
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {corporate.company_name}
                                                 </div>
                                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {university.institute_type}
+                                                    {corporate.company_type || 'Not specified'}
                                                 </div>
                                             </div>
                                         </div>
@@ -482,47 +446,51 @@ export function UniversityTable({
                                         <div className="space-y-1">
                                             <div className="flex items-center text-sm text-gray-900 dark:text-white">
                                                 <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                                                {university.email}
+                                                {corporate.email}
                                             </div>
-                                            {university.phone && (
+                                            {corporate.phone && (
                                                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                                     <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                                                    {university.phone}
+                                                    {corporate.phone}
                                                 </div>
                                             )}
-                                            {university.address && (
+                                            {corporate.address && (
                                                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                                     <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                                                    <span className="truncate max-w-[200px]">{university.address}</span>
+                                                    <span className="truncate max-w-[200px]">{corporate.address}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </td>
 
-                                    {/* Institute Type */}
+                                    {/* Industry */}
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <GraduationCap className="h-4 w-4 text-gray-400 mr-2" />
-                                            <span className="text-sm text-gray-900 dark:text-white">
-                                                {university.institute_type}
-                                            </span>
-                                        </div>
+                                        <span className="text-sm text-gray-900 dark:text-white">
+                                            {corporate.industry || 'Not specified'}
+                                        </span>
                                     </td>
 
                                     {/* Verification Status */}
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getVerifiedColor(university.verified)}`}>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getVerifiedColor(corporate.verified)}`}>
                                             <Shield className="h-3 w-3 mr-1" />
-                                            {university.verified ? 'Verified' : 'Unverified'}
+                                            {corporate.verified ? 'Verified' : 'Unverified'}
                                         </span>
                                     </td>
 
-                                    {/* Student Count */}
+                                    {/* Status */}
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(corporate.status)}`}>
+                                            {corporate.status}
+                                        </span>
+                                    </td>
+
+                                    {/* Job Count */}
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <Users className="h-4 w-4 text-gray-400 mr-2" />
+                                            <Briefcase className="h-4 w-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900 dark:text-white">
-                                                {university.total_students || 0}
+                                                {corporate.total_jobs || 0}
                                             </span>
                                         </div>
                                     </td>
@@ -531,17 +499,8 @@ export function UniversityTable({
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                                             <Calendar className="h-4 w-4 mr-2" />
-                                            {formatDate(university.created_at)}
+                                            {formatDate(corporate.created_at)}
                                         </div>
-                                    </td>
-
-                                    {/* Status */}
-                                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                        <StatusDropdown
-                                            universityId={university.id}
-                                            currentStatus={university.status}
-                                            onStatusChange={onRetry}
-                                        />
                                     </td>
 
                                     {/* Actions */}
@@ -550,33 +509,33 @@ export function UniversityTable({
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    onEditUniversity(university)
+                                                    onEditCorporate(corporate)
                                                 }}
                                                 className="p-2 rounded-lg transition-colors duration-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                                title="Edit University"
+                                                title="Edit Corporate"
                                             >
                                                 <Edit className="h-4 w-4" />
                                             </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    handleArchiveClick(university)
+                                                    handleArchiveClick(corporate)
                                                 }}
-                                                className={`p-2 rounded-lg transition-colors duration-200 ${university.is_archived
+                                                className={`p-2 rounded-lg transition-colors duration-200 ${corporate.is_archived
                                                     ? 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
                                                     : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
                                                     }`}
-                                                title={university.is_archived ? 'Unarchive University' : 'Archive University'}
+                                                title={corporate.is_archived ? 'Unarchive Corporate' : 'Archive Corporate'}
                                             >
-                                                {university.is_archived ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                                {corporate.is_archived ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                                             </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    handleDeleteClick(university)
+                                                    handleDeleteClick(corporate)
                                                 }}
                                                 className="p-2 rounded-lg transition-colors duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                title="Delete University"
+                                                title="Delete Corporate"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
@@ -617,10 +576,10 @@ export function UniversityTable({
                                         </span>{' '}
                                         to{' '}
                                         <span className="font-medium">
-                                            {Math.min(currentPage * itemsPerPage, universities.length)}
+                                            {Math.min(currentPage * itemsPerPage, corporates.length)}
                                         </span>{' '}
                                         of{' '}
-                                        <span className="font-medium">{universities.length}</span>{' '}
+                                        <span className="font-medium">{corporates.length}</span>{' '}
                                         results
                                     </p>
                                 </div>
@@ -668,29 +627,28 @@ export function UniversityTable({
                     handleArchiveConfirm()
                 }}
                 isLoading={isArchiveLoading}
-                studentName={selectedUniversity?.name || ''}
-                isArchiving={!selectedUniversity?.isArchived}
-            />
-
-            {/* University Profile Modal */}
-            <UniversityProfileModal
-                isOpen={showProfileModal}
-                onClose={handleProfileClose}
-                university={selectedProfileUniversity}
-                fullProfile={fullProfileData}
-                isLoading={isLoadingProfile}
+                studentName={selectedCorporate?.name || ''}
+                isArchiving={!selectedCorporate?.isArchived}
             />
 
             {/* Delete Confirmation Modal */}
-            <UniversityDeleteConfirmationModal
+            <CorporateDeleteConfirmationModal
                 isOpen={showDeleteModal}
                 onClose={handleDeleteCancel}
                 onConfirm={handleDeleteConfirm}
-                universityName={selectedDeleteUniversity?.name || ''}
+                companyName={selectedDeleteCorporate?.name || ''}
                 isDeleting={isDeleteLoading}
+            />
+
+            {/* Profile Modal */}
+            <CorporateProfileModal
+                isOpen={showProfileModal}
+                onClose={handleProfileClose}
+                corporate={selectedProfileCorporate}
+                fullProfile={fullProfileData}
+                isLoading={isLoadingProfile}
             />
         </>
     )
 }
-
 
