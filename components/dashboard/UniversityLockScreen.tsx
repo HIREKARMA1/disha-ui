@@ -51,8 +51,7 @@ export function UniversityLockScreen({ isOpen, universityName, email }: Universi
 
         // Add CSS to prevent text selection
         document.body.style.userSelect = 'none'
-        document.body.style.webkitUserSelect = 'none'
-        document.body.style.msUserSelect = 'none'
+            ; (document.body.style as any).webkitUserSelect = 'none'
 
         // Add event listeners
         document.addEventListener('copy', preventCopy)
@@ -64,8 +63,7 @@ export function UniversityLockScreen({ isOpen, universityName, email }: Universi
         return () => {
             // Cleanup: restore normal behavior
             document.body.style.userSelect = ''
-            document.body.style.webkitUserSelect = ''
-            document.body.style.msUserSelect = ''
+                ; (document.body.style as any).webkitUserSelect = ''
 
             document.removeEventListener('copy', preventCopy)
             document.removeEventListener('cut', preventCopy)
