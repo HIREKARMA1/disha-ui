@@ -39,7 +39,7 @@ interface UniversityTableProps {
     onRetry: () => void
 }
 
-type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at'
+type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at' | 'total_students'
 type SortDirection = 'asc' | 'desc' | null
 
 export function UniversityTable({
@@ -194,7 +194,7 @@ export function UniversityTable({
                 let bValue: any = b[sortField]
 
                 // Handle numeric fields
-                if (['placement_rate', 'average_package'].includes(sortField)) {
+                if (['placement_rate', 'average_package', 'total_students'].includes(sortField)) {
                     aValue = Number(aValue) || 0
                     bValue = Number(bValue) || 0
                 } else if (sortField === 'created_at') {
