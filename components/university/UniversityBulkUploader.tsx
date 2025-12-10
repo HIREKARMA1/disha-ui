@@ -570,7 +570,7 @@ export function UniversityBulkUploader({ onComplete, onCancel, moduleId }: Unive
       };
 
     return (
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto max-h-full">
             {/* Header */}
             <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-4 border border-primary-200 dark:border-primary-700 relative">
                 <button

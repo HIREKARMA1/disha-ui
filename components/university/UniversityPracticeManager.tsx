@@ -168,6 +168,18 @@ export function UniversityPracticeManager() {
         return () => setIsMounted(false)
     }, [])
 
+    // Lock body scroll when bulk upload modal is open
+    React.useEffect(() => {
+        if (isBulkUploadModalOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = 'unset'
+        }
+        return () => {
+            document.body.style.overflow = 'unset'
+        }
+    }, [isBulkUploadModalOpen])
+
     // Set current date on client side only to avoid hydration mismatch
     React.useEffect(() => {
         setCurrentDate(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))
@@ -542,19 +554,29 @@ export function UniversityPracticeManager() {
 
                 {/* Bulk Upload Questions Modal */}
                 {isMounted && isBulkUploadModalOpen && createPortal(
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-                        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
-                            <UniversityBulkUploader
-                                onComplete={() => {
-                                    setIsBulkUploadModalOpen(false)
-                                    refetchModules()
-                                    setRefreshTrigger(prev => prev + 1)
-                                }}
-                                onCancel={() => {
-                                    setIsBulkUploadModalOpen(false)
-                                }}
-                                moduleId={selectedModule?.id}
-                            />
+                    <div 
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setIsBulkUploadModalOpen(false)
+                            }
+                        }}
+                    >
+                        <div className="relative w-full max-w-6xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-y-auto">
+                                <UniversityBulkUploader
+                                    onComplete={() => {
+                                        setIsBulkUploadModalOpen(false)
+                                        refetchModules()
+                                        setRefreshTrigger(prev => prev + 1)
+                                    }}
+                                    onCancel={() => {
+                                        setIsBulkUploadModalOpen(false)
+                                    }}
+                                    moduleId={selectedModule?.id}
+                                />
+                            </div>
                         </div>
                     </div>,
                     document.body
