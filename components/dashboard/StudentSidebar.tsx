@@ -101,14 +101,14 @@ const navItems: NavItem[] = [
         description: 'Resources and materials',
         color: 'from-emerald-500 to-green-600'
     },
-    {
-        label: 'Sangha Community',
-        href: '/dashboard/student/sangha',
-        icon: MessageSquare,
-        description: 'Join community discussions',
-        color: 'from-violet-500 to-purple-600',
-        isSSO: true
-    }
+    // {
+    //     label: 'Sangha Community',
+    //     href: '/dashboard/student/sangha',
+    //     icon: MessageSquare,
+    //     description: 'Join community discussions',
+    //     color: 'from-violet-500 to-purple-600',
+    //     isSSO: true
+    // }
 ]
 
 interface StudentSidebarProps {
