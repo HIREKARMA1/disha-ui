@@ -206,6 +206,8 @@ class ApiClient {
   async getUniversityApplications(params: {
     status?: string;
     search?: string;
+    company_name?: string;
+    job_id?: string;
     sort_by?: string;
     sort_order?: string;
     page?: number;
@@ -218,6 +220,8 @@ class ApiClient {
   async exportUniversityApplications(params: {
     status?: string;
     search?: string;
+    company_name?: string;
+    job_id?: string;
     sort_by?: string;
     sort_order?: string;
   } = {}): Promise<Blob> {
