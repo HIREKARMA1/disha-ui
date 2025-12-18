@@ -313,7 +313,8 @@ export function ResumeForm({
                                     />
                                 </div>
 
-                                <div className="flex space-x-2">
+                                {/* Dates row: span full width and wrap properly on smaller screens */}
+                                <div className="col-span-2 flex flex-col md:flex-row gap-2">
                                     <div className="flex-1">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             Start Date
@@ -322,7 +323,7 @@ export function ResumeForm({
                                             type="month"
                                             value={exp.startDate || ''}
                                             onChange={(e) => updateArrayField('experience', index, 'startDate', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                            className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         />
                                     </div>
 
@@ -335,7 +336,7 @@ export function ResumeForm({
                                             value={exp.endDate || ''}
                                             onChange={(e) => updateArrayField('experience', index, 'endDate', e.target.value)}
                                             disabled={exp.current}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                                            className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
                                         />
                                     </div>
                                 </div>
