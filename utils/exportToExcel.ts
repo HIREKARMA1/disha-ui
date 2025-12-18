@@ -81,21 +81,27 @@ export const exportToCSV = (
     jobTitle: string,
     companyName?: string
 ) => {
-    // Prepare CSV headers
+    // Prepare CSV headers (with extra optional columns removed)
     const headers = [
-        'Student ID', 'Name', 'Email', 'Phone', 'University', 'Degree', 'Branch',
-        'Graduation Year', 'CGPA', 'Applied Date', 'Status', 'Expected Salary',
-        'Availability Date', 'Location', 'Skills', 'Cover Letter',
-        'Resume Link', 'Class X Certificate', 'Class XII Certificate', 'Internship Certificates',
-        'Technical Skills', 'Soft Skills', 'Certifications', 'Preferred Industry',
-        'Job Roles of Interest', 'Location Preferences', 'Language Proficiency',
-        'Internship Experience', 'Project Details', 'Extracurricular Activities',
-        'LinkedIn Profile', 'GitHub Profile', 'Personal Website'
+        'Name',
+        'Email',
+        'Phone',
+        'University',
+        'Degree',
+        'Branch',
+        'Graduation Year',
+        'CGPA',
+        'Applied Date',
+        'Expected Salary',
+        'Resume Link',
+        'Technical Skills',
+        'LinkedIn Profile',
+        'GitHub Profile',
+        'Personal Website'
     ];
 
-    // Prepare CSV data
+    // Prepare CSV data aligned with headers above
     const csvData = students.map(student => [
-        student.id,
         student.name,
         student.email,
         student.phone || 'Not provided',
@@ -111,30 +117,9 @@ export const exportToCSV = (
             hour: '2-digit',
             minute: '2-digit'
         }),
-        student.status.charAt(0).toUpperCase() + student.status.slice(1),
         student.expected_salary ? `₹${student.expected_salary.toLocaleString()}` : 'Not specified',
-        student.availability_date ? new Date(student.availability_date).toLocaleDateString() : 'Not specified',
-        student.location || 'Not specified',
-        student.skills ? student.skills.join(', ') : 'Not specified',
-        student.cover_letter || 'Not provided',
-        // Document fields
         student.resume || 'Not uploaded',
-        student.tenth_certificate || 'Not uploaded',
-        student.twelfth_certificate || 'Not uploaded',
-        student.internship_certificates || 'Not uploaded',
-        // Skills fields
         student.technical_skills || 'Not specified',
-        student.soft_skills || 'Not specified',
-        student.certifications || 'Not specified',
-        student.preferred_industry || 'Not specified',
-        student.job_roles_of_interest || 'Not specified',
-        student.location_preferences || 'Not specified',
-        student.language_proficiency || 'Not specified',
-        // Experience fields
-        student.internship_experience || 'Not specified',
-        student.project_details || 'Not specified',
-        student.extracurricular_activities || 'Not specified',
-        // Social fields
         student.linkedin_profile || 'Not provided',
         student.github_profile || 'Not provided',
         student.personal_website || 'Not provided'
