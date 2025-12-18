@@ -1,11 +1,19 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Plus, FileText, Download, Edit, Trash2, Copy, MoreVertical } from 'lucide-react'
+import { Plus, FileText, Download, Edit, Trash2, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect, useRef } from 'react'
 import { resumeService, type ResumeData } from '@/services/resumeService'
 import toast from 'react-hot-toast'
+import { ResumePreview } from './ResumePreview'
+
+// Defer importing html2pdf to client runtime to avoid SSR issues
+let html2pdf: any
+if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    html2pdf = require('html2pdf.js')
+}
 
 interface ResumeBuilderDashboardProps {
     onNewResume: () => void
@@ -26,7 +34,10 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
     const [openMenu, setOpenMenu] = useState<string | null>(null)
     const [resumes, setResumes] = useState<ResumeData[]>([])
     const [loading, setLoading] = useState(true)
+    const [downloadingResume, setDownloadingResume] = useState<ResumeData | null>(null)
+    const [isDownloading, setIsDownloading] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
+    const downloadPreviewRef = useRef<HTMLDivElement | null>(null)
 
     // Load resumes on component mount
     useEffect(() => {
@@ -71,21 +82,6 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
         }
     }
 
-    const handleDuplicateResume = async (resumeId: string) => {
-        try {
-            const originalResume = resumes.find(r => r.id === resumeId)
-            if (!originalResume) return
-
-            const newName = `${originalResume.name} (Copy)`
-            await resumeService.duplicateResume(resumeId, newName)
-            toast.success('Resume duplicated successfully')
-            loadResumes() // Reload the list
-        } catch (error) {
-            console.error('Error duplicating resume:', error)
-            toast.error('Failed to duplicate resume')
-        }
-    }
-
     // Helper function to format date
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
@@ -123,16 +119,63 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
             case 'edit':
                 onEditResume(resumeId)
                 break
-            case 'duplicate':
-                handleDuplicateResume(resumeId)
+            case 'download': {
+                const resume = resumes.find(r => r.id === resumeId)
+                if (!resume) {
+                    toast.error('Resume not found for download')
+                    return
+                }
+                setDownloadingResume(resume)
                 break
-            case 'download':
-                // TODO: Implement download functionality
-                console.log('Download resume:', resumeId)
-                break
+            }
             case 'delete':
                 handleDeleteResume(resumeId)
                 break
+        }
+    }
+
+    // Called by the hidden ResumePreview once the template has fully loaded,
+    // so the generated PDF captures the actual resume rather than the loading state.
+    const handlePreviewReady = async () => {
+        if (!downloadingResume || !downloadPreviewRef.current || !html2pdf || isDownloading) {
+            return
+        }
+
+        try {
+            setIsDownloading(true)
+
+            const safeName =
+                downloadingResume.content?.header?.fullName ||
+                downloadingResume.name ||
+                'resume'
+
+            const fileName = `${safeName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_resume.pdf`
+
+            const options = {
+                margin: [10, 10, 10, 10] as [number, number, number, number],
+                filename: fileName,
+                image: { type: 'jpeg', quality: 0.85 },
+                html2canvas: {
+                    scale: 1.5,
+                    useCORS: true,
+                    allowTaint: true,
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait',
+                    compress: true,
+                },
+            }
+
+            await html2pdf().from(downloadPreviewRef.current).set(options).save()
+            toast.success('Resume downloaded successfully!')
+        } catch (error) {
+            console.error('Error downloading resume:', error)
+            toast.error('Failed to download resume. Please try again.')
+        } finally {
+            setIsDownloading(false)
+            setDownloadingResume(null)
         }
     }
 
@@ -283,18 +326,12 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                                                                 Edit
                                                             </button>
                                                             <button
-                                                                onClick={() => handleAction('duplicate', resume.id)}
-                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
-                                                            >
-                                                                <Copy className="w-4 h-4 mr-2" />
-                                                                Duplicate
-                                                            </button>
-                                                            <button
                                                                 onClick={() => handleAction('download', resume.id)}
-                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                                                                disabled={isDownloading}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center disabled:opacity-60"
                                                             >
                                                                 <Download className="w-4 h-4 mr-2" />
-                                                                Download
+                                                                {isDownloading ? 'Downloading...' : 'Download'}
                                                             </button>
                                                             <button
                                                                 onClick={() => handleAction('delete', resume.id)}
@@ -401,6 +438,29 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                     <li>• Proofread carefully for grammar and spelling errors</li>
                 </ul>
             </motion.div>
+
+            {/* Hidden preview container used for generating PDFs when downloading from the dashboard */}
+            <div
+                style={{
+                    position: 'fixed',
+                    left: '-10000px',
+                    top: 0,
+                    width: '800px',
+                    pointerEvents: 'none',
+                    opacity: 0,
+                    zIndex: -1,
+                }}
+            >
+                {downloadingResume && (
+                    <div ref={downloadPreviewRef}>
+                        <ResumePreview
+                            resumeData={downloadingResume.content}
+                            templateId={downloadingResume.template_id}
+                            onReady={handlePreviewReady}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

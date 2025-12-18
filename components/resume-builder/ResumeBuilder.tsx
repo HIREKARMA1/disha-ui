@@ -136,6 +136,8 @@ const createDefaultResumeData = (profile: any): ResumeData => ({
 export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
     const { profile, loading: profileLoading, error: profileError, isAuthenticated, refreshProfile } = useProfile()
     const [resumeData, setResumeData] = useState<ResumeData | null>(null)
+    // Track a local resumeId so that a newly created resume is updated on subsequent saves
+    const [localResumeId, setLocalResumeId] = useState<string | null>(resumeId || null)
     const [showPreview, setShowPreview] = useState(true)
     const [showForm, setShowForm] = useState(true)
     const [loading, setLoading] = useState(false)
@@ -149,6 +151,13 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
             setResumeData(defaultData)
         }
     }, [profile])
+
+    // Keep localResumeId in sync when the prop changes (e.g. editing from dashboard)
+    useEffect(() => {
+        if (resumeId) {
+            setLocalResumeId(resumeId)
+        }
+    }, [resumeId])
 
     useEffect(() => {
         if (resumeId) {
@@ -184,10 +193,11 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
         setLoading(true)
         try {
             const resumeName = resumeData.header.fullName ? `${resumeData.header.fullName}'s Resume` : 'My Resume'
+            const currentId = localResumeId || resumeId
 
-            if (resumeId) {
+            if (currentId) {
                 // Update existing resume
-                await resumeService.updateResume(resumeId, {
+                await resumeService.updateResume(currentId, {
                     name: resumeName,
                     content: resumeData as ResumeContent,
                     status: 'published'
@@ -199,12 +209,14 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                 const templates = await resumeService.getTemplates()
                 const defaultTemplateId = templates.templates[0]?.id || '550e8400-e29b-41d4-a716-446655440000'
 
-                await resumeService.createResume({
+                const created = await resumeService.createResume({
                     template_id: templateId || defaultTemplateId,
                     name: resumeName,
                     content: resumeData as ResumeContent,
                     status: 'published'
                 })
+                // Remember the new resume id so subsequent saves perform updates
+                setLocalResumeId(created.id)
                 toast.success('Resume saved successfully!')
             }
 
