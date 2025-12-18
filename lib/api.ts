@@ -215,6 +215,19 @@ class ApiClient {
     return response.data;
   }
 
+  async exportUniversityApplications(params: {
+    status?: string;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+  } = {}): Promise<Blob> {
+    const response: AxiosResponse<Blob> = await this.client.get('/universities/applications/export', {
+      params,
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
   async updateUniversityApplicationStatus(
     applicationId: string,
     status: string,

@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'
+import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface StudentApplicationManagementHeaderProps {
     totalApplications: number
@@ -14,6 +15,7 @@ interface StudentApplicationManagementHeaderProps {
     onSearchChange: (term: string) => void
     filterStatus: string
     onFilterChange: (status: string) => void
+    onExport?: () => void
 }
 
 export function StudentApplicationManagementHeader({
@@ -26,7 +28,8 @@ export function StudentApplicationManagementHeader({
     searchTerm,
     onSearchChange,
     filterStatus,
-    onFilterChange
+    onFilterChange,
+    onExport
 }: StudentApplicationManagementHeaderProps) {
     const statusOptions = [
         { value: 'all', label: 'All Applications', count: totalApplications },
@@ -157,7 +160,7 @@ export function StudentApplicationManagementHeader({
                 })}
             </div>
 
-            {/* Search and Filter */}
+            {/* Search, Filter and Export */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                     {/* Search */}
@@ -191,6 +194,20 @@ export function StudentApplicationManagementHeader({
                             </select>
                         </div>
                     </div>
+
+                    {/* Export Button (optional, for university view) */}
+                    {onExport && (
+                        <div className="sm:w-auto flex items-center">
+                            <Button
+                                type="button"
+                                onClick={onExport}
+                                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                <span>Export CSV</span>
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

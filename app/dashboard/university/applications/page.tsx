@@ -156,6 +156,34 @@ export default function UniversityApplicationsPage() {
         fetchApplications()
     }
 
+    const handleExport = async () => {
+        try {
+            toast.loading('Exporting applications...', { id: 'export-applications' })
+
+            const blob = await apiClient.exportUniversityApplications({
+                status: filterStatus === 'all' ? undefined : filterStatus,
+                search: searchTerm || undefined,
+                sort_by: sortBy,
+                sort_order: sortOrder
+            })
+
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            const date = new Date().toISOString().split('T')[0]
+            link.href = url
+            link.download = `university-applications-${date}.csv`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+
+            toast.success('Applications exported successfully!', { id: 'export-applications' })
+        } catch (error) {
+            console.error('Failed to export applications:', error)
+            toast.error('Failed to export applications. Please try again.', { id: 'export-applications' })
+        }
+    }
+
     // Calculate status counts
     const statusCounts = applications.reduce((acc, app) => {
         acc[app.status] = (acc[app.status] || 0) + 1
@@ -184,6 +212,7 @@ export default function UniversityApplicationsPage() {
                     onSearchChange={handleSearch}
                     filterStatus={filterStatus}
                     onFilterChange={handleFilterChange}
+                    onExport={handleExport}
                 />
 
                 {/* Applications Table */}
