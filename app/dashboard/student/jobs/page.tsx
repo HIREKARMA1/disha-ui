@@ -666,8 +666,18 @@ function JobOpportunitiesPageContent() {
                 } else if (error.response.data?.message) {
                     message = error.response.data.message
                 }
-            } else if (error.response?.data?.detail) {
-                message = error.response.data.detail
+            } else {
+                const data = error.response?.data
+                if (data) {
+                    if (typeof data.error === 'string') {
+                        // Our backend wraps user-facing message in `error`
+                        message = data.error
+                    } else if (typeof data.detail === 'string') {
+                        message = data.detail
+                    } else if (typeof data.message === 'string') {
+                        message = data.message
+                    }
+                }
             }
 
             toast.error(message)

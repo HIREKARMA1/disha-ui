@@ -40,6 +40,8 @@ export default function UniversityApplicationsPage() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
+    const [companyFilter, setCompanyFilter] = useState('all')
+    const [jobFilter, setJobFilter] = useState('all')
     const [sortBy, setSortBy] = useState('applied_at')
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
     const [pagination, setPagination] = useState({
@@ -48,6 +50,8 @@ export default function UniversityApplicationsPage() {
         total: 0,
         total_pages: 0
     })
+    const [companyOptions, setCompanyOptions] = useState<string[]>([])
+    const [jobOptions, setJobOptions] = useState<{ id: string; title: string }[]>([])
     const [selectedApplication, setSelectedApplication] = useState<ApplicationData | null>(null)
     const [showOfferLetterModal, setShowOfferLetterModal] = useState(false)
     const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false)
@@ -61,18 +65,43 @@ export default function UniversityApplicationsPage() {
             const response = await apiClient.getUniversityApplications({
                 status: filterStatus === 'all' ? undefined : filterStatus,
                 search: searchTerm || undefined,
+                company_name: companyFilter === 'all' ? undefined : companyFilter,
+                job_id: jobFilter === 'all' ? undefined : jobFilter,
                 sort_by: sortBy,
                 sort_order: sortOrder,
                 page: pagination.page,
                 limit: pagination.limit
             })
 
-            setApplications(response.applications || [])
+            const apps: ApplicationData[] = response.applications || []
+            setApplications(apps)
             setPagination(prev => ({
                 ...prev,
                 total: response.total_count || 0,
                 total_pages: response.total_pages || 0
             }))
+
+            // Build/merge unique list of companies/universities that created jobs
+            setCompanyOptions(prev => {
+                const companySet = new Set(prev)
+                for (const name of apps.map(app => app.corporate_name)) {
+                    if (name) {
+                        companySet.add(name)
+                    }
+                }
+                return Array.from(companySet).sort((a, b) => a.localeCompare(b))
+            })
+
+            // Build list of jobs (id + title) from current applications
+            const jobMap = new Map<string, string>()
+            for (const app of apps) {
+                if (app.job_id && app.job_title) {
+                    jobMap.set(app.job_id, app.job_title)
+                }
+            }
+            const jobs = Array.from(jobMap.entries()).map(([id, title]) => ({ id, title }))
+            jobs.sort((a, b) => a.title.localeCompare(b.title))
+            setJobOptions(jobs)
         } catch (error: any) {
             console.error('Failed to fetch applications:', error)
             toast.error('Failed to load applications. Please try again.')
@@ -83,7 +112,8 @@ export default function UniversityApplicationsPage() {
 
     useEffect(() => {
         fetchApplications()
-    }, [filterStatus, searchTerm, sortBy, sortOrder, pagination.page])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterStatus, searchTerm, sortBy, sortOrder, pagination.page, companyFilter, jobFilter])
 
     const handleSearch = (term: string) => {
         setSearchTerm(term)
@@ -92,6 +122,17 @@ export default function UniversityApplicationsPage() {
 
     const handleFilterChange = (status: string) => {
         setFilterStatus(status)
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }
+
+    const handleCompanyFilterChange = (company: string) => {
+        setCompanyFilter(company)
+        setJobFilter('all')
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }
+
+    const handleJobFilterChange = (jobId: string) => {
+        setJobFilter(jobId)
         setPagination(prev => ({ ...prev, page: 1 }))
     }
 
@@ -156,6 +197,36 @@ export default function UniversityApplicationsPage() {
         fetchApplications()
     }
 
+    const handleExport = async () => {
+        try {
+            toast.loading('Exporting applications...', { id: 'export-applications' })
+
+            const blob = await apiClient.exportUniversityApplications({
+                status: filterStatus === 'all' ? undefined : filterStatus,
+                search: searchTerm || undefined,
+                company_name: companyFilter === 'all' ? undefined : companyFilter,
+                job_id: jobFilter === 'all' ? undefined : jobFilter,
+                sort_by: sortBy,
+                sort_order: sortOrder
+            })
+
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            const date = new Date().toISOString().split('T')[0]
+            link.href = url
+            link.download = `university-applications-${date}.csv`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+
+            toast.success('Applications exported successfully!', { id: 'export-applications' })
+        } catch (error) {
+            console.error('Failed to export applications:', error)
+            toast.error('Failed to export applications. Please try again.', { id: 'export-applications' })
+        }
+    }
+
     // Calculate status counts
     const statusCounts = applications.reduce((acc, app) => {
         acc[app.status] = (acc[app.status] || 0) + 1
@@ -184,6 +255,13 @@ export default function UniversityApplicationsPage() {
                     onSearchChange={handleSearch}
                     filterStatus={filterStatus}
                     onFilterChange={handleFilterChange}
+                    companyOptions={companyOptions}
+                    selectedCompany={companyFilter}
+                    onCompanyChange={handleCompanyFilterChange}
+                    jobOptions={jobOptions}
+                    selectedJobId={jobFilter}
+                    onJobChange={handleJobFilterChange}
+                    onExport={handleExport}
                 />
 
                 {/* Applications Table */}
