@@ -6,9 +6,10 @@ import { getTemplateComponent, getTemplateInfo, TemplateInfo } from './templates
 interface ResumePreviewProps {
     resumeData: any
     templateId: string | null
+    onReady?: () => void
 }
 
-export function ResumePreview({ resumeData, templateId }: ResumePreviewProps) {
+export function ResumePreview({ resumeData, templateId, onReady }: ResumePreviewProps) {
     const [currentTemplate, setCurrentTemplate] = useState<TemplateInfo | null>(null)
     const [TemplateComponent, setTemplateComponent] = useState<any>(null)
 
@@ -29,6 +30,14 @@ export function ResumePreview({ resumeData, templateId }: ResumePreviewProps) {
             setTemplateComponent(() => TemplateComponent)
         }
     }, [templateId])
+
+    // Notify parent when the template component is ready so that external
+    // consumers (like the dashboard PDF download) can safely snapshot the DOM.
+    useEffect(() => {
+        if (TemplateComponent && onReady) {
+            onReady()
+        }
+    }, [TemplateComponent, onReady])
 
     const renderPreviewContent = () => {
         if (!TemplateComponent) {
