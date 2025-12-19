@@ -147,3 +147,94 @@ export const exportToCSV = (
     document.body.removeChild(link);
 };
 
+// Export function for student list
+export interface StudentExport {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    degree?: string;
+    branch?: string;
+    graduation_year?: number;
+    btech_cgpa?: number;
+    placement_status: string;
+    placed_company?: string;
+    package?: number;
+    technical_skills?: string;
+    soft_skills?: string;
+    total_applications: number;
+    interviews_attended: number;
+    offers_received: number;
+    profile_completion_percentage: number;
+    status?: string;
+    created_at: string;
+    is_archived: boolean;
+    resume?: string;
+}
+
+export const exportStudentsToCSV = (students: StudentExport[]) => {
+    // Prepare CSV headers
+    const headers = [
+        'Name',
+        'Email',
+        'Phone',
+        'Degree',
+        'Branch',
+        'Graduation Year',
+        'CGPA',
+        'Placement Status',
+        'Placed Company',
+        'Package (₹)',
+        'Total Applications',
+        'Interviews Attended',
+        'Offers Received',
+        'Resume'
+    ];
+
+    // Prepare CSV data
+    const csvData = students.map(student => [
+        student.name || 'N/A',
+        student.email || 'N/A',
+        student.phone || 'Not provided',
+        student.degree || 'Not specified',
+        student.branch || 'Not specified',
+        student.graduation_year || 'Not specified',
+        student.btech_cgpa || 'Not specified',
+        student.placement_status || 'N/A',
+        student.placed_company || 'N/A',
+        student.package ? `₹${student.package.toLocaleString()}` : 'N/A',
+        student.total_applications || 0,
+        student.interviews_attended || 0,
+        student.offers_received || 0,
+        student.resume || 'Not uploaded'
+    ]);
+
+    // Convert to CSV string
+    const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => {
+            // Escape quotes and wrap in quotes if contains comma, quote, or newline
+            const cellStr = String(cell).replace(/"/g, '""');
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                return `"${cellStr}"`;
+            }
+            return cellStr;
+        }).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `Students_Export_${timestamp}.csv`;
+    link.setAttribute('download', filename);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
