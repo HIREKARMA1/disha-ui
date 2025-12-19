@@ -28,6 +28,7 @@ import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
 import { UniversityProfileModal } from './UniversityProfileModal'
 import { UniversityDeleteConfirmationModal } from './UniversityDeleteConfirmationModal'
 import { StatusDropdown } from './UniversityStatusDropdown'
+import { UniversityStudentsModal } from './UniversityStudentsModal'
 
 interface UniversityTableProps {
     universities: UniversityListItem[]
@@ -71,6 +72,10 @@ export function UniversityTable({
     const [selectedProfileUniversity, setSelectedProfileUniversity] = useState<UniversityListItem | null>(null)
     const [fullProfileData, setFullProfileData] = useState<any>(null)
     const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+
+    // Students modal state
+    const [showStudentsModal, setShowStudentsModal] = useState(false)
+    const [selectedUniversityForStudents, setSelectedUniversityForStudents] = useState<{ id: string; name: string } | null>(null)
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -519,13 +524,22 @@ export function UniversityTable({
                                     </td>
 
                                     {/* Student Count */}
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <Users className="h-4 w-4 text-gray-400 mr-2" />
-                                            <span className="text-sm text-gray-900 dark:text-white">
+                                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedUniversityForStudents({
+                                                    id: university.id,
+                                                    name: university.university_name
+                                                })
+                                                setShowStudentsModal(true)
+                                            }}
+                                            className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer group"
+                                        >
+                                            <Users className="h-4 w-4 text-gray-400 mr-2 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                            <span className="text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                                 {university.total_students || 0}
                                             </span>
-                                        </div>
+                                        </button>
                                     </td>
 
                                     {/* Created Date */}
@@ -689,6 +703,17 @@ export function UniversityTable({
                 onConfirm={handleDeleteConfirm}
                 universityName={selectedDeleteUniversity?.name || ''}
                 isDeleting={isDeleteLoading}
+            />
+
+            {/* Students Modal */}
+            <UniversityStudentsModal
+                isOpen={showStudentsModal}
+                onClose={() => {
+                    setShowStudentsModal(false)
+                    setSelectedUniversityForStudents(null)
+                }}
+                universityId={selectedUniversityForStudents?.id || ''}
+                universityName={selectedUniversityForStudents?.name || ''}
             />
         </>
     )
