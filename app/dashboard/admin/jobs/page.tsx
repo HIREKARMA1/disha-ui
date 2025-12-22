@@ -611,7 +611,7 @@ export default function AdminJobsPage() {
                                 </>
                             ) : (
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    This job is now private and the public link has been removed.
+                                    This job is now private and the public link has been removed do u want again make it public.
                                 </p>
                             )}
                             
