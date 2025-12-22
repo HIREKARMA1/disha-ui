@@ -371,25 +371,26 @@ export default function PublicJobPage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
             <Navbar variant="transparent" />
             
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content - Left Side */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Job Header Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-8 hover:shadow-xl transition-shadow duration-300">
+            <div className="w-full pt-24 pb-12">
+                <div className="w-full px-4 sm:px-6 lg:px-8 mb-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+                        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                        {/* Main Content - Left Side */}
+                        <div className="flex-1 min-w-0 w-full">
+                            {/* Job Header Card */}
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8">
                             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
                                 {companyInfo.logo ? (
                                     <div className="relative">
                                         <img
                                             src={companyInfo.logo}
                                             alt={companyInfo.name}
-                                            className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-700 shadow-md"
+                                            className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-700"
                                         />
 
                                     </div>
                                 ) : (
-                                    <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center text-white text-3xl font-bold shadow-lg ring-4 ring-primary-100 dark:ring-primary-900/30">
+                                    <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-primary-100 dark:ring-primary-900/30">
                                         {companyInfo.name.charAt(0).toUpperCase()}
                                     </div>
                                 )}
@@ -421,7 +422,7 @@ export default function PublicJobPage() {
 
                             {/* Job Details Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                                     <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
                                         <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                                     </div>
@@ -430,7 +431,7 @@ export default function PublicJobPage() {
                                         <p className="text-sm font-bold text-gray-900 dark:text-white">{formatSalary()}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl">
                                     <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
                                         <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
@@ -439,7 +440,7 @@ export default function PublicJobPage() {
                                         <p className="text-sm font-bold text-gray-900 dark:text-white">{formatExperience()}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
                                     <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
                                         <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                     </div>
@@ -450,7 +451,7 @@ export default function PublicJobPage() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl">
                                     <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg">
                                         <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                                     </div>
@@ -463,41 +464,138 @@ export default function PublicJobPage() {
                                 </div>
                             </div>
                         </div>
+                        </div>
 
-                        {/* Tabs */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                                <div className="flex space-x-1 px-6">
-                                    <button
-                                        onClick={() => setActiveTab('description')}
-                                        className={`relative py-4 px-6 font-semibold text-sm transition-all duration-200 ${
-                                            activeTab === 'description'
-                                                ? 'text-primary-600 dark:text-primary-400'
-                                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                                        }`}
+                        {/* Sidebar - Right Side */}
+                        <div className="w-full lg:w-64 xl:w-72 flex-shrink-0 space-y-6">
+                            {/* Action Buttons Card */}
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sticky top-6">
+                                <div className="space-y-4">
+                                    {hasApplied ? (
+                                        <div className="w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-5 text-center shadow-md">
+                                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
+                                            </div>
+                                            <p className="text-base font-bold text-green-900 dark:text-green-200 mb-1">
+                                                Successfully Applied!
+                                            </p>
+                                            <p className="text-sm text-green-700 dark:text-green-300">
+                                                You have successfully applied for this job
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            onClick={handleApplyClick}
+                                            disabled={!job.can_apply || isApplying || hasApplied}
+                                            className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+                                            size="lg"
+                                            title={
+                                                hasApplied 
+                                                    ? 'You have already applied for this job'
+                                                    : !job.can_apply 
+                                                        ? 'Applications are not currently open for this job'
+                                                        : !isEligibleToApply
+                                                            ? eligibility.reason || 'You are not eligible to apply for this job'
+                                                            : ''
+                                            }
+                                        >
+                                            {isApplying ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                    Applying...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-5 h-5 mr-2" />
+                                                    Apply Now
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-2 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(window.location.href)
+                                            toast.success('Link copied to clipboard!')
+                                        }}
                                     >
-                                        Job Description
-                                        {activeTab === 'description' && (
-                                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600"></span>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('company')}
-                                        className={`relative py-4 px-6 font-semibold text-sm transition-all duration-200 ${
-                                            activeTab === 'company'
-                                                ? 'text-primary-600 dark:text-primary-400'
-                                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                                        }`}
-                                    >
-                                        Company Information
-                                        {activeTab === 'company' && (
-                                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600"></span>
-                                        )}
-                                    </button>
+                                        <Share2 className="w-4 h-4 mr-2" />
+                                        Share
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="p-8">
+                            {/* Eligibility Card */}
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+                                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <div className="w-1 h-5 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
+                                    Eligibility
+                                </h3>
+                                <div className="space-y-3">
+                                    {job.experience_min || job.experience_max ? (
+                                        <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <Briefcase className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                {formatExperience()} experience
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Open to all</p>
+                                    )}
+                                    {job.education_level && (
+                                        <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <Building2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                {Array.isArray(job.education_level) 
+                                                    ? job.education_level.join(', ')
+                                                    : job.education_level}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs - Full Width */}
+                <div className="w-full px-4 sm:px-6 lg:px-8">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                            <div className="flex space-x-1 px-6">
+                            <button
+                                onClick={() => setActiveTab('description')}
+                                className={`relative py-4 px-6 font-semibold text-sm transition-all duration-200 ${
+                                    activeTab === 'description'
+                                        ? 'text-primary-600 dark:text-primary-400'
+                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                }`}
+                            >
+                                Job Description
+                                {activeTab === 'description' && (
+                                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600"></span>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('company')}
+                                className={`relative py-4 px-6 font-semibold text-sm transition-all duration-200 ${
+                                    activeTab === 'company'
+                                        ? 'text-primary-600 dark:text-primary-400'
+                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                }`}
+                            >
+                                Company Information
+                                {activeTab === 'company' && (
+                                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600"></span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-4 sm:p-6 lg:p-8">
                                 {activeTab === 'description' && (
                                     <div className="space-y-8">
                                         {job.description && (
@@ -716,101 +814,7 @@ export default function PublicJobPage() {
                                         )}
                                     </div>
                                 )}
-                            </div>
                         </div>
-                    </div>
-
-                    {/* Sidebar - Right Side */}
-                    <div className="space-y-6">
-                        {/* Action Buttons Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 sticky top-6 hover:shadow-2xl transition-shadow duration-300">
-                            <div className="space-y-4">
-                                {hasApplied ? (
-                                    <div className="w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-5 text-center shadow-md">
-                                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                            <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <p className="text-base font-bold text-green-900 dark:text-green-200 mb-1">
-                                            Successfully Applied!
-                                        </p>
-                                        <p className="text-sm text-green-700 dark:text-green-300">
-                                            You have successfully applied for this job
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <Button
-                                        onClick={handleApplyClick}
-                                        disabled={!job.can_apply || isApplying || hasApplied}
-                                        className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
-                                        size="lg"
-                                        title={
-                                            hasApplied 
-                                                ? 'You have already applied for this job'
-                                                : !job.can_apply 
-                                                    ? 'Applications are not currently open for this job'
-                                                    : !isEligibleToApply
-                                                        ? eligibility.reason || 'You are not eligible to apply for this job'
-                                                        : ''
-                                        }
-                                    >
-                                        {isApplying ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                                Applying...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="w-5 h-5 mr-2" />
-                                                Apply Now
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-
-                                <Button
-                                    variant="outline"
-                                    className="w-full border-2 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(window.location.href)
-                                        toast.success('Link copied to clipboard!')
-                                    }}
-                                >
-                                    <Share2 className="w-4 h-4 mr-2" />
-                                    Share
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Eligibility Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-                            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <div className="w-1 h-5 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
-                                Eligibility
-                            </h3>
-                            <div className="space-y-3">
-                                {job.experience_min || job.experience_max ? (
-                                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                        <Briefcase className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                            {formatExperience()} experience
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Open to all</p>
-                                )}
-                                {job.education_level && (
-                                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                        <Building2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                            {Array.isArray(job.education_level) 
-                                                ? job.education_level.join(', ')
-                                                : job.education_level}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
                     </div>
                 </div>
             </div>
