@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, Eye, Edit, Trash2, MoreVertical, Calendar, MapPin, Briefcase, Clock, DollarSign, Users, Building, Plus, UserCheck } from 'lucide-react'
+import { Search, Filter, Eye, Edit, Trash2, MoreVertical, Calendar, MapPin, Briefcase, Clock, DollarSign, Users, Building, Plus, UserCheck, Copy, Check, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -59,6 +59,8 @@ interface Job {
     expiration_date?: string
     ctc_with_probation?: string
     ctc_after_probation?: string
+    is_public?: boolean
+    public_link_token?: string
 }
 
 export default function AdminJobsPage() {
@@ -82,6 +84,10 @@ export default function AdminJobsPage() {
     const [showAppliedStudentsModal, setShowAppliedStudentsModal] = useState(false)
     const [jobForAppliedStudents, setJobForAppliedStudents] = useState<Job | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [showPublicLinkModal, setShowPublicLinkModal] = useState(false)
+    const [publicLink, setPublicLink] = useState<string | null>(null)
+    const [isTogglingPublic, setIsTogglingPublic] = useState(false)
+    const [copied, setCopied] = useState(false)
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 9,
@@ -173,6 +179,22 @@ export default function AdminJobsPage() {
     const handleViewAppliedStudents = (job: Job) => {
         setJobForAppliedStudents(job)
         setShowAppliedStudentsModal(true)
+    }
+
+    const handleMakePublic = async (job: Job) => {
+        setIsTogglingPublic(true)
+        try {
+            const response = await apiClient.toggleJobPublicStatus(job.id)
+            setPublicLink(response.public_link || null)
+            setShowPublicLinkModal(true)
+            toast.success(job.is_public ? 'Job made private successfully!' : 'Job made public successfully!')
+            fetchJobs() // Refresh the jobs list
+        } catch (error: any) {
+            console.error('Failed to toggle job public status:', error)
+            toast.error('Failed to toggle job public status. Please try again.')
+        } finally {
+            setIsTogglingPublic(false)
+        }
     }
 
     const confirmDeleteJob = async () => {
@@ -401,6 +423,7 @@ export default function AdminJobsPage() {
                                     onAssignToUniversity={handleAssignJob}
                                     onViewAppliedStudents={handleViewAppliedStudents}
                                     onStatusChange={handleStatusChange}
+                                    onMakePublic={handleMakePublic}
                                     cardIndex={index}
                                 />
                             ))}
@@ -533,6 +556,77 @@ export default function AdminJobsPage() {
                 }}
                 job={jobForAppliedStudents}
             />
+
+            {/* Public Link Modal */}
+            {showPublicLinkModal && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-screen items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowPublicLinkModal(false)} />
+                        <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Link2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                    {publicLink ? 'Public Link Generated' : 'Job Made Private'}
+                                </h3>
+                                <button
+                                    onClick={() => setShowPublicLinkModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            {publicLink ? (
+                                <>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                        Share this link with students. They can view and apply for this job without being assigned to a university.
+                                    </p>
+                                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
+                                        <input
+                                            type="text"
+                                            value={publicLink}
+                                            readOnly
+                                            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    await navigator.clipboard.writeText(publicLink)
+                                                    setCopied(true)
+                                                    toast.success('Link copied to clipboard!')
+                                                    setTimeout(() => setCopied(false), 2000)
+                                                } catch (err) {
+                                                    toast.error('Failed to copy link')
+                                                }
+                                            }}
+                                            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                                        >
+                                            {copied ? (
+                                                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                            ) : (
+                                                <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    This job is now private and the public link has been removed.
+                                </p>
+                            )}
+                            
+                            <div className="flex justify-end gap-2 mt-6">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowPublicLinkModal(false)}
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {selectedJob && (
                 <JobDescriptionModal

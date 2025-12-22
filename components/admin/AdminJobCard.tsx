@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -49,6 +49,8 @@ interface Job {
     ctc_after_probation?: string
     onsite_office?: boolean
     mode_of_work?: string
+    is_public?: boolean
+    public_link_token?: string
 }
 
 interface AdminJobCardProps {
@@ -59,10 +61,11 @@ interface AdminJobCardProps {
     onStatusChange: (job: Job, status: string) => void
     onAssignToUniversity: (job: Job) => void
     onViewAppliedStudents: (job: Job) => void
+    onMakePublic: (job: Job) => void
     cardIndex?: number
 }
 
-export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onViewAppliedStudents, cardIndex = 0 }: AdminJobCardProps) {
+export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onViewAppliedStudents, onMakePublic, cardIndex = 0 }: AdminJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -280,6 +283,28 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                         >
                                             <UserCheck className="w-4 h-4" />
                                             View Applied Students
+                                        </button>
+
+                                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+                                        <button
+                                            onClick={() => {
+                                                onMakePublic(job)
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
+                                        >
+                                            {job.is_public ? (
+                                                <>
+                                                    <Globe className="w-4 h-4" />
+                                                    Manage Public Link
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Link2 className="w-4 h-4" />
+                                                    Make Public
+                                                </>
+                                            )}
                                         </button>
 
                                         {/* Specific status options */}
