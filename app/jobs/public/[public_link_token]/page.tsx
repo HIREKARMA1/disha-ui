@@ -17,9 +17,7 @@ import {
     Calendar,
     Building2,
     Users,
-    Heart,
     Share2,
-    Download,
     CheckCircle,
     ExternalLink,
     Globe,
@@ -313,47 +311,51 @@ export default function PublicJobPage() {
     const companyLogo = job.company_logo || corporateProfile?.company_logo
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
             <Navbar variant="transparent" />
             
-            <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content - Left Side */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Job Header Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                            <div className="flex items-start gap-4 mb-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-8 hover:shadow-xl transition-shadow duration-300">
+                            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
                                 {companyLogo ? (
-                                    <img
-                                        src={companyLogo}
-                                        alt={companyName}
-                                        className="w-20 h-20 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
-                                    />
+                                    <div className="relative">
+                                        <img
+                                            src={companyLogo}
+                                            alt={companyName}
+                                            className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-700 shadow-md"
+                                        />
+                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                                    </div>
                                 ) : (
-                                    <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-2xl font-bold">
+                                    <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center text-white text-3xl font-bold shadow-lg ring-4 ring-primary-100 dark:ring-primary-900/30">
                                         {companyName.charAt(0).toUpperCase()}
                                     </div>
                                 )}
-                                <div className="flex-1">
-                                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                <div className="flex-1 w-full text-center md:text-left">
+                                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 leading-tight">
                                         {job.title}
                                     </h1>
-                                    <p className="text-xl text-gray-600 dark:text-gray-400 mb-3">
+                                    <p className="text-xl text-gray-700 dark:text-gray-300 mb-4 font-medium">
                                         {companyName}
                                     </p>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                                        <div className="flex items-center gap-1.5">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>{Array.isArray(job.location) ? job.location.join(', ') : job.location}</span>
+                                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <MapPin className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                            <span className="font-medium">{Array.isArray(job.location) ? job.location.join(', ') : job.location}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span>•</span>
-                                            <span>{getWorkMode()}</span>
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <span className="text-primary-600 dark:text-primary-400 font-semibold">•</span>
+                                            <span className="font-medium">{getWorkMode()}</span>
                                         </div>
                                         {job.created_at && (
-                                            <div className="flex items-center gap-1.5">
-                                                <span>•</span>
-                                                <span>Updated on {formatDate(job.created_at)}</span>
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                <Calendar className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                                <span className="font-medium">Updated {formatDate(job.created_at)}</span>
                                             </div>
                                         )}
                                     </div>
@@ -362,34 +364,42 @@ export default function PublicJobPage() {
 
                             {/* Job Details Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                <div className="flex items-start gap-2">
-                                    <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                    <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                                        <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Salary</p>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{formatSalary()}</p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Salary</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{formatSalary()}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-2">
-                                    <Briefcase className="w-5 h-5 text-gray-400 mt-0.5" />
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                                        <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Experience</p>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{formatExperience()}</p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Experience</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{formatExperience()}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-2">
-                                    <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+                                        <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Job Type</p>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Job Type</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">
                                             {job.job_type.replace('_', ' ')}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-2">
-                                    <Users className="w-5 h-5 text-gray-400 mt-0.5" />
+                                <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl hover:shadow-md transition-shadow">
+                                    <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg">
+                                        <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Openings</p>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Openings</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
                                             {job.number_of_openings || 'Not specified'}
                                         </p>
                                     </div>
@@ -398,41 +408,48 @@ export default function PublicJobPage() {
                         </div>
 
                         {/* Tabs */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <div className="border-b border-gray-200 dark:border-gray-700">
-                                <div className="flex space-x-8 px-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                                <div className="flex space-x-1 px-6">
                                     <button
                                         onClick={() => setActiveTab('description')}
-                                        className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                        className={`relative py-4 px-6 font-semibold text-sm transition-all duration-200 ${
                                             activeTab === 'description'
-                                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                                ? 'text-primary-600 dark:text-primary-400'
+                                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                                         }`}
                                     >
                                         Job Description
+                                        {activeTab === 'description' && (
+                                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600"></span>
+                                        )}
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('company')}
-                                        className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                        className={`relative py-4 px-6 font-semibold text-sm transition-all duration-200 ${
                                             activeTab === 'company'
-                                                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                                ? 'text-primary-600 dark:text-primary-400'
+                                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                                         }`}
                                     >
                                         Company Information
+                                        {activeTab === 'company' && (
+                                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-600"></span>
+                                        )}
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-8">
                                 {activeTab === 'description' && (
-                                    <div className="space-y-6">
+                                    <div className="space-y-8">
                                         {job.description && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                    <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
                                                     About the Role
                                                 </h3>
-                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                                     {job.description}
                                                 </div>
                                             </div>
@@ -440,10 +457,11 @@ export default function PublicJobPage() {
 
                                         {job.responsibilities && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                    <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
                                                     Responsibilities
                                                 </h3>
-                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                                     {job.responsibilities}
                                                 </div>
                                             </div>
@@ -451,10 +469,11 @@ export default function PublicJobPage() {
 
                                         {job.requirements && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                    <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
                                                     Requirements
                                                 </h3>
-                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                                     {job.requirements}
                                                 </div>
                                             </div>
@@ -462,14 +481,15 @@ export default function PublicJobPage() {
 
                                         {job.skills_required && job.skills_required.length > 0 && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                    <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
                                                     Required Skills
                                                 </h3>
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="flex flex-wrap gap-3">
                                                     {job.skills_required.map((skill: string, index: number) => (
                                                         <span
                                                             key={index}
-                                                            className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
+                                                            className="px-4 py-2 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 text-primary-700 dark:text-primary-300 rounded-lg text-sm font-semibold border border-primary-200 dark:border-primary-800 shadow-sm hover:shadow-md transition-shadow"
                                                         >
                                                             {skill}
                                                         </span>
@@ -480,10 +500,11 @@ export default function PublicJobPage() {
 
                                         {job.perks_and_benefits && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                    <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
                                                     Perks & Benefits
                                                 </h3>
-                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                                     {job.perks_and_benefits}
                                                 </div>
                                             </div>
@@ -491,24 +512,27 @@ export default function PublicJobPage() {
 
                                         {job.eligibility_criteria && (
                                             <div>
-                                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                    <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
                                                     Eligibility Criteria
                                                 </h3>
-                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                                     {job.eligibility_criteria}
                                                 </div>
                                             </div>
                                         )}
 
                                         {job.application_deadline && (
-                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-5 shadow-md">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+                                                        <Calendar className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                                                    </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                                                        <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200 mb-1">
                                                             Application Deadline
                                                         </p>
-                                                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                                        <p className="text-base font-semibold text-yellow-800 dark:text-yellow-300">
                                                             {formatDate(job.application_deadline)}
                                                         </p>
                                                     </div>
@@ -609,15 +633,17 @@ export default function PublicJobPage() {
                     {/* Sidebar - Right Side */}
                     <div className="space-y-6">
                         {/* Action Buttons Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sticky top-6">
-                            <div className="space-y-3">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 sticky top-6 hover:shadow-2xl transition-shadow duration-300">
+                            <div className="space-y-4">
                                 {hasApplied ? (
-                                    <div className="w-full bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
-                                        <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                                        <p className="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">
+                                    <div className="w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-5 text-center shadow-md">
+                                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <CheckCircle className="w-7 h-7 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <p className="text-base font-bold text-green-900 dark:text-green-200 mb-1">
                                             Successfully Applied!
                                         </p>
-                                        <p className="text-xs text-green-700 dark:text-green-300">
+                                        <p className="text-sm text-green-700 dark:text-green-300">
                                             You have successfully applied for this job
                                         </p>
                                     </div>
@@ -625,7 +651,7 @@ export default function PublicJobPage() {
                                     <Button
                                         onClick={handleApplyClick}
                                         disabled={!job.can_apply || isApplying || hasApplied}
-                                        className="w-full bg-primary-600 hover:bg-primary-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
                                         size="lg"
                                         title={
                                             hasApplied 
@@ -637,86 +663,62 @@ export default function PublicJobPage() {
                                     >
                                         {isApplying ? (
                                             <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                                 Applying...
                                             </>
                                         ) : (
                                             <>
-                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                <CheckCircle className="w-5 h-5 mr-2" />
                                                 Apply Now
                                             </>
                                         )}
                                     </Button>
                                 )}
 
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        className="flex-1"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(window.location.href)
-                                            toast.success('Link copied to clipboard!')
-                                        }}
-                                    >
-                                        <Share2 className="w-4 h-4 mr-2" />
-                                        Share
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="flex-1"
-                                        onClick={() => {
-                                            // TODO: Implement save functionality
-                                            toast('Save feature coming soon!', { icon: '💾' })
-                                        }}
-                                    >
-                                        <Heart className="w-4 h-4 mr-2" />
-                                        Save
-                                    </Button>
-                                </div>
-
                                 <Button
                                     variant="outline"
-                                    className="w-full"
+                                    className="w-full border-2 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
                                     onClick={() => {
-                                        // TODO: Implement PDF download
-                                        toast('PDF download coming soon!', { icon: '📄' })
+                                        navigator.clipboard.writeText(window.location.href)
+                                        toast.success('Link copied to clipboard!')
                                     }}
                                 >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download PDF
+                                    <Share2 className="w-4 h-4 mr-2" />
+                                    Share
                                 </Button>
                             </div>
-
-                            {job.application_deadline && (
-                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Application Deadline</p>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {formatDate(job.application_deadline)}
-                                    </p>
-                                </div>
-                            )}
                         </div>
 
                         {/* Eligibility Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Eligibility</h3>
-                            <div className="space-y-2">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+                            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <div className="w-1 h-5 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
+                                Eligibility
+                            </h3>
+                            <div className="space-y-3">
                                 {job.experience_min || job.experience_max ? (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {formatExperience()} experience
-                                    </p>
+                                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                        <Briefcase className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                            {formatExperience()} experience
+                                        </p>
+                                    </div>
                                 ) : (
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Open to all</p>
                                 )}
                                 {job.education_level && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {Array.isArray(job.education_level) 
-                                            ? job.education_level.join(', ')
-                                            : job.education_level}
-                                    </p>
+                                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                        <Building2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                            {Array.isArray(job.education_level) 
+                                                ? job.education_level.join(', ')
+                                                : job.education_level}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
