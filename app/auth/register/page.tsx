@@ -207,10 +207,14 @@ export default function RegisterPage() {
     const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
     const [resendCount, setResendCount] = useState(0) // Track number of resends
 
-    // Redirect if user is already authenticated
+    // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
-        redirectIfAuthenticated()
-    }, [redirectIfAuthenticated])
+        // Check if there's a redirect URL - if so, don't auto-redirect
+        const hasRedirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' && localStorage.getItem('redirect_after_login'))
+        if (!hasRedirectUrl) {
+            redirectIfAuthenticated()
+        }
+    }, [redirectIfAuthenticated, searchParams])
 
     // Get the appropriate schema for the current user type
     const getValidationSchema = (userType: UserType) => {
@@ -401,6 +405,20 @@ export default function RegisterPage() {
                     name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
+                // Check for redirect URL (from query params or localStorage)
+                const redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+                
+                if (redirectUrl) {
+                    // Clear the stored redirect URL
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('redirect_after_login')
+                    }
+                    // Use window.location for a hard redirect to prevent any interference
+                    window.location.href = redirectUrl
+                    return
+                }
+
+                // Redirect based on user type if no redirect URL
                 switch (selectedUserType) {
                     case 'student': router.push('/dashboard/student'); break
                     case 'corporate': router.push('/dashboard/corporate'); break
@@ -410,7 +428,12 @@ export default function RegisterPage() {
             } catch (loginError) {
                 console.error('Auto-login failed:', loginError)
                 toast.success('Registration successful! Please log in.')
-                router.push(`/auth/login?type=${selectedUserType}&registered=true`)
+                // Preserve redirect URL when redirecting to login
+                const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
+                const loginUrl = redirectUrl 
+                    ? `/auth/login?type=${selectedUserType}&registered=true&redirect=${encodeURIComponent(redirectUrl)}`
+                    : `/auth/login?type=${selectedUserType}&registered=true`
+                router.push(loginUrl)
             }
         } catch (error: any) {
             console.error('OTP verification error:', error)

@@ -344,6 +344,16 @@ class ApiClient {
     return response.data;
   }
 
+  async toggleJobPublicStatus(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/jobs/admin/${jobId}/toggle-public`);
+    return response.data;
+  }
+
+  async getPublicJob(publicLinkToken: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/jobs/public/${publicLinkToken}`);
+    return response.data;
+  }
+
   // Video search endpoint
   async searchVideos(query: string, skip: number = 0, limit: number = 12): Promise<any> {
     const response: AxiosResponse = await this.client.get('/video-search/', {
