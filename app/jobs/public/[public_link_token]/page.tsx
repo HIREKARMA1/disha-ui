@@ -191,6 +191,39 @@ export default function PublicJobPage() {
         }
     }
 
+    const canStudentApply = () => {
+        // Check if job is assigned to any universities
+        if (!job?.assigned_university_ids || job.assigned_university_ids.length === 0) {
+            return {
+                canApply: false,
+                reason: 'This job is not available for applications.'
+            }
+        }
+
+        // If student is not authenticated, they can't apply yet (will be redirected to login)
+        if (!isAuthenticated || user?.user_type !== 'student') {
+            return { canApply: true, reason: null }
+        }
+
+        // Check if student has a university_id
+        if (!studentUniversityId) {
+            return {
+                canApply: false,
+                reason: 'This job is only available to students from assigned universities. Please contact your university administrator.'
+            }
+        }
+
+        // Check if student's university is in the assigned universities list
+        if (!job.assigned_university_ids.includes(studentUniversityId)) {
+            return {
+                canApply: false,
+                reason: 'This job is not available for your college.'
+            }
+        }
+
+        return { canApply: true, reason: null }
+    }
+
     const handleApplyClick = () => {
         if (!isAuthenticated) {
             if (job) {
@@ -205,8 +238,13 @@ export default function PublicJobPage() {
             return
         }
 
-        // Apply directly - backend will validate university assignment
-        // No need to check eligibility upfront, let backend handle it
+        // Check university assignment before applying
+        const eligibility = canStudentApply()
+        if (!eligibility.canApply) {
+            toast.error(eligibility.reason || 'You are not eligible to apply for this job')
+            return
+        }
+
         handleApply()
     }
 
@@ -309,6 +347,10 @@ export default function PublicJobPage() {
 
     const companyName = job.company_name || job.corporate_name || 'Company'
     const companyLogo = job.company_logo || corporateProfile?.company_logo
+
+    // Check eligibility once
+    const eligibility = canStudentApply()
+    const isEligibleToApply = eligibility.canApply
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -658,7 +700,9 @@ export default function PublicJobPage() {
                                                 ? 'You have already applied for this job'
                                                 : !job.can_apply 
                                                     ? 'Applications are not currently open for this job'
-                                                    : ''
+                                                    : !isEligibleToApply
+                                                        ? eligibility.reason || 'You are not eligible to apply for this job'
+                                                        : ''
                                         }
                                     >
                                         {isApplying ? (
