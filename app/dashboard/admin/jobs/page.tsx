@@ -579,7 +579,7 @@ export default function AdminJobsPage() {
                             {publicLink ? (
                                 <>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                        Share this link with students. They can view and apply for this job without being assigned to a university.
+                                        Share this link with students. They can view and apply.
                                     </p>
                                     <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
                                         <input
