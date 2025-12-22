@@ -87,6 +87,7 @@ export default function PublicJobPage() {
     const [hasApplied, setHasApplied] = useState(false)
     const [activeTab, setActiveTab] = useState<'description' | 'company'>('description')
     const [corporateProfile, setCorporateProfile] = useState<any>(null)
+    const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
 
     useEffect(() => {
         if (publicLinkToken) {
@@ -192,22 +193,6 @@ export default function PublicJobPage() {
         }
     }
 
-    // Check if student is eligible to apply (their university is assigned to this job)
-    const isEligibleToApply = () => {
-        // If job has no assigned universities, anyone can apply
-        if (!job?.assigned_university_ids || job.assigned_university_ids.length === 0) {
-            return true
-        }
-        
-        // If student has no university_id, they cannot apply
-        if (!studentUniversityId) {
-            return false
-        }
-        
-        // Check if student's university is in the assigned list
-        return job.assigned_university_ids.includes(studentUniversityId)
-    }
-
     const handleApplyClick = () => {
         if (!isAuthenticated) {
             if (job) {
@@ -222,13 +207,8 @@ export default function PublicJobPage() {
             return
         }
 
-        // Check if student's university is assigned to this job
-        if (!isEligibleToApply()) {
-            toast.error('This job is not available  for your universities.')
-            return
-        }
-
-        // Apply directly without showing modal on public job page
+        // Apply directly - backend will validate university assignment
+        // No need to check eligibility upfront, let backend handle it
         handleApply()
     }
 
@@ -644,28 +624,21 @@ export default function PublicJobPage() {
                                 ) : (
                                     <Button
                                         onClick={handleApplyClick}
-                                        disabled={!job.can_apply || isApplying || hasApplied || !isEligibleToApply()}
+                                        disabled={!job.can_apply || isApplying || hasApplied}
                                         className="w-full bg-primary-600 hover:bg-primary-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
                                         size="lg"
                                         title={
-                                            !isEligibleToApply() 
-                                                ? 'This job is only available to students from assigned universities'
-                                                : hasApplied 
-                                                    ? 'You have already applied for this job'
-                                                    : !job.can_apply 
-                                                        ? 'Applications are not currently open for this job'
-                                                        : ''
+                                            hasApplied 
+                                                ? 'You have already applied for this job'
+                                                : !job.can_apply 
+                                                    ? 'Applications are not currently open for this job'
+                                                    : ''
                                         }
                                     >
                                         {isApplying ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                 Applying...
-                                            </>
-                                        ) : !isEligibleToApply() ? (
-                                            <>
-                                                <AlertCircle className="w-4 h-4 mr-2" />
-                                                Not Eligible
                                             </>
                                         ) : (
                                             <>
