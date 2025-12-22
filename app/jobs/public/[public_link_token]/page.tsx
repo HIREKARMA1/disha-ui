@@ -209,7 +209,7 @@ export default function PublicJobPage() {
         if (!studentUniversityId) {
             return {
                 canApply: false,
-                reason: 'This job is only available to students from assigned universities. Please contact your university administrator.'
+                reason: 'This job is not available for your college.'
             }
         }
 
@@ -345,8 +345,23 @@ export default function PublicJobPage() {
         )
     }
 
-    const companyName = job.company_name || job.corporate_name || 'Company'
+    const companyName = job.company_name || job.corporate_name || corporateProfile?.company_name || 'Company'
     const companyLogo = job.company_logo || corporateProfile?.company_logo
+    
+    // Merge company information from job and corporate profile
+    const companyInfo = {
+        name: companyName,
+        logo: companyLogo,
+        industry: job.industry || corporateProfile?.industry,
+        description: job.company_description || corporateProfile?.description,
+        founded: job.company_founded || corporateProfile?.founded_year,
+        size: job.company_size || corporateProfile?.company_size,
+        type: job.company_type || corporateProfile?.company_type,
+        address: job.company_address || corporateProfile?.address,
+        website: job.company_website || corporateProfile?.website_url,
+        contactPerson: job.contact_person || corporateProfile?.contact_person,
+        contactDesignation: job.contact_designation || corporateProfile?.contact_designation,
+    }
 
     // Check eligibility once
     const eligibility = canStudentApply()
@@ -364,18 +379,18 @@ export default function PublicJobPage() {
                         {/* Job Header Card */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-8 hover:shadow-xl transition-shadow duration-300">
                             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
-                                {companyLogo ? (
+                                {companyInfo.logo ? (
                                     <div className="relative">
                                         <img
-                                            src={companyLogo}
-                                            alt={companyName}
+                                            src={companyInfo.logo}
+                                            alt={companyInfo.name}
                                             className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-700 shadow-md"
                                         />
-                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+
                                     </div>
                                 ) : (
                                     <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center text-white text-3xl font-bold shadow-lg ring-4 ring-primary-100 dark:ring-primary-900/30">
-                                        {companyName.charAt(0).toUpperCase()}
+                                        {companyInfo.name.charAt(0).toUpperCase()}
                                     </div>
                                 )}
                                 <div className="flex-1 w-full text-center md:text-left">
@@ -383,7 +398,7 @@ export default function PublicJobPage() {
                                         {job.title}
                                     </h1>
                                     <p className="text-xl text-gray-700 dark:text-gray-300 mb-4 font-medium">
-                                        {companyName}
+                                        {companyInfo.name}
                                     </p>
                                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                                         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -587,85 +602,118 @@ export default function PublicJobPage() {
                                 {activeTab === 'company' && (
                                     <div className="space-y-6">
                                         <div className="flex items-start gap-4">
-                                            {companyLogo ? (
+                                            {companyInfo.logo ? (
                                                 <img
-                                                    src={companyLogo}
-                                                    alt={companyName}
-                                                    className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                                                    src={companyInfo.logo}
+                                                    alt={companyInfo.name}
+                                                    className="w-20 h-20 rounded-lg object-cover border-2 border-gray-200 dark:border-gray-700 shadow-md"
                                                 />
                                             ) : (
-                                                <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xl font-bold">
-                                                    {companyName.charAt(0).toUpperCase()}
+                                                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                                    {companyInfo.name.charAt(0).toUpperCase()}
                                                 </div>
                                             )}
-                                            <div className="flex-1">
-                                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                                                    {companyName}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">
+                                                    {companyInfo.name}
                                                 </h3>
-                                                {job.industry && (
-                                                    <p className="text-gray-600 dark:text-gray-400 mb-3">{job.industry}</p>
+                                                {companyInfo.industry && (
+                                                    <p className="text-base text-gray-600 dark:text-gray-400 mb-3 font-medium break-words">{companyInfo.industry}</p>
                                                 )}
-                                                {job.company_description && (
-                                                    <p className="text-gray-700 dark:text-gray-300">{job.company_description}</p>
+                                                {companyInfo.description ? (
+                                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed break-words whitespace-pre-wrap">{companyInfo.description}</p>
+                                                ) : (
+                                                    <p className="text-gray-500 dark:text-gray-400 italic">No company description available.</p>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {job.company_founded && (
-                                                <div className="flex items-center gap-3">
-                                                    <Calendar className="w-5 h-5 text-gray-400" />
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Founded</p>
-                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{job.company_founded}</p>
+                                        {(companyInfo.founded || companyInfo.size || companyInfo.type || companyInfo.address || companyInfo.website || companyInfo.contactPerson) ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {companyInfo.founded && (
+                                                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                        <div className="p-2 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex-shrink-0">
+                                                            <Calendar className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Founded</p>
+                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">{companyInfo.founded}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {job.company_size && (
-                                                <div className="flex items-center gap-3">
-                                                    <Users className="w-5 h-5 text-gray-400" />
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Company Size</p>
-                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{job.company_size}</p>
+                                                )}
+                                                {companyInfo.size && (
+                                                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                        <div className="p-2 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex-shrink-0">
+                                                            <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Company Size</p>
+                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">{companyInfo.size}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {job.company_type && (
-                                                <div className="flex items-center gap-3">
-                                                    <Building2 className="w-5 h-5 text-gray-400" />
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Company Type</p>
-                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{job.company_type}</p>
+                                                )}
+                                                {companyInfo.type && (
+                                                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                        <div className="p-2 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex-shrink-0">
+                                                            <Building2 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Company Type</p>
+                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">{companyInfo.type}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {job.company_address && (
-                                                <div className="flex items-center gap-3">
-                                                    <MapPin className="w-5 h-5 text-gray-400" />
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Address</p>
-                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{job.company_address}</p>
+                                                )}
+                                                {companyInfo.address && (
+                                                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                        <div className="p-2 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex-shrink-0">
+                                                            <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Address</p>
+                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">{companyInfo.address}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {job.company_website && (
-                                                <div className="flex items-center gap-3">
-                                                    <Globe className="w-5 h-5 text-gray-400" />
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">Website</p>
-                                                        <a
-                                                            href={job.company_website}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-                                                        >
-                                                            Visit Website
-                                                            <ExternalLink className="w-3 h-3" />
-                                                        </a>
+                                                )}
+                                                {companyInfo.website && (
+                                                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                        <div className="p-2 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex-shrink-0">
+                                                            <Globe className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Website</p>
+                                                            <a
+                                                                href={companyInfo.website}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:underline break-all"
+                                                            >
+                                                                {companyInfo.website}
+                                                                <ExternalLink className="w-3 h-3 inline-block ml-1" />
+                                                            </a>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                                )}
+                                                {companyInfo.contactPerson && (
+                                                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                        <div className="p-2 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex-shrink-0">
+                                                            <Mail className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Contact Person</p>
+                                                            <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">
+                                                                {companyInfo.contactPerson}
+                                                                {companyInfo.contactDesignation && ` - ${companyInfo.contactDesignation}`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-6 text-center">
+                                                <Building2 className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                                                <p className="text-gray-600 dark:text-gray-400">Additional company information is not available.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
