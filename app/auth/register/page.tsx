@@ -76,7 +76,34 @@ const emailSchema = z
     .trim()
     .min(5, "Email must be at least 5 characters long")
     .max(100, "Email must be less than 100 characters")
-    .email("Please enter a valid email address");
+    .email("Please enter a valid email address")
+    .refine((val) => {
+        const domain = val.split('@')[1]
+        if (!domain) return false
+        const domainParts = domain.split('.')
+        if (domainParts.length < 2) return false
+        const tld = domainParts.pop()
+        if (!tld || !/^[A-Za-z]{2,6}$/.test(tld)) return false
+        return domainParts.every((part) => /^[A-Za-z0-9-]+$/.test(part) && !part.startsWith('-') && !part.endsWith('-'))
+    }, "Please enter a valid email address");
+
+const isValidPublicUrl = (value: string) => {
+    try {
+        const trimmed = value.trim()
+        const url = new URL(trimmed)
+        if (!['http:', 'https:'].includes(url.protocol)) return false
+        const hostname = url.hostname
+        if (!hostname || hostname === 'localhost' || hostname.endsWith('.local')) return false
+        if (!/^[A-Za-z0-9.-]+$/.test(hostname)) return false
+        if (!hostname.includes('.')) return false
+        const parts = hostname.split('.')
+        const tld = parts.pop()
+        if (!tld || !/^[A-Za-z]{2,6}$/.test(tld)) return false
+        return parts.every((part) => /^[A-Za-z0-9-]+$/.test(part) && !part.startsWith('-') && !part.endsWith('-'))
+    } catch (error) {
+        return false
+    }
+}
 
 
 
@@ -86,7 +113,10 @@ const studentSchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    name: z.string().min(1, 'Name is required'),
+    name: z
+        .string()
+        .min(1, 'Name is required')
+        .regex(/^[A-Za-z\s]+$/, 'Name can only contain letters and spaces'),
     phone: z
         .string()
         .regex(/^\d+$/, 'Phone number must contain only digits')
@@ -121,8 +151,18 @@ const corporateSchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    company_name: z.string().min(1, 'Company name is required'),
-    website_url: z.string().url().optional().or(z.literal('')),
+    company_name: z
+        .string()
+        .min(1, 'Company name is required')
+        .regex(/^[A-Za-z\s]+$/, 'Company name can only contain letters and spaces'),
+    website_url: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => {
+            if (val === undefined || val === '') return true
+            return isValidPublicUrl(val)
+        }, { message: 'Please enter a valid website URL' }),
     industry: z.string().optional(),
     company_size: z.string().optional(),
     founded_year: z.number().optional(),
@@ -162,8 +202,18 @@ const universitySchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    university_name: z.string().min(1, 'University name is required'),
-    website_url: z.string().url().optional().or(z.literal('')),
+    university_name: z
+        .string()
+        .min(1, 'University name is required')
+        .regex(/^[A-Za-z\s]+$/, 'University name can only contain letters and spaces'),
+    website_url: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => {
+            if (val === undefined || val === '') return true
+            return isValidPublicUrl(val)
+        }, { message: 'Please enter a valid website URL' }),
     institute_type: z.string().optional(),
     established_year: z.number().optional(),
     contact_person_name: z.string().optional(),
@@ -301,13 +351,13 @@ export default function RegisterPage() {
         } catch (error: any) {
             console.error('Send OTP error:', error)
             let message = 'Failed to send OTP. Please try again.'
-            
+
             if (error.response?.data?.detail) {
                 message = error.response.data.detail
             } else if (error.message) {
                 message = error.message
             }
-            
+
             toast.error(message)
         } finally {
             setIsLoading(false)
@@ -316,15 +366,15 @@ export default function RegisterPage() {
 
     const handleResendOtp = async () => {
         if (countdown > 0 || !formData) return
-        
+
         setIsLoading(true)
         try {
             await apiClient.sendEmailOtp(formData.email)
-            
+
             // Increment resend count
             const newResendCount = resendCount + 1
             setResendCount(newResendCount)
-            
+
             // After 3 resends, start 5-minute cooldown countdown
             if (newResendCount >= 3) {
                 setCountdown(300) // 5 minutes = 300 seconds
@@ -340,13 +390,13 @@ export default function RegisterPage() {
             console.error('Resend OTP error:', error)
             const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
-            
+
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
             if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
                 // Extract minutes and seconds from error message
                 const minutesMatch = message.match(/(\d+)\s*minute/)
                 const secondsMatch = message.match(/(\d+)\s*second/)
-                
+
                 let remainingSeconds = 0
                 if (minutesMatch) {
                     remainingSeconds += parseInt(minutesMatch[1]) * 60
@@ -354,7 +404,7 @@ export default function RegisterPage() {
                 if (secondsMatch) {
                     remainingSeconds += parseInt(secondsMatch[1])
                 }
-                
+
                 if (remainingSeconds > 0) {
                     setCountdown(remainingSeconds)
                     setIsResendCooldown(true)
@@ -463,7 +513,11 @@ export default function RegisterPage() {
                     placeholder="Enter your full name"
                     leftIcon={<User className="w-4 h-4" />}
                     error={!!(errors as any).name}
-                    {...register('name')}
+                    {...register('name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -507,7 +561,11 @@ export default function RegisterPage() {
                     placeholder="Enter company name"
                     leftIcon={<Building2 className="w-4 h-4" />}
                     error={!!(errors as any).company_name}
-                    {...register('company_name')}
+                    {...register('company_name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).company_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -524,8 +582,18 @@ export default function RegisterPage() {
                     id="website_url"
                     placeholder="https://company.com"
                     leftIcon={<Globe className="w-4 h-4" />}
-                    {...register('website_url')}
+                    {...register('website_url', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\s/g, '')
+                        },
+                        setValueAs: (value) => (typeof value === 'string' ? value.trim() : value)
+                    })}
                 />
+                {(errors as any).website_url && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).website_url.message === 'string' ? (errors as any).website_url.message : 'Please enter a valid website URL'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -541,7 +609,11 @@ export default function RegisterPage() {
                     placeholder="Enter university name"
                     leftIcon={<GraduationCap className="w-4 h-4" />}
                     error={!!(errors as any).university_name}
-                    {...register('university_name')}
+                    {...register('university_name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).university_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -558,8 +630,18 @@ export default function RegisterPage() {
                     id="website_url"
                     placeholder="https://university.edu"
                     leftIcon={<Globe className="w-4 h-4" />}
-                    {...register('website_url')}
+                    {...register('website_url', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\s/g, '')
+                        },
+                        setValueAs: (value) => (typeof value === 'string' ? value.trim() : value)
+                    })}
                 />
+                {(errors as any).website_url && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).website_url.message === 'string' ? (errors as any).website_url.message : 'Please enter a valid website URL'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -584,8 +666,8 @@ export default function RegisterPage() {
             <Navbar variant="solid" />
 
             {/* Main Content */}
-            <div className={currentStep === 'otp' 
-                ? 'min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12' 
+            <div className={currentStep === 'otp'
+                ? 'min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12'
                 : 'container mx-auto px-4 py-12 pt-24 sm:pt-24'}
             >
                 <motion.div
@@ -679,7 +761,8 @@ export default function RegisterPage() {
                                             {...register("email", {
                                                 onChange: (e) => {
                                                     e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
-                                                }
+                                                },
+                                                setValueAs: (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value)
                                             })}
                                         />
 
@@ -710,10 +793,7 @@ export default function RegisterPage() {
                                                     </button>
                                                 }
                                                 error={!!(errors as any).password}
-                                                onCopy={(e) => e.preventDefault()}
-                                                onPaste={(e) => e.preventDefault()}
-                                                onCut={(e) => e.preventDefault()}
-                                                onContextMenu={(e) => e.preventDefault()}
+
                                                 {...register('password')}
                                             />
                                             {(errors as any).password && (
@@ -742,10 +822,7 @@ export default function RegisterPage() {
                                                     </button>
                                                 }
                                                 error={!!(errors as any).confirmPassword}
-                                                onCopy={(e) => e.preventDefault()}
-                                                onPaste={(e) => e.preventDefault()}
-                                                onCut={(e) => e.preventDefault()}
-                                                onContextMenu={(e) => e.preventDefault()}
+
                                                 {...register('confirmPassword')}
                                             />
                                             {(errors as any).confirmPassword && (
@@ -812,7 +889,7 @@ export default function RegisterPage() {
                                                         const newOtp = otp.split('')
                                                         newOtp[index] = value
                                                         setOtp(newOtp.join('').slice(0, 6))
-                                                        
+
                                                         // Auto-focus next input
                                                         if (value && index < 5) {
                                                             const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
@@ -878,15 +955,14 @@ export default function RegisterPage() {
                                             type="button"
                                             onClick={handleResendOtp}
                                             disabled={countdown > 0 || isLoading}
-                                            className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${
-                                                countdown > 0 || isLoading
-                                                    ? 'text-gray-400 cursor-not-allowed'
-                                                    : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
-                                            }`}
+                                            className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
+                                                ? 'text-gray-400 cursor-not-allowed'
+                                                : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                                }`}
                                         >
                                             <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
-                                            {countdown > 0 
-                                                ? countdown >= 60 
+                                            {countdown > 0
+                                                ? countdown >= 60
                                                     ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
                                                     : `Resend in ${countdown}s`
                                                 : 'Resend OTP'}
