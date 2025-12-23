@@ -478,7 +478,7 @@ export default function PublicJobPage() {
                             </div>
 
                             {/* Job Details Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                                 <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                                     <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
                                         <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -903,10 +903,10 @@ export default function PublicJobPage() {
                                         )}
                                     </div>
                                 )}
-                        </div>
                             </div>
                         </div>
                     </div>
+                                        </div>
 
 
         </div>
