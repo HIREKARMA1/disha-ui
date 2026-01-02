@@ -46,7 +46,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     })
 
     const branchDropdownOptions = useMemo(() => (
-        branchOptions.map(option => ({
+        branchOptions.map((option: { value: string; label: string }) => ({
             value: option.value,
             label: option.label
         }))

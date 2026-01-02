@@ -28,7 +28,7 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const branchDropdownOptions: MultiSelectOption[] = useMemo(() => (
-        branchOptions.map(option => ({
+        branchOptions.map((option: { value: string; label: string }) => ({
             id: option.value,
             value: option.value,
             label: option.label
@@ -36,7 +36,7 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
     ), [])
 
     const degreeDropdownOptions: MultiSelectOption[] = useMemo(() => (
-        degreeOptions.map(option => ({
+        degreeOptions.map((option: { value: string; label: string }) => ({
             id: option.value,
             value: option.value,
             label: option.label

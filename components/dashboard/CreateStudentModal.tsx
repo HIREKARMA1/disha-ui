@@ -128,79 +128,20 @@ export function CreateStudentModal({
     }
 
     // Derived state for filtered options
+    // We keep this to know if we have ANY active licenses to show the global warning if needed, 
+    // or just use it for validation.
     const activeLicenses = useMemo(() => licenses.filter(l => l.is_active && l.remaining_licenses > 0), [licenses])
     const hasActiveLicenses = activeLicenses.length > 0
 
-    // Toast warning if no licenses
+    // Toast warning if no licenses (Keep strictly if 0 licenses exist)
     useEffect(() => {
         if (isOpen && !isLoadingLicenses && !hasActiveLicenses && !fetchError) {
-            // Only toast if we successfully fetched but found no active licenses
-            // Use a timeout to prevent double render issues with toast
             const timer = setTimeout(() => {
                 toast.error("Active license is required to create students")
             }, 500)
             return () => clearTimeout(timer)
         }
     }, [isOpen, isLoadingLicenses, hasActiveLicenses, fetchError])
-
-
-    const validBatches = useMemo(() => {
-        const batches = new Set<string>()
-        activeLicenses.forEach(l => batches.add(l.batch))
-        return Array.from(batches).sort().reverse()
-    }, [activeLicenses])
-
-    const validDegrees = useMemo(() => {
-        if (!formData.graduation_year) return []
-
-        const yearStr = formData.graduation_year.toString()
-        // Find licenses matching this batch
-        const batchLicenses = activeLicenses.filter(l => l.batch === yearStr)
-
-        // If any matching license has NO degree restriction (null/empty), allowing all is implied 
-        const hasWildcardDegree = batchLicenses.some(l => !l.degree || l.degree.length === 0)
-
-        if (hasWildcardDegree) return degreeOptions
-
-        const allowedDegreeValues = new Set<string>()
-        batchLicenses.forEach(l => {
-            if (l.degree && Array.isArray(l.degree)) {
-                l.degree.forEach(d => allowedDegreeValues.add(d))
-            }
-        })
-
-        return degreeOptions.filter(opt => allowedDegreeValues.has(opt.value))
-    }, [activeLicenses, formData.graduation_year])
-
-    const validBranches = useMemo(() => {
-        if (!formData.graduation_year) return []
-        const yearStr = formData.graduation_year.toString()
-        const selectedDegree = formData.degree
-
-        // Find licenses matching batch AND degree
-        const relevantLicenses = activeLicenses.filter(l => {
-            if (l.batch !== yearStr) return false
-            if (!selectedDegree) return true
-
-            // If license has no degree restriction, it matches. 
-            if (!l.degree || l.degree.length === 0) return true
-            // If license has degree restriction, it must include selectedDegree
-            return l.degree.includes(selectedDegree)
-        })
-
-        const hasWildcardBranch = relevantLicenses.some(l => !l.branches || l.branches.length === 0)
-
-        if (hasWildcardBranch) return branchOptions
-
-        const allowedBranchValues = new Set<string>()
-        relevantLicenses.forEach(l => {
-            if (l.branches && Array.isArray(l.branches)) {
-                l.branches.forEach(b => allowedBranchValues.add(b))
-            }
-        })
-
-        return branchOptions.filter(opt => allowedBranchValues.has(opt.value))
-    }, [activeLicenses, formData.graduation_year, formData.degree])
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -213,13 +154,37 @@ export function CreateStudentModal({
             return
         }
 
-        if (!hasActiveLicenses) {
-            toast.error("Active license is required to create students")
+        if (!formData.graduation_year || !formData.degree || !formData.branch) {
+            setError("Please fill in Graduation Year, Degree, and Branch.")
             return
         }
 
-        if (!formData.graduation_year || !formData.degree || !formData.branch) {
-            setError("Please select Graduation Year, Degree, and Branch based on your approved licenses.")
+        // License Verification Logic (Submit Time)
+        const yearStr = formData.graduation_year.toString()
+        const selectedDegree = formData.degree
+        const selectedBranch = formData.branch
+
+        const isLicenseValid = activeLicenses.some(l => {
+            // Must match Batch
+            if (l.batch !== yearStr) return false
+
+            // Must match Degree (or license allows all degrees)
+            const licenseDegrees = (l.degree && Array.isArray(l.degree)) ? l.degree : []
+            const degreeMatch = licenseDegrees.length === 0 || licenseDegrees.includes(selectedDegree)
+            if (!degreeMatch) return false
+
+            // Must match Branch (or license allows all branches)
+            // Note: Some schemas might have branches inside degree, but assuming flattened here or handled by backend logic mirrored here
+            const licenseBranches = (l.branches && Array.isArray(l.branches)) ? l.branches : []
+            const branchMatch = licenseBranches.length === 0 || licenseBranches.includes(selectedBranch)
+            if (!branchMatch) return false
+
+            return true
+        })
+
+        if (!isLicenseValid) {
+            toast.error("You don't have a valid license for this Batch, Degree, and Branch. Please request a license.")
+            setError("You don't have a valid license for this Batch, Degree, and Branch. Please request a license.")
             return
         }
 
@@ -259,16 +224,7 @@ export function CreateStudentModal({
         if (error) {
             setError(null)
         }
-
-        // Reset dependent fields if parent changes
-        if (field === 'graduation_year') {
-            setFormData(prev => ({ ...prev, degree: undefined, branch: undefined, [field]: value as any }))
-        } else if (field === 'degree') {
-            setFormData(prev => ({ ...prev, branch: undefined, [field]: value as any }))
-        }
     }
-
-
 
     return (
         <AnimatePresence>
@@ -464,88 +420,73 @@ export function CreateStudentModal({
                                             </div>
                                         </div>
 
-                                        {/* Graduation Year (Batch) - Driven by Licenses */}
+                                        {/* Graduation Year (Batch) - Independent Input */}
                                         <div>
                                             <label htmlFor="graduation_year" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Graduation Year (Batch) *
                                             </label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                                                <Select
-                                                    value={formData.graduation_year?.toString() || ''}
-                                                    onValueChange={(value) => handleInputChange('graduation_year', parseInt(value))}
+                                                <input
+                                                    type="text"
+                                                    id="graduation_year"
+                                                    required
                                                     disabled={!hasActiveLicenses}
-                                                >
-                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
-                                                        <SelectValue placeholder={isLoadingLicenses ? "Loading licenses..." : "Select Batch Year"} />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {validBatches.map((year) => (
-                                                            <SelectItem key={year} value={year}>
-                                                                {year}
-                                                            </SelectItem>
-                                                        ))}
-                                                        {validBatches.length === 0 && !isLoadingLicenses && (
-                                                            <SelectItem value="none" disabled>No active batches found</SelectItem>
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
+                                                    value={formData.graduation_year || ''}
+                                                    onChange={(e) => handleInputChange('graduation_year', e.target.value)}
+                                                    placeholder="e.g. 2025"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                />
                                             </div>
                                         </div>
 
-                                        {/* Degree - Filtered by Batch */}
+                                        {/* Degree - Independent Select */}
                                         <div>
                                             <label htmlFor="degree" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Degree
+                                                Degree *
                                             </label>
                                             <div className="relative">
                                                 <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                                 <Select
                                                     value={formData.degree || ''}
                                                     onValueChange={(value) => handleInputChange('degree', value)}
-                                                    disabled={!formData.graduation_year || !hasActiveLicenses}
+                                                    disabled={!hasActiveLicenses}
                                                 >
                                                     <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
-                                                        <SelectValue placeholder={!formData.graduation_year ? "Select Batch Year first" : "Select degree"} />
+                                                        <SelectValue placeholder="Select Degree" />
                                                     </SelectTrigger>
-                                                    <SelectContent>
-                                                        {validDegrees.map((option) => (
+                                                    <SelectContent className="max-h-60">
+                                                        {degreeOptions.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}
                                                             </SelectItem>
                                                         ))}
-                                                        {validDegrees.length === 0 && formData.graduation_year && (
-                                                            <SelectItem value="none" disabled>No valid degrees for this batch</SelectItem>
-                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                         </div>
 
-                                        {/* Branch - Filtered by Batch and Degree */}
+                                        {/* Branch - Independent Select */}
                                         <div>
                                             <label htmlFor="branch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Branch
+                                                Branch *
                                             </label>
                                             <div className="relative">
                                                 <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                                 <Select
                                                     value={formData.branch || ''}
                                                     onValueChange={(value) => handleInputChange('branch', value)}
-                                                    disabled={!formData.degree || !hasActiveLicenses}
+                                                    disabled={!hasActiveLicenses}
                                                 >
                                                     <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
-                                                        <SelectValue placeholder={!formData.degree ? "Select Degree first" : "Select branch"} />
+                                                        <SelectValue placeholder="Select Branch" />
                                                     </SelectTrigger>
-                                                    <SelectContent>
-                                                        {validBranches.map((option) => (
+                                                    <SelectContent className="max-h-60">
+                                                        {branchOptions.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}
                                                             </SelectItem>
                                                         ))}
-                                                        {validBranches.length === 0 && formData.degree && (
-                                                            <SelectItem value="none" disabled>No valid branches for this degree</SelectItem>
-                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -565,7 +506,7 @@ export function CreateStudentModal({
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={isSubmitting || !hasActiveLicenses || !formData.graduation_year}
+                                            disabled={isSubmitting || !hasActiveLicenses}
                                             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                                         >
                                             {isSubmitting ? 'Creating...' : 'Create Student'}
