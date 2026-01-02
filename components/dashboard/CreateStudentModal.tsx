@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User, Mail, Phone, GraduationCap, Calendar, AlertCircle } from 'lucide-react'
+import { X, User, Mail, Phone, GraduationCap, Calendar, AlertCircle, ShieldAlert } from 'lucide-react'
 import { CreateStudentRequest } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import apiClient from '@/lib/api'
+import toast from 'react-hot-toast'
 
-// Degree options
+// Degree options (Full list for fallback)
 export const degreeOptions = [
     { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
     { value: 'Bachelor of Engineering', label: 'Bachelor of Engineering (B.E.)' },
@@ -29,7 +31,7 @@ export const degreeOptions = [
     { value: 'Other', label: 'Other' }
 ]
 
-// Branch options
+// Branch options (Full list for fallback)
 export const branchOptions = [
     { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
     { value: 'Information Technology', label: 'Information Technology' },
@@ -64,6 +66,15 @@ export const branchOptions = [
     { value: 'Other', label: 'Other' }
 ]
 
+interface LocalLicense {
+    id: string
+    batch: string
+    degree?: string[]
+    branches?: string[]
+    is_active: boolean
+    remaining_licenses: number
+}
+
 interface CreateStudentModalProps {
     isOpen: boolean
     onClose: () => void
@@ -88,38 +99,135 @@ export function CreateStudentModal({
     const [createdStudent, setCreatedStudent] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
 
+    // License state
+    const [licenses, setLicenses] = useState<LocalLicense[]>([])
+    const [isLoadingLicenses, setIsLoadingLicenses] = useState(false)
+    const [fetchError, setFetchError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchLicenses()
+        }
+    }, [isOpen])
+
+    const fetchLicenses = async () => {
+        setIsLoadingLicenses(true)
+        setFetchError(null)
+        try {
+            const response = await apiClient.getUniversityLicenses()
+            // Make sure we have an array
+            const licenseList = response.licenses || []
+            console.log('Fetched licenses:', licenseList)
+            setLicenses(licenseList)
+        } catch (err: any) {
+            console.error('Failed to fetch licenses:', err)
+            setFetchError("Failed to load licenses. Please try again.")
+        } finally {
+            setIsLoadingLicenses(false)
+        }
+    }
+
+    // Derived state for filtered options
+    const activeLicenses = useMemo(() => licenses.filter(l => l.is_active && l.remaining_licenses > 0), [licenses])
+    const hasActiveLicenses = activeLicenses.length > 0
+
+    // Toast warning if no licenses
+    useEffect(() => {
+        if (isOpen && !isLoadingLicenses && !hasActiveLicenses && !fetchError) {
+            // Only toast if we successfully fetched but found no active licenses
+            // Use a timeout to prevent double render issues with toast
+            const timer = setTimeout(() => {
+                toast.error("Active license is required to create students")
+            }, 500)
+            return () => clearTimeout(timer)
+        }
+    }, [isOpen, isLoadingLicenses, hasActiveLicenses, fetchError])
+
+
+    const validBatches = useMemo(() => {
+        const batches = new Set<string>()
+        activeLicenses.forEach(l => batches.add(l.batch))
+        return Array.from(batches).sort().reverse()
+    }, [activeLicenses])
+
+    const validDegrees = useMemo(() => {
+        if (!formData.graduation_year) return []
+
+        const yearStr = formData.graduation_year.toString()
+        // Find licenses matching this batch
+        const batchLicenses = activeLicenses.filter(l => l.batch === yearStr)
+
+        // If any matching license has NO degree restriction (null/empty), allowing all is implied 
+        const hasWildcardDegree = batchLicenses.some(l => !l.degree || l.degree.length === 0)
+
+        if (hasWildcardDegree) return degreeOptions
+
+        const allowedDegreeValues = new Set<string>()
+        batchLicenses.forEach(l => {
+            if (l.degree && Array.isArray(l.degree)) {
+                l.degree.forEach(d => allowedDegreeValues.add(d))
+            }
+        })
+
+        return degreeOptions.filter(opt => allowedDegreeValues.has(opt.value))
+    }, [activeLicenses, formData.graduation_year])
+
+    const validBranches = useMemo(() => {
+        if (!formData.graduation_year) return []
+        const yearStr = formData.graduation_year.toString()
+        const selectedDegree = formData.degree
+
+        // Find licenses matching batch AND degree
+        const relevantLicenses = activeLicenses.filter(l => {
+            if (l.batch !== yearStr) return false
+            if (!selectedDegree) return true
+
+            // If license has no degree restriction, it matches. 
+            if (!l.degree || l.degree.length === 0) return true
+            // If license has degree restriction, it must include selectedDegree
+            return l.degree.includes(selectedDegree)
+        })
+
+        const hasWildcardBranch = relevantLicenses.some(l => !l.branches || l.branches.length === 0)
+
+        if (hasWildcardBranch) return branchOptions
+
+        const allowedBranchValues = new Set<string>()
+        relevantLicenses.forEach(l => {
+            if (l.branches && Array.isArray(l.branches)) {
+                l.branches.forEach(b => allowedBranchValues.add(b))
+            }
+        })
+
+        return branchOptions.filter(opt => allowedBranchValues.has(opt.value))
+    }, [activeLicenses, formData.graduation_year, formData.degree])
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         e.stopPropagation()
 
-        console.log('🚀 Form submitted!', formData)
-        console.log('🚀 Event:', e)
-        console.log('🚀 Form data keys:', Object.keys(formData))
-        console.log('🚀 Form data values:', Object.values(formData))
-
         // Validate required fields
         if (!formData.name || !formData.email || !formData.phone) {
-            console.error('❌ Missing required fields:', { name: formData.name, email: formData.email, phone: formData.phone })
             alert('Please fill in all required fields: Name, Email, and Phone')
             return
         }
 
-        console.log('✅ All required fields are present, proceeding with submission')
+        if (!hasActiveLicenses) {
+            toast.error("Active license is required to create students")
+            return
+        }
+
+        if (!formData.graduation_year || !formData.degree || !formData.branch) {
+            setError("Please select Graduation Year, Degree, and Branch based on your approved licenses.")
+            return
+        }
+
         setIsSubmitting(true)
-        setError(null) // Clear any previous errors
+        setError(null)
 
         try {
-            console.log('📞 Calling onSubmit with data:', formData)
-            console.log('📞 Form data validation:', {
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                degree: formData.degree,
-                branch: formData.branch,
-                graduation_year: formData.graduation_year
-            })
             const result = await onSubmit(formData)
-            console.log('✅ onSubmit returned:', result)
             setCreatedStudent(result)
             setShowSuccess(true)
             // Reset form
@@ -131,6 +239,8 @@ export function CreateStudentModal({
                 branch: undefined,
                 graduation_year: undefined
             })
+            // Refetch licenses to update remaining counts if needed
+            fetchLicenses()
         } catch (error: any) {
             console.error('❌ Error creating student:', error)
             const errorMessage = getErrorMessage(error, 'Failed to create student')
@@ -143,11 +253,18 @@ export function CreateStudentModal({
     const handleInputChange = (field: keyof CreateStudentRequest, value: string | number) => {
         setFormData(prev => ({
             ...prev,
-            [field]: value
+            [field]: value as any
         }))
         // Clear error when user starts typing
         if (error) {
             setError(null)
+        }
+
+        // Reset dependent fields if parent changes
+        if (field === 'graduation_year') {
+            setFormData(prev => ({ ...prev, degree: undefined, branch: undefined, [field]: value as any }))
+        } else if (field === 'degree') {
+            setFormData(prev => ({ ...prev, branch: undefined, [field]: value as any }))
         }
     }
 
@@ -164,10 +281,7 @@ export function CreateStudentModal({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 bg-black bg-opacity-50"
-                            onClick={(e) => {
-                                console.log('🖱️ Background overlay clicked, closing modal')
-                                onClose()
-                            }}
+                            onClick={onClose}
                         />
 
                         {/* Modal */}
@@ -177,10 +291,7 @@ export function CreateStudentModal({
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             transition={{ duration: 0.2 }}
                             className="relative inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-gray-300 dark:border-slate-600"
-                            onClick={(e) => {
-                                console.log('🖱️ Modal container clicked, stopping propagation')
-                                e.stopPropagation()
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header */}
                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b-2 border-gray-200 dark:border-slate-600">
@@ -257,17 +368,7 @@ export function CreateStudentModal({
                                     </div>
                                 </div>
                             ) : (
-                                <form onSubmit={handleSubmit} className="px-6 py-4 bg-white dark:bg-slate-800" onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        console.log('⌨️ Enter key pressed in form')
-                                    }
-                                }} onClick={(e) => {
-                                    console.log('🖱️ Form clicked, preventing bubble')
-                                    e.stopPropagation()
-                                }} onMouseDown={(e) => {
-                                    console.log('🖱️ Form mouse down, preventing bubble')
-                                    e.stopPropagation()
-                                }}>
+                                <form onSubmit={handleSubmit} className="px-6 py-4 bg-white dark:bg-slate-800">
                                     {/* Error Display */}
                                     {error && (
                                         <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
@@ -279,6 +380,23 @@ export function CreateStudentModal({
                                                     </h4>
                                                     <p className="text-sm text-red-800 dark:text-red-200">
                                                         {error}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* License Warning */}
+                                    {!isLoadingLicenses && !hasActiveLicenses && !fetchError && (
+                                        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <ShieldAlert className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
+                                                        No Active Licenses
+                                                    </h4>
+                                                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                                                        You need an active license to create student accounts. Please request a license from the administration.
                                                     </p>
                                                 </div>
                                             </div>
@@ -297,9 +415,10 @@ export function CreateStudentModal({
                                                     type="text"
                                                     id="name"
                                                     required
+                                                    disabled={!hasActiveLicenses}
                                                     value={formData.name}
                                                     onChange={(e) => handleInputChange('name', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Enter student's full name"
                                                 />
                                             </div>
@@ -316,9 +435,10 @@ export function CreateStudentModal({
                                                     type="email"
                                                     id="email"
                                                     required
+                                                    disabled={!hasActiveLicenses}
                                                     value={formData.email}
                                                     onChange={(e) => handleInputChange('email', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Enter student's email address"
                                                 />
                                             </div>
@@ -335,15 +455,45 @@ export function CreateStudentModal({
                                                     type="tel"
                                                     id="phone"
                                                     required
+                                                    disabled={!hasActiveLicenses}
                                                     value={formData.phone}
                                                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Enter student's phone number"
                                                 />
                                             </div>
                                         </div>
 
-                                        {/* Degree */}
+                                        {/* Graduation Year (Batch) - Driven by Licenses */}
+                                        <div>
+                                            <label htmlFor="graduation_year" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Graduation Year (Batch) *
+                                            </label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                                                <Select
+                                                    value={formData.graduation_year?.toString() || ''}
+                                                    onValueChange={(value) => handleInputChange('graduation_year', parseInt(value))}
+                                                    disabled={!hasActiveLicenses}
+                                                >
+                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
+                                                        <SelectValue placeholder={isLoadingLicenses ? "Loading licenses..." : "Select Batch Year"} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {validBatches.map((year) => (
+                                                            <SelectItem key={year} value={year}>
+                                                                {year}
+                                                            </SelectItem>
+                                                        ))}
+                                                        {validBatches.length === 0 && !isLoadingLicenses && (
+                                                            <SelectItem value="none" disabled>No active batches found</SelectItem>
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        {/* Degree - Filtered by Batch */}
                                         <div>
                                             <label htmlFor="degree" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Degree
@@ -353,22 +503,26 @@ export function CreateStudentModal({
                                                 <Select
                                                     value={formData.degree || ''}
                                                     onValueChange={(value) => handleInputChange('degree', value)}
+                                                    disabled={!formData.graduation_year || !hasActiveLicenses}
                                                 >
-                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200">
-                                                        <SelectValue placeholder="Select degree" />
+                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
+                                                        <SelectValue placeholder={!formData.graduation_year ? "Select Batch Year first" : "Select degree"} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {degreeOptions.map((option) => (
+                                                        {validDegrees.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}
                                                             </SelectItem>
                                                         ))}
+                                                        {validDegrees.length === 0 && formData.graduation_year && (
+                                                            <SelectItem value="none" disabled>No valid degrees for this batch</SelectItem>
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                         </div>
 
-                                        {/* Branch */}
+                                        {/* Branch - Filtered by Batch and Degree */}
                                         <div>
                                             <label htmlFor="branch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Branch
@@ -378,38 +532,22 @@ export function CreateStudentModal({
                                                 <Select
                                                     value={formData.branch || ''}
                                                     onValueChange={(value) => handleInputChange('branch', value)}
+                                                    disabled={!formData.degree || !hasActiveLicenses}
                                                 >
-                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200">
-                                                        <SelectValue placeholder="Select branch" />
+                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
+                                                        <SelectValue placeholder={!formData.degree ? "Select Degree first" : "Select branch"} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {branchOptions.map((option) => (
+                                                        {validBranches.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}
                                                             </SelectItem>
                                                         ))}
+                                                        {validBranches.length === 0 && formData.degree && (
+                                                            <SelectItem value="none" disabled>No valid branches for this degree</SelectItem>
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
-                                            </div>
-                                        </div>
-
-                                        {/* Graduation Year */}
-                                        <div>
-                                            <label htmlFor="graduation_year" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Graduation Year
-                                            </label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                                <input
-                                                    type="number"
-                                                    id="graduation_year"
-                                                    min="2000"
-                                                    max="2030"
-                                                    value={formData.graduation_year || ''}
-                                                    onChange={(e) => handleInputChange('graduation_year', e.target.value ? parseInt(e.target.value) : 0)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
-                                                    placeholder="e.g., 2025"
-                                                />
                                             </div>
                                         </div>
 
@@ -420,24 +558,14 @@ export function CreateStudentModal({
                                     <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                                         <button
                                             type="button"
-                                            onClick={(e) => {
-                                                console.log('❌ Cancel button clicked!')
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                onClose()
-                                            }}
+                                            onClick={onClose}
                                             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={isSubmitting}
-                                            onClick={(e) => {
-                                                console.log('🔘 Submit button clicked!')
-                                                e.stopPropagation()
-                                                // Let the form handle the submission
-                                            }}
+                                            disabled={isSubmitting || !hasActiveLicenses || !formData.graduation_year}
                                             className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                                         >
                                             {isSubmitting ? 'Creating...' : 'Create Student'}
@@ -451,4 +579,4 @@ export function CreateStudentModal({
             )}
         </AnimatePresence>
     )
-}
+} 

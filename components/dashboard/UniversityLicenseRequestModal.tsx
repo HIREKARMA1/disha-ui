@@ -363,8 +363,8 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                                     value={formData.batch}
                                                     onChange={handleBatchChange}
                                                     placeholder="e.g. 2024-2025"
-                                                    disabled
-                                                    className={`pl-9 cursor-not-allowed bg-gray-100 ${eligibility && !eligibility.eligible
+
+                                                    className={`pl-9  bg-gray-100 ${eligibility && !eligibility.eligible
                                                         ? 'border-red-300 focus:ring-red-500'
                                                         : ''
                                                         }`}
