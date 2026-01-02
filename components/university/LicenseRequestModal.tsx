@@ -20,7 +20,7 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
     const [formData, setFormData] = useState({
         requested_total: '',
         batch: '',
-        degree: '',
+        degree: [] as string[],
         branches: [] as string[],
         period_from: '',
         period_to: '',
@@ -35,9 +35,17 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
         }))
     ), [])
 
+    const degreeDropdownOptions: MultiSelectOption[] = useMemo(() => (
+        degreeOptions.map(option => ({
+            id: option.value,
+            value: option.value,
+            label: option.label
+        }))
+    ), [])
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (!formData.requested_total || !formData.batch || !formData.period_from || !formData.period_to) {
             toast.error('Please fill in all required fields')
             return
@@ -54,7 +62,7 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
             return
         }
 
-        const degreeValue = formData.degree.trim()
+        const degreeList = formData.degree
         const branchesList = formData.branches
 
         setIsSubmitting(true)
@@ -62,18 +70,18 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
             await apiClient.createLicenseRequest({
                 requested_total: requestedTotal,
                 batch: formData.batch.trim(),
-                degree: degreeValue || undefined,
+                degree: degreeList.length ? degreeList : undefined,
                 branches: branchesList.length ? branchesList : undefined,
                 period_from: new Date(formData.period_from).toISOString(),
                 period_to: new Date(formData.period_to).toISOString(),
                 message: formData.message.trim() || undefined
             })
-            
+
             toast.success('License request submitted successfully')
             setFormData({
                 requested_total: '',
                 batch: '',
-                degree: '',
+                degree: [],
                 branches: [],
                 period_from: '',
                 period_to: '',
@@ -144,26 +152,15 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Degree (Optional)
-                        </label>
-                        <Select
-                            value={formData.degree || undefined}
-                            onValueChange={(value) => handleChange('degree', value === '__clear__' ? '' : value)}
+                        <MultiSelectDropdown
+                            label="Degree (Optional)"
+                            options={degreeDropdownOptions}
+                            selectedValues={formData.degree}
+                            onSelectionChange={(values) => handleChange('degree', values)}
+                            placeholder="Select degrees"
                             disabled={isSubmitting}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select degree" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="__clear__">Clear selection</SelectItem>
-                                {degreeOptions.map(option => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            allOptionLabel="All degrees"
+                        />
                     </div>
                     <div>
                         <MultiSelectDropdown

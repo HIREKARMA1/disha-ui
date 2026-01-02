@@ -20,11 +20,14 @@ interface UniversityLicenseRequestModalProps {
     onSuccess?: () => void
     initialBatch?: string
     isRenewalFlow?: boolean
+    initialDegree?: string | string[]
+    initialBranches?: string[]
 }
 
-export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, initialBatch, isRenewalFlow }: UniversityLicenseRequestModalProps) {
+export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, initialBatch, isRenewalFlow, initialDegree, initialBranches }: UniversityLicenseRequestModalProps) {
     const [loading, setLoading] = useState(false)
     const [checkingEligibility, setCheckingEligibility] = useState(false)
+    const [eligibilityError, setEligibilityError] = useState<string | null>(null)
     const [eligibility, setEligibility] = useState<{
         eligible: boolean;
         request_type?: 'NEW' | 'RENEWAL';
@@ -52,22 +55,31 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
+            // Normalize initialDegree to array format
+            const normalizedDegree = initialDegree
+                ? (Array.isArray(initialDegree) ? initialDegree : [initialDegree])
+                : []
+
+            // Normalize initialBranches to array format
+            const normalizedBranches = initialBranches || []
+
             setFormData({
                 requested_total: '',
                 batch: initialBatch || '',
-                degree: [],
-                branches: [],
+                degree: normalizedDegree,
+                branches: normalizedBranches,
                 period_from: '',
                 period_to: '',
                 message: ''
             })
             setEligibility(null)
+            setEligibilityError(null)
 
             if (initialBatch) {
-                checkEligibility(initialBatch, [], [])
+                checkEligibility(initialBatch, normalizedDegree, normalizedBranches)
             }
         }
-    }, [isOpen, initialBatch])
+    }, [isOpen, initialBatch, initialDegree, initialBranches])
 
     // Check eligibility when batch changes
     const checkEligibility = async (
@@ -77,6 +89,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     ) => {
         if (!batch || batch.length < 4) {
             setEligibility(null)
+            setEligibilityError(null)
             return
         }
         const candidateDegrees = degreeValue ?? formData.degree
@@ -89,20 +102,42 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             .filter(branch => branch.length > 0)
 
         setCheckingEligibility(true)
+        setEligibilityError(null)
         try {
             const result = await apiClient.checkBatchEligibility(
                 batch,
-                normalizedDegrees.length ? normalizedDegrees[0] : undefined,
+                normalizedDegrees.length ? normalizedDegrees : undefined,
                 normalizedBranches.length ? normalizedBranches : undefined
             )
             setEligibility(result)
+            setEligibilityError(null)
 
             // If renewal, pre-fill dates from existing license if available
             if (result.request_type === 'RENEWAL' && result.usage) {
                 // Optional: could pre-fill dates here
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to check eligibility:', error)
+
+            // For renewal flow, if eligibility check fails, it's not critical
+            // The batch already exists, so we can proceed without blocking
+            if (isRenewalFlow) {
+                console.warn('Eligibility check failed for renewal, but proceeding anyway')
+                setEligibilityError(null)
+                setEligibility({
+                    eligible: true, // Assume eligible for renewal
+                    request_type: 'RENEWAL'
+                })
+                return
+            }
+
+            // For new requests, show a warning but don't block
+            const errorMessage = error.response?.data?.detail ||
+                error.response?.data?.message ||
+                error.message ||
+                'Unable to verify eligibility automatically'
+            setEligibilityError(errorMessage)
+            setEligibility(null)
         } finally {
             setCheckingEligibility(false)
         }
@@ -178,7 +213,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
             await apiClient.createLicenseRequest({
                 requested_total: total,
                 batch: formData.batch,
-                degree: degreesList.length ? degreesList[0] : undefined,
+                degree: degreesList.length ? degreesList : undefined,
                 branches: branchesList.length ? branchesList : undefined,
                 period_from: periodFrom,
                 period_to: periodTo,
@@ -261,6 +296,21 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                     </p>
                                 </div>
 
+                                {/* API Warning - When eligibility check fails (non-blocking) */}
+                                {eligibilityError && (
+                                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-100 dark:border-yellow-800 flex items-start gap-3">
+                                        <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-1">
+                                            <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium mb-1">
+                                                Could not verify eligibility automatically
+                                            </p>
+                                            <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                                {eligibilityError}. You can still submit your request - it will be reviewed by the admin.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Eligibility Error */}
                                 {eligibility && !eligibility.eligible && (
                                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800 flex items-center gap-3">
@@ -313,8 +363,13 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                                     value={formData.batch}
                                                     onChange={handleBatchChange}
                                                     placeholder="e.g. 2024-2025"
-                                                    className={`pl-9 ${eligibility && !eligibility.eligible ? 'border-red-300 focus:ring-red-500' : ''}`}
+                                                    disabled
+                                                    className={`pl-9 cursor-not-allowed bg-gray-100 ${eligibility && !eligibility.eligible
+                                                        ? 'border-red-300 focus:ring-red-500'
+                                                        : ''
+                                                        }`}
                                                 />
+
                                                 {checkingEligibility && (
                                                     <div className="absolute right-3 top-2.5">
                                                         <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
@@ -322,6 +377,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                                 )}
                                             </div>
                                         </div>
+                                        {/* license max 1000 */}
                                         <div>
                                             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                                 Licenses Needed <span className="text-red-500">*</span>
@@ -331,6 +387,7 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                                 <Input
                                                     type="number"
                                                     min="1"
+                                                    max="1000"
                                                     value={formData.requested_total}
                                                     onChange={(e) => setFormData(prev => ({ ...prev, requested_total: e.target.value }))}
                                                     placeholder="e.g. 100"

@@ -681,7 +681,7 @@ class ApiClient {
     period_from: string;
     period_to: string;
     message?: string;
-    degree?: string;
+    degree?: string | string[];
     branches?: string[];
   }): Promise<any> {
     const response: AxiosResponse = await this.client.post('/universities/license-requests', data);
@@ -693,7 +693,7 @@ class ApiClient {
     return response.data;
   }
 
-  async checkBatchEligibility(batch: string, degree?: string, branches?: string[]): Promise<any> {
+  async checkBatchEligibility(batch: string, degree?: string | string[], branches?: string[]): Promise<any> {
     const params: Record<string, string | string[]> = {};
     if (degree) {
       params.degree = degree;

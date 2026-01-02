@@ -28,6 +28,8 @@ export default function UniversityLicensesPage() {
     const [loading, setLoading] = useState(true)
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
     const [selectedBatch, setSelectedBatch] = useState<string | undefined>(undefined)
+    const [selectedDegree, setSelectedDegree] = useState<string | string[] | undefined>(undefined)
+    const [selectedBranches, setSelectedBranches] = useState<string[] | undefined>(undefined)
     const [searchTerm, setSearchTerm] = useState('')
 
     useEffect(() => {
@@ -122,7 +124,12 @@ export default function UniversityLicensesPage() {
                             />
                         </div>
                         <Button
-                            onClick={() => setIsRequestModalOpen(true)}
+                            onClick={() => {
+                                setSelectedBatch(undefined)
+                                setSelectedDegree(undefined)
+                                setSelectedBranches(undefined)
+                                setIsRequestModalOpen(true)
+                            }}
                             className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                         >
                             <Plus className="w-4 h-4 mr-2" />
@@ -146,7 +153,12 @@ export default function UniversityLicensesPage() {
                             {searchTerm ? 'No licenses match your search.' : "You don't have any active licenses yet. Request a license to start adding students."}
                         </p>
                         {!searchTerm && (
-                            <Button onClick={() => setIsRequestModalOpen(true)}>
+                            <Button onClick={() => {
+                                setSelectedBatch(undefined)
+                                setSelectedDegree(undefined)
+                                setSelectedBranches(undefined)
+                                setIsRequestModalOpen(true)
+                            }}>
                                 Request Your First License
                             </Button>
                         )}
@@ -223,6 +235,8 @@ export default function UniversityLicensesPage() {
                                                     className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
                                                     onClick={() => {
                                                         setSelectedBatch(license.batch)
+                                                        setSelectedDegree(license.degree)
+                                                        setSelectedBranches(license.branches)
                                                         setIsRequestModalOpen(true)
                                                     }}
                                                 >
@@ -339,10 +353,14 @@ export default function UniversityLicensesPage() {
                     onClose={() => {
                         setIsRequestModalOpen(false)
                         setSelectedBatch(undefined)
+                        setSelectedDegree(undefined)
+                        setSelectedBranches(undefined)
                     }}
                     onSuccess={fetchLicenses}
                     initialBatch={selectedBatch}
                     isRenewalFlow={!!selectedBatch}
+                    initialDegree={selectedDegree}
+                    initialBranches={selectedBranches}
                 />
             </div>
         </UniversityDashboardLayout >

@@ -33,7 +33,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
 
 const userTypeOptions = [
-    // { value: 'student', label: 'Student' },
+    { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
     { value: 'university', label: 'University' }
     // Admin option removed for security - admin accounts must be created manually
@@ -700,7 +700,7 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                                 I am a
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
                                 {userTypeOptions.map((option) => {
                                     const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]

@@ -22,8 +22,6 @@ import {
     Edit,
     Trash2,
     Users
-    Trash2,
-    Users
 } from 'lucide-react'
 import { UniversityListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
