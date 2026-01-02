@@ -17,7 +17,8 @@ import {
     ChevronUp,
     ChevronDown,
     ChevronsUpDown,
-    Hourglass
+    Hourglass,
+    Trash2
 } from 'lucide-react'
 import { StudentListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
@@ -28,6 +29,7 @@ interface StudentTableProps {
     isLoading: boolean
     error: string | null
     onArchiveStudent: (studentId: string, archive: boolean) => void
+    onDeleteStudent: (studentId: string) => void
     onRetry: () => void
 }
 
@@ -39,6 +41,7 @@ export function StudentTable({
     isLoading,
     error,
     onArchiveStudent,
+    onDeleteStudent,
     onRetry
 }: StudentTableProps) {
     const [sortField, setSortField] = useState<SortField | null>('created_at')
@@ -50,6 +53,11 @@ export function StudentTable({
     const [showArchiveModal, setShowArchiveModal] = useState(false)
     const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; isArchived: boolean } | null>(null)
     const [isArchiveLoading, setIsArchiveLoading] = useState(false)
+
+    // Delete confirmation modal state
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null)
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false)
 
     // Profile modal state
     const [showProfileModal, setShowProfileModal] = useState(false)
@@ -255,6 +263,35 @@ export function StudentTable({
         setSelectedProfileStudent(null)
         setFullProfileData(null)
         setIsLoadingProfile(false)
+    }
+
+    const handleDeleteClick = (student: StudentListItem) => {
+        setStudentToDelete({
+            id: student.id,
+            name: student.name
+        })
+        setShowDeleteModal(true)
+    }
+
+    const handleDeleteConfirm = async () => {
+        if (!studentToDelete) return
+
+        setIsDeleteLoading(true)
+        try {
+            await onDeleteStudent(studentToDelete.id)
+            setShowDeleteModal(false)
+            setStudentToDelete(null)
+        } catch (error) {
+            console.error('Failed to delete student:', error)
+            // Don't close modal on error, let user retry
+        } finally {
+            setIsDeleteLoading(false)
+        }
+    }
+
+    const handleDeleteCancel = () => {
+        setShowDeleteModal(false)
+        setStudentToDelete(null)
     }
 
     if (isLoading) {
@@ -534,6 +571,17 @@ export function StudentTable({
                                                 </>
                                             )}
                                         </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setStudentToDelete({ id: student.id, name: student.name })
+                                                setShowDeleteModal(true)
+                                            }}
+                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-300"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                            Delete
+                                        </button>
                                     </div>
                                 </td>
                             </motion.tr>
@@ -645,6 +693,51 @@ export function StudentTable({
                 isArchiving={selectedStudent ? !selectedStudent.isArchived : true}
                 isLoading={isArchiveLoading}
             />
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && studentToDelete && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6"
+                    >
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                            Delete Student
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">
+                            Are you sure you want to permanently delete <span className="font-semibold">{studentToDelete.name}</span>?
+                            This action cannot be undone and will permanently remove all student data.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={handleDeleteCancel}
+                                disabled={isDeleteLoading}
+                                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium disabled:opacity-50 transition-colors duration-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleteLoading}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50 transition-colors duration-200 flex items-center gap-2"
+                            >
+                                {isDeleteLoading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             {/* Student Profile Modal */}
             {showProfileModal && selectedProfileStudent && (

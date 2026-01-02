@@ -701,6 +701,7 @@ export default function RegisterPage() {
                                 I am a
                             </label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
                                 {userTypeOptions.map((option) => {
                                     const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
                                     const isSelected = selectedUserType === option.value

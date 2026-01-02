@@ -11,7 +11,8 @@ import {
     X,
     Menu,
     LogOut,
-    Brain
+    Brain,
+    Award
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -71,6 +72,13 @@ const navItems: NavItem[] = [
         icon: FileText,
         description: 'Track student applications',
         color: 'from-indigo-500 to-blue-600'
+    },
+    {
+        label: 'Licenses',
+        href: '/dashboard/university/licenses',
+        icon: Award,
+        description: 'View your licenses',
+        color: 'from-yellow-500 to-amber-600'
     }
 ]
 

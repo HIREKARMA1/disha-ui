@@ -1,9 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { config } from './config';
-import { 
-  StudentRegisterRequest, 
-  CorporateRegisterRequest, 
-  UniversityRegisterRequest, 
+import {
+  StudentRegisterRequest,
+  CorporateRegisterRequest,
+  UniversityRegisterRequest,
   AdminRegisterRequest,
   LoginRequest,
   TokenResponse,
@@ -54,7 +54,7 @@ class ApiClient {
               const response = await this.refreshToken(refreshToken);
               localStorage.setItem('access_token', response.access_token);
               localStorage.setItem('refresh_token', response.refresh_token);
-              
+
               originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
               return this.client(originalRequest);
             }
@@ -367,7 +367,7 @@ class ApiClient {
     const params: any = { page, limit };
     if (query) params.query = query;
     if (categoryId) params.category_id = categoryId;
-    
+
     const response: AxiosResponse = await this.client.get('/library/search/', { params });
     return response.data;
   }
@@ -439,7 +439,7 @@ class ApiClient {
     console.log('🌐 API Client: baseURL:', this.client.defaults.baseURL)
     console.log('🌐 API Client: full URL:', `${this.client.defaults.baseURL}/universities/students/create`)
     console.log('🌐 API Client: headers:', this.client.defaults.headers)
-    
+
     try {
       console.log('🌐 API Client: Making POST request...')
       const response: AxiosResponse = await this.client.post('/universities/students/create', studentData);
@@ -464,7 +464,7 @@ class ApiClient {
   async uploadStudentsCSV(file: File): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response: AxiosResponse = await this.client.post('/universities/students/upload-csv', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -484,6 +484,12 @@ class ApiClient {
     });
     return response.data;
   }
+
+  async deleteStudent(studentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/universities/students/${studentId}`);
+    return response.data;
+  }
+
 
   // University job management endpoints
   async getUniversityJobs(): Promise<any> {
@@ -557,7 +563,7 @@ class ApiClient {
   async uploadOfferLetter(applicationId: string, file: File): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response: AxiosResponse = await this.client.post(`/applications/${applicationId}/offer-letter`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -574,11 +580,11 @@ class ApiClient {
 
   async getPublicCorporateProfile(corporateId: string): Promise<any> {
     // Validate corporateId before making the request
-    if (!corporateId || 
-        corporateId === 'None' || 
-        corporateId === 'null' || 
-        corporateId === 'undefined' ||
-        (typeof corporateId === 'string' && corporateId.trim() === '')) {
+    if (!corporateId ||
+      corporateId === 'None' ||
+      corporateId === 'null' ||
+      corporateId === 'undefined' ||
+      (typeof corporateId === 'string' && corporateId.trim() === '')) {
       throw new Error('Invalid corporate ID provided');
     }
     const response: AxiosResponse = await this.client.get(`/corporates/public/${corporateId}`);
@@ -645,7 +651,7 @@ class ApiClient {
   async uploadImage(file: File): Promise<{ file_url: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response: AxiosResponse = await this.client.post('/universities/upload-profile-picture', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -658,7 +664,7 @@ class ApiClient {
   async uploadCompanyLogo(file: File): Promise<{ file_url: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response: AxiosResponse = await this.client.post('/universities/upload-company-logo', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -666,6 +672,104 @@ class ApiClient {
     });
     // The endpoint returns {file_url, message}, but we only need file_url for consistency
     return { file_url: response.data.file_url };
+  }
+
+  // License endpoints
+  async createLicenseRequest(data: {
+    requested_total: number;
+    batch: string;
+    period_from: string;
+    period_to: string;
+    message?: string;
+    degree?: string | string[];
+    branches?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/universities/license-requests', data);
+    return response.data;
+  }
+
+  async getUniversityLicenses(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/licenses');
+    return response.data;
+  }
+
+  async checkBatchEligibility(batch: string, degree?: string | string[], branches?: string[]): Promise<any> {
+    const params: Record<string, string | string[]> = {};
+    if (degree) {
+      params.degree = degree;
+    }
+    if (branches && branches.length > 0) {
+      params.branches = branches;
+    }
+    const response: AxiosResponse = await this.client.get(`/universities/licenses/batch/${batch}/eligibility`, {
+      params
+    });
+    return response.data;
+  }
+
+  async getUniversityLicenseRequests(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/license-requests');
+    return response.data;
+  }
+
+  // Admin license endpoints
+  async getLicenseRequests(params?: { status?: string; page?: number; page_size?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/license-requests', { params });
+    return response.data;
+  }
+
+  async getLicenseRequest(requestId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/license-requests/${requestId}`);
+    return response.data;
+  }
+
+  async approveLicenseRequest(requestId: string, data: {
+    approved_total: number;
+    period_from: string;
+    period_to: string;
+    batch: string;
+    admin_note?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/license-requests/${requestId}/approve`, data);
+    return response.data;
+  }
+
+  async rejectLicenseRequest(requestId: string, data: { admin_note: string }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/license-requests/${requestId}/reject`, data);
+    return response.data;
+  }
+
+  async getLicenses(params?: { university_id?: string; status?: string; page?: number; page_size?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/licenses', { params });
+    return response.data;
+  }
+
+  async updateLicense(licenseId: string, data: {
+    total_licenses?: number;
+    period_from?: string;
+    period_to?: string;
+    status?: string;
+    note?: string;
+    degree?: string[];
+    branches?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/licenses/${licenseId}`, data);
+    return response.data;
+  }
+
+  async deactivateLicense(licenseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/licenses/${licenseId}/deactivate`);
+    return response.data;
+  }
+
+  async deleteLicenseRequest(requestId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/license-requests/${requestId}`);
+    return response.data;
+  }
+
+  async deleteLicense(licenseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/licenses/${licenseId}`);
+    return response.data;
   }
 }
 

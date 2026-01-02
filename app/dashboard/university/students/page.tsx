@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
 import { StudentManagementHeader } from '@/components/dashboard/StudentManagementHeader'
 import { StudentTable } from '@/components/dashboard/StudentTable'
-import { CreateStudentModal } from '@/components/dashboard/CreateStudentModal'
+import { CreateStudentModal, degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
 import { BulkUploadModal } from '@/components/dashboard/BulkUploadModal'
 import { apiClient } from '@/lib/api'
 import { StudentListResponse, StudentListItem } from '@/types/university'
@@ -23,6 +23,11 @@ export default function UniversityStudents() {
     const [includeArchived, setIncludeArchived] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
+    const [selectedBranch, setSelectedBranch] = useState('all')
+    const [selectedYear, setSelectedYear] = useState('all')
+    const [selectedDegree, setSelectedDegree] = useState('all')
+
+    const [showFilters, setShowFilters] = useState(false)
 
     const fetchStudents = async () => {
         setIsLoading(true)
@@ -43,6 +48,14 @@ export default function UniversityStudents() {
         fetchStudents()
     }, [includeArchived])
 
+    // Use predefined options for branches and degrees
+    const branches = branchOptions.map(option => option.value)
+    const degrees = degreeOptions.map(option => option.value)
+
+    // Generate year options: previous 10 years + current year + next 10 years
+    const currentYear = new Date().getFullYear()
+    const years = Array.from({ length: 21 }, (_, i) => String(currentYear - 10 + i)).sort((a, b) => Number(b) - Number(a))
+
     const filteredStudents = students.filter(student => {
         const matchesSearch = searchTerm === '' ||
             student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,11 +68,24 @@ export default function UniversityStudents() {
             (filterStatus === 'inactive' && student.status === 'inactive') ||
             (filterStatus === 'pending' && student.status === 'pending')
 
+        const matchesBranch = selectedBranch === 'all' || student.branch === selectedBranch
+        const matchesYear = selectedYear === 'all' || String(student.graduation_year) === selectedYear
+        const matchesDegree = selectedDegree === 'all' || student.degree === selectedDegree
+
         // Filter by archive status based on includeArchived setting
         const matchesArchiveStatus = includeArchived ? student.is_archived : !student.is_archived
 
-        return matchesSearch && matchesStatus && matchesArchiveStatus
+        return matchesSearch && matchesStatus && matchesArchiveStatus && matchesBranch && matchesYear && matchesDegree
     })
+
+    const clearFilters = () => {
+        setSearchTerm('')
+        setFilterStatus('all')
+        setSelectedBranch('all')
+        setSelectedYear('all')
+        setSelectedDegree('all')
+        setIncludeArchived(false)
+    }
 
     const handleCreateStudent = async (studentData: any) => {
         console.log('🎯 handleCreateStudent called with:', studentData)
@@ -116,6 +142,18 @@ export default function UniversityStudents() {
             toast.error('Failed to export students. Please try again.')
         }
     }
+
+    const handleDeleteStudent = async (studentId: string) => {
+        try {
+            await apiClient.deleteStudent(studentId)
+            toast.success('Student deleted successfully!')
+            fetchStudents()
+        } catch (err: any) {
+            console.error('Failed to delete student:', err)
+            toast.error(err.response?.data?.detail || 'Failed to delete student.')
+        }
+    }
+
 
     return (
         <UniversityDashboardLayout>
@@ -215,6 +253,20 @@ export default function UniversityStudents() {
                     onFilterChange={setFilterStatus}
                     includeArchived={includeArchived}
                     onIncludeArchivedChange={setIncludeArchived}
+                    branches={branches}
+                    selectedBranch={selectedBranch}
+                    onBranchChange={setSelectedBranch}
+                    years={years}
+                    selectedYear={selectedYear}
+                    onYearChange={setSelectedYear}
+                    degrees={degrees}
+                    selectedDegree={selectedDegree}
+                    onDegreeChange={setSelectedDegree}
+                    showFilters={showFilters}
+                    setShowFilters={setShowFilters}
+                    onClearFilters={clearFilters}
+                    onAddStudent={() => setShowCreateModal(true)}
+                    onBulkUpload={() => setShowBulkUploadModal(true)}
                 />
 
                 {/* Student Table */}
@@ -223,6 +275,7 @@ export default function UniversityStudents() {
                     isLoading={isLoading}
                     error={error}
                     onArchiveStudent={handleArchiveStudent}
+                    onDeleteStudent={handleDeleteStudent}
                     onRetry={fetchStudents}
                 />
 
