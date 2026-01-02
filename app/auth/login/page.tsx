@@ -52,11 +52,16 @@ export default function LoginPage() {
     const [selectedUserType, setSelectedUserType] = useState<UserType>('student')
     const [termsAndPrivacyAccepted, setTermsAndPrivacyAccepted] = useState(false)
     const [showTermsModal, setShowTermsModal] = useState(false)
+    const [registerLink, setRegisterLink] = useState(`/auth/register?type=student`)
 
-    // Redirect if user is already authenticated
+    // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
-        redirectIfAuthenticated()
-    }, [redirectIfAuthenticated])
+        // Check if there's a redirect URL - if so, don't auto-redirect
+        const hasRedirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' && localStorage.getItem('redirect_after_login'))
+        if (!hasRedirectUrl) {
+            redirectIfAuthenticated()
+        }
+    }, [redirectIfAuthenticated, searchParams])
 
     const {
         register,
@@ -91,6 +96,17 @@ export default function LoginPage() {
         setValue('user_type', selectedUserType)
     }, [selectedUserType, setValue])
 
+    // Compute register link with redirect URL (client-side only)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
+            const link = redirectUrl 
+                ? `/auth/register?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
+                : `/auth/register?type=${selectedUserType}`
+            setRegisterLink(link)
+        }
+    }, [searchParams, selectedUserType])
+
     const onSubmit = async (data: LoginFormData) => {
         // Check if terms and conditions are accepted
         if (!termsAndPrivacyAccepted) {
@@ -115,7 +131,20 @@ export default function LoginPage() {
 
             toast.success('Login successful!')
 
-            // Redirect based on user type
+            // Check for redirect URL (from query params or localStorage)
+            const redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+            
+            if (redirectUrl) {
+                // Clear the stored redirect URL
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('redirect_after_login')
+                }
+                // Use window.location for a hard redirect to prevent any interference
+                window.location.href = redirectUrl
+                return
+            }
+
+            // Redirect based on user type if no redirect URL
             switch (data.user_type) {
                 case 'student':
                     router.push('/dashboard/student')
@@ -280,10 +309,6 @@ export default function LoginPage() {
                                         </button>
                                     }
                                     error={!!errors.password}
-                                    onCopy={(e) => e.preventDefault()}
-                                    onPaste={(e) => e.preventDefault()}
-                                    onCut={(e) => e.preventDefault()}
-                                    onContextMenu={(e) => e.preventDefault()}
                                     {...register('password')}
                                 />
                                 {errors.password && (
@@ -340,7 +365,7 @@ export default function LoginPage() {
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                     Don't have an account?{' '}
                                     <Link
-                                        href={`/auth/register?type=${selectedUserType}`}
+                                        href={registerLink}
                                         className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
                                     >
                                         Create one

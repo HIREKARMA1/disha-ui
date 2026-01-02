@@ -634,6 +634,42 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             validationErrors.push('Name must be at least 2 characters long')
             hasValidationErrors = true
         }
+
+        // Validate contact_person field if provided
+        if (formData.contact_person) {
+            if (formData.contact_person.trim().length < 2) {
+                validationErrors.push('Contact person name must be at least 2 characters long')
+                hasValidationErrors = true
+            }
+            // Check if it contains only numbers
+            if (/^\d+$/.test(formData.contact_person.trim())) {
+                validationErrors.push('Contact person name cannot contain only numbers')
+                hasValidationErrors = true
+            }
+            // Check if it contains at least one letter
+            if (!/[a-zA-Z]/.test(formData.contact_person.trim())) {
+                validationErrors.push('Contact person name must contain at least one letter')
+                hasValidationErrors = true
+            }
+        }
+
+        // Validate contact_designation field if provided
+        if (formData.contact_designation) {
+            if (formData.contact_designation.trim().length < 2) {
+                validationErrors.push('Contact person designation must be at least 2 characters long')
+                hasValidationErrors = true
+            }
+            // Check if it contains only numbers
+            if (/^\d+$/.test(formData.contact_designation.trim())) {
+                validationErrors.push('Contact person designation cannot contain only numbers')
+                hasValidationErrors = true
+            }
+            // Check if it contains at least one letter
+            if (!/[a-zA-Z]/.test(formData.contact_designation.trim())) {
+                validationErrors.push('Contact person designation must contain at least one letter')
+                hasValidationErrors = true
+            }
+        }
         
         // Validate company name if provided (for company section)
         if (formData.company_name && formData.company_name.trim().length < 2) {
@@ -866,6 +902,44 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder="Enter your name (alphabets only)"
+                    maxLength={50}
+                />
+            )
+        }
+
+        // Handle contact_person field with alphabet-only validation
+        if (field === 'contact_person') {
+            return (
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => {
+                        const inputValue = e.target.value
+                        // Only allow alphabets, spaces, and common punctuation (no numbers)
+                        const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                        setFormData({ ...formData, [field]: sanitizedValue })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter contact person name (alphabets only)"
+                    maxLength={50}
+                />
+            )
+        }
+
+        // Handle contact_designation field with alphabet-only validation
+        if (field === 'contact_designation') {
+            return (
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => {
+                        const inputValue = e.target.value
+                        // Only allow alphabets, spaces, and common punctuation (no numbers)
+                        const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                        setFormData({ ...formData, [field]: sanitizedValue })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter contact person designation (alphabets only)"
                     maxLength={50}
                 />
             )

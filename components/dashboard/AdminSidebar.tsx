@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import { adminProfileService } from '@/services/adminProfileService'
 
 interface NavItem {
     label: string
@@ -157,6 +158,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
+    const desktopNavRef = useRef<HTMLDivElement>(null)
 
     // Fetch profile data when component mounts
     useEffect(() => {
@@ -164,12 +166,12 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
             if (user?.user_type === 'admin') {
                 setIsLoadingProfile(true)
                 try {
-                    // TODO: Replace with actual admin profile API call
-                    // const data = await apiClient.getAdminProfile()
-                    // setProfileData(data)
-                    setProfileData(null) // Placeholder for now
+                    const data = await adminProfileService.getProfile()
+                    setProfileData(data)
                 } catch (error) {
                     console.error('Failed to fetch profile:', error)
+                    // Set profileData to null on error so it falls back to user object
+                    setProfileData(null)
                 } finally {
                     setIsLoadingProfile(false)
                 }
@@ -192,12 +194,30 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
         closeMobileMenu()
     }
 
+    useEffect(() => {
+        if (!desktopNavRef.current) return
+        const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
+        if (activeItem instanceof HTMLElement) {
+            activeItem.scrollIntoView({
+                block: 'nearest',
+                inline: 'nearest',
+                behavior: 'smooth'
+            })
+        }
+    }, [pathname])
+
     // Get display name from profile data
     const getDisplayName = () => {
+        // Prioritize profile data name
         if (profileData?.name && profileData.name.trim()) {
             return profileData.name
         }
-        return user?.name || 'Admin Name'
+        // Fall back to user name, but only if it's not an email
+        if (user?.name && user.name.trim() && !user.name.includes('@')) {
+            return user.name
+        }
+        // If user.name is email or missing, use a default
+        return 'Admin'
     }
 
     // Get display email
@@ -252,7 +272,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
@@ -268,6 +288,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                                 key={item.href}
                                 href={item.href}
                                 onClick={handleClick}
+                                data-sidebar-item={isActive ? 'active' : 'inactive'}
                                 className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${isActive
                                     ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
@@ -363,11 +384,11 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl"
+                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500 flex-shrink-0">
                                 <h2 className="text-lg font-semibold text-white">
                                     Menu
                                 </h2>
@@ -380,7 +401,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             </div>
 
                             {/* User Profile in Mobile */}
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center overflow-hidden">
                                         {getProfilePicture() && !imageError ? (
@@ -411,8 +432,8 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                                 </div>
                             </div>
 
-                            {/* Navigation */}
-                            <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+                            {/* Navigation - Scrollable */}
+                            <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
                                 {navItems.map((item) => {
                                     const isActive = pathname === item.href
                                     const { startLoading } = useLoading()
@@ -449,7 +470,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             </nav>
 
                             {/* Logout in Mobile */}
-                            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"

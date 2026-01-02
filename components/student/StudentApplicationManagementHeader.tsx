@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'
+import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface StudentApplicationManagementHeaderProps {
     totalApplications: number
@@ -14,6 +15,13 @@ interface StudentApplicationManagementHeaderProps {
     onSearchChange: (term: string) => void
     filterStatus: string
     onFilterChange: (status: string) => void
+    companyOptions?: string[]
+    selectedCompany?: string
+    onCompanyChange?: (company: string) => void
+    jobOptions?: { id: string; title: string }[]
+    selectedJobId?: string
+    onJobChange?: (jobId: string) => void
+    onExport?: () => void
 }
 
 export function StudentApplicationManagementHeader({
@@ -26,7 +34,14 @@ export function StudentApplicationManagementHeader({
     searchTerm,
     onSearchChange,
     filterStatus,
-    onFilterChange
+    onFilterChange,
+    companyOptions,
+    selectedCompany,
+    onCompanyChange,
+    jobOptions,
+    selectedJobId,
+    onJobChange,
+    onExport
 }: StudentApplicationManagementHeaderProps) {
     const statusOptions = [
         { value: 'all', label: 'All Applications', count: totalApplications },
@@ -157,7 +172,7 @@ export function StudentApplicationManagementHeader({
                 })}
             </div>
 
-            {/* Search and Filter */}
+            {/* Search, Filters and Export */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                     {/* Search */}
@@ -191,6 +206,62 @@ export function StudentApplicationManagementHeader({
                             </select>
                         </div>
                     </div>
+
+                    {/* Company Filter (optional, for university view) */}
+                    {companyOptions && companyOptions.length > 0 && onCompanyChange && (
+                        <div className="sm:w-64">
+                            <div className="relative">
+                                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <select
+                                    value={selectedCompany || 'all'}
+                                    onChange={(e) => onCompanyChange(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
+                                >
+                                    <option value="all">All Companies</option>
+                                    {companyOptions.map((name) => (
+                                        <option key={name} value={name}>
+                                            {name}
+                                        </option>
+                                    ))}
+                                </select>
+                        </div>
+                    </div>
+                    )}
+
+                    {/* Job Filter (optional, for university view) */}
+                    {jobOptions && jobOptions.length > 0 && onJobChange && (
+                        <div className="sm:w-64">
+                            <div className="relative">
+                                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <select
+                                    value={selectedJobId || 'all'}
+                                    onChange={(e) => onJobChange(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
+                                >
+                                    <option value="all">All Jobs</option>
+                                    {jobOptions.map((job) => (
+                                        <option key={job.id} value={job.id}>
+                                            {job.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Export Button (optional, for university view) */}
+                    {onExport && (
+                        <div className="sm:w-auto flex items-center">
+                            <Button
+                                type="button"
+                                onClick={onExport}
+                                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                <span>Export CSV</span>
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

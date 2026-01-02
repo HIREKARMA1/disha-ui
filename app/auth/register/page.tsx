@@ -76,7 +76,34 @@ const emailSchema = z
     .trim()
     .min(5, "Email must be at least 5 characters long")
     .max(100, "Email must be less than 100 characters")
-    .email("Please enter a valid email address");
+    .email("Please enter a valid email address")
+    .refine((val) => {
+        const domain = val.split('@')[1]
+        if (!domain) return false
+        const domainParts = domain.split('.')
+        if (domainParts.length < 2) return false
+        const tld = domainParts.pop()
+        if (!tld || !/^[A-Za-z]{2,6}$/.test(tld)) return false
+        return domainParts.every((part) => /^[A-Za-z0-9-]+$/.test(part) && !part.startsWith('-') && !part.endsWith('-'))
+    }, "Please enter a valid email address");
+
+const isValidPublicUrl = (value: string) => {
+    try {
+        const trimmed = value.trim()
+        const url = new URL(trimmed)
+        if (!['http:', 'https:'].includes(url.protocol)) return false
+        const hostname = url.hostname
+        if (!hostname || hostname === 'localhost' || hostname.endsWith('.local')) return false
+        if (!/^[A-Za-z0-9.-]+$/.test(hostname)) return false
+        if (!hostname.includes('.')) return false
+        const parts = hostname.split('.')
+        const tld = parts.pop()
+        if (!tld || !/^[A-Za-z]{2,6}$/.test(tld)) return false
+        return parts.every((part) => /^[A-Za-z0-9-]+$/.test(part) && !part.startsWith('-') && !part.endsWith('-'))
+    } catch (error) {
+        return false
+    }
+}
 
 
 
@@ -86,7 +113,10 @@ const studentSchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    name: z.string().min(1, 'Name is required'),
+    name: z
+        .string()
+        .min(1, 'Name is required')
+        .regex(/^[A-Za-z\s]+$/, 'Name can only contain letters and spaces'),
     phone: z
         .string()
         .regex(/^\d+$/, 'Phone number must contain only digits')
@@ -121,8 +151,18 @@ const corporateSchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    company_name: z.string().min(1, 'Company name is required'),
-    website_url: z.string().url().optional().or(z.literal('')),
+    company_name: z
+        .string()
+        .min(1, 'Company name is required')
+        .regex(/^[A-Za-z\s]+$/, 'Company name can only contain letters and spaces'),
+    website_url: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => {
+            if (val === undefined || val === '') return true
+            return isValidPublicUrl(val)
+        }, { message: 'Please enter a valid website URL' }),
     industry: z.string().optional(),
     company_size: z.string().optional(),
     founded_year: z.number().optional(),
@@ -162,8 +202,18 @@ const universitySchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    university_name: z.string().min(1, 'University name is required'),
-    website_url: z.string().url().optional().or(z.literal('')),
+    university_name: z
+        .string()
+        .min(1, 'University name is required')
+        .regex(/^[A-Za-z\s]+$/, 'University name can only contain letters and spaces'),
+    website_url: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => {
+            if (val === undefined || val === '') return true
+            return isValidPublicUrl(val)
+        }, { message: 'Please enter a valid website URL' }),
     institute_type: z.string().optional(),
     established_year: z.number().optional(),
     contact_person_name: z.string().optional(),
@@ -207,10 +257,14 @@ export default function RegisterPage() {
     const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
     const [resendCount, setResendCount] = useState(0) // Track number of resends
 
-    // Redirect if user is already authenticated
+    // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
-        redirectIfAuthenticated()
-    }, [redirectIfAuthenticated])
+        // Check if there's a redirect URL - if so, don't auto-redirect
+        const hasRedirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' && localStorage.getItem('redirect_after_login'))
+        if (!hasRedirectUrl) {
+            redirectIfAuthenticated()
+        }
+    }, [redirectIfAuthenticated, searchParams])
 
     // Get the appropriate schema for the current user type
     const getValidationSchema = (userType: UserType) => {
@@ -401,6 +455,20 @@ export default function RegisterPage() {
                     name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
+                // Check for redirect URL (from query params or localStorage)
+                const redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+                
+                if (redirectUrl) {
+                    // Clear the stored redirect URL
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('redirect_after_login')
+                    }
+                    // Use window.location for a hard redirect to prevent any interference
+                    window.location.href = redirectUrl
+                    return
+                }
+
+                // Redirect based on user type if no redirect URL
                 switch (selectedUserType) {
                     case 'student': router.push('/dashboard/student'); break
                     case 'corporate': router.push('/dashboard/corporate'); break
@@ -410,7 +478,12 @@ export default function RegisterPage() {
             } catch (loginError) {
                 console.error('Auto-login failed:', loginError)
                 toast.success('Registration successful! Please log in.')
-                router.push(`/auth/login?type=${selectedUserType}&registered=true`)
+                // Preserve redirect URL when redirecting to login
+                const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
+                const loginUrl = redirectUrl 
+                    ? `/auth/login?type=${selectedUserType}&registered=true&redirect=${encodeURIComponent(redirectUrl)}`
+                    : `/auth/login?type=${selectedUserType}&registered=true`
+                router.push(loginUrl)
             }
         } catch (error: any) {
             console.error('OTP verification error:', error)
@@ -440,7 +513,11 @@ export default function RegisterPage() {
                     placeholder="Enter your full name"
                     leftIcon={<User className="w-4 h-4" />}
                     error={!!(errors as any).name}
-                    {...register('name')}
+                    {...register('name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -484,7 +561,11 @@ export default function RegisterPage() {
                     placeholder="Enter company name"
                     leftIcon={<Building2 className="w-4 h-4" />}
                     error={!!(errors as any).company_name}
-                    {...register('company_name')}
+                    {...register('company_name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).company_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -501,8 +582,18 @@ export default function RegisterPage() {
                     id="website_url"
                     placeholder="https://company.com"
                     leftIcon={<Globe className="w-4 h-4" />}
-                    {...register('website_url')}
+                    {...register('website_url', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\s/g, '')
+                        },
+                        setValueAs: (value) => (typeof value === 'string' ? value.trim() : value)
+                    })}
                 />
+                {(errors as any).website_url && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).website_url.message === 'string' ? (errors as any).website_url.message : 'Please enter a valid website URL'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -518,7 +609,11 @@ export default function RegisterPage() {
                     placeholder="Enter university name"
                     leftIcon={<GraduationCap className="w-4 h-4" />}
                     error={!!(errors as any).university_name}
-                    {...register('university_name')}
+                    {...register('university_name', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        }
+                    })}
                 />
                 {(errors as any).university_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
@@ -535,8 +630,18 @@ export default function RegisterPage() {
                     id="website_url"
                     placeholder="https://university.edu"
                     leftIcon={<Globe className="w-4 h-4" />}
-                    {...register('website_url')}
+                    {...register('website_url', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\s/g, '')
+                        },
+                        setValueAs: (value) => (typeof value === 'string' ? value.trim() : value)
+                    })}
                 />
+                {(errors as any).website_url && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).website_url.message === 'string' ? (errors as any).website_url.message : 'Please enter a valid website URL'}
+                    </p>
+                )}
             </div>
         </div>
     )
@@ -657,7 +762,8 @@ export default function RegisterPage() {
                                             {...register("email", {
                                                 onChange: (e) => {
                                                     e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
-                                                }
+                                                },
+                                                setValueAs: (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value)
                                             })}
                                         />
 
@@ -688,10 +794,7 @@ export default function RegisterPage() {
                                                     </button>
                                                 }
                                                 error={!!(errors as any).password}
-                                                onCopy={(e) => e.preventDefault()}
-                                                onPaste={(e) => e.preventDefault()}
-                                                onCut={(e) => e.preventDefault()}
-                                                onContextMenu={(e) => e.preventDefault()}
+
                                                 {...register('password')}
                                             />
                                             {(errors as any).password && (
@@ -720,10 +823,7 @@ export default function RegisterPage() {
                                                     </button>
                                                 }
                                                 error={!!(errors as any).confirmPassword}
-                                                onCopy={(e) => e.preventDefault()}
-                                                onPaste={(e) => e.preventDefault()}
-                                                onCut={(e) => e.preventDefault()}
-                                                onContextMenu={(e) => e.preventDefault()}
+
                                                 {...register('confirmPassword')}
                                             />
                                             {(errors as any).confirmPassword && (

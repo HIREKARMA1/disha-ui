@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
+import { useRef } from 'react'
 
 interface ProfileSection {
     id: string
@@ -50,6 +51,7 @@ export function StudentProfile() {
         imageUrl: '',
         altText: ''
     })
+    const basicFormRef = useRef<HTMLDivElement>(null);
 
     const profileSections: ProfileSection[] = [
         {
@@ -129,48 +131,48 @@ export function StudentProfile() {
         }
     }
 
-const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
-    try {
-        setSaving(true)
-        setError(null)
+    const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
+        try {
+            setSaving(true)
+            setError(null)
 
-        console.log('Saving profile data for section:', sectionId)
-        console.log('Form data being sent:', formData)
+            console.log('Saving profile data for section:', sectionId)
+            console.log('Form data being sent:', formData)
 
-        const updatedProfile = await profileService.updateProfile(formData)
-        console.log('Profile updated successfully:', updatedProfile)
+            const updatedProfile = await profileService.updateProfile(formData)
+            console.log('Profile updated successfully:', updatedProfile)
 
-        setProfile(updatedProfile)
+            setProfile(updatedProfile)
 
-        // Refresh completion data after profile update
-        const completionData = await profileService.getProfileCompletion()
-        setProfileCompletion(completionData)
+            // Refresh completion data after profile update
+            const completionData = await profileService.getProfileCompletion()
+            setProfileCompletion(completionData)
 
-        setEditing(null)
-        
-        // Only show success toast if there were actual changes
-        // The form validation already ensures we only get here if there are changes
-        const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
-        toast.success(`${sectionName} updated successfully!`)
+            setEditing(null)
 
-    } catch (error: any) {
-        console.error('Error saving profile:', error)
-        setError(error.message)
+            // Only show success toast if there were actual changes
+            // The form validation already ensures we only get here if there are changes
+            const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+            toast.success(`${sectionName} updated successfully!`)
 
-        // Show error toast with specific message
-        if (error.message.includes('network') || error.message.includes('Internet')) {
-            toast.error('Network error. Please check your connection and try again.')
-        } else if (error.message.includes('auth') || error.message.includes('login')) {
-            toast.error('Authentication failed. Please log in again.')
-        } else if (error.message.includes('validation') || error.message.includes('invalid')) {
-            toast.error('Invalid data provided. Please check your input.')
-        } else {
-            toast.error(`Failed to save: ${error.message}`)
+        } catch (error: any) {
+            console.error('Error saving profile:', error)
+            setError(error.message)
+
+            // Show error toast with specific message
+            if (error.message.includes('network') || error.message.includes('Internet')) {
+                toast.error('Network error. Please check your connection and try again.')
+            } else if (error.message.includes('auth') || error.message.includes('login')) {
+                toast.error('Authentication failed. Please log in again.')
+            } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+                toast.error('Invalid data provided. Please check your input.')
+            } else {
+                toast.error(`Failed to save: ${error.message}`)
+            }
+        } finally {
+            setSaving(false)
         }
-    } finally {
-        setSaving(false)
     }
-}
 
     if (loading) {
         return (
@@ -308,11 +310,20 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                                     </div>
                                                     <button
                                                         className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
-                                                        onClick={() => setEditing('basic')}
+                                                        onClick={() => {
+                                                            setEditing('basic');
+                                                            setTimeout(() => {
+                                                                basicFormRef.current?.scrollIntoView({
+                                                                    behavior: "smooth",
+                                                                    block: "start"
+                                                                });
+                                                            }, 100);
+                                                        }}
                                                         title="Change profile picture"
                                                     >
                                                         <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
                                                     </button>
+
                                                 </div>
                                                 <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
                                                     {profile.name}
@@ -418,7 +429,7 @@ const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
                                     {/* Tab Content */}
                                     <div className="min-h-[600px]">
                                         {activeTab === 'basic' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div ref={basicFormRef} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -1200,14 +1211,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
-    
+
     // Use professional lookup hook for branches
-    const { 
-        data: branches, 
-        loading: loadingBranches, 
-        error: branchesError 
-    } = useBranches({ 
-        enabled: section.id === 'academic' 
+    const {
+        data: branches,
+        loading: loadingBranches,
+        error: branchesError
+    } = useBranches({
+        enabled: section.id === 'academic'
     })
 
     // Use professional lookup hook for degrees
@@ -1235,6 +1246,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             section.fields.forEach(field => {
                 initialData[field] = profile[field as keyof StudentProfile] || ''
             })
+            
+            // Include university_id and college_id for academic section
+            if (section.id === 'academic' || section.id === 'basic') {
+                if (profile.university_id) {
+                    initialData.university_id = profile.university_id
+                }
+            }
+            
             setFormData(initialData)
         }
     }, [profile, section])
@@ -1581,13 +1600,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
         if (field === '10th_certificate' || field === '12th_certificate' || field === 'internship_certificates') {
             // Map display field names to backend field names
-            const backendFieldName = field === '10th_certificate' ? 'tenth_certificate' : 
-                                   field === '12th_certificate' ? 'twelfth_certificate' : 
-                                   field
+            const backendFieldName = field === '10th_certificate' ? 'tenth_certificate' :
+                field === '12th_certificate' ? 'twelfth_certificate' :
+                    field
             const displayName = field === '10th_certificate' ? '10th certificate' :
-                               field === '12th_certificate' ? '12th certificate' :
-                               field.replace(/_/g, ' ')
-            
+                field === '12th_certificate' ? '12th certificate' :
+                    field.replace(/_/g, ' ')
+
             return (
                 <div className="space-y-3">
                     <FileUpload
@@ -1810,7 +1829,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             return (
                 <LookupSelect
                     value={value}
-                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    onChange={(newValue) => {
+                        // Find the matching university to get its ID
+                        const selectedUniversity = universities.find(uni => uni.name === newValue)
+                        
+                        // Update both institution name and university_id
+                        const updatedData = {
+                            ...formData,
+                            [field]: newValue
+                        }
+                        
+                        // If a matching university is found, also set the university_id
+                        if (selectedUniversity) {
+                            updatedData.university_id = selectedUniversity.id
+                        } else {
+                            // Clear university_id if institution doesn't match any university
+                            updatedData.university_id = null
+                        }
+                        
+                        setFormData(updatedData)
+                    }}
                     data={universities}
                     loading={loadingUniversities}
                     placeholder="Select your institution"
@@ -1969,7 +2007,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             if (fieldName === '12th_certificate') return '12th Certificate'
                             return fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                         }
-                        
+
                         return (
                             <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
@@ -93,6 +93,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
+    const desktopNavRef = useRef<HTMLDivElement>(null)
 
     // Fetch profile data when component mounts
     useEffect(() => {
@@ -142,6 +143,18 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
         logout()
         closeMobileMenu()
     }
+
+    useEffect(() => {
+        if (!desktopNavRef.current) return
+        const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
+        if (activeItem instanceof HTMLElement) {
+            activeItem.scrollIntoView({
+                block: 'nearest',
+                inline: 'nearest',
+                behavior: 'smooth'
+            })
+        }
+    }, [pathname])
 
     // Get display name from profile data
     const getDisplayName = () => {
@@ -202,7 +215,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
@@ -218,6 +231,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                                 key={item.href}
                                 href={item.href}
                                 onClick={handleClick}
+                                data-sidebar-item={isActive ? 'active' : 'inactive'}
                                 className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${isActive
                                     ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
@@ -307,11 +321,11 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl"
+                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500 flex-shrink-0">
                                 <h2 className="text-lg font-semibold text-white">
                                     Menu
                                 </h2>
@@ -324,7 +338,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                             </div>
 
                             {/* User Profile in Mobile */}
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center overflow-hidden">
                                         {getProfilePicture() && !imageError ? (
@@ -355,8 +369,8 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                                 </div>
                             </div>
 
-                            {/* Navigation */}
-                            <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+                            {/* Navigation - Scrollable */}
+                            <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
                                 {navItems.map((item) => {
                                     const isActive = pathname === item.href
                                     const { startLoading } = useLoading()
@@ -393,7 +407,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
                             </nav>
 
                             {/* Logout in Mobile */}
-                            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"

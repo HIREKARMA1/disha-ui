@@ -206,12 +206,29 @@ class ApiClient {
   async getUniversityApplications(params: {
     status?: string;
     search?: string;
+    company_name?: string;
+    job_id?: string;
     sort_by?: string;
     sort_order?: string;
     page?: number;
     limit?: number;
   } = {}): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/applications', { params });
+    return response.data;
+  }
+
+  async exportUniversityApplications(params: {
+    status?: string;
+    search?: string;
+    company_name?: string;
+    job_id?: string;
+    sort_by?: string;
+    sort_order?: string;
+  } = {}): Promise<Blob> {
+    const response: AxiosResponse<Blob> = await this.client.get('/universities/applications/export', {
+      params,
+      responseType: 'blob',
+    });
     return response.data;
   }
 
@@ -324,6 +341,16 @@ class ApiClient {
 
   async changeJobStatusAdmin(jobId: string, status: string): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/admins/jobs/${jobId}/status?status=${status}`);
+    return response.data;
+  }
+
+  async toggleJobPublicStatus(jobId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/jobs/admin/${jobId}/toggle-public`);
+    return response.data;
+  }
+
+  async getPublicJob(publicLinkToken: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/jobs/public/${publicLinkToken}`);
     return response.data;
   }
 

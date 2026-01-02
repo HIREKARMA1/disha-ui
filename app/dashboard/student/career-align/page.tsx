@@ -189,7 +189,12 @@ function CareerAlignPageContent() {
             setCurrentApplicationJob(null)
         } catch (error: any) {
             console.error('Application error:', error)
-            toast.error(error.response?.data?.detail || 'Failed to submit application')
+            const data = error.response?.data
+            const message =
+                (data && typeof data.error === 'string' && data.error) ||
+                (data && typeof data.detail === 'string' && data.detail) ||
+                'Failed to submit application'
+            toast.error(message)
         } finally {
             setApplyingJobs(prev => {
                 const newSet = new Set(prev)

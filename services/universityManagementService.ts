@@ -228,6 +228,37 @@ export class UniversityManagementService {
       }
     }
   }
+
+  /**
+   * Get students by university ID
+   * Uses the admin endpoint to get students for a specific university
+   */
+  async getUniversityStudents(universityId: string, includeArchived: boolean = false): Promise<any> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        throw new Error('User not authenticated. Please log in.')
+      }
+
+      const response = await apiClient.client.get(`/admins/universities/${universityId}/students`, {
+        params: {
+          include_archived: includeArchived
+        }
+      })
+      return response.data
+    } catch (error: any) {
+      console.error('Error fetching university students:', error)
+      
+      if (error.response?.status === 401) {
+        throw new Error('Authentication failed. Please log in again.')
+      } else if (error.response?.status === 404) {
+        throw new Error('University not found.')
+      } else if (error.response?.status >= 500) {
+        throw new Error('Server error. Please try again later.')
+      } else {
+        throw new Error(error.response?.data?.detail || 'Failed to fetch students.')
+      }
+    }
+  }
 }
 
 // Export singleton instance
