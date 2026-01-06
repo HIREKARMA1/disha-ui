@@ -41,6 +41,7 @@ interface UniversityTableProps {
 }
 
 type SortField = 'university_name' | 'email' | 'phone' | 'institute_type' | 'verified' | 'status' | 'placement_rate' | 'created_at' | 'total_students'
+
 type SortDirection = 'asc' | 'desc' | null
 
 export function UniversityTable({
