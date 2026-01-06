@@ -18,46 +18,65 @@ export interface ApiError {
  * Extract user-friendly error message from API error
  */
 export function getErrorMessage(error: ApiError, fallbackMessage: string = 'An error occurred'): string {
+  // Check for FastAPI validation error (detail array)
+  if (error.response?.data?.detail && Array.isArray(error.response.data.detail)) {
+    const validationErrors = error.response.data.detail
+      .map((err: any) => {
+        if (typeof err === 'string') return err
+        if (err.msg) return `${err.loc?.join('.') || 'Field'}: ${err.msg}`
+        return JSON.stringify(err)
+      })
+      .filter(Boolean)
+    if (validationErrors.length > 0) {
+      return validationErrors.join('; ')
+    }
+  }
+
   // Check for specific error details from API response
   if (error.response?.data?.detail) {
-    return error.response.data.detail;
+    const detail = error.response.data.detail
+    // Handle cases where detail is an object with validation info
+    if (typeof detail === 'object' && detail !== null) {
+      return JSON.stringify(detail)
+    }
+    return String(detail)
   }
   
   if (error.response?.data?.message) {
-    return error.response.data.message;
+    return error.response.data.message
   }
   
   // Check for validation errors array
   if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-    return error.response.data.errors.join(', ');
+    return error.response.data.errors.join(', ')
   }
   
   // Check for HTTP status code specific messages
   if (error.response?.status) {
     switch (error.response.status) {
       case 400:
-        return 'Invalid request. Please check your input and try again.';
+        return 'Invalid request. Please check your input and try again.'
       case 401:
-        return 'Authentication required. Please log in again.';
+        return 'Authentication required. Please log in again.'
       case 403:
-        return 'Access denied. You do not have permission to perform this action.';
+        return 'Access denied. You do not have permission to perform this action.'
       case 404:
-        return 'Resource not found.';
+        return 'Resource not found.'
       case 409:
-        return 'Conflict: This resource already exists.';
+        return 'Conflict: This resource already exists.'
       case 422:
-        return 'Validation error. Please check your input.';
+        return 'Validation error. Please check your input and try again.'
       case 429:
-        return 'Too many requests. Please try again later.';
+        return 'Too many requests. Please try again later.'
       case 500:
-        return 'Server error. Please try again later.';
+        return 'Server error. Please try again later.'
       default:
-        return `Request failed with status ${error.response.status}.`;
+        return `Request failed with status ${error.response.status}.`
     }
   }
   
   // Fallback to error message or generic message
-  return error.message || fallbackMessage;
+  return error.message || fallbackMessage
 }
 
 /**

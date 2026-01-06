@@ -33,7 +33,7 @@ const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
     { value: 'university', label: 'University' },
-    { value: 'admin', label: 'Admin' }
+    // { value: 'admin', label: 'Admin' }
 ]
 
 const userTypeIcons = {
@@ -236,7 +236,13 @@ export default function LoginPage() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             I am a
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="
+                                        grid 
+                                        sm:grid-cols-3
+                                        grid-cols-1
+                                        gap-3
+                                        w-full
+                                    ">
                             {userTypeOptions.map((option) => {
                                 const Icon = userTypeIcons[option.value as UserType]
                                 const isSelected = selectedUserType === option.value
