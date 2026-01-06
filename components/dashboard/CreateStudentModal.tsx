@@ -150,12 +150,33 @@ export function CreateStudentModal({
 
         // Validate required fields
         if (!formData.name || !formData.email || !formData.phone) {
-            alert('Please fill in all required fields: Name, Email, and Phone')
+            setError('Please fill in all required fields: Name, Email, and Phone')
             return
         }
 
         if (!formData.graduation_year || !formData.degree || !formData.branch) {
             setError("Please fill in Graduation Year, Degree, and Branch.")
+            return
+        }
+
+        // Validate graduation year is a valid number
+        const gradYear = parseInt(String(formData.graduation_year), 10)
+        if (isNaN(gradYear) || gradYear < 1950 || gradYear > 2100) {
+            setError("Graduation Year must be a valid year (between 1950 and 2100).")
+            return
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(formData.email.trim())) {
+            setError("Please enter a valid email address.")
+            return
+        }
+
+        // Validate phone number (at least 10 digits)
+        const phoneRegex = /^\d{10,}$/
+        if (!phoneRegex.test(formData.phone.replace(/\D/g, ''))) {
+            setError("Please enter a valid phone number (at least 10 digits).")
             return
         }
 
@@ -192,7 +213,17 @@ export function CreateStudentModal({
         setError(null)
 
         try {
-            const result = await onSubmit(formData)
+            // Prepare request data with proper type conversion and trim whitespace
+            const requestData: CreateStudentRequest = {
+                name: formData.name.trim(),
+                email: formData.email.trim(),
+                phone: formData.phone.trim(),
+                degree: formData.degree,
+                branch: formData.branch,
+                graduation_year: parseInt(String(formData.graduation_year), 10)
+            }
+
+            const result = await onSubmit(requestData)
             setCreatedStudent(result)
             setShowSuccess(true)
             // Reset form
@@ -208,6 +239,7 @@ export function CreateStudentModal({
             fetchLicenses()
         } catch (error: any) {
             console.error('❌ Error creating student:', error)
+            console.error('❌ Error response data:', error.response?.data)
             const errorMessage = getErrorMessage(error, 'Failed to create student')
             setError(errorMessage)
         } finally {
