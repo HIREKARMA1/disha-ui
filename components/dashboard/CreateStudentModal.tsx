@@ -229,8 +229,8 @@ export function CreateStudentModal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50">
-                    <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-center justify-center min-h-screen px-2 py-4 sm:px-4 sm:py-8 text-center">
                         {/* Background overlay */}
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -246,18 +246,18 @@ export function CreateStudentModal({
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             transition={{ duration: 0.2 }}
-                            className="relative inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-gray-300 dark:border-slate-600"
+                            className="relative w-full mx-auto max-w-sm sm:max-w-lg bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform transition-all border-2 border-gray-300 dark:border-slate-600"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header */}
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b-2 border-gray-200 dark:border-slate-600">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 px-4 py-3 sm:px-6 sm:py-4 border-b-2 border-gray-200 dark:border-slate-600">
+                                <div className="flex items-center justify-between gap-3">
+                                    <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white truncate">
                                         Add New Student
                                     </h3>
                                     <button
                                         onClick={onClose}
-                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+                                        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -266,39 +266,39 @@ export function CreateStudentModal({
 
                             {/* Content */}
                             {showSuccess ? (
-                                <div className="px-6 py-4 bg-white dark:bg-slate-800">
-                                    <div className="text-center py-8">
-                                        <div className="mb-6">
+                                <div className="px-4 py-4 sm:px-6 sm:py-6 bg-white dark:bg-slate-800 max-h-[calc(100vh-200px)] overflow-y-auto">
+                                    <div className="text-center py-6 sm:py-8">
+                                        <div className="mb-4 sm:mb-6">
                                             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30">
                                                 <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
                                             </div>
-                                            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">
+                                            <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                                                 Student Created Successfully!
                                             </h3>
-                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 px-2">
                                                 The student account has been created and a welcome email has been sent.
                                             </p>
                                         </div>
 
-                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">
                                                 Login Credentials:
                                             </h4>
                                             <div className="space-y-2 text-left">
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-600 dark:text-gray-300">Email:</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{createdStudent?.email}</span>
+                                                <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                                                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Email:</span>
+                                                    <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white break-all">{createdStudent?.email}</span>
                                                 </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-sm text-gray-600 dark:text-gray-300">Password:</span>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Password@123</span>
+                                                <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                                                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Password:</span>
+                                                    <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">Password@123</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -306,7 +306,7 @@ export function CreateStudentModal({
                                                     setCreatedStudent(null)
                                                     onClose()
                                                 }}
-                                                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                                                className="w-full sm:flex-1 px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
                                             >
                                                 Close
                                             </button>
@@ -316,7 +316,7 @@ export function CreateStudentModal({
                                                     setShowSuccess(false)
                                                     setCreatedStudent(null)
                                                 }}
-                                                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors duration-200"
+                                                className="w-full sm:flex-1 px-4 py-2 text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors duration-200"
                                             >
                                                 Add Another Student
                                             </button>
@@ -324,17 +324,17 @@ export function CreateStudentModal({
                                     </div>
                                 </div>
                             ) : (
-                                <form onSubmit={handleSubmit} className="px-6 py-4 bg-white dark:bg-slate-800">
+                                <form onSubmit={handleSubmit} className="px-4 py-4 sm:px-6 sm:py-6 bg-white dark:bg-slate-800 max-h-[calc(100vh-200px)] overflow-y-auto">
                                     {/* Error Display */}
                                     {error && (
-                                        <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-                                            <div className="flex items-start gap-3">
-                                                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                                                <div>
-                                                    <h4 className="text-sm font-medium text-red-900 dark:text-red-100 mb-1">
+                                        <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3 sm:p-4">
+                                            <div className="flex gap-2 sm:gap-3">
+                                                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                                <div className="text-left min-w-0">
+                                                    <h4 className="text-xs sm:text-sm font-medium text-red-900 dark:text-red-100 mb-1">
                                                         Error
                                                     </h4>
-                                                    <p className="text-sm text-red-800 dark:text-red-200">
+                                                    <p className="text-xs sm:text-sm text-red-800 dark:text-red-200 break-words">
                                                         {error}
                                                     </p>
                                                 </div>
@@ -344,14 +344,14 @@ export function CreateStudentModal({
 
                                     {/* License Warning */}
                                     {!isLoadingLicenses && !hasActiveLicenses && !fetchError && (
-                                        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
-                                            <div className="flex items-start gap-3">
-                                                <ShieldAlert className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                                                <div>
-                                                    <h4 className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
+                                        <div className="mb-4 sm:mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 sm:p-4">
+                                            <div className="flex gap-2 sm:gap-3">
+                                                <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                                <div className="text-left min-w-0">
+                                                    <h4 className="text-xs sm:text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
                                                         No Active Licenses
                                                     </h4>
-                                                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                                                    <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 break-words">
                                                         You need an active license to create student accounts. Please request a license from the administration.
                                                     </p>
                                                 </div>
@@ -359,10 +359,10 @@ export function CreateStudentModal({
                                         </div>
                                     )}
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-3 sm:space-y-4">
                                         {/* Name */}
                                         <div>
-                                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            <label htmlFor="name" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Full Name *
                                             </label>
                                             <div className="relative">
@@ -374,7 +374,7 @@ export function CreateStudentModal({
                                                     disabled={!hasActiveLicenses}
                                                     value={formData.name}
                                                     onChange={(e) => handleInputChange('name', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Enter student's full name"
                                                 />
                                             </div>
@@ -382,7 +382,7 @@ export function CreateStudentModal({
 
                                         {/* Email */}
                                         <div>
-                                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Email Address *
                                             </label>
                                             <div className="relative">
@@ -394,7 +394,7 @@ export function CreateStudentModal({
                                                     disabled={!hasActiveLicenses}
                                                     value={formData.email}
                                                     onChange={(e) => handleInputChange('email', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Enter student's email address"
                                                 />
                                             </div>
@@ -402,7 +402,7 @@ export function CreateStudentModal({
 
                                         {/* Phone */}
                                         <div>
-                                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            <label htmlFor="phone" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Phone Number *
                                             </label>
                                             <div className="relative">
@@ -414,7 +414,7 @@ export function CreateStudentModal({
                                                     disabled={!hasActiveLicenses}
                                                     value={formData.phone}
                                                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Enter student's phone number"
                                                 />
                                             </div>
@@ -422,7 +422,7 @@ export function CreateStudentModal({
 
                                         {/* Graduation Year (Batch) - Independent Input */}
                                         <div>
-                                            <label htmlFor="graduation_year" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            <label htmlFor="graduation_year" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Graduation Year (Batch) *
                                             </label>
                                             <div className="relative">
@@ -435,14 +435,14 @@ export function CreateStudentModal({
                                                     value={formData.graduation_year || ''}
                                                     onChange={(e) => handleInputChange('graduation_year', e.target.value)}
                                                     placeholder="e.g. 2025"
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                             </div>
                                         </div>
 
                                         {/* Degree - Independent Select */}
                                         <div>
-                                            <label htmlFor="degree" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            <label htmlFor="degree" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Degree *
                                             </label>
                                             <div className="relative">
@@ -452,10 +452,10 @@ export function CreateStudentModal({
                                                     onValueChange={(value) => handleInputChange('degree', value)}
                                                     disabled={!hasActiveLicenses}
                                                 >
-                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
+                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
                                                         <SelectValue placeholder="Select Degree" />
                                                     </SelectTrigger>
-                                                    <SelectContent className="max-h-60">
+                                                    <SelectContent className="max-h-48 sm:max-h-60">
                                                         {degreeOptions.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}
@@ -468,7 +468,7 @@ export function CreateStudentModal({
 
                                         {/* Branch - Independent Select */}
                                         <div>
-                                            <label htmlFor="branch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            <label htmlFor="branch" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Branch *
                                             </label>
                                             <div className="relative">
@@ -478,10 +478,10 @@ export function CreateStudentModal({
                                                     onValueChange={(value) => handleInputChange('branch', value)}
                                                     disabled={!hasActiveLicenses}
                                                 >
-                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
+                                                    <SelectTrigger className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
                                                         <SelectValue placeholder="Select Branch" />
                                                     </SelectTrigger>
-                                                    <SelectContent className="max-h-60">
+                                                    <SelectContent className="max-h-48 sm:max-h-60">
                                                         {branchOptions.map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
                                                                 {option.label}
@@ -496,18 +496,18 @@ export function CreateStudentModal({
                                     </div>
 
                                     {/* Footer */}
-                                    <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                                         <button
                                             type="button"
                                             onClick={onClose}
-                                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                                            className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={isSubmitting || !hasActiveLicenses}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                            className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                                         >
                                             {isSubmitting ? 'Creating...' : 'Create Student'}
                                         </button>
