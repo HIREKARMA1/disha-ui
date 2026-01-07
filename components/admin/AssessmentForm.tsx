@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RoundConfigurator } from "./RoundConfigurator";
+import { FileText, Settings, Layers } from "lucide-react";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -24,7 +25,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
       mode: "HIRING",
       description: "",
       instructions: "",
-      total_duration_minutes: 240,
+      total_duration_minutes: 0,
       auto_submit_on_timeout: true,
       time_window: {
         start_time: "",
@@ -34,7 +35,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
       corporate_id: "",
       rounds: [],
       metadata: {
-        disha_assessment_id: "",
+        disha_assessment_id: "", // Managed automatically
         description: "",
         instructions: "",
         callback_url: "",
@@ -79,7 +80,6 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
     const newErrors: Record<string, string> = {};
 
     if (!formData.assessment_name) newErrors.assessment_name = "Assessment name is required";
-    if (!formData.metadata.disha_assessment_id) newErrors.disha_id = "DISHA Assessment ID is required";
     if (!formData.time_window.start_time) newErrors.start_time = "Start time is required";
     if (!formData.time_window.end_time) newErrors.end_time = "End time is required";
     if (formData.rounds.length === 0) newErrors.rounds = "At least one round is required";
@@ -103,249 +103,270 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
       return;
     }
 
-    onSubmit(formData);
+    // Calculate total duration from rounds
+    const calculatedDuration = formData.rounds.reduce(
+      (acc: number, round: any) => acc + (round.duration_minutes || 0),
+      0
+    );
+
+    // Auto-generate DISHA ID if not present
+    const dishaId = formData.metadata.disha_assessment_id || `DASM-${Date.now()}`;
+
+    const submissionData = {
+      ...formData,
+      total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60, // Default to 60 if 0
+      metadata: {
+        ...formData.metadata,
+        disha_assessment_id: dishaId
+      }
+    };
+
+    onSubmit(submissionData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
-      {/* Basic Information */}
-      <div className="bg-white rounded-lg p-6 border">
-        <h2 className="text-2xl font-bold mb-6">Basic Information</h2>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Assessment Name *
-            </label>
-            <input
-              type="text"
-              value={formData.assessment_name}
-              onChange={(e) => handleChange("assessment_name", e.target.value)}
-              placeholder="e.g., Software Engineer Assessment"
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.assessment_name ? "border-red-500" : ""
-              }`}
-            />
-            {errors.assessment_name && (
-              <p className="text-red-500 text-sm mt-1">{errors.assessment_name}</p>
-            )}
+    <form onSubmit={handleSubmit} className="space-y-8 w-full">
+      {/* 1. Basic Details Card */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+            <FileText size={18} />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Mode *</label>
-            <select
-              value={formData.mode}
-              onChange={(e) => handleChange("mode", e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg"
-            >
-              {MODES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              DISHA Assessment ID *
-            </label>
-            <input
-              type="text"
-              value={formData.metadata.disha_assessment_id}
-              onChange={(e) => handleMetadataChange("disha_assessment_id", e.target.value)}
-              placeholder="e.g., DASM-2024-001"
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.disha_id ? "border-red-500" : ""
-              }`}
-            />
-            {errors.disha_id && <p className="text-red-500 text-sm mt-1">{errors.disha_id}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Total Duration (minutes)
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.total_duration_minutes}
-              onChange={(e) => handleChange("total_duration_minutes", parseInt(e.target.value))}
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-
-          {formData.mode === "UNIVERSITY" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                University ID
-              </label>
-              <input
-                type="text"
-                value={formData.university_id}
-                onChange={(e) => handleChange("university_id", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-            </div>
-          )}
-
-          {formData.mode === "CORPORATE" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Corporate ID
-              </label>
-              <input
-                type="text"
-                value={formData.corporate_id}
-                onChange={(e) => handleChange("corporate_id", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-            </div>
-          )}
+          <h2 className="text-lg font-semibold text-gray-800">Basic Details</h2>
         </div>
 
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-          <textarea
-            value={formData.metadata.description}
-            onChange={(e) => handleMetadataChange("description", e.target.value)}
-            placeholder="Brief description of this assessment..."
-            rows={3}
-            className="w-full px-4 py-2 border rounded-lg"
-          />
+        <div className="p-6 space-y-6">
+          {/* Name & Mode */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assessment Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.assessment_name}
+                onChange={(e) => handleChange("assessment_name", e.target.value)}
+                placeholder="e.g., Full Stack Developer Assessment"
+                className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none ${errors.assessment_name ? "border-red-500 bg-red-50/10" : "border-gray-200"
+                  }`}
+              />
+              {errors.assessment_name && (
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                  {errors.assessment_name}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mode <span className="text-red-500">*</span></label>
+              <select
+                value={formData.mode}
+                onChange={(e) => handleChange("mode", e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer"
+              >
+                {MODES.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={formData.metadata.description}
+              onChange={(e) => handleMetadataChange("description", e.target.value)}
+              placeholder="Brief description of this assessment..."
+              rows={3}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
+            />
+          </div>
+
+          {/* Time & Criteria */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Start Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.time_window.start_time}
+                onChange={(e) => handleTimeChange("start_time", e.target.value)}
+                className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer ${errors.start_time ? "border-red-500" : "border-gray-200"
+                  }`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                End Time <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.time_window.end_time}
+                onChange={(e) => handleTimeChange("end_time", e.target.value)}
+                className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer ${errors.end_time ? "border-red-500" : "border-gray-200"
+                  }`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Passing Percentage (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={formData.metadata.passing_criteria.overall_percentage}
+                onChange={(e) =>
+                  handleMetadataChange("passing_criteria", {
+                    ...formData.metadata.passing_criteria,
+                    overall_percentage: parseInt(e.target.value),
+                  })
+                }
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+              />
+            </div>
+          </div>
+          {(errors.start_time || errors.end_time || errors.timeWindow) && (
+            <div className="bg-red-50 text-red-600 text-sm px-4 py-2 rounded-lg">
+              {errors.start_time || errors.end_time || errors.timeWindow}
+            </div>
+          )}
+
+          {/* Conditional ID Inputs */}
+          {(formData.mode === "UNIVERSITY" || formData.mode === "CORPORATE") && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-gray-100">
+              {formData.mode === "UNIVERSITY" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    University ID
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.university_id}
+                    onChange={(e) => handleChange("university_id", e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none"
+                  />
+                </div>
+              )}
+              {formData.mode === "CORPORATE" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Corporate ID
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.corporate_id}
+                    onChange={(e) => handleChange("corporate_id", e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Time Window */}
-      <div className="bg-white rounded-lg p-6 border">
-        <h2 className="text-2xl font-bold mb-6">Time Window</h2>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Start Time *
-            </label>
-            <input
-              type="datetime-local"
-              value={formData.time_window.start_time}
-              onChange={(e) => handleTimeChange("start_time", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.start_time ? "border-red-500" : ""
-              }`}
-            />
-            {errors.start_time && (
-              <p className="text-red-500 text-sm mt-1">{errors.start_time}</p>
-            )}
+      {/* 2. Rounds Configuration */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+            <Layers size={18} />
           </div>
+          <h2 className="text-lg font-semibold text-gray-800">Rounds Configuration</h2>
+        </div>
+        <div className="p-6">
+          <RoundConfigurator
+            rounds={formData.rounds}
+            onRoundsChange={(rounds) => handleChange("rounds", rounds)}
+          />
+          {errors.rounds && (
+            <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+              {errors.rounds}
+            </div>
+          )}
+        </div>
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              End Time *
-            </label>
-            <input
-              type="datetime-local"
-              value={formData.time_window.end_time}
-              onChange={(e) => handleTimeChange("end_time", e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.end_time ? "border-red-500" : ""
-              }`}
-            />
-            {errors.end_time && <p className="text-red-500 text-sm mt-1">{errors.end_time}</p>}
+      {/* 3. Settings & Policy */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+            <Settings size={18} />
           </div>
+          <h2 className="text-lg font-semibold text-gray-800">Settings & Policy</h2>
         </div>
 
-        {errors.timeWindow && (
-          <p className="text-red-500 text-sm mt-4">{errors.timeWindow}</p>
-        )}
-
-        <div className="mt-6">
-          <label className="flex items-center gap-3">
+        <div className="p-6 space-y-6">
+          {/* Auto-submit */}
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
             <input
               type="checkbox"
+              id="auto_submit"
               checked={formData.auto_submit_on_timeout}
               onChange={(e) => handleChange("auto_submit_on_timeout", e.target.checked)}
-              className="rounded"
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
-            <span className="text-sm font-medium text-gray-700">
-              Auto-submit assessment when time expires
-            </span>
-          </label>
-        </div>
-      </div>
+            <div>
+              <label htmlFor="auto_submit" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Auto-submit on Timeout
+              </label>
+              <p className="text-xs text-gray-500">Automatically submit the assessment when the timer reaches zero.</p>
+            </div>
+          </div>
 
-      {/* Rounds Configuration */}
-      <div className="bg-white rounded-lg p-6 border">
-        <RoundConfigurator
-          rounds={formData.rounds}
-          onRoundsChange={(rounds) => handleChange("rounds", rounds)}
-        />
-        {errors.rounds && <p className="text-red-500 text-sm mt-4">{errors.rounds}</p>}
-      </div>
-
-      {/* Passing Criteria */}
-      <div className="bg-white rounded-lg p-6 border">
-        <h2 className="text-2xl font-bold mb-6">Passing Criteria</h2>
-
-        <div className="grid grid-cols-2 gap-6">
+          {/* Instructions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Overall Passing Percentage (%)
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.metadata.passing_criteria.overall_percentage}
-              onChange={(e) =>
-                handleMetadataChange("passing_criteria", {
-                  ...formData.metadata.passing_criteria,
-                  overall_percentage: parseInt(e.target.value),
-                })
-              }
-              className="w-full px-4 py-2 border rounded-lg"
+            <label className="block text-sm font-medium text-gray-700 mb-2">Instructions for Students</label>
+            <textarea
+              value={formData.metadata.instructions}
+              onChange={(e) => handleMetadataChange("instructions", e.target.value)}
+              placeholder="Enter detailed instructions for the students..."
+              rows={4}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
             />
+            <p className="text-xs text-gray-500 mt-2">These instructions will be displayed to students before they start the assessment.</p>
+          </div>
+
+          {/* Callback URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">SOLVIQ Callback URL <span className="text-gray-400 text-xs font-normal">(Optional)</span></label>
+            <div className="relative">
+              <input
+                type="url"
+                value={formData.metadata.callback_url}
+                onChange={(e) => handleMetadataChange("callback_url", e.target.value)}
+                placeholder="https://disha.example.com/api/v1/assessments/callback"
+                className="w-full pl-4 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-mono text-sm"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Custom webhook URL where SOLVIQ will send the assessment results.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Instructions & Callback */}
-      <div className="bg-white rounded-lg p-6 border">
-        <h2 className="text-2xl font-bold mb-6">Additional Settings</h2>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
-          <textarea
-            value={formData.metadata.instructions}
-            onChange={(e) => handleMetadataChange("instructions", e.target.value)}
-            placeholder="Assessment instructions for students..."
-            rows={3}
-            className="w-full px-4 py-2 border rounded-lg"
-          />
-        </div>
-
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">SOLVIQ Callback URL</label>
-          <input
-            type="url"
-            value={formData.metadata.callback_url}
-            onChange={(e) => handleMetadataChange("callback_url", e.target.value)}
-            placeholder="https://disha.example.com/api/v1/assessments/callback"
-            className="w-full px-4 py-2 border rounded-lg"
-          />
-          <p className="text-sm text-gray-500 mt-2">
-            URL where SOLVIQ will send assessment results
-          </p>
-        </div>
-      </div>
-
-      {/* Submit Button */}
-      <div className="flex gap-4 pt-6">
+      {/* Submit Action */}
+      <div className="flex justify-end pt-4 pb-12">
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400"
+          className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
         >
-          {loading ? "Saving..." : mode === "create" ? "Create Assessment" : "Update Assessment"}
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+              Processing...
+            </span>
+          ) : (
+            mode === "create" ? "Create Assessment" : "Update Assessment"
+          )}
         </button>
       </div>
     </form>

@@ -23,6 +23,7 @@ export function AssessmentList({
   loading,
 }: AssessmentListProps) {
   const [publishId, setPublishId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -56,12 +57,27 @@ export function AssessmentList({
             key={assessment.id}
             assessment={assessment}
             onEdit={onEdit}
-            onDelete={onDelete}
+            onDelete={() => setDeleteId(assessment.id)}
             onView={onView}
             onPublish={() => setPublishId(assessment.id)}
           />
         ))}
       </div>
+
+      <ConfirmationModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={async () => {
+          if (deleteId) {
+            onDelete(deleteId);
+            setDeleteId(null);
+          }
+        }}
+        title="Delete Assessment?"
+        message="Are you sure you want to delete this assessment? This action cannot be undone."
+        confirmText="Confirm Delete"
+        variant="danger"
+      />
 
       <ConfirmationModal
         isOpen={!!publishId}

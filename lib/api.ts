@@ -724,6 +724,12 @@ class ApiClient {
     const response: AxiosResponse = await this.client.get(`/admin/assessments/${id}/stats`);
     return response.data;
   }
+
+  async deleteAssessment(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/assessments/${id}`);
+    return response.data;
+  }
+
 }
 
 export const apiClient = new ApiClient();

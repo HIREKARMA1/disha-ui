@@ -19,7 +19,7 @@ export default function CreateAssessmentPage() {
       setIsSubmitting(true)
       setError(null)
 
-      const response = await apiClient.post('/api/v1/admin/assessments/create', formData)
+      const response = await apiClient.createAssessment(formData)
 
       if (response.id || response.assessment_id) {
         // Success - redirect to list
@@ -35,36 +35,38 @@ export default function CreateAssessmentPage() {
 
   return (
     <AdminDashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/admin/assessments">
-            <Button variant="outline" size="icon">
-              <ArrowLeft size={20} />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Create Assessment</h1>
-            <p className="text-gray-600 mt-1">Set up a new assessment with multiple rounds</p>
+      <div className="space-y-8 pb-8 w-full">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard/admin/assessments"
+              className="bg-white hover:bg-white/80 p-2.5 rounded-xl transition-all border border-gray-200 shadow-sm"
+            >
+              <ArrowLeft size={24} className="text-gray-600" />
+            </Link>
+
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">Create New Assessment</h1>
+              <p className="text-gray-600 dark:text-gray-300">Set up a comprehensive evaluation with multiple rounds</p>
+            </div>
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-red-900 mb-2">Error</h3>
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
+            <div className="h-2 w-2 rounded-full bg-red-500"></div>
+            <p className="font-medium">{error}</p>
           </div>
         )}
 
-        {/* Form */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <AssessmentForm
-            onSubmit={handleSubmit}
-            loading={isSubmitting}
-            mode="create"
-          />
-        </div>
+        {/* Form - No inner wrapper needed as component handles it */}
+        <AssessmentForm
+          onSubmit={handleSubmit}
+          loading={isSubmitting}
+          mode="create"
+        />
       </div>
     </AdminDashboardLayout>
   )

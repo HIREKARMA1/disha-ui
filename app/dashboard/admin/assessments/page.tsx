@@ -70,13 +70,11 @@ export default function AssessmentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this assessment?")) {
-      try {
-        await apiClient.delete(`/admin/assessments/${id}`);
-        fetchAssessments(); // Refresh
-      } catch (err) {
-        alert("Failed to delete assessment");
-      }
+    try {
+      await apiClient.delete(`/admin/assessments/${id}`);
+      fetchAssessments(); // Refresh
+    } catch (err) {
+      alert("Failed to delete assessment");
     }
   };
 
