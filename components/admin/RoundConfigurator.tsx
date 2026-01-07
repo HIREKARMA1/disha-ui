@@ -28,6 +28,10 @@ const ROUND_TYPES = [
   { value: "hr_interview", label: "HR Interview" },
 ];
 
+const getRoundTypeLabel = (type: string) => {
+  return ROUND_TYPES.find((t) => t.value === type)?.label || type;
+};
+
 export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorProps) {
   const [editingRound, setEditingRound] = useState<number | null>(null);
 
@@ -63,9 +67,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
     setEditingRound(null);
   };
 
-  const getRoundTypeLabel = (type: string) => {
-    return ROUND_TYPES.find((t) => t.value === type)?.label || type;
-  };
+
 
   return (
     <div className="space-y-4">

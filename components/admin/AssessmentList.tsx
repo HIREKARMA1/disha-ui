@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Eye, Send } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Search, Filter, X } from "lucide-react";
+import { AssessmentCard } from "@/components/admin/assessments/AssessmentCard";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 
 interface AssessmentListProps {
   assessments: any[];
@@ -20,114 +22,62 @@ export function AssessmentList({
   onPublish,
   loading,
 }: AssessmentListProps) {
-  const getStatusBadge = (status: string) => {
-    const statusStyles = {
-      DRAFT: "bg-gray-200 text-gray-800",
-      ACTIVE: "bg-green-200 text-green-800",
-      PAUSED: "bg-yellow-200 text-yellow-800",
-      COMPLETED: "bg-blue-200 text-blue-800",
-      ARCHIVED: "bg-red-200 text-red-800",
-    };
-
-    return statusStyles[status as keyof typeof statusStyles] || "bg-gray-200";
-  };
-
-  const getModeStyles = (mode: string) => {
-    const modeStyles = {
-      HIRING: "text-purple-600",
-      UNIVERSITY: "text-blue-600",
-      CORPORATE: "text-orange-600",
-      ADMIN: "text-gray-600",
-    };
-
-    return modeStyles[mode as keyof typeof modeStyles] || "text-gray-600";
-  };
+  const [publishId, setPublishId] = useState<string | null>(null);
 
   if (loading) {
-    return <div className="text-center py-8">Loading assessments...</div>;
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-64 rounded-xl bg-gray-100 animate-pulse border border-gray-200" />
+        ))}
+      </div>
+    );
   }
 
   if (assessments.length === 0) {
     return (
-      <div className="text-center py-12 border-2 border-dashed rounded-lg">
-        <p className="text-gray-500 mb-4">No assessments found</p>
-        <p className="text-gray-400 text-sm">Create your first assessment to get started</p>
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+        <div className="bg-white p-4 rounded-full shadow-sm mb-4">
+          <Filter className="h-8 w-8 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">No assessments found</h3>
+        <p className="text-gray-500 max-w-sm mx-auto mb-6">
+          We couldn't find any assessments matching your filters. Try adjusting your search or create a new one.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b">
-          <tr>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mode</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Rounds</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Duration</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {assessments.map((assessment) => (
-            <tr key={assessment.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4">
-                <div>
-                  <p className="font-medium text-gray-900">{assessment.assessment_name}</p>
-                  <p className="text-sm text-gray-500">{assessment.disha_assessment_id}</p>
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <span className={`font-medium ${getModeStyles(assessment.mode)}`}>
-                  {assessment.mode}
-                </span>
-              </td>
-              <td className="px-6 py-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(assessment.status)}`}>
-                  {assessment.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 text-sm">{assessment.round_count} rounds</td>
-              <td className="px-6 py-4 text-sm">{assessment.total_duration_minutes} min</td>
-              <td className="px-6 py-4">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onView(assessment.id)}
-                    className="p-2 hover:bg-blue-100 text-blue-600 rounded"
-                    title="View"
-                  >
-                    <Eye size={18} />
-                  </button>
-                  <button
-                    onClick={() => onEdit(assessment.id)}
-                    className="p-2 hover:bg-yellow-100 text-yellow-600 rounded"
-                    title="Edit"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  {assessment.status === "DRAFT" && !assessment.is_published_to_solviq && (
-                    <button
-                      onClick={() => onPublish(assessment.id)}
-                      className="p-2 hover:bg-green-100 text-green-600 rounded"
-                      title="Publish to SOLVIQ"
-                    >
-                      <Send size={18} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => onDelete(assessment.id)}
-                    className="p-2 hover:bg-red-100 text-red-600 rounded"
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+        {assessments.map((assessment) => (
+          <AssessmentCard
+            key={assessment.id}
+            assessment={assessment}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onView={onView}
+            onPublish={() => setPublishId(assessment.id)}
+          />
+        ))}
+      </div>
+
+      <ConfirmationModal
+        isOpen={!!publishId}
+        onClose={() => setPublishId(null)}
+        onConfirm={async () => {
+          if (publishId) {
+            onPublish(publishId);
+            setPublishId(null);
+          }
+        }}
+        title="Publish to Solviq AI?"
+        message="This will lock the assessment configuration and send the test structure to Solviq AI for question generation. You cannot add or remove rounds after publishing."
+        confirmText="Confirm Publish"
+        variant="info"
+      />
+    </>
   );
 }
+
