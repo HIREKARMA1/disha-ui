@@ -485,6 +485,12 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteStudent(studentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/universities/students/${studentId}`);
+    return response.data;
+  }
+
+
   // University job management endpoints
   async getUniversityJobs(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/universities/jobs');
@@ -667,69 +673,104 @@ class ApiClient {
     // The endpoint returns {file_url, message}, but we only need file_url for consistency
     return { file_url: response.data.file_url };
   }
-  // Generic HTTP methods to support direct usage
-  async get(url: string, config?: any): Promise<any> {
-    const response: AxiosResponse = await this.client.get(url, config);
+
+  // License endpoints
+  async createLicenseRequest(data: {
+    requested_total: number;
+    batch: string;
+    period_from: string;
+    period_to: string;
+    message?: string;
+    degree?: string | string[];
+    branches?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/universities/license-requests', data);
     return response.data;
   }
 
-  async post(url: string, data?: any, config?: any): Promise<any> {
-    const response: AxiosResponse = await this.client.post(url, data, config);
+  async getUniversityLicenses(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/licenses');
     return response.data;
   }
 
-  async put(url: string, data?: any, config?: any): Promise<any> {
-    const response: AxiosResponse = await this.client.put(url, data, config);
+  async checkBatchEligibility(batch: string, degree?: string | string[], branches?: string[]): Promise<any> {
+    const params: Record<string, string | string[]> = {};
+    if (degree) {
+      params.degree = degree;
+    }
+    if (branches && branches.length > 0) {
+      params.branches = branches;
+    }
+    const response: AxiosResponse = await this.client.get(`/universities/licenses/batch/${batch}/eligibility`, {
+      params
+    });
     return response.data;
   }
 
-  async delete(url: string, config?: any): Promise<any> {
-    const response: AxiosResponse = await this.client.delete(url, config);
+  async getUniversityLicenseRequests(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/license-requests');
     return response.data;
   }
 
-  // Assessment Management (DISHA-SOLVIQ)
-  async getAdminAssessments(params: {
-    skip?: number;
-    limit?: number;
+  // Admin license endpoints
+  async getLicenseRequests(params?: { status?: string; page?: number; page_size?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/license-requests', { params });
+    return response.data;
+  }
+
+  async getLicenseRequest(requestId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/license-requests/${requestId}`);
+    return response.data;
+  }
+
+  async approveLicenseRequest(requestId: string, data: {
+    approved_total: number;
+    period_from: string;
+    period_to: string;
+    batch: string;
+    admin_note?: string;
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/license-requests/${requestId}/approve`, data);
+    return response.data;
+  }
+
+  async rejectLicenseRequest(requestId: string, data: { admin_note: string }): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/license-requests/${requestId}/reject`, data);
+    return response.data;
+  }
+
+  async getLicenses(params?: { university_id?: string; status?: string; page?: number; page_size?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/licenses', { params });
+    return response.data;
+  }
+
+  async updateLicense(licenseId: string, data: {
+    total_licenses?: number;
+    period_from?: string;
+    period_to?: string;
     status?: string;
-    mode?: string;
-    university_id?: string;
-  } = {}): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/admin/assessments/list', { params });
+    note?: string;
+    degree?: string[];
+    branches?: string[];
+  }): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/licenses/${licenseId}`, data);
     return response.data;
   }
 
-  async createAssessment(data: any): Promise<any> {
-    const response: AxiosResponse = await this.client.post('/admin/assessments/create', data);
+  async deactivateLicense(licenseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/licenses/${licenseId}/deactivate`);
     return response.data;
   }
 
-  async updateAssessment(id: string, data: any): Promise<any> {
-    const response: AxiosResponse = await this.client.patch(`/admin/assessments/${id}`, data);
+  async deleteLicenseRequest(requestId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/license-requests/${requestId}`);
     return response.data;
   }
 
-  async getAssessment(id: string): Promise<any> {
-    const response: AxiosResponse = await this.client.get(`/admin/assessments/${id}`);
+  async deleteLicense(licenseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/licenses/${licenseId}`);
     return response.data;
   }
-
-  async publishAssessmentToSolviq(id: string): Promise<any> {
-    const response: AxiosResponse = await this.client.post(`/admin/assessments/${id}/publish`);
-    return response.data;
-  }
-
-  async getAssessmentStats(id: string): Promise<any> {
-    const response: AxiosResponse = await this.client.get(`/admin/assessments/${id}/stats`);
-    return response.data;
-  }
-
-  async deleteAssessment(id: string): Promise<any> {
-    const response: AxiosResponse = await this.client.delete(`/admin/assessments/${id}`);
-    return response.data;
-  }
-
 }
 
 export const apiClient = new ApiClient();

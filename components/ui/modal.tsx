@@ -21,17 +21,17 @@ interface ModalContentProps {
 
 const maxWidthClasses = {
     sm: "max-w-sm",
-    md: "max-w-md", 
+    md: "max-w-md",
     lg: "max-w-lg",
     xl: "max-w-xl",
     "2xl": "max-w-2xl"
 }
 
-export function Modal({ 
-    isOpen, 
-    onClose, 
-    title, 
-    children, 
+export function Modal({
+    isOpen,
+    onClose,
+    title,
+    children,
     className,
     maxWidth = "lg"
 }: ModalProps) {
@@ -53,17 +53,22 @@ export function Modal({
         }
     }, [isOpen, onClose])
 
+    const handleBackdropClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onClose()
+    }
+
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-none">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={onClose}
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto"
+                        onClick={handleBackdropClick}
                     />
 
                     {/* Modal */}
@@ -73,7 +78,7 @@ export function Modal({
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                            "relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full mx-4",
+                            "relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full mx-4 pointer-events-auto",
                             maxWidthClasses[maxWidth],
                             className
                         )}
