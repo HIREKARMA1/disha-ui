@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
 import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
 
 interface LicenseRequestModalProps {
@@ -20,28 +19,13 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
     const [formData, setFormData] = useState({
         requested_total: '',
         batch: '',
-        degree: [] as string[],
-        branches: [] as string[],
+        degree: '',
+        branches: '',
         period_from: '',
         period_to: '',
         message: ''
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const branchDropdownOptions: MultiSelectOption[] = useMemo(() => (
-        branchOptions.map((option: { value: string; label: string }) => ({
-            id: option.value,
-            value: option.value,
-            label: option.label
-        }))
-    ), [])
-
-    const degreeDropdownOptions: MultiSelectOption[] = useMemo(() => (
-        degreeOptions.map((option: { value: string; label: string }) => ({
-            id: option.value,
-            value: option.value,
-            label: option.label
-        }))
-    ), [])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -62,16 +46,13 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
             return
         }
 
-        const degreeList = formData.degree
-        const branchesList = formData.branches
-
         setIsSubmitting(true)
         try {
             await apiClient.createLicenseRequest({
                 requested_total: requestedTotal,
                 batch: formData.batch.trim(),
-                degree: degreeList.length ? degreeList : undefined,
-                branches: branchesList.length ? branchesList : undefined,
+                degree: formData.degree ? [formData.degree] : undefined,
+                branches: formData.branches ? [formData.branches] : undefined,
                 period_from: new Date(formData.period_from).toISOString(),
                 period_to: new Date(formData.period_to).toISOString(),
                 message: formData.message.trim() || undefined
@@ -81,8 +62,8 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
             setFormData({
                 requested_total: '',
                 batch: '',
-                degree: [],
-                branches: [],
+                degree: '',
+                branches: '',
                 period_from: '',
                 period_to: '',
                 message: ''
@@ -152,26 +133,46 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <MultiSelectDropdown
-                            label="Degree (Optional)"
-                            options={degreeDropdownOptions}
-                            selectedValues={formData.degree}
-                            onSelectionChange={(values) => handleChange('degree', values)}
-                            placeholder="Select degrees"
+                        <label htmlFor="degree" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Degree (Optional)
+                        </label>
+                        <Select
+                            value={formData.degree}
+                            onValueChange={(value) => handleChange('degree', value)}
                             disabled={isSubmitting}
-                            allOptionLabel="All degrees"
-                        />
+                        >
+                            <SelectTrigger id="degree" className="w-full">
+                                <SelectValue placeholder="Select degree" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {degreeOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div>
-                        <MultiSelectDropdown
-                            label="Branches (Optional)"
-                            options={branchDropdownOptions}
-                            selectedValues={formData.branches}
-                            onSelectionChange={(values) => handleChange('branches', values)}
-                            placeholder="Select branches"
+                        <label htmlFor="branches" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Branches (Optional)
+                        </label>
+                        <Select
+                            value={formData.branches}
+                            onValueChange={(value) => handleChange('branches', value)}
                             disabled={isSubmitting}
-                            allOptionLabel="All branches"
-                        />
+                        >
+                            <SelectTrigger id="branches" className="w-full">
+                                <SelectValue placeholder="Select branches" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {branchOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
