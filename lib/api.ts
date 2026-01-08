@@ -674,6 +674,69 @@ class ApiClient {
     return { file_url: response.data.file_url };
   }
 
+  // Generic HTTP methods to support direct usage
+  async get(url: string, config?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.get(url, config);
+    return response.data;
+  }
+
+  async post(url: string, data?: any, config?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(url, data, config);
+    return response.data;
+  }
+
+  async put(url: string, data?: any, config?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.put(url, data, config);
+    return response.data;
+  }
+
+  async delete(url: string, config?: any): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(url, config);
+    return response.data;
+  }
+
+  // Assessment Management (DISHA-SOLVIQ)
+  async getAdminAssessments(params: {
+    skip?: number;
+    limit?: number;
+    status?: string;
+    mode?: string;
+    university_id?: string;
+  } = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/assessments/list', { params });
+    return response.data;
+  }
+
+  async createAssessment(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/assessments/create', data);
+    return response.data;
+  }
+
+  async updateAssessment(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/assessments/${id}`, data);
+    return response.data;
+  }
+
+  async getAssessment(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/assessments/${id}`);
+    return response.data;
+  }
+
+  async publishAssessmentToSolviq(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/admin/assessments/${id}/publish`);
+    return response.data;
+  }
+
+  async getAssessmentStats(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/assessments/${id}/stats`);
+    return response.data;
+  }
+
+  async deleteAssessment(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/assessments/${id}`);
+    return response.data;
+  }
+
   // License endpoints
   async createLicenseRequest(data: {
     requested_total: number;
