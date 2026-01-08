@@ -90,6 +90,13 @@ const navItems: NavItem[] = [
         color: 'from-rose-500 to-pink-600'
     },
     {
+        label: 'Assessments',
+        href: '/dashboard/admin/assessments',
+        icon: FileText,
+        description: 'Manage assessments',
+        color: 'from-amber-500 to-orange-600'
+    },
+    {
         label: 'Analytics',
         href: '/dashboard/admin/analytics',
         icon: BarChart3,
