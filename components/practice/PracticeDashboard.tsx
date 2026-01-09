@@ -183,7 +183,7 @@ export function PracticeDashboard() {
             console.error("No student profile found")
             return
         }
-        const toastId = toast.loading("Preparing assessment...")
+        const toastId = toast.loading("Configuring your assessment environment...")
         try {
             console.log("Starting assessment token generation for", assessment.id)
             const res = await apiClient.client.post(`/assessments/${assessment.id}/token`, {
@@ -191,14 +191,17 @@ export function PracticeDashboard() {
                 assessment_id: assessment.id
             })
             if (res.data.solviq_url) {
-                toast.success("Assessment started!", { id: toastId })
-                window.open(res.data.solviq_url, '_blank')
+                toast.success("Assessment created successfully! Redirecting to exam...", { id: toastId, duration: 2000 })
+                // Redirect to Solviq (same tab)
+                setTimeout(() => {
+                    window.location.href = res.data.solviq_url
+                }, 1000)
             } else {
-                toast.error("Failed to get assessment URL", { id: toastId })
+                toast.error("Failed to generate assessment config", { id: toastId })
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Failed to start assessment", e)
-            toast.error("Failed to start assessment. Please try again.", { id: toastId })
+            toast.error(e?.response?.data?.detail || "Failed to start assessment. Please try again.", { id: toastId })
         }
     }
 
