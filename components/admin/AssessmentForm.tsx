@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { RoundConfigurator } from "./RoundConfigurator";
-import { FileText, Settings, Layers } from "lucide-react";
+import { FileText, Settings, Layers, Briefcase } from "lucide-react";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -19,33 +19,66 @@ const MODES = [
 ];
 
 export function AssessmentForm({ initialData, onSubmit, loading, mode }: AssessmentFormProps) {
-  const [formData, setFormData] = useState(
-    initialData || {
-      assessment_name: "",
-      mode: "HIRING",
+  const defaultValues = {
+    assessment_name: "",
+    mode: "HIRING",
+    // description: "", // Moved to metadata
+    // instructions: "", // Moved to metadata
+    total_duration_minutes: 0,
+    auto_submit_on_timeout: true,
+    time_window: {
+      start_time: "",
+      end_time: "",
+    },
+    // university_id: "", // Removed
+    // corporate_id: "", // Removed
+    rounds: [],
+    metadata: {
+      disha_assessment_id: "", // Managed automatically
       description: "",
       instructions: "",
-      total_duration_minutes: 0,
-      auto_submit_on_timeout: true,
-      time_window: {
-        start_time: "",
-        end_time: "",
+      callback_url: "",
+      passing_criteria: {
+        overall_percentage: 70,
+        minimum_round_scores: {},
       },
-      university_id: "",
-      corporate_id: "",
-      rounds: [],
-      metadata: {
-        disha_assessment_id: "", // Managed automatically
-        description: "",
-        instructions: "",
-        callback_url: "",
-        passing_criteria: {
-          overall_percentage: 70,
-          minimum_round_scores: {},
-        },
-      },
+    },
+    job_id: "", // Field for linking to a job (kept for UI valid checking but will be moved to metadata on submit)
+  };
+
+  const [formData, setFormData] = useState({
+    ...defaultValues,
+    ...initialData,
+    // Ensure nested objects are also merged properly if initialData has partial nested objects
+    metadata: {
+      ...defaultValues.metadata,
+      ...(initialData?.metadata || {}),
+    },
+    time_window: {
+      ...defaultValues.time_window,
+      ...(initialData?.time_window || {}),
     }
-  );
+  });
+
+  // ... defaultValues and state definition ...
+
+  // Sync with initialData changes (e.g. when job title is fetched)
+  useEffect(() => {
+    if (initialData) {
+      setFormData((prev: any) => ({
+        ...prev,
+        ...initialData,
+        metadata: {
+          ...prev.metadata,
+          ...(initialData.metadata || {}),
+        },
+        time_window: {
+          ...prev.time_window,
+          ...(initialData.time_window || {}),
+        }
+      }));
+    }
+  }, [initialData]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -112,12 +145,22 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
     // Auto-generate DISHA ID if not present
     const dishaId = formData.metadata.disha_assessment_id || `DASM-${Date.now()}`;
 
+    // Construct strict payload matching the requirement
     const submissionData = {
-      ...formData,
-      total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60, // Default to 60 if 0
+      assessment_name: formData.assessment_name,
+      mode: formData.mode,
+      time_window: formData.time_window,
+      total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
+      auto_submit_on_timeout: formData.auto_submit_on_timeout,
+      rounds: formData.rounds,
       metadata: {
         ...formData.metadata,
-        disha_assessment_id: dishaId
+        disha_assessment_id: dishaId,
+        passing_criteria: {
+          ...formData.metadata.passing_criteria,
+          // Include job_id in passing_criteria if present
+          ...(formData.job_id ? { job_id: formData.job_id } : {})
+        }
       }
     };
 
@@ -128,11 +171,20 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
     <form onSubmit={handleSubmit} className="space-y-8 w-full">
       {/* 1. Basic Details Card */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-            <FileText size={18} />
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+              <FileText size={18} />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-800">Basic Details</h2>
           </div>
-          <h2 className="text-lg font-semibold text-gray-800">Basic Details</h2>
+
+          {formData.job_id && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-100">
+              <Briefcase size={14} />
+              <span className="font-medium">Linked to Job: {formData.job_id.substring(0, 8)}...</span>
+            </div>
+          )}
         </div>
 
         <div className="p-6 space-y-6">
@@ -239,36 +291,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
           )}
 
           {/* Conditional ID Inputs */}
-          {(formData.mode === "UNIVERSITY" || formData.mode === "CORPORATE") && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-gray-100">
-              {formData.mode === "UNIVERSITY" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    University ID
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.university_id}
-                    onChange={(e) => handleChange("university_id", e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none"
-                  />
-                </div>
-              )}
-              {formData.mode === "CORPORATE" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Corporate ID
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.corporate_id}
-                    onChange={(e) => handleChange("corporate_id", e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          {/* Inputs removed as they are not needed for this flow */}
         </div>
       </div>
 

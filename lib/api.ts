@@ -722,10 +722,7 @@ class ApiClient {
     return response.data;
   }
 
-  async publishAssessmentToSolviq(id: string): Promise<any> {
-    const response: AxiosResponse = await this.client.post(`/admin/assessments/${id}/publish`);
-    return response.data;
-  }
+
 
   async getAssessmentStats(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/admin/assessments/${id}/stats`);

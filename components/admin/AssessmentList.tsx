@@ -10,7 +10,6 @@ interface AssessmentListProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onView: (id: string) => void;
-  onPublish: (id: string) => void;
   loading: boolean;
 }
 
@@ -19,10 +18,8 @@ export function AssessmentList({
   onEdit,
   onDelete,
   onView,
-  onPublish,
   loading,
 }: AssessmentListProps) {
-  const [publishId, setPublishId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   if (loading) {
@@ -52,14 +49,14 @@ export function AssessmentList({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
-        {assessments.map((assessment) => (
+        {assessments.map((assessment, index) => (
           <AssessmentCard
             key={assessment.id}
+            cardIndex={index}
             assessment={assessment}
             onEdit={onEdit}
             onDelete={() => setDeleteId(assessment.id)}
             onView={onView}
-            onPublish={() => setPublishId(assessment.id)}
           />
         ))}
       </div>
@@ -77,21 +74,6 @@ export function AssessmentList({
         message="Are you sure you want to delete this assessment? This action cannot be undone."
         confirmText="Confirm Delete"
         variant="danger"
-      />
-
-      <ConfirmationModal
-        isOpen={!!publishId}
-        onClose={() => setPublishId(null)}
-        onConfirm={async () => {
-          if (publishId) {
-            onPublish(publishId);
-            setPublishId(null);
-          }
-        }}
-        title="Publish to Solviq AI?"
-        message="This will lock the assessment configuration and send the test structure to Solviq AI for question generation. You cannot add or remove rounds after publishing."
-        confirmText="Confirm Publish"
-        variant="info"
       />
     </>
   );

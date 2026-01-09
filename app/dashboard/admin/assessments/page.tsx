@@ -33,15 +33,6 @@ export default function AssessmentsPage() {
     search: ''
   })
 
-  // Publish Success Modal State
-  const [publishSuccess, setPublishSuccess] = useState<{
-    isOpen: boolean;
-    solviqId: string;
-    link: string;
-  }>({ isOpen: false, solviqId: '', link: '' });
-
-  const [copied, setCopied] = useState(false);
-
   // Fetch assessments
   const fetchAssessments = async () => {
     try {
@@ -76,35 +67,6 @@ export default function AssessmentsPage() {
     } catch (err) {
       alert("Failed to delete assessment");
     }
-  };
-
-  const handlePublish = async (id: string) => {
-    try {
-      const response = await apiClient.publishAssessmentToSolviq(id);
-
-      // Assume response contains the Solviq ID. We can construct a mock link if real one isn't returned yet.
-      // In a real scenario, Solviq might return a "package_url" or similar.
-      // For now, I'll generate the student link format as requested.
-      const solviqId = response.solviq_assessment_id;
-      // Note: Actual student link usually requires a token, but this is the "Master Link" or ID for the admin to distribute via the system
-      const shareableLink = `${window.location.origin}/student/assessment/start?assessment_id=${id}`;
-
-      setPublishSuccess({
-        isOpen: true,
-        solviqId: solviqId,
-        link: shareableLink
-      });
-
-      fetchAssessments();
-    } catch (err: any) {
-      alert(`Failed to publish: ${err.message || "Unknown error"}`);
-    }
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(publishSuccess.link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   // Filter assessments
@@ -197,52 +159,9 @@ export default function AssessmentsPage() {
           onEdit={handleEdit}
           onView={handleView}
           onDelete={handleDelete}
-          onPublish={handlePublish}
         />
 
-        {/* Success Modal */}
-        {publishSuccess.isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="bg-green-50 p-6 flex flex-col items-center justify-center border-b border-green-100">
-                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <Check className="h-8 w-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Successfully Published!</h3>
-                <p className="text-sm text-center text-gray-600 mt-2">
-                  Assessment sent to Solviq AI. Questions are being generated.
-                </p>
-              </div>
 
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Solviq Package ID</label>
-                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray-800">
-                    {publishSuccess.solviqId}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Shareable Link</label>
-                  <div className="mt-1 flex gap-2">
-                    <div className="flex-1 p-3 bg-blue-50 border border-blue-100 rounded-lg font-mono text-xs text-blue-800 break-all">
-                      {publishSuccess.link}
-                    </div>
-                    <Button onClick={copyToClipboard} size="icon" className="shrink-0 h-auto w-10 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-blue-600">
-                      {copied ? <Check size={16} /> : <Copy size={16} />}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                <Button onClick={() => setPublishSuccess(prev => ({ ...prev, isOpen: false }))}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </AdminDashboardLayout>
   )

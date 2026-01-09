@@ -74,6 +74,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Assessment Rounds</h3>
         <button
+          type="button"
           onClick={addRound}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
@@ -130,12 +131,14 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
       </div>
       <div className="flex gap-2">
         <button
+          type="button"
           onClick={onEdit}
           className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium"
         >
           Edit
         </button>
         <button
+          type="button"
           onClick={onRemove}
           className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
         >
@@ -239,10 +242,11 @@ function RoundEditor({ round, onSave, onCancel }: any) {
       </div>
 
       <div className="flex gap-3 justify-end pt-4 border-t">
-        <button onClick={onCancel} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+        <button type="button" onClick={onCancel} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
           Cancel
         </button>
         <button
+          type="button"
           onClick={() => onSave(formData)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >

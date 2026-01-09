@@ -38,31 +38,31 @@ export interface PracticeModule {
   difficulty?: 'easy' | 'medium' | 'hard'
   tags?: string[]
   category?: PracticeCategory
-  
+
   // Creator and targeting fields
   creator_type?: 'admin' | 'university' | 'corporate'
   creator_id?: string
-  
+
   // Job association (optional - only for modules created from job assignments)
   job_id?: string
-  
+
   // Targeting fields for filtering
   target_all_colleges?: boolean
   target_college_ids?: string[]  // University names
   target_all_branches?: boolean
   target_branch_ids?: string[]   // Branch names
-  
+
   // University-specific targeting fields
   university_target_all_branches?: boolean
   university_target_branch_ids?: string[]
-  
+
   // Date limits
   start_date?: string
   end_date?: string
-  
+
   // Days remaining until expiration (calculated field)
   days_remaining?: number | null
-  
+
   // Timestamps
   created_at?: string
   updated_at?: string
@@ -176,6 +176,21 @@ export interface UpdatePracticeModuleSchema {
   duration_seconds?: number
   tags?: string[]
   is_archived?: boolean
+}
+
+export interface JobAssessment {
+  id: string
+  disha_assessment_id: string
+  assessment_name: string
+  mode: string
+  status: string
+  start_time: string
+  end_time: string
+  total_duration_minutes: number
+  round_count: number
+  university_id?: string
+  corporate_id?: string
+  created_at: string
 }
 
 export interface CreateQuestionSchema {
