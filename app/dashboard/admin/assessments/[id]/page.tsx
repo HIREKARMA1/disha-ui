@@ -36,7 +36,7 @@ export default function AssessmentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const assessmentId = params.id as string
-  
+
   const [assessment, setAssessment] = useState<Assessment | null>(null)
   const [stats, setStats] = useState<AssessmentStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -56,7 +56,7 @@ export default function AssessmentDetailPage() {
           apiClient.get(`/api/v1/admin/assessments/${assessmentId}`),
           apiClient.get(`/api/v1/admin/assessments/${assessmentId}/stats`)
         ])
-        
+
         setAssessment(assessmentRes)
         setStats(statsRes)
       } catch (err: any) {
@@ -94,7 +94,7 @@ export default function AssessmentDetailPage() {
       setIsGeneratingToken(true)
       const response = await apiClient.post(
         `/api/v1/admin/assessments/${assessmentId}/token`,
-        { 
+        {
           student_id: studentEmail,
           expires_in_minutes: 30
         }

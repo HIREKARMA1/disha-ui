@@ -237,6 +237,36 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
             />
           </div>
 
+          {/* Instructions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Instructions for Students</label>
+            <textarea
+              value={formData.metadata.instructions}
+              onChange={(e) => handleMetadataChange("instructions", e.target.value)}
+              placeholder="Enter detailed instructions for the students..."
+              rows={4}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-2">These instructions will be displayed to students before they start the assessment.</p>
+          </div>
+
+          {/* Auto-submit */}
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <input
+              type="checkbox"
+              id="auto_submit"
+              checked={formData.auto_submit_on_timeout}
+              onChange={(e) => handleChange("auto_submit_on_timeout", e.target.checked)}
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <div>
+              <label htmlFor="auto_submit" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Auto-submit on Timeout
+              </label>
+              <p className="text-xs text-gray-500">Automatically submit the assessment when the timer reaches zero.</p>
+            </div>
+          </div>
+
           {/* Time & Criteria */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
@@ -313,65 +343,6 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               {errors.rounds}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* 3. Settings & Policy */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-            <Settings size={18} />
-          </div>
-          <h2 className="text-lg font-semibold text-gray-800">Settings & Policy</h2>
-        </div>
-
-        <div className="p-6 space-y-6">
-          {/* Auto-submit */}
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
-            <input
-              type="checkbox"
-              id="auto_submit"
-              checked={formData.auto_submit_on_timeout}
-              onChange={(e) => handleChange("auto_submit_on_timeout", e.target.checked)}
-              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-            />
-            <div>
-              <label htmlFor="auto_submit" className="text-sm font-medium text-gray-900 cursor-pointer">
-                Auto-submit on Timeout
-              </label>
-              <p className="text-xs text-gray-500">Automatically submit the assessment when the timer reaches zero.</p>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Instructions for Students</label>
-            <textarea
-              value={formData.metadata.instructions}
-              onChange={(e) => handleMetadataChange("instructions", e.target.value)}
-              placeholder="Enter detailed instructions for the students..."
-              rows={4}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
-            />
-            <p className="text-xs text-gray-500 mt-2">These instructions will be displayed to students before they start the assessment.</p>
-          </div>
-
-          {/* Callback URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">SOLVIQ Callback URL <span className="text-gray-400 text-xs font-normal">(Optional)</span></label>
-            <div className="relative">
-              <input
-                type="url"
-                value={formData.metadata.callback_url}
-                onChange={(e) => handleMetadataChange("callback_url", e.target.value)}
-                placeholder="https://disha.example.com/api/v1/assessments/callback"
-                className="w-full pl-4 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-mono text-sm"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Custom webhook URL where SOLVIQ will send the assessment results.
-            </p>
-          </div>
         </div>
       </div>
 

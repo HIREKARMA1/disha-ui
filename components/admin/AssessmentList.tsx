@@ -57,6 +57,7 @@ export function AssessmentList({
             onEdit={onEdit}
             onDelete={() => setDeleteId(assessment.id)}
             onView={onView}
+            onViewResults={() => window.location.href = `/dashboard/admin/assessments/${assessment.id}/analytics`}
           />
         ))}
       </div>
@@ -75,6 +76,8 @@ export function AssessmentList({
         confirmText="Confirm Delete"
         variant="danger"
       />
+
+
     </>
   );
 }

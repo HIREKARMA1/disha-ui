@@ -21,6 +21,7 @@ interface AssessmentCardProps {
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
     onView: (id: string) => void;
+    onViewResults?: (id: string) => void;
     cardIndex?: number;
 }
 
@@ -29,6 +30,7 @@ export function AssessmentCard({
     onEdit,
     onDelete,
     onView,
+    onViewResults,
     cardIndex = 0
 }: AssessmentCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
@@ -212,13 +214,13 @@ export function AssessmentCard({
                 {/* Additional Info / Footer Button matching AdminJobCard */}
                 <div className="mt-auto pt-4">
                     <Button
-                        onClick={() => onView(assessment.id)}
+                        onClick={() => onViewResults ? onViewResults(assessment.id) : onView(assessment.id)}
                         variant="outline"
                         size="sm"
-                        className="w-full flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="w-full flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md group-hover:bg-white/50"
                     >
                         <FileText className="w-4 h-4" />
-                        View Details
+                        Result Analytics
                     </Button>
                 </div>
             </div>
