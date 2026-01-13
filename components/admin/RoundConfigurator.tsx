@@ -44,7 +44,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
       config: {
         num_questions: 35,
         difficulty: "medium",
-        topics: [],
+        topic: "",
       },
       is_mandatory: true,
     };
@@ -227,6 +227,16 @@ function RoundEditor({ round, onSave, onCancel }: any) {
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+          <input
+            type="text"
+            value={formData.config.topic || ""}
+            onChange={(e) => handleChange("config.topic", e.target.value)}
+            placeholder="e.g. Java, Data Structures, General Aptitude"
+            className="w-full px-3 py-2 border rounded-lg"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Passing Percentage (%)</label>
