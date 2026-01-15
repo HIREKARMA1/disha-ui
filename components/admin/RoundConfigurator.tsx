@@ -124,7 +124,7 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
           <div>
             <h4 className="font-semibold text-gray-900">{round.round_name}</h4>
             <p className="text-sm text-gray-600">
-              {getRoundTypeLabel(round.round_type)} • {round.duration_minutes} min • {round.config.num_questions || 0} questions
+              {getRoundTypeLabel(round.round_type)}  {round.duration_minutes} min{round.round_type !== 'group_discussion' && `  ${round.config.num_questions || 0} questions`}
             </p>
           </div>
         </div>
@@ -206,16 +206,32 @@ function RoundEditor({ round, onSave, onCancel }: any) {
             className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
-          <input
-            type="number"
-            min="1"
-            value={formData.config.num_questions}
-            onChange={(e) => handleChange("config.num_questions", parseInt(e.target.value))}
-            className="w-full px-3 py-2 border rounded-lg"
-          />
-        </div>
+        {/* Hide "Number of Questions" for Group Discussion rounds, show "Number of Rounds" instead */}
+        {formData.round_type !== 'group_discussion' ? (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
+            <input
+              type="number"
+              min="1"
+              value={formData.config.num_questions}
+              onChange={(e) => handleChange("config.num_questions", parseInt(e.target.value))}
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Rounds</label>
+            <input
+              type="number"
+              min="1"
+              value={formData.config.number_of_rounds || 5}
+              onChange={(e) => handleChange("config.number_of_rounds", parseInt(e.target.value))}
+              placeholder="e.g. 5"
+              className="w-full px-3 py-2 border rounded-lg"
+            />
+            <p className="text-xs text-gray-500 mt-1">Number of speaking turns for the candidate</p>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
           <select
