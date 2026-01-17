@@ -189,7 +189,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
 
         <div className="p-6 space-y-6">
           {/* Name & Mode */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Assessment Name <span className="text-red-500">*</span>
@@ -209,7 +209,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               )}
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Mode <span className="text-red-500">*</span></label>
               <select
                 value={formData.mode}
@@ -222,7 +222,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
           </div>
 
           {/* Description */}
@@ -251,7 +251,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
           </div>
 
           {/* Auto-submit */}
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
+          {/* <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
             <input
               type="checkbox"
               id="auto_submit"
@@ -265,7 +265,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               </label>
               <p className="text-xs text-gray-500">Automatically submit the assessment when the timer reaches zero.</p>
             </div>
-          </div>
+          </div> */}
 
           {/* Time & Criteria */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

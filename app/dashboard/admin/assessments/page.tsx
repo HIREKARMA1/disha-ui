@@ -91,12 +91,12 @@ export default function AssessmentsPage() {
                 Manage hiring tests, university exams, and practice modules.
               </p>
             </div>
-            <Link href="/dashboard/admin/assessments/create">
+            {/* <Link href="/dashboard/admin/assessments/create">
               <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2 h-11 px-6 rounded-lg">
                 <Plus size={20} strokeWidth={2.5} />
                 <span className="font-semibold">Create Assessment</span>
               </Button>
-            </Link>
+            </Link> */}
           </div>
         </div>
 

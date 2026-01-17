@@ -63,8 +63,25 @@ export default function CreateAssessmentPage() {
     <AdminDashboardLayout>
       <div className="space-y-8 pb-8 w-full">
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-700">
-          {/* ... */}
+        {/* Header Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <Link href="/dashboard/admin/assessments" className="hover:text-blue-600 transition-colors">
+                Assessments
+              </Link>
+              <span>/</span>
+              <span className="text-gray-900 font-medium">Create Assessment</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {jobTitle ? `Create Assessment for ${jobTitle}` : "Create New Assessment"}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              Configure assessment details, rounds, and settings.
+            </p>
+          </div>
+
+
         </div>
 
         {/* ... */}

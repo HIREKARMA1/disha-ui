@@ -254,7 +254,7 @@ function RoundEditor({ round, onSave, onCancel }: any) {
             className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Passing Percentage (%)</label>
           <input
             type="number"
@@ -264,7 +264,7 @@ function RoundEditor({ round, onSave, onCancel }: any) {
             onChange={(e) => handleChange("passing_percentage", parseInt(e.target.value))}
             className="w-full px-3 py-2 border rounded-lg"
           />
-        </div>
+        </div> */}
       </div>
 
       <div className="flex gap-3 justify-end pt-4 border-t">
