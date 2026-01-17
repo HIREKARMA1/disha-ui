@@ -191,6 +191,7 @@ export interface JobAssessment {
   university_id?: string
   corporate_id?: string
   created_at: string
+  has_attempted?: boolean
 }
 
 export interface CreateQuestionSchema {

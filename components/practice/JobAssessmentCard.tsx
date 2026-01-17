@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion'
-import { Clock, Calendar, Hash, PlayCircle, Eye } from 'lucide-react'
+import { Clock, Calendar, Hash, PlayCircle, Eye, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { JobAssessment } from '@/types/practice'
@@ -79,16 +79,27 @@ export function JobAssessmentCard({ assessment, cardIndex = 0, onViewDetails, on
                 </Button>
                 <Button
                     size="sm"
-                    className={`flex-1 text-white shadow-md hover:shadow-lg transition-all ${colors.text.includes('blue') ? 'bg-blue-600 hover:bg-blue-700' :
-                        colors.text.includes('indigo') ? 'bg-indigo-600 hover:bg-indigo-700' :
-                            colors.text.includes('purple') ? 'bg-purple-600 hover:bg-purple-700' :
-                                colors.text.includes('violet') ? 'bg-violet-600 hover:bg-violet-700' :
-                                    'bg-emerald-600 hover:bg-emerald-700'
+                    className={`flex-1 text-white shadow-md hover:shadow-lg transition-all ${assessment.has_attempted
+                        ? 'bg-green-600/80 cursor-default hover:bg-green-600/80'
+                        : colors.text.includes('blue') ? 'bg-blue-600 hover:bg-blue-700' :
+                            colors.text.includes('indigo') ? 'bg-indigo-600 hover:bg-indigo-700' :
+                                colors.text.includes('purple') ? 'bg-purple-600 hover:bg-purple-700' :
+                                    colors.text.includes('violet') ? 'bg-violet-600 hover:bg-violet-700' :
+                                        'bg-emerald-600 hover:bg-emerald-700'
                         }`}
-                    onClick={onStart}
+                    onClick={assessment.has_attempted ? undefined : onStart}
                 >
-                    <PlayCircle className="w-4 h-4 mr-2" />
-                    Start
+                    {assessment.has_attempted ? (
+                        <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Completed
+                        </>
+                    ) : (
+                        <>
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                            Start
+                        </>
+                    )}
                 </Button>
             </div>
         </motion.div>
