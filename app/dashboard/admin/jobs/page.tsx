@@ -63,7 +63,10 @@ interface Job {
     public_link_token?: string
 }
 
+import { useRouter } from 'next/navigation'
+
 export default function AdminJobsPage() {
+    const router = useRouter()
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -243,6 +246,10 @@ export default function AdminJobsPage() {
         })
     }
 
+    const handleCreateAssessment = (job: Job) => {
+        router.push(`/dashboard/admin/assessments/create?jobId=${job.id}`)
+    }
+
     return (
         <AdminDashboardLayout>
             <div className="space-y-6 main-content">
@@ -300,7 +307,7 @@ export default function AdminJobsPage() {
                                 className="flex items-center gap-2"
                             >
                                 <Filter className="w-4 h-4" />
-                                Filters
+                                filters
                             </Button>
                         </div>
                     </div>
@@ -424,6 +431,7 @@ export default function AdminJobsPage() {
                                     onViewAppliedStudents={handleViewAppliedStudents}
                                     onStatusChange={handleStatusChange}
                                     onMakePublic={handleMakePublic}
+                                    onCreateAssessment={handleCreateAssessment}
                                     cardIndex={index}
                                 />
                             ))}
@@ -575,7 +583,7 @@ export default function AdminJobsPage() {
                                     ✕
                                 </button>
                             </div>
-                            
+
                             {publicLink ? (
                                 <>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -614,7 +622,7 @@ export default function AdminJobsPage() {
                                     This job is now private and the public link has been removed do u want again make it public.
                                 </p>
                             )}
-                            
+
                             <div className="flex justify-end gap-2 mt-6">
                                 <Button
                                     variant="outline"

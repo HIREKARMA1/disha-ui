@@ -1,14 +1,43 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/api'
 import { config } from '@/lib/config'
-import { 
-    PracticeModule, 
-    Question, 
-    SubmitAttemptRequest, 
+import {
+    PracticeModule,
+    Question,
+    SubmitAttemptRequest,
     SubmitAttemptResponse,
     PracticeStats,
-    StudentAttempt
+    StudentAttempt,
+    JobAssessment
 } from '@/types/practice'
+
+// ... (existing code)
+
+export function useJobAssessments() {
+    const [data, setData] = useState<JobAssessment[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<Error | null>(null)
+
+    useEffect(() => {
+        const fetchAssessments = async () => {
+            try {
+                setIsLoading(true)
+                const response = await apiClient.client.get('/assessments/student/job-assessments')
+                setData(response.data)
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to fetch job assessments'))
+                console.error('Error fetching job assessments:', err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchAssessments()
+    }, [])
+
+    return { data, isLoading, error }
+}
+
 
 // Check if we should use mock data
 const USE_MOCK_DATA = false // Disable mock data to use real API
@@ -229,15 +258,15 @@ const mockApi = {
 
     submitAttempt: async (request: SubmitAttemptRequest): Promise<SubmitAttemptResponse> => {
         await new Promise(resolve => setTimeout(resolve, 1000))
-        
+
         // Mock scoring logic
         const questions = mockQuestions[request.module_id] || []
         const questionResults = questions.map(q => {
             const userAnswer = request.answers.find(a => a.question_id === q.id)
-            const isCorrect = userAnswer && q.correct_options 
+            const isCorrect = userAnswer && q.correct_options
                 ? JSON.stringify(userAnswer.answer.sort()) === JSON.stringify(q.correct_options.sort())
                 : false
-            
+
             return {
                 question_id: q.id,
                 is_correct: isCorrect,
@@ -299,7 +328,7 @@ export function usePracticeModules() {
         const fetchModules = async () => {
             try {
                 setIsLoading(true)
-                
+
                 // Always use real API calls - no mock data
                 console.log('🔄 Fetching real practice modules')
                 const response = await apiClient.client.get('/practice/modules')
@@ -334,7 +363,7 @@ export function usePracticeQuestions(moduleId: string) {
         // Clear any cached data
         setData([])
         setError(null)
-        
+
         // Force clear any cached data in localStorage
         const cacheKeys = ['practice-questions', 'practice-modules']
         cacheKeys.forEach(key => {
@@ -347,7 +376,7 @@ export function usePracticeQuestions(moduleId: string) {
         const fetchQuestions = async () => {
             try {
                 setIsLoading(true)
-                
+
                 // Always use real API calls - no mock data
                 console.log('🔄 Fetching real questions for module:', moduleId)
                 const response = await apiClient.client.get(`/practice/modules/${moduleId}`)
@@ -377,7 +406,7 @@ export function useSubmitAttempt() {
         try {
             setIsPending(true)
             setError(null)
-            
+
             // Always use real API calls - no mock data
             console.log('🚀 Submitting practice attempt:', request)
             const response = await apiClient.client.post('/practice/submit', request)
@@ -409,7 +438,7 @@ export function usePracticeStats() {
         const fetchStats = async () => {
             try {
                 setIsLoading(true)
-                
+
                 // Always use real API calls - no mock data
                 console.log('🔄 Fetching real practice stats')
                 const response = await apiClient.client.get('/practice/stats')

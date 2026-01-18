@@ -17,14 +17,14 @@ export interface AppliedStudentExport {
     availability_date?: string;
     location?: string;
     skills?: string[];
-    
+
     // Document fields
     resume?: string;
     tenth_certificate?: string;
     twelfth_certificate?: string;
     internship_certificates?: string;
     profile_picture?: string;
-    
+
     // Skills tab fields
     technical_skills?: string;
     soft_skills?: string;
@@ -33,17 +33,17 @@ export interface AppliedStudentExport {
     job_roles_of_interest?: string;
     location_preferences?: string;
     language_proficiency?: string;
-    
+
     // Experience tab fields
     internship_experience?: string;
     project_details?: string;
     extracurricular_activities?: string;
-    
+
     // Social tab fields
     linkedin_profile?: string;
     github_profile?: string;
     personal_website?: string;
-    
+
     // Additional profile fields
     bio?: string;
     institution?: string;
@@ -136,11 +136,11 @@ export const exportToCSV = (
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    
+
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `Applied_Students_${jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${companyName ? companyName.replace(/[^a-zA-Z0-9]/g, '_') : 'Unknown'}_${timestamp}.csv`;
     link.setAttribute('download', filename);
-    
+
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -227,14 +227,82 @@ export const exportStudentsToCSV = (students: StudentExport[]) => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    
+
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `Students_Export_${timestamp}.csv`;
     link.setAttribute('download', filename);
-    
+
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 };
 
+
+export interface AnalyticsExport {
+    email: string;
+    student_name: string;
+    status: string;
+    total_score: number;
+    max_score: number;
+    percentage: number;
+    pass_fail: string;
+    rounds_completed: number;
+}
+
+export const exportAnalyticsToCSV = (
+    data: AnalyticsExport[],
+    assessmentName: string
+) => {
+    // Prepare CSV headers
+    const headers = [
+        'Student Name',
+        'Email',
+        'Status',
+        'Overall Score',
+        'Max Score',
+        'Percentage',
+        'Pass/Fail',
+        'Rounds Completed'
+    ];
+
+    // Prepare CSV data
+    const csvData = data.map(item => [
+        item.student_name || 'N/A',
+        item.email || 'N/A',
+        ['PASSED', 'FAILED', 'COMPLETED'].includes(item.status) ? 'EVALUATED' : item.status,
+        item.total_score ?? '0',
+        item.max_score ?? '0',
+        item.percentage?.toFixed(1) ?? '0',
+        item.pass_fail,
+        item.rounds_completed || 0
+    ]);
+
+    // Convert to CSV string
+    const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => {
+            // Escape quotes and wrap in quotes if contains comma, quote, or newline
+            const cellStr = String(cell).replace(/"/g, '""');
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                return `"${cellStr}"`;
+            }
+            return cellStr;
+        }).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `${assessmentName.replace(/[^a-zA-Z0-9]/g, '_')}_Analytics_${timestamp}.csv`;
+    link.setAttribute('download', filename);
+
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};

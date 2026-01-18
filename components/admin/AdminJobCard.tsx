@@ -62,10 +62,11 @@ interface AdminJobCardProps {
     onAssignToUniversity: (job: Job) => void
     onViewAppliedStudents: (job: Job) => void
     onMakePublic: (job: Job) => void
+    onCreateAssessment?: (job: Job) => void
     cardIndex?: number
 }
 
-export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onViewAppliedStudents, onMakePublic, cardIndex = 0 }: AdminJobCardProps) {
+export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onViewAppliedStudents, onMakePublic, onCreateAssessment, cardIndex = 0 }: AdminJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -262,6 +263,19 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                             <Edit className="w-4 h-4" />
                                             Edit Job
                                         </button>
+
+                                        {onCreateAssessment && (
+                                            <button
+                                                onClick={() => {
+                                                    onCreateAssessment(job)
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                                Create Assessment
+                                            </button>
+                                        )}
 
                                         <button
                                             onClick={() => {
