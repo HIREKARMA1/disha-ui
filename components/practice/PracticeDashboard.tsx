@@ -2,17 +2,21 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Brain, Clock, Users, Trophy, ArrowLeft, CalendarDays } from 'lucide-react'
+import { Brain, Clock, Users, Trophy, ArrowLeft, CalendarDays, Briefcase } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { PracticeCard } from './PracticeCard'
+import { JobAssessmentCard } from './JobAssessmentCard'
+import { toast } from 'react-hot-toast'
 import { PracticeExam } from './PracticeExam'
+import { AssessmentDetailsModal } from './AssessmentDetailsModal'
 import { ResultReport } from './ResultReport'
 import { PracticeFilter, PracticeCategory } from './PracticeFilter'
-import { usePracticeModules } from '@/hooks/usePractice'
+import { usePracticeModules, useJobAssessments } from '@/hooks/usePractice'
 import { useStudentProfile } from '@/hooks/useStudentProfile'
-import { PracticeModule, SubmitAttemptResponse } from '@/types/practice'
+import { PracticeModule, SubmitAttemptResponse, JobAssessment } from '@/types/practice'
 import { Button } from '@/components/ui/button'
 import { LoadingSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
+import { apiClient } from '@/lib/api'
 
 type ViewState = 'dashboard' | 'exam' | 'result'
 
@@ -28,8 +32,11 @@ export function PracticeDashboard() {
     const [submittedModules, setSubmittedModules] = useState<Set<string>>(new Set())
     const [moduleResults, setModuleResults] = useState<Map<string, SubmitAttemptResponse>>(new Map())
     const [isClient, setIsClient] = useState(false)
+    const [showDetailsModal, setShowDetailsModal] = useState(false)
+    const [selectedJobAssessment, setSelectedJobAssessment] = useState<JobAssessment | null>(null)
 
     const { data: allModules, isLoading, error } = usePracticeModules()
+    const { data: jobAssessments, isLoading: jobAssessmentsLoading } = useJobAssessments()
     const { profile } = useStudentProfile()
 
     // Set client flag to prevent hydration mismatch
@@ -37,6 +44,7 @@ export function PracticeDashboard() {
         setIsClient(true)
     }, [])
 
+    // ... (keep useEffect for localStorage) ...
     // Load submitted modules from localStorage on mount (only on client)
     useEffect(() => {
         if (!isClient) return
@@ -83,6 +91,7 @@ export function PracticeDashboard() {
         }
     }, [isClient])
 
+    // ... (keep filteredModules useMemo) ...
     // Filter modules based on search term, category, university, and branch
     const filteredModules = useMemo(() => {
         if (!allModules) return []
@@ -154,6 +163,7 @@ export function PracticeDashboard() {
         return filtered
     }, [allModules, selectedCategory, searchTerm, selectedUniversities, selectedBranches, profile])
 
+
     // Don't render until client is ready to prevent hydration mismatch
     if (!isClient) {
         return (
@@ -168,11 +178,44 @@ export function PracticeDashboard() {
         )
     }
 
+    const handleStartJobAssessment = async (assessment: JobAssessment) => {
+        if (!profile?.id) {
+            console.error("No student profile found")
+            return
+        }
+        const toastId = toast.loading("Configuring your assessment environment...")
+        try {
+            console.log("Starting assessment token generation for", assessment.id)
+            const res = await apiClient.client.post(`/assessments/${assessment.id}/token`, {
+                student_id: profile.id,
+                assessment_id: assessment.id
+            })
+            if (res.data.solviq_url) {
+                toast.success("Assessment created successfully! Redirecting to exam...", { id: toastId, duration: 2000 })
+                // Redirect to Solviq (same tab)
+                setTimeout(() => {
+                    window.location.href = res.data.solviq_url
+                }, 1000)
+            } else {
+                toast.error("Failed to generate assessment config", { id: toastId })
+            }
+        } catch (e: any) {
+            console.error("Failed to start assessment", e)
+            toast.error(e?.response?.data?.detail || "Failed to start assessment. Please try again.", { id: toastId })
+        }
+    }
+
+    const handleViewJobAssessmentDetails = (assessment: JobAssessment) => {
+        setSelectedJobAssessment(assessment)
+        setShowDetailsModal(true)
+    }
+
     const handleStartExam = (module: PracticeModule) => {
         // Navigate to the practice module page with the module ID as a parameter
         router.push(`/dashboard/student/practice/${module.id}`)
     }
 
+    // ... (keep handleViewResults, handleExamComplete, etc.) ...
     const handleViewResults = (module: PracticeModule, result: SubmitAttemptResponse) => {
         // Show the results for a completed test
         setSelectedModule(module)
@@ -257,6 +300,7 @@ export function PracticeDashboard() {
                             Test your skills with practice assessments and mock exams to improve your performance ✨
                         </p>
                         <div className="flex flex-wrap gap-2">
+                            {/* ... badges ... */}
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
                                 📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                             </span>
@@ -287,6 +331,7 @@ export function PracticeDashboard() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ... stats ... */}
                 {[
                     {
                         label: 'Available Tests',
@@ -344,6 +389,41 @@ export function PracticeDashboard() {
                     </motion.div>
                 ))}
             </div>
+
+            {/* Job Assessments Section */}
+            {jobAssessments && jobAssessments.length > 0 && (
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center gap-2">
+                        <Briefcase className="w-5 h-5 text-primary-600" />
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                            Hiring Assessments
+                        </h2>
+                    </div>
+                    <div className="p-6">
+                        {jobAssessmentsLoading ? (
+                            <CardSkeleton count={3} />
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {jobAssessments.map((assessment, index) => (
+                                    <motion.div
+                                        key={assessment.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        <JobAssessmentCard
+                                            assessment={assessment}
+                                            cardIndex={index}
+                                            onViewDetails={() => handleViewJobAssessmentDetails(assessment)}
+                                            onStart={() => handleStartJobAssessment(assessment)}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Practice Modules Grid */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300">
@@ -416,6 +496,15 @@ export function PracticeDashboard() {
                     )}
                 </div>
             </div>
+            <AssessmentDetailsModal
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                assessment={selectedJobAssessment}
+                onStart={(a) => {
+                    setShowDetailsModal(false)
+                    handleStartJobAssessment(a)
+                }}
+            />
         </div>
     )
 }
