@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api'
 import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
+import { exportAnalyticsToCSV } from '@/utils/exportToExcel'
 
 export default function AssessmentAnalyticsPage() {
     const params = useParams()
@@ -95,6 +96,30 @@ export default function AssessmentAnalyticsPage() {
     }
 
     const stats = calculateStats()
+
+    const handleExport = () => {
+        if (!assessmentDetails || !filteredAttempts.length) return
+
+        const exportData = filteredAttempts.map(attempt => {
+            // Calculate max score matches the table logic
+            const maxScore = attempt.percentage > 0
+                ? Number((attempt.total_score / (attempt.percentage / 100)).toFixed(0))
+                : 5
+
+            return {
+                email: attempt.email || attempt.student_email || '-',
+                student_name: attempt.student_name || 'Unknown',
+                status: attempt.status,
+                total_score: attempt.total_score,
+                max_score: maxScore,
+                percentage: attempt.percentage,
+                pass_fail: attempt.status === 'PASSED' || attempt.percentage >= 60 ? 'PASS' : 'FAIL',
+                rounds_completed: attempt.result_data?.rounds?.length || 1
+            }
+        })
+
+        exportAnalyticsToCSV(exportData, assessmentDetails.assessment_name || 'Assessment')
+    }
 
     return (
         <AdminDashboardLayout>
@@ -199,6 +224,15 @@ export default function AssessmentAnalyticsPage() {
                                 <option value="COMPLETED">Completed</option>
                             </select>
                         </div>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={handleExport}
+                            disabled={filteredAttempts.length === 0}
+                        >
+                            <Download size={16} />
+                            Export CSV
+                        </Button>
                     </div>
 
                     {/* Table */}
@@ -445,8 +479,8 @@ function AttemptDetailsModal({ isOpen, onClose, attempt }: { isOpen: boolean, on
 
                                                 {/* Feedback */}
                                                 <div className={`p-4 rounded-lg border ${q.score > 0
-                                                        ? 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/50'
-                                                        : 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-800/50'
+                                                    ? 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/50'
+                                                    : 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-800/50'
                                                     }`}>
                                                     <p className={`text-xs font-semibold mb-2 ${q.score > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
                                                         }`}>Feedback:</p>

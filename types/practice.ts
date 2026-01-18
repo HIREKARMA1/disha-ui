@@ -146,6 +146,7 @@ export interface StudentAttempt {
   id: string
   student_id: string
   student_name: string
+  email?: string
   module_id: string
   module_title: string
   score_percent: number
@@ -188,6 +189,13 @@ export interface JobAssessment {
   end_time: string
   total_duration_minutes: number
   round_count: number
+  rounds?: Array<{
+    id: string
+    round_name: string
+    round_type: string
+    duration_minutes: number
+    round_number: number
+  }>
   university_id?: string
   corporate_id?: string
   created_at: string
