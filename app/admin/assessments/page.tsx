@@ -7,7 +7,7 @@ import { Plus } from "lucide-react";
 
 export default function AssessmentsPage() {
   const router = useRouter();
-  const [assessments, setAssessments] = useState([]);
+  const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
 
@@ -112,41 +112,37 @@ export default function AssessmentsPage() {
         <div className="mb-6 flex gap-3">
           <button
             onClick={() => setFilter("")}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              filter === ""
+            className={`px-4 py-2 rounded-lg font-medium ${filter === ""
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 border hover:bg-gray-50"
-            }`}
+              }`}
           >
             All
           </button>
           <button
             onClick={() => setFilter("DRAFT")}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              filter === "DRAFT"
+            className={`px-4 py-2 rounded-lg font-medium ${filter === "DRAFT"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 border hover:bg-gray-50"
-            }`}
+              }`}
           >
             Draft
           </button>
           <button
             onClick={() => setFilter("ACTIVE")}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              filter === "ACTIVE"
+            className={`px-4 py-2 rounded-lg font-medium ${filter === "ACTIVE"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 border hover:bg-gray-50"
-            }`}
+              }`}
           >
             Active
           </button>
           <button
             onClick={() => setFilter("COMPLETED")}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              filter === "COMPLETED"
+            className={`px-4 py-2 rounded-lg font-medium ${filter === "COMPLETED"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-gray-700 border hover:bg-gray-50"
-            }`}
+              }`}
           >
             Completed
           </button>

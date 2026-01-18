@@ -89,7 +89,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
             {editingRound === index ? (
               <RoundEditor
                 round={round}
-                onSave={(updated) => updateRound(index, updated)}
+                onSave={(updated: any) => updateRound(index, updated)}
                 onCancel={() => setEditingRound(null)}
               />
             ) : (

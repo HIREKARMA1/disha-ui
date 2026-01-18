@@ -10,6 +10,7 @@ interface AssessmentListProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onView: (id: string) => void;
+  onPublish?: (id: string) => void;
   loading: boolean;
 }
 
