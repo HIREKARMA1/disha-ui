@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AssessmentList } from '@/components/admin/AssessmentList'
+import { AssessmentDetailsModal } from '@/components/admin/assessments/AssessmentDetailsModal'
 import { apiClient } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Plus, Loader2, Copy, Check } from 'lucide-react'
@@ -21,6 +22,7 @@ interface Assessment {
   solviq_assessment_id?: string
   is_published_to_solviq?: boolean
   created_at: string
+  instructions?: string
 }
 
 export default function AssessmentsPage() {
@@ -32,6 +34,9 @@ export default function AssessmentsPage() {
     mode: 'all',
     search: ''
   })
+
+  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   // Fetch assessments
   const fetchAssessments = async () => {
@@ -57,7 +62,11 @@ export default function AssessmentsPage() {
   };
 
   const handleView = (id: string) => {
-    window.location.href = `/dashboard/admin/assessments/${id}`;
+    const assessment = assessments.find(a => a.id === id)
+    if (assessment) {
+      setSelectedAssessment(assessment)
+      setIsViewModalOpen(true)
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -159,6 +168,12 @@ export default function AssessmentsPage() {
           onEdit={handleEdit}
           onView={handleView}
           onDelete={handleDelete}
+        />
+
+        <AssessmentDetailsModal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          assessment={selectedAssessment}
         />
 
 
