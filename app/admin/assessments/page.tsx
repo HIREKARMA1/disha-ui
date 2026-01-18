@@ -113,8 +113,8 @@ export default function AssessmentsPage() {
           <button
             onClick={() => setFilter("")}
             className={`px-4 py-2 rounded-lg font-medium ${filter === ""
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 border hover:bg-gray-50"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-700 border hover:bg-gray-50"
               }`}
           >
             All
@@ -122,8 +122,8 @@ export default function AssessmentsPage() {
           <button
             onClick={() => setFilter("DRAFT")}
             className={`px-4 py-2 rounded-lg font-medium ${filter === "DRAFT"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 border hover:bg-gray-50"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-700 border hover:bg-gray-50"
               }`}
           >
             Draft
@@ -131,8 +131,8 @@ export default function AssessmentsPage() {
           <button
             onClick={() => setFilter("ACTIVE")}
             className={`px-4 py-2 rounded-lg font-medium ${filter === "ACTIVE"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 border hover:bg-gray-50"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-700 border hover:bg-gray-50"
               }`}
           >
             Active
@@ -140,8 +140,8 @@ export default function AssessmentsPage() {
           <button
             onClick={() => setFilter("COMPLETED")}
             className={`px-4 py-2 rounded-lg font-medium ${filter === "COMPLETED"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-700 border hover:bg-gray-50"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-700 border hover:bg-gray-50"
               }`}
           >
             Completed
