@@ -138,12 +138,216 @@ function JobOpportunitiesPageContent() {
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
     const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open') // New filter for job status
+    const [studentProfile, setStudentProfile] = useState<{ degree?: string; branch?: string } | null>(null)
+    const [allFilteredJobs, setAllFilteredJobs] = useState<Job[]>([]) // Store jobs after degree/branch filtering (before status filter)
+    const [baseJobs, setBaseJobs] = useState<Job[]>([]) // Store jobs after API fetch and client-side search (before degree/branch filter)
+
+    // Fetch student profile to get degree and branch
+    const fetchStudentProfile = async (): Promise<{ degree?: string; branch?: string } | null> => {
+        try {
+            const profile = await profileService.getProfile()
+            const profileData = {
+                degree: profile.degree,
+                branch: profile.branch
+            }
+            console.log('📋 Fetched student profile:', {
+                degree: profile.degree,
+                branch: profile.branch,
+                fullProfile: profile
+            })
+            setStudentProfile(profileData)
+            return profileData
+        } catch (error) {
+            console.error('Failed to fetch student profile:', error)
+            // Continue without profile - show all jobs if profile fetch fails
+            return null
+        }
+    }
+
+    // Filter jobs based on student's degree and branch
+    const filterJobsByDegreeAndBranch = (jobs: Job[], profile?: { degree?: string; branch?: string } | null): Job[] => {
+        const profileToUse = profile !== undefined ? profile : studentProfile
+        
+        console.log('🔍 Filtering jobs with profile:', profileToUse)
+        
+        if (!profileToUse || (!profileToUse.degree && !profileToUse.branch)) {
+            // If no profile or no degree/branch info, show all jobs
+            console.log('⚠️ No profile data, showing all jobs')
+            return jobs
+        }
+
+        return jobs.filter(job => {
+            console.log(`\n🔎 Checking job: "${job.title}"`)
+            console.log(`   Job education_degree:`, job.education_degree)
+            console.log(`   Job education_branch:`, job.education_branch)
+            
+            // Helper function to normalize and compare values
+            const normalizeString = (str: string): string => {
+                return str.toLowerCase().trim().replace(/[()]/g, '').replace(/\s+/g, ' ')
+            }
+
+            const normalizeArray = (arr: string | string[] | undefined): string[] => {
+                if (!arr) return []
+                if (typeof arr === 'string') {
+                    // Try to parse if it's a JSON string
+                    try {
+                        const parsed = JSON.parse(arr)
+                        if (Array.isArray(parsed)) return parsed.map(normalizeString)
+                        return [normalizeString(String(parsed))]
+                    } catch {
+                        return [normalizeString(arr)]
+                    }
+                }
+                return arr.map(normalizeString)
+            }
+
+            // Extract key terms from degree strings for better matching
+            const extractDegreeKeyTerms = (degreeStr: string): string[] => {
+                const normalized = normalizeString(degreeStr)
+                const terms: string[] = []
+                
+                // Extract degree level (bachelor, master, phd, etc.)
+                if (normalized.includes('bachelor') || normalized.includes('b.tech') || normalized.includes('btech')) {
+                    terms.push('bachelor')
+                }
+                if (normalized.includes('master') || normalized.includes('m.tech') || normalized.includes('mtech')) {
+                    terms.push('master')
+                }
+                if (normalized.includes('phd') || normalized.includes('doctor')) {
+                    terms.push('phd')
+                }
+                
+                // Extract degree type (technology, science, arts, etc.)
+                if (normalized.includes('technology') || normalized.includes('tech')) {
+                    terms.push('technology')
+                }
+                if (normalized.includes('science')) {
+                    terms.push('science')
+                }
+                if (normalized.includes('arts')) {
+                    terms.push('arts')
+                }
+                
+                return terms
+            }
+
+            // If job doesn't specify degree or branch requirements, show it
+            const hasDegreeRequirement = job.education_degree && normalizeArray(job.education_degree).length > 0
+            const hasBranchRequirement = job.education_branch && normalizeArray(job.education_branch).length > 0
+
+            // If job has no requirements, show it
+            if (!hasDegreeRequirement && !hasBranchRequirement) {
+                return true
+            }
+
+            // Check degree match (only if job requires it)
+            let degreeMatch = true
+            if (hasDegreeRequirement) {
+                const jobDegrees = normalizeArray(job.education_degree)
+                const studentDegree = profileToUse.degree ? normalizeString(profileToUse.degree) : ''
+                
+                if (studentDegree) {
+                    // Extract key terms for both student and job degrees
+                    const studentTerms = extractDegreeKeyTerms(profileToUse.degree || '')
+                    
+                    degreeMatch = jobDegrees.some(jobDegree => {
+                        const jobTerms = extractDegreeKeyTerms(jobDegree)
+                        
+                        // Check if degree levels match (bachelor vs master vs phd)
+                        const studentLevel = studentTerms.find(t => ['bachelor', 'master', 'phd'].includes(t))
+                        const jobLevel = jobTerms.find(t => ['bachelor', 'master', 'phd'].includes(t))
+                        
+                        // If both have levels, they must match exactly
+                        if (studentLevel && jobLevel) {
+                            if (studentLevel !== jobLevel) {
+                                console.log(`❌ Degree level mismatch: student=${studentLevel}, job=${jobLevel} (${job.title})`)
+                                return false
+                            }
+                        }
+                        
+                        // Also check for exact or substring match as fallback
+                        const exactMatch = jobDegree === studentDegree
+                        const containsMatch = studentDegree.includes(jobDegree) || jobDegree.includes(studentDegree)
+                        
+                        if (exactMatch || containsMatch) {
+                            console.log(`✅ Degree match: student="${profileToUse.degree}" matches job="${jobDegree}" (${job.title})`)
+                            return true
+                        }
+                        
+                        return false
+                    })
+                    
+                    if (!degreeMatch) {
+                        console.log(`❌ Degree mismatch: student="${profileToUse.degree}" does not match job requirements (${job.title})`)
+                    }
+                } else {
+                    // Job requires degree but student doesn't have one
+                    degreeMatch = false
+                    console.log(`❌ Job requires degree but student has none (${job.title})`)
+                }
+            }
+
+            // Check branch match (only if job requires it)
+            let branchMatch = true
+            if (hasBranchRequirement) {
+                const jobBranches = normalizeArray(job.education_branch)
+                const studentBranch = profileToUse.branch ? normalizeString(profileToUse.branch) : ''
+                
+                if (studentBranch) {
+                    branchMatch = jobBranches.some(jobBranch => {
+                        // Extract core branch name (remove common suffixes)
+                        const extractCoreBranch = (branch: string): string => {
+                            return branch
+                                .replace(/engineering/gi, '')
+                                .replace(/science/gi, '')
+                                .replace(/technology/gi, '')
+                                .replace(/\(.*?\)/g, '') // Remove parentheses
+                                .trim()
+                        }
+                        
+                        const studentCore = extractCoreBranch(studentBranch)
+                        const jobCore = extractCoreBranch(jobBranch)
+                        
+                        // Check for exact match or substring match
+                        const exactMatch = jobBranch === studentBranch
+                        const containsMatch = studentBranch.includes(jobCore) || jobBranch.includes(studentCore)
+                        const coreMatch = studentCore && jobCore && (studentCore.includes(jobCore) || jobCore.includes(studentCore))
+                        
+                        if (exactMatch || containsMatch || coreMatch) {
+                            console.log(`✅ Branch match: student="${profileToUse.branch}" matches job="${jobBranch}" (${job.title})`)
+                            return true
+                        }
+                        
+                        return false
+                    })
+                    
+                    if (!branchMatch) {
+                        console.log(`❌ Branch mismatch: student="${profileToUse.branch}" does not match job requirements (${job.title})`)
+                    }
+                } else {
+                    // Job requires branch but student doesn't have one
+                    branchMatch = false
+                    console.log(`❌ Job requires branch but student has none (${job.title})`)
+                }
+            }
+
+            // Job is shown if all specified requirements match
+            const shouldShow = degreeMatch && branchMatch
+            if (!shouldShow) {
+                console.log(`🚫 Filtering out job: "${job.title}" (degreeMatch=${degreeMatch}, branchMatch=${branchMatch})`)
+            } else {
+                console.log(`✅ Keeping job: "${job.title}" (degreeMatch=${degreeMatch}, branchMatch=${branchMatch})`)
+            }
+            return shouldShow
+        })
+    }
 
     // Fetch jobs from API
     const fetchJobs = async (
         page: number = 1,
         searchParams: JobSearchParams = {},
-        useClientSideSearch: boolean = false
+        useClientSideSearch: boolean = false,
+        profileData?: { degree?: string; branch?: string } | null
     ): Promise<void> => {
         try {
             setLoading(true)
@@ -434,6 +638,8 @@ function JobOpportunitiesPageContent() {
                 if (!finalValidation) {
                     console.error('CRITICAL: Ultra cleaning failed. Setting empty state.')
                     setJobs([])
+                    setAllFilteredJobs([])
+                    setBaseJobs([])
                     setPagination({
                         page: 1,
                         limit: 9,
@@ -453,12 +659,36 @@ function JobOpportunitiesPageContent() {
                     console.log(`Client-side search: ${ultraCleanJobs.length} -> ${searchFilteredJobs.length} jobs`)
                 }
 
-                setJobs(searchFilteredJobs)
+                // Store base jobs (after API fetch and client-side search, before degree/branch filter)
+                setBaseJobs(searchFilteredJobs)
+                console.log(`📦 Base jobs stored: ${searchFilteredJobs.length} jobs`)
+
+                // Use provided profile data or fall back to state
+                const profileToUse = profileData !== undefined ? profileData : studentProfile
+                
+                // Apply degree and branch filtering
+                console.log(`🔍 Applying degree/branch filter with profile:`, profileToUse)
+                const degreeBranchFilteredJobs = filterJobsByDegreeAndBranch(searchFilteredJobs, profileToUse)
+                console.log(`✅ Degree/Branch filter result: ${searchFilteredJobs.length} -> ${degreeBranchFilteredJobs.length} jobs`)
+                if (profileToUse) {
+                    console.log(`👤 Student profile: degree="${profileToUse.degree}", branch="${profileToUse.branch}"`)
+                } else {
+                    console.warn('⚠️ No student profile available - showing all jobs')
+                }
+
+                // Store jobs after degree/branch filtering (before status filter)
+                setAllFilteredJobs(degreeBranchFilteredJobs)
+
+                // Apply status filter before setting state (so pagination counts are correct)
+                const statusFilteredJobs = filterJobsByStatus(degreeBranchFilteredJobs)
+                console.log(`Status filter (${jobStatusFilter}): ${degreeBranchFilteredJobs.length} -> ${statusFilteredJobs.length} jobs`)
+
+                setJobs(statusFilteredJobs)
                 setPagination({
                     page: data.page || 1,
                     limit: data.limit || 9,
-                    total: useClientSideSearch ? searchFilteredJobs.length : (data.total_count || 0),
-                    total_pages: useClientSideSearch ? Math.ceil(searchFilteredJobs.length / (data.limit || 9)) : (data.total_pages || 0)
+                    total: statusFilteredJobs.length,
+                    total_pages: Math.ceil(statusFilteredJobs.length / (data.limit || 9))
                 })
 
                 // Update application status for jobs
@@ -466,6 +696,8 @@ function JobOpportunitiesPageContent() {
             } else {
                 // If validation failed and no jobs, set empty state
                 setJobs([])
+                setAllFilteredJobs([])
+                setBaseJobs([])
                 setPagination({
                     page: 1,
                     limit: 9,
@@ -505,6 +737,8 @@ function JobOpportunitiesPageContent() {
                 if (hasValidationErrors(error.response.data)) {
                     console.error('CRITICAL: fetchJobs response contains validation errors. Setting empty state.')
                     setJobs([])
+                    setAllFilteredJobs([])
+                    setBaseJobs([])
                     setPagination({
                         page: 1,
                         limit: 9,
@@ -943,10 +1177,51 @@ function JobOpportunitiesPageContent() {
 
     // Load initial data
     useEffect(() => {
-        fetchJobs(1, {})
-        checkApplicationStatus()
-        fetchProfileCompletion()
+        const loadData = async () => {
+            console.log('🚀 Loading initial data...')
+            // Fetch profile first so filtering can work
+            const profileData = await fetchStudentProfile()
+            // Pass profile data directly to fetchJobs to avoid timing issues
+            await fetchJobs(1, {}, false, profileData)
+            checkApplicationStatus()
+            fetchProfileCompletion()
+        }
+        loadData()
     }, [])
+
+    // Refilter jobs when student profile is loaded/updated (only if we have base jobs)
+    useEffect(() => {
+        if (studentProfile && baseJobs.length > 0) {
+            console.log('🔄 Re-filtering jobs after profile update:', studentProfile)
+            // Re-apply the degree/branch filter with the updated profile
+            const degreeBranchFiltered = filterJobsByDegreeAndBranch(baseJobs, studentProfile)
+            console.log(`🔄 Re-filter result: ${baseJobs.length} -> ${degreeBranchFiltered.length} jobs`)
+            setAllFilteredJobs(degreeBranchFiltered)
+            // Then apply status filter
+            const statusFiltered = filterJobsByStatus(degreeBranchFiltered)
+            setJobs(statusFiltered)
+            setPagination(prev => ({
+                ...prev,
+                total: statusFiltered.length,
+                total_pages: Math.ceil(statusFiltered.length / prev.limit)
+            }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [studentProfile])
+
+    // Re-apply status filter when application status or status filter changes
+    useEffect(() => {
+        if (allFilteredJobs.length > 0) {
+            const statusFiltered = filterJobsByStatus(allFilteredJobs)
+            setJobs(statusFiltered)
+            setPagination(prev => ({
+                ...prev,
+                total: statusFiltered.length,
+                total_pages: Math.ceil(statusFiltered.length / prev.limit)
+            }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [applicationStatus, jobStatusFilter])
 
     // Global error boundary for validation errors
     useEffect(() => {
@@ -1027,7 +1302,18 @@ function JobOpportunitiesPageContent() {
                     </Button>
                     <select
                         value={jobStatusFilter}
-                        onChange={(e) => setJobStatusFilter(e.target.value as 'all' | 'open' | 'closed')}
+                        onChange={(e) => {
+                            const newFilter = e.target.value as 'all' | 'open' | 'closed'
+                            setJobStatusFilter(newFilter)
+                            // Re-apply status filter to already filtered jobs (no need to refetch)
+                            const statusFiltered = filterJobsByStatus(allFilteredJobs)
+                            setJobs(statusFiltered)
+                            setPagination(prev => ({
+                                ...prev,
+                                total: statusFiltered.length,
+                                total_pages: Math.ceil(statusFiltered.length / prev.limit)
+                            }))
+                        }}
                         className="px-3 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10"
                     >
                         <option value="all">All Jobs</option>
@@ -1254,7 +1540,7 @@ function JobOpportunitiesPageContent() {
                 ) : jobs.length > 0 ? (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filterJobsByStatus(jobs).map((job, index) => {
+                            {jobs.map((job, index) => {
                                 // Final safety check before rendering
                                 if (!job || typeof job !== 'object') {
                                     console.error('Attempting to render invalid job:', job)
