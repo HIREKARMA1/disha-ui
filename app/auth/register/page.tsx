@@ -318,8 +318,12 @@ export default function RegisterPage() {
         setSelectedUserType(userType)
         setValue('user_type', userType)
 
-        // Update the URL to reflect the selected user type
-        router.replace(`/auth/register?type=${userType}`)
+        // Preserve redirect parameter when updating URL
+        const redirectUrl = searchParams.get('redirect')
+        const newUrl = redirectUrl
+            ? `/auth/register?type=${userType}&redirect=${redirectUrl}`
+            : `/auth/register?type=${userType}`
+        router.replace(newUrl)
 
         // Reset form when changing user type
         reset()
@@ -456,15 +460,19 @@ export default function RegisterPage() {
                 }, loginResponse.access_token, loginResponse.refresh_token)
 
                 // Check for redirect URL (from query params or localStorage)
-                const redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
-                
+                let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+
                 if (redirectUrl) {
+                    // Decode the redirect URL
+                    redirectUrl = decodeURIComponent(redirectUrl)
+                    console.log('Redirecting to:', redirectUrl) // Debug log
+
                     // Clear the stored redirect URL
                     if (typeof window !== 'undefined') {
                         localStorage.removeItem('redirect_after_login')
                     }
-                    // Use window.location for a hard redirect to prevent any interference
-                    window.location.href = redirectUrl
+                    // Use router.push for client-side navigation
+                    router.push(redirectUrl)
                     return
                 }
 
@@ -480,7 +488,7 @@ export default function RegisterPage() {
                 toast.success('Registration successful! Please log in.')
                 // Preserve redirect URL when redirecting to login
                 const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
-                const loginUrl = redirectUrl 
+                const loginUrl = redirectUrl
                     ? `/auth/login?type=${selectedUserType}&registered=true&redirect=${encodeURIComponent(redirectUrl)}`
                     : `/auth/login?type=${selectedUserType}&registered=true`
                 router.push(loginUrl)
