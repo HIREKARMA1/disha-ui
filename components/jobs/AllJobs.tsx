@@ -86,7 +86,7 @@ export function AllJobs() {
     const [searchTerm, setSearchTerm] = useState('')
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 1000,
+        limit: 12,
         total: 0,
         total_pages: 0
     })
