@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -28,7 +29,7 @@ import {
     GraduationCap as Cap,
     Wrench,
     Users2,
- HeartHandshake
+    HeartHandshake
 } from 'lucide-react'
 // import { FaHandshake } from "react-icons/fa6";
 import { apiClient } from '@/lib/api'
@@ -45,6 +46,7 @@ export function Navbar({
 }: NavbarProps) {
     const { user, isAuthenticated, isLoading, logout } = useAuth()
     const { theme, resolvedTheme } = useTheme()
+    const pathname = usePathname()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isAboutOpen, setIsAboutOpen] = useState(false)
     const [isSolutionsOpen, setIsSolutionsOpen] = useState(false)
@@ -53,6 +55,15 @@ export function Navbar({
     const [profile, setProfile] = useState<UniversityProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+
+    // Helper function to get auth links with redirect
+    const getAuthLink = (basePath: string) => {
+        // Don't add redirect for auth pages themselves
+        if (pathname?.startsWith('/auth/') || pathname === '/') {
+            return basePath
+        }
+        return `${basePath}?redirect=${encodeURIComponent(pathname || '')}`
+    }
 
     useEffect(() => {
         if (isAuthenticated && user?.user_type === 'university') {
@@ -430,10 +441,10 @@ export function Navbar({
                             </div>
                         ) : (
                             <div className="flex items-center space-x-3">
-                                <Link href="/auth/register">
+                                <Link href={getAuthLink('/auth/register')}>
                                     <Button variant="outline">Sign Up</Button>
                                 </Link>
-                                <Link href="/auth/login">
+                                <Link href={getAuthLink('/auth/login')}>
                                     <Button>Sign In</Button>
                                 </Link>
                             </div>
@@ -552,12 +563,12 @@ export function Navbar({
                                 </>
                             ) : (
                                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-6">
-                                    <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Link href={getAuthLink('/auth/register')} onClick={() => setIsMobileMenuOpen(false)}>
                                         <Button variant="outline" className="w-full justify-start mb-4">
                                             Sign Up
                                         </Button>
                                     </Link>
-                                    <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Link href={getAuthLink('/auth/login')} onClick={() => setIsMobileMenuOpen(false)}>
                                         <Button className="w-full justify-start">
                                             Sign In
                                         </Button>

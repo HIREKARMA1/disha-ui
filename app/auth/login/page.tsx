@@ -100,7 +100,7 @@ export default function LoginPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
-            const link = redirectUrl 
+            const link = redirectUrl
                 ? `/auth/register?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
                 : `/auth/register?type=${selectedUserType}`
             setRegisterLink(link)
@@ -132,15 +132,19 @@ export default function LoginPage() {
             toast.success('Login successful!')
 
             // Check for redirect URL (from query params or localStorage)
-            const redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
-            
+            let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+
             if (redirectUrl) {
+                // Decode the redirect URL
+                redirectUrl = decodeURIComponent(redirectUrl)
+                console.log('Redirecting to:', redirectUrl) // Debug log
+
                 // Clear the stored redirect URL
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('redirect_after_login')
                 }
-                // Use window.location for a hard redirect to prevent any interference
-                window.location.href = redirectUrl
+                // Use router.push for client-side navigation
+                router.push(redirectUrl)
                 return
             }
 
@@ -192,8 +196,12 @@ export default function LoginPage() {
         setSelectedUserType(userType)
         setValue('user_type', userType)
 
-        // Update the URL to reflect the selected user type
-        router.replace(`/auth/login?type=${userType}`)
+        // Preserve redirect parameter when updating URL
+        const redirectUrl = searchParams.get('redirect')
+        const newUrl = redirectUrl
+            ? `/auth/login?type=${userType}&redirect=${redirectUrl}`
+            : `/auth/login?type=${userType}`
+        router.replace(newUrl)
 
         // Force form to recognize the change
         setTimeout(() => {
