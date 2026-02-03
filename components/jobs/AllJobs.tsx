@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Search, Loader2, Filter } from 'lucide-react'
+import { Search, Loader2, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { JobCard } from '@/components/dashboard/JobCard'
@@ -640,24 +640,88 @@ export function AllJobs() {
 
             {/* Pagination */}
             {pagination.total_pages > 1 && (
-                <div className="mt-8 flex justify-center gap-2">
-                    <Button
-                        variant="outline"
-                        disabled={pagination.page === 1}
-                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    >
-                        Previous
-                    </Button>
-                    <span className="flex items-center px-4 text-sm text-gray-600 dark:text-gray-400">
-                        Page {pagination.page} of {pagination.total_pages}
-                    </span>
-                    <Button
-                        variant="outline"
-                        disabled={pagination.page === pagination.total_pages}
-                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    >
-                        Next
-                    </Button>
+                <div className="mt-8 flex justify-center pb-8">
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="w-9 h-9 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                            disabled={pagination.page === 1}
+                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                            {(() => {
+                                const totalPages = pagination.total_pages
+                                const currentPage = pagination.page
+
+                                const renderPageButton = (pageNum: number) => (
+                                    <Button
+                                        key={pageNum}
+                                        variant={currentPage === pageNum ? "default" : "outline"}
+                                        className={`w-9 h-9 p-0 font-medium transition-all ${currentPage === pageNum
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-md'
+                                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'}`}
+                                        onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                                    >
+                                        {pageNum}
+                                    </Button>
+                                )
+
+                                const pages = []
+
+                                if (totalPages <= 7) {
+                                    for (let i = 1; i <= totalPages; i++) {
+                                        pages.push(renderPageButton(i))
+                                    }
+                                } else {
+                                    // Always show first page
+                                    pages.push(renderPageButton(1))
+
+                                    if (currentPage > 3) {
+                                        pages.push(<span key="ellipsis-start" className="px-1 text-gray-400">...</span>)
+                                    }
+
+                                    // Calculate range
+                                    let start = Math.max(2, currentPage - 1)
+                                    let end = Math.min(totalPages - 1, currentPage + 1)
+
+                                    if (currentPage <= 3) {
+                                        start = 2
+                                        end = 4
+                                    } else if (currentPage >= totalPages - 2) {
+                                        start = totalPages - 3
+                                        end = totalPages - 1
+                                    }
+
+                                    for (let i = start; i <= end; i++) {
+                                        pages.push(renderPageButton(i))
+                                    }
+
+                                    if (currentPage < totalPages - 2) {
+                                        pages.push(<span key="ellipsis-end" className="px-1 text-gray-400">...</span>)
+                                    }
+
+                                    // Always show last page
+                                    pages.push(renderPageButton(totalPages))
+                                }
+                                return pages
+                            })()}
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="w-9 h-9 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                            disabled={pagination.page === pagination.total_pages}
+                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
             )}
 
