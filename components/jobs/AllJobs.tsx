@@ -86,7 +86,7 @@ export function AllJobs() {
     const [searchTerm, setSearchTerm] = useState('')
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 12,
+        limit: 1000,
         total: 0,
         total_pages: 0
     })
@@ -107,7 +107,7 @@ export function AllJobs() {
 
     // Filter state
     const [showFilters, setShowFilters] = useState(false)
-    const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open')
+    const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
     const [filters, setFilters] = useState({
         location: '',
         industry: '',
@@ -135,7 +135,7 @@ export function AllJobs() {
             salary_max: ''
         })
         setSearchTerm('')
-        setJobStatusFilter('open')
+        setJobStatusFilter('all')
         fetchJobs(1)
     }
 
