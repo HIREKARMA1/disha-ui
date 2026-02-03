@@ -294,8 +294,8 @@ export function AllJobs() {
             setPagination({
                 page: data.page || 1,
                 limit: data.limit || 12,
-                total: filteredByStatus.length,
-                total_pages: Math.ceil(filteredByStatus.length / (data.limit || 12))
+                total: data.total_count || filteredByStatus.length,
+                total_pages: data.total_pages || Math.ceil((data.total_count || filteredByStatus.length) / (data.limit || 12))
             })
         } catch (error) {
             console.error('Error fetching jobs:', error)
