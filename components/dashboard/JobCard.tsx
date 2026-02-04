@@ -337,7 +337,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <DollarSign className="w-4 h-4" />
+
                         <span className="truncate">{formatSalary(job.salary_currency, job.salary_min, job.salary_max)}</span>
                     </div>
 
