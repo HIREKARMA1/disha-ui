@@ -193,6 +193,11 @@ export function AllJobs() {
             const params = new URLSearchParams()
             params.set('page', String(page))
             params.set('limit', String(pagination.limit))
+
+            // Sort by created_at descending (most recent first)
+            params.set('sort_by', 'created_at')
+            params.set('sort_order', 'desc')
+
             if (searchTerm) params.set('title', searchTerm) // Assuming backend supports title search
 
             // Add other filters
