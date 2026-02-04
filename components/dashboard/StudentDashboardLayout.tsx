@@ -78,8 +78,9 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
         checkAccessAndFetchProfile()
     }, [user?.id, user?.user_type])
 
-    const isProfilePage = pathname === '/dashboard/student/profile'
-    const shouldLock = isLocked && !isProfilePage
+    // Lock screen should only appear on Job Opportunities page
+    const isJobOpportunitiesPage = pathname === '/dashboard/student/jobs'
+    const shouldLock = isLocked && isJobOpportunitiesPage
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
