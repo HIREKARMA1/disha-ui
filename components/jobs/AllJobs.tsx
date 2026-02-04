@@ -108,6 +108,7 @@ export function AllJobs() {
     // Filter state
     const [showFilters, setShowFilters] = useState(false)
     const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+    const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '15d' | '30d'>('all')
     const [filters, setFilters] = useState({
         location: '',
         industry: '',
@@ -136,6 +137,7 @@ export function AllJobs() {
         })
         setSearchTerm('')
         setJobStatusFilter('all')
+        setDatePostedFilter('all')
         fetchJobs(1)
     }
 
@@ -170,6 +172,11 @@ export function AllJobs() {
         // Refetch when job status filter changes
         fetchJobs(1)
     }, [jobStatusFilter])
+
+    useEffect(() => {
+        // Refetch when date posted filter changes
+        fetchJobs(1)
+    }, [datePostedFilter])
 
     // Search debounce could be added here, simplified for now
     const handleSearch = (e: React.FormEvent) => {
@@ -290,12 +297,38 @@ export function AllJobs() {
             }
             // 'all' shows everything (no filter)
 
-            setJobs(filteredByStatus)
+            // Apply date posted filter
+            let filteredByDate = filteredByStatus
+            if (datePostedFilter !== 'all') {
+                const now = new Date()
+                const filterHours = {
+                    '24h': 24,
+                    '7d': 24 * 7,
+                    '15d': 24 * 15,
+                    '30d': 24 * 30
+                }[datePostedFilter] || 0
+
+                filteredByDate = filteredByStatus.filter((job: Job) => {
+                    if (!job.created_at) return false
+                    const jobDate = new Date(job.created_at)
+                    const hoursDiff = (now.getTime() - jobDate.getTime()) / (1000 * 60 * 60)
+                    return hoursDiff <= filterHours
+                })
+            }
+
+            // Sort jobs by created_at (most recent first)
+            const sortedJobs = filteredByDate.sort((a: Job, b: Job) => {
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+                return dateB - dateA // Descending order
+            })
+
+            setJobs(sortedJobs)
             setPagination({
                 page: data.page || 1,
                 limit: data.limit || 12,
-                total: data.total_count || filteredByStatus.length,
-                total_pages: data.total_pages || Math.ceil((data.total_count || filteredByStatus.length) / (data.limit || 12))
+                total: sortedJobs.length,
+                total_pages: Math.ceil(sortedJobs.length / (data.limit || 12))
             })
         } catch (error) {
             console.error('Error fetching jobs:', error)
@@ -392,20 +425,20 @@ export function AllJobs() {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
                     <div className="flex-1 min-w-0">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Job Opportunities 💼
+                            Job Opportunities
                         </h1>
                         <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                            Discover and apply for exciting career opportunities ✨
+                            Discover and apply for exciting career opportunities
                         </p>
                         <div className="flex flex-wrap gap-2">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                🎯 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                             </span>
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                📈 Career Growth
+                                Career Growth
                             </span>
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                🚀 New Opportunities
+                                New Opportunities
                             </span>
                         </div>
                     </div>
@@ -457,6 +490,30 @@ export function AllJobs() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </div>
+                    <div className="relative">
+                        <select
+                            value={datePostedFilter}
+                            onChange={(e) => {
+                                const newFilter = e.target.value as 'all' | '24h' | '7d' | '15d' | '30d'
+                                setDatePostedFilter(newFilter)
+                            }}
+                            className="appearance-none px-2 py-2 pr-10 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10 font-medium cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                        >
+                            <option value="all">All Time</option>
+                            <option value="24h">Within 24 hours</option>
+                            <option value="7d">Within 7 days</option>
+                            <option value="15d">Within 15 days</option>
+                            <option value="30d">Within 30 days</option>
+                        </select>
+                        <svg
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                     <Button
                         onClick={(e) => handleSearch(e)}
                         className="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 h-10 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
@@ -470,7 +527,7 @@ export function AllJobs() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                📍 Location
+                                Location
                             </label>
                             <Input
                                 placeholder="City, State"
@@ -482,7 +539,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                🏭 Industry
+                                Industry
                             </label>
                             <select
                                 value={filters.industry}
@@ -502,7 +559,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                💼 Job Type
+                                Job Type
                             </label>
                             <select
                                 value={filters.job_type}
@@ -520,7 +577,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                🏠 Remote Work
+                                Remote Work
                             </label>
                             <select
                                 value={filters.remote_work}
@@ -535,7 +592,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ⏰ Min Experience (years)
+                                Min Experience (years)
                             </label>
                             <Input
                                 type="number"
@@ -548,7 +605,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ⏰ Max Experience (years)
+                                Max Experience (years)
                             </label>
                             <Input
                                 type="number"
@@ -561,7 +618,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                💰 Min Salary (INR)
+                                Min Salary (INR)
                             </label>
                             <Input
                                 type="number"
@@ -574,7 +631,7 @@ export function AllJobs() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                💰 Max Salary (INR)
+                                Max Salary (INR)
                             </label>
                             <Input
                                 type="number"
@@ -590,14 +647,14 @@ export function AllJobs() {
                                 onClick={(e) => handleSearch(e)}
                                 className="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 py-2 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
                             >
-                                ✨ Apply Filters
+                                Apply Filters
                             </Button>
                             <Button
                                 variant="outline"
                                 onClick={clearFilters}
                                 className="border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md px-6 py-2 w-full sm:w-auto"
                             >
-                                🗑️ Clear All
+                                Clear All
                             </Button>
                         </div>
                     </div>
