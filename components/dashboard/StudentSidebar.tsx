@@ -52,6 +52,13 @@ const navItems: NavItem[] = [
         color: 'from-green-500 to-teal-600'
     },
     {
+        label: 'All Jobs',
+        href: '/jobs',
+        icon: Search,
+        description: 'View all available jobs',
+        color: 'from-sky-500 to-cyan-600'
+    },
+    {
         label: 'Job Opportunities',
         href: '/dashboard/student/jobs',
         icon: Briefcase,
