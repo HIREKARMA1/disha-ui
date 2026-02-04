@@ -52,14 +52,14 @@ const navItems: NavItem[] = [
         color: 'from-green-500 to-teal-600'
     },
     {
-        label: 'All Jobs',
+        label: 'Live Jobs',
         href: '/jobs',
         icon: Search,
         description: 'View all available jobs',
         color: 'from-sky-500 to-cyan-600'
     },
     {
-        label: 'Job Opportunities',
+        label: 'Campus Drive',
         href: '/dashboard/student/jobs',
         icon: Briefcase,
         description: 'Browse and apply for jobs',
