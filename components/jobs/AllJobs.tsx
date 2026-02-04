@@ -332,8 +332,8 @@ export function AllJobs() {
             setPagination({
                 page: data.page || 1,
                 limit: data.limit || 12,
-                total: sortedJobs.length,
-                total_pages: Math.ceil(sortedJobs.length / (data.limit || 12))
+                total: data.total_count || 0,
+                total_pages: data.total_pages || 1
             })
         } catch (error) {
             console.error('Error fetching jobs:', error)
