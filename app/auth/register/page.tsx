@@ -204,10 +204,8 @@ const universitySchema = z.object({
     password: passwordSchema,
     confirmPassword: z.string(),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
-    university_name: z
-        .string()
-        .min(1, 'University name is required')
-        .regex(/^[A-Za-z\s]+$/, 'University name can only contain letters and spaces'),
+    college_id: z.string().min(1, 'Please select a college/university'),
+    university_name: z.string().optional(), // Auto-filled from dropdown selection
     website_url: z
         .string()
         .trim()
@@ -645,25 +643,41 @@ export default function RegisterPage() {
     const renderUniversityForm = () => (
         <div className="space-y-4">
             <div>
-                <label htmlFor="university_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    University Name *
-                </label>
-                <Input
-                    id="university_name"
-                    placeholder="Enter university name"
-                    leftIcon={<GraduationCap className="w-4 h-4" />}
-                    error={!!(errors as any).university_name}
-                    {...register('university_name', {
-                        onChange: (e) => {
-                            e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                <AsyncSearchableSelect
+                    label="University / College *"
+                    placeholder="Search for your institution..."
+                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
+                        try {
+                            const response = await apiClient.get('/admin/lookups/colleges', {
+                                params: {
+                                    search: query,
+                                    limit: 100
+                                }
+                            })
+                            // Ensure we handle the response structure correctly
+                            const colleges = response.colleges || []
+                            return colleges.map((c: any) => {
+                                // Cleanup name: remove quotes but keep full name
+                                const cleanName = c.name ? c.name.replace(/['\"]+/g, '').trim() : "Unknown College"
+                                return {
+                                    value: c.id,
+                                    label: cleanName
+                                }
+                            })
+                        } catch (error) {
+                            console.error('Failed to fetch colleges', error)
+                            return []
                         }
-                    })}
+                    }}
+                    onChange={(value, option) => {
+                        // Store both the ID (as college_id) and the name (as university_name)
+                        setValue('college_id', value as any)
+                        if (option) {
+                            setValue('university_name', option.label as any)
+                        }
+                    }}
+                    value={watch('college_id' as any)}
                 />
-                {(errors as any).university_name && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {typeof (errors as any).university_name.message === 'string' ? (errors as any).university_name.message : 'University name is required'}
-                    </p>
-                )}
             </div>
 
             <div>

@@ -11,7 +11,7 @@ export interface AsyncSelectOption {
 interface AsyncSearchableSelectProps {
     fetchOptions: (searchTerm: string) => Promise<AsyncSelectOption[]>
     value?: string
-    onChange: (value: string) => void
+    onChange: (value: string, option?: AsyncSelectOption) => void
     placeholder?: string
     label?: string
     disabled?: boolean
@@ -113,7 +113,7 @@ export function AsyncSearchableSelect({
     }, [isOpen])
 
     const handleSelect = (option: AsyncSelectOption) => {
-        onChange(option.value)
+        onChange(option.value, option)
         setPersistedSelectedOption(option)
         setIsOpen(false)
         setSearchTerm('')

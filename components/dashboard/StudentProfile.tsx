@@ -1246,14 +1246,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             section.fields.forEach(field => {
                 initialData[field] = profile[field as keyof StudentProfile] || ''
             })
-            
+
             // Include university_id and college_id for academic section
             if (section.id === 'academic' || section.id === 'basic') {
                 if (profile.university_id) {
                     initialData.university_id = profile.university_id
                 }
             }
-            
+
             setFormData(initialData)
         }
     }, [profile, section])
@@ -1832,13 +1832,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     onChange={(newValue) => {
                         // Find the matching university to get its ID
                         const selectedUniversity = universities.find(uni => uni.name === newValue)
-                        
+
                         // Update both institution name and university_id
                         const updatedData = {
                             ...formData,
                             [field]: newValue
                         }
-                        
+
                         // If a matching university is found, also set the university_id
                         if (selectedUniversity) {
                             updatedData.university_id = selectedUniversity.id
@@ -1846,7 +1846,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             // Clear university_id if institution doesn't match any university
                             updatedData.university_id = null
                         }
-                        
+
                         setFormData(updatedData)
                     }}
                     data={universities}
