@@ -198,6 +198,34 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
         setImageError(true)
     }
 
+    // Determine if Campus Drive should be visible based on university/license status
+    const shouldShowCampusDrive = () => {
+        if (!profileData) return true
+
+        // Hide if backend explicitly indicates university is not found
+        if (typeof profileData.license_status_reason === 'string') {
+            const reason = profileData.license_status_reason.toLowerCase()
+            if (reason.includes('university not found')) {
+                return false
+            }
+        }
+
+        // Fallback: hide if no university_id associated with the student
+        if (!profileData.university_id) {
+            return false
+        }
+
+        return true
+    }
+
+    // Filter navigation items based on profile/university state
+    const filteredNavItems = navItems.filter((item) => {
+        if (item.label === 'Campus Drive') {
+            return shouldShowCampusDrive()
+        }
+        return true
+    })
+
     // Handle SSO redirect
     const handleSSORedirect = async (item: NavItem) => {
         console.log('SSO redirect triggered for:', item.label)
@@ -259,7 +287,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
 
                 {/* Navigation */}
                 <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
 
@@ -360,7 +388,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             {/* Mobile Bottom Navigation */}
             <div className="student-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
                 <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {navItems.slice(0, 5).map((item) => {
+                    {filteredNavItems.slice(0, 5).map((item) => {
                         const isActive = pathname === item.href
                         const { startLoading } = useLoading()
 
@@ -458,7 +486,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
 
                             {/* Navigation - Scrollable */}
                             <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
-                                {navItems.map((item) => {
+                                {filteredNavItems.map((item) => {
                                     const isActive = pathname === item.href
                                     const { startLoading } = useLoading()
 
