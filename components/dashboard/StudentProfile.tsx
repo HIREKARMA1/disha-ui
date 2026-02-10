@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
+import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { useRef } from 'react'
 
 interface ProfileSection {
@@ -597,35 +598,9 @@ export function StudentProfile() {
                                                                 <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100">College</h3>
                                                             </div>
 
-                                                            {profile.institution && profile.degree && profile.branch ? (
-                                                                <div className="space-y-3">
-                                                                    <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
-                                                                        <div className="font-medium text-emerald-900 dark:text-emerald-100 mb-2">
-                                                                            {profile.degree} from {profile.institution}
-                                                                        </div>
-                                                                        <div className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                                            {profile.branch} • {profile.graduation_year ? `Graduating in ${profile.graduation_year}` : 'Graduation year not specified'}
-                                                                        </div>
-                                                                    </div>
+                                                            {/* We need to fetch universities here to display the name if only ID is present */}
+                                                            <CollegeInfoDisplay profile={profile} />
 
-                                                                    {profile.btech_cgpa && (
-                                                                        <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
-                                                                            <div className="font-medium text-emerald-900 dark:text-emerald-100 mb-2">
-                                                                                CGPA
-                                                                            </div>
-                                                                            <div className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                                                {profile.btech_cgpa}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="p-4 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-emerald-200/30 dark:border-emerald-600/30">
-                                                                    <div className="text-sm text-emerald-700 dark:text-emerald-300">
-                                                                        No college details provided yet
-                                                                    </div>
-                                                                </div>
-                                                            )}
                                                         </div>
 
                                                         {/* 12th Section */}
@@ -1239,6 +1214,19 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         enabled: section.id === 'basic' || section.id === 'academic'
     })
 
+    // Sync institution name from university_id when data is loaded
+    useEffect(() => {
+        if (!loadingUniversities && universities.length > 0 && formData.university_id) {
+            const selectedUniversity = universities.find(uni => uni.id === formData.university_id)
+            if (selectedUniversity && selectedUniversity.name !== formData.institution) {
+                setFormData((prev: any) => ({
+                    ...prev,
+                    institution: selectedUniversity.name
+                }))
+            }
+        }
+    }, [loadingUniversities, universities, formData.university_id, formData.institution])
+
     useEffect(() => {
         if (profile && section) {
             // Initialize form data with current profile values
@@ -1246,14 +1234,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             section.fields.forEach(field => {
                 initialData[field] = profile[field as keyof StudentProfile] || ''
             })
-            
+
             // Include university_id and college_id for academic section
             if (section.id === 'academic' || section.id === 'basic') {
                 if (profile.university_id) {
                     initialData.university_id = profile.university_id
                 }
             }
-            
+
             setFormData(initialData)
         }
     }, [profile, section])
@@ -1832,13 +1820,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     onChange={(newValue) => {
                         // Find the matching university to get its ID
                         const selectedUniversity = universities.find(uni => uni.name === newValue)
-                        
+
                         // Update both institution name and university_id
                         const updatedData = {
                             ...formData,
                             [field]: newValue
                         }
-                        
+
                         // If a matching university is found, also set the university_id
                         if (selectedUniversity) {
                             updatedData.university_id = selectedUniversity.id
@@ -1846,7 +1834,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             // Clear university_id if institution doesn't match any university
                             updatedData.university_id = null
                         }
-                        
+
                         setFormData(updatedData)
                     }}
                     data={universities}

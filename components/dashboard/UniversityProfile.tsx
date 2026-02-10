@@ -1009,7 +1009,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
         // Remove readonly fields and fields that don't exist in the backend model before saving
         const {
-            name, // readonly field
             total_students,
             total_faculty,
             departments,
@@ -1209,14 +1208,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                 <div className="space-y-2">
                     <Input
                         value={value as string}
-                        className="w-full bg-gray-50 dark:bg-gray-700 cursor-not-allowed border-gray-300"
+                        onChange={(e) => {
+                            let inputValue = e.target.value
+                            const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
+                            if (sanitizedValue !== inputValue) {
+                                toast.error('Only letters, spaces, periods, and hyphens are allowed')
+                            }
+                            inputValue = sanitizedValue
+
+                            setFormData({ ...formData, [field]: inputValue })
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                        className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
                         placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                        readOnly
-                        title="University name cannot be changed after account creation"
+                        maxLength={50}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        University name cannot be changed after account creation
-                    </p>
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
                 </div>
             )
         }
