@@ -235,6 +235,7 @@ export interface CreateUniversityRequest {
   contact_designation?: string
   established_year?: number
   courses_offered?: string
+  college_id?: string
 }
 
 export interface CreateUniversityResponse {
