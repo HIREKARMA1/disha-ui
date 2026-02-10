@@ -1812,36 +1812,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        // Handle institution field with professional lookup component
+        // Handle institution field - read-only college/university name
         if (field === 'institution') {
             return (
-                <LookupSelect
-                    value={value}
-                    onChange={(newValue) => {
-                        // Find the matching university to get its ID
-                        const selectedUniversity = universities.find(uni => uni.name === newValue)
-
-                        // Update both institution name and university_id
-                        const updatedData = {
-                            ...formData,
-                            [field]: newValue
-                        }
-
-                        // If a matching university is found, also set the university_id
-                        if (selectedUniversity) {
-                            updatedData.university_id = selectedUniversity.id
-                        } else {
-                            // Clear university_id if institution doesn't match any university
-                            updatedData.university_id = null
-                        }
-
-                        setFormData(updatedData)
-                    }}
-                    data={universities}
-                    loading={loadingUniversities}
-                    placeholder="Select your institution"
-                    error={universitiesError || undefined}
-                    required
+                <input
+                    type="text"
+                    value={value || ''}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
+                    placeholder="Institution will be set from your college selection"
                 />
             )
         }
