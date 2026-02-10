@@ -6,6 +6,8 @@ import { createPortal } from 'react-dom'
 import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, GraduationCap, AlertCircle } from 'lucide-react'
 import { CreateUniversityRequest, CreateUniversityResponse } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
+import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
+import { apiClient } from '@/lib/api'
 
 interface CreateUniversityModalProps {
     isOpen: boolean
@@ -28,12 +30,14 @@ export function CreateUniversityModal({
         contact_person_name: '',
         contact_designation: '',
         established_year: undefined,
-        courses_offered: ''
+        courses_offered: '',
+        college_id: undefined
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
     const [createdUniversity, setCreatedUniversity] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
+    const [selectedCollegeId, setSelectedCollegeId] = useState<string>('')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -95,6 +99,30 @@ export function CreateUniversityModal({
             ...prev,
             [field]: value
         }))
+    }
+
+    const fetchColleges = async (query: string): Promise<AsyncSelectOption[]> => {
+        try {
+            const response = await apiClient.get('/admin/lookups/colleges', {
+                params: {
+                    search: query,
+                    limit: 100
+                }
+            })
+
+            const colleges = (response as any)?.colleges || []
+
+            return colleges.map((c: any) => {
+                const cleanName = c.name ? c.name.replace(/['"]+/g, '').trim() : 'Unknown College'
+                return {
+                    value: c.id,
+                    label: cleanName
+                }
+            })
+        } catch (err) {
+            console.error('Failed to fetch colleges for admin create university:', err)
+            return []
+        }
     }
 
     const instituteTypes = [
@@ -232,22 +260,26 @@ export function CreateUniversityModal({
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* University Name */}
+                                        {/* University Name - now uses searchable dropdown like registration */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
-                                                University Name *
-                                            </label>
-                                            <div className="relative">
-                                                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    value={formData.university_name}
-                                                    onChange={(e) => handleInputChange('university_name', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="Enter university name"
-                                                    required
-                                                />
-                                            </div>
+                                            <AsyncSearchableSelect
+                                                label="University Name *"
+                                                placeholder="Search for university / college..."
+                                                value={selectedCollegeId}
+                                                fetchOptions={fetchColleges}
+                                                onChange={(value, option) => {
+                                                    setSelectedCollegeId(value)
+                                                    if (option) {
+                                                        handleInputChange('university_name', option.label)
+                                                        handleInputChange('college_id', value)
+                                                    } else {
+                                                        handleInputChange('university_name', '')
+                                                        handleInputChange('college_id', undefined)
+                                                    }
+                                                }}
+                                                error={!formData.university_name}
+                                                helperText={!formData.university_name ? 'Please select a university' : undefined}
+                                            />
                                         </div>
 
                                         {/* Email */}
