@@ -2,11 +2,12 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Search, Target, BookOpen } from 'lucide-react'
+import { Search, Target, ClipboardList, Library } from 'lucide-react'
+
 
 const features = [
   {
-    icon: FileText,
+    icon: ClipboardList,
     title: "Applications",
     description: "Streamline your application process with our comprehensive tracking system. Manage candidates efficiently.",
     color: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
@@ -24,7 +25,7 @@ const features = [
     color: "bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-300"
   },
   {
-    icon: BookOpen,
+    icon: Library,
     title: "Library",
     description: "Access a vast library of resources for preparation and learning. Upskill with curated content.",
     color: "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300"
@@ -34,12 +35,12 @@ const features = [
 const FeaturesSection = () => {
   return (
     <section className="py-24 bg-white dark:bg-[#2A2C38] relative overflow-hidden">
-      {/* Decorative background shape */}
+      {/* Decorative background shape
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#00BAE8]/10 dark:from-[#00BAE8]/20 to-transparent" 
-           style={{ clipPath: "ellipse(70% 100% at 50% 0%)" }} />
+           style={{ clipPath: "ellipse(70% 100% at 50% 0%)" }} /> */}
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-[1026px] mx-auto mb-22 md:mb-32">
+        <div className="text-center max-w-[1026px] mx-auto mb-32 md:mb-52">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -62,7 +63,7 @@ const FeaturesSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 xl:gap-8 items-center relative z-10">
           
           {/* Left Column Features */}
-          <div className="space-y-6">
+          <div className="space-y-6 order-2 lg:order-1">
             {features.slice(0, 2).map((feature, index) => (
               <motion.div 
                 key={feature.title}
@@ -70,28 +71,28 @@ const FeaturesSection = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-[16px] border border-[#979797] p-[10px] md:p-6 shadow-sm hover:shadow-md transition-shadow group text-center"
+                className="bg-white dark:bg-transparent rounded-[16px] border border-[#979797] dark:border dark:border-[#979797]/20 p-[10px] md:p-6 shadow-sm dark:shadow-none hover:shadow-md transition-shadow group text-center"
               >
-                <div className={`w-14 h-14 rounded-xl ${feature.color} flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-7 h-7" />
+                <div className="mx-auto mb-6 group-hover:scale-110 transition-transform flex justify-center">
+                  <feature.icon className="w-[45px] h-[45px] text-[#0069FF]" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-bold text-black mb-3">{feature.title}</h3>
-                <p className="text-[#353535] text-base leading-[1.5]">{feature.description}</p>
+                <h3 className="text-[24px] font-bold leading-[24px] text-black dark:text-white mb-4">{feature.title}</h3>
+                <p className="text-[#353535] dark:text-[#CBCBCB] text-[16px] leading-[150%]">{feature.description}</p>
               </motion.div>
             ))}
           </div>
 
           {/* Center Image */}
-          <div className="hidden lg:flex justify-center items-end relative z-10 lg:w-[400px] xl:w-[530px] mx-auto transition-all duration-300">
-            <div className="origin-bottom lg:scale-75 xl:scale-100 transition-transform duration-300">
+          <div className="flex justify-center items-end relative z-10 w-[343px] lg:w-[400px] xl:w-[530px] h-[540px] lg:h-auto mx-auto transition-all duration-300 order-1 lg:order-2 mb-10 lg:mb-0">
+            <div className="origin-bottom scale-[0.65] sm:scale-75 lg:scale-75 xl:scale-100 transition-transform duration-300">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 className="relative h-[829px] w-[530px]"
               >
-                {/* Curved dotted line */}
-                <div className="absolute -top-[160px] left-1/2 -translate-x-1/2 w-[1233px] pointer-events-none z-0">
+                {/* Curved dotted line (Desktop) */}
+                <div className="absolute -top-[160px] left-1/2 -translate-x-1/2 w-[1233px] pointer-events-none z-0 hidden lg:block">
                   <svg
                     viewBox="0 0 1233 242"
                     fill="none"
@@ -100,8 +101,25 @@ const FeaturesSection = () => {
                   >
                     <path
                       d="M1 241C200 150 450 80 616 80C782 80 1033 150 1232 241"
-                      stroke="#444444"
+                      className="stroke-[#444444] dark:stroke-[#CBCBCB]"
                       strokeWidth="1"
+                      strokeDasharray="3 3"
+                    />
+                  </svg>
+                </div>
+
+                {/* Curved dotted line (Mobile) */}
+                <div className="absolute -top-[160px] left-1/2 -translate-x-1/2 w-[530px] pointer-events-none z-0 block lg:hidden">
+                  <svg
+                    viewBox="0 0 530 106"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-full h-auto"
+                  >
+                    <path
+                      d="M1 105 Q 265 10 529 105"
+                      className="stroke-[#444444] dark:stroke-[#CBCBCB]"
+                      strokeWidth="1.5"
                       strokeDasharray="3 3"
                     />
                   </svg>
@@ -115,7 +133,7 @@ const FeaturesSection = () => {
                   }}
                 >
                   {/* Gradient Background */}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,#00BAE8_0%,#A6EDFF_50%,#D2E6F5_100%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,#00BAE8_0%,#A6EDFF_50%,#D2E6F5_100%)] dark:bg-[linear-gradient(180deg,#F9BEBA_0%,#FEDDC0_50%,#D2E6F5_100%)]" />
                   
                   {/* Person Image */}
                   <div className="absolute inset-0 flex items-end justify-center">
@@ -131,7 +149,7 @@ const FeaturesSection = () => {
           </div>
 
           {/* Right Column Features */}
-          <div className="space-y-6">
+          <div className="space-y-6 order-3 lg:order-3">
             {features.slice(2, 4).map((feature, index) => (
               <motion.div 
                 key={feature.title}
@@ -139,13 +157,13 @@ const FeaturesSection = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-[16px] border border-[#979797] p-[10px] md:p-6 shadow-sm hover:shadow-md transition-shadow group text-center"
+                className="bg-white dark:bg-transparent rounded-[16px] border border-[#979797] dark:border dark:border-[#979797]/20 p-[10px] md:p-6 shadow-sm dark:shadow-none hover:shadow-md transition-shadow group text-center"
               >
-                <div className={`w-14 h-14 rounded-xl ${feature.color} flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-7 h-7" />
+                <div className="mx-auto mb-6 group-hover:scale-110 transition-transform flex justify-center">
+                  <feature.icon className="w-[45px] h-[45px] text-[#0069FF]" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-bold text-black mb-3">{feature.title}</h3>
-                <p className="text-[#353535] text-base leading-[1.5]">{feature.description}</p>
+                <h3 className="text-[24px] font-bold leading-[24px] text-black dark:text-white mb-4">{feature.title}</h3>
+                <p className="text-[#353535] dark:text-[#CBCBCB] text-[16px] leading-[150%]">{feature.description}</p>
               </motion.div>
             ))}
           </div>
