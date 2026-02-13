@@ -6,6 +6,7 @@ import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/hooks/useAuth'
 import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
+import HowItsWork from '@/components/home/HowItsWork'
 
 export default function HomePage() {
     const { user, isAuthenticated, isLoading } = useAuth()
@@ -42,6 +43,7 @@ export default function HomePage() {
             <Navbar variant="transparent" />
             <HeroSection />
             <FeaturesSection />
+            <HowItsWork />
         </main>
     )
 }
