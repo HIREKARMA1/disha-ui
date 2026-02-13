@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Layers, Timer, EyeOff, CalendarX, Grid, Cpu, BarChart3, CalendarCheck } from 'lucide-react'
+import { Layers, Timer, EyeOff, CalendarX, Grid, Cpu, BarChart3, CalendarCheck, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 const challenges = [
   {
@@ -54,104 +54,255 @@ const ChallengeSection = () => {
   return (
     <section className="w-full py-24 bg-white dark:bg-[#2A2C38]">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px]">
-        {/* Header */}
-        <div className="text-center mb-16 space-y-4">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-[32px] md:text-[48px] font-bold text-gray-900 dark:text-white font-poppins"
-          >
-            The Campus Recruitment <span className="text-[#00BAE8]">Challenge</span>
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-lg md:text-[20px] text-[#3A3A3A] dark:text-gray-300 font-poppins"
-          >
-            Traditional campus hiring is broken. We're here to fix it.
-          </motion.p>
+        {/* Dark Mode Layout (Desktop Only) */}
+        <div className="hidden lg:dark:block">
+            {/* Header */}
+            <div className="text-center mb-16 space-y-4">
+                <motion.h2
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-[32px] md:text-[48px] font-bold text-white font-poppins"
+                >
+                    The Campus Recruitment Challenge
+                </motion.h2>
+                <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 }}
+                    className="text-lg md:text-[20px] text-gray-300 font-poppins"
+                >
+                    Traditional campus hiring is broken. We're here to fix it.
+                </motion.p>
+                <motion.h3
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="text-[24px] md:text-[32px] font-bold text-white font-poppins mt-8"
+                >
+                    Problems & Our Solution
+                </motion.h3>
+            </div>
+
+            {/* Rows Layout */}
+            <div className="flex flex-col gap-[50px] max-w-[1440px] mx-auto">
+                {challenges.map((challenge, index) => {
+                    const solution = solutions[index];
+                    return (
+                        <div key={index} className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-0">
+                            {/* Left Card (Challenge) */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 }}
+                                className="w-full md:w-[517px] h-[140px] rounded-[10px] border border-[#D7D7D7] p-[10px] flex flex-col justify-center items-start text-left bg-[#1C2938] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.4)] gap-[10px]"
+                            >
+                                <h4 className="text-[20px] font-medium text-[#FF0707] font-poppins w-full">
+                                    {challenge.title}
+                                </h4>
+                                <p className="text-[14px] text-gray-300 font-poppins w-full">
+                                    {challenge.description}
+                                </p>
+                            </motion.div>
+
+                            {/* Center Arrow */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 + 0.1 }}
+                                className="hidden md:flex justify-center items-center"
+                            >
+                                <div className="relative w-[135px] h-[135px] flex items-center justify-center">
+                                     <svg width="135" height="135" viewBox="0 0 135 135" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <g transform="rotate(-90 67.5 67.5)">
+                                            {/* Outer Layer */}
+                                            <path d="M67.5 135L0 0L135 0L67.5 135Z" fill="url(#arrow-outer-gradient)" />
+                                            {/* Inner Layer */}
+                                            <path d="M67.5 112L23 23L112 23L67.5 112Z" fill="url(#arrow-inner-gradient)" />
+                                        </g>
+                                        <defs>
+                                            <linearGradient id="arrow-outer-gradient" x1="67.5" y1="0" x2="67.5" y2="135" gradientUnits="userSpaceOnUse">
+                                                <stop offset="0%" stopColor="#FFFFFF"/>
+                                                <stop offset="100%" stopColor="#1E7BFF"/>
+                                            </linearGradient>
+                                            <linearGradient id="arrow-inner-gradient" x1="67.5" y1="23" x2="67.5" y2="112" gradientUnits="userSpaceOnUse" gradientTransform="rotate(4.27 67.5 67.5)">
+                                                <stop offset="0%" stopColor="#FFFFFF"/>
+                                                <stop offset="100%" stopColor="#1E7BFF"/>
+                                            </linearGradient>
+                                        </defs>
+                                     </svg>
+                                </div>
+                            </motion.div>
+
+                            {/* Right Card (Solution) */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 + 0.2 }}
+                                className="w-full md:w-[517px] h-[140px] rounded-[10px] border border-[#D7D7D7] p-[10px] flex flex-col justify-center items-start text-left bg-[#1C2938] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.4)] gap-[10px]"
+                            >
+                                <h4 className="text-[20px] font-medium text-[#1E7BFF] font-poppins w-full">
+                                    {solution.title}
+                                </h4>
+                                <p className="text-[14px] text-gray-300 font-poppins w-full">
+                                    {solution.description}
+                                </p>
+                            </motion.div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
 
-        {/* Comparison Section */}
-        <div className="flex flex-col lg:flex-row justify-center items-start gap-8 lg:gap-16 relative">
-          
-          {/* Left Column - The Challenge */}
-          <div className="flex-1 w-full max-w-[600px]">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-full bg-[#FF0000] flex items-center justify-center text-white font-bold text-xl">!</div>
-              <h3 className="text-[28px] md:text-[32px] font-bold text-gray-900 dark:text-white font-poppins">The Challenge</h3>
-            </div>
+        {/* Standard Layout (Mobile/Tablet & Light Mode Desktop) */}
+        <div className="block lg:dark:hidden">
+            {/* Header */}
+            <div className="text-center mb-8 md:mb-16 space-y-4">
+            <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-[32px] md:text-[48px] font-semibold md:font-bold text-gray-900 dark:text-white font-poppins leading-[100%] md:leading-tight"
+            >
+                {/* Mobile Title Layout */}
+                <div className="flex flex-col md:hidden items-center">
+                    <span>TheCampus</span>
+                    <span>Recruitment</span>
+                    <span className="text-[#00BAE8]">Challenge</span>
+                </div>
+                
+                {/* Desktop Title Layout */}
+                <span className="hidden md:inline">
+                    The Campus Recruitment <span className="text-[#00BAE8]">Challenge</span>
+                </span>
+            </motion.h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {challenges.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow h-full flex flex-col"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center mb-4 text-[#FF0000]">
-                    <item.icon size={24} />
-                  </div>
-                  <h4 className="text-[18px] font-bold text-[#FF0000] mb-3 font-poppins">{item.title}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {item.description}
-                  </p>
-                </motion.div>
-              ))}
+            <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="text-[16px] text-[#3A3A3A] dark:text-gray-300 font-poppins md:hidden max-w-[343px] mx-auto leading-normal"
+            >
+                Everything you need for modern campus recruitment
+            </motion.p>
+
+            <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="hidden md:block text-lg md:text-[20px] text-[#3A3A3A] dark:text-gray-300 font-poppins"
+            >
+                Traditional campus hiring is broken. We're here to fix it.
+            </motion.p>
             </div>
-          </div>
 
-          {/* Center Arrows (Desktop) */}
-          <div className="hidden lg:flex flex-col justify-center items-center h-full pt-[120px] gap-[280px]">
-             {/* Top Arrow */}
-             <svg width="40" height="24" viewBox="0 0 60 24" fill="none" className="text-gray-300">
-                <path d="M0 12H58M58 12L48 2M58 12L48 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-             </svg>
-             {/* Bottom Arrow */}
-             <svg width="40" height="24" viewBox="0 0 60 24" fill="none" className="text-gray-300">
-                <path d="M0 12H58M58 12L48 2M58 12L48 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-             </svg>
-          </div>
+            {/* Comparison Section */}
+            <div className="flex flex-col lg:flex-row justify-center items-start gap-8 lg:gap-16 relative">
+            
+            {/* Left Column - The Challenge */}
+            <div className="flex-1 w-full max-w-[600px]">
+                <div className="flex items-center gap-3 mb-8">
+                <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+                    style={{ backgroundColor: '#FF0000' }}
+                >
+                    <AlertCircle size={24} />
+                </div>
+                <h3 className="text-[28px] md:text-[32px] font-bold text-gray-900 dark:text-white font-poppins">The Challenge</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {challenges.map((item, index) => (
+                    <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white dark:bg-[#1C2938] rounded-xl border border-gray-200 dark:border-[#FF0707] p-6 hover:shadow-lg transition-shadow h-full flex flex-col"
+                    >
+                    <div 
+                        className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+                        style={{ backgroundColor: '#FFDDDD', color: '#DF000D' }}
+                    >
+                        <item.icon size={24} />
+                    </div>
+                    <h4 
+                        className="text-[18px] font-bold mb-3 font-poppins"
+                        style={{ color: '#DF000D' }}
+                    >
+                        {item.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {item.description}
+                    </p>
+                    </motion.div>
+                ))}
+                </div>
+            </div>
 
-          {/* Right Column - The Shortlisted Way */}
-          <div className="flex-1 w-full max-w-[600px]">
-             <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-full bg-[#00BAE8] flex items-center justify-center text-white">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
+            {/* Center Arrows (Desktop) */}
+            <div className="hidden lg:flex flex-col justify-center items-center h-full pt-[120px] gap-[280px]">
+                {/* Top Arrow */}
+                <svg width="103" height="20" viewBox="0 0 103 20" fill="none">
+                    <path d="M0 10H98M98 10L88 2M98 10L88 18" stroke="#DFDFDF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
-              <h3 className="text-[28px] md:text-[32px] font-bold text-gray-900 dark:text-white font-poppins">The Shortlisted Way</h3>
+                {/* Bottom Arrow */}
+                <svg width="103" height="20" viewBox="0 0 103 20" fill="none">
+                    <path d="M0 10H98M98 10L88 2M98 10L88 18" stroke="#DFDFDF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {solutions.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow h-full flex flex-col"
+            {/* Right Column - The Shortlisted Way */}
+            <div className="flex-1 w-full max-w-[600px]">
+                <div className="flex items-center gap-3 mb-8">
+                <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+                    style={{ backgroundColor: '#00BAE8' }}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-4 text-[#00BAE8]">
-                    <item.icon size={24} />
-                  </div>
-                  <h4 className="text-[18px] font-bold text-[#00BAE8] mb-3 font-poppins">{item.title}</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {item.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+                    <CheckCircle2 size={24} />
+                </div>
+                <h3 className="text-[28px] md:text-[32px] font-bold text-gray-900 dark:text-white font-poppins">The Shortlisted Way</h3>
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {solutions.map((item, index) => (
+                    <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white dark:bg-[#1C2938] rounded-xl border border-gray-200 dark:border-[#1E7BFF] p-6 hover:shadow-lg transition-shadow h-full flex flex-col"
+                    >
+                    <div 
+                        className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+                        style={{ backgroundColor: '#E5F0FF', color: '#00A1C9' }}
+                    >
+                        <item.icon size={24} />
+                    </div>
+                    <h4 
+                        className="text-[18px] font-bold mb-3 font-poppins"
+                        style={{ color: '#00A1C9' }}
+                    >
+                        {item.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {item.description}
+                    </p>
+                    </motion.div>
+                ))}
+                </div>
+            </div>
+
+            </div>
         </div>
       </div>
     </section>
