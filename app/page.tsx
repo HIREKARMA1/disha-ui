@@ -8,6 +8,10 @@ import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
 import HowItsWork from '@/components/home/HowItsWork'
 import ChallengeSection from '@/components/home/ChallengeSection'
+import TestimonialsSection from '@/components/home/TestimonialsSection'
+import PartnersSection from '@/components/home/PartnersSection'
+import FAQSection from '@/components/home/FAQSection'
+import CTASection from '@/components/home/CTASection'
 
 export default function HomePage() {
     const { user, isAuthenticated, isLoading } = useAuth()
@@ -46,6 +50,10 @@ export default function HomePage() {
             <FeaturesSection />
             <HowItsWork />
             <ChallengeSection />
+            <TestimonialsSection />
+            <FAQSection />
+            <CTASection />
+            <PartnersSection />
         </main>
     )
 }
