@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
 import HowItsWork from '@/components/home/HowItsWork'
+import ChallengeSection from '@/components/home/ChallengeSection'
 
 export default function HomePage() {
     const { user, isAuthenticated, isLoading } = useAuth()
@@ -44,6 +45,7 @@ export default function HomePage() {
             <HeroSection />
             <FeaturesSection />
             <HowItsWork />
+            <ChallengeSection />
         </main>
     )
 }
