@@ -142,7 +142,7 @@ const HeroSection = () => {
             </div>
 
             {/* Social Proof */}
-            <div className="flex items-center gap-3 md:gap-4 justify-start md:justify-center lg:justify-start">
+            {/* <div className="flex items-center gap-3 md:gap-4 justify-start md:justify-center lg:justify-start">
               <div className="flex -space-x-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="w-10 h-10 rounded-full bg-gray-300 border-2 border-[#53C9F2] overflow-hidden">
@@ -151,7 +151,7 @@ const HeroSection = () => {
                 ))}
               </div>
               <p className="text-sm font-medium text-white/90">Trusted by 50k+ students, 30+ companies, 20+ universities</p>
-            </div>
+            </div> */}
 
           </motion.div>
 
