@@ -34,7 +34,7 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-24 bg-white dark:bg-[#2A2C38] relative overflow-hidden">
+    <section className="pt-20 sm:pt-28 md:pt-32 lg:pt-24 pb-24 bg-white dark:bg-[#2A2C38] relative overflow-hidden scroll-mt-24" id="features">
       {/* Decorative background shape
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#00BAE8]/10 dark:from-[#00BAE8]/20 to-transparent" 
            style={{ clipPath: "ellipse(70% 100% at 50% 0%)" }} /> */}
@@ -91,9 +91,9 @@ const FeaturesSection = () => {
                 viewport={{ once: true }}
                 className="relative h-[829px] w-[530px]"
               >
-                {/* Curved dotted line (Desktop) */}
-                <div className="absolute -top-[160px] left-1/2 -translate-x-1/2 w-[1233px] pointer-events-none z-0 hidden lg:block">
-                  <svg
+                {/* Curved dotted line (Desktop) - lg: higher above image to avoid collapse at ~1024–1280px; xl: standard offset */}
+                <div className="absolute -top-[250px] lg:-top-[360px] xl:-top-[250px] left-1/2 -translate-x-1/2 w-[1233px] pointer-events-none z-0 hidden lg:block" style={{ contain: 'layout paint' }}>
+               <svg
                     viewBox="0 0 1233 242"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -108,8 +108,8 @@ const FeaturesSection = () => {
                   </svg>
                 </div>
 
-                {/* Curved dotted line (Mobile) */}
-                <div className="absolute -top-[160px] left-1/2 -translate-x-1/2 w-[530px] pointer-events-none z-0 block lg:hidden">
+                {/* Curved dotted line (Mobile / Tablet) - higher on phone so more above the image */}
+                <div className="absolute -top-[140px] left-1/2 -translate-x-1/2 w-[530px] pointer-events-none z-0 block lg:hidden" style={{ contain: 'layout paint' }}>
                   <svg
                     viewBox="0 0 530 106"
                     fill="none"
@@ -125,9 +125,9 @@ const FeaturesSection = () => {
                   </svg>
                 </div>
 
-                {/* Shape & Image Container with Clip Path */}
+                {/* Shape & Image Container with Clip Path - z-10 keeps image above dotted line */}
                 <div 
-                  className="relative w-full h-full z-10"
+                  className="relative w-full h-full z-10 isolate"
                   style={{ 
                     clipPath: "path('M 0 0 Q 265 100 530 0 L 530 630 Q 265 860 0 630 Z')" 
                   }}
