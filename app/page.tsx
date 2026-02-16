@@ -51,7 +51,7 @@ export default function HomePage() {
             <FeaturesSection />
             <HowItsWork />
             <ChallengeSection />
-            <TestimonialsSection />
+            {/* <TestimonialsSection /> */}
             <FAQSection />
             <CTASection />
             <PartnersSection />

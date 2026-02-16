@@ -290,7 +290,7 @@ export function Navbar({
                     </div>
 
                     {/* Desktop Navigation */}
-                    <div className="hidden lg:flex items-center space-x-8">
+                    <div className="hidden xl:flex items-center space-x-8">
                         {/* About Dropdown */}
                         {/* <div className="relative group">
                             <Button
@@ -442,10 +442,10 @@ export function Navbar({
                         ) : (
                             <div className="flex items-center space-x-3">
                                 <Link href={getAuthLink('/auth/register')}>
-                                    <Button variant="outline">Sign Up</Button>
+                                    <Button variant="outline" className="border-[#00BAE8] text-[#00BAE8] hover:bg-[#00BAE8] hover:text-white">Sign Up</Button>
                                 </Link>
                                 <Link href={getAuthLink('/auth/login')}>
-                                    <Button>Sign In</Button>
+                                    <Button className="bg-[#00BAE8] hover:bg-[#009bc2] text-white">Sign In</Button>
                                 </Link>
                             </div>
                         )}
@@ -454,7 +454,7 @@ export function Navbar({
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="lg:hidden flex items-center space-x-2">
+                    <div className="xl:hidden flex items-center space-x-2">
                         <ThemeToggle />
                         <Button
                             variant="ghost"
@@ -473,7 +473,7 @@ export function Navbar({
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="lg:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
+                    <div className="xl:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col space-y-3 p-4">
                             {/* About Section */}
                             {/* <div className="space-y-2">
@@ -564,12 +564,12 @@ export function Navbar({
                             ) : (
                                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-6">
                                     <Link href={getAuthLink('/auth/register')} onClick={() => setIsMobileMenuOpen(false)}>
-                                        <Button variant="outline" className="w-full justify-start mb-4">
+                                        <Button variant="outline" className="w-full justify-start mb-4 border-[#00BAE8] text-[#00BAE8] hover:bg-[#00BAE8] hover:text-white">
                                             Sign Up
                                         </Button>
                                     </Link>
                                     <Link href={getAuthLink('/auth/login')} onClick={() => setIsMobileMenuOpen(false)}>
-                                        <Button className="w-full justify-start">
+                                        <Button className="w-full justify-start bg-[#00BAE8] hover:bg-[#009bc2] text-white">
                                             Sign In
                                         </Button>
                                     </Link>
