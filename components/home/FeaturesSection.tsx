@@ -39,7 +39,7 @@ const FeaturesSection = () => {
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#00BAE8]/10 dark:from-[#00BAE8]/20 to-transparent" 
            style={{ clipPath: "ellipse(70% 100% at 50% 0%)" }} /> */}
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="text-center max-w-[1026px] mx-auto mb-32 md:mb-52">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}

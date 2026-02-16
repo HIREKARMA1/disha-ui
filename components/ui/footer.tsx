@@ -137,7 +137,7 @@ export function Footer() {
                         </a>
                         <a href="https://www.hirekarma.in/" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
                             HireKarma Pvt Ltd
-                        </a>fix 
+                        </a>
                     </div>
                 </div>
             </div>

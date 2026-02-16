@@ -37,7 +37,7 @@ const testimonials = [
 ]
 
 const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
-  <div className="flex flex-col p-6 rounded-[24px]">
+  <div className="flex flex-col rounded-[24px]">
     <div className="flex justify-between items-start mb-6">
       {/* Quote Icon */}
       <div className="relative">
@@ -90,8 +90,8 @@ const TestimonialsSection = () => {
   }
 
   return (
-    <section className="w-full py-24 bg-white dark:bg-[#2A2C38]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px]">
+    <section className="w-full pt-12 pb-12 sm:pt-16 sm:pb-16 md:pt-20 md:pb-20 lg:pt-24 lg:pb-4 bg-white dark:bg-[#2A2C38]">
+      <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
           <motion.h2
@@ -105,7 +105,7 @@ const TestimonialsSection = () => {
         </div>
 
         {/* Desktop Grid View */}
-        <div className="hidden md:grid grid-cols-2 gap-x-[34px] gap-y-[34px]">
+        <div className="hidden md:grid grid-cols-2 gap-x-28 gap-y-24">
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.id}

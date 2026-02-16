@@ -52,8 +52,8 @@ const solutions = [
 
 const ChallengeSection = () => {
   return (
-    <section className="w-full py-24 bg-white dark:bg-[#2A2C38]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px]">
+    <section className="w-full pt-20 pb-20 sm:pt-28 sm:pb-28 md:pt-32 md:pb-32 lg:pt-24 lg:pb-4 bg-white dark:bg-[#2A2C38]">
+      <div className="container mx-auto px-4">
         {/* Dark Mode Layout (Desktop Only) */}
         <div className="hidden lg:dark:block">
             {/* Header */}
@@ -87,7 +87,7 @@ const ChallengeSection = () => {
             </div>
 
             {/* Rows Layout */}
-            <div className="flex flex-col gap-[50px] max-w-[1440px] mx-auto">
+            <div className="flex flex-col gap-[50px]">
                 {challenges.map((challenge, index) => {
                     const solution = solutions[index];
                     return (
@@ -204,10 +204,10 @@ const ChallengeSection = () => {
             </div>
 
             {/* Comparison Section */}
-            <div className="flex flex-col lg:flex-row justify-center items-start gap-8 lg:gap-16 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-0 items-start relative">
             
             {/* Left Column - The Challenge */}
-            <div className="flex-1 w-full max-w-[600px]">
+            <div className="w-full max-w-[600px]">
                 <div className="flex items-center gap-3 mb-8">
                 <div 
                     className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
@@ -261,7 +261,7 @@ const ChallengeSection = () => {
             </div>
 
             {/* Right Column - The Shortlisted Way */}
-            <div className="flex-1 w-full max-w-[600px]">
+            <div className="w-full max-w-[600px] lg:ml-auto">
                 <div className="flex items-center gap-3 mb-8">
                 <div 
                     className="w-10 h-10 rounded-lg flex items-center justify-center text-white"

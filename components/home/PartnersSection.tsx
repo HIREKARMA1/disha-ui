@@ -35,7 +35,7 @@ const LogoCard = ({ src, index }: { src: string, index: number }) => (
 
 const PartnersSection = () => {
   return (
-    <section className="  w-full pb-24 pt-0 bg-white dark:bg-[#2A2C38] overflow-hidden">
+    <section className="w-full pt-12 pb-12 sm:pt-16 sm:pb-16 md:pt-20 md:pb-20 lg:pt-24 lg:pb-36 bg-white dark:bg-[#2A2C38] overflow-hidden">
       <div className="flex flex-col gap-8">
         
         {/* Row 1: Companies (Left to Right) */}
