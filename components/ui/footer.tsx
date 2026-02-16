@@ -14,11 +14,11 @@ export function Footer() {
     }
 
     return (
-        <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-8">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-10">
+            <div className="container mx-auto px-6 sm:px-8 lg:px-10 py-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-14 md:gap-12 lg:gap-16 mb-14">
                     {/* Brand Section */}
-                    <div className="space-y-4 text-center md:text-left flex flex-col items-center md:items-start">
+                    <div className="space-y-5 text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
                         <Link href="/" className="inline-block">
                             <Image
                                 src={getLogoSrc()}
@@ -51,9 +51,9 @@ export function Footer() {
                     </div>
 
                     {/* Quick Links */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
-                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg">Quick Links</h3>
-                        <ul className="space-y-3 flex flex-col items-center md:items-start">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Quick Links</h3>
+                        <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li>
                                 <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
                                     Home
@@ -78,9 +78,9 @@ export function Footer() {
                     </div>
 
                     {/* Resources */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
-                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg">Resources</h3>
-                        <ul className="space-y-3 flex flex-col items-center md:items-start">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Resources</h3>
+                        <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li>
                                 <a href="https://hirekarma.in/about-us/our-story" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
                                     Our Story
@@ -105,9 +105,9 @@ export function Footer() {
                     </div>
 
                     {/* Contact Info */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
-                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg">Contact Us</h3>
-                        <ul className="space-y-3 flex flex-col items-center md:items-start">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Contact Us</h3>
+                        <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <Mail className="w-5 h-5 text-primary-500 shrink-0" />
                                 <span>info@hirekarma.in</span>
@@ -124,7 +124,7 @@ export function Footer() {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="border-t border-gray-200 dark:border-gray-800 pt-10 pb-2 flex flex-col md:flex-row justify-between items-center gap-6 px-2 md:px-0">
                     <p className="text-gray-500 dark:text-gray-400 text-sm text-center md:text-left">
                         © {new Date().getFullYear()} HireKarma. All rights reserved.
                     </p>
@@ -137,7 +137,7 @@ export function Footer() {
                         </a>
                         <a href="https://www.hirekarma.in/" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
                             HireKarma Pvt Ltd
-                        </a>
+                        </a>fix 
                     </div>
                 </div>
             </div>
