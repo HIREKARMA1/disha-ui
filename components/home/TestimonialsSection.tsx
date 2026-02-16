@@ -8,31 +8,31 @@ import { Star, ArrowLeft, ArrowRight } from 'lucide-react'
 const testimonials = [
   {
     id: 1,
-    name: "Mirana Marci",
-    role: "3D Designer",
+    name: "HR Manager",
+    role: "HR Manager",
     image: "/home/testimonial/testimonialicon1.png", 
-    content: "I've used other kits, but this one is the best. The attention to detail and usability are truly amazing for all designers. I highly recommend it for any type of project."
+    content: "Disha reduced our campus hiring time by 40 percent. We now manage all drives from one dashboard."
   },
   {
     id: 2,
-    name: "Crystal Maiden",
-    role: "UIUX Designer",
+    name: "Placement Officer",
+    role: "Placement Officer",
     image: "/home/testimonial/testimonialicon2.png",
-    content: "This UI Kit is incredibly helpful for my design process. The icons and illustrations are clean, modern, and save me a lot of time. It's perfect for beginners and professionals alike."
+    content: "We track student applications and placement status without spreadsheets. The workflow is clear and fast."
   },
   {
     id: 3,
-    name: "Dazzle Healer",
-    role: "Front End Developer",
+    name: "Recruiter",
+    role: "Recruiter",
     image: "/home/testimonial/testimonialicon3.png",
-    content: "This UI Kit saved me hours of work. It's intuitive, high-quality, and totally worth the price for all design needs. My projects look more professional and appealing now."
+    content: "Shortlisting became easier with filters and eligibility checks. We focus only on qualified candidates."
   },
   {
     id: 4,
-    name: "Hearts of Taras",
-    role: "Logo Designer",
+    name: "Career Services Head",
+    role: "Career Services Head",
     image: "/home/testimonial/testimonialicon4.png",
-    content: "Amazing work! The color schemes are vibrant, and the icons fit perfectly with all my projects, especially modern UI designs. It makes everything look polished and user-friendly instantly."
+    content: "Our students discover more opportunities across universities. Engagement has increased."
   }
 ]
 
@@ -100,7 +100,7 @@ const TestimonialsSection = () => {
             viewport={{ once: true }}
             className="text-[32px] md:text-[48px] font-semibold md:font-bold text-[#0F1125] dark:text-white font-poppins leading-[100%]"
           >
-            What Our Client Says About Us
+            What Our Clients Say About Us
           </motion.h2>
         </div>
 

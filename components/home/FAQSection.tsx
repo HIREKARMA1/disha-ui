@@ -7,23 +7,23 @@ import { ChevronDown } from 'lucide-react'
 const faqs = [
   {
     question: "How do I create a profile on Disha?",
-    answer: "Students can sign up using their university email address. Once verified, you can complete your profile by adding academic details, skills, projects, and uploading your resume and other documents."
+    answer: "Sign up, verify your email, and complete your profile with academic and skill details."
   },
   {
     question: "Can I apply to companies from other universities?",
-    answer: "You can apply to companies visiting your registered university. However, some companies may post opportunities open to multiple universities, which you can access through the platform"
+    answer: "Yes. Explore open roles across partnered universities if you meet eligibility criteria."
   },
   {
-    question: "How does Disha help manage placement drives?",
-    answer: "Disha provides a centralized dashboard to coordinate with recruiters, schedule campus visits, manage student applications, track company interactions, and generate comprehensive placement analytics and reports"
+    question: "How does Disha help manage placements?",
+    answer: "Track drives, applications, test results, and interview updates from one dashboard."
   },
   {
-    question: "Can we customize the platform for our university's needs?",
-    answer: "Yes! Disha offers customization options including branding, workflow configurations, eligibility criteria settings, and integration with your existing systems."
+    question: "Can universities customize the platform?",
+    answer: "Yes. Configure workflows, eligibility rules, and branding based on institutional needs."
   },
   {
-    question: "How many universities can we reach through Disha?",
-    answer: "Disha connects you with a vast network of universities across the country. For specific numbers and reach, please contact our sales team."
+    question: "How many universities can reach students?",
+    answer: "Multiple partner universities connect to the same talent pool, expanding student reach."
   }
 ]
 
@@ -82,7 +82,7 @@ const FAQSection = () => {
             viewport={{ once: true }}
             className="text-[32px] md:text-[48px] font-bold text-gray-900 dark:text-white font-poppins mb-4"
           >
-            Frequently asked questions
+            Frequently Asked Questions
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

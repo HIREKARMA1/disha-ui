@@ -9,25 +9,25 @@ const features = [
   {
     icon: ClipboardList,
     title: "Applications",
-    description: "Streamline your application process with our comprehensive tracking system. Manage candidates efficiently.",
+    description: "Manage all student applications in one place. Filter, sort, and review without switching tools.",
     color: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"
-  },
-  {
-    icon: Search,
-    title: "Video Search",
-    description: "Discover talent faster with AI-powered video search capabilities. Find the perfect match in seconds.",
-    color: "bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-300"
   },
   {
     icon: Target,
     title: "Career Align",
-    description: "Ensure the right fit with our career alignment tools. Match skills and aspirations perfectly.",
+    description: "Match students with roles based on skills, interests, and eligibility criteria.",
     color: "bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-300"
+  },
+  {
+    icon: Search,
+    title: "Video Search",
+    description: "Scan video resumes and evaluate candidates faster with quick previews.",
+    color: "bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-300"
   },
   {
     icon: Library,
     title: "Library",
-    description: "Access a vast library of resources for preparation and learning. Upskill with curated content.",
+    description: "Access job descriptions, test templates, and hiring resources in one shared repository.",
     color: "bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300"
   }
 ]
@@ -56,7 +56,7 @@ const FeaturesSection = () => {
             transition={{ delay: 0.1 }}
             className="text-base md:text-[24px] text-[#494949] dark:text-gray-300"
           >
-            Everything you need for modern campus recruitment
+            Everything you need to run modern campus recruitment
           </motion.p>
         </div>
 

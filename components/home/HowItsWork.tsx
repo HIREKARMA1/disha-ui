@@ -13,29 +13,29 @@ const steps: {
 }[] = [
   {
     image: "/home/organization-structure.png",
-    title: 'Corporates post jobs once',
-    description: 'Companies create job postings that reach multiple universities instantly',
+    title: 'Companies Post Jobs',
+    description: 'Create roles and define eligibility, skills, and timelines.',
   },
   {
     image: "/home/teacher.png",
-    title: 'Universities manage placement drives',
-    description: 'Colleges coordinate campus recruitment and track company interactions',
+    title: 'Universities Manage Drives',
+    description: 'Coordinate campus drives, approve students, and track participation.',
   },
   {
     image: "/home/schoolbuilding.png",
-    title: 'Students apply through a single profile',
-    description: 'One profile to apply across multiple opportunities and track applications.',
+    title: 'Students Apply',
+    description: 'Explore roles, check eligibility, and submit applications quickly.',
   },
   {
     image: "/home/recruiter-network.png",
-    title: 'Recruiters shortlist and hire efficiently',
-    description: 'Fast-track hiring with centralized candidate management and analytics',
+    title: 'Recruiters Shortlist and Hire',
+    description: 'Screen applications, conduct assessments, and finalize candidates.',
   },
 ]
 
 const HowItsWork = () => {
   return (
-    <section className="w-full flex flex-col bg-[#00BAE8] lg:bg-white dark:bg-[#6B45C0] lg:dark:bg-white">
+    <section id="how-it-works" className="w-full flex flex-col bg-[#00BAE8] lg:bg-white dark:bg-[#6B45C0] lg:dark:bg-white">
       {/* Top Section with Colored Background */}
       <div 
         className="w-full flex flex-col items-center pt-[30px] lg:pt-[50px] pb-[100px] lg:pb-0 lg:min-h-[463px] px-6 sm:px-8 md:px-[60px] bg-[#00BAE8] dark:bg-[#6B45C0] transition-colors duration-300"
@@ -47,7 +47,7 @@ const HowItsWork = () => {
             viewport={{ once: true }}
             className="text-[32px] sm:text-[40px] md:text-[48px] font-semibold md:font-bold text-white font-poppins"
           >
-            How Its Works
+            How It Works
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -56,7 +56,7 @@ const HowItsWork = () => {
             transition={{ delay: 0.05 }}
             className="text-[16px] sm:text-xl md:text-[24px] text-white/95 max-w-[344px] md:max-w-[900px] font-poppins font-normal"
           >
-            A seamless workflow that connects all stakeholders in campus recruitment
+            A simple workflow connecting companies, universities, and students
           </motion.p>
         </div>
       </div>

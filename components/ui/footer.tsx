@@ -29,7 +29,10 @@ export function Footer() {
                             />
                         </Link>
                         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                            Connect with opportunities that match your skills and aspirations. We are bridging the gap between talent and opportunity.
+                            A unified platform built for modern campus recruitment.
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                            Support available for students, universities, and recruiters across India.
                         </p>
                         <div className="flex space-x-4 pt-2">
                             <a href="#" className="text-gray-400 hover:text-primary-500 transition-colors">

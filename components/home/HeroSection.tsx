@@ -6,12 +6,12 @@ import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 const statsData = [
-  { value: 50, label: 'Students' },
-  { value: 20, label: 'Universities' },
-  { value: 30, label: 'Corporates' },
+  { value: 50, label: 'students', suffix: 'k+' },
+  { value: 30, label: 'companies', suffix: '+' },
+  { value: 20, label: 'universities', suffix: '+' },
 ]
 
-const CounterStat = ({ value, label }: { value: number; label: string }) => {
+const CounterStat = ({ value, label, suffix = '+' }: { value: number; label: string; suffix?: string }) => {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const CounterStat = ({ value, label }: { value: number; label: string }) => {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xl md:text-2xl font-bold text-[#FFFFFF] dark:text-[#FA504D]">
-        {count}k+
+        {count}{suffix}
       </span>
       <span className="font-medium text-[#363636] dark:text-[#FFFFFF]">
         {label}
@@ -65,14 +65,15 @@ const HeroSection = () => {
             
             {/* Title */}
             <h1 className="text-[32px] md:text-5xl lg:text-[64px] font-bold text-[#1A1A1A] dark:text-[#E5E5E5] leading-[50px] md:leading-[1.15] lg:leading-[88px] tracking-tight font-poppins mb-4">
-              One Platform. Endless{" "}
-              Campus
-              Opportunities.
+              One Platform for Campus Hiring
             </h1>
 
             {/* Subtitle */}
-            <p className="text-sm md:text-lg lg:text-[24px] lg:leading-[1.4] text-[#242424] dark:text-[#C9CDD8] max-w-[655px] font-poppins font-normal mb-8 md:mx-auto lg:mx-0">
-              Connecting students, universities, and corporates through a single centralized campus recruitment platform.
+            <p className="text-sm md:text-lg lg:text-[24px] lg:leading-[1.4] text-[#242424] dark:text-[#C9CDD8] max-w-[655px] font-poppins font-normal mb-4 md:mx-auto lg:mx-0">
+              Connect students, universities, and recruiters in one centralized hiring ecosystem.
+            </p>
+            <p className="text-sm md:text-base lg:text-[18px] text-[#242424] dark:text-[#C9CDD8] max-w-[655px] font-poppins font-normal mb-8 md:mx-auto lg:mx-0">
+              Run campus drives, manage applications, and shortlist candidates faster with one unified dashboard.
             </p>
 
             {/* Buttons */}
@@ -83,14 +84,16 @@ const HeroSection = () => {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
-              <button
-                className="px-6 py-3 h-[48px] min-w-[155px] rounded-xl font-bold text-sm md:text-base
-                           flex items-center justify-center gap-2 transition-all
-                           bg-transparent border border-white text-white hover:bg-white/10
-                           dark:bg-[#494949] dark:border-[#2A2C38] dark:text-[#E5E5E5] dark:hover:bg-[#5C5C5C]"
-              >
-                How It Works
-              </button>
+              <Link href="/#how-it-works">
+                <button
+                  className="px-6 py-3 h-[48px] min-w-[155px] rounded-xl font-bold text-sm md:text-base
+                             flex items-center justify-center gap-2 transition-all
+                             bg-transparent border border-white text-white hover:bg-white/10
+                             dark:bg-[#494949] dark:border-[#2A2C38] dark:text-[#E5E5E5] dark:hover:bg-[#5C5C5C]"
+                >
+                  How It Works
+                </button>
+              </Link>
             </div>
 
             {/* Extra-small screens: badges and stats in two aligned columns like Figma, block centered */}
@@ -112,7 +115,7 @@ const HeroSection = () => {
               <div className="flex flex-col justify-between gap-3">
                 {statsData.map((item) => (
                   <div key={item.label} className="flex justify-start">
-                    <CounterStat value={item.value} label={item.label} />
+                    <CounterStat value={item.value} label={item.label} suffix={item.suffix} />
                   </div>
                 ))}
               </div>
@@ -134,7 +137,7 @@ const HeroSection = () => {
             {/* Stats with counter animation */}
             <div className="hidden sm:flex flex-wrap gap-x-6 gap-y-3 text-sm md:text-base mb-5 justify-center lg:justify-start">
               {statsData.map((item) => (
-                <CounterStat key={item.label} value={item.value} label={item.label} />
+                <CounterStat key={item.label} value={item.value} label={item.label} suffix={item.suffix} />
               ))}
             </div>
 
@@ -147,7 +150,7 @@ const HeroSection = () => {
                   </div>
                 ))}
               </div>
-              <p className="text-sm font-medium text-white/90">Over 1000+ Student have Placed with us</p>
+              <p className="text-sm font-medium text-white/90">Trusted by 50k+ students, 30+ companies, 20+ universities</p>
             </div>
 
           </motion.div>

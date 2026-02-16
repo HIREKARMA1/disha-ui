@@ -16,7 +16,7 @@ const CTASection = () => {
             viewport={{ once: true }}
             className="text-[32px] md:text-[64px] font-bold text-[#00BAE8] dark:bg-gradient-to-b dark:from-white dark:to-[#1E7BFF] dark:bg-clip-text dark:text-transparent font-poppins leading-[110%] mb-6"
           >
-            Connecting Students, Universities & <br className="hidden md:block" /> Recruiters with Disha
+            Connecting Students, Universities, and <br className="hidden md:block" /> Recruiters with Disha
           </motion.h2>
           
           <motion.p
@@ -26,7 +26,7 @@ const CTASection = () => {
             transition={{ delay: 0.1 }}
             className="text-[16px] md:text-[20px] text-[#494949] dark:text-gray-300 font-poppins leading-[150%] max-w-[800px] mx-auto"
           >
-            Join the future of campus recruitment. Connect with thousands of <br className="hidden md:block" /> opportunities through one unified platform.
+            Join the unified campus recruitment platform and streamline hiring from application to offer.
           </motion.p>
         </div>
 

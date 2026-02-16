@@ -8,22 +8,22 @@ const challenges = [
   {
     icon: Layers,
     title: "Fragmented Portals",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "Multiple tools for applications, tests, and communication.",
   },
   {
     icon: Timer,
     title: "High TAT",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "Manual coordination slows down shortlisting and hiring cycles.",
   },
   {
     icon: EyeOff,
     title: "Zero Visibility",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "No real-time updates on student progress and hiring status.",
   },
   {
     icon: CalendarX,
-    title: "Scheduling Hell",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    title: "Scheduling Issues",
+    description: "Coordinating interviews across colleges becomes chaotic.",
   }
 ]
 
@@ -31,22 +31,22 @@ const solutions = [
   {
     icon: Grid,
     title: "Unified Ecosystem",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "Manage applications, assessments, and communication from one dashboard.",
   },
   {
     icon: Cpu,
     title: "AI Shortlisting",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "Filter candidates instantly based on skills and criteria.",
   },
   {
     icon: BarChart3,
     title: "Live Tracking",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "Track application status and hiring progress in real time.",
   },
   {
     icon: CalendarCheck,
     title: "Smart Scheduling",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla.",
+    description: "Schedule interviews and drives with automated calendar sync.",
   }
 ]
 
@@ -73,7 +73,7 @@ const ChallengeSection = () => {
                     transition={{ delay: 0.1 }}
                     className="text-lg md:text-[20px] text-gray-300 font-poppins"
                 >
-                    Traditional campus hiring is broken. We're here to fix it.
+                    The Challenge vs The Shortlisted Way
                 </motion.p>
                 <motion.h3
                     initial={{ opacity: 0, y: 20 }}
@@ -82,7 +82,7 @@ const ChallengeSection = () => {
                     transition={{ delay: 0.2 }}
                     className="text-[24px] md:text-[32px] font-bold text-white font-poppins mt-8"
                 >
-                    Problems & Our Solution
+                    The Challenge vs The Shortlisted Way
                 </motion.h3>
             </div>
 
@@ -189,7 +189,7 @@ const ChallengeSection = () => {
                 transition={{ delay: 0.1 }}
                 className="text-[16px] text-[#3A3A3A] dark:text-gray-300 font-poppins md:hidden max-w-[343px] mx-auto leading-normal"
             >
-                Everything you need for modern campus recruitment
+                The Challenge vs The Shortlisted Way
             </motion.p>
 
             <motion.p
@@ -199,7 +199,7 @@ const ChallengeSection = () => {
                 transition={{ delay: 0.1 }}
                 className="hidden md:block text-lg md:text-[20px] text-[#3A3A3A] dark:text-gray-300 font-poppins"
             >
-                Traditional campus hiring is broken. We're here to fix it.
+                The Challenge vs The Shortlisted Way
             </motion.p>
             </div>
 

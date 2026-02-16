@@ -12,6 +12,7 @@ import TestimonialsSection from '@/components/home/TestimonialsSection'
 import PartnersSection from '@/components/home/PartnersSection'
 import FAQSection from '@/components/home/FAQSection'
 import CTASection from '@/components/home/CTASection'
+import { Footer } from '@/components/ui/footer'
 
 export default function HomePage() {
     const { user, isAuthenticated, isLoading } = useAuth()
@@ -54,6 +55,7 @@ export default function HomePage() {
             <FAQSection />
             <CTASection />
             <PartnersSection />
+            <Footer />
         </main>
     )
 }
