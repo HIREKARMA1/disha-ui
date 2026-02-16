@@ -6,8 +6,8 @@ import { ArrowRight } from 'lucide-react'
 
 const CTASection = () => {
   return (
-    <section className="w-full pt-24 pb-12 bg-white dark:bg-[#2A2C38]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1280px]">
+    <section className="w-full bg-white dark:bg-[#2A2C38] pt-12 pb-12 sm:pt-16 sm:pb-16 md:pt-20 md:pb-20 lg:pt-24 lg:pb-4">
+      <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
           <motion.h2

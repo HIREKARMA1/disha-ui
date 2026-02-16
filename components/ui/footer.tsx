@@ -14,11 +14,11 @@ export function Footer() {
     }
 
     return (
-        <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-8">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-10">
+            <div className="container mx-auto px-6 sm:px-8 lg:px-10 py-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-14 md:gap-12 lg:gap-16 mb-14">
                     {/* Brand Section */}
-                    <div className="space-y-4">
+                    <div className="space-y-5 text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
                         <Link href="/" className="inline-block">
                             <Image
                                 src={getLogoSrc()}
@@ -34,26 +34,26 @@ export function Footer() {
                         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                             Support available for students, universities, and recruiters across India.
                         </p>
-                        <div className="flex space-x-4 pt-2">
-                            <a href="#" className="text-gray-400 hover:text-primary-500 transition-colors">
+                        <div className="flex space-x-4 pt-2 justify-center md:justify-start">
+                            <a href="https://twitter.com/hirekarma" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="Twitter">
                                 <Twitter className="w-5 h-5" />
                             </a>
-                            <a href="#" className="text-gray-400 hover:text-primary-500 transition-colors">
+                            <a href="https://www.linkedin.com/company/hirekarma-pvt-ltd" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="LinkedIn">
                                 <Linkedin className="w-5 h-5" />
                             </a>
-                            <a href="#" className="text-gray-400 hover:text-primary-500 transition-colors">
+                            <a href="https://facebook.com/hirekarma" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="Facebook">
                                 <Facebook className="w-5 h-5" />
                             </a>
-                            <a href="#" className="text-gray-400 hover:text-primary-500 transition-colors">
+                            <a href="https://instagram.com/hirekarma" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="Instagram">
                                 <Instagram className="w-5 h-5" />
                             </a>
                         </div>
                     </div>
 
                     {/* Quick Links */}
-                    <div>
-                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg">Quick Links</h3>
-                        <ul className="space-y-3">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Quick Links</h3>
+                        <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li>
                                 <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
                                     Home
@@ -78,66 +78,66 @@ export function Footer() {
                     </div>
 
                     {/* Resources */}
-                    <div>
-                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg">Resources</h3>
-                        <ul className="space-y-3">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Resources</h3>
+                        <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li>
-                                <Link href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
-                                    About Us
-                                </Link>
+                                <a href="https://hirekarma.in/about-us/our-story" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                    Our Story
+                                </a>
                             </li>
                             <li>
-                                <Link href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
-                                    Contact
-                                </Link>
+                                <a href="https://hirekarma.in/about-us/mission-value" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                    Mission & Value
+                                </a>
                             </li>
                             <li>
-                                <Link href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
-                                    Privacy Policy
-                                </Link>
+                                <a href="https://hirekarma.in/about-us/people" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                    People
+                                </a>
                             </li>
                             <li>
-                                <Link href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
-                                    Terms of Service
-                                </Link>
+                                <a href="https://hirekarma.in/contact" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                    Get in Touch
+                                </a>
                             </li>
                         </ul>
                     </div>
 
                     {/* Contact Info */}
-                    <div>
-                        <h3 className="text-gray-900 dark:text-white font-semibold mb-4 text-lg">Contact Us</h3>
-                        <ul className="space-y-3">
-                            <li className="flex items-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                        <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Contact Us</h3>
+                        <ul className="space-y-4 flex flex-col items-center md:items-start">
+                            <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <Mail className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>support@hirekarma.com</span>
+                                <span>info@hirekarma.in</span>
                             </li>
-                            <li className="flex items-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
+                            <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <Phone className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>+91 123 456 7890</span>
+                                <span>+91 90786 83876</span>
                             </li>
-                            <li className="flex items-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
+                            <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <MapPin className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>123, Tech Park, Bangalore, India</span>
+                                <span className="text-center md:text-left">Room No: 109, 1st Floor, Tower A, O-HUB, Bhubaneswar</span>
                             </li>
                         </ul>
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="border-t border-gray-200 dark:border-gray-800 pt-10 pb-2 flex flex-col md:flex-row justify-between items-center gap-6 px-2 md:px-0">
                     <p className="text-gray-500 dark:text-gray-400 text-sm text-center md:text-left">
                         © {new Date().getFullYear()} HireKarma. All rights reserved.
                     </p>
-                    <div className="flex space-x-6">
-                        <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
-                            Privacy
-                        </Link>
-                        <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
-                            Terms
-                        </Link>
-                        <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
-                            Cookies
-                        </Link>
+                    <div className="flex flex-wrap justify-center md:justify-start space-x-6">
+                        <a href="https://hirekarma.in/PrivacyPolicy" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
+                            Privacy Policy
+                        </a>
+                        <a href="https://hirekarma.in/TermsofService" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
+                            Terms of Service
+                        </a>
+                        <a href="https://www.hirekarma.in/" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-primary-500 text-sm transition-colors">
+                            HireKarma Pvt Ltd
+                        </a>
                     </div>
                 </div>
             </div>

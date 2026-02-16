@@ -48,11 +48,11 @@ const CounterStat = ({ value, label, suffix = '+' }: { value: number; label: str
 
 const HeroSection = () => {
   return (
-    <section className="relative w-full min-h-[90vh] bg-[#53C9F2] dark:bg-[#2A2C38] overflow-hidden flex items-center py-20 lg:py-28">
+    <section className="relative w-full min-h-[90vh] bg-[#53C9F2] dark:bg-[#2A2C38] overflow-hidden flex items-center pt-20 pb-12 sm:pt-28 sm:pb-16 md:pt-32 md:pb-20 lg:pt-32 lg:pb-24">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-[#53C9F2] dark:bg-[#2A2C38]" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 items-center">
 
           {/* Left Content */}
@@ -60,7 +60,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-2xl lg:pl-10 md:text-center lg:text-left"
+            className="max-w-2xl md:text-center lg:text-left"
           >
             
             {/* Title */}
@@ -142,7 +142,7 @@ const HeroSection = () => {
             </div>
 
             {/* Social Proof */}
-            <div className="flex items-center gap-3 md:gap-4 justify-start md:justify-center lg:justify-start">
+            {/* <div className="flex items-center gap-3 md:gap-4 justify-start md:justify-center lg:justify-start">
               <div className="flex -space-x-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="w-10 h-10 rounded-full bg-gray-300 border-2 border-[#53C9F2] overflow-hidden">
@@ -151,7 +151,7 @@ const HeroSection = () => {
                 ))}
               </div>
               <p className="text-sm font-medium text-white/90">Trusted by 50k+ students, 30+ companies, 20+ universities</p>
-            </div>
+            </div> */}
 
           </motion.div>
 
