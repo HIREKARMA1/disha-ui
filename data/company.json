@@ -1,0 +1,199 @@
+{
+  "conpanies": [
+    {
+      "id": 1,
+      "name": "Arizona Automation",
+      "logo": "/company/arizona.png"
+    },
+    {
+      "id": 2,
+      "name": "acuity_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/acuity_1_-removebg-preview.png"
+    },
+    {
+      "id": 3,
+      "name": "Actowiz_Solutions_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Actowiz_Solutions_1_-removebg-preview.png"
+    },
+    {
+      "id": 4,
+      "name": "adhoc_software",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/adhoc_software_1_-removebg-preview.png"
+    },
+    {
+      "id": 5,
+      "name": "ambetronic_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/ambetronic_1_-removebg-preview.png"
+    },
+    {
+      "id": 6,
+      "name": "aristrocard",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/aristrocart_1_-removebg-preview.png"
+    },
+    {
+      "id": 7,
+      "name": "cloude certitude",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/CLOUD_CERTITUDE_1_-removebg-preview.png"
+    },
+    {
+      "id": 8,
+      "name": "cmexpertise_infotech",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/cmexpertise_infotech_1_-removebg-preview.png"
+    },
+    {
+      "id": 9,
+      "name": "cordoidhub_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/cordoidhub_1_-removebg-preview.png"
+    },
+    {
+      "id": 11,
+      "name": "datacular_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/datacular_1_-removebg-preview.png"
+    },
+    {
+      "id": 12,
+      "name": "deep_industries_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/deep_industries_1_-removebg-preview.png"
+    },
+    {
+      "id": 13,
+      "name": "Elision_Technologies_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Elision_Technologies_1_-removebg-preview.png"
+    },
+    {
+      "id": 14,
+      "name": "i_bird_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/i_bird_1_-removebg-preview.png"
+    },
+    {
+      "id": 15,
+      "name": "ig_drones_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/ig_drones_1_-removebg-preview.png"
+    },
+    {
+      "id": 16,
+      "name": "Incture_Technologies",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Incture_Technologies_Logo_1_-removebg-preview.png"
+    },
+    {
+      "id": 17,
+      "name": "Intelibim_Solutions_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Intelibim_Solutions_1_-removebg-preview.png"
+    },
+    {
+      "id": 18,
+      "name": "invincix_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/invincix_1_-removebg-preview.png"
+    },
+    {
+      "id": 19,
+      "name": "join_software_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/join_software_1_-removebg-preview.png"
+    },
+    {
+      "id": 20,
+      "name": "ketson_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/ketson_1_-removebg-preview.png"
+    },
+    {
+      "id": 21,
+      "name": "kobkan_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/kokban_1_-removebg-preview.png"
+    },
+    {
+      "id": 22,
+      "name": "milieudigital_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/milieudigital_1_-removebg-preview.png"
+    },
+    {
+      "id": 23,
+      "name": "Qualitykiosk_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Qualitykiosk_1_-removebg-preview.png"
+    },
+    {
+      "id": 24,
+      "name": "satiji_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/satiji_1_-removebg-preview.png"
+    },
+    {
+      "id": 25,
+      "name": "seed_engineering_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/seed_engineering_1_-removebg-preview.png"
+    },
+    {
+      "id": 26,
+      "name": "spd_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/spd_1_-removebg-preview.png"
+    },
+    {
+      "id": 27,
+      "name": "sqare_infosoft_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/sqare_infosoft_1_-removebg-preview.png"
+    },
+    {
+      "id": 28,
+      "name": "tech_mahindra_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/tech_mahindra_1_-removebg-preview.png"
+    },
+    {
+      "id": 29,
+      "name": "TECHM",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/TECHM_1_-removebg-preview.png"
+    },
+    {
+      "id": 30,
+      "name": "technoshine_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/technoshine_1_-removebg-preview.png"
+    },
+    {
+      "id": 31,
+      "name": "Thundersoft_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Thundersoft_1_-removebg-preview.png"
+    },
+    {
+      "id": 32,
+      "name": "twinleaves_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/twinleaves_1_-removebg-preview.png"
+    },
+    {
+      "id": 33,
+      "name": "VanurTech_Media_Pvt_Ltd_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/VanurTech_Media_Pvt.__Ltd_1_-removebg-preview.png"
+    },
+    {
+      "id": 34,
+      "name": "vega_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/vega_1_-removebg-preview.png"
+    },
+    {
+      "id": 35,
+      "name": "Web_Bocket_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Web_Bocket_1_-removebg-preview.png"
+    },
+    {
+      "id": 36,
+      "name": "webplus_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/webplus_1_-removebg-preview.png"
+    },
+    {
+      "id": 37,
+      "name": "Webpristine_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/Webpristine_1_-removebg-preview.png"
+    },
+    {
+      "id": 38,
+      "name": "young_decade_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/young_decade_1_-removebg-preview.png"
+    },
+    {
+      "id": 39,
+      "name": "young_mind_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/young_mind_1_-removebg-preview.png"
+    },
+    {
+      "id": 40,
+      "name": "arcitech_1",
+      "logo": "https://hirekarma.s3.us-east-1.amazonaws.com/hirekarma_ui/company_logo/arcitech_1_-removebg-preview.png"
+    }
+  ]
+}
