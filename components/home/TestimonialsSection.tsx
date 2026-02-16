@@ -90,7 +90,7 @@ const TestimonialsSection = () => {
   }
 
   return (
-    <section className="w-full py-24 bg-white dark:bg-[#1C2938]">
+    <section className="w-full py-24 bg-white dark:bg-[#2A2C38]">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px]">
         {/* Header */}
         <div className="text-center mb-16">
