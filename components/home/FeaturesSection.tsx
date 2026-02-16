@@ -34,7 +34,7 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="pt-20 sm:pt-28 md:pt-32 lg:pt-24 pb-24 bg-white dark:bg-[#2A2C38] relative overflow-hidden scroll-mt-24" id="features">
+    <section className="pt-20 pb-20 sm:pt-28 sm:pb-28 md:pt-32 md:pb-32 lg:pt-24 lg:pb-4 bg-white dark:bg-[#2A2C38] relative overflow-hidden scroll-mt-24" id="features">
       {/* Decorative background shape
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#00BAE8]/10 dark:from-[#00BAE8]/20 to-transparent" 
            style={{ clipPath: "ellipse(70% 100% at 50% 0%)" }} /> */}
@@ -83,7 +83,7 @@ const FeaturesSection = () => {
           </div>
 
           {/* Center Image */}
-          <div className="flex justify-center items-end relative z-10 w-[343px] lg:w-[400px] xl:w-[530px] h-[540px] lg:h-auto mx-auto transition-all duration-300 order-1 lg:order-2 mb-10 lg:mb-0">
+          <div className="flex justify-center items-end relative z-10 w-[343px] lg:w-[400px] xl:w-[530px] h-[540px] lg:h-auto mx-auto transition-all duration-300 order-1 lg:order-2 mb-4 lg:mb-0">
             <div className="origin-bottom scale-[0.65] sm:scale-75 lg:scale-75 xl:scale-100 transition-transform duration-300">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
