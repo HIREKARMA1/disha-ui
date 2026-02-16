@@ -3,6 +3,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 const CTASection = () => {
   return (
@@ -40,18 +41,18 @@ const CTASection = () => {
         >
           {/* For Students */}
           <button className="h-[50px] px-6 rounded-[12px] bg-[#00BAE8] dark:bg-gradient-to-r dark:from-[#1E7BFF] dark:to-[#7F56D9] text-white font-poppins font-medium flex items-center justify-center gap-2 hover:bg-[#009bc2] dark:hover:opacity-90 transition-all w-full sm:w-auto min-w-[159px]">
-            For Students
+           <Link   href="/auth/login?type=student"> For Students</Link>
             <ArrowRight size={20} />
           </button>
 
           {/* For Corporates */}
           <button className="h-[50px] px-6 rounded-[12px] border border-[#00BAE8] text-[#00BAE8] dark:border-white dark:text-white font-poppins font-medium hover:bg-[#00BAE8] hover:text-white dark:hover:bg-white dark:hover:text-[#1C2938] transition-colors w-full sm:w-auto min-w-[144px]">
-            For Corporates
+           <Link   href="/auth/login?type=corporate"> For Corporates</Link>
           </button>
 
           {/* For Universities */}
           <button className="h-[50px] px-6 rounded-[12px] border border-[#00BAE8] text-[#00BAE8] dark:border-white dark:text-white font-poppins font-medium hover:bg-[#00BAE8] hover:text-white dark:hover:bg-white dark:hover:text-[#1C2938] transition-colors w-full sm:w-auto min-w-[144px]">
-            For Universities
+           <Link   href="/auth/login?type=university"> For Universities</Link>
           </button>
         </motion.div>
       </div>
