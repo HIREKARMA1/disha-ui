@@ -259,7 +259,7 @@ export function Navbar({
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-                        <Link href={isAuthenticated ? getDashboardPath() : "/auth/login"} className="flex items-center">
+                        <Link href={isAuthenticated ? getDashboardPath() : "/"} className="flex items-center">
                             <Image
                                 src={getLogoSrc()}
                                 alt="HireKarma Logo"
