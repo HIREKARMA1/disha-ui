@@ -118,7 +118,7 @@ export function Footer() {
                             </li>
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <MapPin className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span className="text-center md:text-left">Room No: 109, 1st Floor, Tower A, O-HUB, Bhubaneswar</span>
+                                <span className="text-center md:text-left">2nd Floor, SS Niwas, Hirekarma Private Limited, Raghunathpur, Bhubaneswar, Odisha 751024</span>
                             </li>
                         </ul>
                     </div>
