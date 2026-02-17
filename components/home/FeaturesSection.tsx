@@ -83,8 +83,8 @@ const FeaturesSection = () => {
           </div>
 
           {/* Center Image */}
-          <div className="flex justify-center items-end relative z-10 w-[343px] lg:w-[400px] xl:w-[530px] h-[540px] lg:h-auto mx-auto transition-all duration-300 order-1 lg:order-2 mb-4 lg:mb-0">
-            <div className="origin-bottom scale-[0.65] sm:scale-75 lg:scale-75 xl:scale-100 transition-transform duration-300">
+          <div className="flex justify-center items-end relative z-10 max-[375px]:w-[300px] w-[343px] lg:w-[400px] xl:w-[530px] h-[540px] lg:h-auto mx-auto transition-all duration-300 order-1 lg:order-2 mb-4 lg:mb-0">
+            <div className="origin-bottom max-[375px]:scale-[0.55] scale-[0.65] sm:scale-75 lg:scale-75 xl:scale-100 transition-transform duration-300">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
