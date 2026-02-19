@@ -62,27 +62,27 @@ const navItems: NavItem[] = [
         description: 'Manage all users',
         color: 'from-orange-500 to-red-600'
     },
-    {
-        label: 'Universities',
-        href: '/dashboard/admin/universities',
-        icon: Building2,
-        description: 'Manage universities',
-        color: 'from-purple-500 to-pink-600'
-    },
-    {
-        label: 'Corporates',
-        href: '/dashboard/admin/corporates',
-        icon: Building2,
-        description: 'Manage corporates',
-        color: 'from-cyan-500 to-blue-600'
-    },
-    {
-        label: 'Student Management',
-        href: '/dashboard/admin/students',
-        icon: GraduationCap,
-        description: 'Manage students across universities',
-        color: 'from-emerald-500 to-teal-600'
-    },
+    // {
+    //     label: 'Universities',
+    //     href: '/dashboard/admin/universities',
+    //     icon: Building2,
+    //     description: 'Manage universities',
+    //     color: 'from-purple-500 to-pink-600'
+    // },
+    // {
+    //     label: 'Corporates',
+    //     href: '/dashboard/admin/corporates',
+    //     icon: Building2,
+    //     description: 'Manage corporates',
+    //     color: 'from-cyan-500 to-blue-600'
+    // },
+    // {
+    //     label: 'Student Management',
+    //     href: '/dashboard/admin/students',
+    //     icon: GraduationCap,
+    //     description: 'Manage students across universities',
+    //     color: 'from-emerald-500 to-teal-600'
+    // },
     {
         label: 'Job Management',
         href: '/dashboard/admin/jobs',

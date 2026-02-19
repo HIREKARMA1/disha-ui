@@ -19,7 +19,7 @@ import {
     ChevronsUpDown,
     Hourglass,
     Trash2,
-    Pencil,
+    Edit,
     Building2
 } from 'lucide-react'
 import { StudentListItem } from '@/types/university'
@@ -589,17 +589,17 @@ export function StudentTable({
 
                                 {/* Actions */}
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex items-center justify-end space-x-2">
                                         {onEditStudent && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     onEditStudent(student)
                                                 }}
-                                                className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300"
+                                                className="p-2 rounded-lg transition-colors duration-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                title="Edit Student"
                                             >
-                                                <Pencil className="w-3 h-3" />
-                                                Edit
+                                                <Edit className="h-4 w-4" />
                                             </button>
                                         )}
                                         {!hideArchiveAction && (
@@ -608,22 +608,13 @@ export function StudentTable({
                                                     e.stopPropagation()
                                                     handleArchiveClick(student)
                                                 }}
-                                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${student.is_archived
-                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300'
-                                                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300'
+                                                className={`p-2 rounded-lg transition-colors duration-200 ${student.is_archived
+                                                    ? 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                                    : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
                                                     }`}
+                                                title={student.is_archived ? 'Unarchive Student' : 'Archive Student'}
                                             >
-                                                {student.is_archived ? (
-                                                    <>
-                                                        <Eye className="w-3 h-3" />
-                                                        Unarchive
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Archive className="w-3 h-3" />
-                                                        Archive
-                                                    </>
-                                                )}
+                                                {student.is_archived ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                                             </button>
                                         )}
                                         <button
@@ -632,10 +623,10 @@ export function StudentTable({
                                                 setStudentToDelete({ id: student.id, name: student.name })
                                                 setShowDeleteModal(true)
                                             }}
-                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-300"
+                                            className="p-2 rounded-lg transition-colors duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                            title="Delete Student"
                                         >
-                                            <Trash2 className="w-3 h-3" />
-                                            Delete
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
                                 </td>

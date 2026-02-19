@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User, Mail, Phone, GraduationCap, Calendar } from 'lucide-react'
+import { X, User, Mail, Phone, GraduationCap, Calendar, Edit, AlertCircle, Award } from 'lucide-react'
 import { StudentListItem } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -90,193 +90,242 @@ export function EditStudentModal({
 
     return createPortal(
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-                <div className="flex min-h-full items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50"
-                        onClick={onClose}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto"
-                    >
-                        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Student</h2>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                    onClick={onClose}
+                />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4"
+                >
+                    {/* Header - match Corporate */}
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <Edit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                    Edit Student
+                                </h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Update student information
+                                </p>
+                            </div>
                         </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            disabled={isSubmitting}
+                        >
+                            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        </button>
+                    </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {/* Content */}
+                    <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             {error && (
-                                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm">
-                                    {error}
-                                </div>
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                                >
+                                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                                    <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                                </motion.div>
                             )}
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            value={formData.name ?? ''}
-                                            onChange={e => handleChange('name', e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                            required
-                                        />
+                            {/* Basic Information */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    Basic Information
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name *</label>
+                                        <div className="relative">
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                value={formData.name ?? ''}
+                                                onChange={e => handleChange('name', e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                        <input
-                                            type="email"
-                                            value={student?.email ?? ''}
-                                            readOnly
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                                        />
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="email"
+                                                value={student?.email ?? ''}
+                                                readOnly
+                                                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Email cannot be changed</p>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-0.5">Email cannot be changed</p>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="tel"
+                                                value={formData.phone ?? ''}
+                                                onChange={e => handleChange('phone', e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="tel"
-                                        value={formData.phone ?? ''}
-                                        onChange={e => handleChange('phone', e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Graduation Year</label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            {/* Academic Information */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                    <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    Academic Information
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Graduation Year</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="number"
+                                                min={2000}
+                                                max={2030}
+                                                value={formData.graduation_year ?? ''}
+                                                onChange={e => handleChange('graduation_year', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">CGPA</label>
                                         <input
                                             type="number"
-                                            min={2000}
-                                            max={2030}
-                                            value={formData.graduation_year ?? ''}
-                                            onChange={e => handleChange('graduation_year', e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            step={0.01}
+                                            min={0}
+                                            max={10}
+                                            value={formData.btech_cgpa ?? ''}
+                                            onChange={e => handleChange('btech_cgpa', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Institution</label>
+                                        <input
+                                            type="text"
+                                            value={formData.institution ?? ''}
+                                            onChange={e => handleChange('institution', e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Degree</label>
+                                        <Select
+                                            value={formData.degree ?? ''}
+                                            onValueChange={v => handleChange('degree', v)}
+                                        >
+                                            <SelectTrigger className="w-full focus:ring-2 focus:ring-blue-500">
+                                                <SelectValue placeholder="Select degree" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {degreeOptions.map(opt => (
+                                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Branch</label>
+                                        <Select
+                                            value={formData.branch ?? ''}
+                                            onValueChange={v => handleChange('branch', v)}
+                                        >
+                                            <SelectTrigger className="w-full focus:ring-2 focus:ring-blue-500">
+                                                <SelectValue placeholder="Select branch" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {branchOptions.map(opt => (
+                                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Skills */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    Skills
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Technical Skills</label>
+                                        <textarea
+                                            value={formData.technical_skills ?? ''}
+                                            onChange={e => handleChange('technical_skills', e.target.value)}
+                                            rows={3}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Soft Skills</label>
+                                        <textarea
+                                            value={formData.soft_skills ?? ''}
+                                            onChange={e => handleChange('soft_skills', e.target.value)}
+                                            rows={3}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CGPA</label>
-                                    <input
-                                        type="number"
-                                        step={0.01}
-                                        min={0}
-                                        max={10}
-                                        value={formData.btech_cgpa ?? ''}
-                                        onChange={e => handleChange('btech_cgpa', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    />
-                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institution</label>
-                                <input
-                                    type="text"
-                                    value={formData.institution ?? ''}
-                                    onChange={e => handleChange('institution', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Degree</label>
-                                    <Select
-                                        value={formData.degree ?? ''}
-                                        onValueChange={v => handleChange('degree', v)}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select degree" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {degreeOptions.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Branch</label>
-                                    <Select
-                                        value={formData.branch ?? ''}
-                                        onValueChange={v => handleChange('branch', v)}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select branch" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {branchOptions.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Technical Skills</label>
-                                <textarea
-                                    value={formData.technical_skills ?? ''}
-                                    onChange={e => handleChange('technical_skills', e.target.value)}
-                                    rows={2}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Soft Skills</label>
-                                <textarea
-                                    value={formData.soft_skills ?? ''}
-                                    onChange={e => handleChange('soft_skills', e.target.value)}
-                                    rows={2}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            {/* Action Buttons - match Corporate */}
+                            <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                    disabled={isSubmitting}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
-                                    {isSubmitting ? 'Saving...' : 'Save changes'}
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Updating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Edit className="w-4 h-4" />
+                                            Update Student
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
-                    </motion.div>
-                </div>
+                    </div>
+                </motion.div>
             </div>
         </AnimatePresence>,
         document.body
