@@ -10,12 +10,15 @@ interface BulkUploadModalProps {
     isOpen: boolean
     onClose: () => void
     onSubmit: (file: File) => void
+    /** Optional: use this to fetch template (e.g. admin with universityId). If not provided, uses apiClient.getStudentTemplate(). */
+    onGetTemplate?: () => Promise<{ template_url: string; message?: string }>
 }
 
 export function BulkUploadModal({
     isOpen,
     onClose,
-    onSubmit
+    onSubmit,
+    onGetTemplate
 }: BulkUploadModalProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isUploading, setIsUploading] = useState(false)
@@ -233,7 +236,7 @@ export function BulkUploadModal({
     const handleDownloadTemplate = async () => {
         setIsDownloadingTemplate(true)
         try {
-            const response = await apiClient.getStudentTemplate()
+            const response = onGetTemplate ? await onGetTemplate() : await apiClient.getStudentTemplate()
 
             // Create a download link
             const link = document.createElement('a')

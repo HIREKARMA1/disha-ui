@@ -98,6 +98,7 @@ export interface StudentListItem {
   twelfth_grade_percentage?: number
   total_percentage?: number
   university_id?: string
+  university_name?: string
   college_id?: string
   twelfth_institution?: string
   twelfth_stream?: string

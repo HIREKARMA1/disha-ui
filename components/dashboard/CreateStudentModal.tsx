@@ -79,12 +79,15 @@ interface CreateStudentModalProps {
     isOpen: boolean
     onClose: () => void
     onSubmit: (data: CreateStudentRequest) => void
+    /** When true (e.g. admin context), skip license fetch and license-based validation. */
+    isAdminMode?: boolean
 }
 
 export function CreateStudentModal({
     isOpen,
     onClose,
-    onSubmit
+    onSubmit,
+    isAdminMode = false
 }: CreateStudentModalProps) {
     const [formData, setFormData] = useState<CreateStudentRequest>({
         name: '',
@@ -105,10 +108,10 @@ export function CreateStudentModal({
     const [fetchError, setFetchError] = useState<string | null>(null)
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !isAdminMode) {
             fetchLicenses()
         }
-    }, [isOpen])
+    }, [isOpen, isAdminMode])
 
     const fetchLicenses = async () => {
         setIsLoadingLicenses(true)
@@ -133,15 +136,15 @@ export function CreateStudentModal({
     const activeLicenses = useMemo(() => licenses.filter(l => l.is_active && l.remaining_licenses > 0), [licenses])
     const hasActiveLicenses = activeLicenses.length > 0
 
-    // Toast warning if no licenses (Keep strictly if 0 licenses exist)
+    // Toast warning if no licenses (Keep strictly if 0 licenses exist). Skip in admin mode.
     useEffect(() => {
-        if (isOpen && !isLoadingLicenses && !hasActiveLicenses && !fetchError) {
+        if (!isAdminMode && isOpen && !isLoadingLicenses && !hasActiveLicenses && !fetchError) {
             const timer = setTimeout(() => {
                 toast.error("Active license is required to create students")
             }, 500)
             return () => clearTimeout(timer)
         }
-    }, [isOpen, isLoadingLicenses, hasActiveLicenses, fetchError])
+    }, [isAdminMode, isOpen, isLoadingLicenses, hasActiveLicenses, fetchError])
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -180,33 +183,28 @@ export function CreateStudentModal({
             return
         }
 
-        // License Verification Logic (Submit Time)
-        const yearStr = formData.graduation_year.toString()
-        const selectedDegree = formData.degree
-        const selectedBranch = formData.branch
+        // License Verification Logic (Submit Time) - skip in admin mode
+        if (!isAdminMode) {
+            const yearStr = formData.graduation_year.toString()
+            const selectedDegree = formData.degree
+            const selectedBranch = formData.branch
 
-        const isLicenseValid = activeLicenses.some(l => {
-            // Must match Batch
-            if (l.batch !== yearStr) return false
+            const isLicenseValid = activeLicenses.some(l => {
+                if (l.batch !== yearStr) return false
+                const licenseDegrees = (l.degree && Array.isArray(l.degree)) ? l.degree : []
+                const degreeMatch = licenseDegrees.length === 0 || licenseDegrees.includes(selectedDegree)
+                if (!degreeMatch) return false
+                const licenseBranches = (l.branches && Array.isArray(l.branches)) ? l.branches : []
+                const branchMatch = licenseBranches.length === 0 || licenseBranches.includes(selectedBranch)
+                if (!branchMatch) return false
+                return true
+            })
 
-            // Must match Degree (or license allows all degrees)
-            const licenseDegrees = (l.degree && Array.isArray(l.degree)) ? l.degree : []
-            const degreeMatch = licenseDegrees.length === 0 || licenseDegrees.includes(selectedDegree)
-            if (!degreeMatch) return false
-
-            // Must match Branch (or license allows all branches)
-            // Note: Some schemas might have branches inside degree, but assuming flattened here or handled by backend logic mirrored here
-            const licenseBranches = (l.branches && Array.isArray(l.branches)) ? l.branches : []
-            const branchMatch = licenseBranches.length === 0 || licenseBranches.includes(selectedBranch)
-            if (!branchMatch) return false
-
-            return true
-        })
-
-        if (!isLicenseValid) {
-            toast.error("You don't have a valid license for this Batch, Degree, and Branch. Please request a license.")
-            setError("You don't have a valid license for this Batch, Degree, and Branch. Please request a license.")
-            return
+            if (!isLicenseValid) {
+                toast.error("You don't have a valid license for this Batch, Degree, and Branch. Please request a license.")
+                setError("You don't have a valid license for this Batch, Degree, and Branch. Please request a license.")
+                return
+            }
         }
 
         setIsSubmitting(true)
@@ -235,8 +233,7 @@ export function CreateStudentModal({
                 branch: undefined,
                 graduation_year: undefined
             })
-            // Refetch licenses to update remaining counts if needed
-            fetchLicenses()
+            if (!isAdminMode) fetchLicenses()
         } catch (error: any) {
             console.error('❌ Error creating student:', error)
             console.error('❌ Error response data:', error.response?.data)
@@ -374,8 +371,8 @@ export function CreateStudentModal({
                                         </div>
                                     )}
 
-                                    {/* License Warning */}
-                                    {!isLoadingLicenses && !hasActiveLicenses && !fetchError && (
+                                    {/* License Warning - hidden in admin mode */}
+                                    {!isAdminMode && !isLoadingLicenses && !hasActiveLicenses && !fetchError && (
                                         <div className="mb-4 sm:mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 sm:p-4">
                                             <div className="flex gap-2 sm:gap-3">
                                                 <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -403,7 +400,7 @@ export function CreateStudentModal({
                                                     type="text"
                                                     id="name"
                                                     required
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!isAdminMode && !hasActiveLicenses}
                                                     value={formData.name}
                                                     onChange={(e) => handleInputChange('name', e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -423,7 +420,7 @@ export function CreateStudentModal({
                                                     type="email"
                                                     id="email"
                                                     required
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!isAdminMode && !hasActiveLicenses}
                                                     value={formData.email}
                                                     onChange={(e) => handleInputChange('email', e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -443,7 +440,7 @@ export function CreateStudentModal({
                                                     type="tel"
                                                     id="phone"
                                                     required
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!isAdminMode && !hasActiveLicenses}
                                                     value={formData.phone}
                                                     onChange={(e) => handleInputChange('phone', e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -463,7 +460,7 @@ export function CreateStudentModal({
                                                     type="text"
                                                     id="graduation_year"
                                                     required
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!isAdminMode && !hasActiveLicenses}
                                                     value={formData.graduation_year || ''}
                                                     onChange={(e) => handleInputChange('graduation_year', e.target.value)}
                                                     placeholder="e.g. 2025"
@@ -482,7 +479,7 @@ export function CreateStudentModal({
                                                 <Select
                                                     value={formData.degree || ''}
                                                     onValueChange={(value) => handleInputChange('degree', value)}
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!isAdminMode && !hasActiveLicenses}
                                                 >
                                                     <SelectTrigger className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
                                                         <SelectValue placeholder="Select Degree" />
@@ -508,7 +505,7 @@ export function CreateStudentModal({
                                                 <Select
                                                     value={formData.branch || ''}
                                                     onValueChange={(value) => handleInputChange('branch', value)}
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!isAdminMode && !hasActiveLicenses}
                                                 >
                                                     <SelectTrigger className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
                                                         <SelectValue placeholder="Select Branch" />
@@ -538,7 +535,7 @@ export function CreateStudentModal({
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={isSubmitting || !hasActiveLicenses}
+                                            disabled={isSubmitting || (!isAdminMode && !hasActiveLicenses)}
                                             className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                                         >
                                             {isSubmitting ? 'Creating...' : 'Create Student'}

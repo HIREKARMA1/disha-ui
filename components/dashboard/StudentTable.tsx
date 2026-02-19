@@ -18,7 +18,9 @@ import {
     ChevronDown,
     ChevronsUpDown,
     Hourglass,
-    Trash2
+    Trash2,
+    Pencil,
+    Building2
 } from 'lucide-react'
 import { StudentListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
@@ -30,6 +32,16 @@ interface StudentTableProps {
     error: string | null
     onArchiveStudent: (studentId: string, archive: boolean) => void
     onDeleteStudent: (studentId: string) => void
+    /** Optional: when provided, an Edit button is shown in the actions column */
+    onEditStudent?: (student: StudentListItem) => void
+    /** When true, hide the Archive button in the actions column */
+    hideArchiveAction?: boolean
+    /** When true, hide the Placement column */
+    hidePlacementColumn?: boolean
+    /** When true, hide the Applications column */
+    hideApplicationsColumn?: boolean
+    /** When true, show the University column */
+    showUniversityColumn?: boolean
     onRetry: () => void
 }
 
@@ -42,6 +54,11 @@ export function StudentTable({
     error,
     onArchiveStudent,
     onDeleteStudent,
+    onEditStudent,
+    hideArchiveAction = false,
+    hidePlacementColumn = false,
+    hideApplicationsColumn = false,
+    showUniversityColumn = false,
     onRetry
 }: StudentTableProps) {
     const [sortField, setSortField] = useState<SortField | null>('created_at')
@@ -369,24 +386,35 @@ export function StudentTable({
                                     {getSortIcon('degree')}
                                 </div>
                             </th>
-                            <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
-                                onClick={() => handleSort('placement_status')}
-                            >
-                                <div className="flex items-center gap-1">
-                                    Placement
-                                    {getSortIcon('placement_status')}
-                                </div>
-                            </th>
-                            <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
-                                onClick={() => handleSort('total_applications')}
-                            >
-                                <div className="flex items-center gap-1">
-                                    Applications
-                                    {getSortIcon('total_applications')}
-                                </div>
-                            </th>
+                            {showUniversityColumn && (
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <div className="flex items-center gap-1">
+                                        University
+                                    </div>
+                                </th>
+                            )}
+                            {!hidePlacementColumn && (
+                                <th
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                    onClick={() => handleSort('placement_status')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Placement
+                                        {getSortIcon('placement_status')}
+                                    </div>
+                                </th>
+                            )}
+                            {!hideApplicationsColumn && (
+                                <th
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                    onClick={() => handleSort('total_applications')}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        Applications
+                                        {getSortIcon('total_applications')}
+                                    </div>
+                                </th>
+                            )}
                             <th
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
                                 onClick={() => handleSort('profile_completion_percentage')}
@@ -470,40 +498,53 @@ export function StudentTable({
                                     </div>
                                 </td>
 
-                                {/* Placement */}
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900 dark:text-white">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(student.placement_status)}`}>
-                                            {student.placement_status}
-                                        </span>
-                                        {student.placed_company && (
-                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                {student.placed_company}
+                                {showUniversityColumn && (
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 dark:text-white">
+                                            <div className="flex items-center gap-1">
+                                                <Building2 className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                                {student.university_name || '—'}
                                             </div>
-                                        )}
-                                        {student.package && (
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                ₹{student.package.toLocaleString()}
-                                            </div>
-                                        )}
-                                    </div>
-                                </td>
+                                        </div>
+                                    </td>
+                                )}
 
-                                {/* Applications */}
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900 dark:text-white">
-                                        <div className="flex items-center gap-1 mb-1">
-                                            <Briefcase className="w-3 h-3 text-gray-400" />
-                                            {student.total_applications} applied
+                                {!hidePlacementColumn && (
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 dark:text-white">
+                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(student.placement_status)}`}>
+                                                {student.placement_status}
+                                            </span>
+                                            {student.placed_company && (
+                                                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                    {student.placed_company}
+                                                </div>
+                                            )}
+                                            {student.package && (
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                    ₹{student.package.toLocaleString()}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                                            {student.interviews_attended} interviews
+                                    </td>
+                                )}
+
+                                {!hideApplicationsColumn && (
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 dark:text-white">
+                                            <div className="flex items-center gap-1 mb-1">
+                                                <Briefcase className="w-3 h-3 text-gray-400" />
+                                                {student.total_applications} applied
+                                            </div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                {student.interviews_attended} interviews
+                                            </div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                {student.offers_received} offers
+                                            </div>
                                         </div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                                            {student.offers_received} offers
-                                        </div>
-                                    </div>
-                                </td>
+                                    </td>
+                                )}
 
                                 {/* Status */}
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -549,28 +590,42 @@ export function StudentTable({
                                 {/* Actions */}
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex items-center justify-end gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleArchiveClick(student)
-                                            }}
-                                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${student.is_archived
-                                                ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300'
-                                                : 'bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300'
-                                                }`}
-                                        >
-                                            {student.is_archived ? (
-                                                <>
-                                                    <Eye className="w-3 h-3" />
-                                                    Unarchive
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Archive className="w-3 h-3" />
-                                                    Archive
-                                                </>
-                                            )}
-                                        </button>
+                                        {onEditStudent && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    onEditStudent(student)
+                                                }}
+                                                className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300"
+                                            >
+                                                <Pencil className="w-3 h-3" />
+                                                Edit
+                                            </button>
+                                        )}
+                                        {!hideArchiveAction && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleArchiveClick(student)
+                                                }}
+                                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${student.is_archived
+                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300'
+                                                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300'
+                                                    }`}
+                                            >
+                                                {student.is_archived ? (
+                                                    <>
+                                                        <Eye className="w-3 h-3" />
+                                                        Unarchive
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Archive className="w-3 h-3" />
+                                                        Archive
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation()

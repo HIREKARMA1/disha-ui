@@ -21,7 +21,8 @@ import {
     Server,
     AlertTriangle,
     Briefcase,
-    Brain
+    Brain,
+    GraduationCap
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -74,6 +75,13 @@ const navItems: NavItem[] = [
         icon: Building2,
         description: 'Manage corporates',
         color: 'from-cyan-500 to-blue-600'
+    },
+    {
+        label: 'Student Management',
+        href: '/dashboard/admin/students',
+        icon: GraduationCap,
+        description: 'Manage students across universities',
+        color: 'from-emerald-500 to-teal-600'
     },
     {
         label: 'Job Management',

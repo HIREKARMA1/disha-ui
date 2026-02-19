@@ -8,7 +8,8 @@ import {
     Upload,
     X,
     Trash2,
-    GraduationCap
+    GraduationCap,
+    Building2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +38,17 @@ interface StudentManagementHeaderProps {
     onClearFilters: () => void
     onAddStudent: () => void
     onBulkUpload: () => void
+    /** When true, hide Add Student and Bulk Upload buttons (e.g. admin page) */
+    hideAddAndBulk?: boolean
+    /** Optional university filter (e.g. admin page). When set, "Filter by University" appears inside the filter options. */
+    universityFilter?: {
+        universities: { id: string; university_name: string }[]
+        selectedUniversityId: string
+        onUniversityChange: (universityId: string) => void
+        isLoading?: boolean
+    }
+    /** Optional actions to show in the same row as Show Filters (e.g. Export CSV button). */
+    extraActions?: React.ReactNode
 }
 
 export function StudentManagementHeader({
@@ -62,7 +74,10 @@ export function StudentManagementHeader({
     setShowFilters,
     onClearFilters,
     onAddStudent,
-    onBulkUpload
+    onBulkUpload,
+    hideAddAndBulk = false,
+    universityFilter,
+    extraActions
 }: StudentManagementHeaderProps) {
     return (
         <div className="space-y-6">
@@ -82,20 +97,25 @@ export function StudentManagementHeader({
                     </div>
 
                     <div className="flex gap-2">
-                        <Button
-                            onClick={onAddStudent}
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
-                        >
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Add Student
-                        </Button>
-                        <Button
-                            onClick={onBulkUpload}
-                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Bulk Upload
-                        </Button>
+                        {!hideAddAndBulk && (
+                            <>
+                                <Button
+                                    onClick={onAddStudent}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
+                                >
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Add Student
+                                </Button>
+                                <Button
+                                    onClick={onBulkUpload}
+                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200"
+                                >
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Bulk Upload
+                                </Button>
+                            </>
+                        )}
+                        {extraActions}
                         <Button
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
@@ -114,8 +134,34 @@ export function StudentManagementHeader({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 overflow-hidden"
+                            className={`grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 overflow-hidden ${universityFilter ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}
                         >
+                            {/* University Filter (optional, e.g. admin) */}
+                            {universityFilter && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        University
+                                    </label>
+                                    <div className="relative">
+                                        <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                        <select
+                                            value={universityFilter.selectedUniversityId}
+                                            onChange={(e) => universityFilter.onUniversityChange(e.target.value)}
+                                            disabled={universityFilter.isLoading}
+                                            className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
+                                        >
+                                            <option value="">All Universities</option>
+                                            {universityFilter.universities.map((u) => (
+                                                <option key={u.id} value={u.id}>{u.university_name}</option>
+                                            ))}
+                                        </select>
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
+                                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Status Filter */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -230,7 +276,7 @@ export function StudentManagementHeader({
                             </div>
 
                             {/* Clear Filters Button */}
-                            <div className="sm:col-span-2 lg:col-span-5 flex justify-end mt-2">
+                            <div className={`sm:col-span-2 flex justify-end mt-2 ${universityFilter ? 'lg:col-span-6' : 'lg:col-span-5'}`}>
                                 <Button
                                     variant="outline"
                                     onClick={onClearFilters}
