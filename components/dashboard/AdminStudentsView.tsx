@@ -333,26 +333,32 @@ export function AdminStudentsView({ hidePageHeader = false }: AdminStudentsViewP
                             }}
                             extraActions={
                                 <>
-                                    {/* Single calendar button in top bar (not inside Hide Filters) */}
-                                    <div ref={calendarRef} className="relative">
+                                    {/* Single calendar button in top bar - responsive on small screens */}
+                                    <div ref={calendarRef} className="relative flex-1 sm:flex-none min-w-0 flex justify-center sm:justify-start">
                                         <motion.button
                                             type="button"
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => setCalendarOpen((o) => !o)}
-                                            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium shadow-sm text-sm border transition-colors ${selectedCreationDate ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium shadow-sm text-sm border transition-colors min-w-0 w-full sm:w-auto ${selectedCreationDate ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                             title="Filter by onboard date"
                                         >
-                                            <CalendarDays className="w-4 h-4" />
-                                            {selectedCreationDate ? formatCreationDateLabel(selectedCreationDate) : 'Filter by date'}
+                                            <CalendarDays className="w-4 h-4 shrink-0" />
+                                            <span className="truncate">{selectedCreationDate ? formatCreationDateLabel(selectedCreationDate) : 'Filter by date'}</span>
                                         </motion.button>
                                         <AnimatePresence>
                                             {calendarOpen && (
+                                                /* Wrapper handles fixed/absolute + centering so Framer Motion's transform doesn't override -translate-x-1/2 -translate-y-1/2 */
+                                                <div
+                                                    className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:translate-x-0 sm:translate-y-0 z-50 w-[calc(100vw-2rem)] max-w-72 sm:w-72"
+                                                    role="dialog"
+                                                    aria-label="Onboard date filter"
+                                                >
                                                 <motion.div
-                                                    initial={{ opacity: 0, y: -4 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: -4 }}
-                                                    className="absolute right-0 top-full mt-2 z-50 w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg"
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg"
                                                 >
                                                     <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-3">Onboard date (year / month / date)</p>
                                                     <div className="space-y-3">
@@ -419,17 +425,19 @@ export function AdminStudentsView({ hidePageHeader = false }: AdminStudentsViewP
                                                         </Button>
                                                     </div>
                                                 </motion.div>
+                                                </div>
                                             )}
                                         </AnimatePresence>
                                     </div>
                                     <motion.button
+                                        type="button"
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleExportStudents}
-                                        className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-sm text-sm"
+                                        className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-sm text-sm flex-1 sm:flex-none min-w-0 w-full sm:w-auto"
                                     >
-                                        <Download className="w-4 h-4" />
-                                        Export CSV
+                                        <Download className="w-4 h-4 shrink-0" />
+                                        <span className="truncate">Export CSV</span>
                                     </motion.button>
                                 </>
                             }

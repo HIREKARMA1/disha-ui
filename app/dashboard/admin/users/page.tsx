@@ -22,13 +22,13 @@ export default function AdminUserManagementPage() {
     return (
         <AdminDashboardLayout>
             <div className="space-y-6">
-                {/* User Management tab switcher only - each view shows its own same header as Students/Universities/Corporates panels */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Users className="w-5 h-5 text-orange-500" />
+                {/* User Management tab switcher - centered on small screens; each view shows its own same header as Students/Universities/Corporates panels */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-center gap-3 text-center sm:text-left lg:text-left lg:justify-start">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto">
+                        <Users className="w-5 h-5 text-orange-500 shrink-0" />
                         User Management
                     </h2>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 justify-center w-full sm:w-auto">
                         {TABS.map((tab) => {
                             const Icon = tab.icon
                             const isActive = activeTab === tab.id

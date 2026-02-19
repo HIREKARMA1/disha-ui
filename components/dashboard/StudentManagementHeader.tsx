@@ -83,35 +83,35 @@ export function StudentManagementHeader({
         <div className="space-y-6">
             {/* Search and Filters */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                {/* Top Row: Search and Action Buttons */}
+                {/* Top Row: Search and Action Buttons - responsive on small screens */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <div className="flex-1 min-w-0 w-full relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 shrink-0 pointer-events-none" />
                         <Input
                             type="text"
                             placeholder="Search students by name, email, or phone..."
                             value={searchTerm}
                             onChange={(e) => onSearchChange(e.target.value)}
-                            className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
+                            className="w-full min-w-0 pl-10 pr-3 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-base sm:text-sm"
                         />
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:flex-nowrap">
                         {!hideAddAndBulk && (
                             <>
                                 <Button
                                     onClick={onAddStudent}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
+                                    className="flex-1 sm:flex-none min-w-0 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 text-sm"
                                 >
-                                    <UserPlus className="w-4 h-4 mr-2" />
-                                    Add Student
+                                    <UserPlus className="w-4 h-4 mr-2 shrink-0" />
+                                    <span className="truncate">Add Student</span>
                                 </Button>
                                 <Button
                                     onClick={onBulkUpload}
-                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200"
+                                    className="flex-1 sm:flex-none min-w-0 bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200 text-sm"
                                 >
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    Bulk Upload
+                                    <Upload className="w-4 h-4 mr-2 shrink-0" />
+                                    <span className="truncate">Bulk Upload</span>
                                 </Button>
                             </>
                         )}
@@ -119,10 +119,10 @@ export function StudentManagementHeader({
                         <Button
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
-                            className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                            className="flex-1 sm:flex-none min-w-0 flex items-center justify-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md text-sm"
                         >
-                            <Filter className="w-4 h-4" />
-                            {showFilters ? 'Hide' : 'Show'} Filters
+                            <Filter className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{showFilters ? 'Hide' : 'Show'} Filters</span>
                         </Button>
                     </div>
                 </div>
