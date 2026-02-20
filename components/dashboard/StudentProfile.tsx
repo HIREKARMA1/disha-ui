@@ -1188,6 +1188,35 @@ interface ProfileSectionFormProps {
     onCancel: () => void
 }
 
+/** Validates social profile URL format and domain. Returns error message or ''. */
+function getSocialProfileUrlError(field: string, url: string): string {
+    const trimmed = (url || '').trim()
+    if (!trimmed) return ''
+    try {
+        const parsed = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`)
+        const host = parsed.hostname.toLowerCase()
+        // Reject localhost and non-http(s) for all social fields
+        if (host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1') {
+            return 'Please enter a public URL (localhost is not allowed)'
+        }
+        if (field === 'linkedin_profile') {
+            if (!host.includes('linkedin.com')) return 'Please enter a valid LinkedIn profile URL (e.g. https://linkedin.com/in/yourprofile)'
+            return ''
+        }
+        if (field === 'github_profile') {
+            if (!host.includes('github.com')) return 'Please enter a valid GitHub profile URL (e.g. https://github.com/username)'
+            return ''
+        }
+        if (field === 'personal_website') {
+            // Any valid public URL is allowed
+            return ''
+        }
+    } catch {
+        return 'Please enter a valid URL'
+    }
+    return ''
+}
+
 function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: ProfileSectionFormProps) {
     const { getToken } = useAuth()
     const [formData, setFormData] = useState<any>({})
@@ -1391,7 +1420,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
         }
 
-        // Social Profiles Validation
+        // Social Profiles Validation (format + domain)
         if (section.id === 'social') {
             const socialFields = ['linkedin_profile', 'github_profile', 'personal_website']
             let socialErrors = false
@@ -1399,13 +1428,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             socialFields.forEach(field => {
                 const url = cleanedFormData[field]
                 if (url && url.trim().length > 0) {
-                    try {
-                        new URL(url)
-                        setFormData((prev: any) => ({ ...prev, [`${field}_error`]: '' }))
-                    } catch {
-                        setFormData((prev: any) => ({ ...prev, [`${field}_error`]: 'Please enter a valid URL' }))
-                        validationErrors.push(`Invalid URL format for ${field.replace('_', ' ')}`)
+                    const error = getSocialProfileUrlError(field, url)
+                    if (error) {
+                        setFormData((prev: any) => ({ ...prev, [`${field}_error`]: error }))
+                        validationErrors.push(error)
                         socialErrors = true
+                    } else {
+                        setFormData((prev: any) => ({ ...prev, [`${field}_error`]: '' }))
                     }
                 }
             })
@@ -1737,18 +1766,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        // Handle social profile fields with URL validation
+        // Handle social profile fields with URL + domain validation
         if (field === 'linkedin_profile' || field === 'github_profile' || field === 'personal_website') {
-            const isValidUrl = (url: string) => {
-                if (!url) return true // Allow empty URLs
-                try {
-                    new URL(url)
-                    return true
-                } catch {
-                    return false
-                }
-            }
-
             const fieldError = formData[`${field}_error`] || ''
 
             return (
@@ -1758,19 +1777,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         value={value}
                         onChange={(e) => {
                             const url = e.target.value
-                            const isValid = isValidUrl(url)
+                            const error = getSocialProfileUrlError(field, url)
                             setFormData({
                                 ...formData,
                                 [field]: url,
-                                [`${field}_error`]: isValid ? '' : 'Please enter a valid URL'
+                                [`${field}_error`]: error
                             })
                         }}
                         onBlur={(e) => {
                             const url = e.target.value
-                            if (url && !isValidUrl(url)) {
+                            const error = getSocialProfileUrlError(field, url)
+                            if (error) {
                                 setFormData({
                                     ...formData,
-                                    [`${field}_error`]: 'Please enter a valid URL'
+                                    [`${field}_error`]: error
                                 })
                             }
                         }}
@@ -1778,11 +1798,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             ? 'border-red-500 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
                             }`}
-                        placeholder={`Enter your ${field.replace(/_/g, ' ')} URL`}
+                        placeholder={field === 'linkedin_profile' ? 'https://linkedin.com/in/yourprofile' : field === 'github_profile' ? 'https://github.com/username' : 'https://yourwebsite.com'}
                     />
                     {fieldError && (
                         <div className="flex items-center space-x-2 text-sm text-red-600 dark:text-red-400">
-                            <AlertCircle className="w-4 h-4" />
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             <span>{fieldError}</span>
                         </div>
                     )}
