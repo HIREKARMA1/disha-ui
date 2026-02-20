@@ -1314,7 +1314,7 @@ function JobOpportunitiesPageContent() {
                                 total_pages: Math.ceil(statusFiltered.length / prev.limit)
                             }))
                         }}
-                        className="px-3 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10"
+                        className="px-5 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10"
                     >
                         <option value="all">All Jobs</option>
                         <option value="open">Open Jobs</option>
@@ -1339,7 +1339,7 @@ function JobOpportunitiesPageContent() {
                     >
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                📍 Location
+                                Location
                             </label>
                             <Input
                                 placeholder="City, State"
@@ -1351,7 +1351,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                🏭 Industry
+                                Industry
                             </label>
                             <select
                                 value={filters.industry}
@@ -1371,7 +1371,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                💼 Job Type
+                                Job Type
                             </label>
                             <select
                                 value={filters.job_type}
@@ -1389,7 +1389,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                🏠 Remote Work
+                                Remote Work
                             </label>
                             <select
                                 value={filters.remote_work}
@@ -1404,7 +1404,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ⏰ Min Experience (years)
+                                Min Experience (years)
                             </label>
                             <Input
                                 type="number"
@@ -1417,7 +1417,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ⏰ Max Experience (years)
+                                Max Experience (years)
                             </label>
                             <Input
                                 type="number"
@@ -1430,7 +1430,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                💰 Min Salary (INR)
+                                Min Salary (INR)
                             </label>
                             <Input
                                 type="number"
@@ -1443,7 +1443,7 @@ function JobOpportunitiesPageContent() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                💰 Max Salary (INR)
+                                Max Salary (INR)
                             </label>
                             <Input
                                 type="number"
@@ -1459,14 +1459,14 @@ function JobOpportunitiesPageContent() {
                                 onClick={handleSearch}
                                 className="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 py-2 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
                             >
-                                ✨ Apply Filters
+                                Apply Filters
                             </Button>
                             <Button
                                 variant="outline"
                                 onClick={clearFilters}
                                 className="border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md px-6 py-2 w-full sm:w-auto"
                             >
-                                🗑️ Clear All
+                                Clear All
                             </Button>
                         </div>
                     </motion.div>
