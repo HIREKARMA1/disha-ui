@@ -60,36 +60,36 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
     }) : []
 
     return (
-        <div className={cn("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6", className)}>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className={cn("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6", className)}>
+            {/* Header - readable on small screens */}
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+                <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Profile Completion
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         Complete your profile to increase your chances
                     </p>
                 </div>
-                <div className="text-right">
-                    <div className={cn("text-2xl font-bold", getCompletionColor(completion))}>
+                <div className="text-right flex-shrink-0">
+                    <div className={cn("text-xl sm:text-2xl font-bold", getCompletionColor(completion))}>
                         {completion}%
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                         {completedCount} of {totalFields} fields
                     </div>
                 </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-6">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+            <div className="mb-4 sm:mb-6">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 sm:h-3">
                     <div
-                        className={cn("h-3 rounded-full transition-all duration-500 ease-out", getProgressColor(completion))}
+                        className={cn("h-2.5 sm:h-3 rounded-full transition-all duration-500 ease-out", getProgressColor(completion))}
                         style={{ width: `${completion}%` }}
                     />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <div className="flex justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2">
                     <span>0%</span>
                     <span>25%</span>
                     <span>50%</span>
@@ -140,7 +140,7 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {completedFieldsList.slice(0, 6).map((fieldName, index) => (
-                                <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                                <div key={index} className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 px-2 py-1.5 sm:py-1 rounded min-h-[28px] sm:min-h-0 flex items-center">
                                     {fieldName.replace(/_/g, ' ')}
                                 </div>
                             ))}
@@ -162,7 +162,7 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {missingFieldsList.slice(0, 6).map((fieldName, index) => (
-                                <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                                <div key={index} className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-red-50 dark:bg-red-900/20 px-2 py-1.5 sm:py-1 rounded min-h-[28px] sm:min-h-0 flex items-center">
                                     {fieldName.replace(/_/g, ' ')}
                                 </div>
                             ))}
@@ -178,11 +178,11 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
 
             {/* Completion Tips */}
             {completion < 100 && (
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <h5 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <h5 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1.5 sm:mb-2">
                         💡 Tips to Complete Your Profile
                     </h5>
-                    <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                    <ul className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 space-y-1">
                         <li>• Add a professional profile picture</li>
                         <li>• Upload your latest resume</li>
                         <li>• Fill in your academic details</li>

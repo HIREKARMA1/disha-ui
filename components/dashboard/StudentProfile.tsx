@@ -29,6 +29,7 @@ import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
+import { FormattedText } from '../ui/FormattedText'
 import { useRef } from 'react'
 
 interface ProfileSection {
@@ -258,27 +259,27 @@ export function StudentProfile() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <Navbar />
             <StudentSidebar />
-            <div className="pt-16 lg:pl-64">
-                <main className="flex-1 p-4 lg:p-6">
-                    <div className="w-full">
-                        {/* Header - Consistent with other sections */}
-                        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+            <div className="pt-24 sm:pt-20 lg:pt-16 lg:pl-64">
+                <main className="flex-1 p-4 lg:p-6 min-w-0">
+                    <div className="w-full min-w-0">
+                        {/* Header - Prominent on small screens, visible below navbar */}
+                        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-primary-200 dark:border-primary-700 mb-4 lg:mb-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 lg:gap-6">
                                 <div className="flex-1 min-w-0">
-                                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
                                         Student Profile 👤
                                     </h1>
-                                    <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                                    <p className="text-gray-600 dark:text-gray-300 text-base lg:text-lg mb-3 leading-snug">
                                         Manage your personal information and career details ✨
                                     </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 lg:min-h-0 min-h-[28px]">
                                             📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                                         </span>
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 lg:min-h-0 min-h-[28px]">
                                             📈 Career Growth
                                         </span>
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 lg:min-h-0 min-h-[28px]">
                                             🚀 New Opportunities
                                         </span>
                                     </div>
@@ -287,30 +288,30 @@ export function StudentProfile() {
                         </div>
 
                         {/* Profile Content */}
-                        <div className="space-y-6">
+                        <div className="space-y-4 lg:space-y-6">
                             <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
                                 {/* Top Horizontal Section - Profile Overview */}
                                 <div className="xl:col-span-4">
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
-                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
+                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-6">
                                             {/* Profile Avatar & Info */}
-                                            <div className="text-center lg:text-left">
+                                            <div className="text-center lg:text-left flex-shrink-0">
                                                 <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto lg:mx-0 mb-4 relative">
                                                     <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                                                         {profile.profile_picture ? (
                                                             <img
                                                                 src={profile.profile_picture}
                                                                 alt={profile.name}
-                                                                className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover"
+                                                                className="w-full h-full rounded-full object-cover"
                                                             />
                                                         ) : (
-                                                            <span className="text-xl lg:text-2xl font-bold text-white">
+                                                            <span className="text-xl sm:text-2xl font-bold text-white">
                                                                 {getInitials(profile.name)}
                                                             </span>
                                                         )}
                                                     </div>
                                                     <button
-                                                        className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
+                                                        className="absolute -bottom-1 -right-1 w-6 h-6 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110 touch-manipulation"
                                                         onClick={() => {
                                                             setEditing('basic');
                                                             setTimeout(() => {
@@ -322,26 +323,26 @@ export function StudentProfile() {
                                                         }}
                                                         title="Change profile picture"
                                                     >
-                                                        <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                                                        <Camera className="w-3 h-3" />
                                                     </button>
 
                                                 </div>
-                                                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                                                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1 leading-tight">
                                                     {profile.name}
                                                 </h3>
-                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 leading-snug">
                                                     {profile.institution || 'University Student'}
                                                 </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 leading-snug">
                                                     {profile.degree} • {profile.branch}
                                                 </p>
                                             </div>
 
                                             {/* Profile Stats */}
-                                            <div className="flex-1">
+                                            <div className="flex-1 w-full min-w-0">
                                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Email</span>
                                                         {(profile.email_verified || !!profile.email) ? (
                                                             <div className="p-1.5 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -352,8 +353,8 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Phone</span>
                                                         {(profile.phone_verified || !!profile.phone) ? (
                                                             <div className="p-1.5 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -364,8 +365,8 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Photo</span>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Photo</span>
                                                         {profile.profile_picture ? (
                                                             <div className="p-1.5 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -376,8 +377,8 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Resume</span>
+                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Resume</span>
                                                         {profile.resume ? (
                                                             <div className="p-1.5 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -404,22 +405,22 @@ export function StudentProfile() {
 
                                 {/* Tab-based Profile Sections */}
                                 <div className="xl:col-span-3">
-                                    {/* Tab Navigation */}
-                                    <div className="mb-6">
+                                    {/* Tab Navigation - compact on small screens, original on large */}
+                                    <div className="mb-4 lg:mb-6">
                                         <div className="border-b border-gray-200 dark:border-gray-700">
-                                            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                                            <nav className="-mb-px flex gap-2 lg:gap-6 overflow-x-auto pb-px min-w-0 lg:overflow-visible">
                                                 {tabs.map((tab) => (
                                                     <button
                                                         key={tab.id}
                                                         onClick={() => setActiveTab(tab.id)}
                                                         className={cn(
-                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
+                                                            "flex items-center space-x-2 py-2.5 lg:py-3 px-1 border-b-2 font-bold text-sm lg:text-base whitespace-nowrap transition-colors duration-200 flex-shrink-0",
                                                             activeTab === tab.id
                                                                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
                                                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                                                         )}
                                                     >
-                                                        <tab.icon className="w-4 h-4" />
+                                                        <tab.icon className="w-4 h-4 flex-shrink-0" />
                                                         <span>{tab.label}</span>
                                                     </button>
                                                 ))}
@@ -427,25 +428,26 @@ export function StudentProfile() {
                                         </div>
                                     </div>
 
-                                    {/* Tab Content */}
-                                    <div className="min-h-[600px]">
+                                    {/* Tab Content - stacked on small screens, original row on large */}
+                                    <div className="min-h-[400px] lg:min-h-[600px]">
                                         {activeTab === 'basic' && (
-                                            <div ref={basicFormRef} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <div ref={basicFormRef} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                                {/* Small: icon top, header, description. Large: icon+title left, Edit right */}
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                                    <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0 order-1 lg:order-1">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                             <User className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Personal details and contact information</p>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Personal details and contact information</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setEditing('basic')}
-                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                        className="order-2 self-center lg:order-2 lg:self-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                                     >
                                                         <ChevronRight className="w-3 h-3 mr-1" />
                                                         Edit
@@ -557,22 +559,22 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'academic' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                                    <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0 order-1">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                             <GraduationCap className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Academic Information</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Educational background and achievements</p>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Academic Information</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Educational background and achievements</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setEditing('academic')}
-                                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
+                                                        className="order-2 self-center lg:order-2 lg:self-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                                     >
                                                         <ChevronRight className="w-3 h-3 mr-1" />
                                                         Edit
@@ -590,12 +592,12 @@ export function StudentProfile() {
                                                 ) : (
                                                     <div className="space-y-6">
                                                         {/* College Section */}
-                                                        <div className="p-6 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50">
-                                                            <div className="flex items-center space-x-3 mb-4">
-                                                                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                                                        <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-700/50">
+                                                            <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 mb-4">
+                                                                <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                     <GraduationCap className="w-4 h-4 text-white" />
                                                                 </div>
-                                                                <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100">College</h3>
+                                                                <h3 className="text-base lg:text-lg font-semibold text-emerald-900 dark:text-emerald-100">College</h3>
                                                             </div>
 
                                                             {/* We need to fetch universities here to display the name if only ID is present */}
@@ -604,14 +606,14 @@ export function StudentProfile() {
                                                         </div>
 
                                                         {/* 12th Section */}
-                                                        <div className="p-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
-                                                            <div className="flex items-center space-x-3 mb-4">
-                                                                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                                        <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+                                                            <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 mb-4">
+                                                                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                                                     </svg>
                                                                 </div>
-                                                                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Class XII</h3>
+                                                                <h3 className="text-base lg:text-lg font-semibold text-blue-900 dark:text-blue-100">Class XII</h3>
                                                             </div>
 
                                                             {profile.twelfth_grade_percentage ? (
@@ -633,14 +635,14 @@ export function StudentProfile() {
                                                         </div>
 
                                                         {/* 10th Section */}
-                                                        <div className="p-6 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50">
-                                                            <div className="flex items-center space-x-3 mb-4">
-                                                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                                                        <div className="p-4 sm:p-6 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50">
+                                                            <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 mb-4">
+                                                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                                                     </svg>
                                                                 </div>
-                                                                <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Class X</h3>
+                                                                <h3 className="text-base lg:text-lg font-semibold text-purple-900 dark:text-purple-100">Class X</h3>
                                                             </div>
 
                                                             {profile.tenth_grade_percentage ? (
@@ -666,22 +668,22 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'skills' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                                    <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0 order-1">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                             <Zap className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Skills & Interests</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Technical skills, soft skills, and career preferences</p>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Skills & Interests</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Technical skills, soft skills, and career preferences</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setEditing('skills')}
-                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200"
+                                                        className="order-2 self-center lg:order-2 lg:self-center text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                                     >
                                                         <ChevronRight className="w-3 h-3 mr-1" />
                                                         Edit
@@ -780,22 +782,22 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'experience' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                                    <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0 order-1">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                             <Trophy className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Experience & Projects</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Experience & Projects</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Internships, projects, and extracurricular activities</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setEditing('experience')}
-                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
+                                                        className="order-2 self-center lg:order-2 lg:self-center text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                                     >
                                                         <ChevronRight className="w-3 h-3 mr-1" />
                                                         Edit
@@ -814,18 +816,20 @@ export function StudentProfile() {
                                                     <div className="space-y-4">
                                                         {profile.internship_experience && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-2 lg:gap-3">
+                                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                         <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                                                         </svg>
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                    <div className="flex-1 min-w-0 w-full">
+                                                                        <div className="font-semibold text-gray-900 dark:text-white mb-1">
                                                                             Internship Experience
                                                                         </div>
                                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            {profile.internship_experience}
+                                                                            <FormattedText firstLineAsHeading bulletPointsForNewLines className="text-gray-600 dark:text-gray-400" linkClassName="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-colors break-all">
+                                                                                {profile.internship_experience}
+                                                                            </FormattedText>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -834,18 +838,20 @@ export function StudentProfile() {
 
                                                         {profile.project_details && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-2 lg:gap-3">
+                                                                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                         <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                                                         </svg>
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                    <div className="flex-1 min-w-0 w-full">
+                                                                        <div className="font-semibold text-gray-900 dark:text-white mb-1">
                                                                             Project Details
                                                                         </div>
                                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            {profile.project_details}
+                                                                            <FormattedText firstLineAsHeading bulletPointsForNewLines className="text-gray-600 dark:text-gray-400" linkClassName="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-colors break-all">
+                                                                                {profile.project_details}
+                                                                            </FormattedText>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -854,18 +860,20 @@ export function StudentProfile() {
 
                                                         {profile.extracurricular_activities && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-2 lg:gap-3">
+                                                                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                         <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                                                         </svg>
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                    <div className="flex-1 min-w-0 w-full">
+                                                                        <div className="font-semibold text-gray-900 dark:text-white mb-1">
                                                                             Extracurricular Activities
                                                                         </div>
                                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            {profile.extracurricular_activities}
+                                                                            <FormattedText bulletPointsForNewLines className="text-gray-600 dark:text-gray-400" linkClassName="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-colors break-all">
+                                                                                {profile.extracurricular_activities}
+                                                                            </FormattedText>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -874,14 +882,14 @@ export function StudentProfile() {
 
                                                         {!profile.internship_experience && !profile.project_details && !profile.extracurricular_activities && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left gap-2 lg:gap-3">
+                                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0 mx-auto lg:mx-0">
                                                                         <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                                                         </svg>
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                                                    <div className="flex-1 min-w-0 w-full">
+                                                                        <div className="font-semibold text-gray-900 dark:text-white mb-1">
                                                                             Experience & Projects
                                                                         </div>
                                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -897,22 +905,22 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'documents' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                                    <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0 order-1">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                             <Shield className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Documents & Certificates</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Resume, certificates, and important documents</p>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Documents & Certificates</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Resume, certificates, and important documents</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setEditing('documents')}
-                                                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200"
+                                                        className="order-2 self-center lg:order-2 lg:self-center text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                                     >
                                                         <ChevronRight className="w-3 h-3 mr-1" />
                                                         Edit
@@ -1046,22 +1054,22 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'social' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                                <div className="flex items-center justify-between mb-6">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                                    <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0 order-1">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                             <Globe className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Social Profiles</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">LinkedIn, GitHub, and personal websites</p>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Social Profiles</h3>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">LinkedIn, GitHub, and personal websites</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => setEditing('social')}
-                                                        className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200"
+                                                        className="order-2 self-center lg:order-2 lg:self-center text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                                     >
                                                         <ChevronRight className="w-3 h-3 mr-1" />
                                                         Edit
@@ -1079,16 +1087,16 @@ export function StudentProfile() {
                                                 ) : (
                                                     <div className="space-y-4">
                                                         {profile.linkedin_profile && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 min-w-0 overflow-hidden">
                                                                 <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                                     LinkedIn Profile
                                                                 </div>
-                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400 min-w-0 break-words">
                                                                     <a
                                                                         href={profile.linkedin_profile}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
+                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200 break-all"
                                                                     >
                                                                         {profile.linkedin_profile}
                                                                     </a>
@@ -1097,16 +1105,16 @@ export function StudentProfile() {
                                                         )}
 
                                                         {profile.github_profile && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 min-w-0 overflow-hidden">
                                                                 <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                                     GitHub Profile
                                                                 </div>
-                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400 min-w-0 break-words">
                                                                     <a
                                                                         href={profile.github_profile}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
+                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200 break-all"
                                                                     >
                                                                         {profile.github_profile}
                                                                     </a>
@@ -1115,16 +1123,16 @@ export function StudentProfile() {
                                                         )}
 
                                                         {profile.personal_website && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 min-w-0 overflow-hidden">
                                                                 <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                                     Personal Website
                                                                 </div>
-                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400 min-w-0 break-words">
                                                                     <a
                                                                         href={profile.personal_website}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200"
+                                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline hover:no-underline transition-all duration-200 break-all"
                                                                     >
                                                                         {profile.personal_website}
                                                                     </a>
