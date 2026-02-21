@@ -91,8 +91,20 @@ export function PracticeDashboard() {
         }
     }, [isClient])
 
-    // ... (keep filteredModules useMemo) ...
-    // Filter modules based on search term, category, university, and branch
+    // Same branch-matching helpers as student jobs page (filterJobsByDegreeAndBranch) for equality
+    const normalizeString = (str: string): string =>
+        str.toLowerCase().trim().replace(/[()]/g, '').replace(/\s+/g, ' ')
+    const normalizeArray = (arr: string[] | undefined): string[] =>
+        !arr || arr.length === 0 ? [] : arr.map(s => normalizeString(s))
+    const extractCoreBranch = (branch: string): string =>
+        branch
+            .replace(/engineering/gi, '')
+            .replace(/science/gi, '')
+            .replace(/technology/gi, '')
+            .replace(/\(.*?\)/g, '')
+            .trim()
+
+    // Filter modules based on search term, category, and profile (same equality as student filteredJobs: degree/branch)
     const filteredModules = useMemo(() => {
         if (!allModules) return []
 
@@ -114,54 +126,46 @@ export function PracticeDashboard() {
             )
         }
 
-        // Filter by university and branch targeting
+        // Profile-based targeting: same equality as student jobs (no profile = show all; branch match uses same fuzzy logic)
         filtered = filtered.filter(module => {
-            // If manual filters are applied, use them instead of automatic profile-based filtering
-            if (selectedUniversities.length > 0 || selectedBranches.length > 0) {
-                // Manual university filter
-                const manualUniversityMatch =
-                    selectedUniversities.length === 0 || // No university filter selected
-                    module.target_all_colleges || // Admin selected "All Universities"
-                    selectedUniversities.some(uniId => module.target_college_ids?.includes(uniId)) // Selected university is in targeted list
-
-                // Manual branch filter
-                const manualBranchMatch =
-                    selectedBranches.length === 0 || // No branch filter selected
-                    module.target_all_branches || // Admin selected "All Branches"
-                    selectedBranches.some(branch => module.target_branch_ids?.includes(branch)) // Selected branch is in targeted list
-
-                return manualUniversityMatch && manualBranchMatch
-            } else {
-                // Use automatic filtering based on student's profile
-                const universityMatch =
-                    module.target_all_colleges || // Admin selected "All Universities"
-                    (profile?.institution && module.target_college_ids?.includes(profile.institution)) // Student's university is in the targeted list
-
-                const branchMatch =
-                    module.target_all_branches || // Admin selected "All Branches"
-                    (profile?.branch && module.target_branch_ids?.includes(profile.branch)) // Student's branch is in the targeted list
-
-                // Debug logging
-                if (process.env.NODE_ENV === 'development') {
-                    console.log(`Module: ${module.title}`, {
-                        target_all_colleges: module.target_all_colleges,
-                        target_college_ids: module.target_college_ids,
-                        target_all_branches: module.target_all_branches,
-                        target_branch_ids: module.target_branch_ids,
-                        student_institution: profile?.institution,
-                        student_branch: profile?.branch,
-                        universityMatch,
-                        branchMatch,
-                        finalMatch: universityMatch && branchMatch
-                    })
-                }
-
-                return universityMatch && branchMatch
+            // If no profile or no degree/branch info, show all (same as student jobs)
+            if (!profile || (!profile.degree && !profile.branch && !profile.institution)) {
+                return true
             }
+
+            // University match (institution): show if no college targeting or student's institution is targeted
+            const hasCollegeTargeting = !module.target_all_colleges && module.target_college_ids && module.target_college_ids.length > 0
+            const universityMatch =
+                !hasCollegeTargeting ||
+                (profile.institution && normalizeArray(module.target_college_ids).some(uni =>
+                    normalizeString(profile.institution!).includes(uni) || uni.includes(normalizeString(profile.institution!))
+                ))
+
+            // Branch match: same fuzzy logic as student jobs (extractCoreBranch, substring/core match)
+            const hasBranchTargeting = !module.target_all_branches && module.target_branch_ids && module.target_branch_ids.length > 0
+            let branchMatch = true
+            if (hasBranchTargeting) {
+                const moduleBranches = normalizeArray(module.target_branch_ids)
+                const studentBranch = profile.branch ? normalizeString(profile.branch) : ''
+                if (studentBranch) {
+                    branchMatch = moduleBranches.some(moduleBranch => {
+                        const studentCore = extractCoreBranch(studentBranch)
+                        const moduleCore = extractCoreBranch(moduleBranch)
+                        const exactMatch = moduleBranch === studentBranch
+                        const containsMatch = studentBranch.includes(moduleCore) || moduleBranch.includes(studentCore)
+                        const coreMatch = studentCore && moduleCore && (studentCore.includes(moduleCore) || moduleCore.includes(studentCore))
+                        return exactMatch || containsMatch || coreMatch
+                    })
+                } else {
+                    branchMatch = false
+                }
+            }
+
+            return universityMatch && branchMatch
         })
 
         return filtered
-    }, [allModules, selectedCategory, searchTerm, selectedUniversities, selectedBranches, profile])
+    }, [allModules, selectedCategory, searchTerm, profile])
 
 
     // Don't render until client is ready to prevent hydration mismatch
@@ -288,18 +292,18 @@ export function PracticeDashboard() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
             {/* Header - Consistent with StudentProfile style */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-primary-200 dark:border-primary-700">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                             Practice Module 🧠
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg mb-3">
                             Test your skills with practice assessments and mock exams to improve your performance ✨
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 gap-y-1">
                             {/* ... badges ... */}
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
                                 📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -330,7 +334,7 @@ export function PracticeDashboard() {
             />
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 {/* ... stats ... */}
                 {[
                     {
@@ -393,17 +397,17 @@ export function PracticeDashboard() {
             {/* Job Assessments Section */}
             {jobAssessments && jobAssessments.length > 0 && (
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center gap-2">
-                        <Briefcase className="w-5 h-5 text-primary-600" />
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <div className="p-4 sm:p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center gap-2">
+                        <Briefcase className="w-5 h-5 shrink-0 text-primary-600" />
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate">
                             Hiring Assessments
                         </h2>
                     </div>
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                         {jobAssessmentsLoading ? (
                             <CardSkeleton count={3} />
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 {jobAssessments.map((assessment, index) => (
                                     <motion.div
                                         key={assessment.id}
@@ -427,12 +431,12 @@ export function PracticeDashboard() {
 
             {/* Practice Modules Grid */}
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <div className="p-4 sm:p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                         Available Practice Tests
                     </h2>
                 </div>
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     {isLoading ? (
                         <CardSkeleton count={6} />
                     ) : error ? (
@@ -445,7 +449,7 @@ export function PracticeDashboard() {
                             </p>
                         </div>
                     ) : filteredModules.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                             {filteredModules.map((module, index) => (
                                 <motion.div
                                     key={module.id}

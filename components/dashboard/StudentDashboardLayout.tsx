@@ -92,7 +92,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className={`p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
+                <main className={`p-4 sm:p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
                     {children ? (
                         <>
                             <div className={shouldLock ? 'opacity-40' : ''}>

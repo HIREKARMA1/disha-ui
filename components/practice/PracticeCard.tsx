@@ -156,13 +156,13 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full`}
+            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full min-w-0 overflow-hidden`}
         >
             {/* Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                        <h3 className={`text-lg font-semibold text-gray-900 dark:text-white group-hover:${cardColors.accent} transition-colors line-clamp-2`}>
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex-1 min-w-0">
+                        <h3 className={`text-base sm:text-lg font-semibold text-gray-900 dark:text-white group-hover:${cardColors.accent} transition-colors line-clamp-2`}>
                             {module.title}
                         </h3>
                         {/* Creator Info */}
@@ -181,11 +181,11 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                             </p>
                         )}
                     </div>
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         {/* Difficulty Badge */}
                         {module.difficulty && (
                             <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
+                                "px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap",
                                 getDifficultyColor(module.difficulty)
                             )}>
                                 {module.difficulty.charAt(0).toUpperCase() + module.difficulty.slice(1)}
@@ -267,7 +267,7 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
             </div>
 
             {/* Content */}
-            <div className="p-6 flex-1 flex flex-col">
+            <div className="p-4 sm:p-6 flex-1 flex flex-col min-w-0">
                 <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
                     {module.description || 'Test your skills with this practice assessment and improve your performance.'}
                 </p>
@@ -304,16 +304,16 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                     </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 mt-auto pt-4">
+                {/* Action Buttons - stack on small screens to prevent overflow */}
+                <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-4">
                     <Button
                         onClick={() => setIsDetailsModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="flex-1 flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="w-full sm:flex-1 flex items-center justify-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md min-w-0"
                     >
-                        <Eye className="w-4 h-4" />
-                        View Details
+                        <Eye className="w-4 h-4 shrink-0" />
+                        <span className="truncate">View Details</span>
                     </Button>
 
                     {/* View Results / Start Practice button - Modified to only show "Start Practice" */}
@@ -321,10 +321,10 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                         <Button
                             onClick={onStart}
                             size="sm"
-                            className="flex-1 flex items-center gap-2 transition-all duration-200 hover:shadow-md bg-primary-500 hover:bg-primary-600"
+                            className="w-full sm:flex-1 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md bg-primary-500 hover:bg-primary-600 min-w-0"
                         >
-                            <Play className="w-4 h-4" />
-                            Start Practice
+                            <Play className="w-4 h-4 shrink-0" />
+                            <span className="truncate">Start Practice</span>
                         </Button>
                     )}
                     {/* Original button with View Results - COMMENTED OUT */}
