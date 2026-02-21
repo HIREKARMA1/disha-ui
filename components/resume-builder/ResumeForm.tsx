@@ -84,15 +84,15 @@ export function ResumeForm({
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 min-w-0 overflow-hidden"
         >
             <button
                 onClick={() => toggleSection(section)}
-                className="w-full px-6 py-4 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                className="w-full px-4 py-3 sm:px-6 sm:py-4 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
             >
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-                    <span className={`transform transition-transform ${expandedSections.has(section) ? 'rotate-180' : ''}`}>
+                <div className="flex items-center justify-between min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">{title}</h3>
+                    <span className={`shrink-0 transform transition-transform ${expandedSections.has(section) ? 'rotate-180' : ''}`}>
                         ▼
                     </span>
                 </div>
@@ -103,7 +103,7 @@ export function ResumeForm({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="p-6 border-t border-gray-200 dark:border-gray-700"
+                    className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 min-w-0"
                 >
                     {children}
                 </motion.div>
@@ -112,13 +112,13 @@ export function ResumeForm({
     )
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 min-w-0">
             {/* Header Section */}
             {renderSection('Personal Information', 'header', (
-                <div className="space-y-4">
-                    {/* Profile Photo Upload */}
-                    <div className="flex items-center space-x-4">
-                        <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
+                <div className="space-y-4 min-w-0">
+                    {/* Profile Photo Upload - stack on small, row on sm+ */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="w-20 h-20 shrink-0 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
                             {resumeData.header?.profilePhoto ? (
                                 <img
                                     src={resumeData.header.profilePhoto}
@@ -132,7 +132,7 @@ export function ResumeForm({
                                 </div>
                             )}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Profile Photo
                             </label>
@@ -149,7 +149,7 @@ export function ResumeForm({
                                         reader.readAsDataURL(file)
                                     }
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                                className="w-full min-w-0 max-w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Upload a professional photo (JPG, PNG, max 5MB)
@@ -158,8 +158,8 @@ export function ResumeForm({
                     </div>
 
                     {/* Other Personal Information Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Full Name *
                             </label>
@@ -167,12 +167,12 @@ export function ResumeForm({
                                 type="text"
                                 value={resumeData.header?.fullName || ''}
                                 onChange={(e) => updateField('header', 'fullName', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="John Doe"
                             />
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Email *
                             </label>
@@ -180,12 +180,12 @@ export function ResumeForm({
                                 type="email"
                                 value={resumeData.header?.email || ''}
                                 onChange={(e) => updateField('header', 'email', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="john@example.com"
                             />
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Phone
                             </label>
@@ -193,12 +193,12 @@ export function ResumeForm({
                                 type="tel"
                                 value={resumeData.header?.phone || ''}
                                 onChange={(e) => updateField('header', 'phone', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="+1 (555) 123-4567"
                             />
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Location
                             </label>
@@ -206,12 +206,12 @@ export function ResumeForm({
                                 type="text"
                                 value={resumeData.header?.location || ''}
                                 onChange={(e) => updateField('header', 'location', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="San Francisco, CA"
                             />
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 LinkedIn
                             </label>
@@ -219,12 +219,12 @@ export function ResumeForm({
                                 type="url"
                                 value={resumeData.header?.linkedin || ''}
                                 onChange={(e) => updateField('header', 'linkedin', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="https://linkedin.com/in/johndoe"
                             />
                         </div>
 
-                        <div>
+                        <div className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Website
                             </label>
@@ -232,7 +232,7 @@ export function ResumeForm({
                                 type="url"
                                 value={resumeData.header?.website || ''}
                                 onChange={(e) => updateField('header', 'website', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 placeholder="https://johndoe.dev"
                             />
                         </div>
@@ -242,7 +242,7 @@ export function ResumeForm({
 
             {/* Summary Section */}
             {renderSection('Professional Summary', 'summary', (
-                <div>
+                <div className="min-w-0">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Summary *
                     </label>
@@ -250,85 +250,85 @@ export function ResumeForm({
                         value={resumeData.summary || ''}
                         onChange={(e) => onUpdate('summary', e.target.value)}
                         rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Write a compelling summary of your professional background, key skills, and career objectives..."
                     />
                 </div>
             ))}
 
-            {/* Experience Section */}
+            {/* Experience Section - single column on small to avoid overlap */}
             {renderSection('Work Experience', 'experience', (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                     {(resumeData.experience || []).map((exp: any, index: number) => (
-                        <div key={exp.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900 dark:text-white">Experience {index + 1}</h4>
+                        <div key={exp.id} className="p-3 sm:p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 min-w-0 overflow-hidden w-full">
+                            <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+                                <h4 className="font-medium text-gray-900 dark:text-white truncate min-w-0">Experience {index + 1}</h4>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeArrayItem('experience', index)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 min-w-0 w-full" style={{ minWidth: 0 }}>
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Company *
                                     </label>
                                     <input
                                         type="text"
                                         value={exp.company || ''}
                                         onChange={(e) => updateArrayField('experience', index, 'company', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="Company Name"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Position *
                                     </label>
                                     <input
                                         type="text"
                                         value={exp.position || ''}
                                         onChange={(e) => updateArrayField('experience', index, 'position', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="Job Title"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Location
                                     </label>
                                     <input
                                         type="text"
                                         value={exp.location || ''}
                                         onChange={(e) => updateArrayField('experience', index, 'location', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="City, State"
                                     />
                                 </div>
 
-                                {/* Dates row: span full width and wrap properly on smaller screens */}
-                                <div className="col-span-2 flex flex-col md:flex-row gap-2">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {/* Dates row: full width on small, side-by-side on md+ */}
+                                <div className="md:col-span-2 flex flex-col sm:flex-row gap-2 min-w-0 w-full">
+                                    <div className="flex-1 min-w-0 w-full space-y-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                             Start Date
                                         </label>
                                         <input
                                             type="month"
                                             value={exp.startDate || ''}
                                             onChange={(e) => updateArrayField('experience', index, 'startDate', e.target.value)}
-                                            className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                            className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         />
                                     </div>
 
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <div className="flex-1 min-w-0 w-full space-y-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                             End Date
                                         </label>
                                         <input
@@ -336,52 +336,55 @@ export function ResumeForm({
                                             value={exp.endDate || ''}
                                             onChange={(e) => updateArrayField('experience', index, 'endDate', e.target.value)}
                                             disabled={exp.current}
-                                            className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                                            className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="col-span-2">
-                                    <label className="flex items-center space-x-2">
+                                <div className="md:col-span-2 min-w-0 w-full">
+                                    <label className="flex items-center gap-2 flex-wrap">
                                         <input
                                             type="checkbox"
                                             checked={exp.current || false}
                                             onChange={(e) => updateArrayField('experience', index, 'current', e.target.checked)}
-                                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 shrink-0"
                                         />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">Currently working here</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300 break-words">Currently working here</span>
                                     </label>
                                 </div>
 
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="md:col-span-2 min-w-0 w-full space-y-3">
+                                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2 break-words">
                                         Description
                                     </label>
                                     {(exp.description || ['']).map((desc: string, descIndex: number) => (
-                                        <div key={descIndex} className="flex items-center space-x-2 mb-2">
-                                            <input
-                                                type="text"
+                                        <div key={descIndex} className="rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 focus-within:border-primary-400 dark:focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all min-w-0 w-full">
+                                            <textarea
                                                 value={desc}
                                                 onChange={(e) => {
                                                     const newDesc = [...(exp.description || [''])]
                                                     newDesc[descIndex] = e.target.value
                                                     updateArrayField('experience', index, 'description', newDesc)
                                                 }}
-                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                                rows={3}
+                                                className="w-full min-w-0 max-w-full box-border px-3 py-2.5 rounded-t-lg rounded-b-none border-0 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 focus:outline-none resize-y min-h-[4.5rem]"
                                                 placeholder="Describe your responsibilities and achievements..."
                                             />
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    const newDesc = [...(exp.description || [''])]
-                                                    newDesc.splice(descIndex, 1)
-                                                    updateArrayField('experience', index, 'description', newDesc)
-                                                }}
-                                                className="text-red-600 hover:text-red-700"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
+                                            <div className="flex justify-end px-2 py-1.5 border-t border-gray-100 dark:border-gray-600 rounded-b-lg">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        const newDesc = [...(exp.description || [''])]
+                                                        newDesc.splice(descIndex, 1)
+                                                        updateArrayField('experience', index, 'description', newDesc)
+                                                    }}
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
+                                                >
+                                                    <X className="w-3.5 h-3.5 mr-1" />
+                                                    Remove
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                     <Button
@@ -391,7 +394,7 @@ export function ResumeForm({
                                             const newDesc = [...(exp.description || ['']), '']
                                             updateArrayField('experience', index, 'description', newDesc)
                                         }}
-                                        className="mt-2"
+                                        className="mt-1 border-dashed border-2 border-primary-200 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
                                     >
                                         <Plus className="w-4 h-4 mr-1" />
                                         Add Description
@@ -412,91 +415,91 @@ export function ResumeForm({
                 </div>
             ))}
 
-            {/* Education Section */}
+            {/* Education Section - responsive like Work Experience */}
             {renderSection('Education', 'education', (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                     {(resumeData.education || []).map((edu: any, index: number) => (
-                        <div key={edu.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900 dark:text-white">Education {index + 1}</h4>
+                        <div key={edu.id} className="p-3 sm:p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 min-w-0 overflow-hidden w-full">
+                            <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+                                <h4 className="font-medium text-gray-900 dark:text-white truncate min-w-0">Education {index + 1}</h4>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeArrayItem('education', index)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 min-w-0 w-full" style={{ minWidth: 0 }}>
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Institution *
                                     </label>
                                     <input
                                         type="text"
                                         value={edu.institution || ''}
                                         onChange={(e) => updateArrayField('education', index, 'institution', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="University Name"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Degree *
                                     </label>
                                     <input
                                         type="text"
                                         value={edu.degree || ''}
                                         onChange={(e) => updateArrayField('education', index, 'degree', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="Bachelor's Degree"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Field of Study
                                     </label>
                                     <input
                                         type="text"
                                         value={edu.field || ''}
                                         onChange={(e) => updateArrayField('education', index, 'field', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="Computer Science"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         GPA
                                     </label>
                                     <input
                                         type="text"
                                         value={edu.gpa || ''}
                                         onChange={(e) => updateArrayField('education', index, 'gpa', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="3.8/4.0"
                                     />
                                 </div>
 
-                                <div className="flex space-x-2">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="md:col-span-2 flex flex-col sm:flex-row gap-2 min-w-0 w-full">
+                                    <div className="flex-1 min-w-0 w-full space-y-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                             Start Date
                                         </label>
                                         <input
                                             type="month"
                                             value={edu.startDate || ''}
                                             onChange={(e) => updateArrayField('education', index, 'startDate', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                            className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         />
                                     </div>
 
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <div className="flex-1 min-w-0 w-full space-y-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                             End Date
                                         </label>
                                         <input
@@ -504,20 +507,20 @@ export function ResumeForm({
                                             value={edu.endDate || ''}
                                             onChange={(e) => updateArrayField('education', index, 'endDate', e.target.value)}
                                             disabled={edu.current}
-                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+                                            className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="col-span-2">
-                                    <label className="flex items-center space-x-2">
+                                <div className="md:col-span-2 min-w-0 w-full">
+                                    <label className="flex items-center gap-2 flex-wrap">
                                         <input
                                             type="checkbox"
                                             checked={edu.current || false}
                                             onChange={(e) => updateArrayField('education', index, 'current', e.target.checked)}
-                                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 shrink-0"
                                         />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">Currently studying here</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300 break-words">Currently studying here</span>
                                     </label>
                                 </div>
                             </div>
@@ -537,20 +540,20 @@ export function ResumeForm({
 
             {/* Skills Section */}
             {renderSection('Skills', 'skills', (
-                <div className="space-y-6">
+                <div className="space-y-6 min-w-0">
                     {['technical', 'soft', 'languages'].map((skillType) => (
-                        <div key={skillType}>
+                        <div key={skillType} className="min-w-0">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 capitalize">
                                 {skillType} Skills
                             </label>
                             <div className="space-y-2">
                                 {(resumeData.skills?.[skillType] || []).map((skill: string, index: number) => (
-                                    <div key={index} className="flex items-center space-x-2">
+                                    <div key={index} className="flex items-center gap-2 min-w-0">
                                         <input
                                             type="text"
                                             value={skill}
                                             onChange={(e) => updateSkill(skillType, index, e.target.value)}
-                                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                             placeholder={`Add ${skillType} skill...`}
                                         />
                                         <Button
@@ -578,85 +581,87 @@ export function ResumeForm({
                 </div>
             ))}
 
-            {/* Projects Section */}
+            {/* Projects Section - responsive + prominent description */}
             {renderSection('Projects', 'projects', (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                     {(resumeData.projects || []).map((project: any, index: number) => (
-                        <div key={project.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900 dark:text-white">Project {index + 1}</h4>
+                        <div key={project.id} className="p-3 sm:p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 min-w-0 overflow-hidden w-full">
+                            <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+                                <h4 className="font-medium text-gray-900 dark:text-white truncate min-w-0">Project {index + 1}</h4>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeArrayItem('projects', index)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 min-w-0 w-full" style={{ minWidth: 0 }}>
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Project Name *
                                     </label>
                                     <input
                                         type="text"
                                         value={project.name || ''}
                                         onChange={(e) => updateArrayField('projects', index, 'name', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="Project Name"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Technologies
                                     </label>
                                     <input
                                         type="text"
                                         value={project.technologies?.join(', ') || ''}
                                         onChange={(e) => updateArrayField('projects', index, 'technologies', e.target.value.split(',').map(t => t.trim()))}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="React, Node.js, MongoDB"
                                     />
                                 </div>
 
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="md:col-span-2 min-w-0 w-full space-y-2">
+                                    <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 break-words">
                                         Description
                                     </label>
-                                    <textarea
-                                        value={project.description || ''}
-                                        onChange={(e) => updateArrayField('projects', index, 'description', e.target.value)}
-                                        rows={3}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                        placeholder="Describe the project, your role, and key achievements..."
-                                    />
+                                    <div className="rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700/50 focus-within:border-primary-400 dark:focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all min-w-0 w-full">
+                                        <textarea
+                                            value={project.description || ''}
+                                            onChange={(e) => updateArrayField('projects', index, 'description', e.target.value)}
+                                            rows={3}
+                                            className="w-full min-w-0 max-w-full box-border px-3 py-2.5 rounded-lg border-0 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 focus:outline-none resize-y min-h-[4.5rem]"
+                                            placeholder="Describe the project, your role, and key achievements..."
+                                        />
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         Live Link
                                     </label>
                                     <input
                                         type="url"
                                         value={project.link || ''}
                                         onChange={(e) => updateArrayField('projects', index, 'link', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="https://project.com"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <div className="min-w-0 w-full space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">
                                         GitHub
                                     </label>
                                     <input
                                         type="url"
                                         value={project.github || ''}
                                         onChange={(e) => updateArrayField('projects', index, 'github', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 max-w-full box-border px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="https://github.com/user/project"
                                     />
                                 </div>
@@ -667,7 +672,7 @@ export function ResumeForm({
                     <Button
                         onClick={onAddProject}
                         variant="outline"
-                        className="w-full border-dashed border-2 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary-500 hover:text-primary-500"
+                        className="w-full border-dashed border-2 border-primary-200 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Project
@@ -677,23 +682,23 @@ export function ResumeForm({
 
             {/* Certifications Section */}
             {renderSection('Certifications', 'certifications', (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                     {(resumeData.certifications || []).map((cert: any, index: number) => (
-                        <div key={cert.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900 dark:text-white">Certification {index + 1}</h4>
+                        <div key={cert.id} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 min-w-0 overflow-hidden">
+                            <div className="flex items-center justify-between mb-3 min-w-0">
+                                <h4 className="font-medium text-gray-900 dark:text-white truncate">Certification {index + 1}</h4>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeArrayItem('certifications', index)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Certification Name *
                                     </label>
@@ -701,12 +706,12 @@ export function ResumeForm({
                                         type="text"
                                         value={cert.name || ''}
                                         onChange={(e) => updateArrayField('certifications', index, 'name', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="AWS Certified Developer"
                                     />
                                 </div>
 
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Issuing Organization
                                     </label>
@@ -714,12 +719,12 @@ export function ResumeForm({
                                         type="text"
                                         value={cert.issuer || ''}
                                         onChange={(e) => updateArrayField('certifications', index, 'issuer', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="Amazon Web Services"
                                     />
                                 </div>
 
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Date Earned
                                     </label>
@@ -727,11 +732,11 @@ export function ResumeForm({
                                         type="month"
                                         value={cert.date || ''}
                                         onChange={(e) => updateArrayField('certifications', index, 'date', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                     />
                                 </div>
 
-                                <div>
+                                <div className="min-w-0">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Verification Link
                                     </label>
@@ -739,7 +744,7 @@ export function ResumeForm({
                                         type="url"
                                         value={cert.link || ''}
                                         onChange={(e) => updateArrayField('certifications', index, 'link', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        className="w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                         placeholder="https://verify.cert.com"
                                     />
                                 </div>

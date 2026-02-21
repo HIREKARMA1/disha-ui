@@ -655,7 +655,7 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className={`space-y-6 ${!showForm && !showPreview ? 'block' : showForm ? 'block' : 'hidden lg:block'}`}
+                        className={`space-y-6 min-w-0 overflow-hidden ${!showForm && !showPreview ? 'block' : showForm ? 'block' : 'hidden lg:block'}`}
                     >
                         <ResumeForm
                             resumeData={resumeData}

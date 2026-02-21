@@ -87,37 +87,38 @@ export function ResumeBuilderPage() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header - Exact match to Video Search */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+        <div className="space-y-4 sm:space-y-6">
+            {/* Header - small: stacked, tighter padding; sm+ unchanged */}
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-primary-200 dark:border-primary-700 mb-4 sm:mb-6 min-w-0 overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 lg:gap-6">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">
                             Resume Builder 📄
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg mb-2 sm:mb-3">
                             Create professional resumes with our AI-powered builder ✨
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                            <span className="inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
                                 📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                             </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                            <span className="inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                                 📈 Career Growth
                             </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                            <span className="inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
                                 🚀 New Opportunities
                             </span>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    {/* Buttons: small = full-width stack; sm+ = row, no change */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 sm:space-x-3 shrink-0 w-full sm:w-auto min-w-0">
                         {currentView !== 'dashboard' && (
                             <Button
                                 variant="outline"
                                 onClick={handleBackToDashboard}
-                                className="flex items-center space-x-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white"
+                                className="flex items-center justify-center sm:justify-start space-x-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white w-full sm:w-auto min-h-10 text-sm"
                             >
-                                <FileText className="w-4 h-4" />
+                                <FileText className="w-4 h-4 flex-shrink-0" />
                                 <span>Dashboard</span>
                             </Button>
                         )}
@@ -125,9 +126,9 @@ export function ResumeBuilderPage() {
                             <Button
                                 variant="outline"
                                 onClick={handleBackToTemplates}
-                                className="flex items-center space-x-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white"
+                                className="flex items-center justify-center sm:justify-start space-x-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white w-full sm:w-auto min-h-10 text-sm"
                             >
-                                <Filter className="w-4 h-4" />
+                                <Filter className="w-4 h-4 flex-shrink-0" />
                                 <span>Change Template</span>
                             </Button>
                         )}
