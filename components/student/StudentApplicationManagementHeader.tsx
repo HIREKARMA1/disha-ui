@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface StudentApplicationManagementHeaderProps {
     totalApplications: number
@@ -136,8 +137,8 @@ export function StudentApplicationManagementHeader({
                 </div>
             </motion.div>
 
-            {/* Stats Cards - Same style as Dashboard Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            {/* Stats Cards - 1 per row when width < 400px; 2 cols 400px–lg; 6 cols at lg */}
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-6 gap-4">
                 {statusOptions.map((option, index) => {
                     const style = getStatusCardStyle(option.value)
                     return (
@@ -172,39 +173,43 @@ export function StudentApplicationManagementHeader({
                 })}
             </div>
 
-            {/* Search, Filters and Export */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search, Filters and Export - dropdown uses Select so it stays in viewport on small screens */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 min-w-0 max-w-full overflow-hidden">
+                <div className="flex flex-col sm:flex-row gap-3 min-w-0">
                     {/* Search */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder="Search by job title, company name, or status..."
                                 value={searchTerm}
                                 onChange={(e) => onSearchChange(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                                className="w-full min-w-0 max-w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                             />
                         </div>
                     </div>
 
-                    {/* Status Filter */}
-                    <div className="sm:w-64">
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => onFilterChange(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
+                    {/* Status Filter - Radix Select so dropdown stays in viewport */}
+                    <div className="w-full sm:w-64 min-w-0 max-w-full">
+                        <Select value={filterStatus} onValueChange={(value) => onFilterChange(value)}>
+                            <SelectTrigger className="relative w-full min-w-0 max-w-full pl-9 h-10 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500">
+                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent
+                                position="popper"
+                                sideOffset={4}
+                                className="max-w-[min(100vw-2rem,var(--radix-select-trigger-width))] z-[100]"
+                                style={{ maxWidth: 'min(calc(100vw - 2rem), var(--radix-select-trigger-width))' }}
                             >
                                 {statusOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
+                                    <SelectItem key={option.value} value={option.value}>
                                         {option.label} ({option.count})
-                                    </option>
+                                    </SelectItem>
                                 ))}
-                            </select>
-                        </div>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {/* Company Filter (optional, for university view) */}
