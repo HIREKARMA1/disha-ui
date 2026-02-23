@@ -263,7 +263,7 @@ export function AdminProfile() {
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
                                             <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
                                                 <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
-                                                {profile.email_verified ? (
+                                                {(profile.email_verified || !!profile.email) ? (
                                                     <div className="p-1.5 bg-green-500 rounded-full">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
@@ -275,7 +275,7 @@ export function AdminProfile() {
                                             </div>
                                             <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
                                                 <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                                {profile.phone_verified ? (
+                                                {(profile.phone_verified || !!profile.phone) ? (
                                                     <div className="p-1.5 bg-green-500 rounded-full">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
@@ -339,9 +339,9 @@ export function AdminProfile() {
                             <div className="min-h-[600px]">
                                 {activeTab === 'basic' && (
                                     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                                            <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left gap-3">
+                                                <div className="w-12 h-12 flex-shrink-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
                                                     <User className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
