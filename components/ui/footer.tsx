@@ -4,9 +4,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { Twitter, Linkedin, Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 export function Footer() {
     const { theme, resolvedTheme } = useTheme()
+    const { user, isAuthenticated } = useAuth()
 
     const getLogoSrc = () => {
         const isDark = resolvedTheme === 'dark' || (resolvedTheme === 'system' && theme === 'dark')
@@ -60,7 +62,7 @@ export function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/jobs" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                <Link href={isAuthenticated && user?.user_type === 'student' ? '/dashboard/student/jobs' : '/jobs'} className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
                                     Jobs
                                 </Link>
                             </li>
