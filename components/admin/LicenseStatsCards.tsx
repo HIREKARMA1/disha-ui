@@ -59,7 +59,7 @@ export function LicenseStatsCards({ stats }: LicenseStatsCardsProps) {
     ]
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 min-[300px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {cards.map((stat, index) => (
                 <motion.div
                     key={stat.label}
