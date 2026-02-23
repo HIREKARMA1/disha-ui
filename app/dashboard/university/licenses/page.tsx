@@ -14,6 +14,7 @@ interface License {
     batch: string
     total_licenses: number
     remaining_licenses: number
+    students_used?: number
     period_from: string
     period_to: string
     status: string
@@ -71,10 +72,11 @@ export default function UniversityLicensesPage() {
         }
     }
 
-    // Calculate summary stats
+    // Calculate summary stats (use students_used when available for accurate count)
     const totalLicenses = licenses.reduce((sum, l) => sum + l.total_licenses, 0)
     const activeBatches = licenses.filter(l => l.status.toLowerCase() === 'active').length
-    const studentsLicensed = licenses.reduce((sum, l) => sum + (l.total_licenses - l.remaining_licenses), 0)
+    const getUsedForLicense = (l: License) => l.students_used ?? (l.total_licenses - l.remaining_licenses)
+    const studentsLicensed = licenses.reduce((sum, l) => sum + getUsedForLicense(l), 0)
 
     // Filter licenses based on search
     const filteredLicenses = licenses.filter(license =>
@@ -174,7 +176,7 @@ export default function UniversityLicensesPage() {
 
                         <div className="grid gap-6">
                             {filteredLicenses.map((license, index) => {
-                                const usedLicenses = license.total_licenses - license.remaining_licenses
+                                const usedLicenses = license.students_used ?? (license.total_licenses - license.remaining_licenses)
                                 const usagePercent = Math.round((usedLicenses / license.total_licenses) * 100)
                                 const isExhausted = license.remaining_licenses <= 0
 
