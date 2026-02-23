@@ -53,10 +53,17 @@ const navItems: NavItem[] = [
     },
     {
         label: 'Live Jobs',
+        href: '/jobs',
+        icon: Search,
+        description: 'View all available jobs',
+        color: 'from-sky-500 to-cyan-600'
+    },
+    {
+        label: 'Campus Drive',
         href: '/dashboard/student/jobs',
         icon: Briefcase,
         description: 'Browse and apply for jobs',
-        color: 'from-sky-500 to-cyan-600'
+        color: 'from-orange-500 to-red-600'
     },
     {
         label: 'Applications',
@@ -191,8 +198,33 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
         setImageError(true)
     }
 
-    // Filter navigation items (e.g. conditionally hide items based on profile state)
-    const filteredNavItems = navItems
+    // Determine if Campus Drive should be visible based on university/license status
+    const shouldShowCampusDrive = () => {
+        if (!profileData) return true
+
+        // Hide if backend explicitly indicates university is not found
+        if (typeof profileData.license_status_reason === 'string') {
+            const reason = profileData.license_status_reason.toLowerCase()
+            if (reason.includes('university not found')) {
+                return false
+            }
+        }
+
+        // Fallback: hide if no university_id associated with the student
+        if (!profileData.university_id) {
+            return false
+        }
+
+        return true
+    }
+
+    // Filter navigation items based on profile/university state
+    const filteredNavItems = navItems.filter((item) => {
+        if (item.label === 'Campus Drive') {
+            return shouldShowCampusDrive()
+        }
+        return true
+    })
 
     // Handle SSO redirect
     const handleSSORedirect = async (item: NavItem) => {

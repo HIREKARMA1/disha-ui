@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, CheckCircle, Calendar, X } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { MatchScorePieChart } from './MatchScorePieChart'
@@ -247,10 +247,10 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full`}
+            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full min-w-0 overflow-hidden`}
         >
             {/* Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
@@ -381,7 +381,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
             </div>
 
             {/* Content */}
-            <div className="p-6 flex-1 flex flex-col">
+            <div className="p-4 sm:p-6 flex-1 flex flex-col min-w-0">
                 <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
                     {typeof job.description === 'string' ? job.description : String(job.description || '')}
                 </p>
@@ -433,14 +433,15 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                     </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Action Buttons - professional layout: equal width, side by side */}
                 <div className="flex gap-3 mt-auto pt-4">
                     <Button
                         onClick={onViewDescription}
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="flex-1 min-w-0 h-9 font-medium border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
                     >
+                        <FileText className="w-4 h-4 mr-1.5 flex-shrink-0" />
                         View JD
                     </Button>
 
@@ -449,10 +450,10 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                         disabled={!canApply() || isApplying}
                         size="sm"
                         className={cn(
-                            "flex-1 flex items-center gap-2 transition-all duration-200 hover:shadow-md",
+                            "flex-1 min-w-0 h-9 font-medium flex items-center justify-center gap-1.5 transition-all",
                             !canApply()
-                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
-                                : "bg-primary-500 hover:bg-primary-600"
+                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed text-gray-500"
+                                : "bg-primary-500 hover:bg-primary-600 text-white"
                         )}
                     >
                         {isApplying ? (
@@ -462,7 +463,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                             </>
                         ) : (
                             <>
-                                <CheckCircle className="w-4 h-4" />
+                                <CheckCircle className="w-4 h-4 flex-shrink-0" />
                                 {job.application_status === 'applied' ? 'Applied' :
                                     job.application_status === 'selected' ? 'Selected' :
                                         job.application_status === 'rejected' ? 'Not Selected' :
