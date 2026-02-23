@@ -86,26 +86,26 @@ export default function UniversityLicensesPage() {
 
     return (
         <UniversityDashboardLayout>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6 px-2 sm:px-0 min-w-0 overflow-x-hidden">
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-primary-200 dark:border-primary-700">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 lg:gap-6">
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
                                 License Management 📜
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg mb-3">
                                 View and manage your student licenses ✨
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    <Award className="w-3 h-3 mr-1" /> {totalLicenses} Total Licenses
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                                <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                    <Award className="w-3 h-3 mr-1 flex-shrink-0" /> <span className="truncate">{totalLicenses} Total</span>
                                 </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    <CheckCircle className="w-3 h-3 mr-1" /> {activeBatches} Active Batches
+                                <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                    <CheckCircle className="w-3 h-3 mr-1 flex-shrink-0" /> <span className="truncate">{activeBatches} Active</span>
                                 </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                                    <Briefcase className="w-3 h-3 mr-1" /> {studentsLicensed} Students Licensed
+                                <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+                                    <Briefcase className="w-3 h-3 mr-1 flex-shrink-0" /> <span className="truncate">{studentsLicensed} Licensed</span>
                                 </span>
                             </div>
                         </div>
@@ -113,16 +113,16 @@ export default function UniversityLicensesPage() {
                 </div>
 
                 {/* Search and Actions Bar */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1 relative">
+                        <div className="flex-1 min-w-0 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
                                 type="text"
-                                placeholder="Search licenses by batch or status..."
+                                placeholder="Search licenses..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
+                                className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-base sm:text-sm"
                             />
                         </div>
                         <Button
@@ -132,7 +132,7 @@ export default function UniversityLicensesPage() {
                                 setSelectedBranches(undefined)
                                 setIsRequestModalOpen(true)
                             }}
-                            className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="w-full sm:w-auto bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 shrink-0"
                         >
                             <Plus className="w-4 h-4 mr-2" />
                             Request License
@@ -146,12 +146,12 @@ export default function UniversityLicensesPage() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
                     </div>
                 ) : filteredLicenses.length === 0 ? (
-                    <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Award className="w-8 h-8 text-gray-400" />
+                    <div className="text-center py-10 sm:py-16 px-4 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Award className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Licenses Found</h3>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
+                        <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2">No Licenses Found</h3>
+                        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
                             {searchTerm ? 'No licenses match your search.' : "You don't have any active licenses yet. Request a license to start adding students."}
                         </p>
                         {!searchTerm && (
@@ -167,8 +167,8 @@ export default function UniversityLicensesPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                <div className="flex items-center justify-between">
+                            <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <Briefcase className="w-5 h-5 text-gray-500" />
                                 Your Licenses ({filteredLicenses.length})
                             </h2>
@@ -189,42 +189,42 @@ export default function UniversityLicensesPage() {
                                         className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200"
                                     >
                                         {/* License Header */}
-                                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                                    <Award className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-4">
+                                            <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                                                <div className="p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg shrink-0">
+                                                    <Award className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                                                         Batch {license.batch}
                                                     </h3>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(license.status)}`}>
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${getStatusColor(license.status)}`}>
                                                             {license.status.toUpperCase()}
                                                         </span>
-                                                        <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" />
+                                                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                            <Clock className="w-3 h-3 flex-shrink-0" />
                                                             Approved on {formatDate(license.created_at)}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Usage Stats */}
-                                            <div className="flex items-center gap-8 bg-gray-50 dark:bg-gray-800/50 px-6 py-3 rounded-lg">
+                                            {/* Usage Stats - responsive: grid on small, flex on larger */}
+                                            <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-4 md:gap-8 bg-gray-50 dark:bg-gray-800/50 px-4 sm:px-6 py-3 rounded-lg">
                                                 <div className="text-center">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium mb-1">Total</p>
-                                                    <p className="text-xl font-bold text-gray-900 dark:text-white">{license.total_licenses}</p>
+                                                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium mb-0.5 sm:mb-1">Total</p>
+                                                    <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{license.total_licenses}</p>
                                                 </div>
-                                                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+                                                <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-700" />
                                                 <div className="text-center">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium mb-1">Used</p>
-                                                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{usedLicenses}</p>
+                                                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium mb-0.5 sm:mb-1">Used</p>
+                                                    <p className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">{usedLicenses}</p>
                                                 </div>
-                                                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+                                                <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-700" />
                                                 <div className="text-center">
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium mb-1">Remaining</p>
-                                                    <p className={`text-xl font-bold ${isExhausted ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium mb-0.5 sm:mb-1">Remaining</p>
+                                                    <p className={`text-lg sm:text-xl font-bold ${isExhausted ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                                         {license.remaining_licenses}
                                                     </p>
                                                 </div>
@@ -234,7 +234,7 @@ export default function UniversityLicensesPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                                                    className="w-full sm:w-auto border-amber-500 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
                                                     onClick={() => {
                                                         setSelectedBatch(license.batch)
                                                         setSelectedDegree(license.degree)
@@ -248,16 +248,16 @@ export default function UniversityLicensesPage() {
                                         </div>
 
                                         {/* License Details */}
-                                        <div className="p-6 bg-gray-50/50 dark:bg-gray-800/30">
-                                            <div className="grid md:grid-cols-2 gap-8">
+                                        <div className="p-4 sm:p-6 bg-gray-50/50 dark:bg-gray-800/30">
+                                            <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                                                 {/* Period & Progress */}
-                                                <div className="space-y-5">
+                                                <div className="space-y-4 sm:space-y-5">
                                                     <div>
                                                         <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                                                             <Calendar className="w-4 h-4 text-gray-500" />
                                                             License Period
                                                         </h4>
-                                                        <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                                                             <span className="font-medium">{formatDate(license.period_from)}</span>
                                                             <span className="text-gray-400">→</span>
                                                             <span className="font-medium">{formatDate(license.period_to)}</span>
@@ -331,12 +331,12 @@ export default function UniversityLicensesPage() {
 
                                                 {/* Admin Note */}
                                                 {license.note && (
-                                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-xl p-5">
+                                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-xl p-4 sm:p-5">
                                                         <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
                                                             <CheckCircle className="w-4 h-4" />
                                                             Admin Message
                                                         </h4>
-                                                        <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                                                        <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200 leading-relaxed break-words">
                                                             {license.note}
                                                         </p>
                                                     </div>
