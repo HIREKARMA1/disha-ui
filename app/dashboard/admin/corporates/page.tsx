@@ -157,7 +157,7 @@ export default function AdminCorporates() {
 
     return (
         <AdminDashboardLayout>
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-visible">
                 {/* Header Section */}
                 <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-cyan-200 dark:border-cyan-700">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
@@ -216,7 +216,8 @@ export default function AdminCorporates() {
                     </motion.button>
                 </div>
 
-                {/* Corporate Management Header (search, filters) */}
+                {/* Corporate Management Header - z-20 so dropdown appears above table */}
+                <div className="relative z-20 mb-2">
                 <CorporateManagementHeader
                     totalCorporates={corporates.length}
                     activeCorporates={corporates.filter(c => !c.is_archived).length}
@@ -228,8 +229,10 @@ export default function AdminCorporates() {
                     includeArchived={includeArchived}
                     onIncludeArchivedChange={setIncludeArchived}
                 />
+                </div>
 
-                {/* Corporate Table */}
+                {/* Corporate Table - z-0 so filter dropdown renders above */}
+                <div className="relative z-0 mt-4">
                 <CorporateTable
                     corporates={filteredCorporates}
                     isLoading={isLoading}
@@ -239,6 +242,7 @@ export default function AdminCorporates() {
                     onEditCorporate={handleEditCorporate}
                     onRetry={fetchCorporates}
                 />
+                </div>
 
                 {/* Modals */}
                 <CreateCorporateModal

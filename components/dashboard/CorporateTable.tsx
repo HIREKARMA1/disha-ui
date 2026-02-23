@@ -479,7 +479,7 @@ export function CorporateTable({
                                     </td>
 
                                     {/* Status */}
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap pr-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(corporate.status)}`}>
                                             {corporate.status}
                                         </span>
@@ -504,8 +504,8 @@ export function CorporateTable({
                                     </td>
 
                                     {/* Actions */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end space-x-2">
+                                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium pl-4">
+                                        <div className="flex items-center justify-end gap-3 sm:gap-4">
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
