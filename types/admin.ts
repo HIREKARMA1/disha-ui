@@ -22,6 +22,12 @@ export interface AdminDashboardData {
         name: string
         count: number
     }>
+    monthly_chart_data?: Array<{
+        month: string
+        users: number
+        jobs: number
+        applications: number
+    }>
     analytics: {
         real_time_metrics: Array<{
             metric_name: string

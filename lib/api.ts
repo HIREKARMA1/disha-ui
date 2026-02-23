@@ -186,6 +186,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getAdminDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/dashboard');
+    return response.data;
+  }
+
   async getStudentAppliedJobs(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/students/applied-jobs');
     return response.data;

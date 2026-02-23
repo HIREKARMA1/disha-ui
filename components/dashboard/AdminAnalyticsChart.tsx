@@ -4,25 +4,52 @@ import { motion } from 'framer-motion'
 import { TrendingUp, Users, Briefcase, Activity } from 'lucide-react'
 import { AdminUserStats, AdminJobStats } from '@/types/admin'
 
+interface MonthlyChartDataPoint {
+    month: string
+    users: number
+    jobs: number
+    applications: number
+}
+
 interface AdminAnalyticsChartProps {
     userStats: AdminUserStats
     jobStats: AdminJobStats
+    monthlyChartData?: MonthlyChartDataPoint[]
 }
 
-export function AdminAnalyticsChart({ userStats, jobStats }: AdminAnalyticsChartProps) {
-    // Mock data for the chart - in real implementation, this would come from API
-    const chartData = [
-        { month: 'Jan', users: 800, jobs: 120, applications: 450 },
-        { month: 'Feb', users: 950, jobs: 150, applications: 520 },
-        { month: 'Mar', users: 1100, jobs: 180, applications: 680 },
-        { month: 'Apr', users: 1250, jobs: 220, applications: 750 },
-        { month: 'May', users: 1400, jobs: 280, applications: 920 },
-        { month: 'Jun', users: 1600, jobs: 320, applications: 1100 }
-    ]
+export function AdminAnalyticsChart({ userStats, jobStats, monthlyChartData }: AdminAnalyticsChartProps) {
+    // Use real data from backend when available, otherwise fallback to empty bars
+    const chartData: MonthlyChartDataPoint[] = monthlyChartData?.length
+        ? monthlyChartData
+        : [
+            { month: 'Jan', users: 0, jobs: 0, applications: 0 },
+            { month: 'Feb', users: 0, jobs: 0, applications: 0 },
+            { month: 'Mar', users: 0, jobs: 0, applications: 0 },
+            { month: 'Apr', users: 0, jobs: 0, applications: 0 },
+            { month: 'May', users: 0, jobs: 0, applications: 0 },
+            { month: 'Jun', users: 0, jobs: 0, applications: 0 }
+        ]
 
     const maxValue = Math.max(
+        1,
         ...chartData.map(d => Math.max(d.users, d.jobs, d.applications))
     )
+
+    // Compute growth % from first month vs last month totals
+    const firstMonthTotal = chartData[0]
+        ? chartData[0].users + chartData[0].jobs + chartData[0].applications
+        : 0
+    const lastMonthTotal = chartData.length
+        ? chartData[chartData.length - 1].users +
+          chartData[chartData.length - 1].jobs +
+          chartData[chartData.length - 1].applications
+        : 0
+    const growthPercent =
+        firstMonthTotal > 0
+            ? (((lastMonthTotal - firstMonthTotal) / firstMonthTotal) * 100).toFixed(1)
+            : lastMonthTotal > 0
+            ? '100.0'
+            : '0.0'
 
     return (
         <motion.div
@@ -40,9 +67,16 @@ export function AdminAnalyticsChart({ userStats, jobStats }: AdminAnalyticsChart
                         Growth trends over the last 6 months
                     </p>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-green-600 dark:text-green-400">
+                <div
+                    className={`flex items-center space-x-2 text-sm ${
+                        Number(growthPercent) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                    }`}
+                >
                     <TrendingUp className="w-4 h-4" />
-                    <span>+18.5% growth</span>
+                    <span>
+                        {Number(growthPercent) >= 0 ? '+' : ''}
+                        {growthPercent}% growth
+                    </span>
                 </div>
             </div>
 

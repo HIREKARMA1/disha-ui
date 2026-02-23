@@ -29,30 +29,28 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
             if (user?.user_type === 'admin') {
                 setIsLoading(true)
                 try {
-                    // TODO: Replace with actual admin dashboard API call
-                    // const data = await apiClient.getAdminDashboard()
-                    // setDashboardData(data)
-
-                    // Mock data for now
+                    const data = await apiClient.getAdminDashboard()
+                    // Map API response to dashboard format (backend may return slightly different structure)
                     setDashboardData({
-                        total_users: 1250,
-                        total_corporates: 45,
-                        total_students: 980,
-                        total_universities: 25,
-                        total_jobs: 320,
-                        total_applications: 1250,
-                        active_jobs: 280,
-                        pending_approvals: 15,
-                        recent_activities: [],
-                        monthly_stats: {
-                            sessions: 4500,
-                            unique_users: 1200,
-                            avg_session_duration: 8.5,
-                            page_views: 12500
+                        total_users: data.total_users ?? 0,
+                        total_corporates: data.total_corporates ?? 0,
+                        total_students: data.total_students ?? 0,
+                        total_universities: data.total_universities ?? 0,
+                        total_jobs: data.total_jobs ?? 0,
+                        total_applications: data.total_applications ?? 0,
+                        active_jobs: data.active_jobs ?? 0,
+                        pending_approvals: data.pending_approvals ?? 0,
+                        recent_activities: data.recent_activities ?? [],
+                        monthly_stats: data.monthly_stats ?? {
+                            sessions: 0,
+                            unique_users: 0,
+                            avg_session_duration: 0,
+                            page_views: 0
                         },
-                        top_industries: [],
-                        top_locations: [],
-                        analytics: {
+                        top_industries: data.top_industries ?? [],
+                        top_locations: data.top_locations ?? [],
+                        monthly_chart_data: data.monthly_chart_data ?? [],
+                        analytics: data.analytics ?? {
                             real_time_metrics: [],
                             kpis: [],
                             alerts: []
@@ -140,6 +138,7 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
                                                     active_jobs: dashboardData.active_jobs,
                                                     pending_approvals: dashboardData.pending_approvals
                                                 }}
+                                                monthlyChartData={dashboardData.monthly_chart_data}
                                             />
                                             <AdminRecentActivities
                                                 activities={dashboardData.recent_activities}
