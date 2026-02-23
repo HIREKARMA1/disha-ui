@@ -1,62 +1,23 @@
 "use client"
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Activity, User, Briefcase, FileText, AlertTriangle, Clock, CheckCircle } from 'lucide-react'
 import { AdminActivity } from '@/types/admin'
+
+const INITIAL_SHOW_COUNT = 5
 
 interface AdminRecentActivitiesProps {
     activities: AdminActivity[]
 }
 
 export function AdminRecentActivities({ activities }: AdminRecentActivitiesProps) {
-    // Mock data for now - in real implementation, this would come from API
-    const mockActivities: AdminActivity[] = [
-        {
-            id: '1',
-            type: 'user_registration',
-            title: 'New Student Registration',
-            description: 'John Doe registered as a student from MIT',
-            timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            user_id: 'user_123',
-            user_name: 'John Doe'
-        },
-        {
-            id: '2',
-            type: 'job_posted',
-            title: 'New Job Posted',
-            description: 'Software Engineer position posted by TechCorp',
-            timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-            user_id: 'corp_456',
-            user_name: 'TechCorp'
-        },
-        {
-            id: '3',
-            type: 'application_submitted',
-            title: 'Application Submitted',
-            description: 'Sarah Wilson applied for Data Scientist role',
-            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            user_id: 'user_789',
-            user_name: 'Sarah Wilson'
-        },
-        {
-            id: '4',
-            type: 'system_alert',
-            title: 'System Alert',
-            description: 'High server load detected on database cluster',
-            timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString()
-        },
-        {
-            id: '5',
-            type: 'admin_action',
-            title: 'Admin Action',
-            description: 'University profile approved by admin',
-            timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-            user_id: 'uni_101',
-            user_name: 'Stanford University'
-        }
-    ]
-
-    const displayActivities = activities.length > 0 ? activities : mockActivities
+    const [showAll, setShowAll] = useState(false)
+    const allActivities = activities ?? []
+    const hasMore = allActivities.length > INITIAL_SHOW_COUNT
+    const displayActivities = showAll
+        ? allActivities
+        : allActivities.slice(0, INITIAL_SHOW_COUNT)
 
     const getActivityIcon = (type: AdminActivity['type']) => {
         switch (type) {
@@ -169,7 +130,7 @@ export function AdminRecentActivities({ activities }: AdminRecentActivitiesProps
                 })}
             </div>
 
-            {displayActivities.length === 0 && (
+            {allActivities.length === 0 && (
                 <div className="text-center py-8">
                     <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400">
@@ -178,11 +139,17 @@ export function AdminRecentActivities({ activities }: AdminRecentActivitiesProps
                 </div>
             )}
 
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button className="w-full text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-                    View All Activities
-                </button>
-            </div>
+            {hasMore && (
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                        type="button"
+                        onClick={() => setShowAll((prev) => !prev)}
+                        className="w-full text-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
+                    >
+                        {showAll ? 'Show Less' : `View All Activities (${allActivities.length - INITIAL_SHOW_COUNT} more)`}
+                    </button>
+                </div>
+            )}
         </motion.div>
     )
 }
