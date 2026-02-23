@@ -14,10 +14,6 @@ interface PracticeFilterProps {
     onSearchChange: (value: string) => void
     selectedCategory: PracticeCategory
     onCategoryChange: (category: PracticeCategory) => void
-    selectedUniversities: string[]
-    onUniversitiesChange: (universities: string[]) => void
-    selectedBranches: string[]
-    onBranchesChange: (branches: string[]) => void
     onSearch: () => void
     onClearFilters: () => void
 }
@@ -66,10 +62,6 @@ export function PracticeFilter({
     onSearchChange,
     selectedCategory,
     onCategoryChange,
-    selectedUniversities,
-    onUniversitiesChange,
-    selectedBranches,
-    onBranchesChange,
     onSearch,
     onClearFilters
 }: PracticeFilterProps) {
@@ -186,8 +178,8 @@ export function PracticeFilter({
                                     </h4>
                                 </div>
                                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                                    Tests are automatically filtered based on your university ({profile?.institution || 'Not set'}) and branch ({profile?.branch || 'Not set'}). 
-                                    You'll only see tests that are relevant to your academic profile.
+                                    Practice tests use the same filtering as your job listings: by your university ({profile?.institution || 'Not set'}) and branch ({profile?.branch || 'Not set'}). 
+                                    You'll only see tests that match your academic profile.
                                 </p>
                             </div>
                         </div>

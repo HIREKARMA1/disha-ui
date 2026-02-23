@@ -27,8 +27,6 @@ export function PracticeDashboard() {
     const [examResult, setExamResult] = useState<SubmitAttemptResponse | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<PracticeCategory>('all')
-    const [selectedUniversities, setSelectedUniversities] = useState<string[]>([])
-    const [selectedBranches, setSelectedBranches] = useState<string[]>([])
     const [submittedModules, setSubmittedModules] = useState<Set<string>>(new Set())
     const [moduleResults, setModuleResults] = useState<Map<string, SubmitAttemptResponse>>(new Map())
     const [isClient, setIsClient] = useState(false)
@@ -325,10 +323,6 @@ export function PracticeDashboard() {
                 onSearchChange={setSearchTerm}
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
-                selectedUniversities={selectedUniversities}
-                onUniversitiesChange={setSelectedUniversities}
-                selectedBranches={selectedBranches}
-                onBranchesChange={setSelectedBranches}
                 onSearch={handleSearch}
                 onClearFilters={handleClearFilters}
             />
