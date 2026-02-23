@@ -55,7 +55,7 @@ const mockModules: PracticeModule[] = [
         description: 'Comprehensive developer assessment covering programming fundamentals, algorithms, and system design.',
         difficulty: 'medium',
         tags: ['programming', 'algorithms', 'system-design'],
-        category: 'ai-mock-tests'
+        category: 'aptitude-test'
     },
     {
         id: 'mod-apt-1',
@@ -68,7 +68,7 @@ const mockModules: PracticeModule[] = [
         description: 'Quick aptitude test covering logical reasoning, quantitative analysis, and verbal ability.',
         difficulty: 'easy',
         tags: ['aptitude', 'logical-reasoning', 'quantitative'],
-        category: 'ai-mock-tests'
+        category: 'aptitude-test'
     },
     {
         id: 'mod-coding-1',
@@ -81,7 +81,7 @@ const mockModules: PracticeModule[] = [
         description: 'Intensive coding challenge with complex algorithmic problems and system design questions.',
         difficulty: 'hard',
         tags: ['coding', 'algorithms', 'data-structures'],
-        category: 'coding-practice'
+        category: 'coding-test'
     },
     {
         id: 'mod-interview-1',
@@ -94,7 +94,7 @@ const mockModules: PracticeModule[] = [
         description: 'Practice technical interviews with AI-powered feedback and evaluation.',
         difficulty: 'medium',
         tags: ['interview', 'technical', 'ai-feedback'],
-        category: 'ai-mock-interviews'
+        category: 'aptitude-test'
     },
     {
         id: 'mod-challenge-1',
@@ -107,7 +107,7 @@ const mockModules: PracticeModule[] = [
         description: 'Weekly coding challenges to improve problem-solving skills.',
         difficulty: 'medium',
         tags: ['challenge', 'problem-solving', 'weekly'],
-        category: 'challenges-engagement'
+        category: 'coding-test'
     },
     {
         id: 'mod-interview-2',
@@ -120,7 +120,7 @@ const mockModules: PracticeModule[] = [
         description: 'Data science interview practice with AI evaluation.',
         difficulty: 'hard',
         tags: ['interview', 'data-science', 'ai-feedback'],
-        category: 'ai-mock-interviews'
+        category: 'aptitude-test'
     },
     {
         id: 'mod-coding-2',
@@ -133,7 +133,7 @@ const mockModules: PracticeModule[] = [
         description: 'Practice various algorithms and data structures.',
         difficulty: 'medium',
         tags: ['algorithms', 'data-structures', 'practice'],
-        category: 'coding-practice'
+        category: 'coding-test'
     },
     {
         id: 'mod-challenge-2',
@@ -146,7 +146,7 @@ const mockModules: PracticeModule[] = [
         description: 'Simulate hackathon environment with time-pressured challenges.',
         difficulty: 'hard',
         tags: ['hackathon', 'time-pressure', 'teamwork'],
-        category: 'challenges-engagement'
+        category: 'coding-test'
     }
 ]
 

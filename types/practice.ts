@@ -24,7 +24,7 @@ export interface Question {
   time_limit_seconds?: number
 }
 
-export type PracticeCategory = 'ai-mock-tests' | 'ai-mock-interviews' | 'coding-practice' | 'challenges-engagement'
+export type PracticeCategory = 'aptitude-test' | 'coding-test'
 
 export interface PracticeModule {
   id: string

@@ -451,7 +451,7 @@ export function AdminBulkUploader({ onComplete, onCancel, moduleId }: AdminBulkU
                         difficulty: question.difficulty || 'medium',
                         explanation: question.explanation || '',
                         role: 'Developer', // Default role
-                        category: 'ai-mock-tests' as any, // Default category
+                        category: 'aptitude-test' as any, // Default category
                         time_limit_seconds: 60, // Default time limit
                         tags: [] // Required tags property
                     }

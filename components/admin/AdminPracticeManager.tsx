@@ -111,20 +111,12 @@ const categories = [
         label: 'All Categories'
     },
     {
-        id: 'ai-mock-tests' as PracticeCategory,
-        label: 'AI-Powered Mock Tests'
+        id: 'aptitude-test' as PracticeCategory,
+        label: 'Aptitude Test'
     },
     {
-        id: 'ai-mock-interviews' as PracticeCategory,
-        label: 'AI-Powered Mock Interviews'
-    },
-    {
-        id: 'coding-practice' as PracticeCategory,
-        label: 'Coding Practice'
-    },
-    {
-        id: 'challenges-engagement' as PracticeCategory,
-        label: 'Challenges & Engagement'
+        id: 'coding-test' as PracticeCategory,
+        label: 'Coding Test'
     }
 ]
 
@@ -680,15 +672,11 @@ export function AdminPracticeManager() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${module.category === 'ai-mock-tests'
-                                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/20 dark:text-rose-400'
-                                                : module.category === 'ai-mock-interviews'
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                                    : module.category === 'coding-practice'
-                                                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
-                                                        : module.category === 'challenges-engagement'
-                                                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400'
-                                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${module.category === 'aptitude-test'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                : module.category === 'coding-test'
+                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                                                 }`}>
                                                 {module.category ? module.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General'}
                                             </span>
@@ -1084,7 +1072,7 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
         title: '',
         description: '',
         role: 'Developer',
-        category: 'ai-mock-tests' as PracticeCategory,
+        category: 'aptitude-test' as PracticeCategory,
         difficulty: 'medium' as 'easy' | 'medium' | 'hard',
         duration_seconds: 3600,
         tags: [] as string[],
@@ -1128,7 +1116,7 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                 title: module.title || '',
                 description: module.description || '',
                 role: module.role || 'Developer',
-                category: module.category || 'ai-mock-tests',
+                category: module.category || 'aptitude-test',
                 difficulty: module.difficulty || 'medium',
                 duration_seconds: module.duration_seconds || 3600,
                 tags: module.tags || [],
@@ -1337,19 +1325,6 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Role
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.role}
-                                    onChange={(e) => handleInputChange('role', e.target.value)}
-                                    placeholder="e.g., Developer, Designer"
-                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Category
                                 </label>
                                 <select
@@ -1357,10 +1332,8 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                                     onChange={(e) => handleInputChange('category', e.target.value)}
                                     className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 >
-                                    <option value="ai-mock-tests">AI-Powered Mock Tests</option>
-                                    <option value="ai-mock-interviews">AI-Powered Mock Interviews</option>
-                                    <option value="coding-practice">Coding Practice</option>
-                                    <option value="challenges-engagement">Challenges & Engagement</option>
+                                    <option value="aptitude-test">Aptitude Test</option>
+                                    <option value="coding-test">Coding Test</option>
                                 </select>
                             </div>
 

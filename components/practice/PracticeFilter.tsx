@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, X, Brain, MessageCircle, Code, Trophy, GraduationCap } from 'lucide-react'
+import { Search, Filter, X, Brain, Code } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useStudentProfile } from '@/hooks/useStudentProfile'
 
-export type PracticeCategory = 'all' | 'ai-mock-tests' | 'ai-mock-interviews' | 'coding-practice' | 'challenges-engagement'
+export type PracticeCategory = 'all' | 'aptitude-test' | 'coding-test'
 
 interface PracticeFilterProps {
     searchTerm: string
@@ -27,32 +27,18 @@ const categories = [
         color: 'from-blue-500 to-purple-600'
     },
     {
-        id: 'ai-mock-tests' as PracticeCategory,
-        label: 'AI-Powered Mock Tests',
+        id: 'aptitude-test' as PracticeCategory,
+        label: 'Aptitude Test',
         icon: Brain,
-        description: 'Comprehensive mock tests with AI evaluation',
-        color: 'from-rose-500 to-pink-600'
-    },
-    {
-        id: 'ai-mock-interviews' as PracticeCategory,
-        label: 'AI-Powered Mock Interviews',
-        icon: MessageCircle,
-        description: 'Practice interviews with AI feedback',
+        description: 'Aptitude and reasoning tests',
         color: 'from-green-500 to-teal-600'
     },
     {
-        id: 'coding-practice' as PracticeCategory,
-        label: 'Coding Practice',
+        id: 'coding-test' as PracticeCategory,
+        label: 'Coding Test',
         icon: Code,
         description: 'Programming challenges and coding exercises',
         color: 'from-orange-500 to-red-600'
-    },
-    {
-        id: 'challenges-engagement' as PracticeCategory,
-        label: 'Challenges & Engagement',
-        icon: Trophy,
-        description: 'Interactive challenges and engagement activities',
-        color: 'from-purple-500 to-indigo-600'
     }
 ]
 
