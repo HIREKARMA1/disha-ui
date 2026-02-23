@@ -60,39 +60,16 @@ export function ArchiveConfirmationModal({
                 transition={{ type: "spring", duration: 0.3 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${isArchiving
-                            ? 'bg-orange-100 dark:bg-orange-900/20'
-                            : 'bg-green-100 dark:bg-green-900/20'
-                            }`}>
-                            {isArchiving ? (
-                                <Archive className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                            ) : (
-                                <Eye className="w-5 h-5 text-green-600 dark:text-green-400" />
-                            )}
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {isArchiving ? 'Archive Student' : 'Unarchive Student'}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Confirm this action
-                            </p>
-                        </div>
-                    </div>
+                {/* Content */}
+                <div className="p-6 pt-12 relative">
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                        className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                         disabled={isLoading}
+                        aria-label="Close"
                     >
                         <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
                     <div className="flex items-start gap-4 mb-6">
                         <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex-shrink-0">
                             <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />

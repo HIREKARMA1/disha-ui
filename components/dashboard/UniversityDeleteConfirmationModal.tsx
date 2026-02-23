@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { AlertTriangle, Trash2, X } from 'lucide-react'
+import { Trash2, X } from 'lucide-react'
 
 interface UniversityDeleteConfirmationModalProps {
     isOpen: boolean
@@ -58,32 +58,16 @@ export function UniversityDeleteConfirmationModal({
                 transition={{ type: "spring", duration: 0.3 }}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/20">
-                            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Delete University
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                This action cannot be undone
-                            </p>
-                        </div>
-                    </div>
+                {/* Content */}
+                <div className="p-6 pt-12 relative">
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                        className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                         disabled={isDeleting}
+                        aria-label="Close"
                     >
                         <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </button>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
                     <div className="flex items-start gap-4 mb-6">
                         <div className="flex-1">
                             <p className="text-gray-900 dark:text-white mb-2">

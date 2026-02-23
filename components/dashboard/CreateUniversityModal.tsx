@@ -140,7 +140,7 @@ export function CreateUniversityModal({
 
     return createPortal(
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -150,24 +150,24 @@ export function CreateUniversityModal({
                     onClick={onClose}
                 />
 
-                {/* Modal */}
+                {/* Modal - responsive: full width on small screens with padding */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4"
+                    className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[calc(100%-2rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4 my-4 sm:my-0 flex flex-col"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-100 rounded-lg">
                                 <Building2 className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-semibold text-gray-900">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                                     {showSuccess ? 'University Created Successfully!' : 'Create New University'}
                                 </h2>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {showSuccess ? 'The university has been added to the system' : 'Add a new university to the platform'}
                                 </p>
                             </div>
@@ -180,14 +180,15 @@ export function CreateUniversityModal({
                         </button>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    {/* Content - scrollable body + fixed footer for buttons */}
+                    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                         {showSuccess ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-center py-8"
+                                className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6"
                             >
+                                <div className="text-center py-4">
                                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Building2 className="w-8 h-8 text-green-600" />
                                 </div>
@@ -214,7 +215,7 @@ export function CreateUniversityModal({
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 mt-6">
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -222,7 +223,7 @@ export function CreateUniversityModal({
                                             setCreatedUniversity(null)
                                             onClose()
                                         }}
-                                        className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                                        className="flex-1 min-w-0 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
                                     >
                                         Close
                                     </button>
@@ -232,14 +233,17 @@ export function CreateUniversityModal({
                                             setShowSuccess(false)
                                             setCreatedUniversity(null)
                                         }}
-                                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                                        className="flex-1 min-w-0 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
                                     >
                                         Add Another University
                                     </button>
                                 </div>
+                                </div>
                             </motion.div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                                {/* Scrollable form body */}
+                                <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
                                 {/* Error Message */}
                                 {error && (
                                     <motion.div
@@ -462,13 +466,14 @@ export function CreateUniversityModal({
                                         </div>
                                     </div>
                                 </div>
+                                </div>
 
-                                {/* Action Buttons */}
-                                <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+                                {/* Action Buttons - equal width, fixed at bottom */}
+                                <div className="flex items-center gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
                                     <button
                                         type="button"
                                         onClick={onClose}
-                                        className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                        className="flex-1 min-w-0 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                                         disabled={isSubmitting}
                                     >
                                         Cancel
@@ -476,7 +481,7 @@ export function CreateUniversityModal({
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="flex-1 min-w-0 px-4 py-2.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
                                         {isSubmitting ? (
                                             <>
@@ -485,8 +490,8 @@ export function CreateUniversityModal({
                                             </>
                                         ) : (
                                             <>
-                                                <Building2 className="w-4 h-4" />
-                                                Create University
+                                                <Building2 className="w-4 h-4 flex-shrink-0" />
+                                                <span>Create</span>
                                             </>
                                         )}
                                     </button>
