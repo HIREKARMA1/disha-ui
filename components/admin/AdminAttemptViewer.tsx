@@ -29,7 +29,8 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
 
     const filteredAttempts = attempts?.filter(attempt =>
         attempt.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attempt.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+        attempt.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (attempt.student_email || attempt.email)?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || []
 
     const formatTime = (seconds: number) => {
@@ -79,7 +80,7 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
         // CSV Headers - summary only, no individual questions
         const headers = [
             'Student Name',
-            'Student ID',
+            'Student Email',
             'Score (%)',
             'Time Taken',
             'Started At',
@@ -97,7 +98,7 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
 
             return [
                 attempt.student_name || 'N/A',
-                attempt.student_id || 'N/A',
+                (attempt.student_email || attempt.email) || 'N/A',
                 attempt.score_percent.toFixed(1),
                 formatTime(attempt.time_taken_seconds),
                 formatDate(attempt.started_at),
@@ -134,8 +135,8 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-                <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4">
+                <div className="flex min-h-screen items-center justify-center">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -150,18 +151,18 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+                        className="relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-full sm:max-w-6xl max-h-[calc(100vh-1rem)] sm:max-h-[90vh] overflow-hidden flex flex-col"
                     >
                         {selectedAttempt ? (
                             // Attempt Detail View
-                            <div className="p-6 overflow-y-auto max-h-[90vh]">
+                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 flex flex-col">
                                 {/* Header */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6 flex-shrink-0">
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                             Attempt Details
                                         </h2>
-                                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 break-words">
                                             {selectedAttempt.student_name} - {module.title}
                                         </p>
                                     </div>
@@ -169,62 +170,54 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                                         onClick={() => setSelectedAttempt(null)}
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0"
+                                        className="h-8 w-8 p-0 shrink-0"
                                     >
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
 
-                                {/* Summary Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                    <div className={`${getScoreBgColor(selectedAttempt.score_percent)} rounded-xl border border-gray-200 dark:border-gray-700 p-4`}>
+                                {/* Summary Cards - 2x2 on mobile, 4 cols on desktop */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6 flex-shrink-0">
+                                    <div className={`${getScoreBgColor(selectedAttempt.score_percent)} rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4`}>
                                         <div className="text-center">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                                Score
-                                            </p>
-                                            <p className={`text-2xl font-bold ${getScoreColor(selectedAttempt.score_percent)}`}>
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 sm:mb-2">Score</p>
+                                            <p className={`text-lg sm:text-2xl font-bold ${getScoreColor(selectedAttempt.score_percent)}`}>
                                                 {selectedAttempt.score_percent.toFixed(1)}%
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
                                         <div className="text-center">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                                Time Taken
-                                            </p>
-                                            <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 sm:mb-2">Time Taken</p>
+                                            <p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">
                                                 {formatTime(selectedAttempt.time_taken_seconds)}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
                                         <div className="text-center">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                                Started
-                                            </p>
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 sm:mb-2">Started</p>
+                                            <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white line-clamp-2">
                                                 {formatDate(selectedAttempt.started_at)}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
                                         <div className="text-center">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                                Completed
-                                            </p>
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 sm:mb-2">Completed</p>
+                                            <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white line-clamp-2">
                                                 {formatDate(selectedAttempt.ended_at)}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Question Results */}
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                                {/* Question Results - scrollable on small screens */}
+                                <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 flex-1 min-h-0 overflow-y-auto">
+                                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
                                         Question-by-Question Breakdown ({allQuestions?.length || 0} total questions)
                                     </h3>
                                     {questionsLoading ? (
@@ -313,26 +306,27 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                             </div>
                         ) : (
                             // Attempts List View
-                            <div className="p-6 overflow-y-auto max-h-[90vh]">
+                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 flex flex-col">
                                 {/* Header */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 flex-shrink-0">
+                                    <div className="min-w-0">
+                                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                             Student Attempts
                                         </h2>
-                                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
                                             {module.title}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-shrink-0">
                                         <Button
                                             onClick={handleExportCSV}
                                             variant="outline"
                                             size="sm"
                                             disabled={!attempts || attempts.length === 0}
+                                            className="w-full sm:w-auto"
                                         >
-                                            <Download className="h-4 w-4 mr-2" />
-                                            Export CSV
+                                            <Download className="h-4 w-4 mr-2 shrink-0" />
+                                            <span className="truncate">Export CSV</span>
                                         </Button>
                                         <Button
                                             onClick={onClose}
@@ -346,12 +340,12 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                                 </div>
 
                                 {/* Search */}
-                                <div className="mb-6">
+                                <div className="mb-4 sm:mb-6 flex-shrink-0">
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                         <input
                                             type="text"
-                                            placeholder="Search by student name or ID..."
+                                            placeholder="Search by student name or email..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -405,72 +399,118 @@ export function AdminAttemptViewer({ isOpen, onClose, module }: AdminAttemptView
                                                 </p>
                                             </div>
                                         ) : (
-                                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                                    <thead className="bg-gray-50 dark:bg-gray-700">
-                                                        <tr>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                Student
-                                                            </th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                Score
-                                                            </th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                Time
-                                                            </th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                Date
-                                                            </th>
-                                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                                Actions
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                                        {filteredAttempts.map((attempt, index) => (
-                                                            <tr
-                                                                key={index}
-                                                                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                                                                onClick={() => setSelectedAttempt(attempt)}
-                                                            >
-                                                                <td className="px-6 py-4">
-                                                                    <div>
-                                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                            {attempt.student_name || 'N/A'}
-                                                                        </div>
-                                                                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                                            {attempt.student_id || 'N/A'}
-                                                                        </div>
+                                            <>
+                                                {/* Card layout - prominent on small screens */}
+                                                <div className="md:hidden space-y-4 flex-1 min-h-0 overflow-y-auto">
+                                                    {filteredAttempts.map((attempt, index) => (
+                                                        <div
+                                                            key={index}
+                                                            onClick={() => setSelectedAttempt(attempt)}
+                                                            className="bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 p-4 cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-colors active:scale-[0.99]"
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="text-base font-semibold text-gray-900 dark:text-white truncate">
+                                                                        {attempt.student_name || 'N/A'}
+                                                                    </p>
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-0.5">
+                                                                        {(attempt.student_email || attempt.email) || 'N/A'}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                                                        <span>{formatTime(attempt.time_taken_seconds)}</span>
+                                                                        <span>•</span>
+                                                                        <span>{formatDate(attempt.ended_at)}</span>
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getScoreBgColor(attempt.score_percent)} ${getScoreColor(attempt.score_percent)}`}>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                                    <span className={`inline-flex px-3 py-1.5 text-sm font-bold rounded-lg ${getScoreBgColor(attempt.score_percent)} ${getScoreColor(attempt.score_percent)}`}>
                                                                         {attempt.score_percent.toFixed(1)}%
                                                                     </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                                                                    {formatTime(attempt.time_taken_seconds)}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                                                    {formatDate(attempt.ended_at)}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
                                                                     <Button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation()
                                                                             setSelectedAttempt(attempt)
                                                                         }}
-                                                                        variant="ghost"
+                                                                        variant="outline"
                                                                         size="sm"
+                                                                        className="h-9 w-9 p-0 shrink-0"
                                                                     >
                                                                         <Eye className="h-4 w-4" />
                                                                     </Button>
-                                                                </td>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Table layout - desktop */}
+                                                <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto flex-1 min-h-0">
+                                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                                        <thead className="bg-gray-50 dark:bg-gray-700">
+                                                            <tr>
+                                                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                                                    Student
+                                                                </th>
+                                                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                                                    Score
+                                                                </th>
+                                                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                                                    Time
+                                                                </th>
+                                                                <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                                                    Date
+                                                                </th>
+                                                                <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                                                                    Actions
+                                                                </th>
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                        </thead>
+                                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                                            {filteredAttempts.map((attempt, index) => (
+                                                                <tr
+                                                                    key={index}
+                                                                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                                                                    onClick={() => setSelectedAttempt(attempt)}
+                                                                >
+                                                                    <td className="px-4 lg:px-6 py-4">
+                                                                        <div>
+                                                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                                {attempt.student_name || 'N/A'}
+                                                                            </div>
+                                                                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                                                {(attempt.student_email || attempt.email) || 'N/A'}
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-4 lg:px-6 py-4">
+                                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getScoreBgColor(attempt.score_percent)} ${getScoreColor(attempt.score_percent)}`}>
+                                                                            {attempt.score_percent.toFixed(1)}%
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 lg:px-6 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                                                                        {formatTime(attempt.time_taken_seconds)}
+                                                                    </td>
+                                                                    <td className="px-4 lg:px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                                                        {formatDate(attempt.ended_at)}
+                                                                    </td>
+                                                                    <td className="px-4 lg:px-6 py-4 text-right">
+                                                                        <Button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                setSelectedAttempt(attempt)
+                                                                            }}
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                        >
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </>
                                         )}
                                     </>
                                 )}

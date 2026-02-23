@@ -149,6 +149,7 @@ export interface StudentAttempt {
   id: string
   student_id: string
   student_name: string
+  student_email?: string
   email?: string
   module_id: string
   module_title: string

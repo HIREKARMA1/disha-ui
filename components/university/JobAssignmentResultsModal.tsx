@@ -129,7 +129,7 @@ export function JobAssignmentResultsModal({ isOpen, onClose, job }: JobAssignmen
         // CSV Headers
         const headers = [
             'Student Name',
-            'Student ID',
+            'Student Email',
             'Score (%)',
             'Time Taken',
             'Started At',
@@ -145,7 +145,7 @@ export function JobAssignmentResultsModal({ isOpen, onClose, job }: JobAssignmen
             
             return [
                 attempt.student_name || 'N/A',
-                attempt.student_id || 'N/A',
+                (attempt.student_email || attempt.email) || 'N/A',
                 attempt.score_percent.toFixed(1),
                 formatTime(attempt.time_taken_seconds),
                 formatDate(attempt.started_at),
