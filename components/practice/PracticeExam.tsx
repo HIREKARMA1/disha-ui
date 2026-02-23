@@ -287,6 +287,8 @@ const fullscreenExamStyle = `
 }
 `
 
+const DESKTOP_MIN_WIDTH = 768 // px - show "use desktop" modal below this
+
 export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [questionResults, setQuestionResults] = useState<Record<string, {
@@ -299,6 +301,7 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
     const [isExitingFullscreen, setIsExitingFullscreen] = useState(false)
     const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false)
     const [isManualSubmit, setIsManualSubmit] = useState(false)
+    const [isSmallScreen, setIsSmallScreen] = useState(false)
 
     const { data: questions, isLoading } = usePracticeQuestions(module.id)
     const { session, updateAnswer, updateTimeSpent, toggleFlag, submitExam } = useExamSession(module.id)
@@ -308,6 +311,16 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
 
     const currentQuestion = questions?.[currentQuestionIndex]
     const totalQuestions = questions?.length || 0
+
+    // Check screen size - require desktop for exam
+    useEffect(() => {
+        const checkScreen = () => {
+            setIsSmallScreen(typeof window !== 'undefined' && window.innerWidth < DESKTOP_MIN_WIDTH)
+        }
+        checkScreen()
+        window.addEventListener('resize', checkScreen)
+        return () => window.removeEventListener('resize', checkScreen)
+    }, [])
 
     // Get question status for the dashboard
     const getQuestionStatus = useCallback((questionId: string) => {
@@ -678,6 +691,36 @@ export function PracticeExam({ module, onComplete, onBack }: PracticeExamProps) 
                 <p className="text-red-700 dark:text-red-300 mb-4">
                     This practice module doesn't have any questions yet.
                 </p>
+            </div>
+        )
+    }
+
+    // Show "use desktop" modal on small screens (phones, tablets)
+    if (isSmallScreen) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-900/50 dark:bg-gray-950/70 backdrop-blur-sm">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center"
+                >
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <Monitor className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                        Desktop Required
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        Please open this test on a desktop or laptop to give the exam. We recommend a larger screen for the best experience.
+                    </p>
+                    <Button
+                        onClick={onBack}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Go Back
+                    </Button>
+                </motion.div>
             </div>
         )
     }
