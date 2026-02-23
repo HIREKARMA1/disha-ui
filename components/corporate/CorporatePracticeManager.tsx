@@ -14,7 +14,6 @@ import {
     Clock,
     Target,
     Search,
-    Filter,
     ArrowLeft,
     X,
     Save,
@@ -22,6 +21,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CorporateQuestionEditor } from './CorporateQuestionEditor'
 import { CorporateBulkUploader } from './CorporateBulkUploader'
 import { CorporateAttemptViewer } from './CorporateAttemptViewer'
@@ -593,7 +593,7 @@ export function CorporatePracticeManager() {
             {currentView === 'modules' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1 relative">
+                        <div className="flex-1 min-w-0 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
                                 type="text"
@@ -604,30 +604,23 @@ export function CorporatePracticeManager() {
                                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
                             />
                         </div>
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value as PracticeCategory | 'all')}
-                                className="pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none min-w-[200px]"
-                            >
+                        <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as PracticeCategory | 'all')}>
+                            <SelectTrigger className="w-full sm:w-auto sm:min-w-[200px] pl-4 pr-8 py-2 h-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent position="popper" align="center" sideOffset={4} className="min-w-[var(--radix-select-trigger-width)]">
                                 {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
+                                    <SelectItem key={category.id} value={category.id}>
                                         {category.label}
-                                    </option>
+                                    </SelectItem>
                                 ))}
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                </svg>
-                            </div>
-                        </div>
+                            </SelectContent>
+                        </Select>
                         {(searchTerm || selectedCategory !== 'all') && (
                             <Button
                                 variant="outline"
                                 onClick={handleClearFilters}
-                                className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 shrink-0"
                             >
                                 <X className="w-4 h-4" />
                                 Clear
@@ -639,10 +632,10 @@ export function CorporatePracticeManager() {
 
             {/* Create Module Button - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="flex justify-end">
+                <div className="flex justify-center sm:justify-end">
                     <Button
                         onClick={handleCreateModule}
-                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2"
+                        className="w-full sm:w-auto bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Create New Module
@@ -846,8 +839,8 @@ export function CorporatePracticeManager() {
 
             {/* Create Module Modal */}
             {isMounted && isCreateModalOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-                    <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center overflow-y-auto bg-black/30 backdrop-blur-[2px] p-2 sm:p-4 py-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-full sm:max-w-6xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-2xl my-auto min-w-0">
                         <CreateModuleForm
                             onSave={(moduleData) => handleSaveModule(moduleData)}
                             onCancel={() => {
@@ -862,8 +855,8 @@ export function CorporatePracticeManager() {
 
             {/* Edit Module Modal */}
             {isMounted && isEditModalOpen && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-                    <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+                <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center overflow-y-auto bg-black/30 backdrop-blur-[2px] p-2 sm:p-4 py-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="relative w-full max-w-full sm:max-w-6xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-2xl my-auto min-w-0">
                         <CreateModuleForm
                             module={selectedModule}
                             onSave={(moduleData) => handleSaveModule(moduleData)}
@@ -1027,8 +1020,8 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
                         {filteredQuestions.map((question, index) => (
                             <div key={question.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className="inline-flex items-center justify-center w-8 h-8 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 rounded-full text-sm font-medium">
                                                 {index + 1}
@@ -1067,11 +1060,11 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 ml-4">
+                                    <div className="flex items-center gap-2 shrink-0 sm:ml-4">
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+                                            className="shrink-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-700"
                                             onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1086,7 +1079,7 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-700"
+                                            className="shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-700"
                                             onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
@@ -1255,9 +1248,9 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
     }
 
     return (
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-4 border border-primary-200 dark:border-primary-700 relative">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-3 sm:p-4 border border-primary-200 dark:border-primary-700 relative">
                 <button
                     onClick={onCancel}
                     className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -1266,7 +1259,7 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                     <X className="w-5 h-5" />
                 </button>
                 <div className="pr-10">
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                    <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1">
                         {module ? 'Edit Module 🧠' : 'Create New Module 🧠'}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-300 text-sm">
@@ -1277,9 +1270,9 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
 
             {/* Form */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2 space-y-4">
+                <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                     {/* Basic Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Basic Information
                         </h3>
@@ -1312,26 +1305,26 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                     </div>
 
                     {/* Tags */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Tags
                         </h3>
                         <div className="space-y-3">
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 min-w-0">
                                 <input
                                     type="text"
                                     value={newTag}
                                     onChange={(e) => setNewTag(e.target.value)}
                                     placeholder="Add a tag..."
-                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    className="flex-1 min-w-0 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                                 />
-                                <Button onClick={handleAddTag} variant="outline" size="sm">
+                                <Button onClick={handleAddTag} variant="outline" size="sm" className="shrink-0">
                                     <Plus className="w-4 h-4" />
                                 </Button>
                             </div>
                             {formData.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2 mt-3">
                                     {formData.tags.map((tag) => (
                                         <span
                                             key={tag}
@@ -1353,9 +1346,9 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                 </div>
 
                 {/* Sidebar */}
-                <div className="space-y-4">
+                <div className="space-y-4 sm:space-y-6">
                     {/* Module Properties */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Module Properties
                         </h3>
@@ -1473,7 +1466,7 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                     </div>
 
                     {/* Actions */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                         <div className="space-y-2">
                             <Button
                                 onClick={handleSave}
