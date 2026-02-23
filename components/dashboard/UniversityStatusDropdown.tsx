@@ -30,10 +30,20 @@ export function StatusDropdown({ universityId, currentStatus, onStatusChange }: 
         const updatePosition = () => {
             if (buttonRef.current) {
                 const rect = buttonRef.current.getBoundingClientRect()
-                // For fixed positioning, use viewport coordinates directly (no scroll offset needed)
+                const dropdownWidth = 160
+                const viewportWidth = window.innerWidth
+                const padding = 8
+                // Prevent overflow: keep dropdown within viewport
+                let left = rect.left
+                if (left + dropdownWidth > viewportWidth - padding) {
+                    left = viewportWidth - dropdownWidth - padding
+                }
+                if (left < padding) {
+                    left = padding
+                }
                 setDropdownPosition({
-                    top: rect.bottom + 4, // 4px gap below button
-                    left: rect.left
+                    top: rect.bottom + 4,
+                    left
                 })
             }
         }

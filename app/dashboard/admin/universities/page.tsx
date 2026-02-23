@@ -157,7 +157,7 @@ export default function AdminUniversities() {
 
     return (
         <AdminDashboardLayout>
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-visible">
                 {/* Header Section */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
@@ -216,7 +216,8 @@ export default function AdminUniversities() {
                     </motion.button>
                 </div>
 
-                {/* University Management Header (search, filters) */}
+                {/* University Management Header (search, filters) - z-20 + mb so dropdown doesn't overlap table */}
+                <div className="relative z-20 mb-2">
                 <UniversityManagementHeader
                     totalUniversities={universities.length}
                     activeUniversities={universities.filter(u => !u.is_archived).length}
@@ -228,8 +229,10 @@ export default function AdminUniversities() {
                     includeArchived={includeArchived}
                     onIncludeArchivedChange={setIncludeArchived}
                 />
+                </div>
 
-                {/* University Table */}
+                {/* University Table - z-0 so filter dropdown renders above, mt-4 adds gap to prevent overlap */}
+                <div className="relative z-0 mt-4">
                 <UniversityTable
                     universities={filteredUniversities}
                     isLoading={isLoading}
@@ -239,6 +242,7 @@ export default function AdminUniversities() {
                     onEditUniversity={handleEditUniversity}
                     onRetry={fetchUniversities}
                 />
+                </div>
 
                 {/* Modals */}
                 <CreateUniversityModal

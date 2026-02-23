@@ -552,7 +552,7 @@ export function UniversityTable({
                                     </td>
 
                                     {/* Status */}
-                                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap pr-4" onClick={(e) => e.stopPropagation()}>
                                         <StatusDropdown
                                             universityId={university.id}
                                             currentStatus={university.status}
@@ -561,8 +561,8 @@ export function UniversityTable({
                                     </td>
 
                                     {/* Actions */}
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end space-x-2">
+                                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium pl-4">
+                                        <div className="flex items-center justify-end gap-3 sm:gap-4">
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation()
