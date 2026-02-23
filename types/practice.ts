@@ -63,6 +63,9 @@ export interface PracticeModule {
   // Days remaining until expiration (calculated field)
   days_remaining?: number | null
 
+  // True when end_date has passed - module is no longer accessible
+  is_expired?: boolean
+
   // Timestamps
   created_at?: string
   updated_at?: string

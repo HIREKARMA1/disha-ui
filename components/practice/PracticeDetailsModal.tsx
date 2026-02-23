@@ -183,7 +183,7 @@ export function PracticeDetailsModal({
                                         <div>
                                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
                                             <p className="text-base font-bold text-orange-600 dark:text-orange-400">
-                                                {isSubmitted ? 'Completed' : 'Available'}
+                                                {isSubmitted ? 'Completed' : module.is_expired ? 'Expired' : 'Available'}
                                             </p>
                                         </div>
                                     </div>
@@ -191,6 +191,39 @@ export function PracticeDetailsModal({
 
                                 {/* Additional Info */}
                                 <div className="space-y-4 mb-6">
+                                    {(module.start_date || module.end_date) && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {module.start_date && (
+                                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Start Date</span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {new Date(module.start_date).toLocaleString(undefined, {
+                                                            dateStyle: 'medium',
+                                                            timeStyle: 'short'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {module.end_date && (
+                                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white">End Date</span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {new Date(module.end_date).toLocaleString(undefined, {
+                                                            dateStyle: 'medium',
+                                                            timeStyle: 'short'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {module.category && (
                                         <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                             <div className="flex items-center justify-between">
@@ -321,13 +354,19 @@ export function PracticeDetailsModal({
                                 ) : (
                                     <Button
                                         onClick={() => {
-                                            onStartPractice()
-                                            onClose()
+                                            if (!module.is_expired) {
+                                                onStartPractice()
+                                                onClose()
+                                            }
                                         }}
-                                        className="flex-1 py-3 text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                        disabled={module.is_expired}
+                                        className={module.is_expired
+                                            ? "flex-1 py-3 text-sm font-medium bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-75"
+                                            : "flex-1 py-3 text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                        }
                                     >
                                         <Play className="w-5 h-5 mr-2" />
-                                        Start Practice Test
+                                        {module.is_expired ? 'Test Expired' : 'Start Practice Test'}
                                     </Button>
                                 )}
                             </div>

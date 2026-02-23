@@ -17,6 +17,7 @@ interface PracticeModule {
     difficulty?: string
     category?: string
     questions_count: number
+    is_expired?: boolean
 }
 
 interface ViewAssignmentModalProps {
@@ -178,6 +179,11 @@ export function ViewAssignmentModal({ isOpen, onClose, jobId, jobTitle, isOnCamp
                                                                     {module.difficulty.charAt(0).toUpperCase() + module.difficulty.slice(1)}
                                                                 </span>
                                                             )}
+                                                            {module.is_expired && (
+                                                                <span className="px-2 py-1 rounded-full text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20">
+                                                                    Expired
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -185,11 +191,15 @@ export function ViewAssignmentModal({ isOpen, onClose, jobId, jobTitle, isOnCamp
                                                 {/* Submit Assignment Button */}
                                                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                                     <Button
-                                                        onClick={() => handleStartTest(module.id)}
-                                                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all"
+                                                        onClick={() => !module.is_expired && handleStartTest(module.id)}
+                                                        disabled={module.is_expired}
+                                                        className={module.is_expired
+                                                            ? "w-full bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-75"
+                                                            : "w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all"
+                                                        }
                                                     >
                                                         <Play className="w-4 h-4 mr-2" />
-                                                        Submit Assignment
+                                                        {module.is_expired ? 'Test Expired' : 'Submit Assignment'}
                                                     </Button>
                                                 </div>
                                             </motion.div>

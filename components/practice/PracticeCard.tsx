@@ -156,7 +156,10 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full min-w-0 overflow-hidden`}
+            className={cn(
+                `${cardColors.bg} rounded-xl border ${cardColors.border} transition-all duration-200 group flex flex-col h-full min-w-0 overflow-hidden`,
+                module.is_expired ? "opacity-85" : `${cardColors.hover} hover:shadow-md`
+            )}
         >
             {/* Header */}
             <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -224,23 +227,30 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <Brain className={`w-4 h-4 ${cardColors.accent}`} />
                         <span className="truncate">
-                            {isSubmitted ? 'Completed' : 'Available'}
+                            {isSubmitted ? 'Completed' : module.is_expired ? 'Expired' : 'Available'}
                         </span>
                     </div>
 
-                    {/* Days Remaining */}
-                    {module.days_remaining !== null && module.days_remaining !== undefined && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <Clock className={`w-4 h-4 ${cardColors.accent}`} />
-                            <span className="truncate">
-                                {module.days_remaining === 0
-                                    ? 'Expires Today'
-                                    : module.days_remaining === 1
-                                        ? '1 Day Left'
-                                        : `${module.days_remaining} Days Left`
+                    {/* Days Remaining / Expired */}
+                    {module.is_expired ? (
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                            <Clock className="w-4 h-4" />
+                            <span className="truncate font-medium">Expired</span>
+                        </div>
+                    ) : (
+                        module.days_remaining !== null && module.days_remaining !== undefined && (
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                <Clock className={`w-4 h-4 ${cardColors.accent}`} />
+                                <span className="truncate">
+                                    {module.days_remaining === 0
+                                        ? 'Expires Today'
+                                        : module.days_remaining === 1
+                                            ? '1 Day Left'
+                                            : `${module.days_remaining} Days Left`
                                 }
                             </span>
-                        </div>
+                            </div>
+                        )
                     )}
                 </div>
 
@@ -316,15 +326,21 @@ export function PracticeCard({ module, onStart, onViewResults, isSubmitted = fal
                         <span className="truncate">View Details</span>
                     </Button>
 
-                    {/* View Results / Start Practice button - Modified to only show "Start Practice" */}
+                    {/* View Results / Start Practice button - Modified to only show "Start Practice" (disabled when expired) */}
                     {!isSubmitted && (
                         <Button
-                            onClick={onStart}
+                            onClick={() => !module.is_expired && onStart()}
+                            disabled={module.is_expired}
                             size="sm"
-                            className="w-full sm:flex-1 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md bg-primary-500 hover:bg-primary-600 min-w-0"
+                            className={cn(
+                                "w-full sm:flex-1 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md min-w-0",
+                                module.is_expired
+                                    ? "opacity-60 cursor-not-allowed bg-gray-400 dark:bg-gray-600"
+                                    : "bg-primary-500 hover:bg-primary-600"
+                            )}
                         >
                             <Play className="w-4 h-4 shrink-0" />
-                            <span className="truncate">Start Practice</span>
+                            <span className="truncate">{module.is_expired ? 'Expired' : 'Start Practice'}</span>
                         </Button>
                     )}
                     {/* Original button with View Results - COMMENTED OUT */}

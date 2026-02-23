@@ -1189,11 +1189,6 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
             }
         }
 
-        if (formData.start_date && new Date(formData.start_date) < new Date()) {
-            toast.error('Start date cannot be in the past')
-            return
-        }
-
         // Convert university IDs to university names for better filtering
         const selectedUniversityNames = formData.university_ids.map(uniId => {
             const university = universities?.find(uni => uni.id === uniId)
