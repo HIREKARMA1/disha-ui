@@ -7,6 +7,25 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
+/** Parse YYYY-MM-DD as local date to avoid timezone offset bug (selecting 24th showing 23rd) */
+function parseDateAsLocal(dateStr: string): Date | null {
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (!match) return null
+    const year = parseInt(match[1], 10)
+    const month = parseInt(match[2], 10) - 1
+    const day = parseInt(match[3], 10)
+    const date = new Date(year, month, day)
+    return isNaN(date.getTime()) ? null : date
+}
+
+/** Format Date to YYYY-MM-DD using local time (avoids timezone offset when saving) */
+function formatDateAsLocal(date: Date): string {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+}
+
 interface DateTimePickerProps {
     value: string
     onChange: (value: string) => void
@@ -22,11 +41,11 @@ export function DateTimePicker({ value, onChange, placeholder = "Select date", c
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const containerRef = useRef<HTMLDivElement>(null)
 
-    // Parse initial value
+    // Parse initial value - use local date to avoid timezone offset (e.g. "2026-02-24" -> Feb 24 local, not UTC)
     useEffect(() => {
         if (value) {
-            const date = new Date(value)
-            if (!isNaN(date.getTime())) {
+            const date = parseDateAsLocal(value)
+            if (date) {
                 setSelectedDate(date)
                 setCurrentMonth(date)
             }
@@ -60,19 +79,12 @@ export function DateTimePicker({ value, onChange, placeholder = "Select date", c
     }
 
     const handleDateSelect = (date: Date) => {
-        console.log('📅 DateTimePicker: Date selected:', date)
-        console.log('📅 DateTimePicker: autoClose:', autoClose)
-
         setSelectedDate(date)
-        // Update the form field immediately
-        onChange(date.toISOString().split('T')[0]) // Format as YYYY-MM-DD
+        // Use local date format to avoid timezone offset (e.g. selecting 24th saving as 23rd)
+        onChange(formatDateAsLocal(date))
 
-        // Only close the modal if autoClose is enabled
         if (autoClose) {
-            console.log('📅 DateTimePicker: Closing modal due to autoClose=true')
             setIsOpen(false)
-        } else {
-            console.log('📅 DateTimePicker: Keeping modal open due to autoClose=false')
         }
     }
 
@@ -86,9 +98,8 @@ export function DateTimePicker({ value, onChange, placeholder = "Select date", c
         const today = new Date()
         setSelectedDate(today)
         setCurrentMonth(today)
-        onChange(today.toISOString().split('T')[0]) // Format as YYYY-MM-DD
+        onChange(formatDateAsLocal(today))
 
-        // Only close the modal if autoClose is enabled
         if (autoClose) {
             setIsOpen(false)
         }

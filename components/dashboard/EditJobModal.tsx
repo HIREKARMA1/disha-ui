@@ -213,6 +213,18 @@ const cleanJsonString = (str: string): string => {
     return cleaned
 }
 
+/** Parse date string to YYYY-MM-DD in local timezone (fixes calendar 1-day offset bug) */
+const toLocalDateString = (dateStr: string): string => {
+    if (!dateStr) return ''
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return ''
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+}
+
 // Helper function to parse education fields safely
 const parseEducationField = (field: string | string[]): string[] => {
     if (Array.isArray(field)) {
@@ -434,17 +446,17 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_degree: educationDegreeArray,
                 education_branch: educationBranchArray,
                 skills_required: job.skills_required || [],
-                application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
+                application_deadline: job.application_deadline ? toLocalDateString(job.application_deadline) : '',
                 industry: normalizedIndustry || (job.industry || ''),
                 selection_process: job.selection_process || '',
-                campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : '',
+                campus_drive_date: job.campus_drive_date ? toLocalDateString(job.campus_drive_date) : '',
                 status: job.status || 'active',
                 // Additional fields
                 number_of_openings: job.number_of_openings !== null && job.number_of_openings !== undefined ? job.number_of_openings.toString() : '',
                 perks_and_benefits: job.perks_and_benefits || '',
                 eligibility_criteria: job.eligibility_criteria || '',
                 service_agreement_details: job.service_agreement_details || '',
-                expiration_date: job.expiration_date ? new Date(job.expiration_date).toISOString().slice(0, 10) : '',
+                expiration_date: job.expiration_date ? toLocalDateString(job.expiration_date) : '',
                 ctc_with_probation: job.ctc_with_probation || '',
                 ctc_after_probation: job.ctc_after_probation || '',
                 // Company information fields (for university-created jobs)
