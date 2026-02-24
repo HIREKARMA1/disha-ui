@@ -70,9 +70,9 @@ export function CorporateDashboardStats({
 
     if (isLoading) {
         return (
-            <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full ${className}`}>
+            <div className={`grid grid-cols-1 min-[300px]:grid-cols-2 lg:grid-cols-4 gap-3 max-[299px]:gap-2 w-full items-stretch ${className}`}>
                 {[...Array(4)].map((_, index) => (
-                    <div key={index} className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse">
+                    <div key={index} className="min-h-[88px] p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse">
                         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
                         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
                     </div>
@@ -82,23 +82,23 @@ export function CorporateDashboardStats({
     }
 
     return (
-        <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full ${className}`}>
+        <div className={`grid grid-cols-1 min-[300px]:grid-cols-2 lg:grid-cols-4 gap-3 max-[299px]:gap-2 w-full items-stretch ${className}`}>
             {statCards.map((stat, index) => (
                 <motion.div
                     key={stat.label}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="w-full"
+                    className="w-full min-w-0 h-full"
                 >
-                    <div className="block group w-full">
-                        <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <div className="block group w-full h-full">
+                        <div className={`h-full min-h-[88px] p-3 max-[299px]:p-2.5 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full flex flex-col ${stat.bgColor}`}>
+                            <div className="flex items-center justify-between gap-2 flex-1">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 line-clamp-2 leading-tight">
                                         {stat.label}
                                     </p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
+                                    <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
                                         {isLoading ? (
                                             <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
                                         ) : (
@@ -106,8 +106,8 @@ export function CorporateDashboardStats({
                                         )}
                                     </p>
                                 </div>
-                                <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                                <div className={`p-2 max-[299px]:p-1.5 sm:p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200 flex-shrink-0`}>
+                                    <stat.icon className={`w-5 max-[299px]:w-4 sm:w-6 h-5 max-[299px]:h-4 sm:h-6 ${stat.color}`} />
                                 </div>
                             </div>
                         </div>

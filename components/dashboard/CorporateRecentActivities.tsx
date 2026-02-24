@@ -67,7 +67,7 @@ export function CorporateRecentActivities({ className = '' }: CorporateRecentAct
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}
+            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 max-[375px]:p-3 sm:p-6 relative ${className}`}
         >
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">

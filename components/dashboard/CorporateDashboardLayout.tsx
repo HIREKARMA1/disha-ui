@@ -63,11 +63,11 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className="p-6 pb-safe lg:pb-6 min-h-screen">
+                <main className="p-4 max-[375px]:p-3 sm:p-6 pb-safe lg:pb-6 min-h-screen">
                     {children ? (
                         children
                     ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-4 max-[375px]:space-y-4 sm:space-y-6">
                             {/* Loading State */}
                             {isLoading && (
                                 <div className="flex items-center justify-center py-12">
