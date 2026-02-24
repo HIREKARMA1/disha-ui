@@ -75,7 +75,7 @@ export function PracticeDetailsModal({
     const modalContent = (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 max-[375px]:p-2">
                     {/* Backdrop - No Blur */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -91,19 +91,19 @@ export function PracticeDetailsModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.3 }}
-                        className="relative w-full max-w-3xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden"
+                        className="relative w-full max-w-3xl max-h-[90vh] sm:max-h-[90vh] max-[375px]:max-h-[95vh] bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden mx-2 max-[375px]:mx-1"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="p-4 max-[375px]:p-3 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 max-[375px]:gap-2 mb-2">
+                                        <h2 className="text-xl max-[375px]:text-lg font-bold text-gray-900 dark:text-white break-words">
                                             {module.title}
                                         </h2>
                                         {module.difficulty && (
-                                            <span className={`px-3 py-1 text-sm font-medium rounded-full ${getDifficultyColor(module.difficulty)}`}>
+                                            <span className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded-full ${getDifficultyColor(module.difficulty)}`}>
                                                 {module.difficulty.charAt(0).toUpperCase() + module.difficulty.slice(1)}
                                             </span>
                                         )}
@@ -125,8 +125,8 @@ export function PracticeDetailsModal({
                         </div>
 
                         {/* Content */}
-                        <div className="max-h-[calc(90vh-250px)] overflow-y-auto">
-                            <div className="p-6">
+                        <div className="max-h-[calc(90vh-250px)] max-[375px]:max-h-[calc(95vh-220px)] overflow-y-auto">
+                            <div className="p-4 max-[375px]:p-3 sm:p-6">
                                 {/* Description */}
                                 <div className="mb-6">
                                     <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
@@ -138,9 +138,9 @@ export function PracticeDetailsModal({
                                     </p>
                                 </div>
 
-                                {/* Quick Stats */}
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                {/* Quick Stats - Stack vertically on screens < 375px */}
+                                <div className="grid grid-cols-1 min-[376px]:grid-cols-2 gap-3 max-[375px]:gap-2 mb-6">
+                                    <div className="flex items-center gap-3 p-3 max-[375px]:p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                         <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
                                             <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                         </div>
@@ -152,7 +152,7 @@ export function PracticeDetailsModal({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                    <div className="flex items-center gap-3 p-3 max-[375px]:p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                         <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
                                             <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
                                         </div>
@@ -164,7 +164,7 @@ export function PracticeDetailsModal({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    <div className="flex items-center gap-3 p-3 max-[375px]:p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                                         <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
                                             <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                         </div>
@@ -176,7 +176,7 @@ export function PracticeDetailsModal({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                                    <div className="flex items-center gap-3 p-3 max-[375px]:p-3 sm:p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                                         <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg">
                                             <Brain className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                                         </div>
@@ -192,9 +192,9 @@ export function PracticeDetailsModal({
                                 {/* Additional Info */}
                                 <div className="space-y-4 mb-6">
                                     {(module.start_date || module.end_date) && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 min-[376px]:grid-cols-2 gap-3 max-[375px]:gap-2">
                                             {module.start_date && (
-                                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                <div className="p-3 max-[375px]:p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                                         <span className="text-sm font-semibold text-gray-900 dark:text-white">Start Date</span>
@@ -208,7 +208,7 @@ export function PracticeDetailsModal({
                                                 </div>
                                             )}
                                             {module.end_date && (
-                                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                <div className="p-3 max-[375px]:p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                                         <span className="text-sm font-semibold text-gray-900 dark:text-white">End Date</span>
@@ -225,7 +225,7 @@ export function PracticeDetailsModal({
                                     )}
 
                                     {module.category && (
-                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                        <div className="p-3 max-[375px]:p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-semibold text-gray-900 dark:text-white">Category:</span>
                                                 <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
@@ -291,7 +291,7 @@ export function PracticeDetailsModal({
                                 )} */}
 
                                 {/* Instructions */}
-                                <div className="p-5 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                                <div className="p-4 max-[375px]:p-3 sm:p-5 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg border border-blue-200 dark:border-blue-700">
                                     <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
                                         <Target className="w-4 h-4" />
                                         Test Instructions
@@ -319,12 +319,12 @@ export function PracticeDetailsModal({
                         </div>
 
                         {/* Footer */}
-                        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                            <div className="flex gap-3">
+                        <div className="p-4 max-[375px]:p-3 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                            <div className="flex flex-col min-[376px]:flex-row gap-3 max-[375px]:gap-2">
                                 <Button
                                     onClick={onClose}
                                     variant="outline"
-                                    className="flex-1 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                                    className="w-full min-[376px]:flex-1 py-3 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
                                 >
                                     Close
                                 </Button>
@@ -361,8 +361,8 @@ export function PracticeDetailsModal({
                                         }}
                                         disabled={module.is_expired}
                                         className={module.is_expired
-                                            ? "flex-1 py-3 text-sm font-medium bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-75"
-                                            : "flex-1 py-3 text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                            ? "w-full min-[376px]:flex-1 py-3 text-sm font-medium bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-75"
+                                            : "w-full min-[376px]:flex-1 py-3 text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                                         }
                                     >
                                         <Play className="w-5 h-5 mr-2" />
