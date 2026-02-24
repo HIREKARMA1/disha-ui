@@ -77,9 +77,9 @@ body.hide-sidebar .main-navbar {
     overflow-y: scroll; /* Always show vertical scrollbar */
   }
   
-  /* Ensure dropdowns don't cause layout shifts */
+  /* Ensure dropdowns don't cause layout shifts - must be above modals */
   [data-radix-popper-content-wrapper] {
-    z-index: 60 !important;
+    z-index: 99999 !important;
   }
   
   /* Prevent layout shifts from dropdowns */
@@ -87,10 +87,10 @@ body.hide-sidebar .main-navbar {
     overflow-x: hidden; /* Prevent horizontal scrollbar */
   }
   
-  /* Fix for Radix UI Select components */
+  /* Fix for Radix UI Select components - must be above modals */
   [data-radix-select-content] {
     position: fixed !important;
-    z-index: 60 !important;
+    z-index: 99999 !important;
   }
   
   /* Ensure consistent layout */
@@ -119,7 +119,7 @@ body.hide-sidebar .main-navbar {
   /* Prevent dropdowns from affecting layout */
   [data-radix-select-content] {
     position: fixed !important;
-    z-index: 60 !important;
+    z-index: 99999 !important;
     transform: translateZ(0); /* Force hardware acceleration */
   }
   

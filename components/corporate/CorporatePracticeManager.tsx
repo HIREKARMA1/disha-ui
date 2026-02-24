@@ -50,7 +50,7 @@ import { LoadingSkeleton, TableSkeleton, CardSkeleton, StatsSkeleton } from '@/c
 // Helper function to parse options from various formats
 const parseQuestionOptions = (options: any): Array<{ id: string; text: string }> => {
     if (!options) return []
-    
+
     if (Array.isArray(options)) {
         return options.map((opt: any, index: number) => {
             if (opt && typeof opt === 'object' && (opt.id !== undefined || opt.text !== undefined)) {
@@ -66,7 +66,7 @@ const parseQuestionOptions = (options: any): Array<{ id: string; text: string }>
             }
         })
     }
-    
+
     if (typeof options === 'string') {
         try {
             const parsed = JSON.parse(options)
@@ -93,7 +93,7 @@ const parseQuestionOptions = (options: any): Array<{ id: string; text: string }>
             }))
         }
     }
-    
+
     return []
 }
 
@@ -140,7 +140,7 @@ export function CorporatePracticeManager() {
         isOpen: false,
         title: '',
         message: '',
-        onConfirm: () => {},
+        onConfirm: () => { },
         variant: 'danger'
     })
 
@@ -177,7 +177,7 @@ export function CorporatePracticeManager() {
         const urlParams = new URLSearchParams(window.location.search)
         const moduleId = urlParams.get('moduleId')
         const viewParam = urlParams.get('view')
-        
+
         if (moduleId && modules) {
             const module = modules.find(m => m.id === moduleId)
             if (module) {
@@ -197,7 +197,7 @@ export function CorporatePracticeManager() {
         const handlePopState = () => {
             const urlParams = new URLSearchParams(window.location.search)
             const moduleId = urlParams.get('moduleId')
-            
+
             if (!moduleId) {
                 // User navigated back to modules list
                 setCurrentView('modules')
@@ -375,10 +375,10 @@ export function CorporatePracticeManager() {
             onConfirm: async () => {
                 try {
                     console.log('🗑️ Confirming deletion of question:', question.id)
-                    
+
                     // Immediately hide the question from UI (optimistic update)
                     setDeletedQuestionIds(prev => new Set(Array.from(prev).concat(question.id)))
-                    
+
                     // First try to remove the question from the current module if we're in module detail view
                     if (selectedModule) {
                         console.log('🔄 Removing question from module:', selectedModule.id)
@@ -389,19 +389,19 @@ export function CorporatePracticeManager() {
                             console.warn('⚠️ Failed to remove from module, continuing with delete:', removeError)
                         }
                     }
-                    
+
                     // Then delete the question entirely
                     console.log('🔄 Deleting question entirely:', question.id)
                     await deleteQuestionMutation.mutateAsync(question.id)
                     console.log('✅ Question deleted successfully')
-                    
+
                     setConfirmationModal(prev => ({ ...prev, isOpen: false }))
-                    
+
                     // Call success callback if provided
                     if (onSuccess) {
                         onSuccess()
                     }
-                    
+
                     // Refresh questions list if we're in module detail view
                     if (currentView === 'module-detail' && selectedModule) {
                         // Trigger a re-render by updating a state that will cause the questions to refetch
@@ -416,7 +416,7 @@ export function CorporatePracticeManager() {
                         newSet.delete(question.id)
                         return newSet
                     })
-                    
+
                     // Call error callback if provided
                     if (onError) {
                         onError(error)
@@ -440,7 +440,7 @@ export function CorporatePracticeManager() {
                     refreshTrigger={refreshTrigger}
                     deletedQuestionIds={deletedQuestionIds}
                 />
-                
+
                 {/* Create/Edit Question Modal */}
                 {isMounted && isQuestionModalOpen && createPortal(
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
@@ -518,66 +518,66 @@ export function CorporatePracticeManager() {
             {/* Stats Cards - Only show on main modules view */}
             {currentView === 'modules' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                    {
-                        label: 'Total Modules',
-                        value: filteredModules.length.toString(),
-                        icon: Brain,
-                        color: 'text-blue-600',
-                        bgColor: 'bg-blue-50 dark:bg-blue-900/20'
-                    },
-                    {
-                        label: 'Total Questions',
-                        value: filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
-                        icon: Target,
-                        color: 'text-green-600',
-                        bgColor: 'bg-green-50 dark:bg-green-900/20'
-                    },
-                    {
-                        label: 'Active Modules',
-                        value: filteredModules.length.toString(),
-                        icon: Users,
-                        color: 'text-purple-600',
-                        bgColor: 'bg-purple-50 dark:bg-purple-900/20'
-                    },
-                    // {
-                    //     label: 'Total Attempts',
-                    //     value: '1,247',
-                    //     icon: Clock,
-                    //     color: 'text-orange-600',
-                    //     bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-                    // }
-                ].map((stat, index) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="w-full"
-                    >
-                        <div className="block group w-full">
-                            <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                            {stat.label}
-                                        </p>
-                                        <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                            {modulesLoading ? (
-                                                <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
-                                            ) : (
-                                                stat.value
-                                            )}
+                    {[
+                        {
+                            label: 'Total Modules',
+                            value: filteredModules.length.toString(),
+                            icon: Brain,
+                            color: 'text-blue-600',
+                            bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+                        },
+                        {
+                            label: 'Total Questions',
+                            value: filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
+                            icon: Target,
+                            color: 'text-green-600',
+                            bgColor: 'bg-green-50 dark:bg-green-900/20'
+                        },
+                        {
+                            label: 'Active Modules',
+                            value: filteredModules.length.toString(),
+                            icon: Users,
+                            color: 'text-purple-600',
+                            bgColor: 'bg-purple-50 dark:bg-purple-900/20'
+                        },
+                        // {
+                        //     label: 'Total Attempts',
+                        //     value: '1,247',
+                        //     icon: Clock,
+                        //     color: 'text-orange-600',
+                        //     bgColor: 'bg-orange-50 dark:bg-orange-900/20'
+                        // }
+                    ].map((stat, index) => (
+                        <motion.div
+                            key={stat.label}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: index * 0.1 }}
+                            className="w-full"
+                        >
+                            <div className="block group w-full">
+                                <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                                {stat.label}
+                                            </p>
+                                            <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
+                                                {modulesLoading ? (
+                                                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
+                                                ) : (
+                                                    stat.value
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                                        <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
+                                            <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
-                ))}
+                        </motion.div>
+                    ))}
                 </div>
             )}
 
@@ -966,11 +966,11 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
             {/* Questions List */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                            Questions ({filteredQuestions?.length || 0})
-                        </h2>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Questions ({filteredQuestions?.length || 0})
+                    </h2>
                 </div>
-                
+
                 {/* Question Action Buttons */}
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -1340,29 +1340,37 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Category
                                 </label>
-                                <select
+                                <Select
                                     value={formData.category}
-                                    onChange={(e) => handleInputChange('category', e.target.value)}
-                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    onValueChange={(value) => handleInputChange('category', value)}
                                 >
-                                    <option value="aptitude-test">Aptitude Test</option>
-                                    <option value="coding-test">Coding Test</option>
-                                </select>
+                                    <SelectTrigger className="w-full p-2.5 h-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999] min-w-[var(--radix-select-trigger-width)]">
+                                        <SelectItem value="aptitude-test">Aptitude Test</SelectItem>
+                                        <SelectItem value="coding-test">Coding Test</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Difficulty
                                 </label>
-                                <select
+                                <Select
                                     value={formData.difficulty}
-                                    onChange={(e) => handleInputChange('difficulty', e.target.value)}
-                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    onValueChange={(value) => handleInputChange('difficulty', value)}
                                 >
-                                    <option value="easy">Easy</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="hard">Hard</option>
-                                </select>
+                                    <SelectTrigger className="w-full p-2.5 h-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                        <SelectValue placeholder="Select difficulty" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999] min-w-[var(--radix-select-trigger-width)]">
+                                        <SelectItem value="easy">Easy</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="hard">Hard</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div>
