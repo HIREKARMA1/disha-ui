@@ -142,7 +142,7 @@ export function CorporateProfile() {
 
             setProfile(updatedProfile)
             setEditing(null)
-            
+
             // Show success toast with section name
             const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
             toast.success(`${sectionName} updated successfully!`)
@@ -300,50 +300,74 @@ export function CorporateProfile() {
                                     {/* Profile Stats - Stack on <300px like StudentProfile */}
                                     <div className="flex-1 w-full min-w-0">
                                         <div className="grid grid-cols-1 min-[300px]:grid-cols-2 lg:grid-cols-4 gap-3 max-[299px]:gap-2 lg:gap-4 mb-4 lg:mb-6">
+                                            {/* Email Badge - green if email exists */}
                                             <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Email</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Email</span>
+                                                    <span className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                        {profile.email_verified ? 'Verified' : 'Unverified'}
+                                                    </span>
+                                                </div>
                                                 {profile.email_verified ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
+                                                    <div className="p-1.5 bg-green-500 rounded-full flex-shrink-0">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                    <div className="p-1.5 bg-yellow-500 rounded-full flex-shrink-0">
                                                         <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 )}
                                             </div>
+                                            {/* Phone Badge - green if phone number is filled */}
                                             <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Phone</span>
-                                                {profile.phone_verified ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Phone</span>
+                                                    <span className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                        {profile.phone ? 'Added' : 'Not added'}
+                                                    </span>
+                                                </div>
+                                                {profile.phone ? (
+                                                    <div className="p-1.5 bg-green-500 rounded-full flex-shrink-0">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                    <div className="p-1.5 bg-yellow-500 rounded-full flex-shrink-0">
                                                         <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 )}
                                             </div>
+                                            {/* Logo Badge - green if logo is uploaded */}
                                             <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Logo</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Logo</span>
+                                                    <span className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                        {profile.company_logo ? 'Uploaded' : 'Not uploaded'}
+                                                    </span>
+                                                </div>
                                                 {profile.company_logo ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
+                                                    <div className="p-1.5 bg-green-500 rounded-full flex-shrink-0">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                    <div className="p-1.5 bg-yellow-500 rounded-full flex-shrink-0">
                                                         <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 )}
                                             </div>
+                                            {/* Verified Badge - set by admin */}
                                             <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Verified</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Verified</span>
+                                                    <span className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                        {profile.verified ? 'Approved' : 'Pending admin'}
+                                                    </span>
+                                                </div>
                                                 {profile.verified ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
+                                                    <div className="p-1.5 bg-green-500 rounded-full flex-shrink-0">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                    <div className="p-1.5 bg-yellow-500 rounded-full flex-shrink-0">
                                                         <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                                                     </div>
                                                 )}
@@ -618,17 +642,17 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         // Validation errors array
         const validationErrors: string[] = []
         let hasValidationErrors = false
-        
+
         // Validate phone number if provided
         if (formData.phone && formData.phone.length !== 10) {
             validationErrors.push('Phone number must be exactly 10 digits')
             hasValidationErrors = true
         }
-        
+
         // Validate name field if provided
         if (formData.name && formData.name.trim().length < 2) {
             validationErrors.push('Name must be at least 2 characters long')
@@ -670,13 +694,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
         }
-        
+
         // Validate company name if provided (for company section)
         if (formData.company_name && formData.company_name.trim().length < 2) {
             validationErrors.push('Company name must be at least 2 characters long')
             hasValidationErrors = true
         }
-        
+
         // Validate website URL if provided
         if (formData.website_url && formData.website_url.trim()) {
             const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
@@ -685,13 +709,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
         }
-        
+
         // Validate founded year if provided
         if (formData.founded_year && (formData.founded_year < 1800 || formData.founded_year > new Date().getFullYear())) {
             validationErrors.push(`Founded year must be between 1800 and ${new Date().getFullYear()}`)
             hasValidationErrors = true
         }
-        
+
         // If there are validation errors, show toast and return
         if (hasValidationErrors) {
             if (validationErrors.length > 0) {
@@ -703,7 +727,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
             return
         }
-        
+
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
             if (cleanedFormData[key] === '') {
@@ -738,18 +762,18 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             setFormData({ ...formData, [field]: fileUrl })
             setUploadSuccess(field)
             setUploadError(null)
-            
+
             // Show success toast
             const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
             toast.success(`${fieldName} uploaded successfully!`)
-            
+
             setTimeout(() => setUploadSuccess(null), 3000)
         } catch (error) {
             console.error('File upload error:', error)
             const errorMessage = error instanceof Error ? error.message : 'Upload failed'
             setUploadError(errorMessage)
             setUploadSuccess(null)
-            
+
             // Show error toast
             const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
             toast.error(`Failed to upload ${fieldName}: ${errorMessage}`)
@@ -761,7 +785,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const handleFileRemove = (field: string) => {
         setFormData({ ...formData, [field]: '' })
         setUploadError(null)
-        
+
         // Show info toast
         const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
         toast.success(`${fieldName} removed successfully!`)
@@ -1003,7 +1027,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         // Handle specific field labels
         let fieldLabel = field.replace(/_/g, ' ')
         let placeholder = `Enter your ${field.replace(/_/g, ' ')}`
-        
+
         if (field === 'name') {
             fieldLabel = 'Company Name'
             placeholder = 'Enter company name'
@@ -1055,7 +1079,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 {section.fields.map((field) => {
                     // Handle specific field labels
                     let fieldLabel = field.replace(/_/g, ' ')
-                    
+
                     if (field === 'name') {
                         fieldLabel = 'Company Name'
                     } else if (field === 'contact_person') {
@@ -1065,7 +1089,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     } else if (field === 'address') {
                         fieldLabel = 'Email Address'
                     }
-                    
+
                     return (
                         <div key={field} className={field.includes('bio') || field.includes('description') ? 'md:col-span-2' : ''}>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
