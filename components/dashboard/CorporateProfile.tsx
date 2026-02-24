@@ -230,24 +230,24 @@ export function CorporateProfile() {
     return (
         <CorporateDashboardLayout>
             <div className="w-full">
-                {/* Header - Consistent with other sections */}
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                {/* Header - Consistent with StudentProfile responsive patterns */}
+                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-primary-200 dark:border-primary-700 mb-4 lg:mb-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4 lg:gap-6">
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
                                 Company Profile 🏢
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                            <p className="text-gray-600 dark:text-gray-300 text-base lg:text-lg mb-3 leading-snug">
                                 Manage your company information and business details ✨
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 lg:min-h-0 min-h-[28px]">
                                     📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                                 </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 lg:min-h-0 min-h-[28px]">
                                     📈 Business Growth
                                 </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 lg:min-h-0 min-h-[28px]">
                                     🚀 Talent Acquisition
                                 </span>
                             </div>
@@ -256,14 +256,14 @@ export function CorporateProfile() {
                 </div>
 
                 {/* Profile Content */}
-                <div className="space-y-6">
+                <div className="space-y-4 lg:space-y-6">
                     <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
                         {/* Top Horizontal Section - Profile Overview */}
                         <div className="xl:col-span-4">
-                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
-                                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
+                                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-6">
                                     {/* Profile Avatar & Info */}
-                                    <div className="text-center lg:text-left">
+                                    <div className="text-center lg:text-left flex-shrink-0">
                                         <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto lg:mx-0 mb-4 relative">
                                             <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                                                 {profile.company_logo ? (
@@ -273,35 +273,35 @@ export function CorporateProfile() {
                                                         className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover"
                                                     />
                                                 ) : (
-                                                    <span className="text-xl lg:text-2xl font-bold text-white">
+                                                    <span className="text-xl sm:text-2xl font-bold text-white">
                                                         {getInitials(profile.company_name)}
                                                     </span>
                                                 )}
                                             </div>
                                             <button
-                                                className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
+                                                className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110 touch-manipulation"
                                                 onClick={() => setEditing('basic')}
                                                 title="Change profile picture"
                                             >
-                                                <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                                                <Camera className="w-3 h-3" />
                                             </button>
                                         </div>
-                                        <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                                        <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1 leading-tight">
                                             {profile.company_name}
                                         </h3>
-                                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-snug">
                                             {profile.industry || 'Company'}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 leading-snug">
                                             {profile.company_size} • {profile.company_type}
                                         </p>
                                     </div>
 
-                                    {/* Profile Stats */}
-                                    <div className="flex-1">
-                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
+                                    {/* Profile Stats - Stack on <300px like StudentProfile */}
+                                    <div className="flex-1 w-full min-w-0">
+                                        <div className="grid grid-cols-1 min-[300px]:grid-cols-2 lg:grid-cols-4 gap-3 max-[299px]:gap-2 lg:gap-4 mb-4 lg:mb-6">
+                                            <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Email</span>
                                                 {profile.email_verified ? (
                                                     <div className="p-1.5 bg-green-500 rounded-full">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -312,8 +312,8 @@ export function CorporateProfile() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
+                                            <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Phone</span>
                                                 {profile.phone_verified ? (
                                                     <div className="p-1.5 bg-green-500 rounded-full">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -324,8 +324,8 @@ export function CorporateProfile() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Logo</span>
+                                            <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Logo</span>
                                                 {profile.company_logo ? (
                                                     <div className="p-1.5 bg-green-500 rounded-full">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -336,8 +336,8 @@ export function CorporateProfile() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Verified</span>
+                                            <div className="flex items-center justify-between p-3 max-[299px]:p-2.5 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm min-h-[44px] lg:min-h-0">
+                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium">Verified</span>
                                                 {profile.verified ? (
                                                     <div className="p-1.5 bg-green-500 rounded-full">
                                                         <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
@@ -356,22 +356,22 @@ export function CorporateProfile() {
 
                         {/* Tab-based Profile Sections */}
                         <div className="xl:col-span-4">
-                            {/* Tab Navigation */}
-                            <div className="mb-6">
+                            {/* Tab Navigation - compact on small screens like StudentProfile */}
+                            <div className="mb-4 lg:mb-6">
                                 <div className="border-b border-gray-200 dark:border-gray-700">
-                                    <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                                    <nav className="-mb-px flex gap-2 lg:gap-6 overflow-x-auto pb-px min-w-0 lg:overflow-visible">
                                         {tabs.map((tab) => (
                                             <button
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
                                                 className={cn(
-                                                    "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
+                                                    "flex items-center space-x-2 py-2.5 lg:py-3 px-1 border-b-2 font-bold text-sm lg:text-base whitespace-nowrap transition-colors duration-200 flex-shrink-0",
                                                     activeTab === tab.id
                                                         ? "border-blue-500 text-blue-600 dark:text-blue-400"
                                                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                                                 )}
                                             >
-                                                <tab.icon className="w-4 h-4" />
+                                                <tab.icon className="w-4 h-4 flex-shrink-0" />
                                                 <span>{tab.label}</span>
                                             </button>
                                         ))}
@@ -379,25 +379,25 @@ export function CorporateProfile() {
                                 </div>
                             </div>
 
-                            {/* Tab Content */}
-                            <div className="min-h-[600px]">
+                            {/* Tab Content - responsive min-height like StudentProfile */}
+                            <div className="min-h-[400px] lg:min-h-[600px]">
                                 {activeTab === 'basic' && (
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                            <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0">
+                                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                     <Building2 className="w-6 h-6 text-white" />
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Company details and contact information</p>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Company details and contact information</p>
                                                 </div>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setEditing('basic')}
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                className="self-center lg:self-center text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                             >
                                                 <ChevronRight className="w-3 h-3 mr-1" />
                                                 Edit
@@ -414,7 +414,7 @@ export function CorporateProfile() {
                                             />
                                         ) : (
                                             <div className="space-y-4">
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                     <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                         Company Name
                                                     </div>
@@ -423,7 +423,7 @@ export function CorporateProfile() {
                                                     </div>
                                                 </div>
 
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                     <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                         Contact Information
                                                     </div>
@@ -435,7 +435,7 @@ export function CorporateProfile() {
                                                     </div>
                                                 </div>
                                                 {(profile.contact_person || profile.contact_designation) && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                         <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                             Contact Person Details
                                                         </div>
@@ -453,7 +453,7 @@ export function CorporateProfile() {
                                                 )}
 
                                                 {profile.bio && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                         <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                             Bio
                                                         </div>
@@ -468,22 +468,22 @@ export function CorporateProfile() {
                                 )}
 
                                 {activeTab === 'company' && (
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 lg:hover:-translate-y-1">
+                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4 lg:mb-6">
+                                            <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left gap-2 lg:gap-3 min-w-0">
+                                                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                                                     <Building2 className="w-6 h-6 text-white" />
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Company Information</h3>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Business details and company profile</p>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-base lg:text-xl font-semibold text-gray-900 dark:text-white">Company Information</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Business details and company profile</p>
                                                 </div>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setEditing('company')}
-                                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
+                                                className="self-center lg:self-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200 flex-shrink-0"
                                             >
                                                 <ChevronRight className="w-3 h-3 mr-1" />
                                                 Edit
@@ -500,7 +500,7 @@ export function CorporateProfile() {
                                             />
                                         ) : (
                                             <div className="space-y-4">
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                     <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                         Industry & Size
                                                     </div>
@@ -510,7 +510,7 @@ export function CorporateProfile() {
                                                 </div>
 
                                                 {profile.company_type && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                         <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                             Company Type
                                                         </div>
@@ -521,7 +521,7 @@ export function CorporateProfile() {
                                                 )}
 
                                                 {profile.founded_year && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                         <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                             Founded Year
                                                         </div>
@@ -532,7 +532,7 @@ export function CorporateProfile() {
                                                 )}
 
                                                 {profile.website_url && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                         <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                             Website
                                                         </div>
@@ -551,7 +551,7 @@ export function CorporateProfile() {
                                                 )}
 
                                                 {profile.description && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="p-3 lg:p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                         <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                             Description
                                                         </div>
@@ -1051,7 +1051,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                 {section.fields.map((field) => {
                     // Handle specific field labels
                     let fieldLabel = field.replace(/_/g, ' ')
@@ -1077,7 +1077,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 })}
             </div>
 
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <Button
                     type="button"
                     variant="outline"
