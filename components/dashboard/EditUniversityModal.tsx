@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, GraduationCap, AlertCircle, Edit } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UpdateUniversityRequest, UniversityProfile } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
 
@@ -34,6 +35,10 @@ export function EditUniversityModal({
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [selectPortalContainer, setSelectPortalContainer] = useState<HTMLDivElement | null>(null)
+    const selectPortalRef = useCallback((el: HTMLDivElement | null) => {
+        if (el) setSelectPortalContainer(el)
+    }, [])
 
     const instituteTypes = [
         'Engineering College',
@@ -105,6 +110,12 @@ export function EditUniversityModal({
     return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+                {/* Portal container for Select dropdown - must be above modal */}
+                <div
+                    ref={selectPortalRef}
+                    className="fixed inset-0 z-[10001] pointer-events-none [&>*]:pointer-events-auto"
+                    aria-hidden
+                />
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -226,19 +237,29 @@ export function EditUniversityModal({
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Institute Type *
                                         </label>
-                                        <select
-                                            value={formData.institute_type}
-                                            onChange={(e) => handleInputChange('institute_type', e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            required
+                                        <Select
+                                            value={formData.institute_type || ''}
+                                            onValueChange={(value) => handleInputChange('institute_type', value)}
                                         >
-                                            <option value="">Select institute type</option>
-                                            {instituteTypes.map((type) => (
-                                                <option key={type} value={type}>
-                                                    {type}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            <SelectTrigger className="w-full px-4 py-2 h-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <SelectValue placeholder="Select institute type" />
+                                            </SelectTrigger>
+                                            <SelectContent
+                                                position="popper"
+                                                sideOffset={4}
+                                                align="center"
+                                                collisionPadding={16}
+                                                container={selectPortalContainer}
+                                                className="max-w-[min(100vw-2rem,var(--radix-select-trigger-width))] z-[10000]"
+                                                style={{ maxWidth: 'min(calc(100vw - 2rem), var(--radix-select-trigger-width))' }}
+                                            >
+                                                {instituteTypes.map((type) => (
+                                                    <SelectItem key={type} value={type}>
+                                                        {type}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
                             </div>

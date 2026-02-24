@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, GraduationCap, AlertCircle } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CreateUniversityRequest, CreateUniversityResponse } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
@@ -326,19 +327,29 @@ export function CreateUniversityModal({
                                             <label className="text-sm font-medium text-gray-700">
                                                 Institute Type *
                                             </label>
-                                            <select
-                                                value={formData.institute_type}
-                                                onChange={(e) => handleInputChange('institute_type', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            <Select
+                                                value={formData.institute_type || ''}
+                                                onValueChange={(value) => handleInputChange('institute_type', value)}
                                                 required
                                             >
-                                                <option value="">Select institute type</option>
-                                                {instituteTypes.map((type) => (
-                                                    <option key={type} value={type}>
-                                                        {type}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                <SelectTrigger className="w-full px-4 py-2 h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                    <SelectValue placeholder="Select institute type" />
+                                                </SelectTrigger>
+                                                <SelectContent
+                                                    position="popper"
+                                                    sideOffset={4}
+                                                    align="center"
+                                                    collisionPadding={16}
+                                                    className="max-w-[min(100vw-2rem,var(--radix-select-trigger-width))] z-[100]"
+                                                    style={{ maxWidth: 'min(calc(100vw - 2rem), var(--radix-select-trigger-width))' }}
+                                                >
+                                                    {instituteTypes.map((type) => (
+                                                        <SelectItem key={type} value={type}>
+                                                            {type}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                 </div>
