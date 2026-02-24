@@ -96,13 +96,13 @@ const navItems: NavItem[] = [
         description: 'Manage assessments',
         color: 'from-amber-500 to-orange-600'
     },
-    {
-        label: 'Analytics',
-        href: '/dashboard/admin/analytics',
-        icon: BarChart3,
-        description: 'Platform insights',
-        color: 'from-emerald-500 to-green-600'
-    },
+    // {
+    //     label: 'Analytics',
+    //     href: '/dashboard/admin/analytics',
+    //     icon: BarChart3,
+    //     description: 'Platform insights',
+    //     color: 'from-emerald-500 to-green-600'
+    // },
     {
         label: 'Events',
         href: '/dashboard/admin/events',
@@ -110,41 +110,41 @@ const navItems: NavItem[] = [
         description: 'Manage events',
         color: 'from-rose-500 to-pink-600'
     },
-    {
-        label: 'System Monitor',
-        href: '/dashboard/admin/monitor',
-        icon: Activity,
-        description: 'System health monitoring',
-        color: 'from-yellow-500 to-orange-600'
-    },
-    {
-        label: 'Reports',
-        href: '/dashboard/admin/reports',
-        icon: FileText,
-        description: 'Generate reports',
-        color: 'from-emerald-500 to-green-600'
-    },
-    {
-        label: 'Audit Logs',
-        href: '/dashboard/admin/audit',
-        icon: Eye,
-        description: 'View audit logs',
-        color: 'from-cyan-500 to-blue-600'
-    },
-    {
-        label: 'Database',
-        href: '/dashboard/admin/database',
-        icon: Database,
-        description: 'Database management',
-        color: 'from-violet-500 to-purple-600'
-    },
-    {
-        label: 'System Settings',
-        href: '/dashboard/admin/settings',
-        icon: Settings,
-        description: 'System configuration',
-        color: 'from-gray-500 to-gray-600'
-    },
+    // {
+    //     label: 'System Monitor',
+    //     href: '/dashboard/admin/monitor',
+    //     icon: Activity,
+    //     description: 'System health monitoring',
+    //     color: 'from-yellow-500 to-orange-600'
+    // },
+    // {
+    //     label: 'Reports',
+    //     href: '/dashboard/admin/reports',
+    //     icon: FileText,
+    //     description: 'Generate reports',
+    //     color: 'from-emerald-500 to-green-600'
+    // },
+    // {
+    //     label: 'Audit Logs',
+    //     href: '/dashboard/admin/audit',
+    //     icon: Eye,
+    //     description: 'View audit logs',
+    //     color: 'from-cyan-500 to-blue-600'
+    // },
+    // {
+    //     label: 'Database',
+    //     href: '/dashboard/admin/database',
+    //     icon: Database,
+    //     description: 'Database management',
+    //     color: 'from-violet-500 to-purple-600'
+    // },
+    // {
+    //     label: 'System Settings',
+    //     href: '/dashboard/admin/settings',
+    //     icon: Settings,
+    //     description: 'System configuration',
+    //     color: 'from-gray-500 to-gray-600'
+    // },
     {
         label: 'Licenses',
         href: '/dashboard/admin/licenses',
