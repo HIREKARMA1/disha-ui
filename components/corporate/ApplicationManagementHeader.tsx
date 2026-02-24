@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'
+import { Search, FileText, Users, CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface ApplicationManagementHeaderProps {
     totalApplications: number
@@ -112,7 +113,7 @@ export function ApplicationManagementHeader({
             </motion.div>
 
             {/* Stats Cards - Same style as Dashboard Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 max-[299px]:grid-cols-1 min-[300px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {statusOptions.map((option, index) => {
                     const style = getStatusCardStyle(option.value)
                     return (
@@ -165,21 +166,19 @@ export function ApplicationManagementHeader({
                     </div>
 
                     {/* Status Filter */}
-                    <div className="sm:w-64">
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => onFilterChange(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
-                            >
+                    <div className="w-full sm:w-auto sm:min-w-[220px]">
+                        <Select value={filterStatus} onValueChange={onFilterChange}>
+                            <SelectTrigger className="w-full pl-4 pr-8 py-2 h-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200">
+                                <SelectValue placeholder="All Applications" />
+                            </SelectTrigger>
+                            <SelectContent position="popper" align="center" sideOffset={4} className="min-w-[var(--radix-select-trigger-width)] z-[9999]">
                                 {statusOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
+                                    <SelectItem key={option.value} value={option.value}>
                                         {option.label} ({option.count})
-                                    </option>
+                                    </SelectItem>
                                 ))}
-                            </select>
-                        </div>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </div>
