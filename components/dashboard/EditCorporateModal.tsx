@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, Briefcase, AlertCircle, Edit } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UpdateCorporateRequest, CorporateProfile } from '@/types/corporate'
 import { getErrorMessage } from '@/lib/error-handler'
 
@@ -36,6 +37,10 @@ export function EditCorporateModal({
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [selectPortalContainer, setSelectPortalContainer] = useState<HTMLDivElement | null>(null)
+    const selectPortalRef = useCallback((el: HTMLDivElement | null) => {
+        if (el) setSelectPortalContainer(el)
+    }, [])
 
     // Populate form when corporate data changes
     useEffect(() => {
@@ -132,6 +137,12 @@ export function EditCorporateModal({
     return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+                {/* Portal container for Select dropdowns - must be above modal */}
+                <div
+                    ref={selectPortalRef}
+                    className="fixed inset-0 z-[10001] pointer-events-none [&>*]:pointer-events-auto"
+                    aria-hidden
+                />
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -254,18 +265,29 @@ export function EditCorporateModal({
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Industry
                                         </label>
-                                        <select
+                                        <Select
                                             value={formData.industry || ''}
-                                            onChange={(e) => handleInputChange('industry', e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            onValueChange={(value) => handleInputChange('industry', value)}
                                         >
-                                            <option value="">Select industry</option>
-                                            {industries.map((industry) => (
-                                                <option key={industry} value={industry}>
-                                                    {industry}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            <SelectTrigger className="w-full px-4 py-2 h-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <SelectValue placeholder="Select industry" />
+                                            </SelectTrigger>
+                                            <SelectContent
+                                                position="popper"
+                                                sideOffset={4}
+                                                align="center"
+                                                collisionPadding={16}
+                                                container={selectPortalContainer}
+                                                className="max-w-[min(100vw-2rem,var(--radix-select-trigger-width))] z-[10000]"
+                                                style={{ maxWidth: 'min(calc(100vw - 2rem), var(--radix-select-trigger-width))' }}
+                                            >
+                                                {industries.map((industry) => (
+                                                    <SelectItem key={industry} value={industry}>
+                                                        {industry}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
                             </div>
@@ -362,18 +384,29 @@ export function EditCorporateModal({
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Company Size
                                         </label>
-                                        <select
+                                        <Select
                                             value={formData.company_size || ''}
-                                            onChange={(e) => handleInputChange('company_size', e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            onValueChange={(value) => handleInputChange('company_size', value)}
                                         >
-                                            <option value="">Select company size</option>
-                                            {companySizes.map((size) => (
-                                                <option key={size} value={size}>
-                                                    {size} employees
-                                                </option>
-                                            ))}
-                                        </select>
+                                            <SelectTrigger className="w-full px-4 py-2 h-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <SelectValue placeholder="Select company size" />
+                                            </SelectTrigger>
+                                            <SelectContent
+                                                position="popper"
+                                                sideOffset={4}
+                                                align="center"
+                                                collisionPadding={16}
+                                                container={selectPortalContainer}
+                                                className="max-w-[min(100vw-2rem,var(--radix-select-trigger-width))] z-[10000]"
+                                                style={{ maxWidth: 'min(calc(100vw - 2rem), var(--radix-select-trigger-width))' }}
+                                            >
+                                                {companySizes.map((size) => (
+                                                    <SelectItem key={size} value={size}>
+                                                        {size} employees
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     {/* Company Type */}
@@ -381,18 +414,29 @@ export function EditCorporateModal({
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Company Type
                                         </label>
-                                        <select
+                                        <Select
                                             value={formData.company_type || ''}
-                                            onChange={(e) => handleInputChange('company_type', e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            onValueChange={(value) => handleInputChange('company_type', value)}
                                         >
-                                            <option value="">Select company type</option>
-                                            {companyTypes.map((type) => (
-                                                <option key={type} value={type}>
-                                                    {type}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            <SelectTrigger className="w-full px-4 py-2 h-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <SelectValue placeholder="Select company type" />
+                                            </SelectTrigger>
+                                            <SelectContent
+                                                position="popper"
+                                                sideOffset={4}
+                                                align="center"
+                                                collisionPadding={16}
+                                                container={selectPortalContainer}
+                                                className="max-w-[min(100vw-2rem,var(--radix-select-trigger-width))] z-[10000]"
+                                                style={{ maxWidth: 'min(calc(100vw - 2rem), var(--radix-select-trigger-width))' }}
+                                            >
+                                                {companyTypes.map((type) => (
+                                                    <SelectItem key={type} value={type}>
+                                                        {type}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     {/* Founded Year */}
