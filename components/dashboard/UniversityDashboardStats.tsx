@@ -66,7 +66,7 @@ export function UniversityDashboardStats({
     ]
 
     return (
-        <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full ${className}`}>
+        <div className={`grid grid-cols-2 max-[299px]:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full ${className}`}>
             {statCards.map((stat, index) => (
                 <motion.div
                     key={stat.label}

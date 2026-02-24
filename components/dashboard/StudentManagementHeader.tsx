@@ -12,6 +12,13 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 
 interface StudentManagementHeaderProps {
     totalStudents: number
@@ -81,27 +88,27 @@ export function StudentManagementHeader({
                         />
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                             onClick={onAddStudent}
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
+                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 w-full sm:w-auto justify-center"
                         >
-                            <UserPlus className="w-4 h-4 mr-2" />
+                            <UserPlus className="w-4 h-4 mr-2 shrink-0" />
                             Add Student
                         </Button>
                         <Button
                             onClick={onBulkUpload}
-                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200"
+                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200 w-full sm:w-auto justify-center"
                         >
-                            <Upload className="w-4 h-4 mr-2" />
+                            <Upload className="w-4 h-4 mr-2 shrink-0" />
                             Bulk Upload
                         </Button>
                         <Button
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
-                            className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                            className="flex items-center justify-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
                         >
-                            <Filter className="w-4 h-4" />
+                            <Filter className="w-4 h-4 shrink-0" />
                             {showFilters ? 'Hide' : 'Show'} Filters
                         </Button>
                     </div>
@@ -121,22 +128,18 @@ export function StudentManagementHeader({
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Status
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        value={filterStatus}
-                                        onChange={(e) => onFilterChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 appearance-none"
-                                    >
-                                        <option value="all">All Statuses</option>
-                                        <option value="placed">Placed</option>
-                                        <option value="unplaced">Unplaced</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="pending">Pending</option>
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
-                                </div>
+                                <Select value={filterStatus} onValueChange={onFilterChange}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="All Statuses" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999]">
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="placed">Placed</SelectItem>
+                                        <SelectItem value="unplaced">Unplaced</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="pending">Pending</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Degree Filter */}
@@ -144,22 +147,17 @@ export function StudentManagementHeader({
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Degree
                                 </label>
-                                <div className="relative">
-                                    <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                    <select
-                                        value={selectedDegree}
-                                        onChange={(e) => onDegreeChange(e.target.value)}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
-                                    >
-                                        <option value="all">All Degrees</option>
+                                <Select value={selectedDegree} onValueChange={onDegreeChange}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="All Degrees" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999] max-h-60">
+                                        <SelectItem value="all">All Degrees</SelectItem>
                                         {degrees.map(degree => (
-                                            <option key={degree} value={degree}>{degree}</option>
+                                            <SelectItem key={degree} value={degree}>{degree}</SelectItem>
                                         ))}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
-                                </div>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Branch Filter */}
@@ -167,22 +165,17 @@ export function StudentManagementHeader({
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Branch
                                 </label>
-                                <div className="relative">
-                                    <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                    <select
-                                        value={selectedBranch}
-                                        onChange={(e) => onBranchChange(e.target.value)}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
-                                    >
-                                        <option value="all">All Branches</option>
+                                <Select value={selectedBranch} onValueChange={onBranchChange}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="All Branches" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999] max-h-60">
+                                        <SelectItem value="all">All Branches</SelectItem>
                                         {branches.map(branch => (
-                                            <option key={branch} value={branch}>{branch}</option>
+                                            <SelectItem key={branch} value={branch}>{branch}</SelectItem>
                                         ))}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
-                                </div>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Year Filter */}
@@ -190,43 +183,36 @@ export function StudentManagementHeader({
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Year
                                 </label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                    <select
-                                        value={selectedYear}
-                                        onChange={(e) => onYearChange(e.target.value)}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
-                                    >
-                                        <option value="all">All Years</option>
+                                <Select value={selectedYear} onValueChange={onYearChange}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="All Years" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999] max-h-60">
+                                        <SelectItem value="all">All Years</SelectItem>
                                         {years.map(year => (
-                                            <option key={year} value={year}>{year}</option>
+                                            <SelectItem key={year} value={year}>{year}</SelectItem>
                                         ))}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
-                                </div>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
-                            {/* Archive Filter */}
+                            {/* Archive / View Filter */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     View
                                 </label>
-                                <div className="relative">
-                                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                    <select
-                                        value={includeArchived ? 'archived' : 'active'}
-                                        onChange={(e) => onIncludeArchivedChange(e.target.value === 'archived')}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
-                                    >
-                                        <option value="active">Active Students</option>
-                                        <option value="archived">Archived Students</option>
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
-                                </div>
+                                <Select
+                                    value={includeArchived ? 'archived' : 'active'}
+                                    onValueChange={(value) => onIncludeArchivedChange(value === 'archived')}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Active Students" />
+                                    </SelectTrigger>
+                                    <SelectContent position="popper" align="start" sideOffset={4} className="z-[99999]">
+                                        <SelectItem value="active">Active Students</SelectItem>
+                                        <SelectItem value="archived">Archived Students</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Clear Filters Button */}
