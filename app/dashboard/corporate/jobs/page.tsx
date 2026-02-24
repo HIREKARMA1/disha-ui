@@ -261,10 +261,11 @@ export default function CorporateJobsPage() {
                 </motion.div>
 
                 {/* Search and Filters */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 relative overflow-visible layout-stable">
-                    {/* Search Bar */}
-                    <div className="flex flex-col lg:flex-row gap-4 mb-4">
-                        <div className="flex-1">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 relative overflow-visible layout-stable">
+                    {/* Search + Buttons row */}
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-4">
+                        {/* Search Bar — flex-1 on lg, full width below */}
+                        <div className="flex-1 min-w-0">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <Input
@@ -272,27 +273,28 @@ export default function CorporateJobsPage() {
                                     placeholder="Search jobs by title, description, or location..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
+                                    className="pl-10 w-full"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        {/* Buttons — natural size on lg, full-width split on mobile */}
+                        <div className="flex items-center gap-2 lg:gap-3 w-full lg:w-auto shrink-0">
                             <Button
                                 onClick={handleCreateJob}
-                                className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                className="flex-1 lg:flex-none min-w-0 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 justify-center"
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Job
+                                <Plus className="w-4 h-4 mr-1.5 shrink-0" />
+                                <span className="truncate">Create Job</span>
                             </Button>
 
                             <Button
                                 variant="outline"
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="flex items-center gap-2"
+                                className="flex-1 lg:flex-none min-w-0 flex items-center justify-center gap-1.5"
                             >
-                                <Filter className="w-4 h-4" />
-                                Filters
+                                <Filter className="w-4 h-4 shrink-0" />
+                                <span className="truncate">Filters</span>
                             </Button>
                         </div>
                     </div>
