@@ -59,13 +59,21 @@ export function DateTimePicker({ value, onChange, placeholder = "Select date", c
         return dateStr
     }
 
+    const formatDateValue = (date: Date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        // Return a pure date string without timezone conversion
+        return `${year}-${month}-${day}`
+    }
+
     const handleDateSelect = (date: Date) => {
         console.log('📅 DateTimePicker: Date selected:', date)
         console.log('📅 DateTimePicker: autoClose:', autoClose)
 
         setSelectedDate(date)
-        // Update the form field immediately
-        onChange(date.toISOString().split('T')[0]) // Format as YYYY-MM-DD
+        // Update the form field immediately using local date components (no timezone shift)
+        onChange(formatDateValue(date)) // Format as YYYY-MM-DD
 
         // Only close the modal if autoClose is enabled
         if (autoClose) {
@@ -86,7 +94,7 @@ export function DateTimePicker({ value, onChange, placeholder = "Select date", c
         const today = new Date()
         setSelectedDate(today)
         setCurrentMonth(today)
-        onChange(today.toISOString().split('T')[0]) // Format as YYYY-MM-DD
+        onChange(formatDateValue(today)) // Format as YYYY-MM-DD
 
         // Only close the modal if autoClose is enabled
         if (autoClose) {

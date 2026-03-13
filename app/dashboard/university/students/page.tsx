@@ -289,6 +289,7 @@ export default function UniversityStudents() {
                     isOpen={showBulkUploadModal}
                     onClose={() => setShowBulkUploadModal(false)}
                     onSubmit={handleBulkUpload}
+                    mode="students"
                 />
             </div>
         </UniversityDashboardLayout>

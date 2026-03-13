@@ -6,6 +6,7 @@ import { UniversityManagementHeader } from '@/components/dashboard/UniversityMan
 import { UniversityTable } from '@/components/dashboard/UniversityTable'
 import { CreateUniversityModal } from '@/components/dashboard/CreateUniversityModal'
 import { EditUniversityModal } from '@/components/dashboard/EditUniversityModal'
+import { BulkUploadModal } from '@/components/dashboard/BulkUploadModal'
 import { universityManagementService } from '@/services/universityManagementService'
 import { UniversityListResponse, UniversityListItem, UniversityProfile, UpdateUniversityRequest } from '@/types/university'
 import { toast } from 'react-hot-toast'
@@ -20,6 +21,7 @@ export default function AdminUniversities() {
     const [error, setError] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
+    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
     const [selectedUniversity, setSelectedUniversity] = useState<UniversityProfile | null>(null)
     const [includeArchived, setIncludeArchived] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
@@ -145,13 +147,29 @@ export default function AdminUniversities() {
         }
     }
 
-    const handleImportUniversities = async () => {
+    const handleImportUniversities = () => {
+        setShowBulkUploadModal(true)
+    }
+
+    const handleBulkUploadUniversities = async (file: File) => {
+        const toastId = toast.loading('Importing universities from CSV...')
         try {
-            // TODO: Implement import functionality
-            toast('Import functionality coming soon!')
+            const result = await universityManagementService.importUniversities(file)
+
+            toast.success(
+                `Imported ${result.successful} of ${result.total_processed} universities`,
+                { id: toastId }
+            )
+
+            if (result.errors && result.errors.length > 0) {
+                console.warn('Some rows failed during university import:', result.errors)
+            }
+
+            setShowBulkUploadModal(false)
+            await fetchUniversities()
         } catch (error: any) {
             console.error('Failed to import universities:', error)
-            toast.error('Failed to import universities.')
+            toast.error(getErrorMessage(error), { id: toastId })
         }
     }
 
@@ -254,6 +272,12 @@ export default function AdminUniversities() {
                     }}
                     onSubmit={handleUpdateUniversity}
                     university={selectedUniversity}
+                />
+                <BulkUploadModal
+                    isOpen={showBulkUploadModal}
+                    onClose={() => setShowBulkUploadModal(false)}
+                    onSubmit={handleBulkUploadUniversities}
+                    mode="universities"
                 />
             </div>
         </AdminDashboardLayout>

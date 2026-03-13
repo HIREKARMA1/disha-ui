@@ -6,7 +6,8 @@ import {
   CreateUniversityRequest,
   CreateUniversityResponse,
   UpdateUniversityRequest,
-  ArchiveUniversityRequest
+  ArchiveUniversityRequest,
+  BulkUploadResponse
 } from '@/types/university'
 
 export class UniversityManagementService {
@@ -256,6 +257,40 @@ export class UniversityManagementService {
         throw new Error('Server error. Please try again later.')
       } else {
         throw new Error(error.response?.data?.detail || 'Failed to fetch students.')
+      }
+    }
+  }
+
+  /**
+   * Bulk import universities from CSV
+   */
+  async importUniversities(file: File): Promise<BulkUploadResponse> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        throw new Error('User not authenticated. Please log in.')
+      }
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await apiClient.client.post('/admins/universities/bulk-upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      return response.data as BulkUploadResponse
+    } catch (error: any) {
+      console.error('Error importing universities:', error)
+
+      if (error.response?.status === 401) {
+        throw new Error('Authentication failed. Please log in again.')
+      } else if (error.response?.status === 400) {
+        throw new Error(error.response?.data?.detail || 'Invalid CSV file or data.')
+      } else if (error.response?.status >= 500) {
+        throw new Error('Server error. Please try again later.')
+      } else {
+        throw new Error(error.response?.data?.detail || 'Failed to import universities.')
       }
     }
   }
