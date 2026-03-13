@@ -309,6 +309,11 @@ class ApiClient {
     return response.data.universities || [];
   }
 
+  async getAdminUniversityTemplate(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/universities/template');
+    return response.data;
+  }
+
   async getAssignedUniversitiesAdmin(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/assigned-universities`);
     return response.data;

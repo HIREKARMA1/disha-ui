@@ -10,12 +10,14 @@ interface BulkUploadModalProps {
     isOpen: boolean
     onClose: () => void
     onSubmit: (file: File) => void
+    mode?: 'students' | 'universities'
 }
 
 export function BulkUploadModal({
     isOpen,
     onClose,
-    onSubmit
+    onSubmit,
+    mode = 'students'
 }: BulkUploadModalProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isUploading, setIsUploading] = useState(false)
@@ -105,7 +107,9 @@ export function BulkUploadModal({
             const header = parseCSVLine(headerLine).map(col => col.trim().toLowerCase())
             console.log('🔍 Frontend CSV parsing - Header line:', headerLine)
             console.log('🔍 Frontend CSV parsing - Parsed header:', header)
-            const requiredColumns = ['name', 'email', 'phone']
+            const requiredColumns = mode === 'universities'
+                ? ['university_name', 'email', 'institute_type']
+                : ['name', 'email', 'phone']
             const missingColumns = requiredColumns.filter(col => !header.includes(col))
             console.log('🔍 Frontend CSV parsing - Missing columns:', missingColumns)
 
@@ -124,16 +128,30 @@ export function BulkUploadModal({
 
                 // Validate each row
                 const rowErrors = []
-                if (!row.name || row.name.trim() === '') {
-                    rowErrors.push('Name is required')
-                }
-                if (!row.email || row.email.trim() === '') {
-                    rowErrors.push('Email is required')
-                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
-                    rowErrors.push('Invalid email format')
-                }
-                if (!row.phone || row.phone.trim() === '') {
-                    rowErrors.push('Phone is required')
+                if (mode === 'universities') {
+                    if (!row.university_name || row.university_name.trim() === '') {
+                        rowErrors.push('university_name is required')
+                    }
+                    if (!row.email || row.email.trim() === '') {
+                        rowErrors.push('Email is required')
+                    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+                        rowErrors.push('Invalid email format')
+                    }
+                    if (!row.institute_type || row.institute_type.trim() === '') {
+                        rowErrors.push('institute_type is required')
+                    }
+                } else {
+                    if (!row.name || row.name.trim() === '') {
+                        rowErrors.push('Name is required')
+                    }
+                    if (!row.email || row.email.trim() === '') {
+                        rowErrors.push('Email is required')
+                    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+                        rowErrors.push('Invalid email format')
+                    }
+                    if (!row.phone || row.phone.trim() === '') {
+                        rowErrors.push('Phone is required')
+                    }
                 }
 
                 // Add row errors if any
@@ -223,7 +241,7 @@ export function BulkUploadModal({
             setSelectedFile(null)
         } catch (error: any) {
             console.error('❌ Error uploading file:', error)
-            const errorMessage = getErrorMessage(error, 'Failed to upload students')
+            const errorMessage = getErrorMessage(error, mode === 'universities' ? 'Failed to upload universities' : 'Failed to upload students')
             setError(errorMessage)
         } finally {
             setIsUploading(false)
@@ -233,15 +251,80 @@ export function BulkUploadModal({
     const handleDownloadTemplate = async () => {
         setIsDownloadingTemplate(true)
         try {
-            const response = await apiClient.getStudentTemplate()
+            if (mode === 'universities') {
+                // Generate university template entirely on the frontend
+                const header = [
+                    'university_name',
+                    'email',
+                    'institute_type',
+                    'phone',
+                    'address',
+                    'website_url',
+                    'contact_person_name',
+                    'contact_designation',
+                    'established_year',
+                    'courses_offered',
+                ]
 
-            // Create a download link
-            const link = document.createElement('a')
-            link.href = response.template_url
-            link.download = 'student_upload_template.csv'
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
+                const rows = [
+                    [
+                        'ABC Institute of Technology',
+                        'admin@abcit.edu',
+                        'Private University',
+                        '+91-9876543210',
+                        '123 Tech Park Road, Bengaluru, Karnataka',
+                        'https://www.abcit.edu',
+                        'Dr. John Doe',
+                        'Training & Placement Officer',
+                        '2005',
+                        'B.Tech (CSE,ECE,ME), MBA, MCA',
+                    ],
+                    [
+                        'XYZ College of Engineering',
+                        'placements@xyzce.ac.in',
+                        'Autonomous College',
+                        '+91-9123456780',
+                        '45 College Road, Pune, Maharashtra',
+                        'https://www.xyzce.ac.in',
+                        'Prof. Jane Smith',
+                        'Head - Career Services',
+                        '1998',
+                        'B.E (CSE,IT,Civil), M.E',
+                    ],
+                ]
+
+                const csvLines = [
+                    header.join(','),
+                    ...rows.map((r) =>
+                        r
+                            .map((val) =>
+                                `"${String(val ?? '').replace(/"/g, '""')}"`
+                            )
+                            .join(',')
+                    ),
+                ]
+
+                const blob = new Blob([csvLines.join('\n')], {
+                    type: 'text/csv;charset=utf-8;',
+                })
+                const url = window.URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.href = url
+                link.download = 'university_upload_template.csv'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                window.URL.revokeObjectURL(url)
+            } else {
+                const response = await apiClient.getStudentTemplate()
+
+                const link = document.createElement('a')
+                link.href = response.template_url
+                link.download = 'student_upload_template.csv'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+            }
         } catch (error) {
             console.error('Error downloading template:', error)
             alert('Failed to download template')
@@ -282,7 +365,7 @@ export function BulkUploadModal({
                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b-2 border-gray-200 dark:border-slate-600">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                            Bulk Upload Students
+                                            {mode === 'universities' ? 'Bulk Upload Universities' : 'Bulk Upload Students'}
                                         </h3>
                                         <button
                                             onClick={handleClose}
@@ -318,10 +401,21 @@ export function BulkUploadModal({
                                                     </h4>
                                                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                                                         <li>• Use the CSV template provided below</li>
-                                                        <li>• Required columns: name, email, phone</li>
-                                                        <li>• Optional columns: degree, branch, graduation_year</li>
-                                                        <li>• Maximum file size: 5MB</li>
-                                                        <li>• Students will receive welcome emails automatically</li>
+                                                        {mode === 'universities' ? (
+                                                            <>
+                                                                <li>• Required columns: university_name, email, institute_type</li>
+                                                                <li>• Optional columns: phone, address, website_url, contact_person_name, contact_designation, established_year, courses_offered</li>
+                                                                <li>• Maximum file size: 5MB</li>
+                                                                <li>• Universities will receive welcome emails automatically</li>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <li>• Required columns: name, email, phone</li>
+                                                                <li>• Optional columns: degree, branch, graduation_year</li>
+                                                                <li>• Maximum file size: 5MB</li>
+                                                                <li>• Students will receive welcome emails automatically</li>
+                                                            </>
+                                                        )}
                                                     </ul>
                                                 </div>
                                             </div>
@@ -483,7 +577,7 @@ export function BulkUploadModal({
                                                 disabled={!selectedFile || isUploading || (fileValidation ? !fileValidation.isValid : false)}
                                                 className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                                             >
-                                                {isUploading ? 'Uploading...' : 'Upload Students'}
+                                                {isUploading ? 'Uploading...' : (mode === 'universities' ? 'Upload Universities' : 'Upload Students')}
                                             </button>
                                         </div>
                                     </div>
