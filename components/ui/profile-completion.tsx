@@ -139,11 +139,16 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                             <span>Completed ({completedFieldsList.length})</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            {completedFieldsList.slice(0, 6).map((fieldName, index) => (
-                                <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                                    {fieldName.replace(/_/g, ' ')}
-                                </div>
-                            ))}
+                            {completedFieldsList.slice(0, 6).map((fieldName, index) => {
+                                const formatted = fieldName
+                                    .replace(/_/g, ' ')
+                                    .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())
+                                return (
+                                    <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                                        {formatted}
+                                    </div>
+                                )
+                            })}
                             {completedFieldsList.length > 6 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
                                     +{completedFieldsList.length - 6} more
@@ -161,11 +166,16 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                             <span>Missing ({missingFieldsList.length})</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            {missingFieldsList.slice(0, 6).map((fieldName, index) => (
-                                <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                                    {fieldName.replace(/_/g, ' ')}
-                                </div>
-                            ))}
+                            {missingFieldsList.slice(0, 6).map((fieldName, index) => {
+                                const formatted = fieldName
+                                    .replace(/_/g, ' ')
+                                    .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase())
+                                return (
+                                    <div key={index} className="text-xs text-gray-600 dark:text-gray-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                                        {formatted}
+                                    </div>
+                                )
+                            })}
                             {missingFieldsList.length > 6 && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
                                     +{missingFieldsList.length - 6} more
