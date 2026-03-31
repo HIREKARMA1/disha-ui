@@ -325,7 +325,7 @@ export function CreateStudentModal({
                                                 </div>
                                                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                                                     <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Password:</span>
-                                                    <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">Password@123</span>
+                                                    <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{createdStudent?.temporary_password || 'Password@123'}</span>
                                                 </div>
                                             </div>
                                         </div>
