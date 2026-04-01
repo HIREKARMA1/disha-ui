@@ -557,303 +557,355 @@ export function CorporateBulkUploader({ onComplete, onCancel, moduleId }: Corpor
                 </div>
             </div>
 
-            {/* Instructions */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            {/* Upload Instructions */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
                 <div className="flex items-start gap-3">
-                    <AlertCircleIcon className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <div>
-                        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                            Upload Instructions
-                        </h4>
-                        <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <div className="flex-shrink-0">
+                        <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                            Upload Guidelines
+                        </h3>
+                        <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
                             <li>• Use the CSV template provided below</li>
-                            <li>• Required columns: statement, type, options, correct_options</li>
-                            <li>• Optional columns: difficulty, explanation</li>
-                            <li>• Use pipe-separated values for options (e.g., "Paris|London|Berlin|Madrid")</li>
-                            <li>• For correct_options, use the exact text from options (e.g., "Paris" or "Paris|London")</li>
+                            <li>• Required: statement, type, options, correct_options</li>
+                            <li>• Optional: difficulty, explanation</li>
+                            <li>• Use pipe-separated values for options (e.g., "Paris|London|Berlin")</li>
                             <li>• Maximum file size: 5MB</li>
-                            <li>• Questions will be validated before upload</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            {/* Template Download */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            {/* Download Template */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
                             Download Template
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Get the CSV template with sample data using pipe-separated format
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs">
+                            Get the CSV template with sample data
                         </p>
                     </div>
                     <Button
                         onClick={downloadTemplate}
                         disabled={isDownloadingTemplate}
-                        variant="outline"
                         size="sm"
-                        className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                     >
                         {isDownloadingTemplate ? (
-                            <div className="flex items-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                                Downloading...
-                            </div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         ) : (
-                            <>
-                                <Download className="w-4 h-4 mr-2" />
-                                Download Template
-                            </>
+                            <Download className="w-4 h-4 mr-2" />
                         )}
+                        Download
                     </Button>
                 </div>
             </div>
 
-            {/* Upload Step */}
-            {uploadStep === 'upload' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8"
-                >
-                    <div className="text-center">
-                        <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-                        </div>
-                        
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                            Upload Questions File
-                        </h3>
-                        
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            Upload a CSV or Excel file containing practice questions
-                        </p>
-
-                        <div className="space-y-4">
-                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 hover:border-primary-500 dark:hover:border-primary-400 transition-colors">
+            {/* Upload Section */}
+            <AnimatePresence mode="wait">
+                {uploadStep === 'upload' && (
+                    <motion.div
+                        key="upload"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                    >
+                        <div className="text-center">
+                            <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
+                                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Select CSV File
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                Choose a CSV file containing your questions
+                            </p>
+                            
+                            <div className="relative">
                                 <input
                                     type="file"
                                     accept=".csv"
                                     onChange={handleFileSelect}
-                                    className="hidden"
-                                    id="file-upload"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    disabled={isProcessing}
                                 />
-                                <label
-                                    htmlFor="file-upload"
-                                    className="cursor-pointer flex flex-col items-center"
-                                >
-                                    <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                                    <span className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                        Choose CSV file or drag and drop
-                                    </span>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                                        CSV files up to 5MB
-                                    </span>
-                                </label>
+                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 hover:border-primary-500 dark:hover:border-primary-400 transition-colors duration-200">
+                                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        {selectedFile ? selectedFile.name : 'Click to select CSV file'}
+                                    </p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                                        CSV files only, max 5MB
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* Error Display */}
-                            {error && (
-                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
-                                    <div className="flex items-center">
-                                        <XCircle className="w-4 h-4 text-red-600 mr-2" />
-                                        <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Processing Indicator */}
                             {isProcessing && (
-                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-                                    <div className="flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                                        <p className="text-sm text-blue-800 dark:text-blue-200">Processing file...</p>
-                                    </div>
+                                <div className="mt-4 flex items-center justify-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Processing file...</span>
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-center gap-4">
-                                <Button
-                                    onClick={downloadTemplate}
-                                    variant="outline"
-                                >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download Template
-                                </Button>
+                            {error && (
+                                <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+
+                {uploadStep === 'preview' && fileValidation && (
+                    <motion.div
+                        key="preview"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                                    Preview & Upload
+                                </h3>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    Review your data before uploading
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => setUploadStep('upload')}
+                                variant="outline"
+                                size="sm"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back
+                            </Button>
+                        </div>
+
+                        {/* Validation Summary */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <Database className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                            {fileValidation.rowCount}
+                                        </p>
+                                        <p className="text-sm text-blue-700 dark:text-blue-300">Total Rows</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                        <CheckCircle className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            {fileValidation.rowCount}
+                                        </p>
+                                        <p className="text-sm text-green-700 dark:text-green-300">Valid</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                                        <XCircle className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">0</p>
+                                        <p className="text-sm text-red-700 dark:text-red-300">Invalid</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {isProcessing && (
-                            <div className="mt-6 flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                                <span className="ml-3 text-gray-600 dark:text-gray-400">
-                                    Processing file...
-                                </span>
+                        {/* Sample Data */}
+                        {fileValidation.sampleData.length > 0 && (
+                            <div className="mb-6">
+                                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">
+                                    Sample Data Preview
+                                </h4>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full bg-white dark:bg-gray-700 rounded-lg overflow-hidden">
+                                        <thead className="bg-gray-50 dark:bg-gray-600">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Row</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statement</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Options</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                                            {fileValidation.sampleData.map((row, index) => (
+                                                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-600">
+                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{row.row}</td>
+                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                                                        {row.statement}
+                                                    </td>
+                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{row.type}</td>
+                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                                                        {row.options}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
-                    </div>
-                </motion.div>
-            )}
 
-            {/* Preview Step */}
-            {uploadStep === 'preview' && fileValidation && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                >
-                    {/* Validation Summary */}
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
-                        <div className="flex items-center">
-                            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                            <div>
-                                <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
-                                    File Validation Successful
-                                </h4>
-                                <p className="text-sm text-green-800 dark:text-green-200">
-                                    {fileValidation.rowCount} questions found and validated
-                                </p>
-                            </div>
+                        {/* Upload Button */}
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                onClick={() => setUploadStep('upload')}
+                                variant="outline"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleUpload}
+                                disabled={isUploading || !fileValidation.isValid}
+                                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                            >
+                                {isUploading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload Questions
+                                    </>
+                                )}
+                            </Button>
                         </div>
-                    </div>
+                    </motion.div>
+                )}
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            File Preview
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            Preview of the first 5 rows from your file:
-                        </p>
-                        
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th className="px-4 py-2 text-left">Row</th>
-                                        <th className="px-4 py-2 text-left">Statement</th>
-                                        <th className="px-4 py-2 text-left">Type</th>
-                                        <th className="px-4 py-2 text-left">Options</th>
-                                        <th className="px-4 py-2 text-left">Correct Options</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {previewData.map((row, index) => (
-                                        <tr key={index}>
-                                            <td className="px-4 py-2">{row.row}</td>
-                                            <td className="px-4 py-2 max-w-xs truncate">{row.statement}</td>
-                                            <td className="px-4 py-2">
-                                                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
-                                                    {row.type}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 max-w-xs truncate">{row.options}</td>
-                                            <td className="px-4 py-2 max-w-xs truncate">{row.correct_options}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                {uploadStep === 'result' && uploadResult && (
+                    <motion.div
+                        key="result"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
+                    >
+                        <div className="text-center mb-6">
+                            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                                uploadResult.success ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                            }`}>
+                                {uploadResult.success ? (
+                                    <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                                ) : (
+                                    <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                                )}
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Upload Complete
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                {uploadResult.success ? 'Questions uploaded successfully!' : 'Upload completed with errors'}
+                            </p>
                         </div>
-                    </div>
 
-                    <div className="flex items-center justify-between">
-                        <Button
-                            onClick={() => setUploadStep('upload')}
-                            variant="outline"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back
-                        </Button>
-                        <Button
-                            onClick={handleUpload}
-                            disabled={isUploading}
-                            className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
-                        >
-                            {isUploading ? (
-                                <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Uploading...
+                        {/* Results Summary */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <Database className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                            {uploadResult.totalRows}
+                                        </p>
+                                        <p className="text-sm text-blue-700 dark:text-blue-300">Total Rows</p>
+                                    </div>
                                 </div>
-                            ) : (
-                                <>
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    Upload {fileValidation.rowCount} Questions
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </motion.div>
-            )}
-
-            {/* Result Step */}
-            {uploadStep === 'result' && uploadResult && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                >
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            Upload Results
-                        </h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                                        {uploadResult.totalRows}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Rows</p>
                             </div>
-                            
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                        <CheckCircle className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            {uploadResult.validRows}
+                                        </p>
+                                        <p className="text-sm text-green-700 dark:text-green-300">Valid</p>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {uploadResult.validRows} Valid
-                                </p>
                             </div>
-                            
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                                        <XCircle className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                                            {uploadResult.invalidRows}
+                                        </p>
+                                        <p className="text-sm text-red-700 dark:text-red-300">Invalid</p>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {uploadResult.invalidRows} Invalid
-                                </p>
                             </div>
                         </div>
 
+                        {/* Errors */}
                         {uploadResult.errors.length > 0 && (
-                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-                                <h4 className="font-medium text-red-900 dark:text-red-100 mb-2 flex items-center gap-2">
+                            <div className="mb-6">
+                                <h4 className="text-md font-medium text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4" />
                                     Validation Errors
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4 max-h-60 overflow-y-auto">
                                     {uploadResult.errors.map((error, index) => (
-                                        <div key={index} className="text-sm text-red-700 dark:text-red-300">
-                                            Row {error.row}: {error.message}
+                                        <div key={index} className="text-sm text-red-700 dark:text-red-300 py-1">
+                                            <span className="font-medium">Row {error.row}:</span> {error.message}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="flex items-center justify-end gap-4">
-                        <Button
-                            onClick={onComplete}
-                            className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
-                        >
-                            Done
-                        </Button>
-                    </div>
-                </motion.div>
-            )}
+                        {/* Actions */}
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                onClick={() => {
+                                    setUploadStep('upload')
+                                    setSelectedFile(null)
+                                    setFileValidation(null)
+                                    setUploadResult(null)
+                                    setError(null)
+                                }}
+                                variant="outline"
+                            >
+                                Upload Another File
+                            </Button>
+                            <Button
+                                onClick={onComplete}
+                                className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
+                            >
+                                Done
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
