@@ -493,7 +493,7 @@ export default function CorporateJobsPage() {
                         <p className="text-gray-600 dark:text-gray-400 mb-6">
                             {searchTerm || filters.status || filters.job_type || filters.industry
                                 ? 'Try adjusting your search or filter criteria'
-                                : 'Create your first job posting to start attracting talent'
+                                : 'Create your first job posting to start attracting talent..'
                             }
                         </p>
 
