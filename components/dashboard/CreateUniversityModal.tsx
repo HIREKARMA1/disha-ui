@@ -6,8 +6,6 @@ import { createPortal } from 'react-dom'
 import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, GraduationCap, AlertCircle } from 'lucide-react'
 import { CreateUniversityRequest, CreateUniversityResponse } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
-import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
-import { apiClient } from '@/lib/api'
 
 interface CreateUniversityModalProps {
     isOpen: boolean
@@ -37,7 +35,6 @@ export function CreateUniversityModal({
     const [showSuccess, setShowSuccess] = useState(false)
     const [createdUniversity, setCreatedUniversity] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
-    const [selectedCollegeId, setSelectedCollegeId] = useState<string>('')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -101,30 +98,6 @@ export function CreateUniversityModal({
         }))
     }
 
-    const fetchColleges = async (query: string): Promise<AsyncSelectOption[]> => {
-        try {
-            const response = await apiClient.get('/admin/lookups/colleges', {
-                params: {
-                    search: query,
-                    limit: 100
-                }
-            })
-
-            const colleges = (response as any)?.colleges || []
-
-            return colleges.map((c: any) => {
-                const cleanName = c.name ? c.name.replace(/['"]+/g, '').trim() : 'Unknown College'
-                return {
-                    value: c.id,
-                    label: cleanName
-                }
-            })
-        } catch (err) {
-            console.error('Failed to fetch colleges for admin create university:', err)
-            return []
-        }
-    }
-
     const instituteTypes = [
         'Government',
         'Private',
@@ -155,28 +128,28 @@ export function CreateUniversityModal({
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4"
+                    className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Building2 className="w-5 h-5 text-blue-600" />
+                            <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
+                                <Building2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-semibold text-gray-900">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                                     {showSuccess ? 'University Created Successfully!' : 'Create New University'}
                                 </h2>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {showSuccess ? 'The university has been added to the system' : 'Add a new university to the platform'}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         >
-                            <X className="w-5 h-5 text-gray-500" />
+                            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                         </button>
                     </div>
 
@@ -188,28 +161,28 @@ export function CreateUniversityModal({
                                 animate={{ opacity: 1, y: 0 }}
                                 className="text-center py-8"
                             >
-                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Building2 className="w-8 h-8 text-green-600" />
+                                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Building2 className="w-8 h-8 text-green-600 dark:text-green-400" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                                     University Created Successfully!
                                 </h3>
-                                <p className="text-gray-600 mb-4">
+                                <p className="text-gray-600 dark:text-gray-400 mb-4">
                                     <strong>{createdUniversity?.university_name}</strong> has been added to the system and a welcome email has been sent.
                                 </p>
 
-                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                                    <h4 className="text-sm font-medium text-gray-900 mb-3">
+                                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                                         Login Credentials:
                                     </h4>
                                     <div className="space-y-2 text-left">
                                         <div className="flex justify-between">
-                                            <span className="text-sm text-gray-600">Email:</span>
-                                            <span className="text-sm font-medium text-gray-900">{createdUniversity?.email}</span>
+                                            <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{createdUniversity?.email}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-sm text-gray-600">Password:</span>
-                                            <span className="text-sm font-medium text-gray-900">{createdUniversity?.temporary_password || 'Password@123'}</span>
+                                            <span className="text-sm text-gray-600 dark:text-gray-400">Password:</span>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{createdUniversity?.temporary_password || 'Password@123'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -222,7 +195,7 @@ export function CreateUniversityModal({
                                             setCreatedUniversity(null)
                                             onClose()
                                         }}
-                                        className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                                        className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
                                     >
                                         Close
                                     </button>
@@ -232,7 +205,7 @@ export function CreateUniversityModal({
                                             setShowSuccess(false)
                                             setCreatedUniversity(null)
                                         }}
-                                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg transition-colors duration-200"
                                     >
                                         Add Another University
                                     </button>
@@ -245,46 +218,42 @@ export function CreateUniversityModal({
                                     <motion.div
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg"
+                                        className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
                                     >
-                                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                                        <p className="text-sm text-red-700">{error}</p>
+                                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                                        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                                     </motion.div>
                                 )}
 
                                 {/* Basic Information */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                                        <Building2 className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Building2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                         Basic Information
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* University Name - now uses searchable dropdown like registration */}
+                                        {/* University Name */}
                                         <div className="space-y-2">
-                                            <AsyncSearchableSelect
-                                                label="University Name *"
-                                                placeholder="Search for university / college..."
-                                                value={selectedCollegeId}
-                                                fetchOptions={fetchColleges}
-                                                onChange={(value, option) => {
-                                                    setSelectedCollegeId(value)
-                                                    if (option) {
-                                                        handleInputChange('university_name', option.label)
-                                                        handleInputChange('college_id', value)
-                                                    } else {
-                                                        handleInputChange('university_name', '')
-                                                        handleInputChange('college_id', undefined)
-                                                    }
-                                                }}
-                                                error={!formData.university_name}
-                                                helperText={!formData.university_name ? 'Please select a university' : undefined}
-                                            />
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                University Name *
+                                            </label>
+                                            <div className="relative">
+                                                <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    value={formData.university_name}
+                                                    onChange={(e) => handleInputChange('university_name', e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                    placeholder="Enter university name"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
 
                                         {/* Email */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Email Address *
                                             </label>
                                             <div className="relative">
@@ -293,7 +262,7 @@ export function CreateUniversityModal({
                                                     type="email"
                                                     value={formData.email}
                                                     onChange={(e) => handleInputChange('email', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                     placeholder="Enter email address"
                                                     required
                                                 />
@@ -302,7 +271,7 @@ export function CreateUniversityModal({
 
                                         {/* Phone */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Phone Number
                                             </label>
                                             <div className="relative">
@@ -311,7 +280,7 @@ export function CreateUniversityModal({
                                                     type="tel"
                                                     value={formData.phone || ''}
                                                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                     placeholder="Enter phone number"
                                                 />
                                             </div>
@@ -319,13 +288,13 @@ export function CreateUniversityModal({
 
                                         {/* Institute Type */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Institute Type *
                                             </label>
                                             <select
                                                 value={formData.institute_type}
                                                 onChange={(e) => handleInputChange('institute_type', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 required
                                             >
                                                 <option value="">Select institute type</option>
@@ -341,36 +310,36 @@ export function CreateUniversityModal({
 
                                 {/* Contact Information */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                                        <User className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                        <User className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                         Contact Information
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Contact Person Name */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Contact Person Name
                                             </label>
                                             <input
                                                 type="text"
                                                 value={formData.contact_person_name || ''}
                                                 onChange={(e) => handleInputChange('contact_person_name', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 placeholder="Enter contact person name"
                                             />
                                         </div>
 
                                         {/* Contact Designation */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Contact Designation
                                             </label>
                                             <input
                                                 type="text"
                                                 value={formData.contact_designation || ''}
                                                 onChange={(e) => handleInputChange('contact_designation', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 placeholder="Enter designation"
                                             />
                                         </div>
@@ -379,21 +348,21 @@ export function CreateUniversityModal({
 
                                 {/* Location & Website */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                                        <MapPin className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                        <MapPin className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                         Location & Website
                                     </h3>
 
                                     <div className="space-y-4">
                                         {/* Address */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Address
                                             </label>
                                             <textarea
                                                 value={formData.address || ''}
                                                 onChange={(e) => handleInputChange('address', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 placeholder="Enter university address"
                                                 rows={3}
                                             />
@@ -401,7 +370,7 @@ export function CreateUniversityModal({
 
                                         {/* Website URL */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Website URL
                                             </label>
                                             <div className="relative">
@@ -410,7 +379,7 @@ export function CreateUniversityModal({
                                                     type="url"
                                                     value={formData.website_url || ''}
                                                     onChange={(e) => handleInputChange('website_url', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                     placeholder="https://university.edu"
                                                 />
                                             </div>
@@ -420,15 +389,15 @@ export function CreateUniversityModal({
 
                                 {/* Academic Information */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                                        <GraduationCap className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                        <GraduationCap className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                         Academic Information
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Established Year */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Established Year
                                             </label>
                                             <div className="relative">
@@ -437,7 +406,7 @@ export function CreateUniversityModal({
                                                     type="number"
                                                     value={formData.established_year || ''}
                                                     onChange={(e) => handleInputChange('established_year', parseInt(e.target.value) || undefined)}
-                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                     placeholder="e.g., 1950"
                                                     min="1800"
                                                     max={new Date().getFullYear()}
@@ -449,13 +418,13 @@ export function CreateUniversityModal({
                                     <div className="space-y-4">
                                         {/* Courses Offered */}
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Courses Offered
                                             </label>
                                             <textarea
                                                 value={formData.courses_offered || ''}
                                                 onChange={(e) => handleInputChange('courses_offered', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 placeholder="List the courses offered (comma-separated)"
                                                 rows={3}
                                             />
@@ -464,11 +433,11 @@ export function CreateUniversityModal({
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+                                <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                                     <button
                                         type="button"
                                         onClick={onClose}
-                                        className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                                         disabled={isSubmitting}
                                     >
                                         Cancel
@@ -476,7 +445,7 @@ export function CreateUniversityModal({
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         {isSubmitting ? (
                                             <>
