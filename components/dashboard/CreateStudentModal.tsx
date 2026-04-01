@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/lib/error-handler'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import apiClient from '@/lib/api'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 
 // Degree options (Full list for fallback)
 export const degreeOptions = [
@@ -384,7 +385,7 @@ export function CreateStudentModal({
                                                         No Active Licenses
                                                     </h4>
                                                     <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 break-words">
-                                                        You need an active license to create student accounts. Please request a license from the administration.
+                                                        You need an active license to create student accounts. Please request a license from the administration. <Link href="/dashboard/university/licenses" onClick={onClose} className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100">Click here</Link> to create licenses.
                                                     </p>
                                                 </div>
                                             </div>
