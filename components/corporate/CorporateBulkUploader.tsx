@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Upload, Download, CheckCircle, XCircle, AlertTriangle, FileText, Database, Clock, AlertCircle as AlertCircleIcon, X } from 'lucide-react'
+import { ArrowLeft, Upload, Download, CheckCircle, XCircle, AlertTriangle, FileText, Database, Clock, AlertCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BulkUploadResult } from '@/types/practice'
 import { toast } from 'react-hot-toast'
