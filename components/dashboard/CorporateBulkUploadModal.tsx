@@ -384,386 +384,247 @@ export function CorporateBulkUploadModal({ isOpen, onClose, onComplete }: Corpor
         }
     };
 
-    if (!isOpen) return null;
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">   {/* allow scroll */}
+                    <div className="flex items-center justify-center min-h-screen px-4 text-center">
 
-    return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={handleClose}
-            />
-
-            {/* Modal */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-            >
-                <div className="p-6 flex-1 overflow-y-auto space-y-4">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-4 border border-primary-200 dark:border-primary-700 relative">
-                        <button
+                        {/* Background overlay */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black bg-opacity-50"
                             onClick={handleClose}
-                            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                            aria-label="Close"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                        <div className="pr-10">
-                            <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                                <Building2 className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-                                Bulk Upload Corporates
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-sm">
-                                Register multiple corporates via CSV file with auto-validation
-                            </p>
-                        </div>
-                    </div>
+                        />
 
-                    {/* Upload Section */}
-                    <AnimatePresence mode="wait">
-                        {uploadStep === 'upload' && (
+                            {/* Modal */}
                             <motion.div
-                                key="upload"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="space-y-4"
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                transition={{ duration: 0.2 }}
+                                className="relative inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-2 border-gray-300 dark:border-slate-600"
+                                onClick={(e) => {
+                                    console.log('🖱️ Modal container clicked, stopping propagation')
+                                    e.stopPropagation()
+                                }}
                             >
-                                {/* Upload Instructions */}
-                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex-shrink-0">
-                                            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                                                Upload Guidelines
-                                            </h3>
-                                            <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
-                                                <li>• Use the CSV template provided below</li>
-                                                <li>• <strong>Required:</strong> company_name, email, phone</li>
-                                                <li>• Optional fields: industry, address, website_url, contact_person, contact_designation, company_size, company_type, founded_year, description</li>
-                                                <li>• Maximum file size: 5MB</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Download Template */}
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                {/* Header */}
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 px-6 py-4 border-b-2 border-gray-200 dark:border-slate-600">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                                                Download Template
-                                            </h3>
-                                            <p className="text-gray-600 dark:text-gray-400 text-xs">
-                                                Get the CSV template with sample data
-                                            </p>
-                                        </div>
-                                        <Button
-                                            onClick={downloadTemplate}
-                                            disabled={isDownloadingTemplate}
-                                            size="sm"
-                                            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                            Bulk Upload Corporates
+                                        </h3>
+                                        <button
+                                            onClick={handleClose}
+                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
                                         >
-                                            {isDownloadingTemplate ? (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            ) : (
-                                                <Download className="w-4 h-4 mr-2" />
-                                            )}
-                                            Download
-                                        </Button>
+                                            <X className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                    <div className="text-center py-6">
-                                        <div className="mx-auto w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
-                                            <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                            Select CSV File
-                                        </h3>
-                                        <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
-                                            Choose a CSV file containing your corporates data
-                                        </p>
-                                        
-                                        <div className="relative">
-                                            <input
-                                                type="file"
-                                                accept=".csv"
-                                                onChange={handleFileSelect}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                disabled={isProcessing}
-                                            />
-                                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 hover:border-primary-500 dark:hover:border-primary-400 transition-colors duration-200 max-w-lg mx-auto">
-                                                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                                <p className="text-gray-600 dark:text-gray-400 font-medium">
-                                                    {selectedFile ? selectedFile.name : 'Click or drop to select CSV file'}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                                                    CSV files only, max 5MB
-                                                </p>
+                                {/* Content */}
+                                <div
+                                    className="px-6 py-4 bg-white dark:bg-slate-800"
+                                    onClick={(e) => {
+                                        console.log('🖱️ Content area clicked, preventing bubble')
+                                        e.stopPropagation()
+                                    }}
+                                    onMouseDown={(e) => {
+                                        console.log('🖱️ Content area mouse down, preventing bubble')
+                                        e.stopPropagation()
+                                    }}
+                                >
+                                    <div className="space-y-6">
+
+                                        {/* Instructions */}
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                                                        Upload Instructions
+                                                    </h4>
+                                                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                                                        <li>• Use the CSV template provided below</li>
+                                                        <li>• Required columns: company_name, email, phone</li>
+                                                        <li>• Optional columns: industry, address, website_url, contact_person, contact_designation, company_size, company_type, founded_year, description</li>
+                                                        <li>• Maximum file size: 5MB</li>
+                                                        <li>• Corporates will receive welcome emails automatically</li>
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {isProcessing && (
-                                            <div className="mt-4 flex items-center justify-center gap-2">
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
-                                                <span className="text-sm text-gray-600 dark:text-gray-400">Processing file...</span>
+                                        {/* Template Download */}
+                                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                                        Download Template
+                                                    </h4>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        Get the CSV template with sample data
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        console.log('📥 Download template button clicked!')
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        downloadTemplate()
+                                                    }}
+                                                    disabled={isDownloadingTemplate}
+                                                    className="inline-flex items-center gap-2 px-3 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    {isDownloadingTemplate ? 'Downloading...' : 'Download'}
+                                                </button>
                                             </div>
-                                        )}
+                                        </div>
 
-                                        {error && (
-                                            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg max-w-lg mx-auto">
-                                                <div className="flex items-center gap-2">
-                                                    <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-                                                    <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+                                        {/* File Upload */}
+                                        <div>
+                                            <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Select CSV File
+                                            </label>
+                                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors duration-200">
+                                                <div className="space-y-1 text-center">
+                                                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                                                        <label
+                                                            htmlFor="file-upload"
+                                                            className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                                                        >
+                                                            <span>Upload a file</span>
+                                                            <input
+                                                                id="file-upload"
+                                                                name="file-upload"
+                                                                type="file"
+                                                                accept=".csv"
+                                                                className="sr-only"
+                                                                onChange={handleFileSelect}
+                                                                disabled={isProcessing}
+                                                            />
+                                                        </label>
+                                                        <p className="pl-1">or drag and drop</p>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        CSV files only, up to 5MB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Selected File - Success */}
+                                        {selectedFile && fileValidation && fileValidation.isValid && (
+                                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                                                            File Validated Successfully
+                                                        </p>
+                                                        <p className="text-sm text-green-800 dark:text-green-200">
+                                                            {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                                                        </p>
+                                                        <div className="mt-2 text-xs text-green-700 dark:text-green-300">
+                                                            <p>• {fileValidation.rowCount} corporate(s) found</p>
+                                                            <p>• All required columns present</p>
+                                                            <p>• All data validated successfully</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
 
-                        {uploadStep === 'preview' && fileValidation && (
-                            <motion.div
-                                key="preview"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
-                            >
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                                            Preview & Upload
-                                        </h3>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            Review your data before uploading
-                                        </p>
-                                    </div>
-                                    <Button
-                                        onClick={() => setUploadStep('upload')}
-                                        variant="outline"
-                                        size="sm"
-                                    >
-                                        <ArrowLeft className="w-4 h-4 mr-2" />
-                                        Back to Upload
-                                    </Button>
-                                </div>
-
-                                {/* Validation Summary */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                                                <Database className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                                    {fileValidation.rowCount}
-                                                </p>
-                                                <p className="text-sm text-blue-700 dark:text-blue-300">Total Rows</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                                <CheckCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                                    {fileValidation.rowCount}
-                                                </p>
-                                                <p className="text-sm text-green-700 dark:text-green-300">Valid</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                                                <XCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-red-600 dark:text-red-400">0</p>
-                                                <p className="text-sm text-red-700 dark:text-red-300">Invalid</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Sample Data */}
-                                {fileValidation.sampleData.length > 0 && (
-                                    <div className="mb-6">
-                                        <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">
-                                            Sample Data Preview
-                                        </h4>
-                                        <div className="overflow-x-auto border rounded-xl border-gray-200 dark:border-gray-700 shadow-sm">
-                                            <table className="min-w-full bg-white dark:bg-gray-800">
-                                                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                                                    <tr>
-                                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Row</th>
-                                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Company</th>
-                                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
-                                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Phone</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                                    {fileValidation.sampleData.map((row, index) => (
-                                                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 font-medium">{row.row}</td>
-                                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white max-w-[200px] truncate">
-                                                                {row.company_name || <span className="text-red-500">Missing</span>}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{row.email || <span className="text-red-500">Missing</span>}</td>
-                                                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{row.phone || <span className="text-red-500">Missing</span>}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-end gap-3 mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                                    <Button
-                                        onClick={handleClose}
-                                        variant="outline"
-                                        disabled={isUploading}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={handleBulkUpload}
-                                        disabled={isUploading}
-                                        className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white min-w-[140px]"
-                                    >
-                                        {isUploading ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                <span>Uploading...</span>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <Upload className="w-4 h-4" />
-                                                <span>Upload Corporates</span>
+                                        {/* Selected File - With Errors */}
+                                        {selectedFile && fileValidation && !fileValidation.isValid && (
+                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                                                            File Selected with Validation Issues
+                                                        </p>
+                                                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                                            {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                                                        </p>
+                                                        <div className="mt-2 text-xs text-yellow-700 dark:text-yellow-300">
+                                                            <p>• {fileValidation.rowCount} corporate(s) found</p>
+                                                            <p>• {fileValidation.missingColumns.length > 0 ? 'Missing columns: ' + fileValidation.missingColumns.join(', ') : 'All required columns present'}</p>
+                                                            <p>• Data validation failed - see errors below</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
-                                    </Button>
+
+                                        {/* File Validation Issues */}
+                                        {(error || (fileValidation && !fileValidation.isValid)) && (
+                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <h4 className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-2">
+                                                            File Validation Issues
+                                                        </h4>
+                                                        {fileValidation?.missingColumns && fileValidation.missingColumns.length > 0 && (
+                                                            <div className="mb-2">
+                                                                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                                                    Missing required columns: {fileValidation.missingColumns.join(', ')}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {(error || fileValidation?.error) && (
+                                                            <div>
+                                                                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                                                    {error || fileValidation?.error}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Footer */}
+                                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    console.log('❌ Cancel button clicked!')
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleClose()
+                                                }}
+                                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    console.log('🔘 Upload Corporates button clicked!')
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleBulkUpload()
+                                                }}
+                                                disabled={!selectedFile || isProcessing || isUploading || (fileValidation ? !fileValidation.isValid : false)}
+                                                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                            >
+                                                {isUploading ? 'Uploading...' : 'Upload Corporates'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
-                        )}
-
-                        {uploadStep === 'result' && uploadResult && (
-                            <motion.div
-                                key="result"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
-                            >
-                                <div className="text-center mb-8">
-                                    {uploadResult.validRows > 0 ? (
-                                        <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-                                            <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
-                                        </div>
-                                    ) : (
-                                        <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-                                            <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
-                                        </div>
-                                    )}
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                        Upload Complete
-                                    </h3>
-                                    <p className="text-gray-600 dark:text-gray-400">
-                                        Processed {uploadResult.totalRows} corporates
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                                                <Database className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                                    {uploadResult.totalRows}
-                                                </p>
-                                                <p className="text-sm text-blue-700 dark:text-blue-300">Total Rows</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                                <CheckCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                                    {uploadResult.validRows}
-                                                </p>
-                                                <p className="text-sm text-green-700 dark:text-green-300">Valid</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-700">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                                                <XCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                                                    {uploadResult.invalidRows}
-                                                </p>
-                                                <p className="text-sm text-red-700 dark:text-red-300">Invalid</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {uploadResult.errors && uploadResult.errors.length > 0 && (
-                                    <div className="mb-6">
-                                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                            <AlertCircle className="w-4 h-4 text-red-500" />
-                                            Errors Details ({uploadResult.errors.length})
-                                        </h4>
-                                        <div className="bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 dark:border-red-900/50 p-4 max-h-48 overflow-y-auto">
-                                            <ul className="space-y-2 text-sm text-red-700 dark:text-red-300">
-                                                {uploadResult.errors.map((err: any, idx: number) => (
-                                                    <li key={idx} className="flex gap-2">
-                                                        <span className="font-semibold whitespace-nowrap">Row {err.row}:</span>
-                                                        <span>{err.message}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-end mt-6">
-                                    <Button
-                                        onClick={handleClose}
-                                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white"
-                                    >
-                                        Done
-                                    </Button>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    </div>
                 </div>
-            </motion.div>
-        </div>,
-        document.body
+            )}
+        </AnimatePresence>
     )
 }
