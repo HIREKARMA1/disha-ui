@@ -472,7 +472,7 @@ export function CorporateBulkUploadModal({ isOpen, onClose, onComplete }: Corpor
                                                 </div>
                                                 <button
                                                     onClick={(e) => {
-                                                        console.log('📥 Download template button clicked!')
+                                                        console.log('📥 Download template button clicked!!')
                                                         e.preventDefault()
                                                         e.stopPropagation()
                                                         downloadTemplate()
