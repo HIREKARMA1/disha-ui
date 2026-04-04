@@ -1183,6 +1183,7 @@ interface ProfileSectionFormProps {
 function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: ProfileSectionFormProps) {
     const { getToken } = useAuth()
     const [formData, setFormData] = useState<any>({})
+    const [pendingFiles, setPendingFiles] = useState<{[key: string]: File}>({})
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
@@ -1246,7 +1247,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         }
     }, [profile, section])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
         // Clean up form data - convert empty strings to null for numeric fields
@@ -1272,7 +1273,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             return currentValue !== originalValue
         })
 
-        if (!hasChanges) {
+        const hasPendingFiles = Object.keys(pendingFiles).length > 0;
+
+        if (!hasChanges && !hasPendingFiles) {
             onCancel() // Just close the form
             return
         }
@@ -1429,7 +1432,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             const documentFields = ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates']
             documentFields.forEach(field => {
                 const url = cleanedFormData[field]
-                if (url && !url.startsWith('http') && !url.startsWith('/')) {
+                if (url && !pendingFiles[field] && !url.startsWith('http') && !url.startsWith('/')) {
                     validationErrors.push(`Invalid file URL for ${field.replace('_', ' ')}`)
                     hasValidationErrors = true
                 }
@@ -1450,81 +1453,71 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
 
         try {
+            // First upload any pending files
+            if (hasPendingFiles) {
+                const token = getToken();
+                if (!token) throw new Error('Authentication token not found');
+
+                const { FileUploadService } = await import('@/services/fileUploadService');
+
+                for (const [field, file] of Object.entries(pendingFiles)) {
+                    setUploading(field);
+                    let response;
+                    switch (field) {
+                        case 'profile_picture':
+                            response = await FileUploadService.uploadProfilePicture(file, token);
+                            break;
+                        case 'resume':
+                            response = await FileUploadService.uploadResume(file, token);
+                            break;
+                        case 'tenth_certificate':
+                            response = await FileUploadService.uploadTenthCertificate(file, token);
+                            break;
+                        case 'twelfth_certificate':
+                            response = await FileUploadService.uploadTwelfthCertificate(file, token);
+                            break;
+                        case 'internship_certificates':
+                            response = await FileUploadService.uploadInternshipCertificates(file, token);
+                            break;
+                        default:
+                            throw new Error('Unknown field type');
+                    }
+                    const fileUrl = response.certificate_url || response.resume_url || response.profile_picture_url || '';
+                    cleanedFormData[field] = fileUrl; // Add URL to form data to be saved
+                }
+                setUploading(null);
+                setPendingFiles({}); // Clear pending uploads
+            }
+
             // Call onSave and handle the result
             onSave(cleanedFormData)
 
             // The onSave function should handle success/error toasts
             // We'll update the handleSave function to properly handle toasts
         } catch (error) {
+            console.error('Save error:', error)
+            setUploading(null)
             toast.error('Failed to save changes')
         }
     }
 
     const handleFileUpload = async (field: string, file: File) => {
-        setUploading(field)
-        setUploadError(null)
-
-        try {
-            // Get auth token from useAuth hook
-            const token = getToken()
-            if (!token) {
-                throw new Error('Authentication token not found')
-            }
-
-            console.log('Starting file upload for field:', field)
-            console.log('File details:', { name: file.name, size: file.size, type: file.type })
-
-            // Import the FileUploadService dynamically to avoid circular dependencies
-            const { FileUploadService } = await import('@/services/fileUploadService')
-
-            let response
-            switch (field) {
-                case 'profile_picture':
-                    response = await FileUploadService.uploadProfilePicture(file, token)
-                    break
-                case 'resume':
-                    response = await FileUploadService.uploadResume(file, token)
-                    break
-                case 'tenth_certificate':
-                    response = await FileUploadService.uploadTenthCertificate(file, token)
-                    break
-                case 'twelfth_certificate':
-                    response = await FileUploadService.uploadTwelfthCertificate(file, token)
-                    break
-                case 'internship_certificates':
-                    response = await FileUploadService.uploadInternshipCertificates(file, token)
-                    break
-                default:
-                    throw new Error('Unknown field type')
-            }
-
-            // Update form data with the uploaded file URL
-            const fileUrl = response.certificate_url || response.resume_url || response.profile_picture_url || ''
-            setFormData({ ...formData, [field]: fileUrl })
-            setUploadSuccess(field)
-            setUploadError(null)
-
-            // Clear success message after 3 seconds
-            setTimeout(() => setUploadSuccess(null), 3000)
-
-            // Persist immediately so top badges (photo/resume) update without extra save
-            try {
-                await onSave({ [field]: fileUrl } as any)
-            } catch (e) {
-                // non-blocking
-            }
-
-        } catch (error) {
-            console.error('File upload error:', error)
-            setUploadError(error instanceof Error ? error.message : 'Upload failed')
-            setUploadSuccess(null)
-        } finally {
-            setUploading(null)
-        }
+        // Store the file to be uploaded when the user clicks 'Save Changes'
+        setPendingFiles(prev => ({ ...prev, [field]: file }));
+        // Temporarily put the local file name in the formData so UI knows a file is staged
+        setFormData({ ...formData, [field]: file.name });
+        setUploadSuccess(field);
+        setUploadError(null);
+        setTimeout(() => setUploadSuccess(null), 3000);
     }
 
     const handleFileRemove = (field: string) => {
         setFormData({ ...formData, [field]: '' })
+        setPendingFiles(prev => {
+            const next = { ...prev };
+            delete next[field];
+            return next;
+        });
         setUploadError(null)
     }
 
@@ -1553,14 +1546,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         onFileRemove={() => handleFileRemove(field)}
                         currentFile={value}
                         placeholder="Upload your profile picture"
-                        disabled={uploading === field}
                     />
-                    {uploading === field && (
-                        <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Uploading...</span>
-                        </div>
-                    )}
                 </div>
             )
         }
@@ -1574,14 +1560,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         onFileRemove={() => handleFileRemove(field)}
                         currentFile={value}
                         placeholder="Upload your resume (PDF only)"
-                        disabled={uploading === field}
                     />
-                    {uploading === field && (
-                        <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Uploading...</span>
-                        </div>
-                    )}
                 </div>
             )
         }
@@ -1603,14 +1582,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         onFileRemove={() => handleFileRemove(backendFieldName)}
                         currentFile={formData[backendFieldName] || ''}
                         placeholder={`Upload your ${displayName} (PDF only)`}
-                        disabled={uploading === backendFieldName}
                     />
-                    {uploading === backendFieldName && (
-                        <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Uploading...</span>
-                        </div>
-                    )}
                 </div>
             )
         }
@@ -1998,10 +1970,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 </Button>
                 <Button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || uploading !== null}
                     className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                    {saving ? 'Saving...' : 'Save Changes'}
+                    {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
         </form>
