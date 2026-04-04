@@ -170,7 +170,7 @@ export default function LoginPage() {
 
             if (error.response) {
                 const status = error.response.status
-                const detail = error.response.data?.detail
+                const detail = error.response.data?.error || error.response.data?.detail
 
                 if (status === 401) {
                     message = 'Invalid password. Please try again.'

@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
             setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
+            const message = error.response?.data?.error || error.response?.data?.detail || 'Failed to send OTP. Please try again.'
             toast.error(message)
         } finally {
             setIsLoading(false)
@@ -150,7 +150,7 @@ export default function ForgotPasswordPage() {
                 toast.success('OTP resent to your email address')
             }
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            const message = error.response?.data?.error || error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
             
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
@@ -191,7 +191,7 @@ export default function ForgotPasswordPage() {
             setCurrentStep('password')
             toast.success('OTP verified successfully')
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Invalid or expired OTP'
+            const message = error.response?.data?.error || error.response?.data?.detail || 'Invalid or expired OTP'
             toast.error(message)
         } finally {
             setIsLoading(false)
@@ -212,7 +212,7 @@ export default function ForgotPasswordPage() {
             setCurrentStep('success')
             toast.success('Password reset successfully!')
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to reset password. Please try again.'
+            const message = error.response?.data?.error || error.response?.data?.detail || 'Failed to reset password. Please try again.'
             toast.error(message)
         } finally {
             setIsLoading(false)

@@ -356,7 +356,9 @@ export default function RegisterPage() {
             console.error('Send OTP error:', error)
             let message = 'Failed to send OTP. Please try again.'
 
-            if (error.response?.data?.detail) {
+            if (error.response?.data?.error) {
+                message = error.response.data.error
+            } else if (error.response?.data?.detail) {
                 message = error.response.data.detail
             } else if (error.message) {
                 message = error.message
@@ -392,7 +394,7 @@ export default function RegisterPage() {
             }
         } catch (error: any) {
             console.error('Resend OTP error:', error)
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            const message = error.response?.data?.error || error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
 
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
@@ -497,7 +499,9 @@ export default function RegisterPage() {
             console.error('OTP verification error:', error)
             let message = 'Invalid or expired OTP. Please try again.'
 
-            if (error.response?.data?.detail) {
+            if (error.response?.data?.error) {
+                message = error.response.data.error
+            } else if (error.response?.data?.detail) {
                 message = error.response.data.detail
             } else if (error.message) {
                 message = error.message
