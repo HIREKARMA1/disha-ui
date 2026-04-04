@@ -133,17 +133,7 @@ export function CreateStudentModal({
     const activeLicenses = useMemo(() => licenses.filter(l => l.is_active && l.remaining_licenses > 0), [licenses])
     const hasActiveLicenses = activeLicenses.length > 0
 
-    // Toast warning if no licenses (Keep strictly if 0 licenses exist)
-    useEffect(() => {
-        if (isOpen && !isLoadingLicenses && !hasActiveLicenses && !fetchError) {
-            const timer = setTimeout(() => {
-                toast.error("Active license is required to create students")
-            }, 500)
-            return () => clearTimeout(timer)
-        }
-    }, [isOpen, isLoadingLicenses, hasActiveLicenses, fetchError])
-
-
+    //     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         e.stopPropagation()
