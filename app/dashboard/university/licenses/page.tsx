@@ -152,16 +152,6 @@ export default function UniversityLicensesPage() {
                         <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-6">
                             {searchTerm ? 'No licenses match your search.' : "You don't have any active licenses yet. Request a license to start adding students."}
                         </p>
-                        {!searchTerm && (
-                            <Button onClick={() => {
-                                setSelectedBatch(undefined)
-                                setSelectedDegree(undefined)
-                                setSelectedBranches(undefined)
-                                setIsRequestModalOpen(true)
-                            }}>
-                                Request Your First License
-                            </Button>
-                        )}
                     </div>
                 ) : (
                     <div className="space-y-6">
