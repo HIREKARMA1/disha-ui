@@ -13,6 +13,37 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useIndustries } from '@/hooks/useLookup'
 
+// Fallback industry options (used if lookup API returns empty)
+const fallbackIndustryOptions = [
+    { value: 'Technology', label: 'Technology' },
+    { value: 'Information Technology', label: 'Information Technology' },
+    { value: 'Finance', label: 'Finance' },
+    { value: 'Healthcare', label: 'Healthcare' },
+    { value: 'Education', label: 'Education' },
+    { value: 'Manufacturing', label: 'Manufacturing' },
+    { value: 'Retail', label: 'Retail' },
+    { value: 'Real Estate', label: 'Real Estate' },
+    { value: 'Consulting', label: 'Consulting' },
+    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
+    { value: 'Telecommunications', label: 'Telecommunications' },
+    { value: 'Automotive', label: 'Automotive' },
+    { value: 'Aerospace', label: 'Aerospace' },
+    { value: 'Energy', label: 'Energy' },
+    { value: 'Government', label: 'Government' },
+    { value: 'Non-Profit', label: 'Non-Profit' },
+    { value: 'E-commerce', label: 'E-commerce' },
+    { value: 'Banking', label: 'Banking' },
+    { value: 'Insurance', label: 'Insurance' },
+    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
+    { value: 'Food & Beverage', label: 'Food & Beverage' },
+    { value: 'Transportation', label: 'Transportation' },
+    { value: 'Logistics', label: 'Logistics' },
+    { value: 'Hospitality', label: 'Hospitality' },
+    { value: 'Agriculture', label: 'Agriculture' },
+    { value: 'Construction', label: 'Construction' },
+    { value: 'Other', label: 'Other' }
+]
+
 // Degree options (same as student modal)
 const degreeOptions = [
     { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
@@ -234,10 +265,12 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
     // Convert LookupItem[] to Select format { value, label }
     // Use industry name as both value and label since that's what's stored in jobs
-    const industryOptions = industriesData.map(industry => ({
-        value: industry.name,
-        label: industry.name
-    }))
+    const industryOptions = industriesData.length > 0
+        ? industriesData.map(industry => ({
+            value: industry.name,
+            label: industry.name
+        }))
+        : fallbackIndustryOptions
 
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
@@ -425,11 +458,11 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 remote_work: isRemote,
                 travel_required: job.travel_required || false,
                 onsite_office: isOnsite,
-                salary_min: job.salary_min ? job.salary_min.toString() : '',
-                salary_max: job.salary_max ? job.salary_max.toString() : '',
+                salary_min: job.salary_min !== null && job.salary_min !== undefined ? job.salary_min.toString() : '',
+                salary_max: job.salary_max !== null && job.salary_max !== undefined ? job.salary_max.toString() : '',
                 salary_currency: job.salary_currency || 'INR',
-                experience_min: job.experience_min ? job.experience_min.toString() : '',
-                experience_max: job.experience_max ? job.experience_max.toString() : '',
+                experience_min: job.experience_min !== null && job.experience_min !== undefined ? job.experience_min.toString() : '',
+                experience_max: job.experience_max !== null && job.experience_max !== undefined ? job.experience_max.toString() : '',
                 education_level: educationLevelArray,
                 education_degree: educationDegreeArray,
                 education_branch: educationBranchArray,
@@ -454,7 +487,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 company_address: (job.company_address && job.company_address.trim()) || '',
                 company_size: normalizedCompanySize,
                 company_type: normalizedCompanyType,
-                company_founded: job.company_founded ? job.company_founded.toString() : '',
+                company_founded: job.company_founded !== null && job.company_founded !== undefined ? job.company_founded.toString() : '',
                 company_description: job.company_description || '',
                 contact_person: (job.contact_person && job.contact_person.trim()) || '',
                 contact_designation: (job.contact_designation && job.contact_designation.trim()) || ''
@@ -1220,7 +1253,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Industry
                                         </label>
-                                        <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
+                                        <Select value={formData.industry || undefined} onValueChange={(value) => handleInputChange('industry', value)}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select industry" />
                                             </SelectTrigger>
