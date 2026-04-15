@@ -81,6 +81,30 @@ export function ProfileSectionForm({ section, profile, onSave, saving }: Profile
             )
         }
 
+        if (['name', 'city', 'state', 'country'].includes(field)) {
+            return (
+                <Input
+                    type="text"
+                    value={value}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setFormData({ ...formData, [field]: e.target.value.replace(/[^a-zA-Z\s]/g, '') });
+                    }}
+                    onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                        // Native DOM interception to prevent emojis and special characters visually bypassing React state
+                        e.currentTarget.value = e.currentTarget.value.replace(/[^a-zA-Z\s]/g, '');
+                    }}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        // Prevent pressing keys that aren't letters or spaces (allows control keys like Backspace)
+                        if (e.key.length === 1 && !/^[a-zA-Z\s]*$/.test(e.key)) {
+                            e.preventDefault();
+                        }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                />
+            )
+        }
+
         return (
             <Input
                 type="text"

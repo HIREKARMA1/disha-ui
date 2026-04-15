@@ -493,15 +493,10 @@ export default function CorporateJobsPage() {
                         <p className="text-gray-600 dark:text-gray-400 mb-6">
                             {searchTerm || filters.status || filters.job_type || filters.industry
                                 ? 'Try adjusting your search or filter criteria'
-                                : 'Create your first job posting to start attracting talent'
+                                : 'Create your first job posting to start attracting talent..'
                             }
                         </p>
-                        {!searchTerm && !filters.status && !filters.job_type && !filters.industry && (
-                            <Button onClick={handleCreateJob} className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Your First Job
-                            </Button>
-                        )}
+
                     </div>
                 )}
             </div>
