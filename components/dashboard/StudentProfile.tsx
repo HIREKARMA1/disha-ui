@@ -1187,6 +1187,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
 
+    const getFieldErrors = () => {
+        const errors: Record<string, string> = {}
+        const alphaOnlyFields = ['name', 'city', 'state', 'country']
+        
+        alphaOnlyFields.forEach(field => {
+            const value = formData[field]
+            if (value && typeof value === 'string') {
+                if (/[^a-zA-Z\s]/.test(value)) {
+                    errors[field] = 'Special characters, numbers, and emojis are not allowed'
+                }
+            }
+        })
+        return errors
+    }
+    
+    const fieldValidationErrors = getFieldErrors()
+    const hasFieldErrors = Object.keys(fieldValidationErrors).length > 0
+
     // Use professional lookup hook for branches
     const {
         data: branches,
@@ -1283,6 +1301,12 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
         // Basic Information Validation
         if (section.id === 'basic') {
+            const dynamicErrors = getFieldErrors();
+            if (Object.keys(dynamicErrors).length > 0) {
+                validationErrors.push('Please remove special characters, numbers, and emojis from the highlighted fields')
+                hasValidationErrors = true
+            }
+
             // Name validation
             if (!cleanedFormData.name || cleanedFormData.name.trim().length === 0) {
                 validationErrors.push('Name is required')
@@ -1825,14 +1849,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+        const hasError = fieldValidationErrors[field]
+
         return (
-            <input
-                type="text"
-                value={value}
-                onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-            />
+            <div className="space-y-1">
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                        hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                    placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                />
+                {hasError && (
+                    <div className="flex items-center space-x-1 text-sm text-red-500">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{fieldValidationErrors[field]}</span>
+                    </div>
+                )}
+            </div>
         )
     }
 
@@ -1998,8 +2034,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 </Button>
                 <Button
                     type="submit"
-                    disabled={saving}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={saving || hasFieldErrors}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saving ? 'Saving...' : 'Save Changes'}
                 </Button>

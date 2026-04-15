@@ -11,10 +11,12 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
+import { useIndustries } from '@/hooks/useLookup'
 
-// Industry options
-const industryOptions = [
+// Fallback industry options (used if lookup API returns empty)
+const fallbackIndustryOptions = [
     { value: 'Technology', label: 'Technology' },
+    { value: 'Information Technology', label: 'Information Technology' },
     { value: 'Finance', label: 'Finance' },
     { value: 'Healthcare', label: 'Healthcare' },
     { value: 'Education', label: 'Education' },
@@ -152,6 +154,12 @@ interface JobFormData {
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corporate' }: CreateJobModalProps) {
+    // Fetch industries from backend (same source as Edit screen)
+    const { data: industriesData } = useIndustries({ limit: 1000 })
+    const industryOptions = industriesData.length > 0
+        ? industriesData.map(industry => ({ value: industry.name, label: industry.name }))
+        : fallbackIndustryOptions
+
     const [isLoading, setIsLoading] = useState(false)
     const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
