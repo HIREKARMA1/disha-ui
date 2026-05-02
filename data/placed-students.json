@@ -1,0 +1,65 @@
+{
+  "subtitle": "Admission offered in the program is purely based on the eligibility of the students.",
+  "students": [
+    {
+      "name": "Ashutosh Panda",
+      "company": "Premier Energies Private Limited",
+      "imageUrl": "https://i.pravatar.cc/128?img=12"
+    },
+    {
+      "name": "Anshika Bansal",
+      "company": "Nextcare Life",
+      "imageUrl": "https://i.pravatar.cc/128?img=45"
+    },
+    {
+      "name": "Rahul Sharma",
+      "company": "TechVista Solutions",
+      "imageUrl": "https://i.pravatar.cc/128?img=33"
+    },
+    {
+      "name": "Priya Singh",
+      "company": "FinEdge Analytics",
+      "imageUrl": "https://i.pravatar.cc/128?img=16"
+    },
+    {
+      "name": "Vikram Mehta",
+      "company": "CloudScale Infra",
+      "imageUrl": "https://i.pravatar.cc/128?img=52"
+    },
+    {
+      "name": "Neha Gupta",
+      "company": "HealthFirst Systems",
+      "imageUrl": "https://i.pravatar.cc/128?img=9"
+    },
+    {
+      "name": "Arjun Pillai",
+      "company": "BuildRight Engineering",
+      "imageUrl": "https://i.pravatar.cc/128?img=68"
+    },
+    {
+      "name": "Sneha Reddy",
+      "company": "DataWeave Labs",
+      "imageUrl": "https://i.pravatar.cc/128?img=23"
+    },
+    {
+      "name": "Karan Joshi",
+      "company": "RetailNext India",
+      "imageUrl": "https://i.pravatar.cc/128?img=59"
+    },
+    {
+      "name": "Divya Nair",
+      "company": "GreenGrid Energy",
+      "imageUrl": "https://i.pravatar.cc/128?img=44"
+    },
+    {
+      "name": "Manish Kapoor",
+      "company": "SecureNet Cyber",
+      "imageUrl": "https://i.pravatar.cc/128?img=11"
+    },
+    {
+      "name": "Ishita Bose",
+      "company": "MediCare Digital",
+      "imageUrl": "https://i.pravatar.cc/128?img=38"
+    }
+  ]
+}

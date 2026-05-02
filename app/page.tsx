@@ -8,6 +8,7 @@ import HeroSection from '@/components/home/HeroSection'
 import FeaturesSection from '@/components/home/FeaturesSection'
 import HowItsWork from '@/components/home/HowItsWork'
 import ChallengeSection from '@/components/home/ChallengeSection'
+import PlacedStudentsSection from '@/components/home/PlacedStudentsSection'
 import TestimonialsSection from '@/components/home/TestimonialsSection'
 import PartnersSection from '@/components/home/PartnersSection'
 import FAQSection from '@/components/home/FAQSection'
@@ -51,6 +52,7 @@ export default function HomePage() {
             <FeaturesSection />
             <HowItsWork />
             <ChallengeSection />
+            <PlacedStudentsSection />
             {/* <TestimonialsSection /> */}
             <FAQSection />
             <CTASection />
