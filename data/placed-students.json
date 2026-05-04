@@ -1,0 +1,65 @@
+{
+  "subtitle": "Our students have successfully secured placements in reputed companies, reflecting their skills, dedication, and industry readiness.",
+  "students": [
+    {
+      "name": "Swarnasikha Behera",
+      "company": "Tech Mahindra",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/SWARNASIKHA+BEHERA+(Tech+Mahindra).jpg"
+    },
+    {
+      "name": "Atasi Pradhan",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Atasi+Pradhan.png"
+    },
+    {
+      "name": "Ayush Patel",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Ayush+Patel.png"
+    },
+    {
+      "name": "Chitun Sahu",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Chitun+Sahu.png"
+    },
+    {
+      "name": "Karan Nayak",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Karan+Nayak.jpg"
+    },
+    {
+      "name": "Nikeeta Sahoo",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Nikeeta+Sahoo.png"
+    },
+    {
+      "name": "Nitish Kumar Behera",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Nitish+Kumar+Behera.png"
+    },
+    {
+      "name": "Prabhudatta Barik",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Prabhudatta+Barik.png"
+    },
+    {
+      "name": "Shridhar Shekhar",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Shridhar+Shekhar.png"
+    },
+    {
+      "name": "Uttam Singh Rathor",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Uttam+Singh+Rathor.png"
+    },
+    {
+      "name": "Sahil kumar Sahoo",
+      "company": "Tech Mahindra",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Tech+mahindra+is+the+image.jpg"
+    },
+    {
+      "name": "Nalla Vamsi Krishna",
+      "company": "Jowib Technology",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/(Jowib+Technology).jpg"
+    }
+  ]
+}
