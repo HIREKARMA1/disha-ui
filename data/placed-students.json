@@ -1,65 +1,65 @@
 {
-  "subtitle": "Admission offered in the program is purely based on the eligibility of the students.",
+  "subtitle": "Our students have successfully secured placements in reputed companies, reflecting their skills, dedication, and industry readiness.",
   "students": [
     {
-      "name": "Ashutosh Panda",
-      "company": "Premier Energies Private Limited",
-      "imageUrl": "https://i.pravatar.cc/128?img=12"
+      "name": "Swarnasikha Behera",
+      "company": "Tech Mahindra",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/SWARNASIKHA+BEHERA+(Tech+Mahindra).jpg"
     },
     {
-      "name": "Anshika Bansal",
-      "company": "Nextcare Life",
-      "imageUrl": "https://i.pravatar.cc/128?img=45"
+      "name": "Atasi Pradhan",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Atasi+Pradhan.png"
     },
     {
-      "name": "Rahul Sharma",
-      "company": "TechVista Solutions",
-      "imageUrl": "https://i.pravatar.cc/128?img=33"
+      "name": "Ayush Patel",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Ayush+Patel.png"
     },
     {
-      "name": "Priya Singh",
-      "company": "FinEdge Analytics",
-      "imageUrl": "https://i.pravatar.cc/128?img=16"
+      "name": "Chitun Sahu",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Chitun+Sahu.png"
     },
     {
-      "name": "Vikram Mehta",
-      "company": "CloudScale Infra",
-      "imageUrl": "https://i.pravatar.cc/128?img=52"
+      "name": "Karan Nayak",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Karan+Nayak.jpg"
     },
     {
-      "name": "Neha Gupta",
-      "company": "HealthFirst Systems",
-      "imageUrl": "https://i.pravatar.cc/128?img=9"
+      "name": "Nikeeta Sahoo",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Nikeeta+Sahoo.png"
     },
     {
-      "name": "Arjun Pillai",
-      "company": "BuildRight Engineering",
-      "imageUrl": "https://i.pravatar.cc/128?img=68"
+      "name": "Nitish Kumar Behera",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Nitish+Kumar+Behera.png"
     },
     {
-      "name": "Sneha Reddy",
-      "company": "DataWeave Labs",
-      "imageUrl": "https://i.pravatar.cc/128?img=23"
+      "name": "Prabhudatta Barik",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Prabhudatta+Barik.png"
     },
     {
-      "name": "Karan Joshi",
-      "company": "RetailNext India",
-      "imageUrl": "https://i.pravatar.cc/128?img=59"
+      "name": "Shridhar Shekhar",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Shridhar+Shekhar.png"
     },
     {
-      "name": "Divya Nair",
-      "company": "GreenGrid Energy",
-      "imageUrl": "https://i.pravatar.cc/128?img=44"
+      "name": "Uttam Singh Rathor",
+      "company": "WeIntern Pvt. Ltd",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Uttam+Singh+Rathor.png"
     },
     {
-      "name": "Manish Kapoor",
-      "company": "SecureNet Cyber",
-      "imageUrl": "https://i.pravatar.cc/128?img=11"
+      "name": "Sahil kumar Sahoo",
+      "company": "Tech Mahindra",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/Tech+mahindra+is+the+image.jpg"
     },
     {
-      "name": "Ishita Bose",
-      "company": "MediCare Digital",
-      "imageUrl": "https://i.pravatar.cc/128?img=38"
+      "name": "Nalla Vamsi Krishna",
+      "company": "Jowib Technology",
+      "imageUrl": "https://disha-ui.s3.ap-south-1.amazonaws.com/Placed_Student_Images/Placed+Student/(Jowib+Technology).jpg"
     }
   ]
 }
