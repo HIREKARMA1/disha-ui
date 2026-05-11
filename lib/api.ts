@@ -349,8 +349,9 @@ class ApiClient {
     return response.data;
   }
 
-  async toggleJobPublicStatus(jobId: string): Promise<any> {
-    const response: AxiosResponse = await this.client.post(`/jobs/admin/${jobId}/toggle-public`);
+  async toggleJobPublicStatus(jobId: string, publicAccessLevel?: "premium" | "all"): Promise<any> {
+    const query = publicAccessLevel ? `?public_access_level=${publicAccessLevel}` : '';
+    const response: AxiosResponse = await this.client.post(`/jobs/admin/${jobId}/toggle-public${query}`);
     return response.data;
   }
 
