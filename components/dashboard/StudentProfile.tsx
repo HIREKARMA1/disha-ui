@@ -22,9 +22,11 @@ import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
+import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { cn, getInitials, truncateText } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
+import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
@@ -1190,7 +1192,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const getFieldErrors = () => {
         const errors: Record<string, string> = {}
         const alphaOnlyFields = ['name', 'city', 'state', 'country']
-        
+
         alphaOnlyFields.forEach(field => {
             const value = formData[field]
             if (value && typeof value === 'string') {
@@ -1201,7 +1203,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         })
         return errors
     }
-    
+
     const fieldValidationErrors = getFieldErrors()
     const hasFieldErrors = Object.keys(fieldValidationErrors).length > 0
 
@@ -1253,10 +1255,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 initialData[field] = profile[field as keyof StudentProfile] || ''
             })
 
-            // Include university_id and college_id for academic section
+            // Include university_id and college_id for academic/basic sections
             if (section.id === 'academic' || section.id === 'basic') {
                 if (profile.university_id) {
                     initialData.university_id = profile.university_id
+                }
+                if (profile.college_id) {
+                    initialData.college_id = profile.college_id
                 }
             }
 
@@ -1524,19 +1529,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
             // Update form data with the uploaded file URL
             const fileUrl = response.certificate_url || response.resume_url || response.profile_picture_url || ''
-            setFormData({ ...formData, [field]: fileUrl })
+            setFormData((prev: any) => ({ ...prev, [field]: fileUrl }))
             setUploadSuccess(field)
             setUploadError(null)
 
             // Clear success message after 3 seconds
             setTimeout(() => setUploadSuccess(null), 3000)
-
-            // Persist immediately so top badges (photo/resume) update without extra save
-            try {
-                await onSave({ [field]: fileUrl } as any)
-            } catch (e) {
-                // non-blocking
-            }
+            // Do not persist profile automatically on file upload.
+            // Persist only when user clicks Save Changes / Update Profile.
 
         } catch (error) {
             console.error('File upload error:', error)
@@ -1548,7 +1548,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     }
 
     const handleFileRemove = (field: string) => {
-        setFormData({ ...formData, [field]: '' })
+        setFormData((prev: any) => ({ ...prev, [field]: '' }))
         setUploadError(null)
     }
 
@@ -1836,15 +1836,38 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        // Handle institution field - read-only college/university name
+        // Use the same searchable college dropdown pattern as signup.
         if (field === 'institution') {
             return (
-                <input
-                    type="text"
-                    value={value || ''}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
-                    placeholder="Institution will be set from your college selection"
+                <AsyncSearchableSelect
+                    placeholder="Search for your college..."
+                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
+                        try {
+                            const response = await apiClient.get('/admin/lookups/colleges', {
+                                params: {
+                                    search: query,
+                                    limit: 100
+                                }
+                            })
+                            const colleges = response.colleges || []
+                            return colleges.map((c: any) => ({
+                                value: c.id,
+                                label: c.name ? c.name.replace(/['"]+/g, '').trim() : 'Unknown College'
+                            }))
+                        } catch (error) {
+                            console.error('Failed to fetch colleges', error)
+                            return []
+                        }
+                    }}
+                    onChange={(selectedCollegeId, option) => {
+                        setFormData({
+                            ...formData,
+                            college_id: selectedCollegeId || null,
+                            institution: option?.label || ''
+                        })
+                    }}
+                    value={formData.college_id || ''}
+                    helperText={formData.institution ? `Selected: ${formData.institution}` : undefined}
                 />
             )
         }
@@ -1857,9 +1880,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     type="text"
                     value={value}
                     onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
-                        hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'
+                        }`}
                     placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
                 />
                 {hasError && (

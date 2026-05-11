@@ -51,6 +51,7 @@ interface Job {
     mode_of_work?: string
     is_public?: boolean
     public_link_token?: string
+    public_access_level?: 'premium' | 'all'
 }
 
 interface AdminJobCardProps {
@@ -311,7 +312,7 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                             {job.is_public ? (
                                                 <>
                                                     <Globe className="w-4 h-4" />
-                                                    Manage Public Link
+                                                    Manage Public Access
                                                 </>
                                             ) : (
                                                 <>

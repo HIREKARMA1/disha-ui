@@ -61,6 +61,7 @@ interface Job {
     ctc_after_probation?: string
     is_public?: boolean
     public_link_token?: string
+    public_access_level?: 'premium' | 'all'
 }
 
 import { useRouter } from 'next/navigation'
@@ -88,6 +89,8 @@ export default function AdminJobsPage() {
     const [jobForAppliedStudents, setJobForAppliedStudents] = useState<Job | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [showPublicLinkModal, setShowPublicLinkModal] = useState(false)
+    const [showPublicAccessModal, setShowPublicAccessModal] = useState(false)
+    const [jobForPublicAction, setJobForPublicAction] = useState<Job | null>(null)
     const [publicLink, setPublicLink] = useState<string | null>(null)
     const [isTogglingPublic, setIsTogglingPublic] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -184,20 +187,35 @@ export default function AdminJobsPage() {
         setShowAppliedStudentsModal(true)
     }
 
-    const handleMakePublic = async (job: Job) => {
+    const executePublicAccessChange = async (job: Job, publicAccessLevel?: 'premium' | 'all') => {
         setIsTogglingPublic(true)
         try {
-            const response = await apiClient.toggleJobPublicStatus(job.id)
+            const response = await apiClient.toggleJobPublicStatus(job.id, publicAccessLevel)
             setPublicLink(response.public_link || null)
             setShowPublicLinkModal(true)
-            toast.success(job.is_public ? 'Job made private successfully!' : 'Job made public successfully!')
+            if (response.is_public) {
+                toast.success(
+                    response.public_access_level === 'all'
+                        ? 'Job is now public for all students.'
+                        : 'Job is now public for premium users.'
+                )
+            } else {
+                toast.success('Job made private successfully!')
+            }
             fetchJobs() // Refresh the jobs list
         } catch (error: any) {
             console.error('Failed to toggle job public status:', error)
             toast.error('Failed to toggle job public status. Please try again.')
         } finally {
             setIsTogglingPublic(false)
+            setShowPublicAccessModal(false)
+            setJobForPublicAction(null)
         }
+    }
+
+    const handleMakePublic = (job: Job) => {
+        setJobForPublicAction(job)
+        setShowPublicAccessModal(true)
     }
 
     const confirmDeleteJob = async () => {
@@ -565,6 +583,62 @@ export default function AdminJobsPage() {
                 job={jobForAppliedStudents}
             />
 
+            {/* Public Access Modal */}
+            {showPublicAccessModal && jobForPublicAction && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-screen items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowPublicAccessModal(false)} />
+                        <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Manage Public Access
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+                                Choose who can apply through the public job link.
+                            </p>
+
+                            <div className="space-y-3">
+                                <Button
+                                    className="w-full justify-start"
+                                    onClick={() => executePublicAccessChange(jobForPublicAction, 'premium')}
+                                    disabled={isTogglingPublic}
+                                >
+                                    Make Public for Premium Users
+                                </Button>
+                                <Button
+                                    className="w-full justify-start"
+                                    variant="secondary"
+                                    onClick={() => executePublicAccessChange(jobForPublicAction, 'all')}
+                                    disabled={isTogglingPublic}
+                                >
+                                    Make Public for All Students
+                                </Button>
+
+                                {jobForPublicAction.is_public && (
+                                    <Button
+                                        className="w-full justify-start"
+                                        variant="destructive"
+                                        onClick={() => executePublicAccessChange(jobForPublicAction)}
+                                        disabled={isTogglingPublic}
+                                    >
+                                        Make Private
+                                    </Button>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowPublicAccessModal(false)}
+                                    disabled={isTogglingPublic}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Public Link Modal */}
             {showPublicLinkModal && (
                 <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -587,7 +661,7 @@ export default function AdminJobsPage() {
                             {publicLink ? (
                                 <>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                        Share this link with students. They can view and apply.
+                                        Share this link with students. Access level is controlled by your selected public mode.
                                     </p>
                                     <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
                                         <input
