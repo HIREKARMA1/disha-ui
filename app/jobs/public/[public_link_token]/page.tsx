@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
+import { getErrorMessage } from '@/lib/error-handler'
 import {
     Loader2,
     AlertCircle,
@@ -71,6 +72,8 @@ interface Job {
     created_at?: string
     education_level?: string | string[]
     assigned_university_ids?: string[]  // List of university IDs this job is assigned to
+    is_public?: boolean
+    public_access_level?: 'premium' | 'all'
     [key: string]: any
 }
 
@@ -214,6 +217,11 @@ export default function PublicJobPage() {
     }
 
     const canStudentApply = () => {
+        // Public-for-all jobs bypass college assignment restrictions.
+        if (job?.is_public && job?.public_access_level === 'all') {
+            return { canApply: true, reason: null }
+        }
+
         // Check if job is assigned to any universities
         if (!job?.assigned_university_ids || job.assigned_university_ids.length === 0) {
             return {
@@ -290,7 +298,42 @@ export default function PublicJobPage() {
             toast.success('Successfully applied for this job!')
         } catch (error: any) {
             console.error('Error applying for job:', error)
-            toast.error(error.response?.data?.detail || 'Failed to submit application')
+            let errorMessage =
+                (typeof error?.response?.data?.detail === 'string' && error.response.data.detail) ||
+                (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||
+                null
+
+            // Handle FastAPI/Pydantic detail arrays.
+            if (!errorMessage && Array.isArray(error?.response?.data?.detail)) {
+                errorMessage = error.response.data.detail
+                    .map((item: any) => {
+                        if (typeof item === 'string') return item
+                        if (item?.msg) return item.msg
+                        return null
+                    })
+                    .filter(Boolean)
+                    .join('; ')
+            }
+
+            // If backend returns generic 400 without detail, enrich with profile context.
+            if (!errorMessage && error?.response?.status === 400 && isAuthenticated && user?.user_type === 'student') {
+                try {
+                    const profile = await apiClient.getStudentProfile()
+                    const completion = Number(profile?.profile_completion_percentage ?? 0)
+                    if (!Number.isNaN(completion) && completion < 75) {
+                        errorMessage = `Please complete at least 75% of your profile before applying. Current completion: ${completion.toFixed(1)}%.`
+                    } else if (!profile?.resume) {
+                        errorMessage = 'Please upload your resume in your profile before applying for a job.'
+                    }
+                } catch (profileError) {
+                    console.warn('Unable to fetch profile context for apply error:', profileError)
+                }
+            }
+
+            if (!errorMessage) {
+                errorMessage = getErrorMessage(error, 'Failed to submit application')
+            }
+            toast.error(errorMessage)
         } finally {
             setIsApplying(false)
         }
