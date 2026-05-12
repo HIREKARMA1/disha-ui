@@ -21,7 +21,8 @@ import {
     Server,
     AlertTriangle,
     Briefcase,
-    Brain
+    Brain,
+    Library
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -30,6 +31,12 @@ import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
 import { adminProfileService } from '@/services/adminProfileService'
+
+function navItemIsActive(pathname: string, href: string) {
+    if (pathname === href) return true
+    if (href === '/dashboard/admin') return false
+    return pathname.startsWith(`${href}/`)
+}
 
 interface NavItem {
     label: string
@@ -67,6 +74,13 @@ const navItems: NavItem[] = [
         icon: Building2,
         description: 'Manage universities',
         color: 'from-purple-500 to-pink-600'
+    },
+    {
+        label: 'Lookup tables',
+        href: '/dashboard/admin/lookups',
+        icon: Library,
+        description: 'Reference data (colleges, more soon)',
+        color: 'from-violet-500 to-indigo-600'
     },
     {
         label: 'Corporates',
@@ -281,7 +295,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                 {/* Navigation */}
                 <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href
+                        const isActive = navItemIsActive(pathname, item.href)
                         const { startLoading } = useLoading()
 
                         const handleClick = () => {
@@ -344,7 +358,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
             <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
                 <div className="flex justify-around items-center py-1.5 px-1 w-full">
                     {navItems.slice(0, 5).map((item) => {
-                        const isActive = pathname === item.href
+                        const isActive = navItemIsActive(pathname, item.href)
                         const { startLoading } = useLoading()
 
                         const handleClick = () => {
@@ -442,7 +456,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             {/* Navigation - Scrollable */}
                             <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
                                 {navItems.map((item) => {
-                                    const isActive = pathname === item.href
+                                    const isActive = navItemIsActive(pathname, item.href)
                                     const { startLoading } = useLoading()
 
                                     const handleClick = () => {
