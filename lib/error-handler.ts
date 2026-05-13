@@ -4,51 +4,83 @@
 
 export interface ApiError {
   response?: {
-    data?: {
-      detail?: string;
-      message?: string;
-      errors?: string[];
-    };
+    /** Raw body from axios (object, string, or unknown) */
+    data?: unknown;
     status?: number;
   };
   message?: string;
+}
+
+function parseResponseData(raw: unknown): Record<string, unknown> | null {
+  if (raw == null) return null
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim()
+    if (!trimmed) return null
+    try {
+      const parsed = JSON.parse(trimmed) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      return { message: trimmed }
+    }
+    return { message: trimmed }
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>
+  }
+  return null
+}
+
+/** Normalize FastAPI-style `detail` / our backend's `error` field (string or validation array). */
+function messageFromDetailLike(value: unknown): string | null {
+  if (value == null) return null
+  if (typeof value === 'string') {
+    const t = value.trim()
+    return t.length > 0 ? t : null
+  }
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((err: unknown) => {
+        if (typeof err === 'string') return err
+        if (err && typeof err === 'object' && 'msg' in (err as object)) {
+          const e = err as { msg?: string; loc?: unknown[] }
+          const loc = Array.isArray(e.loc) ? e.loc.filter(Boolean).join('.') : 'Field'
+          return e.msg ? `${loc}: ${e.msg}` : null
+        }
+        return null
+      })
+      .filter(Boolean) as string[]
+    return parts.length > 0 ? parts.join('; ') : null
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value)
+  }
+  return String(value)
 }
 
 /**
  * Extract user-friendly error message from API error
  */
 export function getErrorMessage(error: ApiError, fallbackMessage: string = 'An error occurred'): string {
-  // Check for FastAPI validation error (detail array)
-  if (error.response?.data?.detail && Array.isArray(error.response.data.detail)) {
-    const validationErrors = error.response.data.detail
-      .map((err: any) => {
-        if (typeof err === 'string') return err
-        if (err.msg) return `${err.loc?.join('.') || 'Field'}: ${err.msg}`
-        return JSON.stringify(err)
-      })
-      .filter(Boolean)
-    if (validationErrors.length > 0) {
-      return validationErrors.join('; ')
-    }
+  const data = parseResponseData(error.response?.data)
+
+  // HireKarma backend wraps HTTPException as { error, status_code, tenant_id } (see disha-server app/main.py)
+  const fromWrapped = data ? messageFromDetailLike(data.error) : null
+  if (fromWrapped) return fromWrapped
+
+  // Standard FastAPI / OpenAPI shape
+  const fromDetail = data ? messageFromDetailLike(data.detail) : null
+  if (fromDetail) return fromDetail
+
+  if (data && typeof data.message === 'string' && data.message.trim()) {
+    return data.message.trim()
   }
 
-  // Check for specific error details from API response
-  if (error.response?.data?.detail) {
-    const detail = error.response.data.detail
-    // Handle cases where detail is an object with validation info
-    if (typeof detail === 'object' && detail !== null) {
-      return JSON.stringify(detail)
-    }
-    return String(detail)
-  }
-  
-  if (error.response?.data?.message) {
-    return error.response.data.message
-  }
-  
   // Check for validation errors array
-  if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-    return error.response.data.errors.join(', ')
+  if (data?.errors && Array.isArray(data.errors)) {
+    const parts = data.errors.filter((e): e is string => typeof e === 'string')
+    if (parts.length > 0) return parts.join(', ')
   }
   
   // Check for HTTP status code specific messages
@@ -75,7 +107,12 @@ export function getErrorMessage(error: ApiError, fallbackMessage: string = 'An e
     }
   }
   
-  // Fallback to error message or generic message
+  // Axios uses "Request failed with status code N" when the server returned no parseable body we handled above
+  const axiosGeneric = /^Request failed with status code \d+$/i.test(error.message || '')
+  if (axiosGeneric) {
+    return fallbackMessage
+  }
+
   return error.message || fallbackMessage
 }
 
@@ -108,6 +145,6 @@ export function getErrorType(error: ApiError): 'error' | 'warning' | 'info' {
  * Check if error is a specific type
  */
 export function isErrorType(error: ApiError, type: string): boolean {
-  return error.response?.data?.detail?.toLowerCase().includes(type.toLowerCase()) || 
-         error.message?.toLowerCase().includes(type.toLowerCase()) || false;
+  const needle = type.toLowerCase()
+  return getErrorMessage(error, '').toLowerCase().includes(needle)
 }

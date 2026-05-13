@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-handler'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
 
 // Union type for all possible form data
@@ -314,17 +315,9 @@ export default function RegisterPage() {
             setIsResendCooldown(false)
             setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Send OTP error:', error)
-            let message = 'Failed to send OTP. Please try again.'
-
-            if (error.response?.data?.detail) {
-                message = error.response.data.detail
-            } else if (error.message) {
-                message = error.message
-            }
-
-            toast.error(message)
+            toast.error(getErrorMessage(error, 'Failed to send OTP. Please try again.'))
         } finally {
             setIsLoading(false)
         }
@@ -352,9 +345,9 @@ export default function RegisterPage() {
                 setIsResendCooldown(false)
                 toast.success('OTP resent to your email address')
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Resend OTP error:', error)
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            const message = getErrorMessage(error, 'Failed to resend OTP. Please try again.')
             toast.error(message)
 
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
@@ -455,17 +448,9 @@ export default function RegisterPage() {
                     : `/auth/login?type=${selectedUserType}&registered=true`
                 router.push(loginUrl)
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('OTP verification error:', error)
-            let message = 'Invalid or expired OTP. Please try again.'
-
-            if (error.response?.data?.detail) {
-                message = error.response.data.detail
-            } else if (error.message) {
-                message = error.message
-            }
-
-            toast.error(message)
+            toast.error(getErrorMessage(error, 'Invalid or expired OTP. Please try again.'))
         } finally {
             setIsLoading(false)
         }
