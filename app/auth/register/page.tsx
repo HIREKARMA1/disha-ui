@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-handler'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
 
 // Union type for all possible form data
@@ -120,20 +121,9 @@ const studentSchema = z.object({
         .regex(/^[A-Za-z\s]+$/, 'Name can only contain letters and spaces'),
     phone: z
         .string()
-        .regex(/^\d+$/, 'Phone number must contain only digits')
-        .refine(
-            (val) => {
-                if (val.length < 10) return false
-                if (val.startsWith('91')) {
-                    return val.length === 12
-                }
-                return val.length === 10
-            },
-            {
-                message:
-                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
-            }
-        )
+        .refine((val) => val === '' || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        })
         .optional(),
     dob: z.string().optional(),
     gender: z.string().optional(),
@@ -173,25 +163,9 @@ const corporateSchema = z.object({
     address: z.string().optional(),
     phone: z
         .string()
-        .regex(/^\d+$/, "Phone number must contain only digits")
-        .refine(
-            (val) => {
-                // Must be at least 10 digits
-                if (val.length < 10) return false;
-
-                // Case 1: Starts with 91 -> should be 12 digits (91 + 10)
-                if (val.startsWith("91")) {
-                    return val.length === 12;
-                }
-
-                // Case 2: Not starting with 91 -> must be exactly 10 digits
-                return val.length === 10;
-            },
-            {
-                message:
-                    "Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.",
-            }
-        )
+        .refine((val) => val === '' || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        })
         .optional(),
 
 }).refine((data) => data.password === data.confirmPassword, {
@@ -220,20 +194,9 @@ const universitySchema = z.object({
     courses_offered: z.string().optional(),
     phone: z
         .string()
-        .regex(/^\d+$/, 'Phone number must contain only digits')
-        .refine(
-            (val) => {
-                if (val.length < 10) return false
-                if (val.startsWith('91')) {
-                    return val.length === 12
-                }
-                return val.length === 10
-            },
-            {
-                message:
-                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
-            }
-        )
+        .refine((val) => val === '' || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        })
         .optional(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -352,17 +315,9 @@ export default function RegisterPage() {
             setIsResendCooldown(false)
             setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Send OTP error:', error)
-            let message = 'Failed to send OTP. Please try again.'
-
-            if (error.response?.data?.detail) {
-                message = error.response.data.detail
-            } else if (error.message) {
-                message = error.message
-            }
-
-            toast.error(message)
+            toast.error(getErrorMessage(error, 'Failed to send OTP. Please try again.'))
         } finally {
             setIsLoading(false)
         }
@@ -390,9 +345,9 @@ export default function RegisterPage() {
                 setIsResendCooldown(false)
                 toast.success('OTP resent to your email address')
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Resend OTP error:', error)
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            const message = getErrorMessage(error, 'Failed to resend OTP. Please try again.')
             toast.error(message)
 
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
@@ -493,17 +448,9 @@ export default function RegisterPage() {
                     : `/auth/login?type=${selectedUserType}&registered=true`
                 router.push(loginUrl)
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('OTP verification error:', error)
-            let message = 'Invalid or expired OTP. Please try again.'
-
-            if (error.response?.data?.detail) {
-                message = error.response.data.detail
-            } else if (error.message) {
-                message = error.message
-            }
-
-            toast.error(message)
+            toast.error(getErrorMessage(error, 'Invalid or expired OTP. Please try again.'))
         } finally {
             setIsLoading(false)
         }
@@ -541,11 +488,14 @@ export default function RegisterPage() {
                 <Input
                     id="phone"
                     type="tel"
-                    placeholder="+91-9876543210"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    maxLength={10}
+                    placeholder="Enter 10 digit phone number (e.g. 9876543210)"
                     leftIcon={<Phone className="w-4 h-4" />}
                     {...register('phone', {
                         onChange: (e) => {
-                            e.target.value = e.target.value.replace(/\D/g, '')
+                            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10)
                         }
                     })}
                 />
