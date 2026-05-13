@@ -11,6 +11,25 @@ export interface ApiError {
   message?: string;
 }
 
+/** Narrow unknown (e.g. from `catch`) to Axios-like shape without forcing casts at call sites. */
+function toApiError(error: unknown): ApiError {
+  if (!error || typeof error !== 'object') {
+    return {}
+  }
+  const o = error as Record<string, unknown>
+  const message = typeof o.message === 'string' ? o.message : undefined
+  const resp = o.response
+  if (resp && typeof resp === 'object' && !Array.isArray(resp)) {
+    const r = resp as Record<string, unknown>
+    const status = typeof r.status === 'number' ? r.status : undefined
+    return {
+      response: { data: r.data, status },
+      message,
+    }
+  }
+  return { message }
+}
+
 function parseResponseData(raw: unknown): Record<string, unknown> | null {
   if (raw == null) return null
   if (typeof raw === 'string') {
@@ -62,8 +81,9 @@ function messageFromDetailLike(value: unknown): string | null {
 /**
  * Extract user-friendly error message from API error
  */
-export function getErrorMessage(error: ApiError, fallbackMessage: string = 'An error occurred'): string {
-  const data = parseResponseData(error.response?.data)
+export function getErrorMessage(error: unknown, fallbackMessage: string = 'An error occurred'): string {
+  const e = toApiError(error)
+  const data = parseResponseData(e.response?.data)
 
   // HireKarma backend wraps HTTPException as { error, status_code, tenant_id } (see disha-server app/main.py)
   const fromWrapped = data ? messageFromDetailLike(data.error) : null
@@ -84,8 +104,8 @@ export function getErrorMessage(error: ApiError, fallbackMessage: string = 'An e
   }
   
   // Check for HTTP status code specific messages
-  if (error.response?.status) {
-    switch (error.response.status) {
+  if (e.response?.status) {
+    switch (e.response.status) {
       case 400:
         return 'Invalid request. Please check your input and try again.'
       case 401:
@@ -103,25 +123,26 @@ export function getErrorMessage(error: ApiError, fallbackMessage: string = 'An e
       case 500:
         return 'Server error. Please try again later.'
       default:
-        return `Request failed with status ${error.response.status}.`
+        return `Request failed with status ${e.response.status}.`
     }
   }
   
   // Axios uses "Request failed with status code N" when the server returned no parseable body we handled above
-  const axiosGeneric = /^Request failed with status code \d+$/i.test(error.message || '')
+  const axiosGeneric = /^Request failed with status code \d+$/i.test(e.message || '')
   if (axiosGeneric) {
     return fallbackMessage
   }
 
-  return error.message || fallbackMessage
+  return e.message || fallbackMessage
 }
 
 /**
  * Get error type for styling purposes
  */
-export function getErrorType(error: ApiError): 'error' | 'warning' | 'info' {
-  if (error.response?.status) {
-    switch (error.response.status) {
+export function getErrorType(error: unknown): 'error' | 'warning' | 'info' {
+  const e = toApiError(error)
+  if (e.response?.status) {
+    switch (e.response.status) {
       case 400:
       case 422:
         return 'warning';
@@ -144,7 +165,7 @@ export function getErrorType(error: ApiError): 'error' | 'warning' | 'info' {
 /**
  * Check if error is a specific type
  */
-export function isErrorType(error: ApiError, type: string): boolean {
+export function isErrorType(error: unknown, type: string): boolean {
   const needle = type.toLowerCase()
   return getErrorMessage(error, '').toLowerCase().includes(needle)
 }
