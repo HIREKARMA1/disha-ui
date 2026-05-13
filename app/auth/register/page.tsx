@@ -120,20 +120,9 @@ const studentSchema = z.object({
         .regex(/^[A-Za-z\s]+$/, 'Name can only contain letters and spaces'),
     phone: z
         .string()
-        .regex(/^\d+$/, 'Phone number must contain only digits')
-        .refine(
-            (val) => {
-                if (val.length < 10) return false
-                if (val.startsWith('91')) {
-                    return val.length === 12
-                }
-                return val.length === 10
-            },
-            {
-                message:
-                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
-            }
-        )
+        .refine((val) => val === '' || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        })
         .optional(),
     dob: z.string().optional(),
     gender: z.string().optional(),
@@ -173,25 +162,9 @@ const corporateSchema = z.object({
     address: z.string().optional(),
     phone: z
         .string()
-        .regex(/^\d+$/, "Phone number must contain only digits")
-        .refine(
-            (val) => {
-                // Must be at least 10 digits
-                if (val.length < 10) return false;
-
-                // Case 1: Starts with 91 -> should be 12 digits (91 + 10)
-                if (val.startsWith("91")) {
-                    return val.length === 12;
-                }
-
-                // Case 2: Not starting with 91 -> must be exactly 10 digits
-                return val.length === 10;
-            },
-            {
-                message:
-                    "Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.",
-            }
-        )
+        .refine((val) => val === '' || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        })
         .optional(),
 
 }).refine((data) => data.password === data.confirmPassword, {
@@ -220,20 +193,9 @@ const universitySchema = z.object({
     courses_offered: z.string().optional(),
     phone: z
         .string()
-        .regex(/^\d+$/, 'Phone number must contain only digits')
-        .refine(
-            (val) => {
-                if (val.length < 10) return false
-                if (val.startsWith('91')) {
-                    return val.length === 12
-                }
-                return val.length === 10
-            },
-            {
-                message:
-                    'Invalid phone number. Must be 10 digits, or start with 91 followed by 10 digits.',
-            }
-        )
+        .refine((val) => val === '' || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        })
         .optional(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -541,11 +503,14 @@ export default function RegisterPage() {
                 <Input
                     id="phone"
                     type="tel"
-                    placeholder="+91-9876543210"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    maxLength={10}
+                    placeholder="Enter 10 digit phone number (e.g. 9876543210)"
                     leftIcon={<Phone className="w-4 h-4" />}
                     {...register('phone', {
                         onChange: (e) => {
-                            e.target.value = e.target.value.replace(/\D/g, '')
+                            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10)
                         }
                     })}
                 />
