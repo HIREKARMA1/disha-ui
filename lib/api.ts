@@ -747,18 +747,19 @@ class ApiClient {
   }
 
   /** Logged-in student: check if they already completed this assessment. */
-  async getAssessmentEligibility(assessmentId: string): Promise<{
-    can_start: boolean;
-    has_completed_attempt?: boolean;
-    attempt_status?: string | null;
-    percentage?: number | null;
-    total_score?: number | null;
-    submitted_at?: string | null;
-  }> {
+  async getAssessmentEligibility(assessmentId: string): Promise<import('@/components/assessments/StudentExamInstructions').StudentExamEligibility> {
     const response: AxiosResponse = await this.client.get(
       `/assessments/${assessmentId}/my-eligibility`
     );
-    return response.data;
+    const data = response.data;
+    return {
+      can_start: Boolean(data.can_start),
+      has_completed_attempt: Boolean(data.has_completed_attempt ?? !data.can_start),
+      attempt_status: data.attempt_status ?? null,
+      percentage: data.percentage ?? null,
+      total_score: data.total_score ?? null,
+      submitted_at: data.submitted_at ?? null,
+    };
   }
 
   /** Student or admin: issue Solviq token; `assessment_id` is taken from the URL path. */
