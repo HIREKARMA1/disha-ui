@@ -7,6 +7,14 @@ import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Cal
 import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { exportAnalyticsToCSV } from '@/utils/exportToExcel'
+import {
+    formatAttemptPercentage,
+    formatAttemptScore,
+    getAttemptMaxScore,
+    getPassFailLabel,
+    getTotalQuestionsFromAssessment,
+    isAttemptEvaluated,
+} from '@/lib/assessmentAnalytics'
 
 export default function AssessmentAnalyticsPage() {
     const params = useParams()
@@ -96,15 +104,17 @@ export default function AssessmentAnalyticsPage() {
     }
 
     const stats = calculateStats()
+    const totalQuestions =
+        getTotalQuestionsFromAssessment(assessmentDetails) ||
+        (attempts[0]?.total_questions as number | undefined) ||
+        0
 
     const handleExport = () => {
         if (!assessmentDetails || !filteredAttempts.length) return
 
         const exportData = filteredAttempts.map(attempt => {
-            // Calculate max score matches the table logic
-            const maxScore = attempt.percentage > 0
-                ? Number((attempt.total_score / (attempt.percentage / 100)).toFixed(0))
-                : 5
+            const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
+            const passFail = getPassFailLabel(attempt, assessmentDetails)
 
             return {
                 email: attempt.email || attempt.student_email || '-',
@@ -113,8 +123,8 @@ export default function AssessmentAnalyticsPage() {
                 total_score: attempt.total_score,
                 max_score: maxScore,
                 percentage: attempt.percentage,
-                pass_fail: attempt.status === 'PASSED' || attempt.percentage >= 60 ? 'PASS' : 'FAIL',
-                rounds_completed: attempt.result_data?.rounds?.length || 1
+                pass_fail: passFail,
+                rounds_completed: attempt.result_data?.rounds?.length || 0
             }
         })
 
@@ -146,6 +156,22 @@ export default function AssessmentAnalyticsPage() {
                         </div>
                     </div>
                 </div>
+
+                {totalQuestions > 0 && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        This assessment has <strong>{totalQuestions}</strong> questions across{' '}
+                        {assessmentDetails?.rounds?.length ?? 0} round(s).
+                    </p>
+                )}
+
+                {attempts.some((a) => !isAttemptEvaluated(a)) && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-4 text-sm text-amber-900 dark:text-amber-100">
+                        <p className="font-semibold">Results not received from Solviq yet</p>
+                        <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
+                            Scores appear here only after Solviq sends a callback when the student submits.
+                        </p>
+                    </div>
+                )}
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -291,37 +317,45 @@ export default function AssessmentAnalyticsPage() {
 
                                             {/* Status */}
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-600 text-white">
-                                                    {['PASSED', 'FAILED', 'COMPLETED'].includes(attempt.status) ? 'EVALUATED' : attempt.status}
+                                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${isAttemptEvaluated(attempt) ? 'bg-blue-600 text-white' : 'bg-amber-100 text-amber-800'}`}>
+                                                    {isAttemptEvaluated(attempt) ? 'EVALUATED' : 'AWAITING RESULTS'}
                                                 </span>
                                             </td>
 
                                             {/* Score */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                                                {attempt.total_score?.toFixed(1) ?? '-'} / {attempt.percentage > 0 ? (attempt.total_score / (attempt.percentage / 100)).toFixed(0) : '5'}
+                                                {formatAttemptScore(attempt, assessmentDetails)}
                                             </td>
 
                                             {/* Percentage */}
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`text-sm font-semibold ${attempt.percentage >= 60 ? 'text-green-600' :
-                                                    attempt.percentage >= 40 ? 'text-yellow-600' : 'text-red-600'
+                                                <span className={`text-sm font-semibold ${!isAttemptEvaluated(attempt) ? 'text-gray-500' :
+                                                    (attempt.percentage ?? 0) >= 60 ? 'text-green-600' :
+                                                    (attempt.percentage ?? 0) >= 40 ? 'text-yellow-600' : 'text-red-600'
                                                     }`}>
-                                                    {attempt.percentage?.toFixed(1)}%
+                                                    {formatAttemptPercentage(attempt)}
                                                 </span>
                                             </td>
 
                                             {/* Pass/Fail */}
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${attempt.status === 'PASSED' || attempt.percentage >= 60 ? 'bg-blue-600 text-white' :
-                                                    'bg-red-500 text-white'
-                                                    }`}>
-                                                    {attempt.status === 'PASSED' || attempt.percentage >= 60 ? 'PASS' : 'FAIL'}
+                                                {(() => {
+                                                    const label = getPassFailLabel(attempt, assessmentDetails)
+                                                    return (
+                                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                                    label === 'PASS' ? 'bg-blue-600 text-white' :
+                                                    label === 'FAIL' ? 'bg-red-500 text-white' :
+                                                    'bg-gray-200 text-gray-700'
+                                                }`}>
+                                                    {label}
                                                 </span>
+                                                    )
+                                                })()}
                                             </td>
 
                                             {/* Rounds */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                                1
+                                                {attempt.result_data?.rounds?.length ?? '—'}
                                             </td>
 
                                             {/* Actions */}
@@ -359,20 +393,29 @@ export default function AssessmentAnalyticsPage() {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     attempt={selectedAttempt}
+                    assessment={assessmentDetails}
                 />
             </div>
         </AdminDashboardLayout>
     )
 }
 
-function AttemptDetailsModal({ isOpen, onClose, attempt }: { isOpen: boolean, onClose: () => void, attempt: any }) {
+function AttemptDetailsModal({
+    isOpen,
+    onClose,
+    attempt,
+    assessment,
+}: {
+    isOpen: boolean
+    onClose: () => void
+    attempt: any
+    assessment: any
+}) {
     if (!attempt) return null
 
-    // Helper to calculate score max (if not available)
-    const totalMaxScore = attempt.percentage > 0 ? (attempt.total_score / (attempt.percentage / 100)) : 5
-
-    // Parse result_data. If it's undefined, we show a clean fallback.
-    // Assuming result_data structure matches typical Solviq: { rounds: [...] }
+    const evaluated = isAttemptEvaluated(attempt)
+    const totalMaxScore = getAttemptMaxScore(attempt, assessment)
+    const passFail = getPassFailLabel(attempt, assessment)
     const rounds = attempt.result_data?.rounds || []
 
     return (
@@ -395,27 +438,43 @@ function AttemptDetailsModal({ isOpen, onClose, attempt }: { isOpen: boolean, on
                 {/* Content - Scrollable */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/50 dark:bg-gray-900/50">
 
+                    {!evaluated && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-4 text-sm text-amber-900 dark:text-amber-100">
+                            <p className="font-semibold">Evaluation pending</p>
+                            <p className="mt-1">
+                                Solviq has not sent results to DISHA for this attempt yet (status: {attempt.status}).
+                                Scores here are placeholders until the callback is received.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Summary Card */}
                     <div className="grid grid-cols-3 gap-8">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Overall Score</p>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {attempt.total_score?.toFixed(1) ?? '0.0'} <span className="text-lg text-gray-400 font-normal">/ {totalMaxScore.toFixed(0)}</span>
+                                {evaluated && typeof attempt.total_score === 'number'
+                                    ? attempt.total_score.toFixed(1)
+                                    : '—'}{' '}
+                                <span className="text-lg text-gray-400 font-normal">
+                                    / {totalMaxScore > 0 ? totalMaxScore : '—'}
+                                </span>
                             </p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Percentage</p>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {attempt.percentage?.toFixed(1)}%
+                                {formatAttemptPercentage(attempt)}
                             </p>
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Status</p>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${attempt.status === 'PASSED' || attempt.percentage >= 60
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-red-500 text-white'
-                                }`}>
-                                {attempt.status === 'PASSED' || attempt.percentage >= 60 ? 'PASS' : 'FAIL'}
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                passFail === 'PASS' ? 'bg-blue-600 text-white' :
+                                passFail === 'FAIL' ? 'bg-red-500 text-white' :
+                                'bg-gray-200 text-gray-700'
+                            }`}>
+                                {passFail}
                             </span>
                         </div>
                     </div>
@@ -496,7 +555,11 @@ function AttemptDetailsModal({ isOpen, onClose, attempt }: { isOpen: boolean, on
                             </div>
                         )) : (
                             <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                                <p className="text-gray-500">No detailed round data available for this attempt.</p>
+                                <p className="text-gray-500">
+                                    {evaluated
+                                        ? 'No detailed round data available for this attempt.'
+                                        : 'Round-wise breakdown will appear after Solviq sends evaluation results to DISHA.'}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -512,12 +575,11 @@ function AttemptDetailsModal({ isOpen, onClose, attempt }: { isOpen: boolean, on
 }
 
 function userEstimateRoundTotal(round: any) {
-    // If we have questions, sum their max_score
     if (round.questions && Array.isArray(round.questions)) {
         return round.questions.reduce((acc: number, q: any) => acc + (q.max_score || 1), 0)
     }
-    // Fallback if no questions array but we have percentage and score
-    if (round.percentage > 0) return (round.score / (round.percentage / 100)).toFixed(0)
-
-    return 5 // Final fallback
+    if (round.percentage > 0 && round.score != null) {
+        return Math.round(round.score / (round.percentage / 100))
+    }
+    return '—'
 }

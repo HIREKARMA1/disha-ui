@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { utcIsoToDatetimeLocal } from '@/lib/datetime'
 
 export default function EditAssessmentPage() {
     const router = useRouter()
@@ -32,8 +33,8 @@ export default function EditAssessmentPage() {
                     ...data,
                     // Ensure time_window exists and is formatted for datetime-local (YYYY-MM-DDTHH:mm)
                     time_window: {
-                        start_time: data.start_time ? new Date(data.start_time).toISOString().slice(0, 16) : "",
-                        end_time: data.end_time ? new Date(data.end_time).toISOString().slice(0, 16) : ""
+                        start_time: data.start_time ? utcIsoToDatetimeLocal(data.start_time) : "",
+                        end_time: data.end_time ? utcIsoToDatetimeLocal(data.end_time) : "",
                     },
                     metadata: {
                         description: data.description,
