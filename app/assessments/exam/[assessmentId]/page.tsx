@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { Navbar } from '@/components/ui/navbar'
@@ -35,36 +35,29 @@ export default function StudentExamEntryPage() {
     [examPath]
   )
 
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      if (!assessmentId) return
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const data = await apiClient.getPublicAssessment(assessmentId)
-        if (!cancelled) {
-          setExam({
-            ...data,
-            total_questions: data.total_questions ?? 0,
-            round_count: data.round_count ?? data.rounds?.length ?? 0,
-            rounds: data.rounds ?? [],
-          })
-        }
-      } catch {
-        if (!cancelled) {
-          setExam(null)
-          setLoadError('This exam link is invalid or the assessment is not open for students.')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    load()
-    return () => {
-      cancelled = true
+  const loadExam = useCallback(async (silent = false) => {
+    if (!assessmentId) return
+    if (!silent) setLoading(true)
+    setLoadError(null)
+    try {
+      const data = await apiClient.getPublicAssessment(assessmentId)
+      setExam({
+        ...data,
+        total_questions: data.total_questions ?? 0,
+        round_count: data.round_count ?? data.rounds?.length ?? 0,
+        rounds: data.rounds ?? [],
+      })
+    } catch {
+      setExam(null)
+      setLoadError('This exam link is invalid or the assessment is not open for students.')
+    } finally {
+      if (!silent) setLoading(false)
     }
   }, [assessmentId])
+
+  useEffect(() => {
+    loadExam()
+  }, [loadExam])
 
   useEffect(() => {
     let cancelled = false
@@ -145,6 +138,7 @@ export default function StudentExamEntryPage() {
             onStart={handleStartExam}
             eligibility={eligibility}
             eligibilityLoading={eligibilityLoading}
+            onScheduleReached={() => loadExam(true)}
           />
         </div>
       )}

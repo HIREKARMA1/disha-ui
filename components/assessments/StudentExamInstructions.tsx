@@ -1,9 +1,15 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { formatAssessmentSchedule } from '@/lib/datetime'
+import {
+  formatAssessmentSchedule,
+  formatCountdown,
+  formatCountdownHuman,
+  formatScheduledInstant,
+  getMillisecondsUntil,
+} from '@/lib/datetime'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -56,6 +62,14 @@ export interface PublicExamBrief {
   has_not_started: boolean
 }
 
+const WAITING_ROOM_TIPS = [
+  'Review the exam window, rounds, and instructions on this page so you know what to expect.',
+  'Stay signed in with your student account and keep this tab open — you can return here when the exam opens.',
+  'Use a supported browser (Chrome or Edge) on a laptop or desktop with a stable internet connection.',
+  'Find a quiet spot, plug in your device if you can, and close other heavy tabs or downloads.',
+  'When the countdown ends, read the declaration at the bottom and click I am ready to begin to open the exam.',
+]
+
 const GENERAL_DIRECTIONS = [
   'The assessment is timed. A countdown reflects the time remaining for the overall test window shown below.',
   'Complete all mandatory rounds in the order listed. You will be guided through each section on the exam platform.',
@@ -91,6 +105,87 @@ interface StudentExamInstructionsProps {
   onStart: () => void
   eligibility: StudentExamEligibility | null
   eligibilityLoading: boolean
+  /** Called when the scheduled start time is reached (refresh exam window state). */
+  onScheduleReached?: () => void
+}
+
+function ExamWaitingCard({
+  startTime,
+  onComplete,
+}: {
+  startTime: string
+  onComplete?: () => void
+}) {
+  const [remainingMs, setRemainingMs] = useState(() => getMillisecondsUntil(startTime))
+  const startLabel = useMemo(() => formatScheduledInstant(startTime), [startTime])
+  const completedRef = useRef(false)
+
+  useEffect(() => {
+    completedRef.current = false
+  }, [startTime])
+
+  useEffect(() => {
+    const tick = () => {
+      const ms = getMillisecondsUntil(startTime)
+      setRemainingMs(ms)
+      if (ms <= 0 && !completedRef.current) {
+        completedRef.current = true
+        onComplete?.()
+      }
+    }
+    tick()
+    const id = window.setInterval(tick, 1000)
+    return () => window.clearInterval(id)
+  }, [startTime, onComplete])
+
+  const humanLeft = formatCountdownHuman(remainingMs)
+  const clockLeft = formatCountdown(remainingMs)
+
+  return (
+    <section className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+        <Clock className="h-5 w-5 text-primary-600 shrink-0" />
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Waiting for the exam to begin
+        </h2>
+      </div>
+
+      <div className="p-5 sm:p-6 space-y-4">
+        <p className="text-base sm:text-lg text-gray-800 dark:text-gray-200 leading-relaxed">
+          The exam opens in{' '}
+          <strong className="text-primary-700 dark:text-primary-300 font-semibold">{humanLeft}</strong>
+          {remainingMs > 0 && (
+            <span className="text-gray-500 dark:text-gray-400 font-normal">
+              {' '}
+              <span className="text-gray-400 dark:text-gray-500">(</span>
+              <span className="font-mono text-sm tabular-nums">{clockLeft}</span>
+              <span className="text-gray-400 dark:text-gray-500">)</span>
+            </span>
+          )}
+          .
+        </p>
+
+        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+          It&apos;s scheduled for <strong className="font-medium text-gray-800 dark:text-gray-200">{startLabel}</strong>.
+          You can read through the instructions below while you wait — no need to refresh; the{' '}
+          <strong className="font-medium text-gray-800 dark:text-gray-200">I am ready to begin</strong> button
+          will turn on by itself when the window opens.
+        </p>
+
+        <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-900/40 px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+          <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">Before you begin</p>
+          <ul className="space-y-1.5 list-none">
+            {WAITING_ROOM_TIPS.map((tip) => (
+              <li key={tip} className="flex gap-2 leading-relaxed">
+                <span className="text-primary-500 select-none shrink-0">—</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 export function StudentExamInstructions({
@@ -105,6 +200,7 @@ export function StudentExamInstructions({
   onStart,
   eligibility,
   eligibilityLoading,
+  onScheduleReached,
 }: StudentExamInstructionsProps) {
   const [declared, setDeclared] = useState(false)
 
@@ -122,17 +218,12 @@ export function StudentExamInstructions({
     !exam.has_ended &&
     !exam.has_not_started
 
-  const statusBanner = exam.has_ended
-    ? {
-        tone: 'amber' as const,
-        text: 'This exam window has ended. Contact the organizer if you need assistance.',
-      }
-    : exam.has_not_started
-      ? {
-          tone: 'blue' as const,
-          text: 'This exam has not started yet. Return after the scheduled start time.',
-        }
-      : null
+  const endedBannerText =
+    'This exam window has ended. Contact the organizer if you need assistance.'
+
+  const handleScheduleReached = useCallback(() => {
+    onScheduleReached?.()
+  }, [onScheduleReached])
 
   return (
     <motion.div className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -164,17 +255,21 @@ export function StudentExamInstructions({
             </div>
           </motion.div>
         )}
-        {statusBanner && !cannotRetake && (
-          <div
-            className={`flex gap-3 rounded-lg border p-4 text-sm ${
-              statusBanner.tone === 'amber'
-                ? 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-100'
-                : 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-100'
-            }`}
+        {exam.has_not_started && !cannotRetake && (
+          <ExamWaitingCard
+            startTime={exam.start_time}
+            onComplete={handleScheduleReached}
+          />
+        )}
+        {exam.has_ended && !cannotRetake && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
           >
             <Info className="h-5 w-5 shrink-0 mt-0.5" />
-            <p>{statusBanner.text}</p>
-          </div>
+            <p>{endedBannerText}</p>
+          </motion.div>
         )}
 
         {/* Summary table — AMCAT-style overview */}
