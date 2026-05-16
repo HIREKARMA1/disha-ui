@@ -1,7 +1,10 @@
-import React from 'react';
+'use client'
+
+import React from 'react'
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Layers, Globe, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { StudentExamLinkSection } from '@/components/admin/assessments/StudentExamLinkSection';
+import { Calendar, Clock, Layers, Globe, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Assessment {
     id: string;
@@ -139,6 +142,13 @@ export function AssessmentDetailsModal({
                                 {assessment.solviq_assessment_id}
                             </span>
                         )}
+                    </div>
+                    <div className="mt-4">
+                        <StudentExamLinkSection
+                            assessmentId={assessment.id}
+                            show={Boolean(assessment.is_published_to_solviq && assessment.status === 'ACTIVE')}
+                            compact
+                        />
                     </div>
                 </div>
 

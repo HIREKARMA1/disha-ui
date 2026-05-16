@@ -10,10 +10,11 @@ import {
     Eye,
     FileText,
     CheckCircle2,
-    Building
+    Link2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { buildStudentExamTakeUrl } from '@/lib/assessmentLinks'
 import { useState, useEffect, useRef } from 'react'
 
 interface AssessmentCardProps {
@@ -34,7 +35,22 @@ export function AssessmentCard({
     cardIndex = 0
 }: AssessmentCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
+    const [linkCopied, setLinkCopied] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    const canShareExamLink =
+        assessment.status === 'ACTIVE' &&
+        (assessment.is_published_to_solviq === true || assessment.is_published_to_solviq === undefined)
+
+    const copyExamLink = async () => {
+        try {
+            await navigator.clipboard.writeText(buildStudentExamTakeUrl(assessment.id))
+            setLinkCopied(true)
+            setTimeout(() => setLinkCopied(false), 2000)
+        } catch {
+            // ignore
+        }
+    }
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -161,6 +177,19 @@ export function AssessmentCard({
                                             View Details
                                         </button>
 
+                                        {canShareExamLink && (
+                                            <button
+                                                onClick={async () => {
+                                                    await copyExamLink()
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
+                                            >
+                                                <Link2 className="w-4 h-4" />
+                                                Copy student exam link
+                                            </button>
+                                        )}
+
                                         <button
                                             onClick={() => {
                                                 onEdit(assessment.id)
@@ -211,8 +240,18 @@ export function AssessmentCard({
                     {assessment.description || "No description provided."}
                 </p>
 
-                {/* Additional Info / Footer Button matching AdminJobCard */}
-                <div className="mt-auto pt-4">
+                <div className="mt-auto pt-4 flex flex-col gap-2">
+                    {canShareExamLink && (
+                        <Button
+                            type="button"
+                            onClick={copyExamLink}
+                            size="sm"
+                            className="w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                            <Link2 className="w-4 h-4" />
+                            {linkCopied ? 'Link copied!' : 'Copy student exam link'}
+                        </Button>
+                    )}
                     <Button
                         onClick={() => onViewResults ? onViewResults(assessment.id) : onView(assessment.id)}
                         variant="outline"

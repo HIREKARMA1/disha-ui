@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { RoundConfigurator } from "./RoundConfigurator";
 import { FileText, Settings, Layers, Briefcase } from "lucide-react";
+import { normalizeAssessmentTimeWindow } from "@/lib/datetime";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -145,23 +146,39 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
     // Auto-generate DISHA ID if not present
     const dishaId = formData.metadata.disha_assessment_id || `DASM-${Date.now()}`;
 
-    // Construct strict payload matching the requirement
+    const passingCriteria = {
+      ...formData.metadata.passing_criteria,
+      ...(formData.job_id ? { job_id: formData.job_id } : {}),
+    };
+
+    // Edit API expects top-level fields; create uses nested metadata
+    if (mode === "edit") {
+      onSubmit({
+        assessment_name: formData.assessment_name,
+        mode: formData.mode,
+        time_window: normalizeAssessmentTimeWindow(formData.time_window),
+        total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
+        auto_submit_on_timeout: formData.auto_submit_on_timeout,
+        rounds: formData.rounds,
+        description: formData.metadata.description ?? "",
+        instructions: formData.metadata.instructions ?? "",
+        passing_criteria: passingCriteria,
+      });
+      return;
+    }
+
     const submissionData = {
       assessment_name: formData.assessment_name,
       mode: formData.mode,
-      time_window: formData.time_window,
+      time_window: normalizeAssessmentTimeWindow(formData.time_window),
       total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
       auto_submit_on_timeout: formData.auto_submit_on_timeout,
       rounds: formData.rounds,
       metadata: {
         ...formData.metadata,
         disha_assessment_id: dishaId,
-        passing_criteria: {
-          ...formData.metadata.passing_criteria,
-          // Include job_id in passing_criteria if present
-          ...(formData.job_id ? { job_id: formData.job_id } : {})
-        }
-      }
+        passing_criteria: passingCriteria,
+      },
     };
 
     onSubmit(submissionData);
