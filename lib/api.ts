@@ -740,6 +740,37 @@ class ApiClient {
     return response.data;
   }
 
+  /** Public summary for shared student exam link (no auth). */
+  async getPublicAssessment(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/assessments/public/${assessmentId}`);
+    return response.data;
+  }
+
+  /** Logged-in student: check if they already completed this assessment. */
+  async getAssessmentEligibility(assessmentId: string): Promise<import('@/components/assessments/StudentExamInstructions').StudentExamEligibility> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/my-eligibility`
+    );
+    const data = response.data;
+    return {
+      can_start: Boolean(data.can_start),
+      has_completed_attempt: Boolean(data.has_completed_attempt ?? !data.can_start),
+      attempt_status: data.attempt_status ?? null,
+      percentage: data.percentage ?? null,
+      total_score: data.total_score ?? null,
+      submitted_at: data.submitted_at ?? null,
+    };
+  }
+
+  /** Student or admin: issue Solviq token; `assessment_id` is taken from the URL path. */
+  async generateAssessmentToken(
+    assessmentId: string,
+    body: { student_id: string; expires_in_minutes?: number; university_id?: string; corporate_id?: string }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/token`, body);
+    return response.data;
+  }
+
   // License endpoints
   async createLicenseRequest(data: {
     requested_total: number;

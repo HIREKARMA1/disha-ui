@@ -43,8 +43,8 @@ export default function CreateAssessmentPage() {
       const response = await apiClient.createAssessment(formData)
 
       if (response.id || response.assessment_id) {
-        // Success - redirect to list
-        router.push('/dashboard/admin/assessments')
+        const rid = response.id || response.assessment_id
+        router.push(`/dashboard/admin/assessments/${rid}?created=1`)
       }
     } catch (err: any) {
       console.error('Failed to create assessment:', err)

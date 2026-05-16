@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Search, Filter, X } from "lucide-react";
+import Link from "next/link";
+import { Plus, Filter } from "lucide-react";
 import { AssessmentCard } from "@/components/admin/assessments/AssessmentCard";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import { Button } from "@/components/ui/button";
 
 interface AssessmentListProps {
   assessments: any[];
@@ -41,8 +43,14 @@ export function AssessmentList({
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-1">No assessments found</h3>
         <p className="text-gray-500 max-w-sm mx-auto mb-6">
-          We couldn't find any assessments matching your filters. Try adjusting your search or create a new one.
+          We couldn&apos;t find any assessments matching your filters. Try adjusting your search or create a new assessment.
         </p>
+        <Link href="/dashboard/admin/assessments/create">
+          <Button className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create assessment
+          </Button>
+        </Link>
       </div>
     );
   }

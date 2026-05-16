@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Copy, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
+import { StudentExamLinkSection } from '@/components/admin/assessments/StudentExamLinkSection'
 
 interface Assessment {
   id: string
@@ -34,7 +36,6 @@ interface AssessmentStats {
 
 export default function AssessmentDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const assessmentId = params.id as string
 
   const [assessment, setAssessment] = useState<Assessment | null>(null)
@@ -46,6 +47,8 @@ export default function AssessmentDetailPage() {
   const [studentEmail, setStudentEmail] = useState('')
   const [generatedToken, setGeneratedToken] = useState<any>(null)
   const [copiedToken, setCopiedToken] = useState(false)
+  const [copiedSolviq, setCopiedSolviq] = useState(false)
+  const [showCreatedBanner, setShowCreatedBanner] = useState(false)
 
   // Fetch assessment details
   useEffect(() => {
@@ -53,8 +56,8 @@ export default function AssessmentDetailPage() {
       try {
         setIsLoading(true)
         const [assessmentRes, statsRes] = await Promise.all([
-          apiClient.get(`/api/v1/admin/assessments/${assessmentId}`),
-          apiClient.get(`/api/v1/admin/assessments/${assessmentId}/stats`)
+          apiClient.getAssessment(assessmentId),
+          apiClient.getAssessmentStats(assessmentId)
         ])
 
         setAssessment(assessmentRes)
@@ -72,11 +75,18 @@ export default function AssessmentDetailPage() {
     }
   }, [assessmentId])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('created=1')) {
+      setShowCreatedBanner(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   // Publish assessment
   const handlePublish = async () => {
     try {
       setIsPublishing(true)
-      const response = await apiClient.post(`/api/v1/admin/assessments/${assessmentId}/publish`)
+      const response = await apiClient.post(`/admin/assessments/${assessmentId}/publish`, {})
       setAssessment(response)
     } catch (err: any) {
       setError(err.message || 'Failed to publish assessment')
@@ -92,13 +102,10 @@ export default function AssessmentDetailPage() {
 
     try {
       setIsGeneratingToken(true)
-      const response = await apiClient.post(
-        `/api/v1/admin/assessments/${assessmentId}/token`,
-        {
-          student_id: studentEmail,
-          expires_in_minutes: 30
-        }
-      )
+      const response = await apiClient.generateAssessmentToken(assessmentId, {
+        student_id: studentEmail,
+        expires_in_minutes: 30,
+      })
       setGeneratedToken(response)
     } catch (err: any) {
       setError(err.message || 'Failed to generate token')
@@ -116,16 +123,27 @@ export default function AssessmentDetailPage() {
     }
   }
 
+  const copySolviqUrl = () => {
+    if (generatedToken?.solviq_url) {
+      navigator.clipboard.writeText(generatedToken.solviq_url)
+      setCopiedSolviq(true)
+      setTimeout(() => setCopiedSolviq(false), 2000)
+    }
+  }
+
   if (isLoading) {
     return (
+      <AdminDashboardLayout>
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
       </div>
+      </AdminDashboardLayout>
     )
   }
 
   if (error && !assessment) {
     return (
+      <AdminDashboardLayout>
       <div className="space-y-6">
         <Link href="/dashboard/admin/assessments">
           <Button variant="outline" size="icon">
@@ -137,11 +155,13 @@ export default function AssessmentDetailPage() {
           <p className="text-red-700">{error}</p>
         </div>
       </div>
+      </AdminDashboardLayout>
     )
   }
 
   if (!assessment) {
     return (
+      <AdminDashboardLayout>
       <div className="space-y-6">
         <Link href="/dashboard/admin/assessments">
           <Button variant="outline" size="icon">
@@ -153,11 +173,18 @@ export default function AssessmentDetailPage() {
           <p className="text-yellow-700">Assessment not found</p>
         </div>
       </div>
+      </AdminDashboardLayout>
     )
   }
 
   return (
+    <AdminDashboardLayout>
     <div className="space-y-6">
+      {showCreatedBanner && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+          Assessment created successfully. Share the <strong>student exam link</strong> below with candidates.
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -187,6 +214,11 @@ export default function AssessmentDetailPage() {
           <p className="text-red-700">{error}</p>
         </div>
       )}
+
+      <StudentExamLinkSection
+        assessmentId={assessment.id}
+        show={Boolean(assessment.is_published_to_solviq && assessment.status === 'ACTIVE')}
+      />
 
       {/* Status & Details */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -287,7 +319,18 @@ export default function AssessmentDetailPage() {
               </div>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">SOLVIQ URL:</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm text-gray-600">SOLVIQ URL:</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copySolviqUrl}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy size={16} />
+                      {copiedSolviq ? 'Copied!' : 'Copy'}
+                    </Button>
+                  </div>
                   <p className="text-sm font-mono bg-white p-2 rounded border border-gray-300 break-all">
                     {generatedToken.solviq_url}
                   </p>
@@ -318,5 +361,6 @@ export default function AssessmentDetailPage() {
         </div>
       )}
     </div>
+    </AdminDashboardLayout>
   )
 }

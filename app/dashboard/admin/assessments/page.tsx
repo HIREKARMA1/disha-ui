@@ -5,7 +5,7 @@ import { AssessmentList } from '@/components/admin/AssessmentList'
 import { AssessmentDetailsModal } from '@/components/admin/assessments/AssessmentDetailsModal'
 import { apiClient } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Plus, Loader2, Copy, Check } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 
@@ -100,12 +100,12 @@ export default function AssessmentsPage() {
                 Manage hiring tests, university exams, and practice modules.
               </p>
             </div>
-            {/* <Link href="/dashboard/admin/assessments/create">
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2 h-11 px-6 rounded-lg">
+            <Link href="/dashboard/admin/assessments/create">
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2 h-11 px-6 rounded-lg w-full sm:w-auto justify-center">
                 <Plus size={20} strokeWidth={2.5} />
                 <span className="font-semibold">Create Assessment</span>
               </Button>
-            </Link> */}
+            </Link>
           </div>
         </div>
 
