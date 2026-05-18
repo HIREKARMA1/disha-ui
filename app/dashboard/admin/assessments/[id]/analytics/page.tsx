@@ -331,7 +331,7 @@ export default function AssessmentAnalyticsPage() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`text-sm font-semibold ${!isAttemptEvaluated(attempt) ? 'text-gray-500' :
                                                     (attempt.percentage ?? 0) >= 60 ? 'text-green-600' :
-                                                    (attempt.percentage ?? 0) >= 40 ? 'text-yellow-600' : 'text-red-600'
+                                                        (attempt.percentage ?? 0) >= 40 ? 'text-yellow-600' : 'text-red-600'
                                                     }`}>
                                                     {formatAttemptPercentage(attempt)}
                                                 </span>
@@ -342,13 +342,12 @@ export default function AssessmentAnalyticsPage() {
                                                 {(() => {
                                                     const label = getPassFailLabel(attempt, assessmentDetails)
                                                     return (
-                                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                                                    label === 'PASS' ? 'bg-blue-600 text-white' :
-                                                    label === 'FAIL' ? 'bg-red-500 text-white' :
-                                                    'bg-gray-200 text-gray-700'
-                                                }`}>
-                                                    {label}
-                                                </span>
+                                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${label === 'PASS' ? 'bg-blue-600 text-white' :
+                                                                label === 'FAIL' ? 'bg-red-500 text-white' :
+                                                                    'bg-gray-200 text-gray-700'
+                                                            }`}>
+                                                            {label}
+                                                        </span>
                                                     )
                                                 })()}
                                             </td>
@@ -469,11 +468,10 @@ function AttemptDetailsModal({
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Status</p>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                passFail === 'PASS' ? 'bg-blue-600 text-white' :
-                                passFail === 'FAIL' ? 'bg-red-500 text-white' :
-                                'bg-gray-200 text-gray-700'
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${passFail === 'PASS' ? 'bg-blue-600 text-white' :
+                                    passFail === 'FAIL' ? 'bg-red-500 text-white' :
+                                        'bg-gray-200 text-gray-700'
+                                }`}>
                                 {passFail}
                             </span>
                         </div>
