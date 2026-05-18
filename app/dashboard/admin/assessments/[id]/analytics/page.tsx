@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
-import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3 } from 'lucide-react'
+import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { exportAnalyticsToCSV } from '@/utils/exportToExcel'
@@ -29,6 +29,8 @@ export default function AssessmentAnalyticsPage() {
     const [assessmentDetails, setAssessmentDetails] = useState<any>(null)
     const [selectedAttempt, setSelectedAttempt] = useState<any>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [pullingResults, setPullingResults] = useState(false)
+    const [pullMessage, setPullMessage] = useState<string | null>(null)
 
     useEffect(() => {
         if (assessmentId) {
@@ -131,6 +133,30 @@ export default function AssessmentAnalyticsPage() {
         exportAnalyticsToCSV(exportData, assessmentDetails.assessment_name || 'Assessment')
     }
 
+    const hasAwaitingResults = attempts.some((a) => !isAttemptEvaluated(a))
+
+    const handlePullSolviqResults = async () => {
+        try {
+            setPullingResults(true)
+            setPullMessage(null)
+            const result = await apiClient.post(
+                `/admin/assessments/${assessmentId}/pull-solviq-results`
+            )
+            const pushed = result?.pushed?.length ?? 0
+            const reevaluated = result?.reevaluated?.length ?? 0
+            const failed = result?.failed?.length ?? 0
+            setPullMessage(
+                `Solviq reported ${pushed} result(s) sent, ${reevaluated} re-evaluated` +
+                    (failed ? `, ${failed} could not be sent.` : '. Refreshing…')
+            )
+            await fetchData()
+        } catch (err: any) {
+            setPullMessage(err.message || 'Could not pull results from Solviq')
+        } finally {
+            setPullingResults(false)
+        }
+    }
+
     return (
         <AdminDashboardLayout>
             <div className="space-y-6 pb-10">
@@ -164,12 +190,33 @@ export default function AssessmentAnalyticsPage() {
                     </p>
                 )}
 
-                {attempts.some((a) => !isAttemptEvaluated(a)) && (
+                {hasAwaitingResults && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-4 text-sm text-amber-900 dark:text-amber-100">
-                        <p className="font-semibold">Results not received from Solviq yet</p>
-                        <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
-                            Scores appear here only after Solviq sends a callback when the student submits.
-                        </p>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div className="flex-1">
+                                <p className="font-semibold">Results not received from Solviq yet</p>
+                                <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
+                                    Students may have finished on Solviq, but the callback did not reach DISHA.
+                                    Use the button to ask Solviq to send scores again.
+                                </p>
+                                {pullMessage && (
+                                    <p className="mt-2 text-amber-900 dark:text-amber-100">{pullMessage}</p>
+                                )}
+                            </div>
+                            <Button
+                                variant="outline"
+                                className="shrink-0 border-amber-300 bg-white hover:bg-amber-50 dark:bg-gray-900"
+                                onClick={handlePullSolviqResults}
+                                disabled={pullingResults}
+                            >
+                                {pullingResults ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                )}
+                                Pull results from Solviq
+                            </Button>
+                        </div>
                     </div>
                 )}
 
