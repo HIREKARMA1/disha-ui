@@ -12,6 +12,7 @@ import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useIndustries } from '@/hooks/useLookup'
+import { parseEducationField } from '@/lib/parseEducationField'
 
 // Fallback industry options (used if lookup API returns empty)
 const fallbackIndustryOptions = [
@@ -206,57 +207,6 @@ interface JobFormData {
     company_description: string
     contact_person: string
     contact_designation: string
-}
-
-// Helper function to clean malformed JSON strings
-const cleanJsonString = (str: string): string => {
-    if (!str || typeof str !== 'string') return str
-
-    const original = str
-    let cleaned = str.trim()
-
-    // Handle various malformed patterns
-    // Remove leading { and trailing }
-    cleaned = cleaned.replace(/^\{/, '').replace(/\}$/, '')
-
-    // Remove leading and trailing quotes
-    cleaned = cleaned.replace(/^"/, '').replace(/"$/, '')
-
-    // Remove excessive JSON escaping
-    cleaned = cleaned.replace(/\\"/g, '"') // Replace \" with "
-    cleaned = cleaned.replace(/\\\\/g, '\\') // Replace \\ with \
-
-    // Remove any remaining JSON array markers
-    cleaned = cleaned.replace(/^\[/, '').replace(/\]$/, '')
-
-    // Clean up any remaining quotes and braces
-    cleaned = cleaned.replace(/^\{/, '').replace(/\}$/, '')
-    cleaned = cleaned.replace(/^"/, '').replace(/"$/, '')
-
-    // Final trim
-    cleaned = cleaned.trim()
-
-    // Debug logging for problematic strings
-    if (original !== cleaned) {
-        console.log('🧹 Cleaned string:', { original, cleaned })
-    }
-
-    return cleaned
-}
-
-// Helper function to parse education fields safely
-const parseEducationField = (field: string | string[]): string[] => {
-    if (Array.isArray(field)) {
-        return field.map(item => cleanJsonString(item)).filter(item => item)
-    }
-
-    if (typeof field === 'string' && field) {
-        // First clean the string, then split by comma
-        const cleaned = cleanJsonString(field)
-        return cleaned.split(',').map(item => item.trim()).filter(item => item)
-    }
-
-    return []
 }
 
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
