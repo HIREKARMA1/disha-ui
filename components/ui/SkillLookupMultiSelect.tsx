@@ -61,6 +61,9 @@ export function SkillLookupMultiSelect({
                 placeholder={placeholder || defaultPlaceholder}
                 searchPlaceholder="Search skills..."
                 disabled={disabled}
+                selectedModalTitle={
+                    kind === 'technical' ? 'Selected technical skills' : 'Selected soft skills'
+                }
             />
             {error && (
                 <div className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">

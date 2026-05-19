@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { ChevronDown, X, Check, Search, Loader2 } from 'lucide-react'
 
+const DEFAULT_VISIBLE_CHIPS = 4
+
 export interface AsyncMultiSelectOption {
     value: string
     label: string
@@ -23,6 +25,8 @@ interface AsyncMultiSearchableSelectProps {
     className?: string
     searchPlaceholder?: string
     debounceMs?: number
+    maxVisibleChips?: number
+    selectedModalTitle?: string
 }
 
 function useDebounceValue<T>(value: T, delay: number): T {
@@ -53,8 +57,11 @@ export function AsyncMultiSearchableSelect({
     className = '',
     searchPlaceholder = 'Type to search...',
     debounceMs = 400,
+    maxVisibleChips = DEFAULT_VISIBLE_CHIPS,
+    selectedModalTitle = 'Selected skills',
 }: AsyncMultiSearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const [selectedModalOpen, setSelectedModalOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [apiOptions, setApiOptions] = useState<AsyncMultiSelectOption[]>([])
     const [hasMore, setHasMore] = useState(false)
@@ -65,6 +72,7 @@ export function AsyncMultiSearchableSelect({
     const dropdownRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const listRef = useRef<HTMLDivElement>(null)
+    const selectedPanelRef = useRef<HTMLDivElement>(null)
     const loadingMoreRef = useRef(false)
 
     const loadPage = useCallback(
@@ -128,6 +136,29 @@ export function AsyncMultiSearchableSelect({
         }
     }, [isOpen])
 
+    useEffect(() => {
+        if (!selectedModalOpen) return
+
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setSelectedModalOpen(false)
+        }
+        const handleClickOutside = (e: MouseEvent) => {
+            if (
+                selectedPanelRef.current &&
+                !selectedPanelRef.current.contains(e.target as Node)
+            ) {
+                setSelectedModalOpen(false)
+            }
+        }
+
+        document.addEventListener('keydown', handleEscape)
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => {
+            document.removeEventListener('keydown', handleEscape)
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [selectedModalOpen])
+
     const displayOptions = useMemo(() => {
         const known = new Set(apiOptions.map((o) => o.value.toLowerCase()))
         const selectedExtras = values
@@ -158,6 +189,30 @@ export function AsyncMultiSearchableSelect({
         if (values.length === 1) return values[0]
         return `${values.length} selected`
     }
+
+    const visibleChips = values.slice(0, maxVisibleChips)
+    const hiddenCount = Math.max(0, values.length - maxVisibleChips)
+
+    const renderChip = (value: string, compact?: boolean) => (
+        <span
+            key={value}
+            className={`inline-flex items-center gap-1 rounded-full text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-800 ${
+                compact ? 'px-2 py-0.5' : 'px-2.5 py-1'
+            }`}
+        >
+            <span className="truncate max-w-[200px]">{value}</span>
+            {!disabled && (
+                <button
+                    type="button"
+                    onClick={() => removeValue(value)}
+                    className="hover:text-blue-950 dark:hover:text-white shrink-0"
+                    aria-label={`Remove ${value}`}
+                >
+                    <X className="w-3 h-3" />
+                </button>
+            )}
+        </span>
+    )
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
@@ -266,25 +321,49 @@ export function AsyncMultiSearchableSelect({
             </div>
 
             {values.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                    {values.map((value) => (
-                        <span
-                            key={value}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-800"
+                <div className="relative mt-2" ref={selectedPanelRef}>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                    {visibleChips.map((value) => renderChip(value, true))}
+                    {hiddenCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setSelectedModalOpen((open) => !open)}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+                                selectedModalOpen
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
                         >
-                            {value}
-                            {!disabled && (
+                            +{hiddenCount} skill{hiddenCount === 1 ? '' : 's'}
+                        </button>
+                    )}
+                    </div>
+
+                    {selectedModalOpen && hiddenCount > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {selectedModalTitle}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {values.length} skill{values.length === 1 ? '' : 's'} selected
+                                    </p>
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={() => removeValue(value)}
-                                    className="hover:text-blue-950 dark:hover:text-white"
-                                    aria-label={`Remove ${value}`}
+                                    onClick={() => setSelectedModalOpen(false)}
+                                    className="p-1 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    aria-label="Close"
                                 >
-                                    <X className="w-3 h-3" />
+                                    <X className="w-4 h-4" />
                                 </button>
-                            )}
-                        </span>
-                    ))}
+                            </div>
+                            <div className="flex flex-wrap gap-2 p-3 max-h-48 overflow-y-auto">
+                                {values.map((value) => renderChip(value))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
