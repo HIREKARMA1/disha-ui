@@ -28,7 +28,8 @@ export function ApplicationManagementHeader({
 }: ApplicationManagementHeaderProps) {
     const statusOptions = [
         { value: 'all', label: 'All Applications', count: totalApplications },
-        { value: 'applied', label: 'Applied', count: pendingApplications },
+        // Applied tab disabled for now — re-enable when status filtering is finalized.
+        // { value: 'applied', label: 'Applied', count: pendingApplications },
         { value: 'shortlisted', label: 'Shortlisted', count: shortlistedApplications },
         { value: 'selected', label: 'Selected', count: selectedApplications },
         { value: 'rejected', label: 'Rejected', count: rejectedApplications },
@@ -112,7 +113,7 @@ export function ApplicationManagementHeader({
             </motion.div>
 
             {/* Stats Cards - Same style as Dashboard Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {statusOptions.map((option, index) => {
                     const style = getStatusCardStyle(option.value)
                     return (
