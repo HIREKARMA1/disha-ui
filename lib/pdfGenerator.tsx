@@ -1,6 +1,7 @@
 import React from 'react'
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer'
 import { config } from './config'
+import { formatEducationFieldForDisplay, parseEducationField } from './parseEducationField'
 
 interface JobData {
   id: string
@@ -298,15 +299,9 @@ const formatDate = (dateString: string): string => {
 
 const parseCommaSeparated = (value: string | string[] | undefined): string => {
   if (!value) return 'Not Specified'
-  if (Array.isArray(value)) return value.join(', ')
-
-  let cleanValue = value.toString().trim()
-  cleanValue = cleanValue.replace(/^[{\[]|[\}\]']$/g, '')
-  const items = cleanValue.split(',').map(item => {
-    return item.trim().replace(/^["']|["']$/g, '')
-  }).filter(item => item.length > 0)
-
-  return items.join(', ')
+  const items = parseEducationField(value)
+  if (items.length === 0) return 'Not Specified'
+  return formatEducationFieldForDisplay(value)
 }
 
 // Main PDF Document Component
