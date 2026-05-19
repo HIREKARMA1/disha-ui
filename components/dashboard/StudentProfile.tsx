@@ -30,6 +30,8 @@ import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
+import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
+import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { useRef } from 'react'
 
@@ -1881,6 +1883,34 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
+        if (field === 'technical_skills') {
+            return (
+                <SkillLookupMultiSelect
+                    kind="technical"
+                    selected={parseSkillsField(value)}
+                    onChange={(names) =>
+                        setFormData({ ...formData, technical_skills: joinSkillsField(names) })
+                    }
+                    placeholder="Select your technical skills"
+                    error={fieldValidationErrors.technical_skills}
+                />
+            )
+        }
+
+        if (field === 'soft_skills') {
+            return (
+                <SkillLookupMultiSelect
+                    kind="soft"
+                    selected={parseSkillsField(value)}
+                    onChange={(names) =>
+                        setFormData({ ...formData, soft_skills: joinSkillsField(names) })
+                    }
+                    placeholder="Select your soft skills"
+                    error={fieldValidationErrors.soft_skills}
+                />
+            )
+        }
+
         // Use the same searchable college dropdown pattern as signup.
         if (field === 'institution') {
             return (
@@ -2079,7 +2109,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         }
 
                         return (
-                            <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
+                            <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') || field === 'technical_skills' || field === 'soft_skills' || field === 'location_preferences' ? 'md:col-span-2' : ''}>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     {getFieldLabel(field)}
                                 </label>
