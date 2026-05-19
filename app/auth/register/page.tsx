@@ -132,7 +132,10 @@ const studentSchema = z.object({
     degree: z.string().optional(),
     branch: z.string().optional(),
     technical_skills: z.string().optional(),
-    college_id: z.string().optional(),
+    college_id: z.preprocess(
+        (val) => (val === undefined || val === null ? '' : String(val).trim()),
+        z.string().min(1, 'Please select your college or institution')
+    ),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
@@ -256,7 +259,8 @@ export default function RegisterPage() {
     } = useForm<FormData>({
         resolver: zodResolver(validationSchema),
         defaultValues: {
-            user_type: 'student'
+            user_type: 'student',
+            college_id: '',
         }
     })
 
@@ -508,8 +512,9 @@ export default function RegisterPage() {
 
             <div>
                 <AsyncSearchableSelect
-                    label="College / Institution"
+                    label="College / Institution *"
                     placeholder="Search for your college..."
+                    error={!!(errors as any).college_id}
                     fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
                         try {
                             const response = await apiClient.get('/admin/lookups/colleges', {
@@ -533,11 +538,23 @@ export default function RegisterPage() {
                             return []
                         }
                     }}
-                    onChange={(value) => {
-                        setValue('college_id', value as any)
+                    onChange={(value, option) => {
+                        setValue('college_id', (value as string) || '', { shouldValidate: true })
+                        if (option) {
+                            setValue('institution', option.label as any, { shouldValidate: true })
+                        } else {
+                            setValue('institution', '' as any, { shouldValidate: true })
+                        }
                     }}
                     value={watch('college_id' as any)}
                 />
+                {(errors as any).college_id && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).college_id?.message === 'string'
+                            ? (errors as any).college_id.message
+                            : 'Please select your college or institution'}
+                    </p>
+                )}
             </div>
         </div >
     )
