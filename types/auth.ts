@@ -5,6 +5,8 @@ export interface StudentRegisterRequest {
   name: string;
   email: string;
   password: string;
+  /** Required at signup: UUID of the college from the directory lookup */
+  college_id: string;
   phone?: string;
   dob?: string;
   gender?: 'male' | 'female' | 'other';
