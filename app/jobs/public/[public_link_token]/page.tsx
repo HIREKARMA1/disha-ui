@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
 import { getErrorMessage } from '@/lib/error-handler'
+import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import {
     Loader2,
     AlertCircle,
@@ -691,9 +692,7 @@ export default function PublicJobPage() {
                                             <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                                 <Building2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                    {Array.isArray(job.education_level)
-                                                        ? job.education_level.join(', ')
-                                                        : job.education_level}
+                                                    {formatEducationFieldForDisplay(job.education_level)}
                                                 </p>
                                             </div>
                                         )}

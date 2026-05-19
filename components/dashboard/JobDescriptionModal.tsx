@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api'
 import { useState, useEffect } from 'react'
 import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
+import { formatEducationLabel, parseEducationField } from '@/lib/parseEducationField'
 import { toast } from 'react-hot-toast'
 
 interface Job {
@@ -97,99 +98,6 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     const [corporateError, setCorporateError] = useState<string | null>(null)
     const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
 
-    // Helper function to parse and format education data
-    const parseEducationData = (data: string | string[] | undefined): string[] => {
-        if (!data) return []
-
-        if (Array.isArray(data)) {
-            return data
-        }
-
-        // Handle complex escaped JSON strings like '{"{\"[\\\"diploma\\\"\"" "\" \\\"bachelor\\\"\"" "\" \\\"master\\\"]\"}"}'
-        if (typeof data === 'string') {
-            let cleanData = data.trim()
-
-            // First, try to extract values from complex escaped JSON format
-            // Look for patterns like: diploma, bachelor, master within the string
-            const valueMatches = cleanData.match(/([a-zA-Z\s]+)(?=\\?\"|$)/g)
-            if (valueMatches) {
-                const cleanValues = valueMatches
-                    .map(match => match.trim())
-                    .filter(match => match && match.length > 0 && !match.match(/^[{}[\]",\\]+$/))
-                    .map(match => match.replace(/\\/g, '').replace(/"/g, '').trim())
-                    .filter(match => match.length > 0)
-
-                if (cleanValues.length > 0) {
-                    return cleanValues
-                }
-            }
-
-            // Try to parse as JSON
-            try {
-                // Handle cases like '{"Bachelor of Engineering"}' or '{"Computer Science and Engineering"}'
-                if (cleanData.startsWith('{"') && cleanData.endsWith('"}')) {
-                    const innerContent = cleanData.slice(2, -2) // Remove '{" and '"}'
-                    return [innerContent]
-                }
-
-                // Handle escaped JSON strings like '{"[\"diploma\",\"bachelor\",\"master\"]"}'
-                if (cleanData.startsWith('"') && cleanData.endsWith('"')) {
-                    cleanData = cleanData.slice(1, -1)
-                }
-
-                const parsed = JSON.parse(cleanData)
-
-                if (Array.isArray(parsed)) {
-                    return parsed
-                }
-
-                // If it's a string containing JSON, try to parse it
-                if (typeof parsed === 'string') {
-                    const innerParsed = JSON.parse(parsed)
-                    if (Array.isArray(innerParsed)) {
-                        return innerParsed
-                    }
-                    // Handle single string values
-                    return [innerParsed]
-                }
-
-                // Handle single string values
-                if (typeof parsed === 'string') {
-                    return [parsed]
-                }
-            } catch (error) {
-                // If JSON parsing fails, try to extract clean values manually
-                console.warn('Failed to parse education data as JSON, extracting values manually:', data)
-
-                // Extract text values from the string, ignoring JSON syntax
-                const textMatches = cleanData.match(/[a-zA-Z][a-zA-Z\s]*[a-zA-Z]|[a-zA-Z]/g)
-                if (textMatches) {
-                    return textMatches
-                        .map(match => match.trim())
-                        .filter(match => match.length > 0)
-                }
-            }
-
-            // Final fallback: treat as comma-separated string
-            return cleanData.split(',').map(item => item.trim()).filter(item => item)
-        }
-
-        return []
-    }
-
-    // Helper function to format education labels
-    const formatEducationLabel = (level: string): string => {
-        switch (level.toLowerCase()) {
-            case 'high_school': return 'High School'
-            case 'diploma': return 'Diploma'
-            case 'bachelor': return 'Bachelor\'s Degree'
-            case 'master': return 'Master\'s Degree'
-            case 'phd': return 'PhD'
-            case 'any': return 'Any'
-            default: return level
-        }
-    }
-
     useEffect(() => {
         const fetchCorporateProfile = async () => {
             // Validate corporate_id - check for null, undefined, empty string, or "None" string
@@ -269,7 +177,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
             // Helper function to convert education data to readable string
             const formatEducationForPDF = (data: string | string[] | undefined): string => {
                 if (!data) return ''
-                const parsed = parseEducationData(data)
+                const parsed = parseEducationField(data)
                 return parsed.map(item => formatEducationLabel(item)).join(', ')
             }
 
@@ -783,7 +691,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     Education Level
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {parseEducationData(job.education_level).map((level, index) => (
+                                    {parseEducationField(job.education_level).map((level, index) => (
                                         <span
                                             key={index}
                                             className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-lg font-medium border border-blue-200 dark:border-blue-700"
@@ -803,7 +711,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     Education Degree
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {parseEducationData(job.education_degree).map((degree, index) => (
+                                    {parseEducationField(job.education_degree).map((degree, index) => (
                                         <span
                                             key={index}
                                             className="px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-lg font-medium border border-green-200 dark:border-green-700"
@@ -823,7 +731,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     Education Branch
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {parseEducationData(job.education_branch).map((branch, index) => (
+                                    {parseEducationField(job.education_branch).map((branch, index) => (
                                         <span
                                             key={index}
                                             className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-lg font-medium border border-purple-200 dark:border-purple-700"
