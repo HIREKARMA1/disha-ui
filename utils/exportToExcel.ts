@@ -1,5 +1,7 @@
 // utils/exportToExcel.ts
 
+import { getDisplayUniversityName } from '@/lib/studentUniversityDisplay'
+
 export interface AppliedStudentExport {
     id: string;
     name: string;
@@ -105,7 +107,7 @@ export const exportToCSV = (
         student.name,
         student.email,
         student.phone || 'Not provided',
-        student.university_name || 'Not specified',
+        getDisplayUniversityName(student),
         student.degree || 'Not specified',
         student.branch || 'Not specified',
         student.graduation_year || 'Not specified',
