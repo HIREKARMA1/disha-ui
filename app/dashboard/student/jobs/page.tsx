@@ -14,6 +14,8 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
+import { extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
 interface Job {
     id: string
@@ -792,7 +794,7 @@ function JobOpportunitiesPageContent() {
 
         // Check profile completion - must be at least 75%
         if (!profileCompletion || profileCompletion.completion_percentage < 75) {
-            toast.error(`Profile completion must be at least 75%`)
+            showProfileCompletionToast()
             return
         }
 
@@ -914,7 +916,11 @@ function JobOpportunitiesPageContent() {
                 }
             }
 
-            toast.error(message)
+            if (isProfileCompletionError(message)) {
+                showProfileCompletionToast()
+            } else {
+                toast.error(message)
+            }
         } finally {
             setApplyingJobs(prev => {
                 const newSet = new Set(prev)
@@ -1716,6 +1722,7 @@ function JobOpportunitiesPageContent() {
                     isApplying={applyingJobs.has(currentApplicationJob.id)}
                 />
             )}
+
         </StudentDashboardLayout>
     )
 }
