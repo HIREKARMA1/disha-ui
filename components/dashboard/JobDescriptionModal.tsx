@@ -1009,7 +1009,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                                 Applications
                                             </h4>
                                             <p className="text-gray-700 dark:text-gray-300">
-                                                {job.current_applications} / {job.max_applications} applications
+                                                {job.current_applications} applications
                                             </p>
                                         </div>
 
