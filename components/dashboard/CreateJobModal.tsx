@@ -12,6 +12,7 @@ import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useIndustries } from '@/hooks/useLookup'
+import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 
 // Fallback industry options (used if lookup API returns empty)
 const fallbackIndustryOptions = [
@@ -161,7 +162,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         : fallbackIndustryOptions
 
     const [isLoading, setIsLoading] = useState(false)
-    const [currentSkill, setCurrentSkill] = useState('')
     const [currentLocation, setCurrentLocation] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -247,23 +247,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 }
             }
         })
-    }
-
-    const addSkill = () => {
-        if (currentSkill.trim() && !formData.skills_required.includes(currentSkill.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                skills_required: [...prev.skills_required, currentSkill.trim()]
-            }))
-            setCurrentSkill('')
-        }
-    }
-
-    const removeSkill = (skillToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            skills_required: prev.skills_required.filter(skill => skill !== skillToRemove)
-        }))
     }
 
     const addLocation = () => {
@@ -1152,37 +1135,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     Required Skills
                                 </h3>
 
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={currentSkill}
-                                        onChange={(e) => setCurrentSkill(e.target.value)}
-                                        placeholder="Add a skill (e.g., Python, React, AWS)"
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                                    />
-                                    <Button type="button" onClick={addSkill} variant="outline">
-                                        <Plus className="w-4 h-4" />
-                                    </Button>
-                                </div>
-
-                                {formData.skills_required.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {formData.skills_required.map((skill, index) => (
-                                            <span
-                                                key={index}
-                                                className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 rounded-full text-sm"
-                                            >
-                                                {skill}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeSkill(skill)}
-                                                    className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-200"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
+                                <SkillLookupMultiSelect
+                                    kind="technical"
+                                    selected={formData.skills_required}
+                                    onChange={(names) =>
+                                        setFormData((prev) => ({ ...prev, skills_required: names }))
+                                    }
+                                    placeholder="Select required skills from lookup"
+                                />
                             </div>
 
                             {/* Application Details */}
