@@ -11,7 +11,7 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
 // Types (reusing from student/jobs/page.tsx logic)
@@ -361,7 +361,7 @@ export function AllJobs() {
             // Assuming strict student apply.
         }
 
-        if (profileCompletion && profileCompletion.completion_percentage < 75) {
+        if (profileCompletion && !canApplyForJobs(profileCompletion)) {
             showProfileCompletionToast()
             return
         }

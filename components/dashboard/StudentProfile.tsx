@@ -42,7 +42,9 @@ interface ProfileSection {
 }
 
 export function StudentProfile() {
+    const { getToken } = useAuth()
     const [profile, setProfile] = useState<StudentProfile | null>(null)
+    const [uploadingResume, setUploadingResume] = useState(false)
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
     const [loading, setLoading] = useState(true)
     const [editing, setEditing] = useState<string | null>(null)
@@ -61,7 +63,7 @@ export function StudentProfile() {
             id: 'basic',
             title: 'Basic Information',
             icon: User,
-            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'institution', 'bio', 'profile_picture'],
+            fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'resume'],
             completed: false
         },
         {
@@ -89,14 +91,14 @@ export function StudentProfile() {
             id: 'documents',
             title: 'Documents & Certificates',
             icon: Shield,
-            fields: ['resume', '10th_certificate', '12th_certificate', 'internship_certificates'],
+            fields: ['10th_certificate', '12th_certificate', 'internship_certificates'],
             completed: false
         },
         {
             id: 'social',
             title: 'Social Profiles',
             icon: Globe,
-            fields: ['linkedin_profile', 'github_profile', 'personal_website'],
+            fields: ['profile_picture', 'linkedin_profile', 'github_profile', 'personal_website'],
             completed: false
         }
     ]
@@ -113,6 +115,24 @@ export function StudentProfile() {
     useEffect(() => {
         loadProfile()
     }, [])
+
+    const handleResumeUpload = async (file: File) => {
+        try {
+            setUploadingResume(true)
+            const token = getToken()
+            if (!token) {
+                throw new Error('Please log in to upload your resume')
+            }
+            const { FileUploadService } = await import('@/services/fileUploadService')
+            await FileUploadService.uploadResume(file, token)
+            await loadProfile()
+            toast.success('Resume uploaded successfully!')
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to upload resume')
+        } finally {
+            setUploadingResume(false)
+        }
+    }
 
     const loadProfile = async () => {
         try {
@@ -314,15 +334,10 @@ export function StudentProfile() {
                                                     <button
                                                         className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
                                                         onClick={() => {
-                                                            setEditing('basic');
-                                                            setTimeout(() => {
-                                                                basicFormRef.current?.scrollIntoView({
-                                                                    behavior: "smooth",
-                                                                    block: "start"
-                                                                });
-                                                            }, 100);
+                                                            setActiveTab('social');
+                                                            setEditing('social');
                                                         }}
-                                                        title="Change profile picture"
+                                                        title="Change profile picture (Social tab)"
                                                     >
                                                         <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
                                                     </button>
@@ -456,7 +471,7 @@ export function StudentProfile() {
 
                                                 {editing === 'basic' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'profile_picture'], completed: false }}
+                                                        section={{ id: 'basic', title: 'Basic Information', icon: User, fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city', 'bio', 'resume'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('basic', formData)}
                                                         saving={saving}
@@ -519,40 +534,34 @@ export function StudentProfile() {
 
                                                         <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                             <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                Profile Picture
+                                                                Resume <span className="text-red-500">*</span>
                                                             </div>
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center space-x-3">
-                                                                    {profile.profile_picture ? (
-                                                                        <>
-                                                                            <img
-                                                                                src={profile.profile_picture}
-                                                                                alt="Profile"
-                                                                                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
-                                                                            />
-                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded</span>
-                                                                    )}
-                                                                </div>
-                                                                {profile.profile_picture && (
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => profile.profile_picture && setImageModal({
-                                                                            isOpen: true,
-                                                                            imageUrl: profile.profile_picture,
-                                                                            altText: 'Profile Picture'
-                                                                        })}
-                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                                                    >
-                                                                        <Camera className="w-4 h-4 mr-2" />
-                                                                        View Image
-                                                                    </Button>
-                                                                )}
-                                                            </div>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                                                Required for job applications (part of the 75% from Basic Info only)
+                                                            </p>
+                                                            <FileUpload
+                                                                type="document"
+                                                                onFileSelect={handleResumeUpload}
+                                                                currentFile={profile.resume}
+                                                                placeholder="Upload your resume (PDF only)"
+                                                                disabled={uploadingResume}
+                                                            />
+                                                            {uploadingResume && (
+                                                                <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">Uploading resume...</p>
+                                                            )}
+                                                            {profile.resume && !uploadingResume && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="mt-3"
+                                                                    onClick={() => window.open(profile.resume, '_blank')}
+                                                                >
+                                                                    <FileText className="w-4 h-4 mr-2" />
+                                                                    View Resume
+                                                                </Button>
+                                                            )}
                                                         </div>
+
                                                     </div>
                                                 )}
                                             </div>
@@ -923,7 +932,7 @@ export function StudentProfile() {
 
                                                 {editing === 'documents' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['resume', '10th_certificate', '12th_certificate', 'internship_certificates'], completed: false }}
+                                                        section={{ id: 'documents', title: 'Documents & Certificates', icon: Shield, fields: ['10th_certificate', '12th_certificate', 'internship_certificates'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('documents', formData)}
                                                         saving={saving}
@@ -1056,7 +1065,7 @@ export function StudentProfile() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Social Profiles</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">LinkedIn, GitHub, and personal websites</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Profile picture, LinkedIn, GitHub, and personal website</p>
                                                         </div>
                                                     </div>
                                                     <Button
@@ -1072,7 +1081,7 @@ export function StudentProfile() {
 
                                                 {editing === 'social' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'social', title: 'Social Profiles', icon: Globe, fields: ['linkedin_profile', 'github_profile', 'personal_website'], completed: false }}
+                                                        section={{ id: 'social', title: 'Social Profiles', icon: Globe, fields: ['profile_picture', 'linkedin_profile', 'github_profile', 'personal_website'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('social', formData)}
                                                         saving={saving}
@@ -1080,6 +1089,43 @@ export function StudentProfile() {
                                                     />
                                                 ) : (
                                                     <div className="space-y-4">
+                                                        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                            <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                Profile Picture
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center space-x-3">
+                                                                    {profile.profile_picture ? (
+                                                                        <>
+                                                                            <img
+                                                                                src={profile.profile_picture}
+                                                                                alt="Profile"
+                                                                                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                                                                            />
+                                                                            <span className="text-sm text-green-600 dark:text-green-400">✓ Uploaded</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-sm text-gray-500 dark:text-gray-400">✗ Not uploaded — use Edit to upload</span>
+                                                                    )}
+                                                                </div>
+                                                                {profile.profile_picture && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => profile.profile_picture && setImageModal({
+                                                                            isOpen: true,
+                                                                            imageUrl: profile.profile_picture,
+                                                                            altText: 'Profile Picture'
+                                                                        })}
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                                    >
+                                                                        <Camera className="w-4 h-4 mr-2" />
+                                                                        View Image
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
                                                         {profile.linkedin_profile && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                                 <div className="font-medium text-gray-900 dark:text-white mb-2">
@@ -1134,13 +1180,13 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
 
-                                                        {!profile.linkedin_profile && !profile.github_profile && !profile.personal_website && (
+                                                        {!profile.profile_picture && !profile.linkedin_profile && !profile.github_profile && !profile.personal_website && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                                 <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                                    Social Profiles
+                                                                    Social links
                                                                 </div>
                                                                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                    No social profiles provided yet
+                                                                    No social links added yet. Use Edit to add LinkedIn, GitHub, or a website.
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1324,6 +1370,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
 
+            if (!cleanedFormData.resume) {
+                validationErrors.push('Resume is required. Upload it in the Resume section below.')
+                hasValidationErrors = true
+            }
+
             // Date of Birth validation
             if (cleanedFormData.dob) {
                 const dobDate = new Date(cleanedFormData.dob)
@@ -1448,14 +1499,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
         // Documents Validation
         if (section.id === 'documents') {
-            // Resume is required
-            if (!cleanedFormData.resume) {
-                validationErrors.push('Resume is required')
-                hasValidationErrors = true
-            }
-
             // Validate file URLs if provided
-            const documentFields = ['resume', 'tenth_certificate', 'twelfth_certificate', 'internship_certificates']
+            const documentFields = ['tenth_certificate', 'twelfth_certificate', 'internship_certificates']
             documentFields.forEach(field => {
                 const url = cleanedFormData[field]
                 if (url && !url.startsWith('http') && !url.startsWith('/')) {

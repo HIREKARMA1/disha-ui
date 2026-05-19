@@ -9,8 +9,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
 import { getErrorMessage } from '@/lib/error-handler'
 import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
-import { extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
+import { profileService } from '@/services/profileService'
 import {
     Loader2,
     AlertCircle,
@@ -310,9 +311,11 @@ export default function PublicJobPage() {
             let errorMessage = detail
             if (!errorMessage && error?.response?.status === 400 && isAuthenticated && user?.user_type === 'student') {
                 try {
-                    const profile = await apiClient.getStudentProfile()
-                    const completion = Number(profile?.profile_completion_percentage ?? 0)
-                    if (!Number.isNaN(completion) && completion < 75) {
+                    const [profile, completionData] = await Promise.all([
+                        apiClient.getStudentProfile(),
+                        profileService.getProfileCompletion().catch(() => null),
+                    ])
+                    if (completionData && !canApplyForJobs(completionData)) {
                         showProfileCompletionToast()
                         return
                     }
