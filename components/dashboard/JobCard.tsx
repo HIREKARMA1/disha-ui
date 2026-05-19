@@ -348,7 +348,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <Users className="w-4 h-4" />
-                        <span className="truncate">{Number(job.current_applications || 0)}/{Number(job.max_applications || 0)}</span>
+                        <span className="truncate">{Number(job.current_applications || 0)}</span>
                     </div>
                 </div>
 
