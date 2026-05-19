@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast'
 import { StudentProfileModal } from '@/components/dashboard/StudentProfileModal'
 import { StudentListItem } from '@/types/university'
 import { exportAppliedStudentsToExcel, AppliedStudentExport } from '@/utils/exportToExcel'
+import { getDisplayUniversityName } from '@/lib/studentUniversityDisplay'
 
 interface Job {
     id: string
@@ -60,6 +61,7 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                     email: app.student_email,
                     phone: app.phone || '',
                     university_id: app.university_id || '',
+                    university_name: app.university || app.university_name || '',
                     degree: app.degree || '',
                     branch: app.branch || '',
                     graduation_year: app.graduation_year || 0,
@@ -389,7 +391,7 @@ export function CorporateAppliedStudentsModal({ isOpen, onClose, job }: Corporat
                                                     <td className="py-4 px-4">
                                                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                             <Building className="w-4 h-4" />
-                                                            <span>{student.university_id || 'Not specified'}</span>
+                                                            <span>{getDisplayUniversityName(student)}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
