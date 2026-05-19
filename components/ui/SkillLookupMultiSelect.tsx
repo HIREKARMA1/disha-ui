@@ -1,11 +1,13 @@
 "use client"
 
-import { useMemo } from 'react'
-import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
-import { useSkills, useSoftSkills } from '@/hooks/useLookup'
+import { useCallback } from 'react'
+import { AsyncMultiSearchableSelect } from '@/components/ui/AsyncMultiSearchableSelect'
+import { lookupService } from '@/services/lookupService'
 import { AlertCircle } from 'lucide-react'
 
 export type SkillLookupKind = 'technical' | 'soft'
+
+const PAGE_SIZE = 50
 
 interface SkillLookupMultiSelectProps {
     kind: SkillLookupKind
@@ -26,55 +28,44 @@ export function SkillLookupMultiSelect({
     error,
     disabled = false,
 }: SkillLookupMultiSelectProps) {
-    const {
-        data: technicalSkills,
-        loading: loadingTechnical,
-        error: technicalError,
-    } = useSkills({ enabled: kind === 'technical', limit: 1000 })
-
-    const {
-        data: softSkills,
-        loading: loadingSoft,
-        error: softError,
-    } = useSoftSkills({ enabled: kind === 'soft', limit: 1000 })
-
-    const loading = kind === 'technical' ? loadingTechnical : loadingSoft
-    const fetchError = kind === 'technical' ? technicalError : softError
-    const source = kind === 'technical' ? technicalSkills : softSkills
-
-    const options = useMemo(() => {
-        const fromLookup = (source || []).map((s) => ({
-            value: s.name,
-            label: s.name,
-        }))
-        const known = new Set(fromLookup.map((o) => o.value.toLowerCase()))
-        const legacy = selected
-            .filter((name) => name && !known.has(name.toLowerCase()))
-            .map((name) => ({ value: name, label: name }))
-        return [...fromLookup, ...legacy]
-    }, [source, selected])
+    const fetchSkillOptions = useCallback(
+        async (searchTerm: string, skip: number) => {
+            const params = {
+                limit: PAGE_SIZE,
+                skip,
+                search: searchTerm.trim() || undefined,
+            }
+            const page =
+                kind === 'technical'
+                    ? await lookupService.getSkillsPage(params)
+                    : await lookupService.getSoftSkillsPage(params)
+            const options = page.items.map((s) => ({ value: s.name, label: s.name }))
+            const hasMore = skip + page.items.length < page.total
+            return { options, hasMore }
+        },
+        [kind]
+    )
 
     const defaultPlaceholder =
         kind === 'technical'
-            ? 'Select technical skills from lookup'
-            : 'Select soft skills from lookup'
+            ? 'Select technical skills'
+            : 'Select soft skills'
 
     return (
         <div className="space-y-1">
-            <MultiSearchableSelect
+            <AsyncMultiSearchableSelect
                 label={label}
-                options={options}
+                fetchOptions={fetchSkillOptions}
                 values={selected}
                 onChange={onChange}
                 placeholder={placeholder || defaultPlaceholder}
                 searchPlaceholder="Search skills..."
                 disabled={disabled}
-                isLoading={loading}
             />
-            {(error || fetchError) && (
+            {error && (
                 <div className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
                     <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{error || fetchError}</span>
+                    <span>{error}</span>
                 </div>
             )}
         </div>

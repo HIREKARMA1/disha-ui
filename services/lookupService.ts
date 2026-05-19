@@ -23,6 +23,7 @@ export interface LookupResponse {
 export interface LookupOptions {
   skip?: number
   limit?: number
+  search?: string
 }
 
 class LookupService {
@@ -36,27 +37,33 @@ class LookupService {
     endpoint: string,
     options: LookupOptions = {}
   ): Promise<T> {
-    const { skip = 0, limit = 100 } = options
-    const cacheKey = `${endpoint}-${skip}-${limit}`
-    
-    // Check cache first
-    const cached = this.cache.get(cacheKey)
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      console.log(`Using cached data for ${endpoint}`)
-      return cached.data as unknown as T
+    const { skip = 0, limit = 100, search } = options
+    const trimmedSearch = search?.trim() || undefined
+    const cacheKey = `${endpoint}-${skip}-${limit}-${trimmedSearch ?? ''}`
+
+    // Only cache unfiltered list requests (search responses stay fresh)
+    if (!trimmedSearch) {
+      const cached = this.cache.get(cacheKey)
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        return cached.data as unknown as T
+      }
     }
 
     try {
-      const response = await apiClient.client.get(endpoint, {
-        params: { skip, limit }
-      })
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data: response.data,
-        timestamp: Date.now()
-      })
-      
+      const params: Record<string, string | number> = { skip, limit }
+      if (trimmedSearch) {
+        params.search = trimmedSearch
+      }
+
+      const response = await apiClient.client.get(endpoint, { params })
+
+      if (!trimmedSearch) {
+        this.cache.set(cacheKey, {
+          data: response.data,
+          timestamp: Date.now(),
+        })
+      }
+
       return response.data
     } catch (error) {
       console.error(`Failed to fetch ${endpoint}:`, error)
@@ -100,15 +107,24 @@ class LookupService {
    * Get all skills
    */
   async getSkills(options: LookupOptions = {}): Promise<LookupItem[]> {
+    const page = await this.getSkillsPage(options)
+    return page.items
+  }
+
+  async getSkillsPage(
+    options: LookupOptions = {}
+  ): Promise<{ items: LookupItem[]; total: number }> {
     try {
-      const response = await this.fetchLookupData<{ skills: LookupItem[]; total: number; skip: number; limit: number }>(
-        '/admin/lookups/skills',
-        options
-      )
-      return response.skills || []
+      const response = await this.fetchLookupData<{
+        skills: LookupItem[]
+        total: number
+        skip: number
+        limit: number
+      }>('/admin/lookups/skills', options)
+      return { items: response.skills || [], total: response.total ?? 0 }
     } catch (error) {
       console.error('Failed to fetch skills:', error)
-      return []
+      return { items: [], total: 0 }
     }
   }
 
@@ -116,15 +132,24 @@ class LookupService {
    * Get all soft skills
    */
   async getSoftSkills(options: LookupOptions = {}): Promise<LookupItem[]> {
+    const page = await this.getSoftSkillsPage(options)
+    return page.items
+  }
+
+  async getSoftSkillsPage(
+    options: LookupOptions = {}
+  ): Promise<{ items: LookupItem[]; total: number }> {
     try {
-      const response = await this.fetchLookupData<{ soft_skills: LookupItem[]; total: number; skip: number; limit: number }>(
-        '/admin/lookups/soft-skills',
-        options
-      )
-      return response.soft_skills || []
+      const response = await this.fetchLookupData<{
+        soft_skills: LookupItem[]
+        total: number
+        skip: number
+        limit: number
+      }>('/admin/lookups/soft-skills', options)
+      return { items: response.soft_skills || [], total: response.total ?? 0 }
     } catch (error) {
       console.error('Failed to fetch soft skills:', error)
-      return []
+      return { items: [], total: 0 }
     }
   }
 
