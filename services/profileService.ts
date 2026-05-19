@@ -102,6 +102,14 @@ export interface ProfileCompletionResponse {
     missing_fields: string[]
     total_fields: number
     completed_count: number
+    core_percentage?: number
+    extended_percentage?: number
+    core_completed_count?: number
+    core_total?: number
+    extended_completed_count?: number
+    extended_total?: number
+    core_missing_fields?: string[]
+    can_apply_for_jobs?: boolean
 }
 
 export interface FileUploadResponse {
