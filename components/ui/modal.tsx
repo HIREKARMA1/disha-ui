@@ -13,6 +13,8 @@ interface ModalProps {
     children: React.ReactNode
     className?: string
     maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl"
+    /** When false, modal opens without dimmed backdrop (default: true). */
+    showBackdrop?: boolean
 }
 
 interface ModalContentProps {
@@ -33,7 +35,8 @@ export function Modal({
     title,
     children,
     className,
-    maxWidth = "lg"
+    maxWidth = "lg",
+    showBackdrop = true,
 }: ModalProps) {
     React.useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -44,14 +47,18 @@ export function Modal({
 
         if (isOpen) {
             document.addEventListener("keydown", handleEscape)
-            document.body.style.overflow = "hidden"
+            if (showBackdrop) {
+                document.body.style.overflow = "hidden"
+            }
         }
 
         return () => {
             document.removeEventListener("keydown", handleEscape)
-            document.body.style.overflow = "unset"
+            if (showBackdrop) {
+                document.body.style.overflow = "unset"
+            }
         }
-    }, [isOpen, onClose])
+    }, [isOpen, onClose, showBackdrop])
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -62,14 +69,15 @@ export function Modal({
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-none">
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto"
-                        onClick={handleBackdropClick}
-                    />
+                    {showBackdrop && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto"
+                            onClick={handleBackdropClick}
+                        />
+                    )}
 
                     {/* Modal */}
                     <motion.div
