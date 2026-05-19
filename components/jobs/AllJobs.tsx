@@ -11,6 +11,8 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
+import { extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
 // Types (reusing from student/jobs/page.tsx logic)
 export interface Job {
@@ -96,7 +98,6 @@ export function AllJobs() {
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [isApplying, setIsApplying] = useState(false)
     const [applyingJobId, setApplyingJobId] = useState<string | null>(null)
-
     // Description Modal state
     const [viewJob, setViewJob] = useState<Job | null>(null)
 
@@ -361,7 +362,7 @@ export function AllJobs() {
         }
 
         if (profileCompletion && profileCompletion.completion_percentage < 75) {
-            toast.error('Profile completion must be at least 75% to apply.')
+            showProfileCompletionToast()
             return
         }
 
@@ -402,17 +403,16 @@ export function AllJobs() {
             fetchJobs(pagination.page)
         } catch (error: any) {
             console.error('Application error:', error)
-            let errorMessage = 'Failed to submit application'
-            const detail = error.response?.data?.detail
+            const detail = extractErrorDetail(error)
+            if (isProfileCompletionError(detail)) {
+                showProfileCompletionToast()
+                return
+            }
 
-            if (typeof detail === 'string') {
-                errorMessage = detail
-            } else if (Array.isArray(detail)) {
-                // Handle array of errors (FastAPI standard validation error)
-                errorMessage = detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ')
-            } else if (typeof detail === 'object' && detail !== null) {
-                // Handle single object error
-                errorMessage = detail.msg || JSON.stringify(detail)
+            let errorMessage = detail || 'Failed to submit application'
+            const rawDetail = error.response?.data?.detail
+            if (!detail && typeof rawDetail === 'object' && rawDetail !== null && !Array.isArray(rawDetail)) {
+                errorMessage = rawDetail.msg || JSON.stringify(rawDetail)
             }
 
             toast.error(errorMessage)
@@ -808,6 +808,7 @@ export function AllJobs() {
                     applicationStatus={viewJob.application_status}
                 />
             )}
+
         </div>
     )
 }

@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
 import { getErrorMessage } from '@/lib/error-handler'
 import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
+import { extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 import {
     Loader2,
     AlertCircle,
@@ -299,31 +301,22 @@ export default function PublicJobPage() {
             toast.success('Successfully applied for this job!')
         } catch (error: any) {
             console.error('Error applying for job:', error)
-            let errorMessage =
-                (typeof error?.response?.data?.detail === 'string' && error.response.data.detail) ||
-                (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||
-                null
-
-            // Handle FastAPI/Pydantic detail arrays.
-            if (!errorMessage && Array.isArray(error?.response?.data?.detail)) {
-                errorMessage = error.response.data.detail
-                    .map((item: any) => {
-                        if (typeof item === 'string') return item
-                        if (item?.msg) return item.msg
-                        return null
-                    })
-                    .filter(Boolean)
-                    .join('; ')
+            const detail = extractErrorDetail(error)
+            if (isProfileCompletionError(detail)) {
+                showProfileCompletionToast()
+                return
             }
 
-            // If backend returns generic 400 without detail, enrich with profile context.
+            let errorMessage = detail
             if (!errorMessage && error?.response?.status === 400 && isAuthenticated && user?.user_type === 'student') {
                 try {
                     const profile = await apiClient.getStudentProfile()
                     const completion = Number(profile?.profile_completion_percentage ?? 0)
                     if (!Number.isNaN(completion) && completion < 75) {
-                        errorMessage = `Please complete at least 75% of your profile before applying. Current completion: ${completion.toFixed(1)}%.`
-                    } else if (!profile?.resume) {
+                        showProfileCompletionToast()
+                        return
+                    }
+                    if (!profile?.resume) {
                         errorMessage = 'Please upload your resume in your profile before applying for a job.'
                     }
                 } catch (profileError) {
