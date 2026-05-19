@@ -3,6 +3,24 @@ export const PROFILE_COMPLETION_MESSAGE =
 
 export const STUDENT_PROFILE_PATH = '/dashboard/student/profile'
 
+export type ProfileCompletionCheck = {
+    can_apply_for_jobs?: boolean
+    core_percentage?: number
+    completion_percentage?: number
+}
+
+/** Apply gate: complete Basic Info tab (75%), not profile picture or other tabs alone. */
+export function canApplyForJobs(completion?: ProfileCompletionCheck | null): boolean {
+    if (!completion) return false
+    if (completion.can_apply_for_jobs !== undefined) {
+        return completion.can_apply_for_jobs
+    }
+    if (completion.core_percentage !== undefined) {
+        return completion.core_percentage >= 75
+    }
+    return (completion.completion_percentage ?? 0) >= 75
+}
+
 /** Detect profile-completion errors from API or client-side checks. */
 export function isProfileCompletionError(message: string | null | undefined): boolean {
     if (!message || typeof message !== 'string') return false

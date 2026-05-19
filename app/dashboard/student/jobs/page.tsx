@@ -14,7 +14,7 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
 interface Job {
@@ -792,8 +792,8 @@ function JobOpportunitiesPageContent() {
             return
         }
 
-        // Check profile completion - must be at least 75%
-        if (!profileCompletion || profileCompletion.completion_percentage < 75) {
+        // Check Basic Info tab complete (75% apply threshold)
+        if (!profileCompletion || !canApplyForJobs(profileCompletion)) {
             showProfileCompletionToast()
             return
         }
@@ -1507,7 +1507,7 @@ function JobOpportunitiesPageContent() {
                 </div>
 
                 {/* Profile Completion Banner */}
-                {profileCompletion && profileCompletion.completion_percentage < 75 && (
+                {profileCompletion && !canApplyForJobs(profileCompletion) && (
                     <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
@@ -1518,9 +1518,9 @@ function JobOpportunitiesPageContent() {
                                     Profile Completion Required
                                 </h3>
                                 <p className="text-sm text-amber-700 dark:text-amber-300">
-                                    Your profile is {profileCompletion.completion_percentage}% complete. You need at least 75% completion to apply for jobs. 
+                                    Your profile is {profileCompletion.completion_percentage}% complete. Fill in all Basic Info fields and upload your resume to apply (75% from Basic Info only).
                                     <a href="/dashboard/student/profile" className="text-amber-600 dark:text-amber-400 hover:underline ml-1 font-medium">
-                                        Complete your profile now →
+                                        Go to profile →
                                     </a>
                                 </p>
                             </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle, AlertCircle, Star } from 'lucide-react'
+import { CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ProfileField {
@@ -30,13 +30,6 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
         return 'text-red-600'
     }
 
-    const getCompletionBgColor = (percentage: number) => {
-        if (percentage >= 80) return 'bg-green-100 dark:bg-green-900/20'
-        if (percentage >= 60) return 'bg-yellow-100 dark:bg-yellow-900/20'
-        if (percentage >= 40) return 'bg-orange-100 dark:bg-orange-900/20'
-        return 'bg-red-100 dark:bg-red-900/20'
-    }
-
     const getProgressColor = (percentage: number) => {
         if (percentage >= 80) return 'bg-green-500'
         if (percentage >= 60) return 'bg-yellow-500'
@@ -44,13 +37,11 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
         return 'bg-red-500'
     }
 
-    // Use completionData if available, otherwise fall back to fields
     const completedCount = completionData?.completed_count || (fields ? fields.filter(field => field.completed).length : 0)
     const totalFields = completionData?.total_fields || (fields ? fields.length : 0)
     const completedFieldsList = completionData?.completed_fields || (fields ? fields.filter(field => field.completed).map(f => f.name) : [])
     const missingFieldsList = completionData?.missing_fields || (fields ? fields.filter(field => !field.completed).map(f => f.name) : [])
 
-    // For backward compatibility, still calculate category stats if fields are provided
     const categories = fields ? Array.from(new Set(fields.map(field => field.category))) : []
     const categoryStats = fields ? categories.map(category => {
         const categoryFields = fields.filter(field => field.category === category)
@@ -61,7 +52,6 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
 
     return (
         <div className={cn("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6", className)}>
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -81,7 +71,6 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                 </div>
             </div>
 
-            {/* Progress Bar */}
             <div className="mb-6">
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                     <div
@@ -98,7 +87,6 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                 </div>
             </div>
 
-            {/* Category Breakdown - Only show if fields are provided */}
             {fields && fields.length > 0 && (
                 <div className="space-y-4 mb-6">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">
@@ -125,13 +113,11 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                 </div>
             )}
 
-            {/* Completion Status */}
             <div className="space-y-4">
                 <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                     Completion Status
                 </h4>
 
-                {/* Completed Fields */}
                 {completedFieldsList.length > 0 && (
                     <div className="space-y-2">
                         <div className="flex items-center space-x-2 text-sm text-green-600">
@@ -158,7 +144,6 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                     </div>
                 )}
 
-                {/* Missing Fields */}
                 {missingFieldsList.length > 0 && (
                     <div className="space-y-2">
                         <div className="flex items-center space-x-2 text-sm text-red-600">
@@ -186,22 +171,20 @@ export function ProfileCompletion({ completion, fields, completionData, classNam
                 )}
             </div>
 
-            {/* Completion Tips */}
             {completion < 100 && (
                 <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <h5 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
                         💡 Tips to Complete Your Profile
                     </h5>
                     <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                        <li>• Add a professional profile picture</li>
-                        <li>• Upload your latest resume</li>
+                        <li>• Complete all Basic Info fields (name, contact, location, resume)</li>
+                        <li>• Upload your latest resume in Basic Info</li>
                         <li>• Fill in your academic details</li>
                         <li>• Add your technical skills</li>
-                        <li>• Include your work experience</li>
+                        <li>• Profile picture is optional (Social tab)</li>
                     </ul>
                 </div>
             )}
         </div>
     )
 }
-
