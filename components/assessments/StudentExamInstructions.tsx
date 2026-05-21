@@ -246,11 +246,6 @@ export function StudentExamInstructions({
               <p className="font-semibold">You have already submitted this assessment</p>
               <p className="mt-1 text-green-800/90 dark:text-green-200/90">
                 Retakes are not allowed for this exam.
-                {eligibility?.percentage != null ? (
-                  <> Your recorded score is <strong>{eligibility.percentage}%</strong>.</>
-                ) : (
-                  <> Your attempt has already been recorded.</>
-                )}
               </p>
             </div>
           </motion.div>
