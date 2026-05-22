@@ -250,6 +250,10 @@ export interface AnalyticsExport {
     percentage: number;
     pass_fail: string;
     rounds_completed: number;
+    snapshot_1_url?: string;
+    snapshot_2_url?: string;
+    snapshot_3_url?: string;
+    snapshot_4_url?: string;
 }
 
 export const exportAnalyticsToCSV = (
@@ -265,7 +269,11 @@ export const exportAnalyticsToCSV = (
         'Max Score',
         'Percentage',
         'Pass/Fail',
-        'Rounds Completed'
+        'Rounds Completed',
+        'Snapshot 1 URL',
+        'Snapshot 2 URL',
+        'Snapshot 3 URL',
+        'Snapshot 4 URL',
     ];
 
     // Prepare CSV data
@@ -277,7 +285,11 @@ export const exportAnalyticsToCSV = (
         item.max_score ?? '0',
         item.percentage?.toFixed(1) ?? '0',
         item.pass_fail,
-        item.rounds_completed || 0
+        item.rounds_completed || 0,
+        item.snapshot_1_url || '',
+        item.snapshot_2_url || '',
+        item.snapshot_3_url || '',
+        item.snapshot_4_url || '',
     ]);
 
     // Convert to CSV string
