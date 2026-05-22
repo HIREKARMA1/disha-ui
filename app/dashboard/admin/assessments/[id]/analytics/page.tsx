@@ -15,6 +15,11 @@ import {
     getTotalQuestionsFromAssessment,
     isAttemptEvaluated,
 } from '@/lib/assessmentAnalytics'
+import {
+    buildProctoringSlots,
+    countCapturedSnapshots,
+    resolveSnapshotUrl,
+} from '@/lib/proctoringSnapshots'
 
 export default function AssessmentAnalyticsPage() {
     const params = useParams()
@@ -126,7 +131,11 @@ export default function AssessmentAnalyticsPage() {
                 max_score: maxScore,
                 percentage: attempt.percentage,
                 pass_fail: passFail,
-                rounds_completed: attempt.result_data?.rounds?.length || 0
+                rounds_completed: attempt.result_data?.rounds?.length || 0,
+                snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
+                snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
+                snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
+                snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
             }
         })
 
@@ -346,6 +355,7 @@ export default function AssessmentAnalyticsPage() {
                                         <th className="px-6 py-4">Percentage</th>
                                         <th className="px-6 py-4">Pass/Fail</th>
                                         <th className="px-6 py-4">Rounds</th>
+                                        <th className="px-6 py-4">Photos</th>
                                         <th className="px-6 py-4">Actions</th>
                                     </tr>
                                 </thead>
@@ -404,6 +414,11 @@ export default function AssessmentAnalyticsPage() {
                                                 {attempt.result_data?.rounds?.length ?? '—'}
                                             </td>
 
+                                            {/* Proctoring photos */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                                {countCapturedSnapshots(attempt)} / 4
+                                            </td>
+
                                             {/* Actions */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <Button
@@ -440,6 +455,7 @@ export default function AssessmentAnalyticsPage() {
                     onClose={() => setIsModalOpen(false)}
                     attempt={selectedAttempt}
                     assessment={assessmentDetails}
+                    assessmentId={assessmentId}
                 />
             </div>
         </AdminDashboardLayout>
@@ -451,18 +467,59 @@ function AttemptDetailsModal({
     onClose,
     attempt,
     assessment,
+    assessmentId,
 }: {
     isOpen: boolean
     onClose: () => void
     attempt: any
     assessment: any
+    assessmentId: string
 }) {
+    const [proctoring, setProctoring] = useState<any>(null)
+    const [loadingProctoring, setLoadingProctoring] = useState(false)
+
+    useEffect(() => {
+        if (!isOpen || !attempt?.id) {
+            setProctoring(null)
+            return
+        }
+
+        const load = async () => {
+            setLoadingProctoring(true)
+            try {
+                const data = await apiClient.get(
+                    `/admin/assessments/${assessmentId}/attempts/${attempt.id}/proctoring-snapshots`
+                )
+                setProctoring(data)
+            } catch {
+                setProctoring({
+                    proctoring_snapshots: attempt.proctoring_snapshots,
+                    proctoring_snapshot_1_url: attempt.proctoring_snapshot_1_url,
+                    proctoring_snapshot_2_url: attempt.proctoring_snapshot_2_url,
+                    proctoring_snapshot_3_url: attempt.proctoring_snapshot_3_url,
+                    proctoring_snapshot_4_url: attempt.proctoring_snapshot_4_url,
+                })
+            } finally {
+                setLoadingProctoring(false)
+            }
+        }
+
+        void load()
+    }, [isOpen, attempt?.id, assessmentId])
+
     if (!attempt) return null
 
     const evaluated = isAttemptEvaluated(attempt)
     const totalMaxScore = getAttemptMaxScore(attempt, assessment)
     const passFail = getPassFailLabel(attempt, assessment)
     const rounds = attempt.result_data?.rounds || []
+
+    const photoSlots = buildProctoringSlots(
+        proctoring?.proctoring_snapshots?.length
+            ? proctoring.proctoring_snapshots
+            : attempt.proctoring_snapshots,
+        proctoring || attempt
+    )
 
     return (
         <div className={`fixed inset-0 z-50 flex items-center justify-center ${!isOpen && 'hidden'}`}>
@@ -522,6 +579,65 @@ function AttemptDetailsModal({
                                 {passFail}
                             </span>
                         </div>
+                    </div>
+
+                    {/* Proctoring photos from Solviq */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                            Photos captured during assessment
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                            Identity verification snapshots from Solviq (up to 4, spread across the exam).
+                        </p>
+                        {!loadingProctoring && photoSlots.every((s) => !s.url) && evaluated && (
+                            <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+                                No photos were stored for this attempt. The student must take a new exam with the webcam
+                                enabled for the full duration. Older attempts completed before proctoring was fixed will
+                                stay empty.
+                            </p>
+                        )}
+                        {loadingProctoring ? (
+                            <div className="flex justify-center py-8">
+                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {photoSlots.map((slot) =>
+                                    slot.url ? (
+                                        <a
+                                            key={slot.index}
+                                            href={slot.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:ring-2 hover:ring-blue-500"
+                                        >
+                                            <img
+                                                src={slot.url}
+                                                alt={`Photo ${slot.index}`}
+                                                className="w-full aspect-[4/3] object-cover"
+                                            />
+                                            <div className="p-2 text-xs text-gray-600 dark:text-gray-400">
+                                                <p className="font-semibold">Photo {slot.index}</p>
+                                                {slot.captured_at && (
+                                                    <p>{new Date(slot.captured_at).toLocaleString()}</p>
+                                                )}
+                                                {slot.round_number != null && (
+                                                    <p>Round {slot.round_number}</p>
+                                                )}
+                                            </div>
+                                        </a>
+                                    ) : (
+                                        <div
+                                            key={slot.index}
+                                            className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center aspect-[4/3] p-3 text-center bg-gray-50 dark:bg-gray-900/40"
+                                        >
+                                            <p className="text-sm font-medium text-gray-500">Photo {slot.index}</p>
+                                            <p className="text-xs text-gray-400 mt-1">Not captured</p>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Round-wise Breakdown */}
