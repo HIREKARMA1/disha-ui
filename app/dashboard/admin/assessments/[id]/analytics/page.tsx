@@ -6,7 +6,13 @@ import { apiClient } from '@/lib/api'
 import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
-import { exportAnalyticsToCSV } from '@/utils/exportToExcel'
+import {
+    exportAnalyticsToCSV,
+    buildAppliedStudentLookups,
+    resolveAppliedStudentProfile,
+    mapAttemptStudentProfileToExport,
+    type AppliedStudentExport,
+} from '@/utils/exportToExcel'
 import {
     formatAttemptPercentage,
     formatAttemptScore,
@@ -36,6 +42,7 @@ export default function AssessmentAnalyticsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [pullingResults, setPullingResults] = useState(false)
     const [pullMessage, setPullMessage] = useState<string | null>(null)
+    const [exporting, setExporting] = useState(false)
 
     useEffect(() => {
         if (assessmentId) {
@@ -116,30 +123,57 @@ export default function AssessmentAnalyticsPage() {
         (attempts[0]?.total_questions as number | undefined) ||
         0
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (!assessmentDetails || !filteredAttempts.length) return
 
-        const exportData = filteredAttempts.map(attempt => {
-            const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
-            const passFail = getPassFailLabel(attempt, assessmentDetails)
+        try {
+            setExporting(true)
 
-            return {
-                email: attempt.email || attempt.student_email || '-',
-                student_name: attempt.student_name || 'Unknown',
-                status: attempt.status,
-                total_score: attempt.total_score,
-                max_score: maxScore,
-                percentage: attempt.percentage,
-                pass_fail: passFail,
-                rounds_completed: attempt.result_data?.rounds?.length || 0,
-                snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
-                snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
-                snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
-                snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
+            const jobId =
+                assessmentDetails.passing_criteria?.job_id ||
+                assessmentDetails.job_id ||
+                null
+
+            let appliedLookups = buildAppliedStudentLookups([])
+
+            // Optional: job application adds applied date / expected salary only
+            if (jobId) {
+                try {
+                    const appliedStudents: AppliedStudentExport[] =
+                        await apiClient.getAppliedStudentsAdmin(jobId)
+                    appliedLookups = buildAppliedStudentLookups(appliedStudents)
+                } catch (err) {
+                    console.warn('Could not load job application extras for export:', err)
+                }
             }
-        })
 
-        exportAnalyticsToCSV(exportData, assessmentDetails.assessment_name || 'Assessment')
+            const exportData = filteredAttempts.map((attempt) => {
+                const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
+                const passFail = getPassFailLabel(attempt, assessmentDetails)
+                const jobApplication = resolveAppliedStudentProfile(attempt, appliedLookups)
+                const profile = mapAttemptStudentProfileToExport(attempt, jobApplication)
+
+                return {
+                    email: attempt.email || attempt.student_email || '-',
+                    student_name: attempt.student_name || 'Unknown',
+                    status: attempt.status,
+                    total_score: attempt.total_score,
+                    max_score: maxScore,
+                    percentage: attempt.percentage,
+                    pass_fail: passFail,
+                    rounds_completed: attempt.result_data?.rounds?.length || 0,
+                    snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
+                    snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
+                    snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
+                    snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
+                    profile,
+                }
+            })
+
+            exportAnalyticsToCSV(exportData, assessmentDetails.assessment_name || 'Assessment')
+        } finally {
+            setExporting(false)
+        }
     }
 
     const hasAwaitingResults = attempts.some((a) => !isAttemptEvaluated(a))
@@ -310,9 +344,13 @@ export default function AssessmentAnalyticsPage() {
                             variant="outline"
                             className="gap-2"
                             onClick={handleExport}
-                            disabled={filteredAttempts.length === 0}
+                            disabled={filteredAttempts.length === 0 || exporting}
                         >
-                            <Download size={16} />
+                            {exporting ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Download size={16} />
+                            )}
                             Export CSV
                         </Button>
                     </div>
