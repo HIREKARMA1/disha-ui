@@ -1,39 +1,41 @@
-"use client"
+'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { BarChart3, TrendingUp, Users, Briefcase, Clock } from 'lucide-react'
+import { BarChart3, TrendingUp, Briefcase, Users } from 'lucide-react'
+import { useRoleAnalytics } from '@/hooks/useRoleAnalytics'
+import type { CorporateAnalyticsData } from '@/types/analytics'
 
 interface CorporateAnalyticsChartProps {
     className?: string
 }
 
 export function CorporateAnalyticsChart({ className = '' }: CorporateAnalyticsChartProps) {
-    // Mock data for now - will be replaced with actual API data
-    const mockData = {
-        applicationsOverTime: [
-            { month: 'Jan', applications: 45 },
-            { month: 'Feb', applications: 52 },
-            { month: 'Mar', applications: 38 },
-            { month: 'Apr', applications: 67 },
-            { month: 'May', applications: 43 },
-            { month: 'Jun', applications: 58 }
-        ],
-        topPositions: [
-            { position: 'Software Engineer', applications: 89 },
-            { position: 'Data Scientist', applications: 67 },
-            { position: 'Product Manager', applications: 45 },
-            { position: 'UX Designer', applications: 34 }
-        ]
+    const { data, loading, error } = useRoleAnalytics<CorporateAnalyticsData>('corporate')
+
+    if (loading) {
+        return (
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 animate-pulse h-64 ${className}`} />
+        )
     }
 
-    const maxApplications = Math.max(...mockData.applicationsOverTime.map(d => d.applications))
+    if (error || !data) {
+        return (
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Analytics unavailable</p>
+            </div>
+        )
+    }
+
+    const { summary, applications_over_time } = data
+    const maxApplications = Math.max(...applications_over_time.map((d) => d.count), 1)
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}
+            className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}
         >
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -45,100 +47,57 @@ export function CorporateAnalyticsChart({ className = '' }: CorporateAnalyticsCh
                             Hiring Analytics
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Application trends and insights
+                            Live data from your job postings
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>+12% this month</span>
+                <Link
+                    href="/dashboard/corporate/analytics"
+                    className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                >
+                    View full report
+                </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <Briefcase className="w-5 h-5 mx-auto text-blue-500 mb-1" />
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{summary.total_applications}</p>
+                    <p className="text-xs text-gray-500">Applications</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <Users className="w-5 h-5 mx-auto text-purple-500 mb-1" />
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{summary.shortlisted_candidates}</p>
+                    <p className="text-xs text-gray-500">Shortlisted</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <TrendingUp className="w-5 h-5 mx-auto text-green-500 mb-1" />
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{summary.shortlist_rate}%</p>
+                    <p className="text-xs text-gray-500">Shortlist rate</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 blur-sm pointer-events-none">
-                {/* Applications Over Time Chart */}
-                <div>
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                        Applications Over Time
-                    </h4>
-                    <div className="space-y-3">
-                        {mockData.applicationsOverTime.map((data, index) => (
-                            <motion.div
-                                key={data.month}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.6, delay: index * 0.1 }}
-                                className="flex items-center space-x-3"
-                            >
-                                <div className="w-8 text-xs font-medium text-gray-600 dark:text-gray-400">
-                                    {data.month}
-                                </div>
-                                <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${(data.applications / maxApplications) * 100}%` }}
-                                        transition={{ duration: 1, delay: index * 0.1 }}
-                                        className="bg-gradient-to-r from-primary-500 to-secondary-500 h-2 rounded-full"
-                                    />
-                                </div>
-                                <div className="w-8 text-xs font-medium text-gray-900 dark:text-white text-right">
-                                    {data.applications}
-                                </div>
-                            </motion.div>
-                        ))}
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Applications Over Time
+            </h4>
+            <div className="space-y-2">
+                {applications_over_time.map((item) => (
+                    <div key={item.month} className="flex items-center space-x-3">
+                        <div className="w-16 text-xs font-medium text-gray-600 dark:text-gray-400 truncate">
+                            {item.month}
+                        </div>
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                                className="bg-primary-500 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${(item.count / maxApplications) * 100}%` }}
+                            />
+                        </div>
+                        <div className="w-8 text-xs font-bold text-gray-900 dark:text-white text-right">
+                            {item.count}
+                        </div>
                     </div>
-                </div>
-
-                {/* Top Positions */}
-                <div>
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                        Top Positions by Applications
-                    </h4>
-                    <div className="space-y-3">
-                        {mockData.topPositions.map((position, index) => (
-                            <motion.div
-                                key={position.position}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.6, delay: index * 0.1 }}
-                                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                            >
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-1 bg-blue-100 dark:bg-blue-900/20 rounded">
-                                        <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {position.position}
-                                    </span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Users className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                        {position.applications}
-                                    </span>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Coming Soon Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl">
-                <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
-                        <Clock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Coming Soon
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-                        Hiring Analytics functionality is under development. Stay tuned for comprehensive insights!
-                    </p>
-                </div>
+                ))}
             </div>
         </motion.div>
     )
 }
-
-

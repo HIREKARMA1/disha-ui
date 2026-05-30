@@ -31,6 +31,8 @@ import {
     Target,
     Clock
 } from 'lucide-react'
+import Link from 'next/link'
+import { config } from '@/lib/config'
 import { StudentStatistics, JobStatistics } from '@/types/university'
 
 interface UniversityAnalyticsChartProps {
@@ -372,6 +374,14 @@ export function UniversityAnalyticsChart({
 
                 {/* Year Filter */}
                 <div className="flex items-center space-x-4 mt-4 lg:mt-0">
+                    {config.features.analytics && (
+                        <Link
+                            href="/dashboard/university/analytics"
+                            className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 whitespace-nowrap"
+                        >
+                            View full report
+                        </Link>
+                    )}
                     <div className="flex items-center space-x-2">
                         <Filter className="w-4 h-4 text-gray-500" />
                         <select

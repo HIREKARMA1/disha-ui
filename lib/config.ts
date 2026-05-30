@@ -17,8 +17,14 @@ export const config = {
   
   // Feature Flags
   features: {
-    analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
+    analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS !== 'false',
     debugMode: process.env.NEXT_PUBLIC_ENABLE_DEBUG_MODE === 'true',
+  },
+
+  analytics: {
+    studentPath: process.env.NEXT_PUBLIC_STUDENT_ANALYTICS_PATH || '/students/analytics',
+    universityPath: process.env.NEXT_PUBLIC_UNIVERSITY_ANALYTICS_PATH || '/universities/analytics',
+    corporatePath: process.env.NEXT_PUBLIC_CORPORATE_ANALYTICS_PATH || '/corporates/analytics',
   },
   
   // Environment

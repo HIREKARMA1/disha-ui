@@ -12,8 +12,10 @@ import {
     Menu,
     LogOut,
     Building2,
-    Brain
+    Brain,
+    BarChart3
 } from 'lucide-react'
+import { config } from '@/lib/config'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
@@ -65,6 +67,15 @@ const navItems: NavItem[] = [
         description: 'Review applications',
         color: 'from-indigo-500 to-blue-600'
     },
+    ...(config.features.analytics
+        ? [{
+            label: 'Analytics',
+            href: '/dashboard/corporate/analytics',
+            icon: BarChart3,
+            description: 'Hiring insights and reports',
+            color: 'from-violet-500 to-purple-600'
+        }]
+        : []),
     // TODO: Uncomment when practice module bugs are fixed
     {
         label: 'Practice',

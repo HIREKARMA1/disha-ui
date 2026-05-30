@@ -186,6 +186,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getStudentAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(config.analytics.studentPath);
+    return response.data;
+  }
+
   async getStudentAppliedJobs(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/students/applied-jobs');
     return response.data;
@@ -421,9 +426,19 @@ class ApiClient {
     return response.data;
   }
 
+  async getUniversityAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(config.analytics.universityPath);
+    return response.data;
+  }
+
   // Corporate endpoints
   async getCorporateDashboard(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/corporates/dashboard');
+    return response.data;
+  }
+
+  async getCorporateAnalytics(): Promise<any> {
+    const response: AxiosResponse = await this.client.get(config.analytics.corporatePath);
     return response.data;
   }
 

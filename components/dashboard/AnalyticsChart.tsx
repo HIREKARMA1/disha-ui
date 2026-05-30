@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, BarChart3, PieChart, Target, Users, Briefcase, AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { config } from '@/lib/config'
 import { dashboardService, type DashboardStats } from '@/services/dashboardService'
 
 interface AnalyticsChartProps {
@@ -116,7 +118,15 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Job Application Analytics
                 </h2>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
+                    {config.features.analytics && (
+                        <Link
+                            href="/dashboard/student/analytics"
+                            className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                        >
+                            View full report
+                        </Link>
+                    )}
                     <BarChart3 className="w-5 h-5 text-gray-400" />
                     <PieChart className="w-5 h-5 text-gray-400" />
                 </div>

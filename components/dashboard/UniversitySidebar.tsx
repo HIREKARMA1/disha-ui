@@ -12,8 +12,10 @@ import {
     Menu,
     LogOut,
     Brain,
-    Award
+    Award,
+    BarChart3
 } from 'lucide-react'
+import { config } from '@/lib/config'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
@@ -73,6 +75,15 @@ const navItems: NavItem[] = [
         description: 'Track student applications',
         color: 'from-indigo-500 to-blue-600'
     },
+    ...(config.features.analytics
+        ? [{
+            label: 'Analytics',
+            href: '/dashboard/university/analytics',
+            icon: BarChart3,
+            description: 'Placement and hiring insights',
+            color: 'from-violet-500 to-purple-600'
+        }]
+        : []),
     {
         label: 'Licenses',
         href: '/dashboard/university/licenses',

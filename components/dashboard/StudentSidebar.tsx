@@ -17,8 +17,10 @@ import {
     LogOut,
     Brain,
     ClipboardList,
-    MessageSquare
+    MessageSquare,
+    BarChart3
 } from 'lucide-react'
+import { config } from '@/lib/config'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
@@ -72,6 +74,15 @@ const navItems: NavItem[] = [
         description: 'Track your job applications',
         color: 'from-blue-500 to-indigo-600'
     },
+    ...(config.features.analytics
+        ? [{
+            label: 'Analytics',
+            href: '/dashboard/student/analytics',
+            icon: BarChart3,
+            description: 'Application insights and trends',
+            color: 'from-violet-500 to-purple-600'
+        }]
+        : []),
     {
         label: 'Resume Builder',
         href: '/dashboard/student/resume-builder',
