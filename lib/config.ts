@@ -20,6 +20,12 @@ export const config = {
     analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
     debugMode: process.env.NEXT_PUBLIC_ENABLE_DEBUG_MODE === 'true',
   },
+
+  // WhatsApp Support Widget
+  whatsapp: {
+    number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '',
+    message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi, I need help with HireKarma',
+  },
   
   // Environment
   isDevelopment: process.env.NODE_ENV === 'development',

@@ -19,7 +19,7 @@ export function PremiumAccessModal({
         <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 text-center">
                 <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
-                
+
                 <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md sm:p-6">
                     <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
                         <button
@@ -31,7 +31,7 @@ export function PremiumAccessModal({
                             <X className="h-6 w-6" aria-hidden="true" />
                         </button>
                     </div>
-                    
+
                     <div>
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
                             <Lock className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
@@ -58,7 +58,7 @@ export function PremiumAccessModal({
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* <div className="mt-5 sm:mt-6">
                         <Button
                             type="button"

@@ -4,6 +4,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { LoadingProvider } from '@/contexts/LoadingContext'
 import { Toaster } from 'react-hot-toast'
+import { WhatsAppFloatingButton } from '@/components/ui/WhatsAppFloatingButton'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const poppins = Poppins({ 
@@ -42,6 +43,7 @@ export default function RootLayout({
                 >
                     <LoadingProvider>
                         {children}
+                        <WhatsAppFloatingButton />
                         <Toaster
                             position="top-right"
                             toastOptions={{
