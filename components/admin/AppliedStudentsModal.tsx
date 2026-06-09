@@ -19,6 +19,12 @@ interface Job {
 
 interface AppliedStudent extends AppliedStudentExport {
     profile_picture?: string
+    application_id?: string
+    applicant_source?: 'campus' | 'shortlisted'
+    shortlisted_batch_id?: string | null
+    shortlisted_batch_name?: string | null
+    college?: string
+    preferred_roles?: string
 }
 
 interface AppliedStudentsModalProps {
@@ -93,12 +99,13 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
 
             // First, convert AppliedStudent to StudentListItem format
             // Now we have ALL the profile data directly from the applied student response!
+            const isShortlisted = student.applicant_source === 'shortlisted'
             const studentListItem: StudentListItem = {
                 id: student.id,
                 name: student.name,
                 email: student.email,
                 phone: student.phone || '',
-                degree: student.degree || '',
+                degree: student.degree || (isShortlisted ? 'Shortlisted' : ''),
                 branch: student.branch || '',
                 graduation_year: student.graduation_year || 0,
                 btech_cgpa: student.cgpa || 0,
@@ -112,11 +119,11 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                 created_at: student.created_at || student.applied_at,
 
                 // Skills tab data
-                technical_skills: student.technical_skills || '',
+                technical_skills: student.technical_skills || (student.skills?.join(', ') ?? ''),
                 soft_skills: student.soft_skills || '',
                 certifications: student.certifications || '',
                 preferred_industry: student.preferred_industry || '',
-                job_roles_of_interest: student.job_roles_of_interest || '',
+                job_roles_of_interest: student.job_roles_of_interest || student.preferred_roles || '',
                 location_preferences: student.location_preferences || '',
                 language_proficiency: student.language_proficiency || '',
 
@@ -137,8 +144,8 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                 internship_certificates: student.internship_certificates || '',
 
                 // Additional profile data
-                bio: student.bio || '',
-                institution: student.institution || '',
+                bio: student.bio || (isShortlisted ? `Shortlisted batch: ${student.shortlisted_batch_name || '—'}` : ''),
+                institution: student.institution || student.college || '',
                 major: student.major || '',
                 dob: student.dob || '',
                 gender: student.gender || '',
@@ -306,7 +313,7 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                                     <thead>
                                         <tr className="border-b border-gray-200 dark:border-gray-700">
                                             <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Student</th>
-                                            <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">University</th>
+                                            <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">University / Batch</th>
                                             <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Education</th>
                                             <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Applied Date</th>
                                             <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
@@ -315,10 +322,14 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                                     </thead>
                                     <tbody>
                                         {students.map((student) => (
-                                            <tr key={student.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                            <tr key={student.application_id || student.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
+                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                                            student.applicant_source === 'shortlisted'
+                                                                ? 'bg-gradient-to-r from-orange-500 to-amber-500'
+                                                                : 'bg-gradient-to-r from-primary-500 to-secondary-500'
+                                                        }`}>
                                                             {student.profile_picture ? (
                                                                 <img
                                                                     src={student.profile_picture}
@@ -330,9 +341,16 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <h4 className="font-medium text-gray-900 dark:text-white">
-                                                                {student.name}
-                                                            </h4>
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                                                    {student.name}
+                                                                </h4>
+                                                                {student.applicant_source === 'shortlisted' && (
+                                                                    <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                                                                        Shortlisted
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                                                 <Mail className="w-3 h-3" />
                                                                 <span>{student.email}</span>
@@ -347,24 +365,66 @@ export function AppliedStudentsModal({ isOpen, onClose, job }: AppliedStudentsMo
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                        <Building className="w-4 h-4" />
-                                                        <span>{getDisplayUniversityName(student)}</span>
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {student.applicant_source === 'shortlisted' ? (
+                                                            <>
+                                                                <div className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                                                                    <GraduationCap className="w-4 h-4" />
+                                                                    <span>{student.shortlisted_batch_name || 'Shortlisted batch'}</span>
+                                                                </div>
+                                                                {student.college && (
+                                                                    <div className="mt-1 flex items-center gap-2">
+                                                                        <Building className="w-4 h-4" />
+                                                                        <span>{student.college}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2">
+                                                                <Building className="w-4 h-4" />
+                                                                <span>{getDisplayUniversityName(student)}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="text-sm">
-                                                        <div className="text-gray-900 dark:text-white">
-                                                            {student.degree || 'Not specified'}
-                                                        </div>
-                                                        <div className="text-gray-600 dark:text-gray-400">
-                                                            {student.branch && `${student.branch}`}
-                                                            {student.graduation_year && ` • ${student.graduation_year}`}
-                                                        </div>
-                                                        {student.cgpa && (
-                                                            <div className="text-gray-600 dark:text-gray-400">
-                                                                CGPA: {student.cgpa}
-                                                            </div>
+                                                        {student.applicant_source === 'shortlisted' ? (
+                                                            <>
+                                                                <div className="text-gray-900 dark:text-white">
+                                                                    {student.branch || 'Branch not specified'}
+                                                                </div>
+                                                                {student.graduation_year && (
+                                                                    <div className="text-gray-600 dark:text-gray-400">
+                                                                        Graduation: {student.graduation_year}
+                                                                    </div>
+                                                                )}
+                                                                {student.technical_skills && (
+                                                                    <div className="text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                                        Skills: {student.technical_skills}
+                                                                    </div>
+                                                                )}
+                                                                {student.preferred_roles && (
+                                                                    <div className="text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                                        Roles: {student.preferred_roles}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="text-gray-900 dark:text-white">
+                                                                    {student.degree || 'Not specified'}
+                                                                </div>
+                                                                <div className="text-gray-600 dark:text-gray-400">
+                                                                    {student.branch && `${student.branch}`}
+                                                                    {student.graduation_year && ` • ${student.graduation_year}`}
+                                                                </div>
+                                                                {student.cgpa && (
+                                                                    <div className="text-gray-600 dark:text-gray-400">
+                                                                        CGPA: {student.cgpa}
+                                                                    </div>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                 </td>
