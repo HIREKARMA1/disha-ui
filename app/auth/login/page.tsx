@@ -228,10 +228,10 @@ export default function LoginPage() {
                 >
                     {/* Logo */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-4">
-                            <Shield className="w-8 h-8 text-white" />
+                        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-4">
+                            <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                             Welcome Back
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -246,9 +246,8 @@ export default function LoginPage() {
                         </label>
                         <div className="
                                         grid 
-                                        sm:grid-cols-3
-                                        grid-cols-1
-                                        gap-3
+                                        grid-cols-3
+                                        gap-2
                                         w-full
                                     ">
                             {userTypeOptions.map((option) => {
@@ -260,13 +259,13 @@ export default function LoginPage() {
                                         key={option.value}
                                         type="button"
                                         onClick={() => handleUserTypeChange(option.value)}
-                                        className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${isSelected
+                                        className={`p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-1${isSelected
                                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                                             : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-400'
                                             }`}
                                     >
-                                        <Icon className={`w-5 h-5 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                                        <span className="text-sm font-medium">{option.label}</span>
+                                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                                        <span className="text-xs sm:text-sm font-medium text-center">{option.label}</span>
                                     </button>
                                 )
                             })}

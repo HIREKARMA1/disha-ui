@@ -107,15 +107,15 @@ export function AdminProfile() {
 
             setProfile(updatedProfile)
             setEditing(null) // Exit edit mode after saving
-            
+
             // Show success toast
             const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
             toast.success(`${sectionName} updated successfully!`)
-            
+
         } catch (error: any) {
             console.error('Error saving admin profile:', error)
             setError(error.message)
-            
+
             // Show error toast with specific message
             if (error.message.includes('network') || error.message.includes('Internet')) {
                 toast.error('Network error. Please check your connection and try again.')
@@ -350,12 +350,26 @@ export function AdminProfile() {
                                                 </div>
                                             </div>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
+                                                variant="outline"
                                                 onClick={() => setEditing('basic')}
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                className="
+        border-2 border-blue-500
+        bg-blue-50
+        text-blue-700
+        hover:bg-blue-100
+        hover:border-blue-600
+        dark:bg-blue-900/20
+        dark:border-blue-400
+        dark:text-blue-300
+        px-5 py-2
+        text-sm
+        font-semibold
+        rounded-lg
+        shadow-sm
+        transition-all duration-200
+    "
                                             >
-                                                <ChevronRight className="w-3 h-3 mr-1" />
+                                                <ChevronRight className="w-4 h-4 mr-2" />
                                                 Edit
                                             </Button>
                                         </div>
@@ -549,20 +563,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         // Clear previous errors
         setFieldErrors({})
-        
+
         // Validation errors
         const errors: Record<string, string> = {}
         let hasValidationErrors = false
-        
+
         // Name validation
         if (formData.name && formData.name.trim().length < 2) {
             errors.name = 'Name must be at least 2 characters long'
             hasValidationErrors = true
         }
-        
+
         // Phone validation - exactly 10 digits
         if (formData.phone && formData.phone.trim()) {
             const phoneRegex = /^\d{10}$/
@@ -571,13 +585,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
         }
-        
+
         // If there are validation errors, set field errors and return
         if (hasValidationErrors) {
             setFieldErrors(errors)
             return
         }
-        
+
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
             if (cleanedFormData[key] === '') {
@@ -626,7 +640,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         } catch (error: any) {
             console.error('File upload error:', error)
             setUploadError(error.message || 'Failed to upload file.')
-            
+
             // Show specific error messages
             if (error.message.includes('network') || error.message.includes('Internet')) {
                 toast.error('Network error. Please check your connection and try again.')
@@ -722,11 +736,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                                 setFieldErrors({ ...fieldErrors, [field]: '' })
                             }
                         }}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
-                            fieldErrors[field] 
-                                ? 'border-red-500 focus:border-red-500' 
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${fieldErrors[field]
+                                ? 'border-red-500 focus:border-red-500'
                                 : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                            }`}
                         placeholder="Enter 10-digit phone number"
                         maxLength={10}
                     />
@@ -746,25 +759,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         value={value}
                         onChange={(e) => {
                             let inputValue = e.target.value
-                            
+
                             // Name field validation - only alphabets, spaces, and common punctuation
                             const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
                             if (sanitizedValue !== inputValue) {
                                 toast.error('Only letters, spaces, periods, and hyphens are allowed')
                             }
                             inputValue = sanitizedValue
-                            
+
                             setFormData({ ...formData, [field]: inputValue })
                             // Clear error when user starts typing
                             if (fieldErrors[field]) {
                                 setFieldErrors({ ...fieldErrors, [field]: '' })
                             }
                         }}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
-                            fieldErrors[field] 
-                                ? 'border-red-500 focus:border-red-500' 
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${fieldErrors[field]
+                                ? 'border-red-500 focus:border-red-500'
                                 : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                            }`}
                         placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
                         maxLength={50}
                     />

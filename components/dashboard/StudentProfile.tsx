@@ -28,8 +28,7 @@ import { profileService, type StudentProfile, type ProfileUpdateData, type Profi
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
-import { LookupSelect } from '@/components/ui/lookup-select'
+import { useAcademicBranches, useAcademicCourses, useAcademicDegrees, useUniversities } from '@/hooks/useLookup'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
@@ -72,7 +71,7 @@ export function StudentProfile() {
             id: 'academic',
             title: 'Academic Information',
             icon: GraduationCap,
-            fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'],
+            fields: ['institution', 'degree', 'major', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'],
             completed: false
         },
         {
@@ -461,12 +460,12 @@ export function StudentProfile() {
                                                         </div>
                                                     </div>
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => setEditing('basic')}
-                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                        className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 px-4 py-2 font-semibold shadow-sm"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-4 h-4 mr-2" />
                                                         Edit
                                                     </Button>
                                                 </div>
@@ -594,7 +593,7 @@ export function StudentProfile() {
 
                                                 {editing === 'academic' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
+                                                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'major', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('academic', formData)}
                                                         saving={saving}
@@ -1255,21 +1254,30 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const fieldValidationErrors = getFieldErrors()
     const hasFieldErrors = Object.keys(fieldValidationErrors).length > 0
 
-    // Use professional lookup hook for branches
-    const {
-        data: branches,
-        loading: loadingBranches,
-        error: branchesError
-    } = useBranches({
-        enabled: section.id === 'academic'
-    })
+    const [selectedDegreeId, setSelectedDegreeId] = useState<number | undefined>(undefined)
+    const [selectedCourseId, setSelectedCourseId] = useState<number | undefined>(undefined)
 
-    // Use professional lookup hook for degrees
     const {
         data: degrees,
         loading: loadingDegrees,
         error: degreesError
-    } = useDegrees({
+    } = useAcademicDegrees({
+        enabled: section.id === 'academic'
+    })
+
+    const {
+        data: courses,
+        loading: loadingCourses,
+        error: coursesError
+    } = useAcademicCourses(selectedDegreeId, {
+        enabled: section.id === 'academic'
+    })
+
+    const {
+        data: branches,
+        loading: loadingBranches,
+        error: branchesError
+    } = useAcademicBranches(selectedCourseId, {
         enabled: section.id === 'academic'
     })
 
@@ -1314,8 +1322,31 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
 
             setFormData(initialData)
+
+            if (section.id === 'academic') {
+                setSelectedDegreeId(undefined)
+                setSelectedCourseId(undefined)
+            }
         }
     }, [profile, section])
+
+    useEffect(() => {
+        if (section.id !== 'academic') return
+        if (!formData.degree || selectedDegreeId) return
+        const matchedDegree = degrees.find((d) => d.name === formData.degree)
+        if (matchedDegree) {
+            setSelectedDegreeId(Number(matchedDegree.id))
+        }
+    }, [section.id, formData.degree, degrees, selectedDegreeId])
+
+    useEffect(() => {
+        if (section.id !== 'academic') return
+        if (!formData.major || selectedCourseId || courses.length === 0) return
+        const matchedCourse = courses.find((c) => c.name === formData.major)
+        if (matchedCourse) {
+            setSelectedCourseId(Number(matchedCourse.id))
+        }
+    }, [section.id, formData.major, courses, selectedCourseId])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -1853,32 +1884,78 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        // Handle branch field with professional lookup component
+        // Handle branch/specialization field with cascading searchable dropdown
         if (field === 'branch') {
             return (
-                <LookupSelect
+                <AsyncSearchableSelect
+                    placeholder="Search branch/specialization..."
+                    searchPlaceholder="Search branch/specialization"
                     value={value}
-                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
-                    data={branches}
-                    loading={loadingBranches}
-                    placeholder="Select your branch"
+                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
+                        if (!selectedCourseId) return []
+                        return branches
+                            .filter((item) =>
+                                query ? item.name.toLowerCase().includes(query.toLowerCase()) : true
+                            )
+                            .map((item) => ({ value: item.name, label: item.name }))
+                    }}
+                    onChange={(selectedValue) => {
+                        setFormData({ ...formData, [field]: selectedValue })
+                    }}
+                    helperText={!selectedCourseId ? 'Select course first' : undefined}
                     error={branchesError || undefined}
-                    required
                 />
             )
         }
 
-        // Handle degree field with professional lookup component
+        // Handle course field with cascading searchable dropdown
+        if (field === 'major') {
+            return (
+                <AsyncSearchableSelect
+                    placeholder="Search your course..."
+                    searchPlaceholder="Search course"
+                    value={value}
+                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
+                        if (!selectedDegreeId) return []
+                        return courses
+                            .filter((item) =>
+                                query ? item.name.toLowerCase().includes(query.toLowerCase()) : true
+                            )
+                            .map((item) => ({ value: item.name, label: item.name }))
+                    }}
+                    onChange={(selectedValue) => {
+                        const selectedCourse = courses.find((course) => course.name === selectedValue)
+                        setSelectedCourseId(selectedCourse ? Number(selectedCourse.id) : undefined)
+                        setFormData({ ...formData, major: selectedValue, branch: '' })
+                    }}
+                    helperText={!selectedDegreeId ? 'Select degree first' : undefined}
+                    error={coursesError || undefined}
+                />
+            )
+        }
+
+        // Handle degree field with cascading searchable dropdown
         if (field === 'degree') {
             return (
-                <LookupSelect
+                <AsyncSearchableSelect
+                    placeholder="Search your degree..."
+                    searchPlaceholder="Search degree"
                     value={value}
-                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
-                    data={degrees}
-                    loading={loadingDegrees}
-                    placeholder="Select your degree"
+                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
+                        return degrees
+                            .filter((item) =>
+                                query ? item.name.toLowerCase().includes(query.toLowerCase()) : true
+                            )
+                            .map((item) => ({ value: item.name, label: item.name }))
+                    }}
+                    onChange={(selectedValue) => {
+                        const selectedDegree = degrees.find((degree) => degree.name === selectedValue)
+                        setSelectedDegreeId(selectedDegree ? Number(selectedDegree.id) : undefined)
+                        setSelectedCourseId(undefined)
+                        setFormData({ ...formData, degree: selectedValue, major: '', branch: '' })
+                    }}
+                    helperText={loadingDegrees ? 'Loading degrees...' : undefined}
                     error={degreesError || undefined}
-                    required
                 />
             )
         }
@@ -2025,11 +2102,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {section.fields.filter(field =>
-                                ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa'].includes(field)
+                                ['institution', 'degree', 'major', 'branch', 'graduation_year', 'btech_cgpa'].includes(field)
                             ).map((field) => (
                                 <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
                                     <label className="block text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2 capitalize">
-                                        {field.replace(/_/g, ' ')}
+                                        {field === 'major' ? 'course' : field.replace(/_/g, ' ')}
                                     </label>
                                     {renderField(field)}
                                 </div>

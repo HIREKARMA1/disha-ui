@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
+import { fetchCollegeSelectOptions } from '@/lib/colleges'
 import { getErrorMessage } from '@/lib/error-handler'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
 
@@ -222,6 +223,18 @@ export default function RegisterPage() {
     const [countdown, setCountdown] = useState(0)
     const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
     const [resendCount, setResendCount] = useState(0) // Track number of resends
+    const [collegesLoadError, setCollegesLoadError] = useState<string | null>(null)
+
+    const loadCollegeOptions = async (query: string): Promise<AsyncSelectOption[]> => {
+        try {
+            setCollegesLoadError(null)
+            return await fetchCollegeSelectOptions(query)
+        } catch (error) {
+            console.error('Failed to fetch colleges', error)
+            setCollegesLoadError('Unable to load colleges. Please check your connection and try again.')
+            return []
+        }
+    }
 
     // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
@@ -514,30 +527,10 @@ export default function RegisterPage() {
                 <AsyncSearchableSelect
                     label="College / Institution *"
                     placeholder="Search for your college..."
-                    error={!!(errors as any).college_id}
-                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
-                        try {
-                            const response = await apiClient.get('/admin/lookups/colleges', {
-                                params: {
-                                    search: query,
-                                    limit: 100
-                                }
-                            })
-                            // Ensure we handle the response structure correctly
-                            const colleges = response.colleges || []
-                            return colleges.map((c: any) => {
-                                // Cleanup name: remove quotes but keep full name
-                                const cleanName = c.name ? c.name.replace(/['"]+/g, '').trim() : "Unknown College"
-                                return {
-                                    value: c.id,
-                                    label: cleanName
-                                }
-                            })
-                        } catch (error) {
-                            console.error('Failed to fetch colleges', error)
-                            return []
-                        }
-                    }}
+                    searchPlaceholder="Type to search colleges..."
+                    error={!!(errors as any).college_id || !!collegesLoadError}
+                    helperText={collegesLoadError ?? undefined}
+                    fetchOptions={loadCollegeOptions}
                     onChange={(value, option) => {
                         setValue('college_id', (value as string) || '', { shouldValidate: true })
                         if (option) {
@@ -613,31 +606,11 @@ export default function RegisterPage() {
                 <AsyncSearchableSelect
                     label="University / College *"
                     placeholder="Search for your institution..."
-                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
-                        try {
-                            const response = await apiClient.get('/admin/lookups/colleges', {
-                                params: {
-                                    search: query,
-                                    limit: 100
-                                }
-                            })
-                            // Ensure we handle the response structure correctly
-                            const colleges = response.colleges || []
-                            return colleges.map((c: any) => {
-                                // Cleanup name: remove quotes but keep full name
-                                const cleanName = c.name ? c.name.replace(/['\"]+/g, '').trim() : "Unknown College"
-                                return {
-                                    value: c.id,
-                                    label: cleanName
-                                }
-                            })
-                        } catch (error) {
-                            console.error('Failed to fetch colleges', error)
-                            return []
-                        }
-                    }}
+                    searchPlaceholder="Type to search colleges..."
+                    error={!!collegesLoadError}
+                    helperText={collegesLoadError ?? undefined}
+                    fetchOptions={loadCollegeOptions}
                     onChange={(value, option) => {
-                        // Store both the ID (as college_id) and the name (as university_name)
                         setValue('college_id', value as any)
                         if (option) {
                             setValue('university_name', option.label as any)
@@ -704,13 +677,13 @@ export default function RegisterPage() {
                     {/* Header - Only show on form step */}
                     {currentStep === 'form' && (
                         <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-6">
+                            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-4">
                                 {(() => {
                                     const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
-                                    return <IconComponent className="w-10 h-10 text-white" />
+                                    return <IconComponent className="w-7 h-7 sm:w-10 sm:h-10 text-white" />
                                 })()}
                             </div>
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                                 Create Your {selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)} Account
                             </h1>
                             <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -725,7 +698,7 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                                 I am a
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-3 gap-2">
 
                                 {userTypeOptions.map((option) => {
                                     const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
@@ -736,13 +709,13 @@ export default function RegisterPage() {
                                             key={option.value}
                                             type="button"
                                             onClick={() => handleUserTypeChange(option.value)}
-                                            className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${isSelected
+                                            className={`p-2 sm:p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-1 sm:space-y-2 ${isSelected
                                                 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                                                 : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-400'
                                                 }`}
                                         >
-                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                                            <span className="text-sm font-medium">{option.label}</span>
+                                            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                                            <span className="text-xs sm:text-sm font-medium">{option.label}</span>
                                         </button>
                                     )
                                 })}
