@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe } from 'lucide-react'
+import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -61,13 +61,14 @@ interface AdminJobCardProps {
     onDelete: (job: Job) => void
     onStatusChange: (job: Job, status: string) => void
     onAssignToUniversity: (job: Job) => void
+    onAssignToShortlistedBatch: (job: Job) => void
     onViewAppliedStudents: (job: Job) => void
     onMakePublic: (job: Job) => void
     onCreateAssessment?: (job: Job) => void
     cardIndex?: number
 }
 
-export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onViewAppliedStudents, onMakePublic, onCreateAssessment, cardIndex = 0 }: AdminJobCardProps) {
+export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onAssignToShortlistedBatch, onViewAppliedStudents, onMakePublic, onCreateAssessment, cardIndex = 0 }: AdminJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -287,6 +288,17 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                         >
                                             <GraduationCap className="w-4 h-4" />
                                             Assign to University
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                onAssignToShortlistedBatch(job)
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center gap-2"
+                                        >
+                                            <UserPlus className="w-4 h-4" />
+                                            Assign to Shortlisted Batch
                                         </button>
 
                                         <button
