@@ -28,7 +28,8 @@ import { profileService, type StudentProfile, type ProfileUpdateData, type Profi
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useAcademicBranches, useAcademicCourses, useAcademicDegrees, useUniversities } from '@/hooks/useLookup'
+import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
@@ -71,7 +72,7 @@ export function StudentProfile() {
             id: 'academic',
             title: 'Academic Information',
             icon: GraduationCap,
-            fields: ['institution', 'degree', 'major', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'],
+            fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'],
             completed: false
         },
         {
@@ -593,7 +594,7 @@ export function StudentProfile() {
 
                                                 {editing === 'academic' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'major', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
+                                                        section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('academic', formData)}
                                                         saving={saving}
@@ -1254,30 +1255,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const fieldValidationErrors = getFieldErrors()
     const hasFieldErrors = Object.keys(fieldValidationErrors).length > 0
 
-    const [selectedDegreeId, setSelectedDegreeId] = useState<number | undefined>(undefined)
-    const [selectedCourseId, setSelectedCourseId] = useState<number | undefined>(undefined)
-
-    const {
-        data: degrees,
-        loading: loadingDegrees,
-        error: degreesError
-    } = useAcademicDegrees({
-        enabled: section.id === 'academic'
-    })
-
-    const {
-        data: courses,
-        loading: loadingCourses,
-        error: coursesError
-    } = useAcademicCourses(selectedDegreeId, {
-        enabled: section.id === 'academic'
-    })
-
+    // Use professional lookup hook for branches
     const {
         data: branches,
         loading: loadingBranches,
         error: branchesError
-    } = useAcademicBranches(selectedCourseId, {
+    } = useBranches({
+        enabled: section.id === 'academic'
+    })
+
+    // Use professional lookup hook for degrees
+    const {
+        data: degrees,
+        loading: loadingDegrees,
+        error: degreesError
+    } = useDegrees({
         enabled: section.id === 'academic'
     })
 
@@ -1322,31 +1314,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
 
             setFormData(initialData)
-
-            if (section.id === 'academic') {
-                setSelectedDegreeId(undefined)
-                setSelectedCourseId(undefined)
-            }
         }
     }, [profile, section])
-
-    useEffect(() => {
-        if (section.id !== 'academic') return
-        if (!formData.degree || selectedDegreeId) return
-        const matchedDegree = degrees.find((d) => d.name === formData.degree)
-        if (matchedDegree) {
-            setSelectedDegreeId(Number(matchedDegree.id))
-        }
-    }, [section.id, formData.degree, degrees, selectedDegreeId])
-
-    useEffect(() => {
-        if (section.id !== 'academic') return
-        if (!formData.major || selectedCourseId || courses.length === 0) return
-        const matchedCourse = courses.find((c) => c.name === formData.major)
-        if (matchedCourse) {
-            setSelectedCourseId(Number(matchedCourse.id))
-        }
-    }, [section.id, formData.major, courses, selectedCourseId])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -1884,78 +1853,32 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             )
         }
 
-        // Handle branch/specialization field with cascading searchable dropdown
+        // Handle branch field with professional lookup component
         if (field === 'branch') {
             return (
-                <AsyncSearchableSelect
-                    placeholder="Search branch/specialization..."
-                    searchPlaceholder="Search branch/specialization"
+                <LookupSelect
                     value={value}
-                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
-                        if (!selectedCourseId) return []
-                        return branches
-                            .filter((item) =>
-                                query ? item.name.toLowerCase().includes(query.toLowerCase()) : true
-                            )
-                            .map((item) => ({ value: item.name, label: item.name }))
-                    }}
-                    onChange={(selectedValue) => {
-                        setFormData({ ...formData, [field]: selectedValue })
-                    }}
-                    helperText={!selectedCourseId ? 'Select course first' : undefined}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={branches}
+                    loading={loadingBranches}
+                    placeholder="Select your branch"
                     error={branchesError || undefined}
+                    required
                 />
             )
         }
 
-        // Handle course field with cascading searchable dropdown
-        if (field === 'major') {
-            return (
-                <AsyncSearchableSelect
-                    placeholder="Search your course..."
-                    searchPlaceholder="Search course"
-                    value={value}
-                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
-                        if (!selectedDegreeId) return []
-                        return courses
-                            .filter((item) =>
-                                query ? item.name.toLowerCase().includes(query.toLowerCase()) : true
-                            )
-                            .map((item) => ({ value: item.name, label: item.name }))
-                    }}
-                    onChange={(selectedValue) => {
-                        const selectedCourse = courses.find((course) => course.name === selectedValue)
-                        setSelectedCourseId(selectedCourse ? Number(selectedCourse.id) : undefined)
-                        setFormData({ ...formData, major: selectedValue, branch: '' })
-                    }}
-                    helperText={!selectedDegreeId ? 'Select degree first' : undefined}
-                    error={coursesError || undefined}
-                />
-            )
-        }
-
-        // Handle degree field with cascading searchable dropdown
+        // Handle degree field with professional lookup component
         if (field === 'degree') {
             return (
-                <AsyncSearchableSelect
-                    placeholder="Search your degree..."
-                    searchPlaceholder="Search degree"
+                <LookupSelect
                     value={value}
-                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
-                        return degrees
-                            .filter((item) =>
-                                query ? item.name.toLowerCase().includes(query.toLowerCase()) : true
-                            )
-                            .map((item) => ({ value: item.name, label: item.name }))
-                    }}
-                    onChange={(selectedValue) => {
-                        const selectedDegree = degrees.find((degree) => degree.name === selectedValue)
-                        setSelectedDegreeId(selectedDegree ? Number(selectedDegree.id) : undefined)
-                        setSelectedCourseId(undefined)
-                        setFormData({ ...formData, degree: selectedValue, major: '', branch: '' })
-                    }}
-                    helperText={loadingDegrees ? 'Loading degrees...' : undefined}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={degrees}
+                    loading={loadingDegrees}
+                    placeholder="Select your degree"
                     error={degreesError || undefined}
+                    required
                 />
             )
         }
@@ -2102,11 +2025,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {section.fields.filter(field =>
-                                ['institution', 'degree', 'major', 'branch', 'graduation_year', 'btech_cgpa'].includes(field)
+                                ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa'].includes(field)
                             ).map((field) => (
                                 <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
                                     <label className="block text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2 capitalize">
-                                        {field === 'major' ? 'course' : field.replace(/_/g, ' ')}
+                                        {field.replace(/_/g, ' ')}
                                     </label>
                                     {renderField(field)}
                                 </div>
