@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
             setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
+            const message = error.response?.data?.detail || 'Email not registered. Please sign up first.'
             toast.error(message)
         } finally {
             setIsLoading(false)
@@ -150,7 +150,7 @@ export default function ForgotPasswordPage() {
                 toast.success('OTP resent to your email address')
             }
         } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+            const message = error.response?.data?.detail || 'Email not registered. Please sign up first.'
             toast.error(message)
             
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
