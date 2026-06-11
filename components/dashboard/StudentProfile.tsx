@@ -461,12 +461,12 @@ export function StudentProfile() {
                                                         </div>
                                                     </div>
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => setEditing('basic')}
-                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                        className="border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 px-4 py-2 font-semibold shadow-sm"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-4 h-4 mr-2" />
                                                         Edit
                                                     </Button>
                                                 </div>

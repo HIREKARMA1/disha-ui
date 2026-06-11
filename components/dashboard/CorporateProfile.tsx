@@ -142,7 +142,7 @@ export function CorporateProfile() {
 
             setProfile(updatedProfile)
             setEditing(null)
-            
+
             // Show success toast with section name
             const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
             toast.success(`${sectionName} updated successfully!`)
@@ -394,12 +394,14 @@ export function CorporateProfile() {
                                                 </div>
                                             </div>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
+                                                variant="outline"
                                                 onClick={() => setEditing('basic')}
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                className="border-2 border-blue-500 bg-blue-50 text-blue-700
+               hover:bg-blue-100 hover:border-blue-600
+               dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300
+               px-5 py-2 text-sm font-semibold rounded-lg shadow-sm"
                                             >
-                                                <ChevronRight className="w-3 h-3 mr-1" />
+                                                <ChevronRight className="w-4 h-4 mr-2" />
                                                 Edit
                                             </Button>
                                         </div>
@@ -618,17 +620,17 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         // Validation errors array
         const validationErrors: string[] = []
         let hasValidationErrors = false
-        
+
         // Validate phone number if provided
         if (formData.phone && formData.phone.length !== 10) {
             validationErrors.push('Phone number must be exactly 10 digits')
             hasValidationErrors = true
         }
-        
+
         // Validate name field if provided
         if (formData.name && formData.name.trim().length < 2) {
             validationErrors.push('Name must be at least 2 characters long')
@@ -670,13 +672,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
         }
-        
+
         // Validate company name if provided (for company section)
         if (formData.company_name && formData.company_name.trim().length < 2) {
             validationErrors.push('Company name must be at least 2 characters long')
             hasValidationErrors = true
         }
-        
+
         // Validate website URL if provided
         if (formData.website_url && formData.website_url.trim()) {
             const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
@@ -685,13 +687,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
         }
-        
+
         // Validate founded year if provided
         if (formData.founded_year && (formData.founded_year < 1800 || formData.founded_year > new Date().getFullYear())) {
             validationErrors.push(`Founded year must be between 1800 and ${new Date().getFullYear()}`)
             hasValidationErrors = true
         }
-        
+
         // If there are validation errors, show toast and return
         if (hasValidationErrors) {
             if (validationErrors.length > 0) {
@@ -703,7 +705,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
             return
         }
-        
+
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
             if (cleanedFormData[key] === '') {
@@ -738,18 +740,18 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             setFormData({ ...formData, [field]: fileUrl })
             setUploadSuccess(field)
             setUploadError(null)
-            
+
             // Show success toast
             const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
             toast.success(`${fieldName} uploaded successfully!`)
-            
+
             setTimeout(() => setUploadSuccess(null), 3000)
         } catch (error) {
             console.error('File upload error:', error)
             const errorMessage = error instanceof Error ? error.message : 'Upload failed'
             setUploadError(errorMessage)
             setUploadSuccess(null)
-            
+
             // Show error toast
             const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
             toast.error(`Failed to upload ${fieldName}: ${errorMessage}`)
@@ -761,7 +763,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const handleFileRemove = (field: string) => {
         setFormData({ ...formData, [field]: '' })
         setUploadError(null)
-        
+
         // Show info toast
         const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
         toast.success(`${fieldName} removed successfully!`)
@@ -1003,7 +1005,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         // Handle specific field labels
         let fieldLabel = field.replace(/_/g, ' ')
         let placeholder = `Enter your ${field.replace(/_/g, ' ')}`
-        
+
         if (field === 'name') {
             fieldLabel = 'Company Name'
             placeholder = 'Enter company name'
@@ -1055,7 +1057,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 {section.fields.map((field) => {
                     // Handle specific field labels
                     let fieldLabel = field.replace(/_/g, ' ')
-                    
+
                     if (field === 'name') {
                         fieldLabel = 'Company Name'
                     } else if (field === 'contact_person') {
@@ -1065,7 +1067,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     } else if (field === 'address') {
                         fieldLabel = 'Email Address'
                     }
-                    
+
                     return (
                         <div key={field} className={field.includes('bio') || field.includes('description') ? 'md:col-span-2' : ''}>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
