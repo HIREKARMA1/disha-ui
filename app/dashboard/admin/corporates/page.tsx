@@ -6,6 +6,7 @@ import { CorporateManagementHeader } from '@/components/dashboard/CorporateManag
 import { CorporateTable } from '@/components/dashboard/CorporateTable'
 import { CreateCorporateModal } from '@/components/dashboard/CreateCorporateModal'
 import { EditCorporateModal } from '@/components/dashboard/EditCorporateModal'
+import { CorporateBulkUploadModal } from '@/components/dashboard/CorporateBulkUploadModal'
 import { corporateManagementService } from '@/services/corporateManagementService'
 import { CorporateListResponse, CorporateListItem, CorporateProfile, UpdateCorporateRequest } from '@/types/corporate'
 import { toast } from 'react-hot-toast'
@@ -20,6 +21,7 @@ export default function AdminCorporates() {
     const [error, setError] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
+    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
     const [selectedCorporate, setSelectedCorporate] = useState<CorporateProfile | null>(null)
     const [includeArchived, setIncludeArchived] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
@@ -146,13 +148,7 @@ export default function AdminCorporates() {
     }
 
     const handleImportCorporates = async () => {
-        try {
-            // TODO: Implement import functionality
-            toast('Import functionality coming soon!')
-        } catch (error: any) {
-            console.error('Failed to import corporates:', error)
-            toast.error('Failed to import corporates.')
-        }
+        setShowBulkUploadModal(true)
     }
 
     return (
@@ -254,6 +250,11 @@ export default function AdminCorporates() {
                     }}
                     onSubmit={handleUpdateCorporate}
                     corporate={selectedCorporate}
+                />
+                <CorporateBulkUploadModal
+                    isOpen={showBulkUploadModal}
+                    onClose={() => setShowBulkUploadModal(false)}
+                    onComplete={fetchCorporates}
                 />
             </div>
         </AdminDashboardLayout>
