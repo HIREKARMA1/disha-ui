@@ -466,24 +466,6 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Expiration Date */}
-                            {job.expiration_date && (
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${new Date(job.expiration_date) < new Date() ? 'bg-red-50 dark:bg-red-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
-                                            <Calendar className={`w-5 h-5 ${new Date(job.expiration_date) < new Date() ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">Expires</p>
-                                            <p className={`font-medium ${new Date(job.expiration_date) < new Date() ? 'text-red-900 dark:text-red-200' : 'text-yellow-900 dark:text-yellow-200'}`}>
-                                                {formatDate(job.expiration_date)}
-                                                {new Date(job.expiration_date) < new Date() && ' (Expired)'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* Company Information */}
@@ -995,36 +977,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                 </div>
                             </div>
                         )}
-
-                        {/* Job Expiration */}
-                        {job.expiration_date && (
-                            <div className="mt-6">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-primary-500" />
-                                    Job Expiration
-                                </h3>
-                                <div className={cn(
-                                    "rounded-xl p-4 border",
-                                    new Date(job.expiration_date) < new Date()
-                                        ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-                                        : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-                                )}>
-                                    <p className={cn(
-                                        "font-medium",
-                                        new Date(job.expiration_date) < new Date()
-                                            ? "text-red-800 dark:text-red-200"
-                                            : "text-yellow-800 dark:text-yellow-200"
-                                    )}>
-                                        Expires: {formatDate(job.expiration_date)}
-                                        {new Date(job.expiration_date) < new Date() && (
-                                            <span className="ml-2 text-red-600 dark:text-red-400">
-                                                (Expired)
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+                        
                     </div>
 
                     {/* Footer */}

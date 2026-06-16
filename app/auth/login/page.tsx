@@ -242,7 +242,7 @@ export default function LoginPage() {
                     {/* User Type Selection */}
                     <div className="mb-6">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            I am a
+                            I am a <span className="text-red-500">*</span>
                         </label>
                         <div className="
                                         grid 
@@ -280,7 +280,7 @@ export default function LoginPage() {
 
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Email Address
+                                    Email Address <span className="text-red-500">*</span>
                                 </label>
                                 <Input
                                     id="email"
@@ -299,7 +299,7 @@ export default function LoginPage() {
 
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Password
+                                    Password <span className="text-red-500">*</span>
                                 </label>
                                 <Input
                                     id="password"

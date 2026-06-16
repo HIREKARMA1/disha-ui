@@ -426,13 +426,13 @@ export function AllJobs() {
         <div className="w-full">
             {/* Search Bar */}
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl p-2 md:p-6 border border-primary-200 dark:border-primary-700 mb-2 md:mb-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        <h1 className="text-lg md:text-3xl font-bold text-gray-900 dark:text-white mb-1">
                             Job Opportunities
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                        <p className="text-xs md:text-lg mb-1">
                             Discover and apply for exciting career opportunities
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -451,7 +451,7 @@ export function AllJobs() {
             </div>
 
             {/* Search and Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-6 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-4 p-4">
                 {/* Search Bar */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="flex-1 relative">

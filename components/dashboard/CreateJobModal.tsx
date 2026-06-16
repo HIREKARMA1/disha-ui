@@ -1180,17 +1180,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Expiration Date
-                                        </label>
-                                        <DateTimePicker
-                                            value={formData.expiration_date}
-                                            onChange={(value) => handleInputChange('expiration_date', value)}
-                                            placeholder="Select expiration date"
-                                            autoClose={true}
-                                        />
-                                    </div>
                                 </div>
 
                                 <div>

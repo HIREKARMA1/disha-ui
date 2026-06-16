@@ -1721,6 +1721,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             return (
                 <input
                     type="date"
+                    min="1990-01-01"
+                    max="2010-12-31"
                     value={value}
                     onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
@@ -2112,6 +2114,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') || field === 'technical_skills' || field === 'soft_skills' || field === 'location_preferences' ? 'md:col-span-2' : ''}>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     {getFieldLabel(field)}
+                                    {['name', 'resume', 'technical_skills', 'preferred_industry'].includes(field) && (
+                                        <span className="text-red-500 ml-1">*</span>
+                                    )}
                                 </label>
                                 {renderField(field)}
                             </div>

@@ -21,7 +21,7 @@ export function FileUpload({
     onFileSelect,
     onFileRemove,
     acceptedTypes,
-    maxSize = 5,
+    maxSize = 1,
     currentFile,
     placeholder,
     className,
@@ -141,9 +141,9 @@ export function FileUpload({
     }
 
     const getAcceptedTypesText = () => {
-        if (type === 'image') return 'PNG, JPG, JPEG up to 5MB'
-        if (type === 'document') return 'PDF only up to 5MB'
-        return 'PDF only up to 5MB'
+        if (type === 'image') return 'PNG, JPG, JPEG up to 1MB'
+        if (type === 'document') return 'PDF only up to 1MB'
+        return 'PDF only up to 1MB'
     }
 
     return (
