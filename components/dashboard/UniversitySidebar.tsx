@@ -158,8 +158,6 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
 
     // Get display name from profile data
     const getDisplayName = () => {
-        console.log('Profile data for name:', profileData)
-        console.log('User data for name:', user)
         return profileData?.name || profileData?.university_name || user?.name || 'Loading...'
     }
 

@@ -8,7 +8,7 @@ import {
     Mail,
     Phone,
     Calendar,
-    DollarSign,
+    IndianRupee,
     FileText,
     Upload,
     Eye,
@@ -20,6 +20,7 @@ import {
     Download,
     ExternalLink
 } from 'lucide-react'
+import { formatAmountINR } from '@/lib/currency'
 import { ApplicationData } from '@/app/dashboard/corporate/applications/page'
 
 interface ApplicationTableProps {
@@ -59,13 +60,7 @@ export function ApplicationTable({
         })
     }
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0
-        }).format(amount)
-    }
+    const formatCurrency = formatAmountINR
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -348,7 +343,7 @@ export function ApplicationTable({
                                 {/* Expected Salary */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center text-sm text-gray-900 dark:text-white">
-                                        <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
+                                        <IndianRupee className="w-4 h-4 mr-2 text-gray-400" />
                                         {application.expected_salary ? formatCurrency(application.expected_salary) : 'Not specified'}
                                     </div>
                                 </td>

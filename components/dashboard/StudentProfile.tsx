@@ -286,16 +286,16 @@ export function StudentProfile() {
                 <main className="flex-1 p-4 lg:p-6">
                     <div className="w-full">
                         {/* Header - Consistent with other sections */}
-                        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+                        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-4 border border-primary-200 dark:border-primary-700 mb-4">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-4">
                                 <div className="flex-1 min-w-0">
-                                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
                                         Student Profile 👤
                                     </h1>
-                                    <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base mb-2">
                                         Manage your personal information and career details ✨
                                     </p>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="hidden md:flex flex-wrap gap-2">
                                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
                                             📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                                         </span>
@@ -315,17 +315,17 @@ export function StudentProfile() {
                             <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
                                 {/* Top Horizontal Section - Profile Overview */}
                                 <div className="xl:col-span-4">
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
-                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border-2 border-primary-300 dark:border-primary-700/50 p-3 lg:p-4 hover:shadow-md transition-all duration-300">
+                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 lg:gap-4">
                                             {/* Profile Avatar & Info */}
                                             <div className="text-center lg:text-left">
-                                                <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto lg:mx-0 mb-4 relative">
-                                                    <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                                <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto lg:mx-0 mb-2 relative">
+                                                    <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                                                         {profile.profile_picture ? (
                                                             <img
                                                                 src={profile.profile_picture}
                                                                 alt={profile.name}
-                                                                className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover"
+                                                                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover"
                                                             />
                                                         ) : (
                                                             <span className="text-xl lg:text-2xl font-bold text-white">
@@ -345,7 +345,7 @@ export function StudentProfile() {
                                                     </button>
 
                                                 </div>
-                                                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                                                <h3 className="text-sm lg:text-base font-semibold text-gray-900 dark:text-white mb-1">
                                                     {profile.name}
                                                 </h3>
                                                 <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -358,12 +358,12 @@ export function StudentProfile() {
 
                                             {/* Profile Stats */}
                                             <div className="flex-1">
-                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
+                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 mb-3 lg:mb-4">
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Email</span>
                                                         {(profile.email_verified || !!profile.email) ? (
-                                                            <div className="p-1.5 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
                                                             </div>
                                                         ) : (
                                                             <div className="p-1.5 bg-yellow-500 rounded-full">
@@ -371,11 +371,11 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Phone</span>
                                                         {(profile.phone_verified || !!profile.phone) ? (
-                                                            <div className="p-1.5 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
                                                             </div>
                                                         ) : (
                                                             <div className="p-1.5 bg-yellow-500 rounded-full">
@@ -383,11 +383,11 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Photo</span>
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Photo</span>
                                                         {profile.profile_picture ? (
-                                                            <div className="p-1.5 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
                                                             </div>
                                                         ) : (
                                                             <div className="p-1.5 bg-yellow-500 rounded-full">
@@ -395,11 +395,11 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Resume</span>
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Resume</span>
                                                         {profile.resume ? (
-                                                            <div className="p-1.5 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
                                                             </div>
                                                         ) : (
                                                             <div className="p-1.5 bg-yellow-500 rounded-full">
@@ -449,7 +449,7 @@ export function StudentProfile() {
                                     {/* Tab Content */}
                                     <div className="min-h-[600px]">
                                         {activeTab === 'basic' && (
-                                            <div ref={basicFormRef} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div ref={basicFormRef} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-primary-200 dark:border-primary-700 p-6 shadow-sm hover:shadow-md hover:border-primary-500 transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -570,7 +570,7 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'academic' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-primary-200 dark:border-primary-700 p-6 shadow-sm hover:shadow-md hover:border-primary-500 transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -679,7 +679,7 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'skills' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-primary-200 dark:border-primary-700 p-6 shadow-sm hover:shadow-md hover:border-primary-500 transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -793,7 +793,7 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'experience' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-primary-200 dark:border-primary-700 p-6 shadow-sm hover:shadow-md hover:border-primary-500 transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -910,7 +910,7 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'documents' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-primary-200 dark:border-primary-700 p-6 shadow-sm hover:shadow-md hover:border-primary-500 transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -1059,7 +1059,7 @@ export function StudentProfile() {
                                         )}
 
                                         {activeTab === 'social' && (
-                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-primary-200 dark:border-primary-700 p-6 shadow-sm hover:shadow-md hover:border-primary-500 transition-all duration-300 hover:-translate-y-1">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-sm">

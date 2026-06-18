@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock, Building } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -1237,7 +1237,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                             {/* Compensation */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <DollarSign className="w-5 h-5" />
+                                    <IndianRupee className="w-5 h-5" />
                                     Compensation & Experience
                                 </h3>
 
@@ -1290,9 +1290,6 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="INR">INR (₹)</SelectItem>
-                                                <SelectItem value="USD">USD ($)</SelectItem>
-                                                <SelectItem value="EUR">EUR (€)</SelectItem>
-                                                <SelectItem value="GBP">GBP (£)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -1382,7 +1379,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                 {/* Probation Salary Details */}
                                 <div className="space-y-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <DollarSign className="w-5 h-5" />
+                                        <IndianRupee className="w-5 h-5" />
                                         Probation Salary Details
                                     </h3>
 
