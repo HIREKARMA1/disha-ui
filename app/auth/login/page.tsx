@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
@@ -43,7 +43,7 @@ const userTypeIcons = {
     admin: Shield
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { redirectIfAuthenticated, login } = useAuth()
@@ -419,5 +419,13 @@ export default function LoginPage() {
                 </div>
             </Modal>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
+            <LoginPageContent />
+        </Suspense>
     )
 }

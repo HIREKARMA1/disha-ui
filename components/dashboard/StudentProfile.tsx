@@ -20,6 +20,7 @@ import { StudentSidebar } from './StudentSidebar'
 import { Navbar } from '../ui/navbar'
 import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
+import { ProfilePictureUpload } from '../profile/ProfilePictureUpload'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
@@ -1088,6 +1089,7 @@ export function StudentProfile() {
                                                         onSave={(formData) => handleSave('social', formData)}
                                                         saving={saving}
                                                         onCancel={() => setEditing(null)}
+                                                        onProfilePictureUploaded={loadProfile}
                                                     />
                                                 ) : (
                                                     <div className="space-y-4">
@@ -1228,9 +1230,10 @@ interface ProfileSectionFormProps {
     onSave: (formData: any) => void
     saving: boolean
     onCancel: () => void
+    onProfilePictureUploaded?: () => void | Promise<void>
 }
 
-function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: ProfileSectionFormProps) {
+function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProfilePictureUploaded }: ProfileSectionFormProps) {
     const { getToken } = useAuth()
     const [formData, setFormData] = useState<any>({})
     const [uploading, setUploading] = useState<string | null>(null)
@@ -1580,6 +1583,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             setUploadSuccess(field)
             setUploadError(null)
 
+            if (field === 'profile_picture') {
+                await onProfilePictureUploaded?.()
+            }
+
             // Clear success message after 3 seconds
             setTimeout(() => setUploadSuccess(null), 3000)
             // Do not persist profile automatically on file upload.
@@ -1618,19 +1625,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         if (field === 'profile_picture') {
             return (
                 <div className="space-y-3">
-                    <FileUpload
-                        type="image"
+                    <ProfilePictureUpload
+                        currentFile={value}
                         onFileSelect={(file) => handleFileUpload(field, file)}
                         onFileRemove={() => handleFileRemove(field)}
-                        currentFile={value}
-                        placeholder="Upload your profile picture"
                         disabled={uploading === field}
+                        uploading={uploading === field}
                     />
-                    {uploading === field && (
-                        <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Uploading...</span>
+                    {uploadSuccess === field && (
+                        <div className="text-sm text-green-600 dark:text-green-400">
+                            Profile picture uploaded successfully
                         </div>
+                    )}
+                    {uploadError && (
+                        <div className="text-sm text-red-600 dark:text-red-400">{uploadError}</div>
                     )}
                 </div>
             )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { AssessmentForm } from '@/components/admin/AssessmentForm'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
@@ -9,7 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 
-export default function CreateAssessmentPage() {
+function CreateAssessmentPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const jobId = searchParams.get('jobId')
@@ -94,5 +94,13 @@ export default function CreateAssessmentPage() {
         />
       </div>
     </AdminDashboardLayout>
+  )
+}
+
+export default function CreateAssessmentPage() {
+  return (
+    <Suspense fallback={<AdminDashboardLayout><div className="p-6">Loading...</div></AdminDashboardLayout>}>
+      <CreateAssessmentPageContent />
+    </Suspense>
   )
 }

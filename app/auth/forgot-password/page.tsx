@@ -1,19 +1,27 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-hot-toast'
-import { Mail, Lock, ArrowLeft, CheckCircle, Eye, EyeOff, Shield, ShieldCheck, RotateCcw } from 'lucide-react'
+import { Mail, Lock, ArrowLeft, CheckCircle, Eye, EyeOff, Shield, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { apiClient } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-handler'
+import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
+import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
+import {
+    clearPasswordResetSession,
+    loadPasswordResetSession,
+    savePasswordResetSession,
+} from '@/lib/password-reset-session'
 import { UserType } from '@/types/auth'
 
 // Step 1: Email input schema
@@ -46,7 +54,7 @@ type PasswordFormData = z.infer<typeof passwordSchema>
 
 type Step = 'email' | 'otp' | 'password' | 'success'
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [currentStep, setCurrentStep] = useState<Step>('email')
@@ -56,36 +64,13 @@ export default function ForgotPasswordPage() {
     const [otp, setOtp] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const [countdown, setCountdown] = useState(0)
-    const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
-    const [resendCount, setResendCount] = useState(0) // Track number of resends
 
-    // Initialize user type from URL
-    useEffect(() => {
-        const type = searchParams.get('type') as UserType
-        if (type && ['student', 'corporate', 'university'].includes(type)) {
-            setUserType(type)
-        }
-    }, [searchParams])
-
-    // Countdown timer for resend OTP
-    useEffect(() => {
-        if (countdown > 0) {
-            const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-            return () => clearTimeout(timer)
-        } else if (countdown === 0 && isResendCooldown) {
-            // Reset cooldown flag when countdown reaches 0
-            setIsResendCooldown(false)
-        }
-    }, [countdown, isResendCooldown])
-
-    // Auto-redirect to login immediately when password reset is successful
-    useEffect(() => {
-        if (currentStep === 'success') {
-            // Redirect immediately without delay
-            router.push(`/auth/login?type=${userType}`)
-        }
-    }, [currentStep, router, userType])
+    const otpRateLimit = useOtpRateLimit({
+        purpose: 'password_reset',
+        identifier: email || null,
+        userType,
+        enabled: currentStep === 'otp' && !!email,
+    })
 
     // Form handlers
     const emailForm = useForm<EmailFormData>({
@@ -100,79 +85,96 @@ export default function ForgotPasswordPage() {
         resolver: zodResolver(passwordSchema)
     })
 
+    // Restore session after refresh so OTP cooldown/attempts persist
+    useEffect(() => {
+        const saved = loadPasswordResetSession()
+        if (!saved) return
+
+        setEmail(saved.email)
+        setUserType(saved.userType)
+        emailForm.setValue('email', saved.email)
+        if (saved.step === 'otp' || saved.step === 'password') {
+            setCurrentStep(saved.step)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Persist reset-password progress for refresh handling
+    useEffect(() => {
+        if (currentStep === 'success') {
+            clearPasswordResetSession()
+            return
+        }
+        if (currentStep === 'email' && !email) {
+            clearPasswordResetSession()
+            return
+        }
+        if (email && (currentStep === 'otp' || currentStep === 'password')) {
+            savePasswordResetSession({ email, userType, step: currentStep })
+        }
+    }, [currentStep, email, userType])
+
+    // Initialize user type from URL
+    useEffect(() => {
+        const type = searchParams.get('type') as UserType
+        if (type && ['student', 'corporate', 'university'].includes(type)) {
+            setUserType(type)
+        }
+    }, [searchParams])
+
+    // Countdown timer for resend OTP - handled by useOtpRateLimit
+
+    // Auto-redirect to login immediately when password reset is successful
+    useEffect(() => {
+        if (currentStep === 'success') {
+            // Redirect immediately without delay
+            router.push(`/auth/login?type=${userType}`)
+        }
+    }, [currentStep, router, userType])
+
     // Step 1: Submit email
     const onSubmitEmail = async (data: EmailFormData) => {
+        if (!otpRateLimit.beginSend()) return
+
         setIsLoading(true)
         try {
-            await apiClient.client.post('/auth/password-reset/request', {
+            const response = await apiClient.requestPasswordResetOtp({
                 email: data.email,
-                user_type: userType
+                user_type: userType,
             })
-            
+
             setEmail(data.email)
             setCurrentStep('otp')
-            setCountdown(0) // No cooldown for first OTP request
-            setIsResendCooldown(false)
-            setResendCount(0) // Reset resend count for new email
+            savePasswordResetSession({ email: data.email, userType, step: 'otp' })
+            otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
             toast.success('OTP sent to your email address')
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
-            toast.error(message)
+        } catch (error: unknown) {
+            otpRateLimit.handleSendError(error)
+            toast.error(getErrorMessage(error, 'Failed to send OTP. Please try again.'))
         } finally {
+            otpRateLimit.endSend()
             setIsLoading(false)
         }
     }
 
     // Resend OTP
     const handleResendOtp = async () => {
-        if (countdown > 0) return
-        
+        if (!email || !otpRateLimit.beginSend()) return
+
         setIsLoading(true)
         try {
-            await apiClient.client.post('/auth/password-reset/request', {
-                email: email,
-                user_type: userType
+            const response = await apiClient.requestPasswordResetOtp({
+                email,
+                user_type: userType,
             })
-            
-            // Increment resend count
-            const newResendCount = resendCount + 1
-            setResendCount(newResendCount)
-            
-            // After 3 resends, start 5-minute cooldown countdown
-            if (newResendCount >= 3) {
-                setCountdown(300) // 5 minutes = 300 seconds
-                setIsResendCooldown(true)
-                toast.success('OTP resent to your email address. Please wait 5 minutes before requesting again.')
-            } else {
-                // No cooldown for first 2 resends
-                setCountdown(0)
-                setIsResendCooldown(false)
-                toast.success('OTP resent to your email address')
-            }
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
-            toast.error(message)
-            
-            // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
-            if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
-                // Extract minutes and seconds from error message
-                const minutesMatch = message.match(/(\d+)\s*minute/)
-                const secondsMatch = message.match(/(\d+)\s*second/)
-                
-                let remainingSeconds = 0
-                if (minutesMatch) {
-                    remainingSeconds += parseInt(minutesMatch[1]) * 60
-                }
-                if (secondsMatch) {
-                    remainingSeconds += parseInt(secondsMatch[1])
-                }
-                
-                if (remainingSeconds > 0) {
-                    setCountdown(remainingSeconds)
-                    setIsResendCooldown(true)
-                }
-            }
+
+            otpRateLimit.handleSendSuccess(response.rate_limit, email)
+            toast.success('OTP resent to your email address')
+        } catch (error: unknown) {
+            otpRateLimit.handleSendError(error)
+            toast.error(getErrorMessage(error, 'Failed to resend OTP. Please try again.'))
         } finally {
+            otpRateLimit.endSend()
             setIsLoading(false)
         }
     }
@@ -189,10 +191,10 @@ export default function ForgotPasswordPage() {
             
             setOtp(data.otp)
             setCurrentStep('password')
+            savePasswordResetSession({ email, userType, step: 'password' })
             toast.success('OTP verified successfully')
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Invalid or expired OTP'
-            toast.error(message)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Invalid or expired OTP'))
         } finally {
             setIsLoading(false)
         }
@@ -411,6 +413,19 @@ export default function ForgotPasswordPage() {
                                             </p>
                                         </div>
 
+                                        <OtpStatusSection
+                                            formattedTimeRemaining={otpRateLimit.formattedTimeRemaining}
+                                            remainingAttempts={otpRateLimit.remainingAttempts}
+                                            maxAttempts={otpRateLimit.maxAttempts}
+                                            isLockedOut={otpRateLimit.isLockedOut}
+                                            lockoutMessage={otpRateLimit.lockoutMessage}
+                                            canShowResendButton={otpRateLimit.canShowResendButton}
+                                            isResendDisabled={otpRateLimit.isResendDisabled}
+                                            resendButtonLabel={otpRateLimit.resendButtonLabel}
+                                            onResend={handleResendOtp}
+                                            isResending={otpRateLimit.isSending || isLoading}
+                                        />
+
                                         {/* Information Box */}
                                         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                                             <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
@@ -430,32 +445,6 @@ export default function ForgotPasswordPage() {
                                         >
                                             Verify Code
                                         </Button>
-
-                                        {/* Resend OTP Section */}
-                                        <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                                    Didn't receive the code?
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleResendOtp}
-                                                    disabled={countdown > 0 || isLoading}
-                                                    className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${
-                                                        countdown > 0 || isLoading
-                                                            ? 'text-gray-400 cursor-not-allowed'
-                                                            : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
-                                                    }`}
-                                                >
-                                                    <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
-                                                    {countdown > 0 
-                                                        ? countdown >= 60 
-                                                            ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
-                                                            : `Resend in ${countdown}s`
-                                                        : 'Resend OTP'}
-                                                </button>
-                                            </div>
-                                        </div>
                                     </form>
                                 </motion.div>
                             )}
@@ -573,3 +562,10 @@ export default function ForgotPasswordPage() {
     )
 }
 
+export default function ForgotPasswordPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
+            <ForgotPasswordPageContent />
+        </Suspense>
+    )
+}

@@ -2,6 +2,8 @@
  * Error handling utilities for better user experience
  */
 
+import type { OtpRateLimitStatus } from '@/lib/otp-rate-limit'
+
 export interface ApiError {
   response?: {
     /** Raw body from axios (object, string, or unknown) */
@@ -57,6 +59,12 @@ function messageFromDetailLike(value: unknown): string | null {
   if (typeof value === 'string') {
     const t = value.trim()
     return t.length > 0 ? t : null
+  }
+  if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+    const obj = value as Record<string, unknown>
+    if (typeof obj.message === 'string' && obj.message.trim()) {
+      return obj.message.trim()
+    }
   }
   if (Array.isArray(value)) {
     const parts = value
@@ -160,6 +168,34 @@ export function getErrorType(error: unknown): 'error' | 'warning' | 'info' {
     }
   }
   return 'error';
+}
+
+export interface OtpRateLimitErrorPayload {
+  message?: string
+  rate_limit?: Record<string, unknown>
+}
+
+function toOtpRateLimitStatus(value: unknown): OtpRateLimitStatus | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+  return value as OtpRateLimitStatus
+}
+
+/** Extract OTP rate-limit payload from a 429 API error response. */
+export function extractOtpRateLimitFromError(error: unknown): OtpRateLimitStatus | null {
+  const e = toApiError(error)
+  const data = parseResponseData(e.response?.data)
+  if (!data) return null
+
+  const errorField = data.error
+  if (errorField && typeof errorField === 'object' && !Array.isArray(errorField)) {
+    const payload = errorField as OtpRateLimitErrorPayload
+    const fromPayload = toOtpRateLimitStatus(payload.rate_limit)
+    if (fromPayload) return fromPayload
+  }
+
+  return toOtpRateLimitStatus(data.rate_limit)
 }
 
 /**
