@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Download, ArrowLeft, RefreshCw } from 'lucide-react'
@@ -60,7 +60,7 @@ interface CorporateProfile {
   address?: string
 }
 
-export default function PDFViewerPage() {
+function PDFViewerContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const jobId = searchParams.get('jobId')
@@ -371,5 +371,12 @@ export default function PDFViewerPage() {
         )}
       </div>
     </div>
+  )
+}
+export default function PDFViewerPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PDFViewerContent />
+    </Suspense>
   )
 }

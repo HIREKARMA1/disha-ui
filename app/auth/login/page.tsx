@@ -20,6 +20,7 @@ import { apiClient } from '@/lib/api'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
+import { Suspense } from 'react'
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -43,7 +44,7 @@ const userTypeIcons = {
     admin: Shield
 }
 
-export default function LoginPage() {
+function LoginContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { redirectIfAuthenticated, login } = useAuth()
@@ -419,5 +420,12 @@ export default function LoginPage() {
                 </div>
             </Modal>
         </div>
+    )
+}
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LoginContent />
+        </Suspense>
     )
 }

@@ -18,7 +18,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
-
+import { Suspense } from 'react'
 // Union type for all possible form data
 type FormData = {
     email: string
@@ -208,7 +208,7 @@ const universitySchema = z.object({
 
 // Admin schema removed for security - admin accounts must be created manually
 
-export default function RegisterPage() {
+function RegisterContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { redirectIfAuthenticated, login } = useAuth()
@@ -222,6 +222,7 @@ export default function RegisterPage() {
     const [countdown, setCountdown] = useState(0)
     const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
     const [resendCount, setResendCount] = useState(0) // Track number of resends
+    const MAX_ATTEMPTS = 3
 
     // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
@@ -315,8 +316,8 @@ export default function RegisterPage() {
             await apiClient.sendEmailOtp(data.email)
             setFormData(data)
             setCurrentStep('otp')
-            setCountdown(0) // No cooldown for first OTP request
-            setIsResendCooldown(false)
+            setCountdown(120) // No cooldown for first OTP request
+            setIsResendCooldown(true)
             setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
         } catch (error: unknown) {
@@ -338,17 +339,23 @@ export default function RegisterPage() {
             const newResendCount = resendCount + 1
             setResendCount(newResendCount)
 
-            // After 3 resends, start 5-minute cooldown countdown
+            // Maximum 3 resend attempts
             if (newResendCount >= 3) {
-                setCountdown(300) // 5 minutes = 300 seconds
+                setCountdown(600) // 10 minutes
                 setIsResendCooldown(true)
-                toast.success('OTP resent to your email address. Please wait 5 minutes before requesting again.')
-            } else {
-                // No cooldown for first 2 resends
-                setCountdown(0)
-                setIsResendCooldown(false)
-                toast.success('OTP resent to your email address')
+
+                toast.error(
+                    'Maximum OTP attempts reached. Please wait 10 minutes.'
+                )
+
+                return
             }
+
+            // First and second resend
+            setCountdown(120) // 2 minutes
+            setIsResendCooldown(true)
+
+            toast.success('OTP resent to your email address')
         } catch (error: unknown) {
             console.error('Resend OTP error:', error)
             const message = getErrorMessage(error, 'Failed to resend OTP. Please try again.')
@@ -974,13 +981,21 @@ export default function RegisterPage() {
                                 {/* Resend OTP Section */}
                                 <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                                        <div className="text-center mb-3">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                Remaining Attempts:
+                                                <span className="font-semibold ml-1">
+                                                    {Math.max(0, 3 - resendCount)}/3
+                                                </span>
+                                            </p>
+                                        </div>
                                         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                             Didn't receive the code?
                                         </p>
                                         <button
                                             type="button"
                                             onClick={handleResendOtp}
-                                            disabled={countdown > 0 || isLoading}
+                                            disabled={countdown > 0 || resendCount >= 3 || isLoading}
                                             className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
                                                 ? 'text-gray-400 cursor-not-allowed'
                                                 : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
@@ -1027,5 +1042,12 @@ export default function RegisterPage() {
                 </motion.div>
             </div>
         </div>
+    )
+}
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <RegisterContent />
+        </Suspense>
     )
 }
