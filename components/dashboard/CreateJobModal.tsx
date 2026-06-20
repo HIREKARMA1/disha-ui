@@ -13,6 +13,7 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useIndustries } from '@/hooks/useLookup'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
+import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 
 // Fallback industry options (used if lookup API returns empty)
 const fallbackIndustryOptions = [
@@ -162,7 +163,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         : fallbackIndustryOptions
 
     const [isLoading, setIsLoading] = useState(false)
-    const [currentLocation, setCurrentLocation] = useState('')
+    const [jobLocationLabel, setJobLocationLabel] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [uploadingLogo, setUploadingLogo] = useState(false)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -249,23 +250,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         })
     }
 
-    const addLocation = () => {
-        if (currentLocation.trim() && !formData.location.includes(currentLocation.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                location: [...prev.location, currentLocation.trim()]
-            }))
-            setCurrentLocation('')
-        }
-    }
-
-    const removeLocation = (locationToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            location: prev.location.filter(location => location !== locationToRemove)
-        }))
-    }
-
     const handleLogoUpload = async (file: File) => {
         setUploadingLogo(true)
         try {
@@ -293,14 +277,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 // Corporate users: use regular image upload (though they shouldn't be using this for company logos)
                 result = await apiClient.uploadImage(file)
             }
-            
+
             // Update form data with the uploaded logo URL
             handleInputChange('company_logo', result.file_url)
-            
+
             // Create preview URL for display
             const previewUrl = URL.createObjectURL(file)
             setLogoPreview(previewUrl)
-            
+
             toast.success('Company logo uploaded successfully!')
         } catch (error: any) {
             console.error('Logo upload error:', error)
@@ -343,7 +327,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             errors.job_type = 'Job type is required'
         }
         if (formData.location.length === 0) {
-            errors.location = 'At least one location is required'
+            errors.location = 'Please select a job location from the suggestions'
         }
 
         // Validate company information fields for university-created jobs
@@ -374,7 +358,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 remote_work: formData.remote_work,
                 travel_required: formData.travel_required
             })
-            
+
             let modeOfWork = null
             if (formData.onsite_office && formData.remote_work) {
                 modeOfWork = 'hybrid'
@@ -383,7 +367,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             } else if (formData.remote_work) {
                 modeOfWork = 'remote'
             }
-            
+
             console.log('🔍 Create job - Derived mode_of_work:', modeOfWork)
 
             // Prepare data for API - match backend schema exactly
@@ -451,6 +435,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             toast.success(message)
             onJobCreated()
             onClose()
+
+            setJobLocationLabel('')
 
             // Reset form
             setFormData({
@@ -860,44 +846,31 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Location *
+                                            Job Location *
                                         </label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={currentLocation}
-                                                onChange={(e) => setCurrentLocation(e.target.value)}
-                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
-                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
-                                            />
-                                            <Button type="button" onClick={addLocation} variant="outline">
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                        {validationErrors.location && (
-                                            <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
-                                        )}
+                                        <GoogleLocationAutocomplete
+                                            value={jobLocationLabel || formData.location[0] || ''}
+                                            placeholder="Search for company, building, address, city, town, or locality"
+                                            mode="all"
+                                            required
+                                            error={validationErrors.location}
+                                            onChange={(place) => {
+                                                const label = place.formattedAddress
+                                            
+                                                setJobLocationLabel(label)
+                                            
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    location: label ? [label] : [],
+                                                }))
+                                                setValidationErrors((prev) => {
+                                                    const next = { ...prev }
+                                                    delete next.location
+                                                    return next
+                                                })
+                                            }}
+                                        />
                                     </div>
-
-                                    {formData.location.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {formData.location.map((location, index) => (
-                                                <span
-                                                    key={index}
-                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
-                                                >
-                                                    {location}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeLocation(location)}
-                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1116,7 +1089,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Probation Time
+                                                Probation Time
                                             </label>
                                             <Input
                                                 value={formData.ctc_after_probation}
