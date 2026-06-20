@@ -329,6 +329,24 @@ class ApiClient {
     return response.data;
   }
 
+  async getShortlistedBatchesAdmin(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/admins/shortlisted-batches');
+    return response.data.batches || [];
+  }
+
+  async getAssignedShortlistedBatchesAdmin(jobId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/assigned-shortlisted-batches`);
+    return response.data.batches || [];
+  }
+
+  async assignJobToShortlistedBatch(jobId: string, shortlistedBatchId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admins/jobs/${jobId}/assign-shortlisted-batch`,
+      { shortlisted_batch_id: shortlistedBatchId }
+    );
+    return response.data;
+  }
+
   async unassignJobFromUniversity(jobId: string, universityId: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/jobs/admin/${jobId}/unassign-university/${universityId}`);
     return response.data;

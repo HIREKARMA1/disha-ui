@@ -12,6 +12,7 @@ import { EditJobModal } from '@/components/dashboard/EditJobModal'
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { AssignUniversityModal } from '@/components/admin/AssignUniversityModal'
+import { AssignShortlistedBatchModal } from '@/components/admin/AssignShortlistedBatchModal'
 import { AppliedStudentsModal } from '@/components/admin/AppliedStudentsModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
@@ -83,8 +84,10 @@ export default function AdminJobsPage() {
     const [showFilters, setShowFilters] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showAssignModal, setShowAssignModal] = useState(false)
+    const [showAssignShortlistedModal, setShowAssignShortlistedModal] = useState(false)
     const [jobToDelete, setJobToDelete] = useState<Job | null>(null)
     const [jobToAssign, setJobToAssign] = useState<Job | null>(null)
+    const [jobToAssignShortlisted, setJobToAssignShortlisted] = useState<Job | null>(null)
     const [showAppliedStudentsModal, setShowAppliedStudentsModal] = useState(false)
     const [jobForAppliedStudents, setJobForAppliedStudents] = useState<Job | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -180,6 +183,11 @@ export default function AdminJobsPage() {
     const handleAssignJob = (job: Job) => {
         setJobToAssign(job)
         setShowAssignModal(true)
+    }
+
+    const handleAssignShortlistedBatch = (job: Job) => {
+        setJobToAssignShortlisted(job)
+        setShowAssignShortlistedModal(true)
     }
 
     const handleViewAppliedStudents = (job: Job) => {
@@ -446,6 +454,7 @@ export default function AdminJobsPage() {
                                     onEdit={handleEditJob}
                                     onDelete={handleDeleteJob}
                                     onAssignToUniversity={handleAssignJob}
+                                    onAssignToShortlistedBatch={handleAssignShortlistedBatch}
                                     onViewAppliedStudents={handleViewAppliedStudents}
                                     onStatusChange={handleStatusChange}
                                     onMakePublic={handleMakePublic}
@@ -571,6 +580,20 @@ export default function AdminJobsPage() {
                     fetchJobs()
                     setShowAssignModal(false)
                     setJobToAssign(null)
+                }}
+            />
+
+            <AssignShortlistedBatchModal
+                isOpen={showAssignShortlistedModal}
+                onClose={() => {
+                    setShowAssignShortlistedModal(false)
+                    setJobToAssignShortlisted(null)
+                }}
+                job={jobToAssignShortlisted}
+                onAssigned={() => {
+                    fetchJobs()
+                    setShowAssignShortlistedModal(false)
+                    setJobToAssignShortlisted(null)
                 }}
             />
 
