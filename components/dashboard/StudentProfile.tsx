@@ -1754,7 +1754,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         }
 
         if (field === 'city') {
-            const locationValue = buildLocationLabel(formData.city, formData.state, formData.country)
+            const locationValue = formData.city || ''
             return (
                 <GoogleLocationAutocomplete
                     value={locationValue}
@@ -1765,7 +1765,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         setLocationError('')
                         setFormData({
                             ...formData,
-                            city: place.city || place.locality || '',
+                            city: place.formattedAddress || '',
                             state: place.state || '',
                             country: place.country || '',
                         })
