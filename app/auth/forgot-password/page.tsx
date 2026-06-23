@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
@@ -47,6 +47,18 @@ type PasswordFormData = z.infer<typeof passwordSchema>
 type Step = 'email' | 'otp' | 'password' | 'success'
 
 export default function ForgotPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+            </div>
+        }>
+            <ForgotPasswordPageContent />
+        </Suspense>
+    )
+}
+
+function ForgotPasswordPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [currentStep, setCurrentStep] = useState<Step>('email')

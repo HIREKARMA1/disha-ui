@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, FileText, Calendar, DollarSign, Send, Building, MapPin, Briefcase } from 'lucide-react'
+import { X, FileText, Calendar, IndianRupee, Send, Building, MapPin, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -163,8 +163,8 @@ Best regards,
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    <DollarSign className="w-4 h-4 inline mr-2" />
-                                    Expected Salary ({job.salary_currency})
+                                    <IndianRupee className="w-4 h-4 inline mr-2" />
+                                    Expected Salary (₹)
                                 </label>
                                 <Input
                                     type="text"
