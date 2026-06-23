@@ -989,14 +989,14 @@ function RegisterContent() {
                                                 </span>
                                             </p>
                                         </div>
-                                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                            Didn't receive the code?
+                                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                            You can resend the OTP in
                                         </p>
                                         <button
                                             type="button"
                                             onClick={handleResendOtp}
                                             disabled={countdown > 0 || resendCount >= 3 || isLoading}
-                                            className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
+                                            className={`text-xs sm:text-sm font-semibold inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
                                                 ? 'text-gray-400 cursor-not-allowed'
                                                 : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
                                                 }`}
@@ -1004,8 +1004,8 @@ function RegisterContent() {
                                             <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
                                             {countdown > 0
                                                 ? countdown >= 60
-                                                    ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
-                                                    : `Resend in ${countdown}s`
+                                                    ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                    : `${countdown}s`
                                                 : 'Resend OTP'}
                                         </button>
                                     </div>

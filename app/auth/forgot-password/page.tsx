@@ -399,11 +399,10 @@ function ForgotPasswordContent() {
                                                             }
                                                         }}
                                                         data-otp-index={index}
-                                                        className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white dark:bg-gray-800 text-black dark:text-white ${
-                                                            otpForm.formState.errors.otp
+                                                        className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white dark:bg-gray-800 text-black dark:text-white ${otpForm.formState.errors.otp
                                                                 ? 'border-red-500 dark:border-red-400'
                                                                 : 'border-gray-300 dark:border-gray-600'
-                                                        }`}
+                                                            }`}
                                                         autoFocus={index === 0}
                                                     />
                                                 ))}
@@ -449,23 +448,23 @@ function ForgotPasswordContent() {
                                                 </p>
                                             </div>
                                             <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                                    Didn't receive the code?
+                                                <p className="text-xs sm:text-sm font-semibold text-white dark:text-white">
+                                                    You can resend the OTP in
                                                 </p>
                                                 <button
                                                     type="button"
                                                     onClick={handleResendOtp}
                                                     disabled={countdown > 0 || resendCount >= 3 || isLoading}
                                                     className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
-                                                            ? 'text-gray-400 cursor-not-allowed'
-                                                            : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
                                                         }`}
                                                 >
                                                     <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
                                                     {countdown > 0
                                                         ? countdown >= 60
-                                                            ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
-                                                            : `Resend in ${countdown}s`
+                                                            ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                            : `${countdown}s`
                                                         : 'Resend OTP'}
                                                 </button>
                                             </div>
