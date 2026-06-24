@@ -2117,7 +2117,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                         }
 
                         return (
-                            <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') || field === 'technical_skills' || field === 'soft_skills' || field === 'location_preferences' ? 'md:col-span-2' : ''}>
+                            <div
+                                key={field}
+                                className={
+                                    field.includes('bio') ||
+                                        field.includes('experience') ||
+                                        field.includes('details') ||
+                                        field.includes('activities') ||
+                                        field === 'technical_skills' ||
+                                        field === 'soft_skills' ||
+                                        field === 'location_preferences' ||
+                                        field === 'profile_picture'
+                                        ? 'md:col-span-2'
+                                        : ''
+                                }
+                            >
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     {getFieldLabel(field)}
                                 </label>
