@@ -20,7 +20,6 @@ import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
-
 // Union type for all possible form data
 type FormData = {
     email: string
@@ -210,6 +209,18 @@ const universitySchema = z.object({
 
 // Admin schema removed for security - admin accounts must be created manually
 
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+            </div>
+        }>
+            <RegisterPageContent />
+        </Suspense>
+    )
+}
+
 function RegisterPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -221,12 +232,10 @@ function RegisterPageContent() {
     const [currentStep, setCurrentStep] = useState<'form' | 'otp'>('form')
     const [formData, setFormData] = useState<FormData | null>(null)
     const [otp, setOtp] = useState('')
-
-    const otpRateLimit = useOtpRateLimit({
-        purpose: 'signup',
-        identifier: formData?.email ?? null,
-        enabled: currentStep === 'otp' && !!formData?.email,
-    })
+    const [countdown, setCountdown] = useState(0)
+    const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
+    const [resendCount, setResendCount] = useState(0) // Track number of resends
+    const MAX_ATTEMPTS = 3
 
     // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
@@ -310,7 +319,9 @@ function RegisterPageContent() {
             const response = await apiClient.sendEmailOtp(data.email)
             setFormData(data)
             setCurrentStep('otp')
-            otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
+            setCountdown(120) // No cooldown for first OTP request
+            setIsResendCooldown(true)
+            setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
         } catch (error: unknown) {
             console.error('Send OTP error:', error)
@@ -327,8 +338,28 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(formData.email)
-            otpRateLimit.handleSendSuccess(response.rate_limit, formData.email)
+            await apiClient.sendEmailOtp(formData.email)
+
+            // Increment resend count
+            const newResendCount = resendCount + 1
+            setResendCount(newResendCount)
+
+            // Maximum 3 resend attempts
+            if (newResendCount >= 3) {
+                setCountdown(600) // 10 minutes
+                setIsResendCooldown(true)
+
+                toast.error(
+                    'Maximum OTP attempts reached. Please wait 10 minutes.'
+                )
+
+                return
+            }
+
+            // First and second resend
+            setCountdown(120) // 2 minutes
+            setIsResendCooldown(true)
+
             toast.success('OTP resent to your email address')
         } catch (error: unknown) {
             console.error('Resend OTP error:', error)
@@ -945,6 +976,42 @@ function RegisterPageContent() {
                                 >
                                     Verify & Register
                                 </Button>
+
+                                {/* Resend OTP Section */}
+                                <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="text-center mb-3">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Remaining Attempts:
+                                            <span className="font-semibold ml-1">
+                                                {Math.max(0, 3 - resendCount)}/3
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                            You can resend the OTP in   
+
+
+                                        <button
+                                            type="button"
+                                            onClick={handleResendOtp}
+                                            disabled={countdown > 0 || resendCount >= 3 || isLoading}
+                                            className={`text-xs sm:text-sm font-semibold inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
+                                                ? 'text-gray-400 cursor-not-allowed'
+                                                : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                                }`}
+                                        >
+                                            {/* <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} /> */}
+                                            {countdown > 0
+                                                ? countdown >= 60
+                                                    ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                    : `${countdown}s`
+                                                : 'Resend OTP'}
+                                        </button>
+                                        </p>
+                                    </div>
+                                </div>
                             </motion.div>
                         )}
 
@@ -977,13 +1044,5 @@ function RegisterPageContent() {
                 </motion.div>
             </div>
         </div>
-    )
-}
-
-export default function RegisterPage() {
-    return (
-        <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
-            <RegisterPageContent />
-        </Suspense>
     )
 }

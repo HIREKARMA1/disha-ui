@@ -60,6 +60,18 @@ interface CorporateProfile {
   address?: string
 }
 
+export default function PDFViewerPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    }>
+      <PDFViewerPageContent />
+    </Suspense>
+  )
+}
+
 function PDFViewerPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -371,13 +383,5 @@ function PDFViewerPageContent() {
         )}
       </div>
     </div>
-  )
-}
-
-export default function PDFViewerPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
-      <PDFViewerPageContent />
-    </Suspense>
   )
 }

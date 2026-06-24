@@ -9,6 +9,18 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 
+export default function CreateAssessmentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    }>
+      <CreateAssessmentPageContent />
+    </Suspense>
+  )
+}
+
 function CreateAssessmentPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -94,13 +106,5 @@ function CreateAssessmentPageContent() {
         />
       </div>
     </AdminDashboardLayout>
-  )
-}
-
-export default function CreateAssessmentPage() {
-  return (
-    <Suspense fallback={<AdminDashboardLayout><div className="p-6">Loading...</div></AdminDashboardLayout>}>
-      <CreateAssessmentPageContent />
-    </Suspense>
   )
 }

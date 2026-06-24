@@ -6,7 +6,7 @@ import {
     Briefcase,
     Building,
     User,
-    DollarSign,
+    IndianRupee,
     Calendar,
     ArrowRight,
     Activity,
@@ -222,8 +222,8 @@ export function UniversityRecentActivities({
                                         {activity.type === 'student_placed' && activity.package && (
                                             <div className="flex items-center space-x-2 mt-2">
                                                 <div className="flex items-center space-x-1 text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                                                    <DollarSign className="w-3 h-3" />
-                                                    <span>${activity.package.toLocaleString()}</span>
+                                                    <IndianRupee className="w-3 h-3" />
+                                                    <span>₹{activity.package.toLocaleString('en-IN')}</span>
                                                 </div>
                                             </div>
                                         )}

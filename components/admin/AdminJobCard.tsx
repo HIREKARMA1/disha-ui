@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe, UserPlus } from 'lucide-react'
+import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe, UserPlus } from 'lucide-react'
+import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -115,19 +116,6 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
     }
 
     const cardColors = getCardColorScheme(cardIndex)
-
-    const formatSalary = (currency: string, min?: number, max?: number) => {
-        try {
-            if (!min && !max) return 'Not specified'
-            if (min && max) return `${currency} ${Number(min).toLocaleString()} - ${Number(max).toLocaleString()}`
-            if (min) return `${currency} ${Number(min).toLocaleString()}+`
-            if (max) return `${currency} Up to ${Number(max).toLocaleString()}`
-            return 'Not specified'
-        } catch (error) {
-            console.error('Error formatting salary:', error, { min, max, currency })
-            return 'Not specified'
-        }
-    }
 
     const formatExperience = (min?: number, max?: number) => {
         try {
@@ -438,8 +426,8 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="truncate">{formatSalary(job.salary_currency, job.salary_min, job.salary_max)}</span>
+                        <IndianRupee className="w-4 h-4" />
+                        <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">

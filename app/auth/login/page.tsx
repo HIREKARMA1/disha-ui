@@ -43,6 +43,18 @@ const userTypeIcons = {
     admin: Shield
 }
 
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+            </div>
+        }>
+            <LoginPageContent />
+        </Suspense>
+    )
+}
+
 function LoginPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -419,13 +431,5 @@ function LoginPageContent() {
                 </div>
             </Modal>
         </div>
-    )
-}
-
-export default function LoginPage() {
-    return (
-        <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900" />}>
-            <LoginPageContent />
-        </Suspense>
     )
 }
