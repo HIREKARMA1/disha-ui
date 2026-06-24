@@ -20,6 +20,7 @@ import { StudentSidebar } from './StudentSidebar'
 import { Navbar } from '../ui/navbar'
 import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
+import { ProfilePictureUpload } from '../profile/ProfilePictureUpload'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
@@ -289,7 +290,7 @@ export function StudentProfile() {
                         <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-4 border border-primary-200 dark:border-primary-700 mb-4">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-4">
                                 <div className="flex-1 min-w-0">
-                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
                                         Student Profile 👤
                                     </h1>
                                     <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base mb-2">
@@ -1088,6 +1089,7 @@ export function StudentProfile() {
                                                         onSave={(formData) => handleSave('social', formData)}
                                                         saving={saving}
                                                         onCancel={() => setEditing(null)}
+                                                        onProfilePictureUploaded={loadProfile}
                                                     />
                                                 ) : (
                                                     <div className="space-y-4">
@@ -1228,11 +1230,13 @@ interface ProfileSectionFormProps {
     onSave: (formData: any) => void
     saving: boolean
     onCancel: () => void
+    onProfilePictureUploaded?: () => void | Promise<void>
 }
 
-function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: ProfileSectionFormProps) {
+function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProfilePictureUploaded }: ProfileSectionFormProps) {
     const { getToken } = useAuth()
     const [formData, setFormData] = useState<any>({})
+    const [errors, setErrors] = useState<Record<string, string>>({})
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
@@ -1263,6 +1267,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     } = useBranches({
         enabled: section.id === 'academic'
     })
+
+    console.log('branches', branches)
+    console.log('loadingBranches', loadingBranches)
+    console.log('branchesError', branchesError)
 
     // Use professional lookup hook for degrees
     const {
@@ -1360,9 +1368,43 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 hasValidationErrors = true
             }
 
-            // Name validation
-            if (!cleanedFormData.name || cleanedFormData.name.trim().length === 0) {
-                validationErrors.push('Name is required')
+            // Mandatory Fields Validation
+            const fieldErrors: Record<string, string> = {}
+            const requiredFields = [
+                { key: 'name', label: 'Name' },
+                { key: 'phone', label: 'Phone Number' },
+                { key: 'dob', label: 'Date of Birth' },
+                { key: 'gender', label: 'Gender' },
+                { key: 'country', label: 'Country' },
+                { key: 'state', label: 'State' },
+                { key: 'city', label: 'City' },
+                { key: 'bio', label: 'Bio' }
+            ]
+
+            requiredFields.forEach(field => {
+                if (
+                    !cleanedFormData[field.key] ||
+                    cleanedFormData[field.key].toString().trim() === ''
+                ) {
+                    fieldErrors[field.key] = 'This field is required'
+
+                    hasValidationErrors = true
+                }
+            })
+            setErrors(fieldErrors)
+
+            // Phone Validation
+            if (
+                cleanedFormData.phone &&
+                cleanedFormData.phone.toString().length < 10
+            ) {
+                validationErrors.push('Phone number must be 10 digits')
+                hasValidationErrors = true
+            }
+
+            // Resume Validation
+            if (!cleanedFormData.resume) {
+                validationErrors.push('Resume is required')
                 hasValidationErrors = true
             }
 
@@ -1580,6 +1622,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             setUploadSuccess(field)
             setUploadError(null)
 
+            if (field === 'profile_picture') {
+                await onProfilePictureUploaded?.()
+            }
+
             // Clear success message after 3 seconds
             setTimeout(() => setUploadSuccess(null), 3000)
             // Do not persist profile automatically on file upload.
@@ -1618,19 +1664,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         if (field === 'profile_picture') {
             return (
                 <div className="space-y-3">
-                    <FileUpload
-                        type="image"
+                    <ProfilePictureUpload
+                        currentFile={value}
                         onFileSelect={(file) => handleFileUpload(field, file)}
                         onFileRemove={() => handleFileRemove(field)}
-                        currentFile={value}
-                        placeholder="Upload your profile picture"
                         disabled={uploading === field}
+                        uploading={uploading === field}
                     />
-                    {uploading === field && (
-                        <div className="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400">
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Uploading...</span>
+                    {uploadSuccess === field && (
+                        <div className="text-sm text-green-600 dark:text-green-400">
+                            Profile picture uploaded successfully
                         </div>
+                    )}
+                    {uploadError && (
+                        <div className="text-sm text-red-600 dark:text-red-400">{uploadError}</div>
                     )}
                 </div>
             )
@@ -1695,7 +1742,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     onChange={(e) => {
                         const digitsOnly = e.target.value.replace(/\D/g, '')
                         const limited = digitsOnly.slice(0, 10)
+
                         setFormData({ ...formData, [field]: limited })
+
+                        setErrors(prev => ({
+                            ...prev,
+                            [field]: ''
+                        }))
                     }}
                     maxLength={10}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
@@ -2030,8 +2083,29 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                                 <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
                                     <label className="block text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2 capitalize">
                                         {field.replace(/_/g, ' ')}
+                                        {[
+                                            'name',
+                                            'phone',
+                                            'dob',
+                                            'gender',
+                                            'country',
+                                            'state',
+                                            'city',
+                                            'bio',
+                                            'resume'
+                                        ].includes(field) && (
+                                                <span className="text-red-500 ml-1">*</span>
+                                            )}
                                     </label>
+
                                     {renderField(field)}
+
+                                    {errors[field] && (
+                                        <p className="text-red-500 text-xs mt-1">
+                                            {errors[field]}
+                                        </p>
+                                    )}
+
                                 </div>
                             ))}
                         </div>
@@ -2052,6 +2126,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             <div>
                                 <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
                                     Twelfth Grade Percentage
+                                    <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <input
                                     type="number"
@@ -2082,6 +2157,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                             <div>
                                 <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">
                                     Tenth Grade Percentage
+                                    <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <input
                                     type="number"
@@ -2109,11 +2185,46 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                         }
 
                         return (
-                            <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') || field === 'technical_skills' || field === 'soft_skills' || field === 'location_preferences' ? 'md:col-span-2' : ''}>
+                            <div
+                                key={field}
+                                className={
+                                    field.includes('bio') ||
+                                        field.includes('experience') ||
+                                        field.includes('details') ||
+                                        field.includes('activities') ||
+                                        field === 'technical_skills' ||
+                                        field === 'soft_skills' ||
+                                        field === 'location_preferences' ||
+                                        field === 'profile_picture'
+                                        ? 'md:col-span-2'
+                                        : ''
+                                }
+                            >
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     {getFieldLabel(field)}
+                                    {[
+                                        'name',
+                                        'phone',
+                                        'dob',
+                                        'gender',
+                                        'country',
+                                        'state',
+                                        'city',
+                                        'bio',
+                                        'resume'
+                                    ].includes(field) && (
+                                            <span className="text-red-500 ml-1">*</span>
+                                        )}
                                 </label>
+
                                 {renderField(field)}
+
+                                {errors[field] && (
+                                    <p className="text-red-500 text-xs mt-1">
+                                        {errors[field]}
+                                    </p>
+                                )}
+
                             </div>
                         )
                     })}
