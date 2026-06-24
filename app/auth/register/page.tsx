@@ -980,18 +980,20 @@ function RegisterContent() {
 
                                 {/* Resend OTP Section */}
                                 <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                                        <div className="text-center mb-3">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                Remaining Attempts:
-                                                <span className="font-semibold ml-1">
-                                                    {Math.max(0, 3 - resendCount)}/3
-                                                </span>
-                                            </p>
-                                        </div>
-                                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                            You can resend the OTP in
+                                    <div className="text-center mb-3">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Remaining Attempts:
+                                            <span className="font-semibold ml-1">
+                                                {Math.max(0, 3 - resendCount)}/3
+                                            </span>
                                         </p>
+                                    </div>
+
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                            You can resend the OTP in   
+
+
                                         <button
                                             type="button"
                                             onClick={handleResendOtp}
@@ -1001,13 +1003,14 @@ function RegisterContent() {
                                                 : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
                                                 }`}
                                         >
-                                            <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
+                                            {/* <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} /> */}
                                             {countdown > 0
                                                 ? countdown >= 60
                                                     ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
                                                     : `${countdown}s`
                                                 : 'Resend OTP'}
                                         </button>
+                                        </p>
                                     </div>
                                 </div>
                             </motion.div>

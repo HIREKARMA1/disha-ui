@@ -460,7 +460,7 @@ function ForgotPasswordContent() {
                                                         : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
                                                         }`}
                                                 >
-                                                    <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
+                                                    {/* <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} /> */}
                                                     {countdown > 0
                                                         ? countdown >= 60
                                                             ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
