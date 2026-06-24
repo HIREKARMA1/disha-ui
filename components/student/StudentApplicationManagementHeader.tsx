@@ -11,6 +11,7 @@ interface StudentApplicationManagementHeaderProps {
     selectedApplications: number
     rejectedApplications: number
     pendingApplications: number
+    withdrawnApplications?: number
     searchTerm: string
     onSearchChange: (term: string) => void
     filterStatus: string
@@ -31,6 +32,7 @@ export function StudentApplicationManagementHeader({
     selectedApplications,
     rejectedApplications,
     pendingApplications,
+    withdrawnApplications = 0,
     searchTerm,
     onSearchChange,
     filterStatus,
@@ -50,6 +52,7 @@ export function StudentApplicationManagementHeader({
         { value: 'selected', label: 'Selected', count: selectedApplications },
         { value: 'rejected', label: 'Rejected', count: rejectedApplications },
         { value: 'pending', label: 'Pending', count: pendingApplications },
+        { value: 'withdrawn', label: 'Withdrawn', count: withdrawnApplications },
     ]
 
     const getStatusIcon = (status: string) => {
@@ -64,6 +67,8 @@ export function StudentApplicationManagementHeader({
                 return <XCircle className="w-6 h-6" />
             case 'pending':
                 return <Clock className="w-6 h-6" />
+            case 'withdrawn':
+                return <FileText className="w-6 h-6" />
             default:
                 return <FileText className="w-6 h-6" />
         }
@@ -95,6 +100,11 @@ export function StudentApplicationManagementHeader({
                 return {
                     color: 'text-yellow-600',
                     bgColor: 'bg-yellow-50 dark:bg-yellow-900/20'
+                }
+            case 'withdrawn':
+                return {
+                    color: 'text-gray-600',
+                    bgColor: 'bg-gray-50 dark:bg-gray-900/20'
                 }
             default:
                 return {

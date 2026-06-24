@@ -14,7 +14,8 @@ import {
     XCircle,
     UserCheck,
     FileText,
-    ClipboardList
+    ClipboardList,
+    Undo2
 } from 'lucide-react'
 import { formatAmountINR } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,7 @@ interface StudentApplicationTableProps {
     onSort: (field: string) => void
     onViewOfferLetter: (application: ApplicationData) => void
     onDownloadOfferLetter: (application: ApplicationData) => void
+    onWithdraw?: (application: ApplicationData) => void
     onStatusUpdate?: (application: ApplicationData) => void
     pagination: {
         page: number
@@ -72,6 +74,7 @@ export function StudentApplicationTable({
     sortOrder,
     onSort,
     onViewOfferLetter,
+    onWithdraw,
     onStatusUpdate,
     pagination,
     onPageChange
@@ -168,6 +171,8 @@ export function StudentApplicationTable({
                 return <XCircle className="w-4 h-4 text-red-500" />
             case 'pending':
                 return <Clock className="w-4 h-4 text-yellow-500" />
+            case 'withdrawn':
+                return <Undo2 className="w-4 h-4 text-gray-500" />
             default:
                 return <FileText className="w-4 h-4 text-gray-500" />
         }
@@ -185,6 +190,8 @@ export function StudentApplicationTable({
                 return 'text-red-600 dark:text-red-400'
             case 'pending':
                 return 'text-yellow-600 dark:text-yellow-400'
+            case 'withdrawn':
+                return 'text-gray-600 dark:text-gray-400'
             default:
                 return 'text-gray-600 dark:text-gray-400'
         }
@@ -203,6 +210,8 @@ export function StudentApplicationTable({
     }
 
     const formatSalary = formatAmountINR
+
+    const canWithdraw = (status: string) => ['applied', 'shortlisted', 'pending'].includes(status)
 
     const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <button
@@ -399,6 +408,20 @@ export function StudentApplicationTable({
                                             </>
                                         )}
 
+                                        {/* Student View - Withdraw Application */}
+                                        {!onStatusUpdate && onWithdraw && canWithdraw(application.status) && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onWithdraw(application)}
+                                                className="flex items-center gap-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400"
+                                                title="Withdraw Application"
+                                            >
+                                                <Undo2 className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Withdraw</span>
+                                            </Button>
+                                        )}
+
                                         {/* Student View - View Offer Letter (only for selected applications with offer letter) */}
                                         {!onStatusUpdate && application.status === 'selected' && application.offer_letter_url && (
                                             <Button
@@ -416,7 +439,7 @@ export function StudentApplicationTable({
 
 
                                         {/* Student View - No offer letter available yet */}
-                                        {!onStatusUpdate && !application.has_assignment && (application.status !== 'selected' || !application.offer_letter_url) && (
+                                        {!onStatusUpdate && !application.has_assignment && (application.status !== 'selected' || !application.offer_letter_url) && application.status !== 'withdrawn' && (
                                             <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
                                                 {application.status === 'selected' ? (
                                                     <span className="text-xs">Offer letter pending</span>

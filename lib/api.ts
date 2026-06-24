@@ -88,8 +88,25 @@ class ApiClient {
   }
 
   // Email OTP for signup
-  async sendEmailOtp(email: string): Promise<{ message: string }> {
+  async sendEmailOtp(email: string): Promise<{ message: string; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
     const response: AxiosResponse = await this.client.post('/auth/send-email-otp', { email });
+    return response.data;
+  }
+
+  async getOtpRateLimitStatus(params: {
+    identifier: string;
+    purpose: 'signup' | 'password_reset' | 'phone';
+    user_type?: string;
+  }): Promise<import('@/lib/otp-rate-limit').OtpRateLimitStatus> {
+    const response: AxiosResponse = await this.client.get('/auth/otp-rate-limit/status', { params });
+    return response.data;
+  }
+
+  async requestPasswordResetOtp(payload: {
+    email: string;
+    user_type: string;
+  }): Promise<{ message: string; success: boolean; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
+    const response: AxiosResponse = await this.client.post('/auth/password-reset/request', payload);
     return response.data;
   }
 
@@ -200,6 +217,11 @@ class ApiClient {
     limit?: number;
   } = {}): Promise<any> {
     const response: AxiosResponse = await this.client.get('/students/applications', { params });
+    return response.data;
+  }
+
+  async withdrawApplication(applicationId: string): Promise<{ message: string; status: string }> {
+    const response: AxiosResponse = await this.client.post(`/applications/${applicationId}/withdraw`);
     return response.data;
   }
 

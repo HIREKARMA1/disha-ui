@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen, ShieldCheck, RotateCcw } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,8 @@ import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
+import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
+import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
 // Union type for all possible form data
 type FormData = {
@@ -230,10 +232,12 @@ function RegisterPageContent() {
     const [currentStep, setCurrentStep] = useState<'form' | 'otp'>('form')
     const [formData, setFormData] = useState<FormData | null>(null)
     const [otp, setOtp] = useState('')
-    const [countdown, setCountdown] = useState(0)
-    const [isResendCooldown, setIsResendCooldown] = useState(false) // Track if we're in resend cooldown period
-    const [resendCount, setResendCount] = useState(0) // Track number of resends
-    const MAX_ATTEMPTS = 3
+
+    const otpRateLimit = useOtpRateLimit({
+        purpose: 'signup',
+        identifier: formData?.email ?? null,
+        enabled: currentStep === 'otp' && !!formData?.email,
+    })
 
     // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
@@ -309,89 +313,40 @@ function RegisterPageContent() {
         setValue('user_type', userType)
     }
 
-    // Countdown timer for OTP resend
-    useEffect(() => {
-        if (countdown > 0) {
-            const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-            return () => clearTimeout(timer)
-        } else if (countdown === 0 && isResendCooldown) {
-            // Reset cooldown flag when countdown reaches 0
-            setIsResendCooldown(false)
-        }
-    }, [countdown, isResendCooldown])
-
     const onSubmit = async (data: FormData) => {
+        if (!otpRateLimit.beginSend()) return
+
         setIsLoading(true)
         try {
-            // Step 1: Send OTP to email
-            await apiClient.sendEmailOtp(data.email)
+            const response = await apiClient.sendEmailOtp(data.email)
             setFormData(data)
             setCurrentStep('otp')
-            setCountdown(120) // No cooldown for first OTP request
-            setIsResendCooldown(true)
-            setResendCount(0) // Reset resend count for new email
+            otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
             toast.success('OTP sent to your email address')
         } catch (error: unknown) {
             console.error('Send OTP error:', error)
+            otpRateLimit.handleSendError(error)
             toast.error(getErrorMessage(error, 'Failed to send OTP. Please try again.'))
         } finally {
+            otpRateLimit.endSend()
             setIsLoading(false)
         }
     }
 
     const handleResendOtp = async () => {
-        if (countdown > 0 || !formData) return
+        if (!formData || !otpRateLimit.beginSend()) return
 
         setIsLoading(true)
         try {
-            await apiClient.sendEmailOtp(formData.email)
-
-            // Increment resend count
-            const newResendCount = resendCount + 1
-            setResendCount(newResendCount)
-
-            // Maximum 3 resend attempts
-            if (newResendCount >= 3) {
-                setCountdown(600) // 10 minutes
-                setIsResendCooldown(true)
-
-                toast.error(
-                    'Maximum OTP attempts reached. Please wait 10 minutes.'
-                )
-
-                return
-            }
-
-            // First and second resend
-            setCountdown(120) // 2 minutes
-            setIsResendCooldown(true)
-
+            const response = await apiClient.sendEmailOtp(formData.email)
+            otpRateLimit.handleSendSuccess(response.rate_limit, formData.email)
             toast.success('OTP resent to your email address')
         } catch (error: unknown) {
             console.error('Resend OTP error:', error)
-            const message = getErrorMessage(error, 'Failed to resend OTP. Please try again.')
-            toast.error(message)
-
-            // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
-            if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
-                // Extract minutes and seconds from error message
-                const minutesMatch = message.match(/(\d+)\s*minute/)
-                const secondsMatch = message.match(/(\d+)\s*second/)
-
-                let remainingSeconds = 0
-                if (minutesMatch) {
-                    remainingSeconds += parseInt(minutesMatch[1]) * 60
-                }
-                if (secondsMatch) {
-                    remainingSeconds += parseInt(secondsMatch[1])
-                }
-
-                if (remainingSeconds > 0) {
-                    setCountdown(remainingSeconds)
-                    setIsResendCooldown(true)
-                }
-            }
+            otpRateLimit.handleSendError(error)
+            toast.error(getErrorMessage(error, 'Failed to resend OTP. Please try again.'))
         } finally {
+            otpRateLimit.endSend()
             setIsLoading(false)
         }
     }
@@ -968,6 +923,19 @@ function RegisterPageContent() {
                                     </p>
                                 </div>
 
+                                <OtpStatusSection
+                                    formattedTimeRemaining={otpRateLimit.formattedTimeRemaining}
+                                    remainingAttempts={otpRateLimit.remainingAttempts}
+                                    maxAttempts={otpRateLimit.maxAttempts}
+                                    isLockedOut={otpRateLimit.isLockedOut}
+                                    lockoutMessage={otpRateLimit.lockoutMessage}
+                                    canShowResendButton={otpRateLimit.canShowResendButton}
+                                    isResendDisabled={otpRateLimit.isResendDisabled}
+                                    resendButtonLabel={otpRateLimit.resendButtonLabel}
+                                    onResend={handleResendOtp}
+                                    isResending={otpRateLimit.isSending || isLoading}
+                                />
+
                                 {/* Information Box */}
                                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                                     <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
@@ -988,42 +956,6 @@ function RegisterPageContent() {
                                 >
                                     Verify & Register
                                 </Button>
-
-                                {/* Resend OTP Section */}
-                                <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <div className="text-center mb-3">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            Remaining Attempts:
-                                            <span className="font-semibold ml-1">
-                                                {Math.max(0, 3 - resendCount)}/3
-                                            </span>
-                                        </p>
-                                    </div>
-
-                                    <div className="flex flex-col items-center justify-center gap-1">
-                                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                            You can resend the OTP in   
-
-
-                                        <button
-                                            type="button"
-                                            onClick={handleResendOtp}
-                                            disabled={countdown > 0 || resendCount >= 3 || isLoading}
-                                            className={`text-xs sm:text-sm font-semibold inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
-                                                ? 'text-gray-400 cursor-not-allowed'
-                                                : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
-                                                }`}
-                                        >
-                                            {/* <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} /> */}
-                                            {countdown > 0
-                                                ? countdown >= 60
-                                                    ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
-                                                    : `${countdown}s`
-                                                : 'Resend OTP'}
-                                        </button>
-                                        </p>
-                                    </div>
-                                </div>
                             </motion.div>
                         )}
 
