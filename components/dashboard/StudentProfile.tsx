@@ -1385,7 +1385,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 ) {
                     fieldErrors[field.key] = 'This field is required'
 
-                    validationErrors.push(`${field.label} is required`)
                     hasValidationErrors = true
                 }
             })
