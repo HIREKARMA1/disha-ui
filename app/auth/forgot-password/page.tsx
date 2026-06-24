@@ -120,12 +120,12 @@ function ForgotPasswordPageContent() {
                 email: data.email,
                 user_type: userType
             })
-            
+
             setEmail(data.email)
             setCurrentStep('otp')
-            setCountdown(0) // No cooldown for first OTP request
-            setIsResendCooldown(false)
-            setResendCount(0) // Reset resend count for new email
+            setCountdown(120) // 2 minutes
+            setIsResendCooldown(true)
+            setResendCount(0)
             toast.success('OTP sent to your email address')
         } catch (error: any) {
             const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
@@ -138,39 +138,45 @@ function ForgotPasswordPageContent() {
     // Resend OTP
     const handleResendOtp = async () => {
         if (countdown > 0) return
-        
+
         setIsLoading(true)
         try {
             await apiClient.client.post('/auth/password-reset/request', {
                 email: email,
                 user_type: userType
             })
-            
+
             // Increment resend count
             const newResendCount = resendCount + 1
             setResendCount(newResendCount)
-            
-            // After 3 resends, start 5-minute cooldown countdown
+
+            // Maximum 3 resend attempts
             if (newResendCount >= 3) {
-                setCountdown(300) // 5 minutes = 300 seconds
+                setCountdown(600) // 10 minutes
                 setIsResendCooldown(true)
-                toast.success('OTP resent to your email address. Please wait 5 minutes before requesting again.')
-            } else {
-                // No cooldown for first 2 resends
-                setCountdown(0)
-                setIsResendCooldown(false)
-                toast.success('OTP resent to your email address')
+
+                toast.error(
+                    'Maximum OTP attempts reached. Please wait 10 minutes.'
+                )
+
+                return
             }
+
+            // First and second resend
+            setCountdown(120)
+            setIsResendCooldown(true)
+
+            toast.success('OTP resent to your email address')
         } catch (error: any) {
             const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
             toast.error(message)
-            
+
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
             if (message.includes('Too many OTP requests') || message.includes('Please wait')) {
                 // Extract minutes and seconds from error message
                 const minutesMatch = message.match(/(\d+)\s*minute/)
                 const secondsMatch = message.match(/(\d+)\s*second/)
-                
+
                 let remainingSeconds = 0
                 if (minutesMatch) {
                     remainingSeconds += parseInt(minutesMatch[1]) * 60
@@ -178,7 +184,7 @@ function ForgotPasswordPageContent() {
                 if (secondsMatch) {
                     remainingSeconds += parseInt(secondsMatch[1])
                 }
-                
+
                 if (remainingSeconds > 0) {
                     setCountdown(remainingSeconds)
                     setIsResendCooldown(true)
@@ -198,7 +204,7 @@ function ForgotPasswordPageContent() {
                 user_type: userType,
                 code: data.otp
             })
-            
+
             setOtp(data.otp)
             setCurrentStep('password')
             toast.success('OTP verified successfully')
@@ -220,7 +226,7 @@ function ForgotPasswordPageContent() {
                 code: otp,
                 new_password: data.password
             })
-            
+
             setCurrentStep('success')
             toast.success('Password reset successfully!')
         } catch (error: any) {
@@ -379,7 +385,7 @@ function ForgotPasswordPageContent() {
                                                                 newOtp[index] = value
                                                                 const updatedOtp = newOtp.join('').slice(0, 6)
                                                                 otpForm.setValue('otp', updatedOtp, { shouldValidate: true })
-                                                                
+
                                                                 // Auto-focus next input
                                                                 if (value && index < 5) {
                                                                     const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
@@ -404,11 +410,10 @@ function ForgotPasswordPageContent() {
                                                             }
                                                         }}
                                                         data-otp-index={index}
-                                                        className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
-                                                            otpForm.formState.errors.otp
+                                                        className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white dark:bg-gray-800 text-black dark:text-white ${otpForm.formState.errors.otp
                                                                 ? 'border-red-500 dark:border-red-400'
-                                                                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                                                        }`}
+                                                                : 'border-gray-300 dark:border-gray-600'
+                                                            }`}
                                                         autoFocus={index === 0}
                                                     />
                                                 ))}
@@ -445,25 +450,32 @@ function ForgotPasswordPageContent() {
 
                                         {/* Resend OTP Section */}
                                         <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+                                            <div className="text-center mb-3">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Remaining Attempts:
+                                                    <span className="font-semibold ml-1">
+                                                        {Math.max(0, 3 - resendCount)}/3
+                                                    </span>
+                                                </p>
+                                            </div>
                                             <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                                    Didn't receive the code?
+                                                <p className="text-xs sm:text-sm font-semibold text-white dark:text-white">
+                                                    You can resend the OTP in
                                                 </p>
                                                 <button
                                                     type="button"
                                                     onClick={handleResendOtp}
-                                                    disabled={countdown > 0 || isLoading}
-                                                    className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${
-                                                        countdown > 0 || isLoading
-                                                            ? 'text-gray-400 cursor-not-allowed'
-                                                            : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
-                                                    }`}
+                                                    disabled={countdown > 0 || resendCount >= 3 || isLoading}
+                                                    className={`text-xs sm:text-sm font-medium inline-flex items-center gap-1 transition-colors touch-manipulation ${countdown > 0 || isLoading
+                                                        ? 'text-gray-400 cursor-not-allowed'
+                                                        : 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'
+                                                        }`}
                                                 >
-                                                    <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} />
-                                                    {countdown > 0 
-                                                        ? countdown >= 60 
-                                                            ? `Resend in ${Math.floor(countdown / 60)}m ${countdown % 60}s`
-                                                            : `Resend in ${countdown}s`
+                                                    {/* <RotateCcw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${countdown > 0 ? 'animate-spin' : ''}`} /> */}
+                                                    {countdown > 0
+                                                        ? countdown >= 60
+                                                            ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
+                                                            : `${countdown}s`
                                                         : 'Resend OTP'}
                                                 </button>
                                             </div>
@@ -584,4 +596,3 @@ function ForgotPasswordPageContent() {
         </div>
     )
 }
-
