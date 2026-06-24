@@ -15,7 +15,6 @@ import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { apiClient } from '@/lib/api'
 import { UserType } from '@/types/auth'
-import { Suspense } from 'react'
 
 // Step 1: Email input schema
 const emailSchema = z.object({
@@ -595,12 +594,5 @@ function ForgotPasswordPageContent() {
                 </motion.div>
             </div>
         </div>
-    )
-}
-export default function ForgotPasswordPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <ForgotPasswordContent />
-        </Suspense>
     )
 }
