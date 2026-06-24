@@ -161,7 +161,7 @@ export function formatAppliedStudentCsvRow(
         formatMarksForCsv(student.twelfth_grade_percentage),
         appliedDate,
         student.expected_salary
-            ? `₹${student.expected_salary.toLocaleString()}`
+            ? `₹${student.expected_salary.toLocaleString('en-IN')}`
             : 'Not specified',
         student.resume || 'Not uploaded',
         student.technical_skills || 'Not specified',
