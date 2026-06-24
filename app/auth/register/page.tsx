@@ -18,7 +18,6 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
-import { Suspense } from 'react'
 // Union type for all possible form data
 type FormData = {
     email: string
@@ -1057,12 +1056,5 @@ function RegisterPageContent() {
                 </motion.div>
             </div>
         </div>
-    )
-}
-export default function RegisterPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <RegisterContent />
-        </Suspense>
     )
 }

@@ -108,10 +108,3 @@ function CreateAssessmentPageContent() {
     </AdminDashboardLayout>
   )
 }
-export default function CreateAssessmentPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <CreateAssessmentContent />
-    </Suspense>
-  )
-}

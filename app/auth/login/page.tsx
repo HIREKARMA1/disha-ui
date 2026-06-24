@@ -20,7 +20,6 @@ import { apiClient } from '@/lib/api'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
-import { Suspense } from 'react'
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -432,12 +431,5 @@ function LoginPageContent() {
                 </div>
             </Modal>
         </div>
-    )
-}
-export default function LoginPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <LoginContent />
-        </Suspense>
     )
 }

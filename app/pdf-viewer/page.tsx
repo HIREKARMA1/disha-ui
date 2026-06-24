@@ -385,10 +385,3 @@ function PDFViewerPageContent() {
     </div>
   )
 }
-export default function PDFViewerPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PDFViewerContent />
-    </Suspense>
-  )
-}
