@@ -26,7 +26,7 @@ import {
     Calendar,
     Filter,
     Users,
-    DollarSign,
+    IndianRupee,
     Building,
     Target,
     Clock
@@ -105,7 +105,7 @@ export function UniversityAnalyticsChart({
 
     const chartTabs = [
         { id: 'placement', label: 'Placement Overview', icon: PieChartIcon, color: 'text-blue-600' },
-        { id: 'salary', label: 'Salary Distribution', icon: DollarSign, color: 'text-green-600' },
+        { id: 'salary', label: 'Salary Distribution', icon: IndianRupee, color: 'text-green-600' },
         { id: 'trends', label: 'Historical Trends', icon: TrendingUp, color: 'text-orange-600' }
     ]
 
@@ -118,7 +118,11 @@ export function UniversityAnalyticsChart({
                         <div key={index} className="flex items-center space-x-2 mb-1">
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{entry.name}:</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">{entry.value.toLocaleString()}</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                {entry.dataKey === 'avgSalary'
+                                    ? `₹${Number(entry.value).toLocaleString('en-IN')}`
+                                    : entry.value.toLocaleString('en-IN')}
+                            </span>
                         </div>
                     ))}
                 </div>
@@ -221,7 +225,7 @@ export function UniversityAnalyticsChart({
     const renderSalaryChart = () => (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <DollarSign className="w-5 h-5 mr-2 text-green-600" />
+                <IndianRupee className="w-5 h-5 mr-2 text-green-600" />
                 Salary Distribution
             </h3>
             <div className="h-96">
@@ -263,13 +267,13 @@ export function UniversityAnalyticsChart({
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                     <p className="text-blue-600 text-sm font-medium mb-1">Average Salary</p>
                     <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                        ${(studentStats?.average_salary || 0).toLocaleString()}
+                        ₹{(studentStats?.average_salary || 0).toLocaleString('en-IN')}
                     </p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
                     <p className="text-purple-600 text-sm font-medium mb-1">Highest Package</p>
                     <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                        ${(studentStats?.highest_package || 0).toLocaleString()}
+                        ₹{(studentStats?.highest_package || 0).toLocaleString('en-IN')}
                     </p>
                 </div>
             </div>

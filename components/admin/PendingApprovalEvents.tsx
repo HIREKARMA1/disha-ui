@@ -10,7 +10,7 @@ import {
     Calendar,
     MapPin,
     Users,
-    DollarSign,
+    IndianRupee,
     AlertCircle,
     User,
     Building2
@@ -229,7 +229,7 @@ export function PendingApprovalEvents() {
                                         <span>Max {event.max_participants} participants</span>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <DollarSign className="w-4 h-4" />
+                                        <IndianRupee className="w-4 h-4" />
                                         <span>₹{event.registration_fee} registration fee</span>
                                     </div>
                                 </div>
