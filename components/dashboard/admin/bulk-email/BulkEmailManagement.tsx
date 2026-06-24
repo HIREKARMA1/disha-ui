@@ -221,16 +221,16 @@ export function BulkEmailManagement() {
         }
 
         setIsSending(true)
-        const toastId = toast.loading('Queuing bulk email...')
+        const toastId = toast.loading(`Sending bulk email to ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}...`)
         try {
-            await bulkEmailService.sendBulkEmail({
+            const result = await bulkEmailService.sendBulkEmail({
                 category,
                 status: statusFilter,
                 subject: subject.trim(),
                 body,
                 emails: recipients.map((recipient) => recipient.email),
             })
-            toast.success(`Bulk email queued for ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}`, { id: toastId })
+            toast.success(result.message, { id: toastId })
             setSubject('')
             setBody('')
             setRecipients([])

@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { apiClient } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-handler'
 import { UserType } from '@/types/auth'
 
 // Step 1: Email input schema
@@ -115,9 +116,8 @@ export default function ForgotPasswordPage() {
             setIsResendCooldown(false)
             setResendCount(0) // Reset resend count for new email
             toast.success('OTP sent to your email address')
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to send OTP. Please try again.'
-            toast.error(message)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Failed to send OTP. Please try again.'))
         } finally {
             setIsLoading(false)
         }
@@ -149,8 +149,8 @@ export default function ForgotPasswordPage() {
                 setIsResendCooldown(false)
                 toast.success('OTP resent to your email address')
             }
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to resend OTP. Please try again.'
+        } catch (error: unknown) {
+            const message = getErrorMessage(error, 'Failed to resend OTP. Please try again.')
             toast.error(message)
             
             // If it's a cooldown error (backend enforced), extract the remaining time and set countdown
@@ -190,9 +190,8 @@ export default function ForgotPasswordPage() {
             setOtp(data.otp)
             setCurrentStep('password')
             toast.success('OTP verified successfully')
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Invalid or expired OTP'
-            toast.error(message)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Invalid or expired OTP'))
         } finally {
             setIsLoading(false)
         }
@@ -211,9 +210,8 @@ export default function ForgotPasswordPage() {
             
             setCurrentStep('success')
             toast.success('Password reset successfully!')
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to reset password. Please try again.'
-            toast.error(message)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Failed to reset password. Please try again.'))
         } finally {
             setIsLoading(false)
         }

@@ -33,6 +33,7 @@ export interface BulkEmailSendResponse {
     message: string
     log_id: string
     recipient_count: number
+    queued?: boolean
 }
 
 export interface BulkEmailLog {

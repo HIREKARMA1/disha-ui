@@ -17,6 +17,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Modal, TermsModalContent, PrivacyModalContent } from '@/components/ui/modal'
 import { apiClient } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-handler'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
@@ -165,22 +166,16 @@ export default function LoginPage() {
                 default:
                     router.push('/dashboard')
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             let message = 'Login failed. Please try again.'
 
-            if (error.response) {
-                const status = error.response.status
-                const detail = error.response.data?.detail
-
-                if (status === 401) {
-                    message = 'Invalid password. Please try again.'
-                } else if (status === 404) {
-                    message = 'This email is not registered. Please create an account first.'
-                } else if (status === 400) {
-                    message = detail || 'Invalid login request.'
-                } else {
-                    message = detail || message
-                }
+            const e = error as { response?: { status?: number } }
+            if (e.response?.status === 401) {
+                message = 'Invalid password. Please try again.'
+            } else if (e.response?.status === 404) {
+                message = 'This email is not registered. Please create an account first.'
+            } else {
+                message = getErrorMessage(error, message)
             }
 
             toast.error(message)
