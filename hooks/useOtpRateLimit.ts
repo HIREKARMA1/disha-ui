@@ -115,7 +115,9 @@ export function useOtpRateLimit({
     if (!status) return
 
     const tick = () => {
-      const derived = deriveCountdownFromStatus(status)
+      const current = statusRef.current
+      if (!current) return
+      const derived = deriveCountdownFromStatus(current)
       setCountdown(derived.countdown)
       setIsLockedOut(derived.isLockedOut)
     }
@@ -161,20 +163,23 @@ export function useOtpRateLimit({
       return false
     }
 
-    const derived = status ? deriveCountdownFromStatus(status) : { countdown, isLockedOut }
-    if (derived.countdown > 0) {
+    const currentStatus = statusRef.current
+    const derived = currentStatus
+      ? deriveCountdownFromStatus(currentStatus)
+      : { countdown, isLockedOut }
+    if (derived.countdown > 0 || derived.isLockedOut) {
       return false
     }
 
-    const { remaining } = getRemainingAttempts(status)
-    if (remaining <= 0 || status?.can_request === false) {
+    const { remaining } = getRemainingAttempts(currentStatus)
+    if (remaining <= 0) {
       return false
     }
 
     sendInFlightRef.current = true
     setIsSending(true)
     return true
-  }, [countdown, isLockedOut, isSending, status])
+  }, [countdown, isLockedOut, isSending])
 
   const endSend = useCallback(() => {
     sendInFlightRef.current = false

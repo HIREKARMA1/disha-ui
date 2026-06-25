@@ -17,11 +17,7 @@ import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
-import {
-    clearPasswordResetSession,
-    loadPasswordResetSession,
-    savePasswordResetSession,
-} from '@/lib/password-reset-session'
+import { clearPasswordResetSession } from '@/lib/password-reset-session'
 import { UserType } from '@/types/auth'
 
 // Step 1: Email input schema
@@ -97,34 +93,10 @@ function ForgotPasswordPageContent() {
         resolver: zodResolver(passwordSchema)
     })
 
-    // Restore session after refresh so OTP cooldown/attempts persist
+    // Always start fresh on page load — do not restore email or step from session
     useEffect(() => {
-        const saved = loadPasswordResetSession()
-        if (!saved) return
-
-        setEmail(saved.email)
-        setUserType(saved.userType)
-        emailForm.setValue('email', saved.email)
-        if (saved.step === 'otp' || saved.step === 'password') {
-            setCurrentStep(saved.step)
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        clearPasswordResetSession()
     }, [])
-
-    // Persist reset-password progress for refresh handling
-    useEffect(() => {
-        if (currentStep === 'success') {
-            clearPasswordResetSession()
-            return
-        }
-        if (currentStep === 'email' && !email) {
-            clearPasswordResetSession()
-            return
-        }
-        if (email && (currentStep === 'otp' || currentStep === 'password')) {
-            savePasswordResetSession({ email, userType, step: currentStep })
-        }
-    }, [currentStep, email, userType])
 
     // Initialize user type from URL
     useEffect(() => {
@@ -146,14 +118,20 @@ function ForgotPasswordPageContent() {
 
     // Step 1: Submit email
     const onSubmitEmail = async (data: EmailFormData) => {
+        console.log('Email entered:', data.email)
+
         if (!otpRateLimit.beginSend()) return
 
         setIsLoading(true)
         try {
+            console.log('Sending OTP to:', data.email)
+
             const response = await apiClient.requestPasswordResetOtp({
                 email: data.email,
                 user_type: userType,
             })
+
+            console.log('OTP API Response:', response)
 
             setEmail(data.email)
             setCurrentStep('otp')
@@ -202,7 +180,6 @@ function ForgotPasswordPageContent() {
 
             setOtp(data.otp)
             setCurrentStep('password')
-            savePasswordResetSession({ email, userType, step: 'password' })
             toast.success('OTP verified successfully')
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, 'Invalid or expired OTP'))
@@ -222,6 +199,7 @@ function ForgotPasswordPageContent() {
                 new_password: data.password
             })
 
+            clearPasswordResetSession()
             setCurrentStep('success')
             toast.success('Password reset successfully!')
         } catch (error: any) {
