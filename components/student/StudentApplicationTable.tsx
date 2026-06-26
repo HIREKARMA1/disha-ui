@@ -9,14 +9,15 @@ import {
     Download,
     Calendar,
     Building,
-    DollarSign,
     Clock,
     CheckCircle,
     XCircle,
     UserCheck,
     FileText,
-    ClipboardList
+    ClipboardList,
+    Undo2
 } from 'lucide-react'
+import { formatAmountINR } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { ViewAssignmentModal } from './ViewAssignmentModal'
 import { ViewApplicationDetailsModal } from '@/components/university/ViewApplicationDetailsModal'
@@ -55,6 +56,7 @@ interface StudentApplicationTableProps {
     onSort: (field: string) => void
     onViewOfferLetter: (application: ApplicationData) => void
     onDownloadOfferLetter: (application: ApplicationData) => void
+    onWithdraw?: (application: ApplicationData) => void
     onStatusUpdate?: (application: ApplicationData) => void
     pagination: {
         page: number
@@ -72,6 +74,7 @@ export function StudentApplicationTable({
     sortOrder,
     onSort,
     onViewOfferLetter,
+    onWithdraw,
     onStatusUpdate,
     pagination,
     onPageChange
@@ -168,6 +171,8 @@ export function StudentApplicationTable({
                 return <XCircle className="w-4 h-4 text-red-500" />
             case 'pending':
                 return <Clock className="w-4 h-4 text-yellow-500" />
+            case 'withdrawn':
+                return <Undo2 className="w-4 h-4 text-gray-500" />
             default:
                 return <FileText className="w-4 h-4 text-gray-500" />
         }
@@ -185,6 +190,8 @@ export function StudentApplicationTable({
                 return 'text-red-600 dark:text-red-400'
             case 'pending':
                 return 'text-yellow-600 dark:text-yellow-400'
+            case 'withdrawn':
+                return 'text-gray-600 dark:text-gray-400'
             default:
                 return 'text-gray-600 dark:text-gray-400'
         }
@@ -202,10 +209,9 @@ export function StudentApplicationTable({
         }
     }
 
-    const formatSalary = (salary?: number) => {
-        if (!salary) return 'Not specified'
-        return `₹${salary.toLocaleString()}`
-    }
+    const formatSalary = formatAmountINR
+
+    const canWithdraw = (status: string) => ['applied', 'shortlisted', 'pending'].includes(status)
 
     const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <button
@@ -257,9 +263,6 @@ export function StudentApplicationTable({
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
                             <th className="px-6 py-4 text-left">
-                                <SortButton field="student_name">Applicant Name</SortButton>
-                            </th>
-                            <th className="px-6 py-4 text-left">
                                 <SortButton field="job_title">Job Title</SortButton>
                             </th>
                             <th className="px-6 py-4 text-left">
@@ -270,9 +273,6 @@ export function StudentApplicationTable({
                             </th>
                             <th className="px-6 py-4 text-left">
                                 <SortButton field="applied_at">Applied Date</SortButton>
-                            </th>
-                            <th className="px-6 py-4 text-left">
-                                <SortButton field="expected_salary">Expected Salary</SortButton>
                             </th>
                             <th className="px-6 py-4 text-center">Actions</th>
                         </tr>
@@ -288,21 +288,6 @@ export function StudentApplicationTable({
                                 onMouseEnter={() => setHoveredRow(application.id)}
                                 onMouseLeave={() => setHoveredRow(null)}
                             >
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                            {application.student_name ? application.student_name.charAt(0).toUpperCase() : 'S'}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {application.student_name || 'N/A'}
-                                            </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                Student ID: {application.student_id.slice(0, 8)}...
-                                            </p>
-                                        </div>
-                                    </div>
-                                </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
@@ -344,14 +329,6 @@ export function StudentApplicationTable({
                                         <Calendar className="w-4 h-4 text-gray-400" />
                                         <span className="text-gray-900 dark:text-white">
                                             {formatDate(application.applied_at)}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <DollarSign className="w-4 h-4 text-gray-400" />
-                                        <span className="text-gray-900 dark:text-white">
-                                            {formatSalary(application.expected_salary)}
                                         </span>
                                     </div>
                                 </td>
@@ -431,6 +408,20 @@ export function StudentApplicationTable({
                                             </>
                                         )}
 
+                                        {/* Student View - Withdraw Application */}
+                                        {!onStatusUpdate && onWithdraw && canWithdraw(application.status) && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onWithdraw(application)}
+                                                className="flex items-center gap-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400"
+                                                title="Withdraw Application"
+                                            >
+                                                <Undo2 className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Withdraw</span>
+                                            </Button>
+                                        )}
+
                                         {/* Student View - View Offer Letter (only for selected applications with offer letter) */}
                                         {!onStatusUpdate && application.status === 'selected' && application.offer_letter_url && (
                                             <Button
@@ -448,7 +439,7 @@ export function StudentApplicationTable({
 
 
                                         {/* Student View - No offer letter available yet */}
-                                        {!onStatusUpdate && !application.has_assignment && (application.status !== 'selected' || !application.offer_letter_url) && (
+                                        {!onStatusUpdate && !application.has_assignment && (application.status !== 'selected' || !application.offer_letter_url) && application.status !== 'withdrawn' && (
                                             <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
                                                 {application.status === 'selected' ? (
                                                     <span className="text-xs">Offer letter pending</span>
