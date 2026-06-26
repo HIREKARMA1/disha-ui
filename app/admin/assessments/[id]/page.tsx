@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ChevronLeft, Clock, Users, AlertCircle } from "lucide-react";
+import { ChevronLeft, Clock, Users, AlertCircle, ChevronDown, ChevronUp, Trash2, Sparkles, CheckCircle2, HelpCircle, RefreshCw } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
 export default function AssessmentDetailsPage() {
   const router = useRouter();
@@ -12,8 +13,14 @@ export default function AssessmentDetailsPage() {
   const [assessment, setAssessment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
-  const [generatingToken, setGeneratingToken] = useState(false);
-  const [studentEmail, setStudentEmail] = useState("");
+  // const [generatingToken, setGeneratingToken] = useState(false);
+  // const [studentEmail, setStudentEmail] = useState("");
+
+  const [questionsData, setQuestionsData] = useState<any>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [replenishing, setReplenishing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [expandedRounds, setExpandedRounds] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     fetchAssessment();
@@ -32,11 +39,87 @@ export default function AssessmentDetailsPage() {
         const data = await response.json();
         setAssessment(data);
         fetchStats();
+        if (data.solviq_assessment_id) {
+          fetchQuestions(data.solviq_assessment_id);
+        }
       }
     } catch (error) {
       console.error("Error fetching assessment:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchQuestions = async (packageId: string) => {
+    if (!packageId || packageId.startsWith("SOLVIQ-")) return;
+    try {
+      setLoadingQuestions(true);
+      const data = await apiClient.get(`/disha/assessments/${packageId}/questions-answers`);
+      setQuestionsData(data);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  const toggleRoundExpanded = (roundNumber: number) => {
+    setExpandedRounds(prev => ({
+      ...prev,
+      [roundNumber]: !prev[roundNumber]
+    }));
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm("Are you sure you want to delete this question?")) return;
+    try {
+      await apiClient.delete(`/disha/assessments/questions/${questionId}`);
+      alert("Question deleted successfully!");
+      if (assessment?.solviq_assessment_id) {
+        fetchQuestions(assessment.solviq_assessment_id);
+      }
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      alert("Error deleting question");
+    }
+  };
+
+  const handleReplenishQuestions = async () => {
+    if (!assessment?.solviq_assessment_id) return;
+    try {
+      setReplenishing(true);
+      const res = await apiClient.post(`/disha/assessments/${assessment.solviq_assessment_id}/fill-questions`, {});
+      alert(`Questions replenished! Total questions added: ${res.total_questions_added || 0}`);
+      fetchQuestions(assessment.solviq_assessment_id);
+    } catch (error) {
+      console.error("Error replenishing questions:", error);
+      alert("Error replenishing questions");
+    } finally {
+      setReplenishing(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      setPublishing(true);
+      const response = await fetch(`/api/v1/admin/assessments/${assessment_id}/publish`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+
+      if (response.ok) {
+        alert("Assessment published to SOLVIQ successfully!");
+        fetchAssessment();
+      } else {
+        alert("Failed to publish assessment");
+      }
+    } catch (error) {
+      console.error("Error publishing assessment:", error);
+      alert("Error publishing assessment");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -57,6 +140,7 @@ export default function AssessmentDetailsPage() {
     }
   };
 
+  /*
   const generateStudentToken = async () => {
     if (!studentEmail) {
       alert("Please enter student email");
@@ -92,6 +176,7 @@ export default function AssessmentDetailsPage() {
       setGeneratingToken(false);
     }
   };
+  */
 
   if (loading) {
     return <div className="text-center py-12">Loading assessment...</div>;
@@ -131,14 +216,23 @@ export default function AssessmentDetailsPage() {
               <p className="text-gray-600 mt-2">{assessment.disha_assessment_id}</p>
               <p className="text-gray-700 mt-4">{assessment.description}</p>
             </div>
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-3">
               <span className={`px-4 py-2 rounded-full font-semibold ${getStatusColor(assessment.status)}`}>
                 {assessment.status}
               </span>
-              {assessment.is_published_to_solviq && (
-                <div className="mt-3 text-sm text-green-600 font-medium">
+              {assessment.is_published_to_solviq && !assessment.solviq_assessment_id?.startsWith("SOLVIQ-") ? (
+                <div className="text-sm text-green-600 font-medium flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   ✓ Published to SOLVIQ
                 </div>
+              ) : (
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow transition-all disabled:opacity-50"
+                >
+                  {publishing ? "Publishing..." : "Publish to SOLVIQ"}
+                </button>
               )}
             </div>
           </div>
@@ -188,35 +282,181 @@ export default function AssessmentDetailsPage() {
             <div className="bg-white rounded-lg p-6 border mb-8">
               <h2 className="text-2xl font-bold mb-6">Assessment Rounds ({assessment.rounds.length})</h2>
               <div className="space-y-4">
-                {assessment.rounds.map((round: any) => (
-                  <div key={round.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-block w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                            {round.round_number}
-                          </span>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{round.round_name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {round.round_type} • {round.duration_minutes} min • {round.config.num_questions} questions
-                            </p>
+                {assessment.rounds.map((round: any) => {
+                  const solviqRound = questionsData?.rounds?.find((r: any) => r.round_number === round.round_number);
+                  const expectedCount = round.config?.num_questions || 0;
+                  const currentCount = solviqRound?.questions?.length || 0;
+                  const isShort = expectedCount > 0 && currentCount < expectedCount;
+
+                  return (
+                    <div key={round.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="inline-block w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
+                              {round.round_number}
+                            </span>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{round.round_name}</h3>
+                              <p className="text-sm text-gray-600">
+                                {round.round_type} • {round.duration_minutes} min • {expectedCount} questions
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700">
-                          Difficulty: <span className="font-semibold">{round.config.difficulty}</span>
-                        </p>
-                        {round.passing_percentage && (
-                          <p className="text-sm text-gray-600">
-                            Pass: {round.passing_percentage}%
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-700">
+                            Difficulty: <span className="font-semibold">{round.config?.difficulty}</span>
                           </p>
-                        )}
+                          {round.passing_percentage && (
+                            <p className="text-sm text-gray-600">
+                              Pass: {round.passing_percentage}%
+                            </p>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Questions Management Block */}
+                      {assessment.is_published_to_solviq && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <div className="flex justify-between items-center flex-wrap gap-2">
+                            <button
+                              onClick={() => toggleRoundExpanded(round.round_number)}
+                              className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                              {expandedRounds[round.round_number] ? (
+                                <>
+                                  <ChevronUp size={16} />
+                                  Hide Questions ({currentCount})
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown size={16} />
+                                  View & Configure Questions ({currentCount})
+                                </>
+                              )}
+                            </button>
+
+                            {/* Missing questions warning & replenishment button */}
+                            {solviqRound && isShort && (
+                              <div className="flex items-center gap-3">
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                                  <AlertCircle size={14} />
+                                  {expectedCount - currentCount} questions missing
+                                </span>
+                                <button
+                                  onClick={handleReplenishQuestions}
+                                  disabled={replenishing}
+                                  className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded text-xs font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 shadow-sm transition-all"
+                                >
+                                  {replenishing ? (
+                                    <RefreshCw size={12} className="animate-spin" />
+                                  ) : (
+                                    <Sparkles size={12} />
+                                  )}
+                                  Replenish
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Expanded questions list */}
+                          {expandedRounds[round.round_number] && (
+                            <div className="mt-4 space-y-4">
+                              {loadingQuestions ? (
+                                <div className="text-center py-6 text-sm text-gray-500 flex items-center justify-center gap-2">
+                                  <RefreshCw size={16} className="animate-spin text-blue-600" />
+                                  Loading questions...
+                                </div>
+                              ) : !solviqRound?.questions || solviqRound.questions.length === 0 ? (
+                                <div className="text-center py-8 text-sm text-gray-500 border border-dashed rounded-lg bg-gray-50 flex flex-col items-center gap-2">
+                                  <HelpCircle size={24} className="text-gray-400" />
+                                  <span>No questions generated yet for this round.</span>
+                                  <button
+                                    onClick={handleReplenishQuestions}
+                                    disabled={replenishing}
+                                    className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 shadow"
+                                  >
+                                    {replenishing ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                    Generate Questions
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  {solviqRound.questions.map((question: any, qIdx: number) => (
+                                    <div key={question.question_id || qIdx} className="bg-gray-50 border border-gray-200 rounded-lg p-4 relative group hover:border-gray-300 transition-all">
+                                      {/* Delete button */}
+                                      <button
+                                        onClick={() => handleDeleteQuestion(question.question_id)}
+                                        className="absolute top-4 right-4 text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Delete Question"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+
+                                      <div className="flex items-start gap-2 pr-8">
+                                        <span className="font-bold text-gray-400 min-w-[20px]">{qIdx + 1}.</span>
+                                        <div className="flex-1">
+                                          <p className="font-medium text-gray-900 leading-relaxed">{question.question_text}</p>
+                                          
+                                          {/* Render Options if MCQ */}
+                                          {question.question_type === "mcq" && question.options && (
+                                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                              {question.options.map((option: string, oIdx: number) => {
+                                                const isCorrect = option === question.correct_answer;
+                                                return (
+                                                  <div
+                                                    key={oIdx}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all ${
+                                                      isCorrect
+                                                        ? "bg-green-50 border-green-200 text-green-800 font-medium"
+                                                        : "bg-white border-gray-200 text-gray-700"
+                                                    }`}
+                                                  >
+                                                    {isCorrect ? (
+                                                      <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
+                                                    ) : (
+                                                      <span className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] text-gray-400 font-bold flex-shrink-0">
+                                                        {String.fromCharCode(65 + oIdx)}
+                                                      </span>
+                                                    )}
+                                                    <span>{option}</span>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+
+                                          {/* Explanations / Answers for non-MCQ */}
+                                          {question.question_type !== "mcq" && (
+                                            <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+                                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Correct Answer</p>
+                                              <p className="text-sm font-medium text-gray-800 mt-1">{question.correct_answer}</p>
+                                            </div>
+                                          )}
+
+                                          {question.explanation && (
+                                            <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-gray-100 flex items-start gap-2">
+                                              <HelpCircle size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                                              <div>
+                                                <span className="font-semibold text-gray-700">Explanation: </span>
+                                                {question.explanation}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -251,6 +491,7 @@ export default function AssessmentDetailsPage() {
           {/* Sidebar */}
           <div>
             {/* Student Access */}
+            {/*
             {assessment.is_published_to_solviq && (
               <div className="bg-white rounded-lg p-6 border mb-8">
                 <h3 className="text-lg font-bold mb-4">Generate Student Token</h3>
@@ -275,6 +516,7 @@ export default function AssessmentDetailsPage() {
                 </div>
               </div>
             )}
+            */}
 
             {/* Passing Criteria */}
             {assessment.passing_criteria && (
