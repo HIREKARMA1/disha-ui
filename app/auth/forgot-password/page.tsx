@@ -210,6 +210,11 @@ function ForgotPasswordPageContent() {
         }
     }
 
+    // ADD THESE 3 LINES HERE
+    console.log("isLockedOut:", otpRateLimit.isLockedOut)
+    console.log("remainingAttempts:", otpRateLimit.remainingAttempts)
+    console.log("status:", otpRateLimit.status)
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
             <Navbar variant="solid" />
@@ -384,8 +389,8 @@ function ForgotPasswordPageContent() {
                                                         }}
                                                         data-otp-index={index}
                                                         className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white dark:bg-gray-800 text-black dark:text-white ${otpForm.formState.errors.otp
-                                                                ? 'border-red-500 dark:border-red-400'
-                                                                : 'border-gray-300 dark:border-gray-600'
+                                                            ? 'border-red-500 dark:border-red-400'
+                                                            : 'border-gray-300 dark:border-gray-600'
                                                             }`}
                                                         autoFocus={index === 0}
                                                     />
@@ -415,15 +420,28 @@ function ForgotPasswordPageContent() {
                                         />
 
                                         {/* Information Box */}
-                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                                            <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
-                                                Code sent to: <strong>{email}</strong>
-                                            </p>
-                                            <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                                                The code will expire in 2 minutes
-                                            </p>
-                                        </div>
+                                        {otpRateLimit.isLockedOut ? (
+                                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                                                <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                                                    Your OTP request limit has been reached.
+                                                </p>
 
+                                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                                    Please try again after{" "}
+                                                    <strong>{otpRateLimit.formattedTimeRemaining}</strong>
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                                                <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
+                                                    Code sent to: <strong>{email}</strong>
+                                                </p>
+
+                                                <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                                                    The code will expire in 2 minutes
+                                                </p>
+                                            </div>
+                                        )}
                                         {/* Verify Button */}
                                         <Button
                                             type="submit"
