@@ -14,6 +14,7 @@ import { toast } from 'react-hot-toast'
 import { useIndustries } from '@/hooks/useLookup'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseEducationField } from '@/lib/parseEducationField'
+import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 
 // Fallback industry options (used if lookup API returns empty)
 const fallbackIndustryOptions = [
@@ -224,7 +225,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         : fallbackIndustryOptions
 
     const [isLoading, setIsLoading] = useState(false)
-    const [currentLocation, setCurrentLocation] = useState('')
+    const [jobLocationLabel, setJobLocationLabel] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [uploadingLogo, setUploadingLogo] = useState(false)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -443,6 +444,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 contact_designation: (job.contact_designation && job.contact_designation.trim()) || ''
             })
 
+            setJobLocationLabel(locationArray[0] || locationArray.join(', ') || '')
+
             // Log the form data after setting to verify values
             console.log('🔍 Form Data After Setting:', {
                 industry: normalizedIndustry,
@@ -488,23 +491,6 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (validationErrors[field]) {
             setValidationErrors(prev => ({ ...prev, [field]: '' }))
         }
-    }
-
-    const addLocation = () => {
-        if (currentLocation.trim() && !formData.location.includes(currentLocation.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                location: [...prev.location, currentLocation.trim()]
-            }))
-            setCurrentLocation('')
-        }
-    }
-
-    const removeLocation = (locationToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            location: prev.location.filter(location => location !== locationToRemove)
-        }))
     }
 
     const handleLogoUpload = async (file: File) => {
@@ -582,7 +568,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (!formData.title.trim()) errors.title = 'Job title is required'
         if (!formData.description.trim()) errors.description = 'Job description is required'
         if (!formData.job_type) errors.job_type = 'Job type is required'
-        if (formData.location.length === 0) errors.location = 'At least one location is required'
+        if (formData.location.length === 0) errors.location = 'Please select a job location from the suggestions'
 
         // Validate company information for university-created jobs
         if (isUniversity && !formData.company_name.trim()) {
@@ -1141,44 +1127,29 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Location *
+                                            Job Location *
                                         </label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={currentLocation}
-                                                onChange={(e) => setCurrentLocation(e.target.value)}
-                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
-                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
-                                            />
-                                            <Button type="button" onClick={addLocation} variant="outline">
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                        {validationErrors.location && (
-                                            <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
-                                        )}
+                                        <GoogleLocationAutocomplete
+                                            value={jobLocationLabel || formData.location[0] || ''}
+                                            placeholder="Search for city, town, or locality"
+                                            mode="locality"
+                                            required
+                                            error={validationErrors.location}
+                                            onChange={(place) => {
+                                                const label = place.locality || place.city || place.formattedAddress
+                                                setJobLocationLabel(label)
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    location: label ? [label] : [],
+                                                }))
+                                                setValidationErrors((prev) => {
+                                                    const next = { ...prev }
+                                                    delete next.location
+                                                    return next
+                                                })
+                                            }}
+                                        />
                                     </div>
-
-                                    {formData.location.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {formData.location.map((location, index) => (
-                                                <span
-                                                    key={index}
-                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
-                                                >
-                                                    {location}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeLocation(location)}
-                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

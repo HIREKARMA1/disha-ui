@@ -29,6 +29,8 @@ import { profileService, type StudentProfile, type ProfileUpdateData, type Profi
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
+import { buildLocationLabel } from '@/lib/googlePlacesUtils'
 import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
@@ -1240,10 +1242,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+    const [locationError, setLocationError] = useState<string>('')
 
     const getFieldErrors = () => {
         const errors: Record<string, string> = {}
-        const alphaOnlyFields = ['name', 'city', 'state', 'country']
+        const alphaOnlyFields = ['name']
 
         alphaOnlyFields.forEach(field => {
             const value = formData[field]
@@ -1416,6 +1419,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
 
             if (!cleanedFormData.resume) {
                 validationErrors.push('Resume is required. Upload it in the Resume section below.')
+                hasValidationErrors = true
+            }
+
+            if (locationError) {
+                validationErrors.push(locationError)
                 hasValidationErrors = true
             }
 
@@ -1798,6 +1806,31 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             )
         }
 
+        if (field === 'city') {
+            const locationValue = formData.city || ''
+            return (
+                <GoogleLocationAutocomplete
+                    value={locationValue}
+                    placeholder="Search for company, building, address, city, town, or locality"
+                    mode="all"
+                    error={locationError}
+                    onChange={(place) => {
+                        setLocationError('')
+                        setFormData({
+                            ...formData,
+                            city: place.formattedAddress || '',
+                            state: place.state || '',
+                            country: place.country || '',
+                        })
+                    }}
+                />
+            )
+        }
+
+        if (field === 'state' || field === 'country') {
+            return null
+        }
+
         // Handle location preferences field (textarea for multiple locations)
         if (field === 'location_preferences') {
             return (
@@ -2176,13 +2209,18 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             ) : (
                 // All Other Sections - Simple Grid Layout
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {section.fields.map((field) => {
-                        // Map display field names to proper labels
+                    {section.fields
+                        .filter((field) => section.id !== 'basic' || (field !== 'state' && field !== 'country'))
+                        .map((field) => {
                         const getFieldLabel = (fieldName: string) => {
                             if (fieldName === '10th_certificate') return '10th Certificate'
                             if (fieldName === '12th_certificate') return '12th Certificate'
+                            if (fieldName === 'city') return 'Location'
                             return fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                         }
+
+                        const fieldContent = renderField(field)
+                        if (!fieldContent) return null
 
                         return (
                             <div

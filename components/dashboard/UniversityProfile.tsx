@@ -35,6 +35,7 @@ import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { z } from "zod";
 import toast from 'react-hot-toast'
+import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -980,8 +981,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             }
 
             // Address validation
-            if (formData.address && formData.address.trim().length < 10) {
-                errors.address = 'Address must be at least 10 characters long'
+            if (!formData.address || !String(formData.address).trim()) {
+                errors.address = 'Address is required. Please select a location from the suggestions.'
                 hasValidationErrors = true
             }
         }
@@ -1106,8 +1107,28 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
+        if (field === 'address') {
+            return (
+                <div>
+                    <GoogleLocationAutocomplete
+                        value={value as string}
+                        placeholder="Search for your institution address"
+                        mode="address"
+                        required
+                        error={fieldErrors[field]}
+                        onChange={(place) => {
+                            setFormData({ ...formData, address: place.formattedAddress })
+                            if (fieldErrors[field]) {
+                                setFieldErrors({ ...fieldErrors, [field]: '' })
+                            }
+                        }}
+                    />
+                </div>
+            )
+        }
+
         // Handle textarea fields
-        if (field.includes('bio') || field.includes('address') || field.includes('courses_offered')) {
+        if (field.includes('bio') || field.includes('courses_offered')) {
             return (
                 <div>
                     <Textarea
