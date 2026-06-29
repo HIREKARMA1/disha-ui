@@ -224,9 +224,8 @@ function ForgotPasswordPageContent() {
 
             setCurrentStep('success')
             toast.success('Password reset successfully!')
-        } catch (error: any) {
-            const message = error.response?.data?.detail || 'Failed to reset password. Please try again.'
-            toast.error(message)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Failed to reset password. Please try again.'))
         } finally {
             setIsLoading(false)
         }
