@@ -22,7 +22,8 @@ import {
     AlertTriangle,
     Briefcase,
     Brain,
-    Library
+    Library,
+    Mail
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -123,6 +124,13 @@ const navItems: NavItem[] = [
         icon: Calendar,
         description: 'Manage events',
         color: 'from-rose-500 to-pink-600'
+    },
+    {
+        label: 'Bulk Email',
+        href: '/dashboard/admin/bulk-email',
+        icon: Mail,
+        description: 'Send bulk emails to users',
+        color: 'from-sky-500 to-blue-600'
     },
     {
         label: 'System Monitor',
