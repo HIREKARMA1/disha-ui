@@ -80,23 +80,23 @@ export function deriveCountdownFromStatus(status: OtpRateLimitStatus): {
   isLockedOut: boolean
 } {
   const lockoutRemaining = status.is_locked_out
-    ? Math.max(status.remaining_lockout_seconds, remainingSecondsUntil(status.lockout_until))
+    ? status.lockout_until
+      ? remainingSecondsUntil(status.lockout_until)
+      : status.remaining_lockout_seconds
     : 0
 
-  let cooldownRemaining = status.is_locked_out
-    ? 0
-    : Math.max(status.remaining_cooldown_seconds, remainingSecondsUntil(status.cooldown_until))
-
-  if (
-    cooldownRemaining === 0 &&
-    !status.is_locked_out &&
-    status.last_otp_sent_at &&
-    status.otp_request_count > 0
-  ) {
-    const sentAt = new Date(status.last_otp_sent_at).getTime()
-    if (!Number.isNaN(sentAt)) {
-      const cooldownEnd = sentAt + status.cooldown_seconds * 1000
-      cooldownRemaining = Math.max(0, Math.ceil((cooldownEnd - Date.now()) / 1000))
+  let cooldownRemaining = 0
+  if (!status.is_locked_out) {
+    if (status.cooldown_until) {
+      cooldownRemaining = remainingSecondsUntil(status.cooldown_until)
+    } else if (status.last_otp_sent_at && status.otp_request_count > 0) {
+      const sentAt = new Date(status.last_otp_sent_at).getTime()
+      if (!Number.isNaN(sentAt)) {
+        const cooldownEnd = sentAt + status.cooldown_seconds * 1000
+        cooldownRemaining = Math.max(0, Math.ceil((cooldownEnd - Date.now()) / 1000))
+      }
+    } else {
+      cooldownRemaining = status.remaining_cooldown_seconds
     }
   }
 
