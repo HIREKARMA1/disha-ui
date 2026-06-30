@@ -30,7 +30,6 @@ export const config = {
   googleMaps: {
     apiKey:
       process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-      process.env.REACT_APP_GOOGLE_MAPS_API_KEY ||
       '',
   },
   
