@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import apiClient from '@/lib/api'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { useBranches } from '@/hooks/useLookup'
 
 // Degree options (Full list for fallback)
 export const degreeOptions = [
@@ -32,41 +33,6 @@ export const degreeOptions = [
     { value: 'Other', label: 'Other' }
 ]
 
-// Branch options (Full list for fallback)
-export const branchOptions = [
-    { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
-    { value: 'Electrical Engineering', label: 'Electrical Engineering' },
-    { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
-    { value: 'Civil Engineering', label: 'Civil Engineering' },
-    { value: 'Chemical Engineering', label: 'Chemical Engineering' },
-    { value: 'Aerospace Engineering', label: 'Aerospace Engineering' },
-    { value: 'Biotechnology', label: 'Biotechnology' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
-    { value: 'Machine Learning', label: 'Machine Learning' },
-    { value: 'Cybersecurity', label: 'Cybersecurity' },
-    { value: 'Software Engineering', label: 'Software Engineering' },
-    { value: 'Business Administration', label: 'Business Administration' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Operations Management', label: 'Operations Management' },
-    { value: 'International Business', label: 'International Business' },
-    { value: 'Economics', label: 'Economics' },
-    { value: 'Mathematics', label: 'Mathematics' },
-    { value: 'Physics', label: 'Physics' },
-    { value: 'Chemistry', label: 'Chemistry' },
-    { value: 'Biology', label: 'Biology' },
-    { value: 'English Literature', label: 'English Literature' },
-    { value: 'History', label: 'History' },
-    { value: 'Psychology', label: 'Psychology' },
-    { value: 'Sociology', label: 'Sociology' },
-    { value: 'Political Science', label: 'Political Science' },
-    { value: 'Other', label: 'Other' }
-]
-
 interface LocalLicense {
     id: string
     batch: string
@@ -87,6 +53,8 @@ export function CreateStudentModal({
     onClose,
     onSubmit
 }: CreateStudentModalProps) {
+    const { data: branches } = useBranches({ limit: 1000 })
+    const branchOptions = branches.map((branch) => ({ value: branch.name, label: branch.name }))
     const [formData, setFormData] = useState<CreateStudentRequest>({
         name: '',
         email: '',

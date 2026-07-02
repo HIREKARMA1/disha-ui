@@ -456,6 +456,7 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                         <ResumePreview
                             resumeData={downloadingResume.content}
                             templateId={downloadingResume.template_id}
+                            settings={downloadingResume.settings}
                             onReady={handlePreviewReady}
                         />
                     </div>

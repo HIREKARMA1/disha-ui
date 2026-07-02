@@ -2,74 +2,40 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, Eye, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { resumeService } from '@/services/resumeService'
-
-interface TemplateInfo {
-    id: string
-    name: string
-    description: string
-    category: string
-    preview_image?: string
-    structure?: any
-    layout?: string
-    font_family?: string
-    font_size?: string
-    sections?: number
-}
+import { Search, Check } from 'lucide-react'
+import {
+    getTemplateList,
+    TemplateSlug,
+    TEMPLATES,
+} from './templates/TemplateRegistry'
+import { TemplateThumbnail } from './templates/TemplateThumbnail'
 
 interface TemplateSelectionProps {
     onTemplateSelect: (templateId: string) => void
 }
 
 export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) {
-    const [templates, setTemplates] = useState<TemplateInfo[]>([])
-    const [filteredTemplates, setFilteredTemplates] = useState<TemplateInfo[]>([])
+    const templates = getTemplateList()
+    const [filteredTemplates, setFilteredTemplates] = useState(templates)
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
     const [searchQuery, setSearchQuery] = useState('')
-    const [loading, setLoading] = useState(true)
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
-    const [categories, setCategories] = useState([
-        { id: 'all', name: 'All Templates', count: 0 },
-        { id: 'professional', name: 'Professional', count: 0 },
-        { id: 'creative', name: 'Creative', count: 0 },
-        { id: 'minimalist', name: 'Minimalist', count: 0 },
-        { id: 'executive', name: 'Executive', count: 0 }
-    ])
 
-    useEffect(() => {
-        const loadTemplates = async () => {
-            try {
-                const response = await resumeService.getTemplates()
-                setTemplates(response.templates)
-                setFilteredTemplates(response.templates)
-
-                // Update category counts
-                const updatedCategories = categories.map(cat => ({
-                    ...cat,
-                    count: cat.id === 'all' ? response.templates.length : response.templates.filter((t: TemplateInfo) => t.category === cat.id).length
-                }))
-                setCategories(updatedCategories)
-            } catch (error) {
-                console.error('Error loading templates:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        loadTemplates()
-    }, [])
+    const categories = [
+        { id: 'all', name: 'All Templates', count: templates.length },
+        { id: 'professional', name: 'Professional', count: templates.filter(t => t.category === 'professional').length },
+        { id: 'creative', name: 'Creative', count: templates.filter(t => t.category === 'creative').length },
+        { id: 'minimalist', name: 'Minimalist', count: templates.filter(t => t.category === 'minimalist').length },
+        { id: 'executive', name: 'Executive', count: templates.filter(t => t.category === 'executive').length }
+    ]
 
     useEffect(() => {
         let filtered = templates
 
-        // Filter by category
         if (selectedCategory !== 'all') {
             filtered = filtered.filter(template => template.category === selectedCategory)
         }
 
-        // Filter by search query
         if (searchQuery) {
             filtered = filtered.filter(template =>
                 template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,11 +44,10 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
         }
 
         setFilteredTemplates(filtered)
-    }, [templates, selectedCategory, searchQuery])
+    }, [selectedCategory, searchQuery, templates])
 
     const handleTemplateSelect = (templateId: string) => {
         setSelectedTemplate(templateId)
-        // Add a small delay for visual feedback
         setTimeout(() => {
             onTemplateSelect(templateId)
         }, 300)
@@ -103,24 +68,12 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
         }
     }
 
-    const getTemplateCardColor = (templateId: string) => {
-        const colors = [
-            'bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200',
-            'bg-gradient-to-br from-green-50 to-green-100 border border-green-200',
-            'bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200',
-            'bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200',
-            'bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200'
-        ]
-        const index = parseInt(templateId) - 1
-        return colors[index % colors.length]
-    }
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-            </div>
-        )
+    const getTemplateCardColor = (templateId: TemplateSlug) => {
+        const accent = TEMPLATES[templateId]?.accentColor || '#3b82f6'
+        return {
+            background: `linear-gradient(135deg, ${accent}08 0%, ${accent}18 100%)`,
+            borderColor: `${accent}30`,
+        }
     }
 
     return (
@@ -129,7 +82,6 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
             {/* Search and Filters */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row gap-4">
-                    {/* Search */}
                     <div className="w-full sm:flex-1 relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
@@ -141,9 +93,7 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
                         />
                     </div>
 
-                    {/* Category Filter */}
                     <div className="w-full sm:w-auto flex items-center space-x-2">
-                        {/* <Filter className="w-4 h-4 text-gray-400" /> */}
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
@@ -169,18 +119,16 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
                         transition={{ delay: index * 0.1 }}
                         className={`rounded-xl shadow-lg border transition-all duration-200 cursor-pointer hover:shadow-xl overflow-hidden ${selectedTemplate === template.id
                             ? 'ring-4 ring-primary-500 ring-opacity-50'
-                            : 'hover:scale-105'
+                            : 'hover:scale-[1.02]'
                             }`}
+                        style={getTemplateCardColor(template.id as TemplateSlug)}
                         onClick={() => handleTemplateSelect(template.id)}
                     >
-                        {/* Card Background with Different Colors */}
-                        <div className={`p-4 ${getTemplateCardColor(template.id)}`}>
-                            {/* Preview Image Container */}
-                            <div className="relative bg-white rounded-lg shadow-inner overflow-hidden">
-                                <img
-                                    src={template.preview_image}
-                                    alt={template.name}
-                                    className="w-full h-80 sm:h-96 lg:h-[28rem] xl:h-[32rem] object-contain rounded-lg"
+                        <div className="p-4">
+                            <div className="relative">
+                                <TemplateThumbnail
+                                    templateId={template.id as TemplateSlug}
+                                    selected={selectedTemplate === template.id}
                                 />
                                 {selectedTemplate === template.id && (
                                     <div className="absolute top-3 right-3 bg-primary-500 text-white rounded-full p-2 shadow-lg">
@@ -189,10 +137,9 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
                                 )}
                             </div>
 
-                            {/* Template Info */}
-                            <div className="mt-4 p-3 bg-white/90 backdrop-blur-sm rounded-lg">
+                            <div className="mt-4 p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                                         {template.name}
                                     </h3>
                                     <span className={`px-2 py-1 text-xs font-medium rounded-full w-fit ${getCategoryColor(template.category)}`}>
@@ -200,12 +147,11 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
                                     </span>
                                 </div>
 
-                                <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-1">
+                                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2 line-clamp-2">
                                     {template.description}
                                 </p>
 
-                                {/* Template Details */}
-                                <div className="space-y-1 text-xs text-gray-500">
+                                <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
                                     <div className="flex items-center space-x-2">
                                         <span>Layout:</span>
                                         <span className="font-medium">{template.layout}</span>
@@ -225,7 +171,6 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
                 ))}
             </div>
 
-            {/* No Results */}
             {filteredTemplates.length === 0 && (
                 <div className="text-center py-12">
                     <div className="text-gray-400 dark:text-gray-500 mb-4">

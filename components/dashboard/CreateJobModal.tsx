@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,40 +11,11 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
-import { useIndustries } from '@/hooks/useLookup'
+import { useIndustries, useBranches } from '@/hooks/useLookup'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
+import { LookupSelect } from '@/components/ui/lookup-select'
+import { lookupService } from '@/services/lookupService'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
-
-// Fallback industry options (used if lookup API returns empty)
-const fallbackIndustryOptions = [
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Manufacturing', label: 'Manufacturing' },
-    { value: 'Retail', label: 'Retail' },
-    { value: 'Real Estate', label: 'Real Estate' },
-    { value: 'Consulting', label: 'Consulting' },
-    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-    { value: 'Telecommunications', label: 'Telecommunications' },
-    { value: 'Automotive', label: 'Automotive' },
-    { value: 'Aerospace', label: 'Aerospace' },
-    { value: 'Energy', label: 'Energy' },
-    { value: 'Government', label: 'Government' },
-    { value: 'Non-Profit', label: 'Non-Profit' },
-    { value: 'E-commerce', label: 'E-commerce' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Insurance', label: 'Insurance' },
-    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-    { value: 'Food & Beverage', label: 'Food & Beverage' },
-    { value: 'Transportation', label: 'Transportation' },
-    { value: 'Logistics', label: 'Logistics' },
-    { value: 'Hospitality', label: 'Hospitality' },
-    { value: 'Agriculture', label: 'Agriculture' },
-    { value: 'Construction', label: 'Construction' },
-    { value: 'Other', label: 'Other' }
-]
 
 // Degree options (same as student modal)
 const degreeOptions = [
@@ -66,41 +37,6 @@ const degreeOptions = [
     { value: 'Post Graduate Diploma', label: 'Post Graduate Diploma (PGD)' },
     { value: 'Doctor of Philosophy', label: 'Doctor of Philosophy (Ph.D)' },
     { value: 'Any', label: 'Any' }
-]
-
-// Branch options (same as student modal)
-const branchOptions = [
-    { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
-    { value: 'Electrical Engineering', label: 'Electrical Engineering' },
-    { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
-    { value: 'Civil Engineering', label: 'Civil Engineering' },
-    { value: 'Chemical Engineering', label: 'Chemical Engineering' },
-    { value: 'Aerospace Engineering', label: 'Aerospace Engineering' },
-    { value: 'Biotechnology', label: 'Biotechnology' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
-    { value: 'Machine Learning', label: 'Machine Learning' },
-    { value: 'Cybersecurity', label: 'Cybersecurity' },
-    { value: 'Software Engineering', label: 'Software Engineering' },
-    { value: 'Business Administration', label: 'Business Administration' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Operations Management', label: 'Operations Management' },
-    { value: 'International Business', label: 'International Business' },
-    { value: 'Economics', label: 'Economics' },
-    { value: 'Mathematics', label: 'Mathematics' },
-    { value: 'Physics', label: 'Physics' },
-    { value: 'Chemistry', label: 'Chemistry' },
-    { value: 'Biology', label: 'Biology' },
-    { value: 'English Literature', label: 'English Literature' },
-    { value: 'History', label: 'History' },
-    { value: 'Psychology', label: 'Psychology' },
-    { value: 'Sociology', label: 'Sociology' },
-    { value: 'Political Science', label: 'Political Science' },
-    { value: 'All', label: 'All Branches' }
 ]
 
 interface CreateJobModalProps {
@@ -156,11 +92,21 @@ interface JobFormData {
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corporate' }: CreateJobModalProps) {
-    // Fetch industries from backend (same source as Edit screen)
-    const { data: industriesData } = useIndustries({ limit: 1000 })
-    const industryOptions = industriesData.length > 0
-        ? industriesData.map(industry => ({ value: industry.name, label: industry.name }))
-        : fallbackIndustryOptions
+    const { data: industriesData, loading: loadingIndustries, error: industriesError, refetch: refetchIndustries } = useIndustries({
+        limit: 1000,
+        enabled: isOpen,
+    })
+    const { data: branchesData } = useBranches({ limit: 1000, enabled: isOpen })
+    const branchOptions = [
+        ...branchesData.map((branch) => ({ value: branch.name, label: branch.name })),
+        { value: 'All', label: 'All Branches' },
+    ]
+
+    useEffect(() => {
+        if (!isOpen) return
+        lookupService.clearCache('/admin/lookups/industries')
+        void refetchIndustries()
+    }, [isOpen, refetchIndustries])
 
     const [isLoading, setIsLoading] = useState(false)
     const [jobLocationLabel, setJobLocationLabel] = useState('')
@@ -700,18 +646,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Industry
                                             </label>
-                                            <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select industry" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {industryOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <LookupSelect
+                                                value={formData.industry}
+                                                onChange={(value) => handleInputChange('industry', value)}
+                                                data={industriesData}
+                                                loading={loadingIndustries}
+                                                placeholder="Select industry"
+                                                error={industriesError || undefined}
+                                            />
                                         </div>
 
                                         <div>
@@ -878,18 +820,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Industry
                                         </label>
-                                        <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select industry" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {industryOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <LookupSelect
+                                            value={formData.industry}
+                                            onChange={(value) => handleInputChange('industry', value)}
+                                            data={industriesData}
+                                            loading={loadingIndustries}
+                                            placeholder="Select industry"
+                                            error={industriesError || undefined}
+                                        />
                                     </div>
                                 </div>
 
