@@ -57,6 +57,7 @@ interface StudentApplicationTableProps {
     onViewOfferLetter: (application: ApplicationData) => void
     onDownloadOfferLetter: (application: ApplicationData) => void
     onWithdraw?: (application: ApplicationData) => void
+    onViewMessages?: (application: ApplicationData) => void
     onStatusUpdate?: (application: ApplicationData) => void
     pagination: {
         page: number
@@ -75,6 +76,7 @@ export function StudentApplicationTable({
     onSort,
     onViewOfferLetter,
     onWithdraw,
+    onViewMessages,
     onStatusUpdate,
     pagination,
     onPageChange
@@ -419,6 +421,19 @@ export function StudentApplicationTable({
                                             >
                                                 <Undo2 className="w-4 h-4" />
                                                 <span className="hidden sm:inline">Withdraw</span>
+                                            </Button>
+                                        )}
+
+                                        {/* Student View - View Application Messages */}
+                                        {!onStatusUpdate && onViewMessages && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onViewMessages(application)}
+                                                className="flex items-center gap-1"
+                                                title="View Messages"
+                                            >
+                                                <Eye className="w-4 h-4" />
                                             </Button>
                                         )}
 

@@ -36,6 +36,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { z } from "zod";
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
+import { useInstituteTypes, useBranches } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -902,6 +904,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
     const [formData, setFormData] = useState<UniversityProfileUpdateData>({})
     const [uploadingImage, setUploadingImage] = useState(false)
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+    const { data: instituteTypes, loading: loadingInstituteTypes, error: instituteTypesError } = useInstituteTypes({
+        enabled: section.id === 'institution',
+        limit: 1000,
+    })
+    const { data: branches, loading: loadingBranches, error: branchesError } = useBranches({
+        enabled: section.id === 'academic',
+        limit: 1000,
+    })
 
     useEffect(() => {
         if (profile && section) {
@@ -1182,20 +1192,29 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         // Handle select fields
         if (field === 'institute_type') {
             return (
-                <Select
-                    value={value as string}
-                    onValueChange={(val) => setFormData({ ...formData, [field]: val })}
-                >
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select institute type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="university">University</SelectItem>
-                        <SelectItem value="college">College</SelectItem>
-                        <SelectItem value="institute">Institute</SelectItem>
-                        <SelectItem value="academy">Academy</SelectItem>
-                    </SelectContent>
-                </Select>
+                <LookupSelect
+                    value={(value as string) || ''}
+                    onChange={(val) => setFormData({ ...formData, [field]: val })}
+                    data={instituteTypes}
+                    loading={loadingInstituteTypes}
+                    placeholder="Select institute type"
+                    error={instituteTypesError || undefined}
+                    required
+                />
+            )
+        }
+
+        if (field === 'branch') {
+            return (
+                <LookupSelect
+                    value={(value as string) || ''}
+                    onChange={(val) => setFormData({ ...formData, [field]: val })}
+                    data={branches}
+                    loading={loadingBranches}
+                    placeholder="Select branch"
+                    error={branchesError || undefined}
+                    required
+                />
             )
         }
 

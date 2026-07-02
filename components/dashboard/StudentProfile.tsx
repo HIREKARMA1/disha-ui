@@ -31,7 +31,7 @@ import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { buildLocationLabel } from '@/lib/googlePlacesUtils'
-import { useBranches, useDegrees, useUniversities } from '@/hooks/useLookup'
+import { useBranches, useDegrees, useUniversities, useIndustries } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
@@ -1293,6 +1293,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         enabled: section.id === 'basic' || section.id === 'academic'
     })
 
+    const {
+        data: industries,
+        loading: loadingIndustries,
+        error: industriesError,
+    } = useIndustries({
+        enabled: section.id === 'skills',
+        limit: 1000,
+    })
+
     // Sync institution name from university_id when data is loaded
     useEffect(() => {
         if (!loadingUniversities && universities.length > 0 && formData.university_id) {
@@ -1840,6 +1849,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     placeholder="Enter your preferred locations (e.g., Mumbai, Delhi, Remote, Bangalore)"
+                />
+            )
+        }
+
+        if (field === 'preferred_industry') {
+            return (
+                <LookupSelect
+                    value={value}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={industries}
+                    loading={loadingIndustries}
+                    placeholder="Select your preferred industry"
+                    error={industriesError || undefined}
+                    required
                 />
             )
         }

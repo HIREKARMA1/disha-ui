@@ -225,6 +225,18 @@ class ApiClient {
     return response.data;
   }
 
+  async getApplicationMessages(applicationId: string): Promise<{
+    messages: Array<{
+      title: string;
+      sender?: string;
+      message: string;
+      created_at?: string;
+    }>;
+  }> {
+    const response: AxiosResponse = await this.client.get(`/applications/${applicationId}/messages`);
+    return response.data;
+  }
+
   async getUniversityApplications(params: {
     status?: string;
     search?: string;

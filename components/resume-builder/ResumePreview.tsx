@@ -6,30 +6,21 @@ import { getTemplateComponent, getTemplateInfo, TemplateInfo } from './templates
 interface ResumePreviewProps {
     resumeData: any
     templateId: string | null
+    settings?: Record<string, unknown>
     onReady?: () => void
 }
 
-export function ResumePreview({ resumeData, templateId, onReady }: ResumePreviewProps) {
+export function ResumePreview({ resumeData, templateId, settings, onReady }: ResumePreviewProps) {
     const [currentTemplate, setCurrentTemplate] = useState<TemplateInfo | null>(null)
-    const [TemplateComponent, setTemplateComponent] = useState<any>(null)
+    const [TemplateComponent, setTemplateComponent] = useState<React.ComponentType<{ resumeData: any }> | null>(null)
 
     useEffect(() => {
-        if (templateId) {
-            const templateInfo = getTemplateInfo(templateId)
-            const TemplateComponent = getTemplateComponent(templateId)
+        const templateInfo = getTemplateInfo(templateId, settings)
+        const Component = getTemplateComponent(templateId, settings)
 
-            setCurrentTemplate(templateInfo)
-            setTemplateComponent(() => TemplateComponent)
-        } else {
-            // Default to Classic ATS if no template selected
-            const defaultTemplateId = 'classic-ats'
-            const templateInfo = getTemplateInfo(defaultTemplateId)
-            const TemplateComponent = getTemplateComponent(defaultTemplateId)
-
-            setCurrentTemplate(templateInfo)
-            setTemplateComponent(() => TemplateComponent)
-        }
-    }, [templateId])
+        setCurrentTemplate(templateInfo)
+        setTemplateComponent(() => Component)
+    }, [templateId, settings])
 
     // Notify parent when the template component is ready so that external
     // consumers (like the dashboard PDF download) can safely snapshot the DOM.
