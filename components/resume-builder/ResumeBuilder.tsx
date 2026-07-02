@@ -6,6 +6,8 @@ import { Save, Download, UserPlus, FileText, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResumeForm } from './ResumeForm'
 import { ResumePreview } from './ResumePreview'
+import { TemplatePicker } from './TemplatePicker'
+import { resolveTemplateSlug, type TemplateSlug } from './templates/TemplateRegistry'
 import { useProfile } from '@/hooks/useProfile'
 import { resumeService, type ResumeContent } from '@/services/resumeService'
 // Defer importing html2pdf to client runtime to avoid SSR ReferenceError: self is not defined
@@ -142,6 +144,10 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
     const [showForm, setShowForm] = useState(true)
     const [loading, setLoading] = useState(false)
     const [saved, setSaved] = useState(false)
+    const [selectedTemplateSlug, setSelectedTemplateSlug] = useState<TemplateSlug>(
+        resolveTemplateSlug(templateId)
+    )
+    const [resumeSettings, setResumeSettings] = useState<Record<string, unknown>>({})
     const previewRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -160,28 +166,28 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
     }, [resumeId])
 
     useEffect(() => {
-        if (resumeId) {
-            // TODO: Load existing resume data
-            loadResumeData(resumeId)
-        } else if (templateId && profile) {
-            // TODO: Load template structure and initialize form
-            loadTemplateStructure(templateId)
+        if (templateId) {
+            setSelectedTemplateSlug(resolveTemplateSlug(templateId))
         }
-    }, [resumeId, templateId, profile])
+    }, [templateId])
+
+    useEffect(() => {
+        if (resumeId) {
+            loadResumeData(resumeId)
+        }
+    }, [resumeId])
 
     const loadResumeData = async (resumeId: string) => {
         try {
             const resume = await resumeService.getResumeById(resumeId)
             setResumeData(resume.content)
+            const settings = resume.settings || {}
+            setResumeSettings(settings)
+            setSelectedTemplateSlug(resolveTemplateSlug(resume.template_id, settings))
         } catch (error) {
             console.error('Error loading resume:', error)
             toast.error('Failed to load resume data')
         }
-    }
-
-    const loadTemplateStructure = async (templateId: string) => {
-        // TODO: Implement API call to load template structure
-        console.log('Loading template:', templateId)
     }
 
     const handleSave = async () => {
@@ -194,14 +200,17 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
         try {
             const resumeName = resumeData.header.fullName ? `${resumeData.header.fullName}'s Resume` : 'My Resume'
             const currentId = localResumeId || resumeId
+            const settings = { ...resumeSettings, templateSlug: selectedTemplateSlug }
 
             if (currentId) {
                 // Update existing resume
                 await resumeService.updateResume(currentId, {
                     name: resumeName,
                     content: resumeData as ResumeContent,
+                    settings,
                     status: 'published'
                 })
+                setResumeSettings(settings)
                 toast.success('Resume updated successfully!')
             } else {
                 // Create new resume
@@ -210,11 +219,13 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                 const defaultTemplateId = templates.templates[0]?.id || '550e8400-e29b-41d4-a716-446655440000'
 
                 const created = await resumeService.createResume({
-                    template_id: templateId || defaultTemplateId,
+                    template_id: defaultTemplateId,
                     name: resumeName,
                     content: resumeData as ResumeContent,
+                    settings,
                     status: 'published'
                 })
+                setResumeSettings(settings)
                 // Remember the new resume id so subsequent saves perform updates
                 setLocalResumeId(created.id)
                 toast.success('Resume saved successfully!')
@@ -674,9 +685,14 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                         animate={{ opacity: 1, x: 0 }}
                         className={`sticky top-24 min-h-[calc(100vh-12rem)] ${!showForm && !showPreview ? 'block' : showPreview ? 'block' : 'hidden lg:block'}`}
                     >
+                        <TemplatePicker
+                            selectedTemplateId={selectedTemplateSlug}
+                            onTemplateChange={setSelectedTemplateSlug}
+                        />
                         <ResumePreview
                             resumeData={resumeData}
-                            templateId={templateId}
+                            templateId={selectedTemplateSlug}
+                            settings={resumeSettings}
                         />
                     </motion.div>
                 </div>

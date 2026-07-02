@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, GraduationCap, AlertCircle, Edit } from 'lucide-react'
+import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, GraduationCap, AlertCircle, Edit, ShieldCheck } from 'lucide-react'
 import { UpdateUniversityRequest, UniversityProfile } from '@/types/university'
 import { getErrorMessage } from '@/lib/error-handler'
+import { useInstituteTypes } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
 
 interface EditUniversityModalProps {
     isOpen: boolean
@@ -30,23 +32,12 @@ export function EditUniversityModal({
         contact_person_name: '',
         contact_designation: '',
         established_year: undefined,
-        courses_offered: ''
+        courses_offered: '',
+        verified: false
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-
-    const instituteTypes = [
-        'Engineering College',
-        'Arts College',
-        'Science College',
-        'Medical College',
-        'Law College',
-        'Business School',
-        'University',
-        'Research Institute',
-        'Polytechnic',
-        'Other'
-    ]
+    const { data: instituteTypes, loading: loadingInstituteTypes, error: instituteTypesError } = useInstituteTypes({ limit: 1000 })
 
     // Populate form when university data changes
     useEffect(() => {
@@ -61,7 +52,8 @@ export function EditUniversityModal({
                 contact_person_name: university.contact_person_name || '',
                 contact_designation: university.contact_designation || '',
                 established_year: university.established_year,
-                courses_offered: university.courses_offered || ''
+                courses_offered: university.courses_offered || '',
+                verified: university.verified ?? false
             })
             setError(null)
         }
@@ -93,7 +85,7 @@ export function EditUniversityModal({
         }
     }
 
-    const handleInputChange = (field: keyof UpdateUniversityRequest, value: string | number | undefined) => {
+    const handleInputChange = (field: keyof UpdateUniversityRequest, value: string | number | boolean | undefined) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -226,19 +218,33 @@ export function EditUniversityModal({
                                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Institute Type *
                                         </label>
-                                        <select
-                                            value={formData.institute_type}
-                                            onChange={(e) => handleInputChange('institute_type', e.target.value)}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        <LookupSelect
+                                            value={formData.institute_type || ''}
+                                            onChange={(value) => handleInputChange('institute_type', value)}
+                                            data={instituteTypes}
+                                            loading={loadingInstituteTypes}
+                                            placeholder="Select institute type"
+                                            error={instituteTypesError || undefined}
                                             required
-                                        >
-                                            <option value="">Select institute type</option>
-                                            {instituteTypes.map((type) => (
-                                                <option key={type} value={type}>
-                                                    {type}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        />
+                                    </div>
+
+                                    {/* Verification Status */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Verification Status
+                                        </label>
+                                        <div className="relative">
+                                            <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <select
+                                                value={formData.verified ? 'verified' : 'unverified'}
+                                                onChange={(e) => handleInputChange('verified', e.target.value === 'verified')}
+                                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="verified">Verified</option>
+                                                <option value="unverified">Unverified</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
