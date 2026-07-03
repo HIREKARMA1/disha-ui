@@ -1,7 +1,7 @@
 "use client";
 
 import { TemplateSlug, getTemplateList } from "./templates/TemplateRegistry";
-import { TemplateThumbnail } from "./templates/TemplateThumbnail";
+import { TemplateMiniPreview } from "./templates/TemplateMiniPreview";
 
 interface TemplatePickerProps {
   selectedTemplateId: TemplateSlug;
@@ -54,10 +54,7 @@ export function TemplatePicker({
                 : "border-gray-200 dark:border-gray-600 hover:border-gray-300"
             }`}
           >
-            <TemplateThumbnail
-              templateId={template.id as TemplateSlug}
-              selected={selectedTemplateId === template.id}
-            />
+            <TemplateMiniPreview templateId={template.id as TemplateSlug} />
             <p className="text-xs font-medium text-gray-900 dark:text-white mt-2 truncate">
               {template.name}
             </p>
