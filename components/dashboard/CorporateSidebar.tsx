@@ -12,7 +12,8 @@ import {
     Menu,
     LogOut,
     Building2,
-    Brain
+    Brain,
+    BarChart3
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -80,13 +81,13 @@ const navItems: NavItem[] = [
     //     description: 'Schedule interviews',
     //     color: 'from-rose-500 to-pink-600'
     // },
-    // {
-    //     label: 'Analytics',
-    //     href: '/dashboard/corporate/analytics',
-    //     icon: BarChart3,
-    //     description: 'Hiring insights',
-    //     color: 'from-yellow-500 to-orange-600'
-    // },
+    {
+        label: 'Analytics',
+        href: '/dashboard/corporate/analytics',
+        icon: BarChart3,
+        description: 'Hiring insights',
+        color: 'from-yellow-500 to-orange-600'
+    },
     // {
     //     label: 'Talent Search',
     //     href: '/dashboard/corporate/talent-search',

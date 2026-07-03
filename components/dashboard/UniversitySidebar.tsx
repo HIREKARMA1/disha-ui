@@ -12,7 +12,8 @@ import {
     Menu,
     LogOut,
     Brain,
-    Award
+    Award,
+    BarChart3
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -72,6 +73,13 @@ const navItems: NavItem[] = [
         icon: FileText,
         description: 'Track student applications',
         color: 'from-indigo-500 to-blue-600'
+    },
+    {
+        label: 'Analytics',
+        href: '/dashboard/university/analytics',
+        icon: BarChart3,
+        description: 'Placement insights & reports',
+        color: 'from-yellow-500 to-orange-600'
     },
     {
         label: 'Licenses',
