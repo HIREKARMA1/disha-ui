@@ -9,7 +9,8 @@ import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { FileText, Calendar, Users, MessageSquare, CheckCircle2, XCircle, X, Shield } from 'lucide-react'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
-import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
+import { degreeOptions } from '@/components/dashboard/CreateStudentModal'
+import { useBranches } from '@/hooks/useLookup'
 
 interface License {
     id: string
@@ -34,6 +35,8 @@ interface EditLicenseModalProps {
 }
 
 export function EditLicenseModal({ isOpen, onClose, license, onSuccess }: EditLicenseModalProps) {
+    const { data: branches } = useBranches({ limit: 1000 })
+    const branchOptions = branches.map((branch) => ({ value: branch.name, label: branch.name }))
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         total_licenses: '',
