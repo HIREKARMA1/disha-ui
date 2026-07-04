@@ -1,620 +1,399 @@
 "use client"
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-    Calendar,
-    MapPin,
-    Users,
-    DollarSign,
-    Upload,
-    X,
-    Save,
-    Eye,
-    AlertCircle,
-    CheckCircle,
-    Clock
-} from 'lucide-react'
+import { Save, Upload, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { contestEventService } from '@/services/contestEventService'
+import type { ContestEventCreatePayload, ContestEventDetail, FAQItem, RoundItem, RewardItem } from '@/types/contestEvent'
+import { EVENT_CATEGORIES } from '@/types/contestEvent'
+import { toast } from 'react-hot-toast'
 
-interface EventFormData {
-    title: string
-    description: string
-    event_type: string
-    event_date: string
-    event_end_date: string
-    registration_start_date: string
-    registration_end_date: string
-    place: string
-    map_location: string
-    venue_address: string
-    max_participants: number
-    registration_fee: number
-    requires_approval: boolean
-    contact_email: string
-    contact_phone: string
-    website_url: string
-    tags: string[]
-    university_ids: string[]
-    photo_url?: string
-    document_url?: string
+interface EventFormProps {
+  eventId?: string
 }
 
-const eventTypes = [
-    { value: 'conference', label: 'Conference' },
-    { value: 'workshop', label: 'Workshop' },
-    { value: 'seminar', label: 'Seminar' },
-    { value: 'celebration', label: 'Celebration' },
-    { value: 'pull_campus', label: 'Pull Campus' },
-    { value: 'achievement', label: 'Achievement' }
-]
-
-const initialFormData: EventFormData = {
-    title: '',
-    description: '',
-    event_type: '',
-    event_date: '',
-    event_end_date: '',
-    registration_start_date: '',
-    registration_end_date: '',
-    place: '',
-    map_location: '',
-    venue_address: '',
-    max_participants: 100,
-    registration_fee: 0,
-    requires_approval: false,
-    contact_email: '',
-    contact_phone: '',
-    website_url: '',
-    tags: [],
-    university_ids: []
+const defaultForm: ContestEventCreatePayload = {
+  title: '',
+  short_description: '',
+  subtitle: '',
+  long_description: '',
+  venue: 'Online',
+  mode: 'online',
+  category: 'technology',
+  event_start_date: '',
+  event_end_date: '',
+  registration_start_date: '',
+  registration_end_date: '',
+  max_participants: 1000,
+  prize_pool: '',
+  prize_type: 'free',
+  eligibility: '',
+  about_organizer: '',
+  organizer_name: '',
+  organizer_email: '',
+  organizer_website: '',
+  organizer_phone: '',
+  support_email: '',
+  support_phone: '',
+  support_content: '',
+  registration_button_text: 'Register Now',
+  publication_status: 'draft',
+  registration_is_open: true,
+  visibility: { student: true, corporate: false, university: false, public: true },
+  faqs: [],
+  rounds: [],
+  rewards: [],
 }
 
-export function EventCreateForm() {
-    const router = useRouter()
-    const [formData, setFormData] = useState<EventFormData>(initialFormData)
-    const [loading, setLoading] = useState(false)
-    const [errors, setErrors] = useState<Record<string, string>>({})
-    const [tagInput, setTagInput] = useState('')
-    const [uploadedFiles, setUploadedFiles] = useState<{
-        photo?: File
-        document?: File
-    }>({})
+export function EventCreateForm({ eventId }: EventFormProps) {
+  const router = useRouter()
+  const [form, setForm] = useState<ContestEventCreatePayload>(defaultForm)
+  const [loading, setLoading] = useState(!!eventId)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState<string | null>(null)
 
-    const handleInputChange = (field: keyof EventFormData, value: any) => {
-        setFormData(prev => ({ ...prev, [field]: value }))
-        // Clear error when user starts typing
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: '' }))
-        }
+  useEffect(() => {
+    if (eventId) {
+      contestEventService.getAdminEvent(eventId)
+        .then((event) => {
+          setForm({
+            title: event.title,
+            slug: event.slug,
+            short_description: event.short_description,
+            subtitle: event.subtitle,
+            long_description: event.long_description,
+            banner_url: event.banner_url,
+            organizer_logo_url: event.organizer_logo_url,
+            organizer_name: event.organizer_name,
+            organizer_website: event.organizer_website,
+            organizer_email: event.organizer_email,
+            organizer_phone: event.organizer_phone,
+            venue: event.venue,
+            mode: event.mode,
+            category: event.category,
+            registration_start_date: event.registration_start_date?.slice(0, 16),
+            registration_end_date: event.registration_end_date?.slice(0, 16),
+            event_start_date: event.event_start_date?.slice(0, 16),
+            event_end_date: event.event_end_date?.slice(0, 16),
+            max_participants: event.max_participants,
+            registration_limit: event.registration_limit,
+            prize_pool: event.prize_pool,
+            prize_type: event.prize_type,
+            eligibility: event.eligibility,
+            about_organizer: event.about_organizer,
+            support_email: event.support_email,
+            support_phone: event.support_phone,
+            support_content: event.support_content,
+            registration_button_text: event.registration_button_text,
+            registration_external_url: event.registration_external_url,
+            publication_status: event.publication_status,
+            registration_is_open: event.registration_is_open,
+            visibility: event.visibility,
+            faqs: event.faqs,
+            rounds: event.rounds,
+            rewards: event.rewards,
+          })
+        })
+        .catch(() => toast.error('Failed to load event'))
+        .finally(() => setLoading(false))
     }
+  }, [eventId])
 
-    const handleTagAdd = () => {
-        if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                tags: [...prev.tags, tagInput.trim()]
-            }))
-            setTagInput('')
-        }
+  const update = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }))
+
+  const handleUpload = async (file: File, type: 'banner' | 'logo' | 'document', field: string) => {
+    setUploading(field)
+    try {
+      const result = await contestEventService.uploadFile(file, type)
+      update(field, result.file_url)
+      toast.success('File uploaded')
+    } catch {
+      toast.error('Upload failed')
+    } finally {
+      setUploading(null)
     }
+  }
 
-    const handleTagRemove = (tagToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            tags: prev.tags.filter(tag => tag !== tagToRemove)
-        }))
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.title || !form.event_start_date) {
+      toast.error('Title and event start date are required')
+      return
     }
-
-    const handleFileUpload = (type: 'photo' | 'document', file: File) => {
-        setUploadedFiles(prev => ({ ...prev, [type]: file }))
+    setSaving(true)
+    try {
+      const payload = {
+        ...form,
+        event_start_date: new Date(form.event_start_date).toISOString(),
+        event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : undefined,
+        registration_start_date: form.registration_start_date ? new Date(form.registration_start_date).toISOString() : undefined,
+        registration_end_date: form.registration_end_date ? new Date(form.registration_end_date).toISOString() : undefined,
+      }
+      if (eventId) {
+        await contestEventService.updateEvent(eventId, payload)
+        toast.success('Event updated')
+      } else {
+        await contestEventService.createEvent(payload)
+        toast.success('Event created')
+      }
+      router.push('/dashboard/admin/events')
+    } catch {
+      toast.error('Failed to save event')
+    } finally {
+      setSaving(false)
     }
+  }
 
-    const validateForm = (): boolean => {
-        const newErrors: Record<string, string> = {}
+  const addFaq = () => update('faqs', [...(form.faqs || []), { question: '', answer: '', sort_order: (form.faqs?.length || 0) }])
+  const addRound = () => update('rounds', [...(form.rounds || []), { title: '', description: '', sort_order: (form.rounds?.length || 0) }])
+  const addReward = () => update('rewards', [...(form.rewards || []), { title: '', description: '', value: '', sort_order: (form.rewards?.length || 0) }])
 
-        if (!formData.title.trim()) newErrors.title = 'Event title is required'
-        if (!formData.description.trim()) newErrors.description = 'Event description is required'
-        if (!formData.event_type) newErrors.event_type = 'Event type is required'
-        if (!formData.event_date) newErrors.event_date = 'Event date is required'
-        if (!formData.event_end_date) newErrors.event_end_date = 'Event end date is required'
-        if (!formData.place.trim()) newErrors.place = 'Event location is required'
-        if (!formData.contact_email.trim()) newErrors.contact_email = 'Contact email is required'
-        if (!formData.contact_phone.trim()) newErrors.contact_phone = 'Contact phone is required'
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
 
-        // Date validations
-        if (formData.event_date && formData.event_end_date) {
-            if (new Date(formData.event_end_date) <= new Date(formData.event_date)) {
-                newErrors.event_end_date = 'End date must be after start date'
-            }
-        }
+  return (
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-5xl space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {eventId ? 'Edit Event' : 'Create Event'}
+        </h1>
+        <Button type="submit" disabled={saving}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+          {eventId ? 'Update' : 'Create'}
+        </Button>
+      </div>
 
-        if (formData.registration_start_date && formData.registration_end_date) {
-            if (new Date(formData.registration_end_date) <= new Date(formData.registration_start_date)) {
-                newErrors.registration_end_date = 'Registration end date must be after start date'
-            }
-        }
-
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        if (!validateForm()) {
-            return
-        }
-
-        setLoading(true)
-        try {
-            // TODO: Implement API call to create event
-            console.log('Creating event:', formData)
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000))
-
-            // Redirect to events list
-            router.push('/dashboard/admin/events')
-        } catch (error) {
-            console.error('Error creating event:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handlePreview = () => {
-        // TODO: Implement preview functionality
-        console.log('Preview event:', formData)
-    }
-
-    return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            {/* Header */}
-            <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    Create New Event
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Fill in the details below to create a new event
-                </p>
+      <Card>
+        <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Event Title *</label>
+            <Input value={form.title} onChange={(e) => update('title', e.target.value)} required />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Slug (auto-generated if empty)</label>
+              <Input value={form.slug || ''} onChange={(e) => update('slug', e.target.value)} placeholder="tech-fest-2026" />
             </div>
+            <div>
+              <label className="text-sm font-medium">Category</label>
+              <Select value={form.category} onValueChange={(v) => update('category', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {EVENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Subtitle</label>
+            <Input value={form.subtitle || ''} onChange={(e) => update('subtitle', e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Short Description</label>
+            <Textarea value={form.short_description || ''} onChange={(e) => update('short_description', e.target.value)} rows={2} />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Long Description</label>
+            <Textarea value={form.long_description || ''} onChange={(e) => update('long_description', e.target.value)} rows={5} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Event Banner</label>
+              <div className="flex gap-2 mt-1">
+                <Input value={form.banner_url || ''} onChange={(e) => update('banner_url', e.target.value)} placeholder="URL or upload" />
+                <label className="cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], 'banner', 'banner_url')} />
+                  <Button type="button" variant="outline" size="sm" disabled={uploading === 'banner_url'}>
+                    {uploading === 'banner_url' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  </Button>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Organizer Logo</label>
+              <div className="flex gap-2 mt-1">
+                <Input value={form.organizer_logo_url || ''} onChange={(e) => update('organizer_logo_url', e.target.value)} placeholder="URL or upload" />
+                <label className="cursor-pointer">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], 'logo', 'organizer_logo_url')} />
+                  <Button type="button" variant="outline" size="sm" disabled={uploading === 'organizer_logo_url'}>
+                    {uploading === 'organizer_logo_url' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  </Button>
+                </label>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Information */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Calendar className="w-5 h-5 text-primary-600" />
-                            <span>Basic Information</span>
-                        </CardTitle>
-                        <CardDescription>
-                            Provide the essential details about your event
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event Title *
-                                </label>
-                                <Input
-                                    value={formData.title}
-                                    onChange={(e) => handleInputChange('title', e.target.value)}
-                                    placeholder="Enter event title"
-                                    className={cn(errors.title && "border-red-500")}
-                                />
-                                {errors.title && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-                                )}
-                            </div>
+      <Card>
+        <CardHeader><CardTitle>Organizer & Venue</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="text-sm font-medium">Organizer Name</label><Input value={form.organizer_name || ''} onChange={(e) => update('organizer_name', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Organizer Website</label><Input value={form.organizer_website || ''} onChange={(e) => update('organizer_website', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Organizer Email</label><Input type="email" value={form.organizer_email || ''} onChange={(e) => update('organizer_email', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Organizer Phone</label><Input value={form.organizer_phone || ''} onChange={(e) => update('organizer_phone', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Venue</label><Input value={form.venue || ''} onChange={(e) => update('venue', e.target.value)} /></div>
+          <div>
+            <label className="text-sm font-medium">Mode</label>
+            <Select value={form.mode} onValueChange={(v) => update('mode', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="offline">Offline</SelectItem>
+                <SelectItem value="hybrid">Hybrid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event Type *
-                                </label>
-                                <Select
-                                    value={formData.event_type}
-                                    onValueChange={(value) => handleInputChange('event_type', value)}
-                                >
-                                    <SelectTrigger className={cn(errors.event_type && "border-red-500")}>
-                                        <SelectValue placeholder="Select event type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {eventTypes.map(type => (
-                                            <SelectItem key={type.value} value={type.value}>
-                                                {type.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.event_type && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.event_type}</p>
-                                )}
-                            </div>
-                        </div>
+      <Card>
+        <CardHeader><CardTitle>Dates & Registration</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="text-sm font-medium">Registration Start</label><Input type="datetime-local" value={form.registration_start_date || ''} onChange={(e) => update('registration_start_date', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Registration End</label><Input type="datetime-local" value={form.registration_end_date || ''} onChange={(e) => update('registration_end_date', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Event Start *</label><Input type="datetime-local" value={form.event_start_date} onChange={(e) => update('event_start_date', e.target.value)} required /></div>
+          <div><label className="text-sm font-medium">Event End</label><Input type="datetime-local" value={form.event_end_date || ''} onChange={(e) => update('event_end_date', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Max Participants</label><Input type="number" value={form.max_participants || ''} onChange={(e) => update('max_participants', parseInt(e.target.value))} /></div>
+          <div><label className="text-sm font-medium">Registration Limit</label><Input type="number" value={form.registration_limit || ''} onChange={(e) => update('registration_limit', parseInt(e.target.value))} /></div>
+          <div><label className="text-sm font-medium">Prize Pool</label><Input value={form.prize_pool || ''} onChange={(e) => update('prize_pool', e.target.value)} placeholder="₹5,00,000" /></div>
+          <div>
+            <label className="text-sm font-medium">Prize Type</label>
+            <Select value={form.prize_type} onValueChange={(v) => update('prize_type', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><label className="text-sm font-medium">Registration Button Text</label><Input value={form.registration_button_text || ''} onChange={(e) => update('registration_button_text', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Registration URL (optional)</label><Input value={form.registration_external_url || ''} onChange={(e) => update('registration_external_url', e.target.value)} /></div>
+          <div>
+            <label className="text-sm font-medium">Publication Status</label>
+            <Select value={form.publication_status} onValueChange={(v) => update('publication_status', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Description *
-                            </label>
-                            <Textarea
-                                value={formData.description}
-                                onChange={(e) => handleInputChange('description', e.target.value)}
-                                placeholder="Describe your event in detail"
-                                rows={4}
-                                className={cn(errors.description && "border-red-500")}
-                            />
-                            {errors.description && (
-                                <p className="text-red-500 text-sm mt-1">{errors.description}</p>
-                            )}
-                        </div>
+      <Card>
+        <CardHeader><CardTitle>Visibility & Eligibility</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-4">
+            {(['student', 'corporate', 'university', 'public'] as const).map((key) => (
+              <label key={key} className="flex items-center gap-2 text-sm capitalize cursor-pointer">
+                <Checkbox
+                  checked={form.visibility?.[key] ?? false}
+                  onChange={(e) => update('visibility', { ...form.visibility, [key]: e.target.checked })}
+                />
+                {key === 'public' ? 'Everyone (Public)' : key}
+              </label>
+            ))}
+          </div>
+          <div><label className="text-sm font-medium">Eligibility</label><Textarea value={form.eligibility || ''} onChange={(e) => update('eligibility', e.target.value)} rows={3} /></div>
+          <div><label className="text-sm font-medium">About Organizer</label><Textarea value={form.about_organizer || ''} onChange={(e) => update('about_organizer', e.target.value)} rows={3} /></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="text-sm font-medium">Support Email</label><Input value={form.support_email || ''} onChange={(e) => update('support_email', e.target.value)} /></div>
+            <div><label className="text-sm font-medium">Support Phone</label><Input value={form.support_phone || ''} onChange={(e) => update('support_phone', e.target.value)} /></div>
+          </div>
+          <div><label className="text-sm font-medium">Support Content</label><Textarea value={form.support_content || ''} onChange={(e) => update('support_content', e.target.value)} rows={2} /></div>
+        </CardContent>
+      </Card>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Tags
-                            </label>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                {formData.tags.map(tag => (
-                                    <Badge key={tag} variant="secondary" className="flex items-center space-x-1">
-                                        <span>{tag}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleTagRemove(tag)}
-                                            className="ml-1 hover:text-red-500"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </Badge>
-                                ))}
-                            </div>
-                            <div className="flex space-x-2">
-                                <Input
-                                    value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    placeholder="Add a tag"
-                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleTagAdd())}
-                                />
-                                <Button type="button" onClick={handleTagAdd} variant="outline">
-                                    Add
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+      {/* FAQs */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>FAQs</CardTitle>
+          <Button type="button" variant="outline" size="sm" onClick={addFaq}><Plus className="w-4 h-4 mr-1" /> Add FAQ</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(form.faqs || []).map((faq, i) => (
+            <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+              <Input placeholder="Question" value={faq.question} onChange={(e) => {
+                const faqs = [...(form.faqs || [])]; faqs[i] = { ...faq, question: e.target.value }; update('faqs', faqs)
+              }} />
+              <Textarea placeholder="Answer" value={faq.answer} rows={2} onChange={(e) => {
+                const faqs = [...(form.faqs || [])]; faqs[i] = { ...faq, answer: e.target.value }; update('faqs', faqs)
+              }} />
+              <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('faqs', (form.faqs || []).filter((_, j) => j !== i))}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-                {/* Date & Time */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Clock className="w-5 h-5 text-primary-600" />
-                            <span>Date & Time</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event Start Date *
-                                </label>
-                                <Input
-                                    type="datetime-local"
-                                    value={formData.event_date}
-                                    onChange={(e) => handleInputChange('event_date', e.target.value)}
-                                    className={cn(errors.event_date && "border-red-500")}
-                                />
-                                {errors.event_date && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.event_date}</p>
-                                )}
-                            </div>
+      {/* Rounds */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Rounds</CardTitle>
+          <Button type="button" variant="outline" size="sm" onClick={addRound}><Plus className="w-4 h-4 mr-1" /> Add Round</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(form.rounds || []).map((round, i) => (
+            <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+              <Input placeholder="Round Title" value={round.title} onChange={(e) => {
+                const rounds = [...(form.rounds || [])]; rounds[i] = { ...round, title: e.target.value }; update('rounds', rounds)
+              }} />
+              <Textarea placeholder="Description" value={round.description || ''} rows={2} onChange={(e) => {
+                const rounds = [...(form.rounds || [])]; rounds[i] = { ...round, description: e.target.value }; update('rounds', rounds)
+              }} />
+              <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('rounds', (form.rounds || []).filter((_, j) => j !== i))}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event End Date *
-                                </label>
-                                <Input
-                                    type="datetime-local"
-                                    value={formData.event_end_date}
-                                    onChange={(e) => handleInputChange('event_end_date', e.target.value)}
-                                    className={cn(errors.event_end_date && "border-red-500")}
-                                />
-                                {errors.event_end_date && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>
-                                )}
-                            </div>
-                        </div>
+      {/* Rewards */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Rewards</CardTitle>
+          <Button type="button" variant="outline" size="sm" onClick={addReward}><Plus className="w-4 h-4 mr-1" /> Add Reward</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(form.rewards || []).map((reward, i) => (
+            <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder="Title" value={reward.title} onChange={(e) => {
+                  const rewards = [...(form.rewards || [])]; rewards[i] = { ...reward, title: e.target.value }; update('rewards', rewards)
+                }} />
+                <Input placeholder="Value (e.g. ₹50,000)" value={reward.value || ''} onChange={(e) => {
+                  const rewards = [...(form.rewards || [])]; rewards[i] = { ...reward, value: e.target.value }; update('rewards', rewards)
+                }} />
+              </div>
+              <Textarea placeholder="Description" value={reward.description || ''} rows={2} onChange={(e) => {
+                const rewards = [...(form.rewards || [])]; rewards[i] = { ...reward, description: e.target.value }; update('rewards', rewards)
+              }} />
+              <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('rewards', (form.rewards || []).filter((_, j) => j !== i))}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Registration Start Date
-                                </label>
-                                <Input
-                                    type="datetime-local"
-                                    value={formData.registration_start_date}
-                                    onChange={(e) => handleInputChange('registration_start_date', e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Registration End Date
-                                </label>
-                                <Input
-                                    type="datetime-local"
-                                    value={formData.registration_end_date}
-                                    onChange={(e) => handleInputChange('registration_end_date', e.target.value)}
-                                    className={cn(errors.registration_end_date && "border-red-500")}
-                                />
-                                {errors.registration_end_date && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.registration_end_date}</p>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Location */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <MapPin className="w-5 h-5 text-primary-600" />
-                            <span>Location</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Venue *
-                            </label>
-                            <Input
-                                value={formData.place}
-                                onChange={(e) => handleInputChange('place', e.target.value)}
-                                placeholder="Enter venue name"
-                                className={cn(errors.place && "border-red-500")}
-                            />
-                            {errors.place && (
-                                <p className="text-red-500 text-sm mt-1">{errors.place}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Address
-                            </label>
-                            <Textarea
-                                value={formData.venue_address}
-                                onChange={(e) => handleInputChange('venue_address', e.target.value)}
-                                placeholder="Enter full address"
-                                rows={2}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Map Location
-                            </label>
-                            <Input
-                                value={formData.map_location}
-                                onChange={(e) => handleInputChange('map_location', e.target.value)}
-                                placeholder="Google Maps URL or coordinates"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Registration Details */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Users className="w-5 h-5 text-primary-600" />
-                            <span>Registration Details</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Max Participants
-                                </label>
-                                <Input
-                                    type="number"
-                                    value={formData.max_participants}
-                                    onChange={(e) => handleInputChange('max_participants', parseInt(e.target.value) || 0)}
-                                    min="1"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Registration Fee (₹)
-                                </label>
-                                <Input
-                                    type="number"
-                                    value={formData.registration_fee}
-                                    onChange={(e) => handleInputChange('registration_fee', parseFloat(e.target.value) || 0)}
-                                    min="0"
-                                    step="0.01"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <input
-                                type="checkbox"
-                                id="requires_approval"
-                                checked={formData.requires_approval}
-                                onChange={(e) => handleInputChange('requires_approval', e.target.checked)}
-                                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
-                            <label htmlFor="requires_approval" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Requires approval for registration
-                            </label>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Contact Information */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <AlertCircle className="w-5 h-5 text-primary-600" />
-                            <span>Contact Information</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Contact Email *
-                                </label>
-                                <Input
-                                    type="email"
-                                    value={formData.contact_email}
-                                    onChange={(e) => handleInputChange('contact_email', e.target.value)}
-                                    placeholder="contact@example.com"
-                                    className={cn(errors.contact_email && "border-red-500")}
-                                />
-                                {errors.contact_email && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.contact_email}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Contact Phone *
-                                </label>
-                                <Input
-                                    type="tel"
-                                    value={formData.contact_phone}
-                                    onChange={(e) => handleInputChange('contact_phone', e.target.value)}
-                                    placeholder="+91 9876543210"
-                                    className={cn(errors.contact_phone && "border-red-500")}
-                                />
-                                {errors.contact_phone && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.contact_phone}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Website URL
-                            </label>
-                            <Input
-                                type="url"
-                                value={formData.website_url}
-                                onChange={(e) => handleInputChange('website_url', e.target.value)}
-                                placeholder="https://example.com"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* File Uploads */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Upload className="w-5 h-5 text-primary-600" />
-                            <span>Files & Media</span>
-                        </CardTitle>
-                        <CardDescription>
-                            Upload event photo and documents (optional)
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event Photo
-                                </label>
-                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
-                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                        Upload event photo (JPG, PNG - Max 10MB)
-                                    </p>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => e.target.files?.[0] && handleFileUpload('photo', e.target.files[0])}
-                                        className="hidden"
-                                        id="photo-upload"
-                                    />
-                                    <label
-                                        htmlFor="photo-upload"
-                                        className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                    >
-                                        Choose File
-                                    </label>
-                                </div>
-                                {uploadedFiles.photo && (
-                                    <p className="text-sm text-green-600 mt-2">
-                                        ✓ {uploadedFiles.photo.name}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event Document
-                                </label>
-                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
-                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                        Upload event document (PDF - Max 10MB)
-                                    </p>
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={(e) => e.target.files?.[0] && handleFileUpload('document', e.target.files[0])}
-                                        className="hidden"
-                                        id="document-upload"
-                                    />
-                                    <label
-                                        htmlFor="document-upload"
-                                        className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                    >
-                                        Choose File
-                                    </label>
-                                </div>
-                                {uploadedFiles.document && (
-                                    <p className="text-sm text-green-600 mt-2">
-                                        ✓ {uploadedFiles.document.name}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Actions */}
-                <div className="flex justify-end space-x-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handlePreview}
-                        className="flex items-center space-x-2"
-                    >
-                        <Eye className="w-4 h-4" />
-                        <span>Preview</span>
-                    </Button>
-                    <Button
-                        type="submit"
-                        loading={loading}
-                        className="flex items-center space-x-2"
-                    >
-                        <Save className="w-4 h-4" />
-                        <span>Create Event</span>
-                    </Button>
-                </div>
-            </form>
-        </div>
-    )
+      <div className="flex justify-end">
+        <Button type="submit" disabled={saving} size="lg">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+          {eventId ? 'Update Event' : 'Create Event'}
+        </Button>
+      </div>
+    </form>
+  )
 }
