@@ -81,7 +81,7 @@ export function CorporateAnalyticsDashboard({
         <AnalyticsKpiCards
           kpis={data?.kpis ?? []}
           isLoading={isLoading}
-          columns={4}
+          columns={6}
           kpiIds={CORPORATE_KPI_IDS}
         />
       )}

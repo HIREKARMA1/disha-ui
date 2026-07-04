@@ -19,6 +19,8 @@ import { AnalyticsKpi as KpiType } from '@/types/corporateAnalytics'
 import { StatsSkeleton } from '@/components/ui/LoadingSkeleton'
 
 const CORPORATE_KPI_IDS = [
+  'active_jobs',
+  'archived_jobs',
   'total_job_postings',
   'applications',
   'conversion_rate',
@@ -34,6 +36,8 @@ const UNIVERSITY_KPI_IDS = [
 ]
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  active_jobs: Briefcase,
+  archived_jobs: Briefcase,
   total_job_postings: Briefcase,
   applications: FileText,
   conversion_rate: Target,
@@ -43,12 +47,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   highest_package: TrendingUp,
   active_corporate_partners: Building2,
   test_engagement_rate: Brain,
-  active_jobs: Briefcase,
   candidates: Users,
   hires: Target,
 }
 
 const COLOR_MAP: Record<string, { color: string; bg: string }> = {
+  active_jobs: { color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+  archived_jobs: { color: 'text-gray-600', bg: 'bg-gray-50 dark:bg-gray-800/40' },
   total_job_postings: { color: 'text-primary-600', bg: 'bg-primary-50 dark:bg-primary-900/20' },
   applications: { color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
   conversion_rate: { color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
@@ -76,7 +81,7 @@ function formatKpiValue(kpi: KpiType): string {
 interface AnalyticsKpiCardsProps {
   kpis: KpiType[]
   isLoading?: boolean
-  columns?: 4 | 5
+  columns?: 4 | 5 | 6
   className?: string
   kpiIds?: string[]
 }
@@ -97,7 +102,9 @@ export function AnalyticsKpiCards({
     : kpis.slice(0, columns)
 
   const gridClass =
-    columns === 5
+    columns === 6
+      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4'
+      : columns === 5
       ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4'
       : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'
 
