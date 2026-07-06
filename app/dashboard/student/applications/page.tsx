@@ -7,6 +7,7 @@ import { StudentApplicationManagementHeader } from '@/components/student/Student
 import { StudentApplicationTable } from '@/components/student/StudentApplicationTable'
 import { OfferLetterViewerModal } from '@/components/student/OfferLetterViewerModal'
 import { WithdrawApplicationModal } from '@/components/student/WithdrawApplicationModal'
+import { ApplicationMessagesModal } from '@/components/student/ApplicationMessagesModal'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { toast } from 'react-hot-toast'
@@ -50,6 +51,7 @@ export default function StudentApplicationsPage() {
     const [showOfferLetterModal, setShowOfferLetterModal] = useState(false)
     const [withdrawTarget, setWithdrawTarget] = useState<ApplicationData | null>(null)
     const [withdrawing, setWithdrawing] = useState(false)
+    const [messagesTarget, setMessagesTarget] = useState<ApplicationData | null>(null)
 
     // Fetch student applications
     const fetchApplications = async () => {
@@ -140,6 +142,10 @@ export default function StudentApplicationsPage() {
         setWithdrawTarget(application)
     }
 
+    const handleViewMessages = (application: ApplicationData) => {
+        setMessagesTarget(application)
+    }
+
     const handleConfirmWithdraw = async () => {
         if (!withdrawTarget) return
 
@@ -198,6 +204,7 @@ export default function StudentApplicationsPage() {
                     onViewOfferLetter={handleViewOfferLetter}
                     onDownloadOfferLetter={handleDownloadOfferLetter}
                     onWithdraw={handleWithdrawApplication}
+                    onViewMessages={handleViewMessages}
                     pagination={pagination}
                     onPageChange={handlePageChange}
                 />
@@ -222,6 +229,13 @@ export default function StudentApplicationsPage() {
                 onConfirm={handleConfirmWithdraw}
                 jobTitle={withdrawTarget?.job_title}
                 loading={withdrawing}
+            />
+
+            <ApplicationMessagesModal
+                isOpen={!!messagesTarget}
+                onClose={() => setMessagesTarget(null)}
+                applicationId={messagesTarget?.id ?? null}
+                jobTitle={messagesTarget?.job_title}
             />
         </StudentDashboardLayout>
     )
