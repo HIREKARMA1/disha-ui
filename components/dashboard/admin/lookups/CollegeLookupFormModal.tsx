@@ -77,18 +77,18 @@ export function CollegeLookupFormModal({
         }
     }
 
-    const title = mode === 'create' ? 'Add college' : 'Edit college'
+    const title = mode === 'create' ? 'Add College' : 'Edit College'
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="lg">
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                    <Label htmlFor="college-name">College name</Label>
+                    <Label htmlFor="college-name">College Name *</Label>
                     <Input
                         id="college-name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Indian Institute of Technology, Delhi"
+                        placeholder="e.g. KIIT University"
                         required
                         maxLength={255}
                     />

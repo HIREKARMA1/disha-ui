@@ -56,22 +56,25 @@ export function SkillLookupFormModal({
     const title =
         mode === 'create'
             ? kind === 'technical'
-                ? 'Add technical skill'
-                : 'Add soft skill'
+                ? 'Add Technical Skill'
+                : 'Add Soft Skill'
             : kind === 'technical'
-              ? 'Edit technical skill'
-              : 'Edit soft skill'
+              ? 'Edit Technical Skill'
+              : 'Edit Soft Skill'
+
+    const fieldLabel = 'Skill Name *'
+    const placeholder = kind === 'technical' ? 'e.g. Java' : 'e.g. Communication'
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="lg">
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                    <Label htmlFor="skill-name">Skill name *</Label>
+                    <Label htmlFor="skill-name">{fieldLabel}</Label>
                     <Input
                         id="skill-name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder={kind === 'technical' ? 'e.g. Python' : 'e.g. Communication'}
+                        placeholder={placeholder}
                         required
                         maxLength={255}
                     />

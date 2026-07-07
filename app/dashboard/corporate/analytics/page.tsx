@@ -1,23 +1,43 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import { CorporateDashboardLayout } from '@/components/dashboard/CorporateDashboardLayout'
+import { CorporateAnalyticsDashboard } from '@/components/analytics/CorporateAnalyticsDashboard'
+import { CorporateAnalyticsDashboardData } from '@/types/corporateAnalytics'
+import { apiClient } from '@/lib/api'
 
 export default function CorporateAnalyticsPage() {
-    return (
-        <CorporateDashboardLayout>
-            <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                        Analytics
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        View hiring insights and reports.
-                    </p>
-                </div>
-            </div>
-        </CorporateDashboardLayout>
-    )
+  const [data, setData] = useState<CorporateAnalyticsDashboardData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setIsLoading(true)
+        const result = await apiClient.getCorporateAnalyticsDashboard()
+        setData(result)
+        setError(null)
+      } catch {
+        setError('Failed to load analytics data')
+        setData(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  return (
+    <CorporateDashboardLayout>
+      <div className="space-y-6">
+        {error && !isLoading && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
+          </div>
+        )}
+        <CorporateAnalyticsDashboard data={data} isLoading={isLoading} />
+      </div>
+    </CorporateDashboardLayout>
+  )
 }
-
-
-
