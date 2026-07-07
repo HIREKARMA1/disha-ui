@@ -473,9 +473,19 @@ class ApiClient {
     return response.data;
   }
 
+  async getUniversityAnalyticsDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/universities/analytics/dashboard');
+    return response.data;
+  }
+
   // Corporate endpoints
   async getCorporateDashboard(): Promise<any> {
     const response: AxiosResponse = await this.client.get('/corporates/dashboard');
+    return response.data;
+  }
+
+  async getCorporateAnalyticsDashboard(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/corporates/analytics/dashboard');
     return response.data;
   }
 

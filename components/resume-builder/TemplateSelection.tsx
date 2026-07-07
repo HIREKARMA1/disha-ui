@@ -8,7 +8,7 @@ import {
     TemplateSlug,
     TEMPLATES,
 } from './templates/TemplateRegistry'
-import { TemplateThumbnail } from './templates/TemplateThumbnail'
+import { TemplateMiniPreview } from './templates/TemplateMiniPreview'
 
 interface TemplateSelectionProps {
     onTemplateSelect: (templateId: string) => void
@@ -126,12 +126,11 @@ export function TemplateSelection({ onTemplateSelect }: TemplateSelectionProps) 
                     >
                         <div className="p-4">
                             <div className="relative">
-                                <TemplateThumbnail
+                                <TemplateMiniPreview
                                     templateId={template.id as TemplateSlug}
-                                    selected={selectedTemplate === template.id}
                                 />
                                 {selectedTemplate === template.id && (
-                                    <div className="absolute top-3 right-3 bg-primary-500 text-white rounded-full p-2 shadow-lg">
+                                    <div className="absolute top-3 right-3 bg-primary-500 text-white rounded-full p-2 shadow-lg z-10">
                                         <Check className="w-4 h-4" />
                                     </div>
                                 )}
