@@ -33,6 +33,27 @@ export class BulkEmailService {
         return response.data
     }
 
+    async searchUsers(
+        query: string,
+        category: BulkEmailCategory = 'all',
+        limit = 20,
+        offset = 0
+    ): Promise<BulkEmailRecipientsResponse> {
+        ensureAuth()
+        const response = await apiClient.client.get<BulkEmailRecipientsResponse>(
+            '/admin/bulk-email/search',
+            {
+                params: {
+                    q: query,
+                    category: category === 'all' ? undefined : category,
+                    limit,
+                    offset,
+                },
+            }
+        )
+        return response.data
+    }
+
     async uploadCsv(file: File): Promise<BulkEmailUploadResponse> {
         ensureAuth()
         const formData = new FormData()
