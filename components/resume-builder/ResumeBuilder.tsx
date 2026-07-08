@@ -6,8 +6,8 @@ import { Save, Download, UserPlus, FileText, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResumeForm } from './ResumeForm'
 import { ResumePreview } from './ResumePreview'
-import { TemplatePicker } from './TemplatePicker'
 import { resolveTemplateSlug, type TemplateSlug } from './templates/TemplateRegistry'
+import { buildPreviewData } from './sampleResumeData'
 import { useProfile } from '@/hooks/useProfile'
 import { resumeService, type ResumeContent } from '@/services/resumeService'
 // Defer importing html2pdf to client runtime to avoid SSR ReferenceError: self is not defined
@@ -250,22 +250,23 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
         try {
             setLoading(true)
 
-            // Configure PDF options with optimized settings for smaller file size
+            // Configure PDF options with optimized settings for high-resolution vector-like quality
             const options = {
                 margin: [10, 10, 10, 10] as [number, number, number, number],
                 filename: `${resumeData?.header?.fullName || 'resume'}_${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.85 }, // Reduced from 0.98 to 0.85 for smaller file size
+                image: { type: 'jpeg', quality: 0.98 },
                 enableLinks: true,
                 html2canvas: {
-                    scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
+                    scale: 3.5, // High resolution scale to ensure crisp vector-like text quality
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    letterRendering: true,
                 },
                 jsPDF: {
                     unit: 'mm',
                     format: 'a4',
                     orientation: 'portrait',
-                    compress: true // Enable PDF compression
+                    compress: true
                 }
             }
 
@@ -585,6 +586,11 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
         )
     }
 
+    // Visible preview blends the student's data with premium sample content so the
+    // template never looks empty. Real data replaces the sample per-section as it is
+    // entered. Save/Download always use the untouched `resumeData` instead.
+    const previewData = buildPreviewData(resumeData as ResumeContent)
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Header */}
@@ -678,23 +684,46 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                         />
                     </motion.div>
 
-                    {/* Preview Section - Hidden on mobile when form is active */}
+                    {/* Preview Section - Hidden on mobile when form is active.
+                        Shows premium sample content until the student fills in their own data. */}
                     <motion.div
-                        ref={previewRef}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className={`sticky top-24 min-h-[calc(100vh-12rem)] ${!showForm && !showPreview ? 'block' : showPreview ? 'block' : 'hidden lg:block'}`}
                     >
-                        <TemplatePicker
-                            selectedTemplateId={selectedTemplateSlug}
-                            onTemplateChange={setSelectedTemplateSlug}
-                        />
                         <ResumePreview
-                            resumeData={resumeData}
+                            resumeData={previewData}
                             templateId={selectedTemplateSlug}
                             settings={resumeSettings}
                         />
                     </motion.div>
+                </div>
+            </div>
+
+            {/* Hidden preview rendered with the student's REAL data only, used as
+                the source for PDF download so sample content never leaks into the file. */}
+            <div
+                style={{
+                    position: 'fixed',
+                    left: '-10000px',
+                    top: 0,
+                    width: '800px',
+                    pointerEvents: 'none',
+                    opacity: 0,
+                    zIndex: -1,
+                    fontVariantLigatures: 'none',
+                    fontFeatureSettings: '"liga" 0',
+                    textRendering: 'geometricPrecision',
+                }}
+                aria-hidden="true"
+            >
+                <div ref={previewRef}>
+                    <ResumePreview
+                        resumeData={resumeData}
+                        templateId={selectedTemplateSlug}
+                        settings={resumeSettings}
+                        hideTemplateInfo={true}
+                    />
                 </div>
             </div>
         </div>

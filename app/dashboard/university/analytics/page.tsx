@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { CorporateDashboardLayout } from '@/components/dashboard/CorporateDashboardLayout'
-import { CorporateAnalyticsDashboard } from '@/components/analytics/CorporateAnalyticsDashboard'
-import { CorporateAnalyticsDashboardData } from '@/types/corporateAnalytics'
+import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
+import { UniversityAnalyticsDashboard } from '@/components/analytics/UniversityAnalyticsDashboard'
+import { UniversityAnalyticsDashboardData } from '@/types/universityAnalytics'
 import { apiClient } from '@/lib/api'
 
-export default function CorporateAnalyticsPage() {
-  const [data, setData] = useState<CorporateAnalyticsDashboardData | null>(null)
+export default function UniversityAnalyticsPage() {
+  const [data, setData] = useState<UniversityAnalyticsDashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -15,7 +15,7 @@ export default function CorporateAnalyticsPage() {
     const load = async () => {
       try {
         setIsLoading(true)
-        const result = await apiClient.getCorporateAnalyticsDashboard()
+        const result = await apiClient.getUniversityAnalyticsDashboard()
         setData(result)
         setError(null)
       } catch {
@@ -29,15 +29,15 @@ export default function CorporateAnalyticsPage() {
   }, [])
 
   return (
-    <CorporateDashboardLayout>
+    <UniversityDashboardLayout>
       <div className="space-y-6">
         {error && !isLoading && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
             <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
-        <CorporateAnalyticsDashboard data={data} isLoading={isLoading} />
+        <UniversityAnalyticsDashboard data={data} isLoading={isLoading} />
       </div>
-    </CorporateDashboardLayout>
+    </UniversityDashboardLayout>
   )
 }
