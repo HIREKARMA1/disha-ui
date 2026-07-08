@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAdminUserStatsContext } from '@/contexts/AdminUserStatsContext'
 import { toast } from 'react-hot-toast'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { UserManagementHero } from '@/components/dashboard/admin/users/UserManagementHero'
@@ -47,13 +48,9 @@ function matchesCreatedDateRange(
     return true
 }
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
+    const { typeCounts } = useAdminUserStatsContext()
     const [users, setUsers] = useState<AdminUserListItem[]>([])
-    const [typeCounts, setTypeCounts] = useState<Record<AdminManagedUserType, number>>({
-        student: 0,
-        university: 0,
-        corporate: 0,
-    })
     const [activeUserType, setActiveUserType] = useState<AdminManagedUserType>(DEFAULT_ADMIN_USER_TYPE)
     const [isLoading, setIsLoading] = useState(true)
     const [isExporting, setIsExporting] = useState(false)
@@ -64,20 +61,6 @@ export default function AdminUsersPage() {
     const [verificationFilter, setVerificationFilter] = useState('all')
     const [createdAfter, setCreatedAfter] = useState('')
     const [createdBefore, setCreatedBefore] = useState('')
-
-    const fetchStats = useCallback(async () => {
-        try {
-            const stats = await userManagementService.getUserStats()
-            const distribution = stats.user_type_distribution || {}
-            setTypeCounts({
-                student: distribution.student ?? stats.students ?? 0,
-                university: distribution.university ?? stats.universities ?? 0,
-                corporate: distribution.corporate ?? stats.corporates ?? 0,
-            })
-        } catch (err) {
-            console.error('Failed to fetch user stats:', err)
-        }
-    }, [])
 
     const fetchUsers = useCallback(async () => {
         setIsLoading(true)
@@ -97,10 +80,6 @@ export default function AdminUsersPage() {
             setIsLoading(false)
         }
     }, [activeUserType])
-
-    useEffect(() => {
-        fetchStats()
-    }, [fetchStats])
 
     useEffect(() => {
         fetchUsers()
@@ -188,39 +167,45 @@ export default function AdminUsersPage() {
     }
 
     return (
+        <div className="space-y-6">
+            <UserManagementHero />
+
+            <UserTypeStatsTabs
+                activeType={activeUserType}
+                counts={typeCounts}
+                onTypeChange={handleTypeChange}
+            />
+
+            <UserManagementToolbar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                verificationFilter={verificationFilter}
+                onVerificationFilterChange={setVerificationFilter}
+                createdAfter={createdAfter}
+                onCreatedAfterChange={setCreatedAfter}
+                createdBefore={createdBefore}
+                onCreatedBeforeChange={setCreatedBefore}
+                onExport={handleExport}
+                isExporting={isExporting}
+            />
+
+            <UserTable
+                users={filteredUsers}
+                userType={activeUserType}
+                isLoading={isLoading}
+                error={error}
+                onRetry={fetchUsers}
+            />
+        </div>
+    )
+}
+
+export default function AdminUsersPage() {
+    return (
         <AdminDashboardLayout>
-            <div className="space-y-6">
-                <UserManagementHero />
-
-                <UserTypeStatsTabs
-                    activeType={activeUserType}
-                    counts={typeCounts}
-                    onTypeChange={handleTypeChange}
-                />
-
-                <UserManagementToolbar
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    statusFilter={statusFilter}
-                    onStatusFilterChange={setStatusFilter}
-                    verificationFilter={verificationFilter}
-                    onVerificationFilterChange={setVerificationFilter}
-                    createdAfter={createdAfter}
-                    onCreatedAfterChange={setCreatedAfter}
-                    createdBefore={createdBefore}
-                    onCreatedBeforeChange={setCreatedBefore}
-                    onExport={handleExport}
-                    isExporting={isExporting}
-                />
-
-                <UserTable
-                    users={filteredUsers}
-                    userType={activeUserType}
-                    isLoading={isLoading}
-                    error={error}
-                    onRetry={fetchUsers}
-                />
-            </div>
+            <AdminUsersContent />
         </AdminDashboardLayout>
     )
 }
