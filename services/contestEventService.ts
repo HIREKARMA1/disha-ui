@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api'
 import type {
   ContestEventAnalytics,
   ContestEventCreatePayload,
+  ContestEventUpdatePayload,
   ContestEventDetail,
   ContestEventListResponse,
   EventRegistrationItem,
@@ -55,7 +56,7 @@ export class ContestEventService {
     return response.data
   }
 
-  async updateEvent(eventId: string, data: Partial<ContestEventCreatePayload>): Promise<ContestEventDetail> {
+  async updateEvent(eventId: string, data: ContestEventUpdatePayload): Promise<ContestEventDetail> {
     const response = await apiClient.client.put(`/events/contests/${eventId}`, data)
     return response.data
   }

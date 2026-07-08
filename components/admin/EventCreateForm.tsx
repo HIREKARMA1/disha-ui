@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { contestEventService } from '@/services/contestEventService'
-import type { ContestEventCreatePayload, ContestEventDetail, FAQItem, RoundItem, RewardItem } from '@/types/contestEvent'
+import type { ContestEventCreatePayload, ContestEventDetail, ContestEventUpdatePayload, FAQItem, RoundItem, RewardItem } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
 import { toast } from 'react-hot-toast'
@@ -126,29 +126,28 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     }
   }
 
-  const buildPayload = () => {
+  const buildPayload = (): ContestEventCreatePayload => {
     const emptyToUndef = (v: string | undefined) => (v === '' || v === undefined ? undefined : v)
-    const payload: Record<string, unknown> = {
+    return {
       ...form,
       organizer_email: emptyToUndef(form.organizer_email),
       support_email: emptyToUndef(form.support_email),
       slug: emptyToUndef(form.slug),
       registration_external_url: emptyToUndef(form.registration_external_url),
+      banner_url: emptyToUndef(form.banner_url),
+      organizer_logo_url: emptyToUndef(form.organizer_logo_url),
       event_start_date: new Date(form.event_start_date).toISOString(),
       event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : undefined,
       registration_start_date: form.registration_start_date ? new Date(form.registration_start_date).toISOString() : undefined,
       registration_end_date: form.registration_end_date ? new Date(form.registration_end_date).toISOString() : undefined,
     }
-    if (eventId) {
-      // Send null explicitly so the backend clears images when removed
-      payload.banner_url = form.banner_url || null
-      payload.organizer_logo_url = form.organizer_logo_url || null
-    } else {
-      payload.banner_url = emptyToUndef(form.banner_url)
-      payload.organizer_logo_url = emptyToUndef(form.organizer_logo_url)
-    }
-    return payload
   }
+
+  const buildUpdatePayload = (): ContestEventUpdatePayload => ({
+    ...buildPayload(),
+    banner_url: form.banner_url || null,
+    organizer_logo_url: form.organizer_logo_url || null,
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -160,10 +159,10 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     try {
       const payload = buildPayload()
       if (eventId) {
-        await contestEventService.updateEvent(eventId, payload)
+        await contestEventService.updateEvent(eventId, buildUpdatePayload())
         toast.success('Event updated')
       } else {
-        await contestEventService.createEvent(payload as ContestEventCreatePayload)
+        await contestEventService.createEvent(payload)
         toast.success('Event created')
       }
       router.push('/dashboard/admin/events')

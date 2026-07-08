@@ -201,6 +201,13 @@ export interface ContestEventCreatePayload {
   sections?: SectionItem[]
 }
 
+export type ContestEventUpdatePayload = Partial<
+  Omit<ContestEventCreatePayload, 'banner_url' | 'organizer_logo_url'>
+> & {
+  banner_url?: string | null
+  organizer_logo_url?: string | null
+}
+
 export interface ContestEventAnalytics {
   total_views: number
   unique_visitors: number
