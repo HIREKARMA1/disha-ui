@@ -154,11 +154,12 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
             const options = {
                 margin: [10, 10, 10, 10] as [number, number, number, number],
                 filename: fileName,
-                image: { type: 'jpeg', quality: 0.85 },
+                image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: {
-                    scale: 1.5,
+                    scale: 3.5, // High resolution scale to ensure crisp vector-like text quality
                     useCORS: true,
                     allowTaint: true,
+                    letterRendering: true,
                 },
                 jsPDF: {
                     unit: 'mm',
@@ -449,6 +450,9 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                     pointerEvents: 'none',
                     opacity: 0,
                     zIndex: -1,
+                    fontVariantLigatures: 'none',
+                    fontFeatureSettings: '"liga" 0',
+                    textRendering: 'geometricPrecision',
                 }}
             >
                 {downloadingResume && (
@@ -458,6 +462,7 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                             templateId={downloadingResume.template_id}
                             settings={downloadingResume.settings}
                             onReady={handlePreviewReady}
+                            hideTemplateInfo={true}
                         />
                     </div>
                 )}

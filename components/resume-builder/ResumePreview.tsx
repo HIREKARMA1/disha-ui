@@ -8,9 +8,10 @@ interface ResumePreviewProps {
     templateId: string | null
     settings?: Record<string, unknown>
     onReady?: () => void
+    hideTemplateInfo?: boolean
 }
 
-export function ResumePreview({ resumeData, templateId, settings, onReady }: ResumePreviewProps) {
+export function ResumePreview({ resumeData, templateId, settings, onReady, hideTemplateInfo }: ResumePreviewProps) {
     const [currentTemplate, setCurrentTemplate] = useState<TemplateInfo | null>(null)
     const [TemplateComponent, setTemplateComponent] = useState<React.ComponentType<{ resumeData: any }> | null>(null)
 
@@ -52,7 +53,7 @@ export function ResumePreview({ resumeData, templateId, settings, onReady }: Res
             </div>
 
             {/* Template Info */}
-            {currentTemplate && (
+            {!hideTemplateInfo && currentTemplate && (
                 <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                         <span className="font-medium">Template:</span> {currentTemplate.name} |

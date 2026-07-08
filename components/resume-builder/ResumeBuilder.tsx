@@ -250,22 +250,23 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
         try {
             setLoading(true)
 
-            // Configure PDF options with optimized settings for smaller file size
+            // Configure PDF options with optimized settings for high-resolution vector-like quality
             const options = {
                 margin: [10, 10, 10, 10] as [number, number, number, number],
                 filename: `${resumeData?.header?.fullName || 'resume'}_${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.85 }, // Reduced from 0.98 to 0.85 for smaller file size
+                image: { type: 'jpeg', quality: 0.98 },
                 enableLinks: true,
                 html2canvas: {
-                    scale: 1.5, // Reduced from 2 to 1.5 for smaller file size while maintaining quality
+                    scale: 3.5, // High resolution scale to ensure crisp vector-like text quality
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    letterRendering: true,
                 },
                 jsPDF: {
                     unit: 'mm',
                     format: 'a4',
                     orientation: 'portrait',
-                    compress: true // Enable PDF compression
+                    compress: true
                 }
             }
 
@@ -710,6 +711,9 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                     pointerEvents: 'none',
                     opacity: 0,
                     zIndex: -1,
+                    fontVariantLigatures: 'none',
+                    fontFeatureSettings: '"liga" 0',
+                    textRendering: 'geometricPrecision',
                 }}
                 aria-hidden="true"
             >
@@ -718,6 +722,7 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                         resumeData={resumeData}
                         templateId={selectedTemplateSlug}
                         settings={resumeSettings}
+                        hideTemplateInfo={true}
                     />
                 </div>
             </div>
