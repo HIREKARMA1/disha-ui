@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/ui/navbar'
 import { AdminSidebar } from './AdminSidebar'
 import { AdminWelcomeMessage } from './AdminWelcomeMessage'
@@ -9,66 +8,61 @@ import { AdminAnalyticsChart } from './AdminAnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { AdminRecentActivities } from './AdminRecentActivities'
 import { useAuth } from '@/hooks/useAuth'
-import { apiClient } from '@/lib/api'
+import { useAdminUserStatsContext, AdminUserStatsProvider } from '@/contexts/AdminUserStatsContext'
 import { LoadingOverlay } from './LoadingOverlay'
-import { AdminDashboardData } from '@/types/admin'
+import { AdminDashboardData, AdminJobStats } from '@/types/admin'
 
 interface AdminDashboardLayoutProps {
     children?: React.ReactNode
 }
 
+const MOCK_JOB_STATS: AdminJobStats = {
+    total_jobs: 320,
+    total_applications: 1250,
+    active_jobs: 280,
+    pending_approvals: 15,
+}
+
+const MOCK_DASHBOARD_EXTRAS: Pick<
+    AdminDashboardData,
+    'recent_activities' | 'monthly_stats' | 'top_industries' | 'top_locations' | 'analytics'
+> = {
+    recent_activities: [],
+    monthly_stats: {
+        sessions: 4500,
+        unique_users: 1200,
+        avg_session_duration: 8.5,
+        page_views: 12500,
+    },
+    top_industries: [],
+    top_locations: [],
+    analytics: {
+        real_time_metrics: [],
+        kpis: [],
+        alerts: [],
+    },
+}
+
 function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
-    const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
     const { user } = useAuth()
+    const {
+        userStats,
+        isLoading: isUserStatsLoading,
+        error: userStatsError,
+    } = useAdminUserStatsContext()
 
-    // Fetch dashboard data when component mounts
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (user?.user_type === 'admin') {
-                setIsLoading(true)
-                try {
-                    // TODO: Replace with actual admin dashboard API call
-                    // const data = await apiClient.getAdminDashboard()
-                    // setDashboardData(data)
+    const isAdmin = user?.user_type === 'admin'
+    const isLoading = isAdmin && isUserStatsLoading
+    const error = isAdmin ? userStatsError : null
 
-                    // Mock data for now
-                    setDashboardData({
-                        total_users: 1250,
-                        total_corporates: 45,
-                        total_students: 980,
-                        total_universities: 25,
-                        total_jobs: 320,
-                        total_applications: 1250,
-                        active_jobs: 280,
-                        pending_approvals: 15,
-                        recent_activities: [],
-                        monthly_stats: {
-                            sessions: 4500,
-                            unique_users: 1200,
-                            avg_session_duration: 8.5,
-                            page_views: 12500
-                        },
-                        top_industries: [],
-                        top_locations: [],
-                        analytics: {
-                            real_time_metrics: [],
-                            kpis: [],
-                            alerts: []
-                        }
-                    })
-                } catch (error) {
-                    console.error('Failed to fetch dashboard data:', error)
-                    setError('Failed to load dashboard data')
-                } finally {
-                    setIsLoading(false)
-                }
-            }
-        }
-
-        fetchDashboardData()
-    }, [user?.id, user?.user_type, user?.name])
+    const dashboardData: AdminDashboardData | null =
+        isAdmin && userStats
+            ? {
+                  ...userStats,
+                  ...MOCK_JOB_STATS,
+                  ...MOCK_DASHBOARD_EXTRAS,
+              }
+            : null
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -161,9 +155,9 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
 
 export function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
     return (
-        <>
+        <AdminUserStatsProvider>
             <AdminDashboardContent children={children} />
             <LoadingOverlay />
-        </>
+        </AdminUserStatsProvider>
     )
 }
