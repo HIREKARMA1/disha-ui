@@ -179,21 +179,26 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
       {/* Hero Banner */}
       <div className="relative pt-16">
-        <div className="h-48 md:h-64 bg-gradient-to-r from-primary-600 to-secondary-500 overflow-hidden">
-          {event.banner_url && (
-            <img src={event.banner_url} alt="" className="w-full h-full object-cover opacity-80" />
+        <div className="relative aspect-[21/9] md:aspect-[21/7] max-h-[420px] w-full overflow-hidden bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600">
+          {event.banner_url ? (
+            <>
+              <img src={event.banner_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/30 to-transparent" />
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600" />
           )}
         </div>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <div className="relative -mt-12 md:-mt-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
-            <div className="flex flex-col md:flex-row gap-4 md:items-start">
+          <div className="relative -mt-16 md:-mt-20 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 md:p-8">
+            <div className="flex flex-col md:flex-row gap-6 md:items-start">
               {event.organizer_logo_url && (
-                <div className="w-16 h-16 rounded-xl border border-gray-200 dark:border-gray-700 p-2 bg-white dark:bg-gray-900 flex-shrink-0">
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-gray-100 dark:border-gray-700 p-2.5 bg-white dark:bg-gray-900 shadow-md flex-shrink-0 -mt-12 md:-mt-14 ring-4 ring-white dark:ring-gray-800">
                   <img src={event.organizer_logo_url} alt="" className="w-full h-full object-contain" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {event.category && (
                     <Badge variant="outline">{CATEGORY_LABELS[event.category] || event.category}</Badge>
                   )}
@@ -215,7 +220,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                     <strong>Postponement notice:</strong> {event.postponed_reason}
                   </div>
                 )}
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{event.title}</h1>
+                <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">{event.title}</h1>
                 {event.subtitle && (
                   <p className="text-gray-600 dark:text-gray-400 mt-1">{event.subtitle}</p>
                 )}
@@ -240,8 +245,10 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                   )}
                 </div>
               </div>
-              <div className="hidden md:block w-48 flex-shrink-0">
-                <RegisterButton />
+              <div className="hidden md:block w-52 flex-shrink-0">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/80 dark:bg-gray-900/50">
+                  <RegisterButton />
+                </div>
               </div>
             </div>
           </div>
@@ -277,9 +284,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           <div className="flex-1 min-w-0 space-y-8">
             {/* Description */}
             <section id="description" ref={(el) => { sectionRefs.current['description'] = el }} className="scroll-mt-36">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Description</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Description</h2>
               <div
-                className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
                 dangerouslySetInnerHTML={{ __html: event.long_description || event.short_description || 'No description available.' }}
               />
             </section>
@@ -374,9 +381,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
               {event.faqs.length > 0 ? (
                 <div className="space-y-2">
                   {event.faqs.map((faq, i) => (
-                    <div key={faq.id || i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div key={faq.id || i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                       <button
-                        className="w-full flex items-center justify-between p-4 text-left"
+                        className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-colors"
                         onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
                       >
                         <span className="font-medium text-gray-900 dark:text-white pr-4">{faq.question}</span>
@@ -442,7 +449,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           {/* Right Sidebar */}
           <aside className="lg:w-80 flex-shrink-0">
             <div className="sticky top-36 space-y-4">
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+              <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-4 shadow-lg shadow-gray-200/40 dark:shadow-none">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Quick Info</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Upload, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Save, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventCreatePayload, ContestEventDetail, FAQItem, RoundItem, RewardItem } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
+import { EventImageUpload } from '@/components/admin/EventImageUpload'
 import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
@@ -108,9 +109,14 @@ export function EventCreateForm({ eventId }: EventFormProps) {
   const update = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }))
 
   const handleUpload = async (file: File, type: 'banner' | 'logo' | 'document', field: string) => {
+    const maxSize = type === 'document' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error(type === 'document' ? 'File must be less than 10MB' : 'Image must be less than 5MB')
+      return
+    }
     setUploading(field)
     try {
-      const result = await contestEventService.uploadFile(file, type)
+      const result = await contestEventService.uploadFile(file, type === 'document' ? 'document' : type)
       update(field, result.file_url)
       toast.success('File uploaded')
     } catch {
@@ -118,6 +124,30 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     } finally {
       setUploading(null)
     }
+  }
+
+  const buildPayload = () => {
+    const emptyToUndef = (v: string | undefined) => (v === '' || v === undefined ? undefined : v)
+    const payload: Record<string, unknown> = {
+      ...form,
+      organizer_email: emptyToUndef(form.organizer_email),
+      support_email: emptyToUndef(form.support_email),
+      slug: emptyToUndef(form.slug),
+      registration_external_url: emptyToUndef(form.registration_external_url),
+      event_start_date: new Date(form.event_start_date).toISOString(),
+      event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : undefined,
+      registration_start_date: form.registration_start_date ? new Date(form.registration_start_date).toISOString() : undefined,
+      registration_end_date: form.registration_end_date ? new Date(form.registration_end_date).toISOString() : undefined,
+    }
+    if (eventId) {
+      // Send null explicitly so the backend clears images when removed
+      payload.banner_url = form.banner_url || null
+      payload.organizer_logo_url = form.organizer_logo_url || null
+    } else {
+      payload.banner_url = emptyToUndef(form.banner_url)
+      payload.organizer_logo_url = emptyToUndef(form.organizer_logo_url)
+    }
+    return payload
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,23 +158,18 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     }
     setSaving(true)
     try {
-      const payload = {
-        ...form,
-        event_start_date: new Date(form.event_start_date).toISOString(),
-        event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : undefined,
-        registration_start_date: form.registration_start_date ? new Date(form.registration_start_date).toISOString() : undefined,
-        registration_end_date: form.registration_end_date ? new Date(form.registration_end_date).toISOString() : undefined,
-      }
+      const payload = buildPayload()
       if (eventId) {
         await contestEventService.updateEvent(eventId, payload)
         toast.success('Event updated')
       } else {
-        await contestEventService.createEvent(payload)
+        await contestEventService.createEvent(payload as ContestEventCreatePayload)
         toast.success('Event created')
       }
       router.push('/dashboard/admin/events')
-    } catch {
-      toast.error('Failed to save event')
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      toast.error(typeof msg === 'string' ? msg : 'Failed to save event')
     } finally {
       setSaving(false)
     }
@@ -167,6 +192,30 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           {eventId ? 'Update' : 'Create'}
         </Button>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle>Event Images</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <EventImageUpload
+            label="Background Banner Image"
+            hint="Used on event details hero. Recommended ratio 16:9."
+            value={form.banner_url}
+            onChange={(url) => update('banner_url', url)}
+            onUpload={async (file) => handleUpload(file, 'banner', 'banner_url')}
+            uploading={uploading === 'banner_url'}
+            aspect="banner"
+          />
+          <EventImageUpload
+            label="Event Profile / Logo Image"
+            hint="Shown in listings, dashboards, and event details."
+            value={form.organizer_logo_url}
+            onChange={(url) => update('organizer_logo_url', url)}
+            onUpload={async (file) => handleUpload(file, 'logo', 'organizer_logo_url')}
+            uploading={uploading === 'organizer_logo_url'}
+            aspect="logo"
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
@@ -201,32 +250,6 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           <div>
             <label className="text-sm font-medium">Long Description</label>
             <Textarea value={form.long_description || ''} onChange={(e) => update('long_description', e.target.value)} rows={5} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Event Banner</label>
-              <div className="flex gap-2 mt-1">
-                <Input value={form.banner_url || ''} onChange={(e) => update('banner_url', e.target.value)} placeholder="URL or upload" />
-                <label className="cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], 'banner', 'banner_url')} />
-                  <Button type="button" variant="outline" size="sm" disabled={uploading === 'banner_url'}>
-                    {uploading === 'banner_url' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  </Button>
-                </label>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Organizer Logo</label>
-              <div className="flex gap-2 mt-1">
-                <Input value={form.organizer_logo_url || ''} onChange={(e) => update('organizer_logo_url', e.target.value)} placeholder="URL or upload" />
-                <label className="cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], 'logo', 'organizer_logo_url')} />
-                  <Button type="button" variant="outline" size="sm" disabled={uploading === 'organizer_logo_url'}>
-                    {uploading === 'organizer_logo_url' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  </Button>
-                </label>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

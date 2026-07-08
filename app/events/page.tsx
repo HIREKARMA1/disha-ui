@@ -77,13 +77,24 @@ function EventsPageContent() {
       <Navbar variant="transparent" />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 max-w-7xl flex-grow">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Events & Contests
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Discover hackathons, workshops, placement drives, and competitions
-          </p>
+        <div className="mb-10 relative">
+          <div className="absolute -inset-x-4 -top-8 h-32 bg-gradient-to-r from-primary-500/10 via-secondary-500/10 to-transparent rounded-3xl blur-2xl pointer-events-none" />
+          <div className="relative">
+            <p className="text-sm font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">
+              HireKarma Events
+            </p>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+              Events & Contests
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl text-lg">
+              Discover hackathons, workshops, placement drives, and competitions curated for your career growth.
+            </p>
+            {!loading && pagination.total_count > 0 && (
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                {pagination.total_count} events available
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -134,7 +145,7 @@ function EventsPageContent() {
                 <p className="text-sm mt-1">Try adjusting your filters or search terms</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-5">
                 {events.map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}
