@@ -23,7 +23,8 @@ import {
     Briefcase,
     Brain,
     Library,
-    Mail
+    Mail,
+    MessageCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -131,6 +132,13 @@ const navItems: NavItem[] = [
         icon: Mail,
         description: 'Send bulk emails to users',
         color: 'from-sky-500 to-blue-600'
+    },
+    {
+        label: 'Bulk WhatsApp',
+        href: '/dashboard/admin/bulk-whatsapp',
+        icon: MessageCircle,
+        description: 'Send bulk WhatsApp messages',
+        color: 'from-emerald-500 to-green-600'
     },
     {
         label: 'System Monitor',
