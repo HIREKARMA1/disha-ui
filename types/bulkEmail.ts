@@ -12,6 +12,8 @@ export interface BulkEmailRecipient {
 export interface BulkEmailRecipientsResponse {
     count: number
     users: BulkEmailRecipient[]
+    limit?: number
+    offset?: number
 }
 
 export interface BulkEmailUploadResponse {
@@ -31,9 +33,12 @@ export interface BulkEmailSendRequest {
 export interface BulkEmailSendResponse {
     success: boolean
     message: string
-    log_id: string
-    recipient_count: number
+    log_id?: string | null
+    recipient_count?: number | null
+    success_count?: number | null
+    failure_count?: number | null
     queued?: boolean
+    error?: string | null
 }
 
 export interface BulkEmailLog {
@@ -53,7 +58,7 @@ export interface BulkEmailLogsResponse {
     total: number
 }
 
-export type RecipientSource = 'filter' | 'manual' | 'imported'
+export type RecipientSource = 'filter' | 'manual' | 'imported' | 'search'
 
 export interface ManagedRecipient extends BulkEmailRecipient {
     source: RecipientSource
