@@ -64,15 +64,15 @@ function StatCard({
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center dark:border-gray-600 dark:bg-gray-800/50">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-100 to-orange-100 dark:from-rose-900/30 dark:to-orange-900/30">
-        <CalendarDays className="h-10 w-10 text-rose-500" />
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-100 to-secondary-100 dark:from-primary-900/30 dark:to-secondary-900/30">
+        <CalendarDays className="h-10 w-10 text-primary-500" />
       </div>
       <h3 className="text-xl font-bold text-gray-900 dark:text-white">No events yet</h3>
       <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
         Create your first contest, hackathon, or placement drive to start engaging students and partners.
       </p>
       <Link href="/dashboard/admin/events/create" className="mt-6">
-        <Button className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600">
+        <Button className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
           <Plus className="mr-2 h-4 w-4" /> Create Event
         </Button>
       </Link>
@@ -206,11 +206,11 @@ export function EventList() {
   }
 
   const statCards = useMemo(() => [
-    { label: 'Total Events', value: stats.total, icon: Calendar, gradient: 'from-rose-500 to-orange-500' },
-    { label: 'Upcoming', value: stats.upcoming, icon: Activity, gradient: 'from-blue-500 to-cyan-500' },
-    { label: 'Live', value: stats.live, icon: Megaphone, gradient: 'from-emerald-500 to-green-500' },
-    { label: 'Completed', value: stats.completed, icon: CheckCircle2, gradient: 'from-gray-500 to-slate-600' },
-    { label: 'Cancelled', value: stats.cancelled, icon: AlertCircle, gradient: 'from-red-500 to-rose-600' },
+    { label: 'Total Events', value: stats.total, icon: Calendar, gradient: 'from-primary-500 to-secondary-500' },
+    { label: 'Upcoming', value: stats.upcoming, icon: Activity, gradient: 'from-primary-400 to-primary-600' },
+    { label: 'Live', value: stats.live, icon: Megaphone, gradient: 'from-secondary-400 to-secondary-600' },
+    { label: 'Completed', value: stats.completed, icon: CheckCircle2, gradient: 'from-gray-500 to-gray-600' },
+    { label: 'Cancelled', value: stats.cancelled, icon: AlertCircle, gradient: 'from-accent-red-500 to-accent-red-600' },
   ], [stats])
 
   return (

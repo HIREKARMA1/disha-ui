@@ -118,7 +118,7 @@ const navItems: NavItem[] = [
         href: '/dashboard/admin/events',
         icon: Calendar,
         description: 'Manage events',
-        color: 'from-rose-500 to-pink-600'
+        color: 'from-primary-500 to-secondary-500'
     },
     {
         label: 'Bulk Email',

@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Plus, BarChart3, List } from 'lucide-react'
+import { Plus, BarChart3, List, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
 import { navItemIsActive } from '@/lib/adminNav'
 
 const SUB_NAV_ITEMS = [
@@ -27,22 +28,26 @@ function eventSubNavIsActive(pathname: string, href: string) {
 
 export function EventManagementHero() {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-orange-50 to-amber-50 p-6 dark:border-rose-800/50 dark:from-rose-950/30 dark:via-orange-950/20 dark:to-amber-950/20">
+    <div className="rounded-2xl border border-primary-200 bg-gradient-to-r from-primary-50 to-secondary-50 p-6 dark:border-primary-700 dark:from-primary-900/20 dark:to-secondary-900/20">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
-          <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white md:text-3xl">
-            Event Management
-          </h1>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white md:text-3xl">
+              Event Management
+            </h1>
+          </div>
           <p className="text-base text-gray-600 dark:text-gray-300 md:text-lg">
             Create and manage contests, placement drives, hackathons, and workshops across the platform.
           </p>
         </div>
-        <Link
-          href="/dashboard/admin/events/create"
-          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:shadow-lg hover:brightness-105"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Event
+        <Link href="/dashboard/admin/events/create" className="shrink-0">
+          <Button className="bg-gradient-to-r from-primary-500 to-secondary-500 shadow-md hover:from-primary-600 hover:to-secondary-600 hover:shadow-lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Event
+          </Button>
         </Link>
       </div>
     </div>
@@ -70,7 +75,7 @@ export function EventManagementSubNav() {
               <div
                 className={`rounded-lg p-2.5 ${
                   isActive
-                    ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white'
+                    ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white'
                     : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
                 }`}
               >
