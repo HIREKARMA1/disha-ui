@@ -1,7 +1,8 @@
 "use client"
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, Briefcase, Clock, DollarSign, Users, Building, Calendar, Globe, Car, GraduationCap, Award, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
+import { X, MapPin, Briefcase, Clock, IndianRupee, Users, Building, Calendar, Globe, Car, GraduationCap, Award, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
+import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api'
@@ -243,14 +244,6 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     }
 
 
-    const formatSalary = (currency: string, min?: number, max?: number) => {
-        if (!min && !max) return 'Not specified'
-        if (min && max) return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`
-        if (min) return `${currency} ${min.toLocaleString()}+`
-        if (max) return `${currency} Up to ${max.toLocaleString()}`
-        return 'Not specified'
-    }
-
     const formatExperience = (min?: number, max?: number) => {
         if (min === undefined && max === undefined) return 'Not specified'
         if (min !== undefined && max !== undefined) return `${min}-${max} years`
@@ -365,12 +358,12 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                                        <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                        <IndianRupee className="w-5 h-5 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Salary Range</p>
                                         <p className="font-medium text-gray-900 dark:text-white">
-                                            {formatSalary(job.salary_currency, job.salary_min, job.salary_max)}
+                                            {formatSalaryRange(job.salary_min, job.salary_max)}
                                         </p>
                                     </div>
                                 </div>
@@ -823,7 +816,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         {(job.ctc_with_probation || job.ctc_after_probation) && (
                             <div className="mb-6">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <DollarSign className="w-5 h-5 text-primary-500" />
+                                    <IndianRupee className="w-5 h-5 text-primary-500" />
                                     CTC Details
                                 </h3>
                                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
 import { StudentManagementHeader } from '@/components/dashboard/StudentManagementHeader'
 import { StudentTable } from '@/components/dashboard/StudentTable'
-import { CreateStudentModal, degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
+import { CreateStudentModal, degreeOptions } from '@/components/dashboard/CreateStudentModal'
+import { useBranches } from '@/hooks/useLookup'
 import { BulkUploadModal } from '@/components/dashboard/BulkUploadModal'
 import { apiClient } from '@/lib/api'
 import { StudentListResponse, StudentListItem } from '@/types/university'
@@ -15,6 +16,7 @@ import { UserPlus, Upload, Users, GraduationCap, TrendingUp, Download } from 'lu
 import { exportStudentsToCSV } from '@/utils/exportToExcel'
 
 export default function UniversityStudents() {
+    const { data: branchLookup } = useBranches({ limit: 1000 })
     const [students, setStudents] = useState<StudentListItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -49,7 +51,7 @@ export default function UniversityStudents() {
     }, [includeArchived])
 
     // Use predefined options for branches and degrees
-    const branches = branchOptions.map(option => option.value)
+    const branches = branchLookup.map((option) => option.name)
     const degrees = degreeOptions.map(option => option.value)
 
     // Generate year options: previous 10 years + current year + next 10 years

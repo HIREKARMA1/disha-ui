@@ -232,3 +232,59 @@ html, body {
     overflow-x: hidden !important;
   }
 }
+
+/* Google Places Autocomplete dropdown */
+.pac-container {
+  z-index: 10000 !important;
+  margin-top: 4px;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(209 213 219);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  font-family: inherit;
+}
+
+.dark .pac-container {
+  background-color: rgb(31 41 55);
+  border-color: rgb(75 85 99);
+  color: rgb(243 244 246);
+}
+
+.pac-item {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-top: 1px solid rgb(229 231 235);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.dark .pac-item {
+  border-top-color: rgb(55 65 81);
+  color: rgb(229 231 235);
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background-color: rgb(239 246 255);
+}
+
+.dark .pac-item:hover,
+.dark .pac-item-selected {
+  background-color: rgb(55 65 81);
+}
+
+.pac-item-query {
+  font-size: 0.875rem;
+  color: rgb(17 24 39);
+}
+
+.dark .pac-item-query {
+  color: rgb(243 244 246);
+}
+
+.pac-matched {
+  font-weight: 600;
+}
+
+.pac-logo::after {
+  margin: 0.25rem 0.5rem;
+}

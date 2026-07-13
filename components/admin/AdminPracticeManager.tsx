@@ -42,7 +42,7 @@ import {
 } from '@/hooks/useAdminPracticeActions'
 import { useUniversities } from '@/hooks/useUniversities'
 import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
-import { BranchSelection, branchOptions } from '@/components/ui/BranchSelection'
+import { BranchSelection } from '@/components/ui/BranchSelection'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import toast from 'react-hot-toast'
 import { LoadingSkeleton, TableSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
@@ -1205,10 +1205,7 @@ function CreateModuleForm({ module, onSave, onCancel }: CreateModuleFormProps) {
         })
 
         // Convert branch IDs to branch names for better filtering
-        const selectedBranchNames = formData.branch_ids.map(branchId => {
-            const branch = branchOptions.find(branch => branch.value === branchId)
-            return branch ? branch.label : branchId
-        })
+        const selectedBranchNames = formData.branch_ids.map((branchId) => branchId)
 
         // Prepare the module data for the API
         const moduleData = {

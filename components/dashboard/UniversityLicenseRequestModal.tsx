@@ -12,7 +12,8 @@ import { FileText, Calendar, Users, MessageSquare, X, CheckCircle, AlertCircle, 
 import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
-import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
+import { degreeOptions } from '@/components/dashboard/CreateStudentModal'
+import { useBranches } from '@/hooks/useLookup'
 
 interface UniversityLicenseRequestModalProps {
     isOpen: boolean
@@ -25,6 +26,7 @@ interface UniversityLicenseRequestModalProps {
 }
 
 export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, initialBatch, isRenewalFlow, initialDegree, initialBranches }: UniversityLicenseRequestModalProps) {
+    const { data: branches } = useBranches({ limit: 1000 })
     const [loading, setLoading] = useState(false)
     const [checkingEligibility, setCheckingEligibility] = useState(false)
     const [eligibilityError, setEligibilityError] = useState<string | null>(null)
@@ -46,11 +48,11 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     })
 
     const branchDropdownOptions = useMemo(() => (
-        branchOptions.map((option: { value: string; label: string }) => ({
-            value: option.value,
-            label: option.label
+        branches.map((branch) => ({
+            value: branch.name,
+            label: branch.name
         }))
-    ), [])
+    ), [branches])
 
     // Reset state when modal opens
     useEffect(() => {

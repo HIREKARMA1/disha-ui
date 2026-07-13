@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, DollarSign, Users, Briefcase, Clock, Building } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,39 +11,11 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { FileUpload } from '@/components/ui/file-upload'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
-import { useIndustries } from '@/hooks/useLookup'
+import { useIndustries, useBranches } from '@/hooks/useLookup'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
-
-// Fallback industry options (used if lookup API returns empty)
-const fallbackIndustryOptions = [
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Manufacturing', label: 'Manufacturing' },
-    { value: 'Retail', label: 'Retail' },
-    { value: 'Real Estate', label: 'Real Estate' },
-    { value: 'Consulting', label: 'Consulting' },
-    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-    { value: 'Telecommunications', label: 'Telecommunications' },
-    { value: 'Automotive', label: 'Automotive' },
-    { value: 'Aerospace', label: 'Aerospace' },
-    { value: 'Energy', label: 'Energy' },
-    { value: 'Government', label: 'Government' },
-    { value: 'Non-Profit', label: 'Non-Profit' },
-    { value: 'E-commerce', label: 'E-commerce' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Insurance', label: 'Insurance' },
-    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-    { value: 'Food & Beverage', label: 'Food & Beverage' },
-    { value: 'Transportation', label: 'Transportation' },
-    { value: 'Logistics', label: 'Logistics' },
-    { value: 'Hospitality', label: 'Hospitality' },
-    { value: 'Agriculture', label: 'Agriculture' },
-    { value: 'Construction', label: 'Construction' },
-    { value: 'Other', label: 'Other' }
-]
+import { LookupSelect } from '@/components/ui/lookup-select'
+import { lookupService } from '@/services/lookupService'
+import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 
 // Degree options (same as student modal)
 const degreeOptions = [
@@ -65,41 +37,6 @@ const degreeOptions = [
     { value: 'Post Graduate Diploma', label: 'Post Graduate Diploma (PGD)' },
     { value: 'Doctor of Philosophy', label: 'Doctor of Philosophy (Ph.D)' },
     { value: 'Any', label: 'Any' }
-]
-
-// Branch options (same as student modal)
-const branchOptions = [
-    { value: 'Computer Science and Engineering', label: 'Computer Science and Engineering' },
-    { value: 'Information Technology', label: 'Information Technology' },
-    { value: 'Electronics and Communication Engineering', label: 'Electronics and Communication Engineering' },
-    { value: 'Electrical Engineering', label: 'Electrical Engineering' },
-    { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
-    { value: 'Civil Engineering', label: 'Civil Engineering' },
-    { value: 'Chemical Engineering', label: 'Chemical Engineering' },
-    { value: 'Aerospace Engineering', label: 'Aerospace Engineering' },
-    { value: 'Biotechnology', label: 'Biotechnology' },
-    { value: 'Data Science', label: 'Data Science' },
-    { value: 'Artificial Intelligence', label: 'Artificial Intelligence' },
-    { value: 'Machine Learning', label: 'Machine Learning' },
-    { value: 'Cybersecurity', label: 'Cybersecurity' },
-    { value: 'Software Engineering', label: 'Software Engineering' },
-    { value: 'Business Administration', label: 'Business Administration' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Operations Management', label: 'Operations Management' },
-    { value: 'International Business', label: 'International Business' },
-    { value: 'Economics', label: 'Economics' },
-    { value: 'Mathematics', label: 'Mathematics' },
-    { value: 'Physics', label: 'Physics' },
-    { value: 'Chemistry', label: 'Chemistry' },
-    { value: 'Biology', label: 'Biology' },
-    { value: 'English Literature', label: 'English Literature' },
-    { value: 'History', label: 'History' },
-    { value: 'Psychology', label: 'Psychology' },
-    { value: 'Sociology', label: 'Sociology' },
-    { value: 'Political Science', label: 'Political Science' },
-    { value: 'All', label: 'All Branches' }
 ]
 
 interface CreateJobModalProps {
@@ -155,14 +92,24 @@ interface JobFormData {
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corporate' }: CreateJobModalProps) {
-    // Fetch industries from backend (same source as Edit screen)
-    const { data: industriesData } = useIndustries({ limit: 1000 })
-    const industryOptions = industriesData.length > 0
-        ? industriesData.map(industry => ({ value: industry.name, label: industry.name }))
-        : fallbackIndustryOptions
+    const { data: industriesData, loading: loadingIndustries, error: industriesError, refetch: refetchIndustries } = useIndustries({
+        limit: 1000,
+        enabled: isOpen,
+    })
+    const { data: branchesData } = useBranches({ limit: 1000, enabled: isOpen })
+    const branchOptions = [
+        ...branchesData.map((branch) => ({ value: branch.name, label: branch.name })),
+        { value: 'All', label: 'All Branches' },
+    ]
+
+    useEffect(() => {
+        if (!isOpen) return
+        lookupService.clearCache('/admin/lookups/industries')
+        void refetchIndustries()
+    }, [isOpen, refetchIndustries])
 
     const [isLoading, setIsLoading] = useState(false)
-    const [currentLocation, setCurrentLocation] = useState('')
+    const [jobLocationLabel, setJobLocationLabel] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [uploadingLogo, setUploadingLogo] = useState(false)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -249,23 +196,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         })
     }
 
-    const addLocation = () => {
-        if (currentLocation.trim() && !formData.location.includes(currentLocation.trim())) {
-            setFormData(prev => ({
-                ...prev,
-                location: [...prev.location, currentLocation.trim()]
-            }))
-            setCurrentLocation('')
-        }
-    }
-
-    const removeLocation = (locationToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            location: prev.location.filter(location => location !== locationToRemove)
-        }))
-    }
-
     const handleLogoUpload = async (file: File) => {
         setUploadingLogo(true)
         try {
@@ -293,14 +223,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 // Corporate users: use regular image upload (though they shouldn't be using this for company logos)
                 result = await apiClient.uploadImage(file)
             }
-            
+
             // Update form data with the uploaded logo URL
             handleInputChange('company_logo', result.file_url)
-            
+
             // Create preview URL for display
             const previewUrl = URL.createObjectURL(file)
             setLogoPreview(previewUrl)
-            
+
             toast.success('Company logo uploaded successfully!')
         } catch (error: any) {
             console.error('Logo upload error:', error)
@@ -343,7 +273,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             errors.job_type = 'Job type is required'
         }
         if (formData.location.length === 0) {
-            errors.location = 'At least one location is required'
+            errors.location = 'Please select a job location from the suggestions'
         }
 
         // Validate company information fields for university-created jobs
@@ -374,7 +304,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 remote_work: formData.remote_work,
                 travel_required: formData.travel_required
             })
-            
+
             let modeOfWork = null
             if (formData.onsite_office && formData.remote_work) {
                 modeOfWork = 'hybrid'
@@ -383,7 +313,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             } else if (formData.remote_work) {
                 modeOfWork = 'remote'
             }
-            
+
             console.log('🔍 Create job - Derived mode_of_work:', modeOfWork)
 
             // Prepare data for API - match backend schema exactly
@@ -451,6 +381,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             toast.success(message)
             onJobCreated()
             onClose()
+
+            setJobLocationLabel('')
 
             // Reset form
             setFormData({
@@ -714,18 +646,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Industry
                                             </label>
-                                            <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select industry" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {industryOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <LookupSelect
+                                                value={formData.industry}
+                                                onChange={(value) => handleInputChange('industry', value)}
+                                                data={industriesData}
+                                                loading={loadingIndustries}
+                                                placeholder="Select industry"
+                                                error={industriesError || undefined}
+                                            />
                                         </div>
 
                                         <div>
@@ -860,44 +788,31 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Location *
+                                            Job Location *
                                         </label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={currentLocation}
-                                                onChange={(e) => setCurrentLocation(e.target.value)}
-                                                placeholder={validationErrors.location || "Add a location (e.g., Bangalore, Pan India, Mumbai)"}
-                                                className={validationErrors.location ? "border-red-500 placeholder-red-500" : ""}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLocation())}
-                                            />
-                                            <Button type="button" onClick={addLocation} variant="outline">
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                        {validationErrors.location && (
-                                            <p className="text-red-500 text-sm mt-1">{validationErrors.location}</p>
-                                        )}
+                                        <GoogleLocationAutocomplete
+                                            value={jobLocationLabel || formData.location[0] || ''}
+                                            placeholder="Search for company, building, address, city, town, or locality"
+                                            mode="all"
+                                            required
+                                            error={validationErrors.location}
+                                            onChange={(place) => {
+                                                const label = place.formattedAddress
+                                            
+                                                setJobLocationLabel(label)
+                                            
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    location: label ? [label] : [],
+                                                }))
+                                                setValidationErrors((prev) => {
+                                                    const next = { ...prev }
+                                                    delete next.location
+                                                    return next
+                                                })
+                                            }}
+                                        />
                                     </div>
-
-                                    {formData.location.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {formData.location.map((location, index) => (
-                                                <span
-                                                    key={index}
-                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm"
-                                                >
-                                                    {location}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeLocation(location)}
-                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -905,18 +820,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Industry
                                         </label>
-                                        <Select value={formData.industry} onValueChange={(value) => handleInputChange('industry', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select industry" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {industryOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <LookupSelect
+                                            value={formData.industry}
+                                            onChange={(value) => handleInputChange('industry', value)}
+                                            data={industriesData}
+                                            loading={loadingIndustries}
+                                            placeholder="Select industry"
+                                            error={industriesError || undefined}
+                                        />
                                     </div>
                                 </div>
 
@@ -956,7 +867,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                             {/* Compensation */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <DollarSign className="w-5 h-5" />
+                                    <IndianRupee className="w-5 h-5" />
                                     Compensation & Experience
                                 </h3>
 
@@ -1006,9 +917,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="INR">INR</SelectItem>
-                                                <SelectItem value="USD">USD</SelectItem>
-                                                <SelectItem value="EUR">EUR</SelectItem>
+                                                <SelectItem value="INR">INR (₹)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -1098,7 +1007,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 {/* Probation Salary Details */}
                                 <div className="space-y-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <DollarSign className="w-5 h-5" />
+                                        <IndianRupee className="w-5 h-5" />
                                         Probation Salary Details
                                     </h3>
 
@@ -1116,7 +1025,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Probation Time
+                                                Probation Time
                                             </label>
                                             <Input
                                                 value={formData.ctc_after_probation}

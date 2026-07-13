@@ -3,15 +3,14 @@
  * Professional React hook for fetching lookup data with loading states and error handling
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { lookupService, LookupItem } from '@/services/lookupService'
-import { universityService } from '@/services/universityService'
 
 export interface UseLookupOptions {
   skip?: number
   limit?: number
-  enabled?: boolean // Allow disabling the hook
-  refetchOnMount?: boolean // Allow disabling refetch on mount
+  enabled?: boolean
+  refetchOnMount?: boolean
 }
 
 export interface UseLookupReturn {
@@ -34,14 +33,17 @@ export function useLookup(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchFnRef = useRef(fetchFunction)
+  fetchFnRef.current = fetchFunction
+
+  const fetchData = useCallback(async () => {
     if (!enabled) return
 
     setLoading(true)
     setError(null)
-    
+
     try {
-      const result = await fetchFunction()
+      const result = await fetchFnRef.current()
       setData(result)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data'
@@ -50,28 +52,28 @@ export function useLookup(
     } finally {
       setLoading(false)
     }
-  }
+  }, [enabled])
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     await fetchData()
-  }
+  }, [fetchData])
 
-  const clearCache = () => {
+  const clearCache = useCallback(() => {
     lookupService.clearCache()
-  }
+  }, [])
 
   useEffect(() => {
-    if (refetchOnMount) {
-      fetchData()
+    if (refetchOnMount && enabled) {
+      void fetchData()
     }
-  }, [enabled, refetchOnMount])
+  }, [enabled, refetchOnMount, fetchData])
 
   return {
     data,
     loading,
     error,
     refetch,
-    clearCache
+    clearCache,
   }
 }
 
@@ -79,55 +81,100 @@ export function useLookup(
  * Hook for fetching branches
  */
 export function useBranches(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getBranches(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getBranches({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching degrees
  */
 export function useDegrees(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getDegrees(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getDegrees({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching skills
  */
 export function useSkills(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getSkills(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getSkills({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching soft skills
  */
 export function useSoftSkills(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getSoftSkills(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getSoftSkills({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching industries
  */
 export function useIndustries(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getIndustries(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getIndustries({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
+}
+
+export function useInstituteTypes(options: UseLookupOptions = {}) {
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getInstituteTypes({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching colleges
  */
 export function useColleges(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getColleges(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getColleges({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching universities (using existing university management endpoint)
  */
 export function useUniversities(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getUniversities(options), options)
+  const { enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(() => lookupService.getUniversities(), [])
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
 
 /**
  * Hook for fetching job categories
  */
 export function useJobCategories(options: UseLookupOptions = {}) {
-  return useLookup(() => lookupService.getJobCategories(options), options)
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getJobCategories({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
 }
-

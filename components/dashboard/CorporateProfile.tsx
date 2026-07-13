@@ -28,38 +28,10 @@ import { cn, getInitials, truncateText } from '@/lib/utils'
 import { corporateProfileService } from '@/services/corporateProfileService'
 import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
 import { useAuth } from '@/hooks/useAuth'
+import { useIndustries } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
 import toast from 'react-hot-toast'
-
-// Industry options
-const industryOptions = [
-    { value: 'Technology', label: 'Technology' },
-    { value: 'Finance', label: 'Finance' },
-    { value: 'Healthcare', label: 'Healthcare' },
-    { value: 'Education', label: 'Education' },
-    { value: 'Manufacturing', label: 'Manufacturing' },
-    { value: 'Retail', label: 'Retail' },
-    { value: 'Real Estate', label: 'Real Estate' },
-    { value: 'Consulting', label: 'Consulting' },
-    { value: 'Media & Entertainment', label: 'Media & Entertainment' },
-    { value: 'Telecommunications', label: 'Telecommunications' },
-    { value: 'Automotive', label: 'Automotive' },
-    { value: 'Aerospace', label: 'Aerospace' },
-    { value: 'Energy', label: 'Energy' },
-    { value: 'Government', label: 'Government' },
-    { value: 'Non-Profit', label: 'Non-Profit' },
-    { value: 'E-commerce', label: 'E-commerce' },
-    { value: 'Banking', label: 'Banking' },
-    { value: 'Insurance', label: 'Insurance' },
-    { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-    { value: 'Food & Beverage', label: 'Food & Beverage' },
-    { value: 'Transportation', label: 'Transportation' },
-    { value: 'Logistics', label: 'Logistics' },
-    { value: 'Hospitality', label: 'Hospitality' },
-    { value: 'Agriculture', label: 'Agriculture' },
-    { value: 'Construction', label: 'Construction' },
-    { value: 'Human Resources', label: 'Human Resources' },
-    { value: 'Other', label: 'Other' }
-]
+import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 
 interface ProfileSection {
     id: string
@@ -87,7 +59,7 @@ export function CorporateProfile() {
             id: 'basic',
             title: 'Basic Information',
             icon: Building2,
-            fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'bio', 'company_logo'],
+            fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'bio', 'company_logo'],
             completed: false
         },
         {
@@ -406,7 +378,7 @@ export function CorporateProfile() {
 
                                         {editing === 'basic' ? (
                                             <ProfileSectionForm
-                                                section={{ id: 'basic', title: 'Basic Information', icon: Building2, fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'bio', 'company_logo'], completed: false }}
+                                                section={{ id: 'basic', title: 'Basic Information', icon: Building2, fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'bio', 'company_logo'], completed: false }}
                                                 profile={profile}
                                                 onSave={(formData) => handleSave('basic', formData)}
                                                 saving={saving}
@@ -451,6 +423,15 @@ export function CorporateProfile() {
                                                         )}
                                                     </div>
                                                 )}
+
+                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                    <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                        Address
+                                                    </div>
+                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                        {profile.address || 'Address not provided'}
+                                                    </div>
+                                                </div>
 
                                                 {profile.bio && (
                                                     <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
@@ -600,10 +581,12 @@ interface ProfileSectionFormProps {
 
 function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: ProfileSectionFormProps) {
     const { getToken } = useAuth()
+    const { data: industries, loading: loadingIndustries, error: industriesError } = useIndustries({ limit: 1000 })
     const [formData, setFormData] = useState<any>({})
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+    const [addressError, setAddressError] = useState<string>('')
 
     useEffect(() => {
         if (profile && section) {
@@ -671,6 +654,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
         }
         
+        // Validate address for basic section
+        if (section.id === 'basic') {
+            if (!formData.address || !String(formData.address).trim()) {
+                validationErrors.push('Address is required. Please select a location from the suggestions.')
+                setAddressError('Address is required. Please select a location from the suggestions.')
+                hasValidationErrors = true
+            }
+        }
+
         // Validate company name if provided (for company section)
         if (formData.company_name && formData.company_name.trim().length < 2) {
             validationErrors.push('Company name must be at least 2 characters long')
@@ -888,6 +880,25 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         }
 
 
+        if (field === 'address') {
+            return (
+                <GoogleLocationAutocomplete
+                    value={value}
+                    placeholder="Search for your company address"
+                    mode="address"
+                    required
+                    error={addressError}
+                    onChange={(place) => {
+                        setAddressError('')
+                        setFormData({
+                            ...formData,
+                            address: place.formattedAddress,
+                        })
+                    }}
+                />
+            )
+        }
+
         // Handle name field with alphabet-only validation
         if (field === 'name') {
             return (
@@ -985,18 +996,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
 
         if (field === 'industry') {
             return (
-                <select
+                <LookupSelect
                     value={value}
-                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                >
-                    <option value="">Select industry</option>
-                    {industryOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={industries}
+                    loading={loadingIndustries}
+                    placeholder="Select industry"
+                    error={industriesError || undefined}
+                />
             )
         }
 
@@ -1014,8 +1021,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             fieldLabel = 'Contact Person Designation'
             placeholder = 'Enter contact person designation'
         } else if (field === 'address') {
-            fieldLabel = 'Email Address'
-            placeholder = 'Enter email address'
+            fieldLabel = 'Address'
+            placeholder = 'Search for your company address'
         }
 
         return (
@@ -1063,11 +1070,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     } else if (field === 'contact_designation') {
                         fieldLabel = 'Contact Person Designation'
                     } else if (field === 'address') {
-                        fieldLabel = 'Email Address'
+                        fieldLabel = 'Address'
                     }
                     
                     return (
-                        <div key={field} className={field.includes('bio') || field.includes('description') ? 'md:col-span-2' : ''}>
+                        <div key={field} className={field.includes('bio') || field.includes('description') || field === 'address' ? 'md:col-span-2' : ''}>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 {fieldLabel}
                             </label>

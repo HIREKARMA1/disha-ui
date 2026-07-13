@@ -45,7 +45,7 @@ import {
 } from '@/hooks/useUniversityPracticeActions'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown'
-import { BranchSelection, branchOptions } from '@/components/ui/BranchSelection'
+import { BranchSelection } from '@/components/ui/BranchSelection'
 import toast from 'react-hot-toast'
 import { LoadingSkeleton, TableSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
 
@@ -1277,10 +1277,7 @@ function CreateModuleForm({ module, onSave, onCancel, jobContext }: CreateModule
         }
 
         // Convert branch IDs to branch names for better filtering (same as admin)
-        const selectedBranchNames = formData.university_target_branch_ids.map(branchId => {
-            const branch = branchOptions.find(branch => branch.value === branchId)
-            return branch ? branch.label : branchId
-        })
+        const selectedBranchNames = formData.university_target_branch_ids.map((branchId) => branchId)
 
         // Prepare the base module data
         const baseModuleData = {

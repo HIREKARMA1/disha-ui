@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, DollarSign, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
+import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
+import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
@@ -141,19 +142,6 @@ export function UniversityJobCard({
     }
 
     const cardColors = getCardColorScheme(cardIndex)
-
-    const formatSalary = (min?: string, max?: string) => {
-        try {
-            if (!min && !max) return 'Not specified'
-            if (min && max) return `₹ ${Number(min).toLocaleString()} - ${Number(max).toLocaleString()}`
-            if (min) return `₹ ${Number(min).toLocaleString()}+`
-            if (max) return `₹ Up to ${Number(max).toLocaleString()}`
-            return 'Not specified'
-        } catch (error) {
-            console.error('Error formatting salary:', error, { min, max })
-            return 'Not specified'
-        }
-    }
 
     const formatDate = (dateString: string) => {
         try {
@@ -384,8 +372,8 @@ export function UniversityJobCard({
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="truncate">{formatSalary(job.salary_min, job.salary_max)}</span>
+                        <IndianRupee className="w-4 h-4" />
+                        <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
                     </div>
 
                     {job.campus_drive_date && (

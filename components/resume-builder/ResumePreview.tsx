@@ -6,30 +6,22 @@ import { getTemplateComponent, getTemplateInfo, TemplateInfo } from './templates
 interface ResumePreviewProps {
     resumeData: any
     templateId: string | null
+    settings?: Record<string, unknown>
     onReady?: () => void
+    hideTemplateInfo?: boolean
 }
 
-export function ResumePreview({ resumeData, templateId, onReady }: ResumePreviewProps) {
+export function ResumePreview({ resumeData, templateId, settings, onReady, hideTemplateInfo }: ResumePreviewProps) {
     const [currentTemplate, setCurrentTemplate] = useState<TemplateInfo | null>(null)
-    const [TemplateComponent, setTemplateComponent] = useState<any>(null)
+    const [TemplateComponent, setTemplateComponent] = useState<React.ComponentType<{ resumeData: any }> | null>(null)
 
     useEffect(() => {
-        if (templateId) {
-            const templateInfo = getTemplateInfo(templateId)
-            const TemplateComponent = getTemplateComponent(templateId)
+        const templateInfo = getTemplateInfo(templateId, settings)
+        const Component = getTemplateComponent(templateId, settings)
 
-            setCurrentTemplate(templateInfo)
-            setTemplateComponent(() => TemplateComponent)
-        } else {
-            // Default to Classic ATS if no template selected
-            const defaultTemplateId = 'classic-ats'
-            const templateInfo = getTemplateInfo(defaultTemplateId)
-            const TemplateComponent = getTemplateComponent(defaultTemplateId)
-
-            setCurrentTemplate(templateInfo)
-            setTemplateComponent(() => TemplateComponent)
-        }
-    }, [templateId])
+        setCurrentTemplate(templateInfo)
+        setTemplateComponent(() => Component)
+    }, [templateId, settings])
 
     // Notify parent when the template component is ready so that external
     // consumers (like the dashboard PDF download) can safely snapshot the DOM.
@@ -61,7 +53,7 @@ export function ResumePreview({ resumeData, templateId, onReady }: ResumePreview
             </div>
 
             {/* Template Info */}
-            {currentTemplate && (
+            {!hideTemplateInfo && currentTemplate && (
                 <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                         <span className="font-medium">Template:</span> {currentTemplate.name} |

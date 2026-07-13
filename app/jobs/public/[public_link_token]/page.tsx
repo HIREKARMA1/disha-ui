@@ -12,13 +12,14 @@ import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 import { profileService } from '@/services/profileService'
+import { formatSalaryRange } from '@/lib/currency'
 import {
     Loader2,
     AlertCircle,
     MapPin,
     Briefcase,
     Clock,
-    DollarSign,
+    IndianRupee,
     Calendar,
     Building2,
     Users,
@@ -336,14 +337,7 @@ export default function PublicJobPage() {
         }
     }
 
-    const formatSalary = () => {
-        if (!job?.salary_min && !job?.salary_max) return 'Not disclosed'
-        if (job.salary_min && job.salary_max) {
-            return `${job.salary_currency} ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}`
-        }
-        if (job.salary_min) return `${job.salary_currency} ${job.salary_min.toLocaleString()}+`
-        return `Up to ${job.salary_currency} ${job.salary_max?.toLocaleString()}`
-    }
+    const getSalaryDisplay = () => formatSalaryRange(job?.salary_min, job?.salary_max, 'Not disclosed')
 
     const formatExperience = () => {
         if (!job?.experience_min && !job?.experience_max) return 'Not specified'
@@ -532,11 +526,11 @@ export default function PublicJobPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                                         <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                                             <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
-                                                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                                <IndianRupee className="w-5 h-5 text-green-600 dark:text-green-400" />
                                             </div>
                                             <div>
                                                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Salary</p>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">{formatSalary()}</p>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">{getSalaryDisplay()}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl">

@@ -6,7 +6,10 @@ import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardL
 import { StudentApplicationManagementHeader } from '@/components/student/StudentApplicationManagementHeader'
 import { StudentApplicationTable } from '@/components/student/StudentApplicationTable'
 import { OfferLetterViewerModal } from '@/components/student/OfferLetterViewerModal'
+import { WithdrawApplicationModal } from '@/components/student/WithdrawApplicationModal'
+import { ApplicationMessagesModal } from '@/components/student/ApplicationMessagesModal'
 import { apiClient } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-handler'
 import { toast } from 'react-hot-toast'
 
 interface ApplicationData {
@@ -46,6 +49,9 @@ export default function StudentApplicationsPage() {
     })
     const [selectedApplication, setSelectedApplication] = useState<ApplicationData | null>(null)
     const [showOfferLetterModal, setShowOfferLetterModal] = useState(false)
+    const [withdrawTarget, setWithdrawTarget] = useState<ApplicationData | null>(null)
+    const [withdrawing, setWithdrawing] = useState(false)
+    const [messagesTarget, setMessagesTarget] = useState<ApplicationData | null>(null)
 
     // Fetch student applications
     const fetchApplications = async () => {
@@ -132,6 +138,30 @@ export default function StudentApplicationsPage() {
         }
     }
 
+    const handleWithdrawApplication = (application: ApplicationData) => {
+        setWithdrawTarget(application)
+    }
+
+    const handleViewMessages = (application: ApplicationData) => {
+        setMessagesTarget(application)
+    }
+
+    const handleConfirmWithdraw = async () => {
+        if (!withdrawTarget) return
+
+        setWithdrawing(true)
+        try {
+            await apiClient.withdrawApplication(withdrawTarget.id)
+            toast.success('Application withdrawn successfully')
+            setWithdrawTarget(null)
+            await fetchApplications()
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Failed to withdraw application. Please try again.'))
+        } finally {
+            setWithdrawing(false)
+        }
+    }
+
     // Calculate status counts
     const statusCounts = applications.reduce((acc, app) => {
         acc[app.status] = (acc[app.status] || 0) + 1
@@ -144,6 +174,7 @@ export default function StudentApplicationsPage() {
     const selectedCount = statusCounts.selected || 0
     const rejectedCount = statusCounts.rejected || 0
     const pendingCount = statusCounts.pending || 0
+    const withdrawnCount = statusCounts.withdrawn || 0
 
     return (
         <StudentDashboardLayout>
@@ -156,6 +187,7 @@ export default function StudentApplicationsPage() {
                     selectedApplications={selectedCount}
                     rejectedApplications={rejectedCount}
                     pendingApplications={pendingCount}
+                    withdrawnApplications={withdrawnCount}
                     searchTerm={searchTerm}
                     onSearchChange={handleSearch}
                     filterStatus={filterStatus}
@@ -171,6 +203,8 @@ export default function StudentApplicationsPage() {
                     onSort={handleSort}
                     onViewOfferLetter={handleViewOfferLetter}
                     onDownloadOfferLetter={handleDownloadOfferLetter}
+                    onWithdraw={handleWithdrawApplication}
+                    onViewMessages={handleViewMessages}
                     pagination={pagination}
                     onPageChange={handlePageChange}
                 />
@@ -188,6 +222,21 @@ export default function StudentApplicationsPage() {
                     onDownload={() => handleDownloadOfferLetter(selectedApplication)}
                 />
             )}
+
+            <WithdrawApplicationModal
+                isOpen={!!withdrawTarget}
+                onClose={() => !withdrawing && setWithdrawTarget(null)}
+                onConfirm={handleConfirmWithdraw}
+                jobTitle={withdrawTarget?.job_title}
+                loading={withdrawing}
+            />
+
+            <ApplicationMessagesModal
+                isOpen={!!messagesTarget}
+                onClose={() => setMessagesTarget(null)}
+                applicationId={messagesTarget?.id ?? null}
+                jobTitle={messagesTarget?.job_title}
+            />
         </StudentDashboardLayout>
     )
 }

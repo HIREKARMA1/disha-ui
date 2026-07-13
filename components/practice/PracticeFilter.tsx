@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useStudentProfile } from '@/hooks/useStudentProfile'
 import { useUniversities } from '@/hooks/useUniversities'
+import { useBranches } from '@/hooks/useLookup'
 import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
-import { BRANCH_MULTI_SELECT_OPTIONS } from '@/components/ui/BranchSelection'
 
 export type PracticeCategory = 'all' | 'ai-mock-tests' | 'ai-mock-interviews' | 'coding-practice' | 'challenges-engagement'
 
@@ -79,7 +79,13 @@ export function PracticeFilter({
     const [showFilters, setShowFilters] = useState(false)
     const { profile } = useStudentProfile()
     const { data: universities, isLoading: universitiesLoading } = useUniversities()
+    const { data: branches, loading: branchesLoading } = useBranches({ limit: 1000 })
     
+    const branchMultiSelectOptions: MultiSelectOption[] = branches.map((branch) => ({
+        id: branch.id,
+        label: branch.name,
+        value: branch.name,
+    }))
     // Convert universities to MultiSelectOption format
     const universityOptions: MultiSelectOption[] = universities.map(uni => ({
         id: uni.id,
@@ -220,7 +226,7 @@ export function PracticeFilter({
                                         Filter by Branch
                                     </label>
                                     <MultiSelectDropdown
-                                        options={BRANCH_MULTI_SELECT_OPTIONS}
+                                        options={branchMultiSelectOptions}
                                         selectedValues={selectedBranches}
                                         onSelectionChange={onBranchesChange}
                                         placeholder="Select branches..."

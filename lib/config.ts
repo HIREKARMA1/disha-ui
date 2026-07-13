@@ -26,6 +26,12 @@ export const config = {
     number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '',
     message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi, I need help with HireKarma',
   },
+
+  googleMaps: {
+    apiKey:
+      process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+      '',
+  },
   
   // Environment
   isDevelopment: process.env.NODE_ENV === 'development',

@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer'
 import { config } from './config'
 import { formatEducationFieldForDisplay, parseEducationField } from './parseEducationField'
+import { formatSalaryRange } from './currency'
 
 interface JobData {
   id: string
@@ -263,15 +264,6 @@ const formatJobType = (jobType: string): string => {
   return types[jobType] || jobType
 }
 
-const formatSalary = (currency: string, min?: number, max?: number): string => {
-  if (!min && !max) return 'Not specified'
-  const formatNumber = (num: number) => Math.round(num).toLocaleString('en-US', { maximumFractionDigits: 0 })
-  if (min && max) return `${currency} ${formatNumber(min)} - ${formatNumber(max)}`
-  if (min) return `${currency} ${formatNumber(min)}+`
-  if (max) return `${currency} Up to ${formatNumber(max)}`
-  return 'Not specified'
-}
-
 const formatExperience = (min?: number, max?: number): string => {
   // Check if values are actually provided (0 is a valid value)
   const hasMin = min !== undefined && min !== null
@@ -408,7 +400,7 @@ const JobDescriptionDocument = ({
               <Text><Text style={{ fontWeight: 'bold' }}>Location:</Text> {parseCommaSeparated(job.location)}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Salary:</Text> {formatSalary(job.salary_currency, job.salary_min, job.salary_max)}</Text>
+              <Text><Text style={{ fontWeight: 'bold' }}>Salary:</Text> {formatSalaryRange(job.salary_min, job.salary_max)}</Text>
             </View>
             <View style={styles.infoItem}>
               <Text><Text style={{ fontWeight: 'bold' }}>Experience:</Text> {formatExperience(job.experience_min, job.experience_max)}</Text>

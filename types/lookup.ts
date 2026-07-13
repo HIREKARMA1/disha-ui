@@ -49,3 +49,20 @@ export interface BulkUploadApiResponse {
 }
 
 export type SkillLookupKind = 'technical' | 'soft'
+
+export interface NameLookupRow {
+    id: string
+    name: string
+}
+
+export interface NameLookupListApiResponse {
+    items: NameLookupRow[]
+    total: number
+    skip: number
+    limit: number
+}
+
+export type NameLookupKind =
+    | 'industry'
+    | 'education-branches'
+    | 'institute-type'

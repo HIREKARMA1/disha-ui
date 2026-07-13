@@ -21,28 +21,23 @@ export default function HomePage() {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated && user) {
-             // If logged in, redirect to appropriate dashboard
-             router.replace(`/dashboard/${user.user_type}`)
+            router.replace(`/dashboard/${user.user_type}`)
         }
     }, [isLoading, isAuthenticated, user, router])
 
-    if (isLoading) {
+    // Only show a redirect state once auth is confirmed — never block the landing page on auth check
+    if (!isLoading && isAuthenticated && user) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                 <Navbar variant="transparent" />
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
                         <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+                        <p className="text-gray-600 dark:text-gray-400">Redirecting to your dashboard...</p>
                     </div>
                 </div>
             </div>
         )
-    }
-
-    // If authenticated, we are redirecting, so return null or a loader to avoid flash
-    if (isAuthenticated) {
-         return null 
     }
 
     return (

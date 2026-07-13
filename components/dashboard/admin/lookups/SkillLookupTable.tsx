@@ -9,6 +9,7 @@ type SkillRow = TechnicalSkillLookupRow | SoftSkillLookupRow
 
 interface SkillLookupTableProps {
     kind: SkillLookupKind
+    entityLabel?: string
     rows: SkillRow[]
     isLoading: boolean
     error: string | null
@@ -25,6 +26,7 @@ interface SkillLookupTableProps {
 
 export function SkillLookupTable({
     kind,
+    entityLabel,
     rows,
     isLoading,
     error,
@@ -38,7 +40,7 @@ export function SkillLookupTable({
     onPrevPage,
     onNextPage,
 }: SkillLookupTableProps) {
-    const label = kind === 'technical' ? 'technical skills' : 'soft skills'
+    const label = entityLabel ?? (kind === 'technical' ? 'technical skills' : 'soft skills')
 
     if (isLoading) {
         return (

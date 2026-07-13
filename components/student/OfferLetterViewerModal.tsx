@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Download, FileText, Calendar, Building, User, CheckCircle } from 'lucide-react'
+import { formatAmountINR } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 
 interface ApplicationData {
@@ -53,10 +54,7 @@ export function OfferLetterViewerModal({
         }
     }
 
-    const formatSalary = (salary?: number) => {
-        if (!salary) return 'Not specified'
-        return `₹${salary.toLocaleString()}`
-    }
+    const formatSalary = formatAmountINR
 
     const handleDownload = async () => {
         setIsLoading(true)

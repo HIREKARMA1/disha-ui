@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { degreeOptions, branchOptions } from '@/components/dashboard/CreateStudentModal'
+import { degreeOptions } from '@/components/dashboard/CreateStudentModal'
+import { useBranches } from '@/hooks/useLookup'
 
 interface LicenseRequestModalProps {
     isOpen: boolean
@@ -16,6 +17,8 @@ interface LicenseRequestModalProps {
 }
 
 export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseRequestModalProps) {
+    const { data: branches } = useBranches({ limit: 1000 })
+    const branchOptions = branches.map((branch) => ({ value: branch.name, label: branch.name }))
     const [formData, setFormData] = useState({
         requested_total: '',
         batch: '',

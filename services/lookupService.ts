@@ -158,13 +158,35 @@ class LookupService {
    */
   async getIndustries(options: LookupOptions = {}): Promise<LookupItem[]> {
     try {
-      const response = await this.fetchLookupData<{ industries: LookupItem[]; total: number; skip: number; limit: number }>(
-        '/admin/lookups/industries',
-        options
-      )
-      return response.industries || []
+      const response = await this.fetchLookupData<{
+        industries?: LookupItem[]
+        total: number
+        skip: number
+        limit: number
+      }>('/admin/lookups/industries', options)
+
+      if (Array.isArray(response)) {
+        return response
+      }
+
+      return response.industries ?? []
     } catch (error) {
       console.error('Failed to fetch industries:', error)
+      return []
+    }
+  }
+
+  async getInstituteTypes(options: LookupOptions = {}): Promise<LookupItem[]> {
+    try {
+      const response = await this.fetchLookupData<{
+        institute_types: LookupItem[]
+        total: number
+        skip: number
+        limit: number
+      }>('/admin/lookups/institute-types', options)
+      return response.institute_types || []
+    } catch (error) {
+      console.error('Failed to fetch institute types:', error)
       return []
     }
   }

@@ -8,6 +8,8 @@ import { CreateUniversityRequest, CreateUniversityResponse } from '@/types/unive
 import { getErrorMessage } from '@/lib/error-handler'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { apiClient } from '@/lib/api'
+import { useInstituteTypes } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
 
 interface CreateUniversityModalProps {
     isOpen: boolean
@@ -38,6 +40,7 @@ export function CreateUniversityModal({
     const [createdUniversity, setCreatedUniversity] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
     const [selectedCollegeId, setSelectedCollegeId] = useState<string>('')
+    const { data: instituteTypes, loading: loadingInstituteTypes, error: instituteTypesError } = useInstituteTypes({ limit: 1000 })
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -124,17 +127,6 @@ export function CreateUniversityModal({
             return []
         }
     }
-
-    const instituteTypes = [
-        'Government',
-        'Private',
-        'Deemed University',
-        'Central University',
-        'State University',
-        'Autonomous College',
-        'Private University',
-        'Institute of National Importance'
-    ]
 
     if (!isOpen) return null
 
@@ -322,19 +314,15 @@ export function CreateUniversityModal({
                                             <label className="text-sm font-medium text-gray-700">
                                                 Institute Type *
                                             </label>
-                                            <select
-                                                value={formData.institute_type}
-                                                onChange={(e) => handleInputChange('institute_type', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            <LookupSelect
+                                                value={formData.institute_type || ''}
+                                                onChange={(value) => handleInputChange('institute_type', value)}
+                                                data={instituteTypes}
+                                                loading={loadingInstituteTypes}
+                                                placeholder="Select institute type"
+                                                error={instituteTypesError || undefined}
                                                 required
-                                            >
-                                                <option value="">Select institute type</option>
-                                                {instituteTypes.map((type) => (
-                                                    <option key={type} value={type}>
-                                                        {type}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            />
                                         </div>
                                     </div>
                                 </div>
