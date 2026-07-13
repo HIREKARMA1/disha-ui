@@ -1,12 +1,12 @@
 "use client"
 
-import { AdminEventLayout } from '@/components/admin/AdminEventLayout'
+import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { EventList } from '@/components/admin/EventList'
 
 export default function AdminEventsPage() {
-    return (
-        <AdminEventLayout>
-            <EventList />
-        </AdminEventLayout>
-    )
+  return (
+    <AdminDashboardLayout>
+      <EventList />
+    </AdminDashboardLayout>
+  )
 }

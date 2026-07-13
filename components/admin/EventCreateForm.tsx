@@ -167,8 +167,9 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       }
       router.push('/dashboard/admin/events')
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      toast.error(typeof msg === 'string' ? msg : 'Failed to save event')
+      const data = (err as { response?: { data?: { detail?: string; error?: string } } })?.response?.data
+      const msg = typeof data?.detail === 'string' ? data.detail : typeof data?.error === 'string' ? data.error : 'Failed to save event'
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

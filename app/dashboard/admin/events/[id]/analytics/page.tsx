@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { AdminEventLayout } from '@/components/admin/AdminEventLayout'
+import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventAnalytics } from '@/types/contestEvent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,7 +35,7 @@ export default function EventAnalyticsPage({ params }: PageProps) {
   ]
 
   return (
-    <AdminEventLayout>
+    <AdminDashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
@@ -111,6 +111,6 @@ export default function EventAnalyticsPage({ params }: PageProps) {
           </>
         )}
       </div>
-    </AdminEventLayout>
+    </AdminDashboardLayout>
   )
 }
