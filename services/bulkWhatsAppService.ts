@@ -52,11 +52,20 @@ export class BulkWhatsAppService {
 
     async sendBulkWhatsApp(payload: BulkWhatsAppSendRequest): Promise<BulkWhatsAppSendResponse> {
         ensureAuth()
-        const response = await apiClient.client.post<BulkWhatsAppSendResponse>(
-            '/admin/bulk-whatsapp/send',
-            payload
-        )
-        return response.data
+        try {
+            const response = await apiClient.client.post<BulkWhatsAppSendResponse>(
+                '/admin/bulk-whatsapp/send',
+                payload
+            )
+            return response.data
+        } catch (error: any) {
+            // 502 responses include the full BulkWhatsAppSendResponse body with Twilio errors.
+            const data = error?.response?.data
+            if (data && typeof data === 'object' && 'success' in data) {
+                return data as BulkWhatsAppSendResponse
+            }
+            throw error
+        }
     }
 
     async getLogs(limit = 20, offset = 0): Promise<BulkWhatsAppLogsResponse> {

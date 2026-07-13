@@ -40,7 +40,6 @@ import {
 import { AdminUserListItem } from '@/types/userManagement'
 
 const WHATSAPP_MAX_CHARS = 4096
-const PLACEHOLDERS = ['{{name}}', '{{email}}', '{{phone}}', '{{college}}', '{{branch}}', '{{company}}']
 
 function normalizePhone(phone: string) {
     return phone.replace(/[^\d+]/g, '').trim()
@@ -51,14 +50,22 @@ function isLikelyPhone(phone: string) {
     return digits.length >= 10 && digits.length <= 15
 }
 
-function previewWithSample(message: string) {
-    return message
-        .replace(/\{\{\s*name\s*\}\}/gi, 'Rohit')
-        .replace(/\{\{\s*email\s*\}\}/gi, 'rohit@example.com')
-        .replace(/\{\{\s*phone\s*\}\}/gi, '+919876543210')
-        .replace(/\{\{\s*college\s*\}\}/gi, 'Example College')
-        .replace(/\{\{\s*branch\s*\}\}/gi, 'CSE')
-        .replace(/\{\{\s*company\s*\}\}/gi, 'HireKarma')
+function applyPlaceholders(
+    template: string,
+    recipient?: Pick<
+        ManagedWhatsAppRecipient,
+        'name' | 'email' | 'phone' | 'college' | 'branch' | 'company'
+    > | null
+) {
+    const values: Record<string, string> = {
+        name: recipient?.name || '',
+        email: recipient?.email || '',
+        phone: recipient?.phone || '',
+        college: recipient?.college || '',
+        branch: recipient?.branch || '',
+        company: recipient?.company || '',
+    }
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/gi, (_, key: string) => values[key.toLowerCase()] ?? '')
 }
 
 export function BulkWhatsAppManagement() {
@@ -69,9 +76,7 @@ export function BulkWhatsAppManagement() {
     const [manualName, setManualName] = useState('')
     const [importedCount, setImportedCount] = useState(0)
     const [campaignName, setCampaignName] = useState('')
-    const [message, setMessage] = useState(
-        'Hello {{name}} 👋\n\nDISHA Placement Drive starts tomorrow.\n\nVenue:\nSeminar Hall\n\nTime:\n10:00 AM\n\nRegards,\nDISHA Team'
-    )
+    const [message, setMessage] = useState('')
     const [isLoadingRecipients, setIsLoadingRecipients] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const [isSending, setIsSending] = useState(false)
@@ -97,6 +102,8 @@ export function BulkWhatsAppManagement() {
 
     const totalRecipients = recipients.length
     const charCount = message.length
+    const previewRecipient = recipients[0] || null
+    const previewMessage = applyPlaceholders(message, previewRecipient)
 
     const mergeRecipients = useCallback((
         incoming: ManagedWhatsAppRecipient[],
@@ -189,7 +196,7 @@ export function BulkWhatsAppManagement() {
 
         mergeRecipients([{
             phone: trimmed,
-            name: manualName.trim() || trimmed,
+            name: manualName.trim() || undefined,
             user_type: 'external',
             status: 'Manual',
             source: 'manual',
@@ -222,7 +229,7 @@ export function BulkWhatsAppManagement() {
             const result = await bulkWhatsAppService.uploadCsv(file)
             const mapped: ManagedWhatsAppRecipient[] = result.recipients.map((item) => ({
                 phone: item.phone,
-                name: item.name || item.phone,
+                name: item.name || undefined,
                 user_type: 'imported',
                 status: 'Imported',
                 source: 'imported' as const,
@@ -291,23 +298,6 @@ export function BulkWhatsAppManagement() {
         toast.success('Recipient added')
     }
 
-    const insertPlaceholder = (token: string) => {
-        const el = messageRef.current
-        if (!el) {
-            setMessage((current) => `${current}${token}`)
-            return
-        }
-        const start = el.selectionStart ?? message.length
-        const end = el.selectionEnd ?? message.length
-        const next = message.slice(0, start) + token + message.slice(end)
-        setMessage(next)
-        requestAnimationFrame(() => {
-            el.focus()
-            const pos = start + token.length
-            el.setSelectionRange(pos, pos)
-        })
-    }
-
     const handleSend = async () => {
         if (!campaignName.trim()) {
             toast.error('Campaign name is required')
@@ -341,15 +331,27 @@ export function BulkWhatsAppManagement() {
                     company: recipient.company,
                 })),
             })
-            toast.success(result.message, { id: toastId })
-            setCampaignName('')
-            setRecipients([])
-            setImportedCount(0)
-            setShowConfirm(false)
+
+            if (result.success) {
+                toast.success(result.message, { id: toastId })
+                setCampaignName('')
+                setMessage('')
+                setRecipients([])
+                setImportedCount(0)
+                setShowConfirm(false)
+            } else {
+                const detail =
+                    result.error ||
+                    result.message ||
+                    result.results?.find((item) => item.error_message)?.error_message ||
+                    'Twilio did not accept the message'
+                toast.error(detail, { id: toastId, duration: 10000 })
+                setShowConfirm(false)
+            }
             fetchLogs()
             fetchStatistics()
         } catch (error) {
-            toast.error(getErrorMessage(error), { id: toastId })
+            toast.error(getErrorMessage(error), { id: toastId, duration: 10000 })
         } finally {
             setIsSending(false)
         }
@@ -362,7 +364,13 @@ export function BulkWhatsAppManagement() {
                 description="Send WhatsApp messages to platform users in bulk using filters, search, manual entries, or CSV uploads."
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>Total Campaigns</CardDescription>
+                        <CardTitle className="text-2xl">{statistics?.total_campaigns ?? 0}</CardTitle>
+                    </CardHeader>
+                </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Messages Sent</CardDescription>
@@ -371,20 +379,26 @@ export function BulkWhatsAppManagement() {
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardDescription>Delivered</CardDescription>
-                        <CardTitle className="text-2xl text-green-600">{statistics?.delivered ?? 0}</CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Failed</CardDescription>
+                        <CardDescription>Messages Failed</CardDescription>
                         <CardTitle className="text-2xl text-red-600">{statistics?.failed ?? 0}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardDescription>Pending</CardDescription>
-                        <CardTitle className="text-2xl text-amber-600">{statistics?.pending ?? 0}</CardTitle>
+                        <CardDescription>Recipients</CardDescription>
+                        <CardTitle className="text-2xl">{statistics?.recipients ?? 0}</CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>Today&apos;s Messages</CardDescription>
+                        <CardTitle className="text-2xl">{statistics?.todays_messages ?? 0}</CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>Success Rate</CardDescription>
+                        <CardTitle className="text-2xl">{statistics ? `${statistics.success_rate}%` : '0%'}</CardTitle>
                     </CardHeader>
                 </Card>
             </div>
@@ -410,7 +424,7 @@ export function BulkWhatsAppManagement() {
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardDescription>Total Messages To Send</CardDescription>
+                        <CardDescription>Selected To Send</CardDescription>
                         <CardTitle className="text-2xl">{totalRecipients}</CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-gray-500 dark:text-gray-400">
@@ -655,7 +669,7 @@ export function BulkWhatsAppManagement() {
                 <CardHeader>
                     <CardTitle>WhatsApp Message Composer</CardTitle>
                     <CardDescription>
-                        Compose a multi-line WhatsApp message with emoji and placeholders.
+                        Compose a multi-line WhatsApp message with emoji support.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -663,7 +677,7 @@ export function BulkWhatsAppManagement() {
                         <Label htmlFor="bulk-whatsapp-campaign">Campaign Name</Label>
                         <Input
                             id="bulk-whatsapp-campaign"
-                            placeholder="DISHA Placement Drive Reminder"
+                            placeholder="Campaign name"
                             value={campaignName}
                             onChange={(event) => setCampaignName(event.target.value)}
                         />
@@ -681,22 +695,9 @@ export function BulkWhatsAppManagement() {
                             rows={10}
                             value={message}
                             onChange={(event) => setMessage(event.target.value)}
-                            placeholder="Hello {{name}} 👋"
+                            placeholder="Type your WhatsApp message."
                             className="font-sans"
                         />
-                        <div className="flex flex-wrap gap-2">
-                            {PLACEHOLDERS.map((token) => (
-                                <Button
-                                    key={token}
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => insertPlaceholder(token)}
-                                >
-                                    {token}
-                                </Button>
-                            ))}
-                        </div>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Button type="button" variant="outline" onClick={() => setShowPreview(true)}>
@@ -733,15 +734,19 @@ export function BulkWhatsAppManagement() {
                 </CardContent>
             </Card>
 
-            {recentLogs.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>WhatsApp Logs</CardTitle>
-                        <CardDescription>
-                            Per-recipient delivery history with Twilio SID and errors.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+            <Card>
+                <CardHeader>
+                    <CardTitle>WhatsApp Logs</CardTitle>
+                    <CardDescription>
+                        Per-recipient delivery history with Twilio SID and errors.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {recentLogs.length === 0 ? (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
+                            No WhatsApp logs yet.
+                        </p>
+                    ) : (
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                                 <thead>
@@ -774,9 +779,9 @@ export function BulkWhatsAppManagement() {
                                 </tbody>
                             </table>
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                    )}
+                </CardContent>
+            </Card>
 
             <Modal
                 isOpen={showPreview}
@@ -790,15 +795,17 @@ export function BulkWhatsAppManagement() {
                         {campaignName || '—'}
                     </div>
                     <div>
-                        <span className="font-semibold text-gray-700 dark:text-gray-300">To:</span>{' '}
-                        {totalRecipients} recipient{totalRecipients === 1 ? '' : 's'}
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Preview recipient:</span>{' '}
+                        {previewRecipient
+                            ? `${previewRecipient.name || 'Unnamed'} (${previewRecipient.phone})`
+                            : 'No recipient selected'}
                     </div>
                     <div>
                         <span className="font-semibold text-gray-700 dark:text-gray-300 block mb-2">
-                            Message (sample placeholders filled):
+                            Message (placeholders filled from selected recipient data):
                         </span>
                         <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 font-sans text-sm">
-                            {previewWithSample(message) || '—'}
+                            {previewMessage || '—'}
                         </pre>
                     </div>
                 </div>
