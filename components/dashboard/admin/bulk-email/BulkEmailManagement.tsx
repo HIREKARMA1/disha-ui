@@ -433,7 +433,6 @@ export function BulkEmailManagement() {
                             <div className="space-y-2">
                                 <Label>Recipient Category</Label>
                                 <Select
-                                    modal={false}
                                     value={category}
                                     onValueChange={(value) => setCategory(value as BulkEmailCategory)}
                                 >
@@ -451,7 +450,6 @@ export function BulkEmailManagement() {
                             <div className="space-y-2">
                                 <Label>User Status</Label>
                                 <Select
-                                    modal={false}
                                     value={statusFilter}
                                     onValueChange={(value) => setStatusFilter(value as BulkEmailStatusFilter)}
                                 >
@@ -551,7 +549,6 @@ export function BulkEmailManagement() {
                             />
                         </div>
                         <Select
-                            modal={false}
                             value={searchCategory}
                             onValueChange={(value) => setSearchCategory(value as BulkEmailCategory)}
                         >
