@@ -1,11 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import {
+    Building2,
     Eye,
+    GraduationCap,
+    Loader2,
     Mail,
     Plus,
+    Search,
     Send,
     Trash2,
     Upload,
@@ -31,6 +35,7 @@ import { getErrorMessage } from '@/lib/error-handler'
 import {
     BulkEmailCategory,
     BulkEmailLog,
+    BulkEmailRecipient,
     BulkEmailStatusFilter,
     ManagedRecipient,
 } from '@/types/bulkEmail'
@@ -49,6 +54,35 @@ function stripHtml(html: string) {
     return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
 }
 
+const BULK_EMAIL_SELECT_CONTENT_PROPS = {
+    position: 'item-aligned' as const,
+    sideOffset: 4,
+    collisionPadding: 16,
+    onOpenAutoFocus: (event: Event) => event.preventDefault(),
+}
+
+function roleIcon(userType?: string | null) {
+    switch ((userType || '').toLowerCase()) {
+        case 'student':
+            return GraduationCap
+        case 'university':
+            return Building2
+        case 'corporate':
+            return Users
+        default:
+            return Mail
+    }
+}
+
+function avatarInitials(name?: string | null, email?: string) {
+    const source = (name || email || '?').trim()
+    const parts = source.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    }
+    return source.slice(0, 2).toUpperCase()
+}
+
 export function BulkEmailManagement() {
     const [category, setCategory] = useState<BulkEmailCategory>('all')
     const [statusFilter, setStatusFilter] = useState<BulkEmailStatusFilter>('all')
@@ -65,6 +99,14 @@ export function BulkEmailManagement() {
     const [recentLogs, setRecentLogs] = useState<BulkEmailLog[]>([])
     const fileInputRef = useRef<HTMLInputElement>(null)
 
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchCategory, setSearchCategory] = useState<BulkEmailCategory>('all')
+    const [searchResults, setSearchResults] = useState<BulkEmailRecipient[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [searchError, setSearchError] = useState<string | null>(null)
+    const searchRequestRef = useRef(0)
+    const savedScrollYRef = useRef<number | null>(null)
+
     const filterRecipientCount = useMemo(
         () => recipients.filter((recipient) => recipient.source === 'filter').length,
         [recipients]
@@ -75,7 +117,16 @@ export function BulkEmailManagement() {
         [recipients]
     )
 
+    const searchRecipientCount = useMemo(
+        () => recipients.filter((recipient) => recipient.source === 'search').length,
+        [recipients]
+    )
+
     const totalRecipients = recipients.length
+
+    const selectedEmailSet = useMemo(() => {
+        return new Set(recipients.map((recipient) => normalizeEmail(recipient.email)))
+    }, [recipients])
 
     const mergeRecipients = useCallback((
         incoming: ManagedRecipient[],
@@ -139,6 +190,65 @@ export function BulkEmailManagement() {
     useEffect(() => {
         fetchLogs()
     }, [fetchLogs])
+
+    useEffect(() => {
+        if (isLoadingRecipients) {
+            savedScrollYRef.current = window.scrollY
+        }
+    }, [isLoadingRecipients])
+
+    useLayoutEffect(() => {
+        if (!isLoadingRecipients && savedScrollYRef.current !== null) {
+            window.scrollTo({ top: savedScrollYRef.current, left: 0, behavior: 'instant' })
+            savedScrollYRef.current = null
+        }
+    }, [isLoadingRecipients, recipients.length])
+
+    useEffect(() => {
+        const q = searchQuery.trim()
+        if (q.length < 2) {
+            setSearchResults([])
+            setSearchError(null)
+            setIsSearching(false)
+            return
+        }
+
+        const requestId = ++searchRequestRef.current
+        setIsSearching(true)
+        setSearchError(null)
+
+        const timer = window.setTimeout(async () => {
+            try {
+                const result = await bulkEmailService.searchUsers(q, searchCategory, 20, 0)
+                if (requestId !== searchRequestRef.current) return
+                setSearchResults(result.users)
+            } catch (error) {
+                if (requestId !== searchRequestRef.current) return
+                setSearchResults([])
+                setSearchError(getErrorMessage(error))
+            } finally {
+                if (requestId === searchRequestRef.current) {
+                    setIsSearching(false)
+                }
+            }
+        }, 300)
+
+        return () => window.clearTimeout(timer)
+    }, [searchQuery, searchCategory])
+
+    const handleAddFromSearch = (user: BulkEmailRecipient) => {
+        const normalized = normalizeEmail(user.email)
+        if (selectedEmailSet.has(normalized)) {
+            toast.error('Already Added')
+            return
+        }
+
+        mergeRecipients([{
+            ...user,
+            source: 'search',
+        }], false)
+        toast.success(`${user.name || user.email} added`)
+    }
 
     const handleAddEmail = () => {
         const trimmed = manualEmail.trim()
@@ -230,15 +340,32 @@ export function BulkEmailManagement() {
                 body,
                 emails: recipients.map((recipient) => recipient.email),
             })
-            toast.success(result.message, { id: toastId })
+
+            if (!result.success) {
+                toast.error(result.error || result.message || 'Bulk email sending failed.', { id: toastId })
+                fetchLogs()
+                return
+            }
+
+            const detail =
+                result.queued
+                    ? result.message
+                    : result.failure_count
+                        ? `${result.message} (success: ${result.success_count ?? 0}, failed: ${result.failure_count})`
+                        : result.message
+
+            toast.success(detail, { id: toastId })
             setSubject('')
             setBody('')
             setRecipients([])
             setImportedCount(0)
+            setSearchQuery('')
+            setSearchResults([])
             setShowConfirm(false)
             fetchLogs()
         } catch (error) {
             toast.error(getErrorMessage(error), { id: toastId })
+            fetchLogs()
         } finally {
             setIsSending(false)
         }
@@ -248,10 +375,10 @@ export function BulkEmailManagement() {
         <div className="space-y-6">
             <UserManagementHero
                 title="Bulk Email Management"
-                description="Send emails to platform users in bulk using filters, manual entries, or CSV uploads."
+                description="Search users, filter groups, upload CSV, or add emails manually — then send a branded bulk message."
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Filter Recipients</CardDescription>
@@ -263,16 +390,25 @@ export function BulkEmailManagement() {
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardDescription>Imported Emails</CardDescription>
-                        <CardTitle className="text-2xl">{importedRecipientCount}</CardTitle>
+                        <CardDescription>Search Added</CardDescription>
+                        <CardTitle className="text-2xl">{searchRecipientCount}</CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-gray-500 dark:text-gray-400">
-                        Total imported this session: {importedCount}
+                        Added from user search
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardDescription>Total Emails To Send</CardDescription>
+                        <CardDescription>Imported Emails</CardDescription>
+                        <CardTitle className="text-2xl">{importedRecipientCount}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm text-gray-500 dark:text-gray-400">
+                        Session imports: {importedCount}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>Total To Send</CardDescription>
                         <CardTitle className="text-2xl">{totalRecipients}</CardTitle>
                     </CardHeader>
                     <CardContent className="text-sm text-gray-500 dark:text-gray-400">
@@ -296,11 +432,14 @@ export function BulkEmailManagement() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Recipient Category</Label>
-                                <Select value={category} onValueChange={(value) => setCategory(value as BulkEmailCategory)}>
+                                <Select
+                                    value={category}
+                                    onValueChange={(value) => setCategory(value as BulkEmailCategory)}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent {...BULK_EMAIL_SELECT_CONTENT_PROPS}>
                                         <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="student">Student</SelectItem>
                                         <SelectItem value="corporate">Corporate</SelectItem>
@@ -310,11 +449,14 @@ export function BulkEmailManagement() {
                             </div>
                             <div className="space-y-2">
                                 <Label>User Status</Label>
-                                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as BulkEmailStatusFilter)}>
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={(value) => setStatusFilter(value as BulkEmailStatusFilter)}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent {...BULK_EMAIL_SELECT_CONTENT_PROPS}>
                                         <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="verified">Verified</SelectItem>
                                         <SelectItem value="unverified">Unverified</SelectItem>
@@ -337,7 +479,7 @@ export function BulkEmailManagement() {
                             Add Recipients
                         </CardTitle>
                         <CardDescription>
-                            Manually add emails or upload a CSV file with an email column.
+                            Manually add emails or upload a CSV file with an email column. Works together with search and filters.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -386,6 +528,124 @@ export function BulkEmailManagement() {
 
             <Card>
                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Search className="h-5 w-5" />
+                        Search Users
+                    </CardTitle>
+                    <CardDescription>
+                        Search by name, email, company, or university across students, corporates, and universities.
+                        Click Add to place them in Selected Recipients — email is not sent until you press Send.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-3">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                className="pl-9"
+                                placeholder="Search by Name / Email"
+                                value={searchQuery}
+                                onChange={(event) => setSearchQuery(event.target.value)}
+                            />
+                        </div>
+                        <Select
+                            value={searchCategory}
+                            onValueChange={(value) => setSearchCategory(value as BulkEmailCategory)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="All roles" />
+                            </SelectTrigger>
+                            <SelectContent {...BULK_EMAIL_SELECT_CONTENT_PROPS}>
+                                <SelectItem value="all">All roles</SelectItem>
+                                <SelectItem value="student">Student</SelectItem>
+                                <SelectItem value="corporate">Corporate</SelectItem>
+                                <SelectItem value="university">University</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {searchQuery.trim().length > 0 && searchQuery.trim().length < 2 && (
+                        <p className="text-sm text-gray-500">Type at least 2 characters to search.</p>
+                    )}
+
+                    {isSearching && (
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Searching users...
+                        </div>
+                    )}
+
+                    {searchError && (
+                        <p className="text-sm text-red-600">{searchError}</p>
+                    )}
+
+                    {!isSearching && searchQuery.trim().length >= 2 && searchResults.length === 0 && !searchError && (
+                        <p className="text-sm text-gray-500 py-4 text-center">No users found.</p>
+                    )}
+
+                    {searchResults.length > 0 && (
+                        <div className="overflow-x-auto max-h-80 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                            <table className="min-w-full text-sm">
+                                <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left font-medium">User</th>
+                                        <th className="px-4 py-3 text-left font-medium">Role</th>
+                                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                                        <th className="px-4 py-3 text-right font-medium">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {searchResults.map((user) => {
+                                        const Icon = roleIcon(user.user_type)
+                                        const alreadyAdded = selectedEmailSet.has(normalizeEmail(user.email))
+                                        return (
+                                            <tr key={`${user.user_type}-${user.email}`}>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center text-xs font-semibold shrink-0">
+                                                            {avatarInitials(user.name, user.email)}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                                                {user.name || '—'}
+                                                            </p>
+                                                            <p className="text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                                                                <Mail className="h-3.5 w-3.5" />
+                                                                {user.email}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="inline-flex items-center gap-1.5 capitalize">
+                                                        <Icon className="h-4 w-4 text-cyan-600" />
+                                                        {user.user_type || '—'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">{user.status || '—'}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant={alreadyAdded ? 'outline' : 'default'}
+                                                        disabled={alreadyAdded}
+                                                        onClick={() => handleAddFromSearch(user)}
+                                                    >
+                                                        {alreadyAdded ? 'Already Added' : 'Add'}
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
                     <CardTitle>Selected Recipients</CardTitle>
                     <CardDescription>
                         {totalRecipients} recipient{totalRecipients === 1 ? '' : 's'} ready to receive this email.
@@ -394,7 +654,7 @@ export function BulkEmailManagement() {
                 <CardContent>
                     {totalRecipients === 0 ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
-                            No recipients selected. Apply filters or add emails to get started.
+                            No recipients selected. Search users, apply filters, or add emails to get started.
                         </p>
                     ) : (
                         <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -403,18 +663,25 @@ export function BulkEmailManagement() {
                                     <tr>
                                         <th className="px-4 py-3 text-left font-medium">Name</th>
                                         <th className="px-4 py-3 text-left font-medium">Email</th>
-                                        <th className="px-4 py-3 text-left font-medium">User Type</th>
+                                        <th className="px-4 py-3 text-left font-medium">Role</th>
                                         <th className="px-4 py-3 text-left font-medium">Status</th>
-                                        <th className="px-4 py-3 text-right font-medium">Action</th>
+                                        <th className="px-4 py-3 text-left font-medium">Source</th>
+                                        <th className="px-4 py-3 text-right font-medium">Remove</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                     {recipients.map((recipient) => (
-                                        <tr key={recipient.email}>
-                                            <td className="px-4 py-3">{recipient.name || '—'}</td>
+                                        <tr key={`${recipient.source}-${recipient.email}`}>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-green-600">✓</span>
+                                                    {recipient.name || '—'}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3">{recipient.email}</td>
                                             <td className="px-4 py-3 capitalize">{recipient.user_type || '—'}</td>
                                             <td className="px-4 py-3">{recipient.status || '—'}</td>
+                                            <td className="px-4 py-3 capitalize">{recipient.source}</td>
                                             <td className="px-4 py-3 text-right">
                                                 <Button
                                                     type="button"
@@ -491,7 +758,7 @@ export function BulkEmailManagement() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Recent Email Logs</CardTitle>
-                        <CardDescription>History of bulk emails sent from the admin panel.</CardDescription>
+                        <CardDescription>History of bulk emails sent from the admin panel. Refresh after send to see success/failure counts.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">

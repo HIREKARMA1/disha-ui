@@ -102,7 +102,9 @@ const TEMPLATE_NAME_MAP: Record<string, TemplateSlug> = {
 };
 
 export function getTemplateList(): TemplateInfo[] {
-  return TEMPLATE_SLUGS.map((slug) => TEMPLATES[slug]);
+  return TEMPLATE_SLUGS
+    .filter((slug) => slug !== "creative-premium")
+    .map((slug) => TEMPLATES[slug]);
 }
 
 export function isTemplateSlug(id: string): id is TemplateSlug {
