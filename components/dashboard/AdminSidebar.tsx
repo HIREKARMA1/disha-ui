@@ -32,12 +32,7 @@ import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
 import { adminProfileService } from '@/services/adminProfileService'
-
-function navItemIsActive(pathname: string, href: string) {
-    if (pathname === href) return true
-    if (href === '/dashboard/admin') return false
-    return pathname.startsWith(`${href}/`)
-}
+import { navItemIsActive } from '@/lib/adminNav'
 
 interface NavItem {
     label: string
@@ -123,7 +118,7 @@ const navItems: NavItem[] = [
         href: '/dashboard/admin/events',
         icon: Calendar,
         description: 'Manage events',
-        color: 'from-rose-500 to-pink-600'
+        color: 'from-primary-500 to-secondary-500'
     },
     {
         label: 'Bulk Email',

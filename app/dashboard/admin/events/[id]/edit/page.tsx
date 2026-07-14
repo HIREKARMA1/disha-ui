@@ -1,7 +1,8 @@
 "use client"
 
-import { AdminEventLayout } from '@/components/admin/AdminEventLayout'
+import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { EventCreateForm } from '@/components/admin/EventCreateForm'
+import { EventManagementSubNav } from '@/components/dashboard/admin/events/EventManagementNav'
 
 interface PageProps {
   params: { id: string }
@@ -9,8 +10,11 @@ interface PageProps {
 
 export default function EditEventPage({ params }: PageProps) {
   return (
-    <AdminEventLayout>
-      <EventCreateForm eventId={params.id} />
-    </AdminEventLayout>
+    <AdminDashboardLayout>
+      <div className="space-y-6">
+        <EventManagementSubNav />
+        <EventCreateForm eventId={params.id} />
+      </div>
+    </AdminDashboardLayout>
   )
 }
