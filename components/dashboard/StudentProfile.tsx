@@ -172,6 +172,10 @@ export function StudentProfile() {
 
             setProfile(updatedProfile)
 
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('profile-updated'))
+            }
+
             // Refresh completion data after profile update
             const completionData = await profileService.getProfileCompletion()
             setProfileCompletion(completionData)
@@ -1641,6 +1645,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
 
             if (field === 'profile_picture') {
                 await onProfilePictureUploaded?.()
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('profile-updated'))
+                }
             }
 
             // Clear success message after 3 seconds
