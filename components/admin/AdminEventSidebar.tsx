@@ -21,6 +21,9 @@ export function AdminEventSidebar({ className, onNavigate }: AdminEventSidebarPr
   const pathname = usePathname()
 
   const isActive = (href: string) => {
+    if (href === '/dashboard/admin') {
+      return pathname === href
+    }
     if (href === '/dashboard/admin/events') {
       return pathname === href || (pathname.startsWith('/dashboard/admin/events/') &&
         !pathname.includes('/create') && !pathname.includes('/statistics') && !pathname.includes('/pending'))
