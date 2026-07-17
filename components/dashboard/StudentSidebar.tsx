@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
@@ -131,24 +131,37 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
     const { user, getToken, logout } = useAuth()
     const desktopNavRef = useRef<HTMLDivElement>(null)
 
-    // Fetch profile data when component mounts
-    useEffect(() => {
-        const fetchProfile = async () => {
-            if (user?.user_type === 'student') {
-                setIsLoadingProfile(true)
-                try {
-                    const data = await apiClient.getStudentProfile()
-                    setProfileData(data)
-                } catch (error) {
-                    console.error('Failed to fetch profile:', error)
-                } finally {
-                    setIsLoadingProfile(false)
-                }
+    // Fetch profile data when component mounts or updates
+    const fetchProfile = useCallback(async () => {
+        if (user?.user_type === 'student') {
+            setIsLoadingProfile(true)
+            try {
+                const data = await apiClient.getStudentProfile()
+                setProfileData(data)
+                setImageError(false) // Reset image error in case a new image is loaded
+            } catch (error) {
+                console.error('Failed to fetch profile:', error)
+            } finally {
+                setIsLoadingProfile(false)
             }
         }
-
-        fetchProfile()
     }, [user])
+
+    useEffect(() => {
+        fetchProfile()
+    }, [fetchProfile])
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const handleProfileUpdate = () => {
+                void fetchProfile()
+            }
+            window.addEventListener('profile-updated', handleProfileUpdate)
+            return () => {
+                window.removeEventListener('profile-updated', handleProfileUpdate)
+            }
+        }
+    }, [fetchProfile])
 
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen)
