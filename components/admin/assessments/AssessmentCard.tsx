@@ -177,6 +177,17 @@ export function AssessmentCard({
                                             View Details
                                         </button>
 
+                                        <button
+                                            onClick={() => {
+                                                window.location.href = `/dashboard/admin/assessments/${assessment.id}`
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+                                        >
+                                            <FileText className="w-4 h-4" />
+                                            View Questions
+                                        </button>
+
                                         {canShareExamLink && (
                                             <button
                                                 onClick={async () => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import {
     Building2,
@@ -54,6 +54,14 @@ function stripHtml(html: string) {
     return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
 }
 
+const BULK_EMAIL_SELECT_CONTENT_PROPS = {
+    position: 'item-aligned' as const,
+    sideOffset: 4,
+    collisionPadding: 16,
+    onOpenAutoFocus: (event: Event) => event.preventDefault(),
+    onCloseAutoFocus: (event: Event) => event.preventDefault(),
+}
+
 function roleIcon(userType?: string | null) {
     switch ((userType || '').toLowerCase()) {
         case 'student':
@@ -98,6 +106,7 @@ export function BulkEmailManagement() {
     const [isSearching, setIsSearching] = useState(false)
     const [searchError, setSearchError] = useState<string | null>(null)
     const searchRequestRef = useRef(0)
+    const savedScrollYRef = useRef<number | null>(null)
 
     const filterRecipientCount = useMemo(
         () => recipients.filter((recipient) => recipient.source === 'filter').length,
@@ -182,6 +191,19 @@ export function BulkEmailManagement() {
     useEffect(() => {
         fetchLogs()
     }, [fetchLogs])
+
+    useEffect(() => {
+        if (isLoadingRecipients) {
+            savedScrollYRef.current = window.scrollY
+        }
+    }, [isLoadingRecipients])
+
+    useLayoutEffect(() => {
+        if (!isLoadingRecipients && savedScrollYRef.current !== null) {
+            window.scrollTo({ top: savedScrollYRef.current, left: 0, behavior: 'instant' })
+            savedScrollYRef.current = null
+        }
+    }, [isLoadingRecipients, recipients.length])
 
     useEffect(() => {
         const q = searchQuery.trim()
@@ -396,6 +418,115 @@ export function BulkEmailManagement() {
                 </Card>
             </div>
 
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5" />
+                            Recipient Filters
+                        </CardTitle>
+                        <CardDescription>
+                            Filter platform users by category and status. Results auto-populate the recipient list.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Recipient Category</Label>
+                                <Select
+                                    value={category}
+                                    onValueChange={(value) => setCategory(value as BulkEmailCategory)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent {...BULK_EMAIL_SELECT_CONTENT_PROPS}>
+                                        <SelectItem value="all">All</SelectItem>
+                                        <SelectItem value="student">Student</SelectItem>
+                                        <SelectItem value="corporate">Corporate</SelectItem>
+                                        <SelectItem value="university">University</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>User Status</Label>
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={(value) => setStatusFilter(value as BulkEmailStatusFilter)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent {...BULK_EMAIL_SELECT_CONTENT_PROPS}>
+                                        <SelectItem value="all">All</SelectItem>
+                                        <SelectItem value="verified">Verified</SelectItem>
+                                        <SelectItem value="unverified">Unverified</SelectItem>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        {isLoadingRecipients && (
+                            <p className="text-sm text-gray-500">Loading matching recipients...</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Mail className="h-5 w-5" />
+                            Add Recipients
+                        </CardTitle>
+                        <CardDescription>
+                            Manually add emails or upload a CSV file with an email column. Works together with search and filters.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Input
+                                type="email"
+                                placeholder="Email address"
+                                value={manualEmail}
+                                onChange={(event) => setManualEmail(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault()
+                                        handleAddEmail()
+                                    }
+                                }}
+                            />
+                            <Button type="button" onClick={handleAddEmail} className="shrink-0">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Email
+                            </Button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".csv"
+                                className="hidden"
+                                onChange={handleCsvUpload}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={isUploading}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload CSV
+                            </Button>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                Imported Emails: {importedRecipientCount}
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -425,7 +556,7 @@ export function BulkEmailManagement() {
                             <SelectTrigger>
                                 <SelectValue placeholder="All roles" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent {...BULK_EMAIL_SELECT_CONTENT_PROPS}>
                                 <SelectItem value="all">All roles</SelectItem>
                                 <SelectItem value="student">Student</SelectItem>
                                 <SelectItem value="corporate">Corporate</SelectItem>
@@ -513,109 +644,6 @@ export function BulkEmailManagement() {
                     )}
                 </CardContent>
             </Card>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Users className="h-5 w-5" />
-                            Recipient Filters
-                        </CardTitle>
-                        <CardDescription>
-                            Filter platform users by category and status. Results auto-populate the recipient list.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Recipient Category</Label>
-                                <Select value={category} onValueChange={(value) => setCategory(value as BulkEmailCategory)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="student">Student</SelectItem>
-                                        <SelectItem value="corporate">Corporate</SelectItem>
-                                        <SelectItem value="university">University</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>User Status</Label>
-                                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as BulkEmailStatusFilter)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="verified">Verified</SelectItem>
-                                        <SelectItem value="unverified">Unverified</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        {isLoadingRecipients && (
-                            <p className="text-sm text-gray-500">Loading matching recipients...</p>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Mail className="h-5 w-5" />
-                            Add Recipients
-                        </CardTitle>
-                        <CardDescription>
-                            Manually add emails or upload a CSV file with an email column. Works together with search and filters.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <Input
-                                type="email"
-                                placeholder="Email address"
-                                value={manualEmail}
-                                onChange={(event) => setManualEmail(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault()
-                                        handleAddEmail()
-                                    }
-                                }}
-                            />
-                            <Button type="button" onClick={handleAddEmail} className="shrink-0">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Email
-                            </Button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".csv"
-                                className="hidden"
-                                onChange={handleCsvUpload}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={isUploading}
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload CSV
-                            </Button>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                                Imported Emails: {importedRecipientCount}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
 
             <Card>
                 <CardHeader>
