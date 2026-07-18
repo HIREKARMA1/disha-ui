@@ -38,7 +38,7 @@ import { Navbar } from '@/components/ui/navbar'
 const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
-    { value: 'university', label: 'University' }
+    // { value: 'university', label: 'University' }
     // Admin option removed for security - admin accounts must be created manually
 ]
 
