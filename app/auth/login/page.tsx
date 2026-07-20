@@ -33,7 +33,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
-    { value: 'university', label: 'University' },
+    // { value: 'university', label: 'University' },
     // { value: 'admin', label: 'Admin' }
 ]
 
