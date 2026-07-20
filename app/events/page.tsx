@@ -1,30 +1,34 @@
 "use client"
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Navbar } from '@/components/ui/navbar'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Footer } from '@/components/ui/footer'
-import { EventFilters } from '@/components/events/EventFilters'
-import { EventCard } from '@/components/events/EventCard'
+import { Button } from '@/components/ui/button'
+import { EventsPortalHeader } from '@/components/events/portal/EventsPortalHeader'
+import { EventsFilterSidebar, type StatusCounts } from '@/components/events/portal/EventsFilterSidebar'
+import { EventsContentTabs, type EventsTab } from '@/components/events/portal/EventsContentTabs'
+import { ContestCard } from '@/components/events/EventCard'
+import { ContestCardSkeleton } from '@/components/events/portal/ContestCardSkeleton'
+import { EventsEmptyState } from '@/components/events/portal/EventsEmptyState'
+import { EventsAdSidebar, EventsPortalAdCard } from '@/components/events/portal/EventsAdSidebar'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventListItem } from '@/types/contestEvent'
-import { Loader2, ChevronLeft, ChevronRight, Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { EVENTS_PORTAL_ADS, type PortalStatusFilter } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
+
+const LEFT_AD = EVENTS_PORTAL_ADS[0]
+const RIGHT_AD = EVENTS_PORTAL_ADS[1] ?? EVENTS_PORTAL_ADS[0]
 
 function EventsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+
   const [events, setEvents] = useState<ContestEventListItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'all' | 'registered'>('all')
-  const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({
-    status: 'all',
-    category: 'all',
-    prize_type: 'all',
-  })
+  const [activeTab, setActiveTab] = useState<EventsTab>('all')
+  const [status, setStatus] = useState<PortalStatusFilter>('all')
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({ all: 0, live: 0, closed: 0 })
   const [pagination, setPagination] = useState({
     page: 1,
     total_pages: 1,
@@ -35,16 +39,41 @@ function EventsPageContent() {
 
   const page = parseInt(searchParams.get('page') || '1', 10)
 
+  const fetchStatusCounts = useCallback(async () => {
+    const registeredOnly = activeTab === 'registered'
+    try {
+      const [allRes, liveRes, closedRes] = await Promise.all([
+        contestEventService.listPublicEvents({ limit: 1, page: 1, registered_only: registeredOnly }),
+        contestEventService.listPublicEvents({
+          limit: 1,
+          page: 1,
+          status: 'live',
+          registered_only: registeredOnly,
+        }),
+        contestEventService.listPublicEvents({
+          limit: 1,
+          page: 1,
+          status: 'closed',
+          registered_only: registeredOnly,
+        }),
+      ])
+      setStatusCounts({
+        all: allRes.total_count,
+        live: liveRes.total_count,
+        closed: closedRes.total_count,
+      })
+    } catch {
+      setStatusCounts({ all: 0, live: 0, closed: 0 })
+    }
+  }, [activeTab])
+
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     try {
       const result = await contestEventService.listPublicEvents({
         page,
         limit: 10,
-        search: search || undefined,
-        status: filters.status !== 'all' ? filters.status : undefined,
-        category: filters.category !== 'all' ? filters.category : undefined,
-        prize_type: filters.prize_type !== 'all' ? filters.prize_type : undefined,
+        status: status !== 'all' ? status : undefined,
         registered_only: activeTab === 'registered',
       })
       setEvents(result.events)
@@ -60,7 +89,11 @@ function EventsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, filters, activeTab])
+  }, [page, status, activeTab])
+
+  useEffect(() => {
+    fetchStatusCounts()
+  }, [fetchStatusCounts])
 
   useEffect(() => {
     fetchEvents()
@@ -72,124 +105,172 @@ function EventsPageContent() {
     router.push(`/events?${params.toString()}`)
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Navbar variant="transparent" />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 max-w-7xl flex-grow">
-        {/* Header */}
-        <div className="mb-10 relative">
-          <div className="absolute -inset-x-4 -top-8 h-32 bg-gradient-to-r from-primary-500/10 via-secondary-500/10 to-transparent rounded-3xl blur-2xl pointer-events-none" />
-          <div className="relative">
-            <p className="text-sm font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-2">
-              HireKarma Events
-            </p>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
-              Events & Contests
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 max-w-2xl text-lg">
-              Discover hackathons, workshops, placement drives, and competitions curated for your career growth.
-            </p>
-            {!loading && pagination.total_count > 0 && (
-              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                {pagination.total_count} events available
-              </p>
-            )}
+  const handleTabChange = (tab: EventsTab) => {
+    setActiveTab(tab)
+    goToPage(1)
+  }
+
+  const handleStatusChange = (next: PortalStatusFilter) => {
+    setStatus(next)
+    goToPage(1)
+  }
+
+  const tabsBlock = (
+    <div className="min-w-0 rounded-2xl border border-gray-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-gray-700/80 dark:bg-gray-900/60 sm:p-5">
+      <EventsContentTabs activeTab={activeTab} onChange={handleTabChange} />
+      {!loading && pagination.total_count > 0 && (
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          Showing {events.length} of {pagination.total_count} contests
+        </p>
+      )}
+    </div>
+  )
+
+  const cardsBlock = (
+    <>
+      <div className="w-full">
+        {loading ? (
+          <ContestCardSkeleton count={4} />
+        ) : events.length === 0 ? (
+          <EventsEmptyState />
+        ) : (
+          <div className="flex w-full flex-col gap-5">
+            {events.map((event) => (
+              <ContestCard key={event.id} event={event} />
+            ))}
           </div>
+        )}
+      </div>
+
+      {pagination.total_pages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!pagination.has_prev}
+            onClick={() => goToPage(page - 1)}
+            className="rounded-xl"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Prev
+          </Button>
+          {Array.from({ length: Math.min(pagination.total_pages, 5) }, (_, i) => {
+            const p = i + 1
+            return (
+              <Button
+                key={p}
+                variant={p === page ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => goToPage(p)}
+                className={cn(
+                  'min-w-[40px] rounded-xl',
+                  p === page &&
+                    'bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600'
+                )}
+              >
+                {p}
+              </Button>
+            )
+          })}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!pagination.has_next}
+            onClick={() => goToPage(page + 1)}
+            className="rounded-xl"
+          >
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </>
+  )
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-gray-50 via-white to-primary-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <EventsPortalHeader />
+
+      <div className="mx-auto w-full max-w-[1600px] flex-grow px-4 py-6 sm:px-6 lg:px-8">
+        {/* Desktop: row 1 = filters + tabs; row 2 = left ad + cards + right ad */}
+        <div
+          className={cn(
+            'hidden xl:grid xl:grid-cols-[320px_minmax(0,1fr)_320px] xl:gap-x-8 xl:gap-y-6'
+          )}
+        >
+          <EventsFilterSidebar
+            status={status}
+            onStatusChange={handleStatusChange}
+            statusCounts={statusCounts}
+            className="col-start-1 row-start-1 w-full"
+          />
+          <div className="col-start-2 row-start-1 min-w-0">{tabsBlock}</div>
+          <div className="col-start-1 row-start-2 w-full">
+            {LEFT_AD ? <EventsPortalAdCard ad={LEFT_AD} variant="left" /> : null}
+          </div>
+          <div className="col-start-2 row-start-2 min-w-0">{cardsBlock}</div>
+          {RIGHT_AD ? (
+            <EventsAdSidebar
+              ad={RIGHT_AD}
+              variant="right"
+              sticky
+              className="col-start-3 row-start-2 w-full"
+            />
+          ) : null}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700">
-          {(['all', 'registered'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); goToPage(1) }}
-              className={cn(
-                'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
-                activeTab === tab
-                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              )}
-            >
-              {tab === 'all' ? 'All Events' : 'Registered Events'}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Filter Panel */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <EventFilters filters={filters} onChange={setFilters} />
-          </aside>
-
-          {/* Center Content */}
-          <main className="flex-1 min-w-0">
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search by title, organizer, category, prize..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && goToPage(1)}
-                className="pl-10 bg-white dark:bg-gray-800"
-              />
+        {/* Tablet: 2 columns — sidebar | main (tabs + cards + inline right ad) */}
+        <div className="hidden md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-8 xl:hidden">
+          <div className="flex w-[320px] flex-col gap-6">
+            <EventsFilterSidebar
+              status={status}
+              onStatusChange={handleStatusChange}
+              statusCounts={statusCounts}
+              className="w-full"
+            />
+            {LEFT_AD ? (
+              <EventsPortalAdCard ad={LEFT_AD} variant="left" className="h-[480px]" />
+            ) : null}
+          </div>
+          <main className="min-w-0">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="min-w-0">{tabsBlock}</div>
+              {RIGHT_AD ? (
+                <EventsAdSidebar
+                  ad={RIGHT_AD}
+                  variant="right"
+                  sticky
+                  className="hidden lg:block w-[320px]"
+                />
+              ) : null}
             </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+            <div className="mt-6">{cardsBlock}</div>
+            {RIGHT_AD ? (
+              <div className="mt-8 lg:hidden">
+                <EventsPortalAdCard ad={RIGHT_AD} variant="right" className="h-[480px]" />
               </div>
-            ) : events.length === 0 ? (
-              <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-                <p className="text-lg font-medium">No events found</p>
-                <p className="text-sm mt-1">Try adjusting your filters or search terms</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-5">
-                {events.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {pagination.total_pages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!pagination.has_prev}
-                  onClick={() => goToPage(page - 1)}
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-                </Button>
-                {Array.from({ length: Math.min(pagination.total_pages, 5) }, (_, i) => {
-                  const p = i + 1
-                  return (
-                    <Button
-                      key={p}
-                      variant={p === page ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => goToPage(p)}
-                      className="min-w-[36px]"
-                    >
-                      {p}
-                    </Button>
-                  )
-                })}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!pagination.has_next}
-                  onClick={() => goToPage(page + 1)}
-                >
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            )}
+            ) : null}
           </main>
         </div>
+
+        {/* Mobile: single column */}
+        <div className="flex flex-col gap-6 md:hidden">
+          <EventsFilterSidebar
+            status={status}
+            onStatusChange={handleStatusChange}
+            statusCounts={statusCounts}
+          />
+          {tabsBlock}
+          {cardsBlock}
+          <div className="flex flex-col gap-6">
+            {LEFT_AD ? <EventsPortalAdCard ad={LEFT_AD} variant="left" className="h-auto min-h-[420px]" /> : null}
+            {RIGHT_AD && RIGHT_AD.id !== LEFT_AD?.id ? (
+              <EventsPortalAdCard ad={RIGHT_AD} variant="right" className="h-auto min-h-[420px]" />
+            ) : null}
+          </div>
+        </div>
       </div>
+
       <Footer />
     </div>
   )
@@ -197,11 +278,16 @@ function EventsPageContent() {
 
 export default function EventsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+          <EventsPortalHeader />
+          <div className="flex flex-grow items-center justify-center p-8">
+            <ContestCardSkeleton count={2} />
+          </div>
+        </div>
+      }
+    >
       <EventsPageContent />
     </Suspense>
   )
