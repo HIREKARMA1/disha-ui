@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Footer } from '@/components/ui/footer'
@@ -13,12 +13,16 @@ import { ContestCardSkeleton } from '@/components/events/portal/ContestCardSkele
 import { EventsEmptyState } from '@/components/events/portal/EventsEmptyState'
 import { EventsAdSidebar, EventsPortalAdCard } from '@/components/events/portal/EventsAdSidebar'
 import { contestEventService } from '@/services/contestEventService'
+import { advertisementService } from '@/services/advertisementService'
 import type { ContestEventListItem } from '@/types/contestEvent'
-import { EVENTS_PORTAL_ADS, type PortalStatusFilter } from '@/lib/eventsPortalConfig'
+import type { Advertisement } from '@/types/advertisement'
+import type { PortalStatusFilter } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
 
-const LEFT_AD = EVENTS_PORTAL_ADS[0]
-const RIGHT_AD = EVENTS_PORTAL_ADS[1] ?? EVENTS_PORTAL_ADS[0]
+/** One active ad per placement — lowest display_order wins (API already sorts). */
+function pickAdForPlacement(ads: Advertisement[], placement: 'left_sidebar' | 'right_sidebar'): Advertisement | null {
+  return ads.find((a) => a.placement === placement) ?? null
+}
 
 function EventsPageContent() {
   const router = useRouter()
@@ -26,6 +30,7 @@ function EventsPageContent() {
 
   const [events, setEvents] = useState<ContestEventListItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [ads, setAds] = useState<Advertisement[]>([])
   const [activeTab, setActiveTab] = useState<EventsTab>('all')
   const [status, setStatus] = useState<PortalStatusFilter>('all')
   const [statusCounts, setStatusCounts] = useState<StatusCounts>({ all: 0, live: 0, closed: 0 })
@@ -38,6 +43,9 @@ function EventsPageContent() {
   })
 
   const page = parseInt(searchParams.get('page') || '1', 10)
+
+  const leftAd = useMemo(() => pickAdForPlacement(ads, 'left_sidebar'), [ads])
+  const rightAd = useMemo(() => pickAdForPlacement(ads, 'right_sidebar'), [ads])
 
   const fetchStatusCounts = useCallback(async () => {
     const registeredOnly = activeTab === 'registered'
@@ -72,7 +80,7 @@ function EventsPageContent() {
     try {
       const result = await contestEventService.listPublicEvents({
         page,
-        limit: 10,
+        limit: 50,
         status: status !== 'all' ? status : undefined,
         registered_only: activeTab === 'registered',
       })
@@ -91,6 +99,15 @@ function EventsPageContent() {
     }
   }, [page, status, activeTab])
 
+  const fetchAds = useCallback(async () => {
+    try {
+      const result = await advertisementService.listPublic({ page: 'events' })
+      setAds(result.advertisements)
+    } catch {
+      setAds([])
+    }
+  }, [])
+
   useEffect(() => {
     fetchStatusCounts()
   }, [fetchStatusCounts])
@@ -98,6 +115,10 @@ function EventsPageContent() {
   useEffect(() => {
     fetchEvents()
   }, [fetchEvents])
+
+  useEffect(() => {
+    fetchAds()
+  }, [fetchAds])
 
   const goToPage = (p: number) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -115,19 +136,24 @@ function EventsPageContent() {
     goToPage(1)
   }
 
-  const tabsBlock = (
-    <div className="min-w-0 rounded-2xl border border-gray-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-gray-700/80 dark:bg-gray-900/60 sm:p-5">
-      <EventsContentTabs activeTab={activeTab} onChange={handleTabChange} />
-      {!loading && pagination.total_count > 0 && (
-        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-          Showing {events.length} of {pagination.total_count} contests
-        </p>
-      )}
-    </div>
-  )
+  const centerContent = (
+    <div className="flex min-w-0 flex-col gap-6">
+      <EventsFilterSidebar
+        status={status}
+        onStatusChange={handleStatusChange}
+        statusCounts={statusCounts}
+        className="w-full"
+      />
 
-  const cardsBlock = (
-    <>
+      <div className="min-w-0 rounded-2xl border border-gray-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-gray-700/80 dark:bg-gray-900/60 sm:p-5">
+        <EventsContentTabs activeTab={activeTab} onChange={handleTabChange} />
+        {!loading && pagination.total_count > 0 && (
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            Showing {events.length} of {pagination.total_count} contests
+          </p>
+        )}
+      </div>
+
       <div className="w-full">
         {loading ? (
           <ContestCardSkeleton count={4} />
@@ -143,7 +169,7 @@ function EventsPageContent() {
       </div>
 
       {pagination.total_pages > 1 && (
-        <div className="mt-8 flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 pb-2">
           <Button
             variant="outline"
             size="sm"
@@ -184,7 +210,7 @@ function EventsPageContent() {
           </Button>
         </div>
       )}
-    </>
+    </div>
   )
 
   return (
@@ -192,80 +218,39 @@ function EventsPageContent() {
       <EventsPortalHeader />
 
       <div className="mx-auto w-full max-w-[1600px] flex-grow px-4 py-6 sm:px-6 lg:px-8">
-        {/* Desktop: row 1 = filters + tabs; row 2 = left ad + cards + right ad */}
-        <div
-          className={cn(
-            'hidden xl:grid xl:grid-cols-[320px_minmax(0,1fr)_320px] xl:gap-x-8 xl:gap-y-6'
-          )}
-        >
-          <EventsFilterSidebar
-            status={status}
-            onStatusChange={handleStatusChange}
-            statusCounts={statusCounts}
-            className="col-start-1 row-start-1 w-full"
-          />
-          <div className="col-start-2 row-start-1 min-w-0">{tabsBlock}</div>
-          <div className="col-start-1 row-start-2 w-full">
-            {LEFT_AD ? <EventsPortalAdCard ad={LEFT_AD} variant="left" /> : null}
-          </div>
-          <div className="col-start-2 row-start-2 min-w-0">{cardsBlock}</div>
-          {RIGHT_AD ? (
-            <EventsAdSidebar
-              ad={RIGHT_AD}
-              variant="right"
-              sticky
-              className="col-start-3 row-start-2 w-full"
-            />
-          ) : null}
+        {/* Desktop: fixed left ad | scrollable center events | fixed right ad */}
+        <div className="hidden xl:grid xl:grid-cols-[320px_minmax(0,1fr)_320px] xl:items-start xl:gap-8">
+          <aside className="sticky top-20 w-full self-start">
+            {leftAd ? <EventsPortalAdCard ad={leftAd} variant="left" /> : null}
+          </aside>
+
+          <main className="min-w-0">{centerContent}</main>
+
+          <aside className="sticky top-20 w-full self-start">
+            {rightAd ? <EventsPortalAdCard ad={rightAd} variant="right" /> : null}
+          </aside>
         </div>
 
-        {/* Tablet: 2 columns — sidebar | main (tabs + cards + inline right ad) */}
-        <div className="hidden md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-8 xl:hidden">
-          <div className="flex w-[320px] flex-col gap-6">
-            <EventsFilterSidebar
-              status={status}
-              onStatusChange={handleStatusChange}
-              statusCounts={statusCounts}
-              className="w-full"
-            />
-            {LEFT_AD ? (
-              <EventsPortalAdCard ad={LEFT_AD} variant="left" className="h-[480px]" />
+        {/* Tablet */}
+        <div className="hidden md:grid md:grid-cols-[280px_minmax(0,1fr)] md:items-start md:gap-8 xl:hidden">
+          <aside className="sticky top-20 flex w-full flex-col gap-6 self-start">
+            {leftAd ? <EventsPortalAdCard ad={leftAd} variant="left" className="h-[480px]" /> : null}
+            {rightAd && rightAd.id !== leftAd?.id ? (
+              <EventsAdSidebar ad={rightAd} variant="right" className="w-full" />
             ) : null}
-          </div>
-          <main className="min-w-0">
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="min-w-0">{tabsBlock}</div>
-              {RIGHT_AD ? (
-                <EventsAdSidebar
-                  ad={RIGHT_AD}
-                  variant="right"
-                  sticky
-                  className="hidden lg:block w-[320px]"
-                />
-              ) : null}
-            </div>
-            <div className="mt-6">{cardsBlock}</div>
-            {RIGHT_AD ? (
-              <div className="mt-8 lg:hidden">
-                <EventsPortalAdCard ad={RIGHT_AD} variant="right" className="h-[480px]" />
-              </div>
-            ) : null}
-          </main>
+          </aside>
+          <main className="min-w-0">{centerContent}</main>
         </div>
 
-        {/* Mobile: single column */}
+        {/* Mobile: events first, ads below */}
         <div className="flex flex-col gap-6 md:hidden">
-          <EventsFilterSidebar
-            status={status}
-            onStatusChange={handleStatusChange}
-            statusCounts={statusCounts}
-          />
-          {tabsBlock}
-          {cardsBlock}
+          {centerContent}
           <div className="flex flex-col gap-6">
-            {LEFT_AD ? <EventsPortalAdCard ad={LEFT_AD} variant="left" className="h-auto min-h-[420px]" /> : null}
-            {RIGHT_AD && RIGHT_AD.id !== LEFT_AD?.id ? (
-              <EventsPortalAdCard ad={RIGHT_AD} variant="right" className="h-auto min-h-[420px]" />
+            {leftAd ? (
+              <EventsPortalAdCard ad={leftAd} variant="left" className="h-auto min-h-[420px]" />
+            ) : null}
+            {rightAd && rightAd.id !== leftAd?.id ? (
+              <EventsPortalAdCard ad={rightAd} variant="right" className="h-auto min-h-[420px]" />
             ) : null}
           </div>
         </div>

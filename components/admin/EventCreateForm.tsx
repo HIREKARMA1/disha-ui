@@ -10,9 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { contestEventService } from '@/services/contestEventService'
-import type { ContestEventCreatePayload, ContestEventDetail, ContestEventUpdatePayload, FAQItem, RoundItem, RewardItem } from '@/types/contestEvent'
+import { advertisementService } from '@/services/advertisementService'
+import type { ContestEventCreatePayload, ContestEventUpdatePayload } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
+import {
+  EventAdvertisementSection,
+  adFromApi,
+  defaultEventAdForm,
+  saveEventAd,
+  validateEventAd,
+  type EventAdFormState,
+} from '@/components/admin/EventAdvertisementSection'
 import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
@@ -55,14 +64,22 @@ const defaultForm: ContestEventCreatePayload = {
 export function EventCreateForm({ eventId }: EventFormProps) {
   const router = useRouter()
   const [form, setForm] = useState<ContestEventCreatePayload>(defaultForm)
+  const [leftAd, setLeftAd] = useState<EventAdFormState>(defaultEventAdForm({ display_order: 0 }))
+  const [rightAd, setRightAd] = useState<EventAdFormState>(defaultEventAdForm({ display_order: 1 }))
   const [loading, setLoading] = useState(!!eventId)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
 
   useEffect(() => {
     if (eventId) {
-      contestEventService.getAdminEvent(eventId)
-        .then((event) => {
+      Promise.all([
+        contestEventService.getAdminEvent(eventId),
+        advertisementService.listAdmin({ event_id: eventId, limit: 20 }).catch(() => ({
+          advertisements: [],
+          total_count: 0,
+        })),
+      ])
+        .then(([event, adList]) => {
           setForm({
             title: event.title,
             slug: event.slug,
@@ -100,6 +117,22 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             rounds: event.rounds,
             rewards: event.rewards,
           })
+
+          const ads = adList.advertisements || []
+          const left = ads.find((a) => a.placement === 'left_sidebar')
+          const right = ads.find((a) => a.placement === 'right_sidebar')
+          // Backward compatibility: a single older ad without clear pair
+          const legacy =
+            !left && !right
+              ? ads[0]
+              : !left && ads.length === 1 && ads[0].placement !== 'right_sidebar'
+                ? ads[0]
+                : null
+
+          if (left) setLeftAd(adFromApi(left))
+          else if (legacy) setLeftAd(adFromApi({ ...legacy, placement: 'left_sidebar' }))
+
+          if (right) setRightAd(adFromApi(right))
         })
         .catch(() => toast.error('Failed to load event'))
         .finally(() => setLoading(false))
@@ -155,16 +188,47 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       toast.error('Title and event start date are required')
       return
     }
+    const leftError = validateEventAd(leftAd, 'Left Sidebar advertisement')
+    if (leftError) {
+      toast.error(leftError)
+      return
+    }
+    const rightError = validateEventAd(rightAd, 'Right Sidebar advertisement')
+    if (rightError) {
+      toast.error(rightError)
+      return
+    }
+
     setSaving(true)
     try {
       const payload = buildPayload()
+      let savedEventId = eventId
       if (eventId) {
         await contestEventService.updateEvent(eventId, buildUpdatePayload())
-        toast.success('Event updated')
       } else {
-        await contestEventService.createEvent(payload)
-        toast.success('Event created')
+        const created = await contestEventService.createEvent(payload)
+        savedEventId = created.id
       }
+
+      if (savedEventId) {
+        await saveEventAd({
+          form: leftAd,
+          placement: 'left_sidebar',
+          eventId: savedEventId,
+        })
+        await saveEventAd({
+          form: rightAd,
+          placement: 'right_sidebar',
+          eventId: savedEventId,
+        })
+      }
+
+      const adCount = [leftAd.enabled, rightAd.enabled].filter(Boolean).length
+      toast.success(
+        adCount > 0
+          ? `Event saved with ${adCount} advertisement${adCount === 1 ? '' : 's'}`
+          : 'Event saved'
+      )
       router.push('/dashboard/admin/events')
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { detail?: string; error?: string } } })?.response?.data
@@ -410,6 +474,26 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           ))}
         </CardContent>
       </Card>
+
+      <EventAdvertisementSection
+        title="Left Sidebar Advertisement"
+        description="Shown in the left column of the public Events page."
+        placementLabel="Left Sidebar"
+        value={leftAd}
+        onChange={setLeftAd}
+        uploading={uploading === 'left_ad'}
+        onUploadingChange={(busy) => setUploading(busy ? 'left_ad' : null)}
+      />
+
+      <EventAdvertisementSection
+        title="Right Sidebar Advertisement"
+        description="Shown in the right column of the public Events page."
+        placementLabel="Right Sidebar"
+        value={rightAd}
+        onChange={setRightAd}
+        uploading={uploading === 'right_ad'}
+        onUploadingChange={(busy) => setUploading(busy ? 'right_ad' : null)}
+      />
 
       <div className="flex justify-end">
         <Button type="submit" disabled={saving} size="lg">

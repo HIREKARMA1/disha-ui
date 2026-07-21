@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Calendar, Plus, List, BarChart3 } from 'lucide-react'
+import { Calendar, Plus, List, BarChart3, Megaphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/dashboard/admin', icon: Calendar },
   { label: 'Events', href: '/dashboard/admin/events', icon: List },
   { label: 'Create Event', href: '/dashboard/admin/events/create', icon: Plus },
+  { label: 'Advertisements', href: '/dashboard/admin/events/advertisements', icon: Megaphone },
   { label: 'Statistics', href: '/dashboard/admin/events/statistics', icon: BarChart3 },
 ]
 
@@ -26,7 +27,8 @@ export function AdminEventSidebar({ className, onNavigate }: AdminEventSidebarPr
     }
     if (href === '/dashboard/admin/events') {
       return pathname === href || (pathname.startsWith('/dashboard/admin/events/') &&
-        !pathname.includes('/create') && !pathname.includes('/statistics') && !pathname.includes('/pending'))
+        !pathname.includes('/create') && !pathname.includes('/statistics') &&
+        !pathname.includes('/pending') && !pathname.includes('/advertisements'))
     }
     return pathname.startsWith(href)
   }

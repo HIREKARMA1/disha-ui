@@ -97,6 +97,7 @@ export interface ContestEventListItem {
   organizer_name?: string
   category?: EventCategory
   mode?: EventMode
+  venue?: string
   prize_pool?: string
   prize_type?: PrizeType
   publication_status?: PublicationStatus
