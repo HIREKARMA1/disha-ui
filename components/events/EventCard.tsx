@@ -46,13 +46,18 @@ function modeLabel(mode?: string) {
 
 function locationLabel(event: ContestEventListItem) {
   if (event.mode === 'online') return 'Online'
-  if (event.mode === 'hybrid') return 'Hybrid · Multiple locations'
-  return 'On-site'
+  const venue = event.venue?.trim()
+  if (event.mode === 'hybrid') {
+    return venue ? `Hybrid · ${venue}` : 'Hybrid · Multiple locations'
+  }
+  // offline / default — show admin-provided venue when available
+  return venue || 'On-site'
 }
 
 function ContestCardComponent({ event }: ContestCardProps) {
   const slug = event.slug || event.id
   const detailHref = `/events/${slug}`
+  const registerHref = `/events/${slug}?register=1`
   const deadline = formatDate(event.registration_end_date)
   const tags = [
     event.category ? CATEGORY_LABELS[event.category] || event.category : null,
@@ -157,10 +162,12 @@ function ContestCardComponent({ event }: ContestCardProps) {
               <Wifi className="h-4 w-4 shrink-0 text-primary-500" />
               <span>{modeLabel(event.mode)}</span>
             </div>
-            <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300 sm:col-span-2">
-              <MapPin className="h-4 w-4 shrink-0 text-primary-500" />
-              <span className="truncate">{locationLabel(event)}</span>
-            </div>
+            {(event.mode !== 'online' || event.venue) && (
+              <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300 sm:col-span-2">
+                <MapPin className="h-4 w-4 shrink-0 text-primary-500" />
+                <span className="truncate">{locationLabel(event)}</span>
+              </div>
+            )}
           </div>
 
           {tags.length > 0 && (
@@ -187,7 +194,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href={detailHref} className="sm:flex-1">
+            <Link href={registerHref} className="sm:flex-1">
               <Button className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
                 {event.is_registered ? 'Manage Registration' : 'Register Now'}
               </Button>
