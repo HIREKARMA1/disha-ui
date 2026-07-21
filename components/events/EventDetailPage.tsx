@@ -49,6 +49,20 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       .finally(() => setLoading(false))
   }, [slug])
 
+  // Register Now from listing → land on details with register CTA in view
+  useEffect(() => {
+    if (!event || typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('register') !== '1') return
+    const timer = window.setTimeout(() => {
+      document.getElementById('event-register-cta')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [event])
+
   // Hash navigation on load
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
@@ -91,8 +105,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const handleRegister = async () => {
     const token = localStorage.getItem('access_token')
     if (!token) {
-      localStorage.setItem('redirect_after_login', `/events/${slug}`)
-      router.push(`/auth/login?redirect=${encodeURIComponent(`/events/${slug}`)}`)
+      localStorage.setItem('redirect_after_login', `/events/${slug}?register=1`)
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/events/${slug}?register=1`)}`)
       return
     }
     if (event?.registration_external_url) {
@@ -485,7 +499,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                     </div>
                   )}
                 </div>
-                <RegisterButton />
+                <div id="event-register-cta">
+                  <RegisterButton />
+                </div>
               </div>
 
               {event.organizer_name && (

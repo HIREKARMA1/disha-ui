@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Plus, BarChart3, List, Calendar } from 'lucide-react'
+import { Plus, BarChart3, List, Calendar, Megaphone } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { navItemIsActive } from '@/lib/adminNav'
@@ -10,6 +10,7 @@ import { navItemIsActive } from '@/lib/adminNav'
 const SUB_NAV_ITEMS = [
   { label: 'All Events', href: '/dashboard/admin/events', icon: List },
   { label: 'Create Event', href: '/dashboard/admin/events/create', icon: Plus },
+  { label: 'Advertisements', href: '/dashboard/admin/events/advertisements', icon: Megaphone },
   { label: 'Statistics', href: '/dashboard/admin/events/statistics', icon: BarChart3 },
 ] as const
 
@@ -20,7 +21,8 @@ function eventSubNavIsActive(pathname: string, href: string) {
       (pathname.startsWith('/dashboard/admin/events/') &&
         !pathname.startsWith('/dashboard/admin/events/create') &&
         !pathname.startsWith('/dashboard/admin/events/statistics') &&
-        !pathname.startsWith('/dashboard/admin/events/pending'))
+        !pathname.startsWith('/dashboard/admin/events/pending') &&
+        !pathname.startsWith('/dashboard/admin/events/advertisements'))
     )
   }
   return navItemIsActive(pathname, href)
@@ -40,7 +42,7 @@ export function EventManagementHero() {
             </h1>
           </div>
           <p className="text-base text-gray-600 dark:text-gray-300 md:text-lg">
-            Create and manage contests, placement drives, hackathons, and workshops across the platform.
+            Manage contests separately from sidebar advertisements on the Events portal.
           </p>
         </div>
         <Link href="/dashboard/admin/events/create" className="shrink-0">
@@ -58,7 +60,7 @@ export function EventManagementSubNav() {
   const pathname = usePathname()
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {SUB_NAV_ITEMS.map((item) => {
         const isActive = eventSubNavIsActive(pathname, item.href)
         const Icon = item.icon
