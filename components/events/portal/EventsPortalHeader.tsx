@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ExternalLink, LogOut } from 'lucide-react'
+import { User, ExternalLink, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -70,7 +70,7 @@ function EventsPortalHeaderComponent() {
                   size="sm"
                   className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
                 >
-                  <LayoutDashboard className="mr-1.5 h-4 w-4" />
+                  <User className="mr-1.5 h-4 w-4" />
                   <span className="hidden sm:inline">Dashboard</span>
                 </Button>
               </Link>
