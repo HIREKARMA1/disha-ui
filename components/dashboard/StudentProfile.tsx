@@ -550,9 +550,10 @@ export function StudentProfile() {
                                                             </p>
                                                             <FileUpload
                                                                 type="document"
+                                                                maxSize={1}
                                                                 onFileSelect={handleResumeUpload}
                                                                 currentFile={profile.resume}
-                                                                placeholder="Upload your resume (PDF only)"
+                                                                placeholder="Upload your resume (PDF only, max 1 MB)"
                                                                 disabled={uploadingResume}
                                                             />
                                                             {uploadingResume && (
@@ -1712,10 +1713,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 <div className="space-y-3">
                     <FileUpload
                         type="document"
+                        maxSize={1}
                         onFileSelect={(file) => handleFileUpload(field, file)}
                         onFileRemove={() => handleFileRemove(field)}
                         currentFile={value}
-                        placeholder="Upload your resume (PDF only)"
+                        placeholder="Upload your resume (PDF only, max 1 MB)"
                         disabled={uploading === field}
                     />
                     {uploading === field && (
@@ -1741,10 +1743,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 <div className="space-y-3">
                     <FileUpload
                         type="document"
+                        maxSize={1}
                         onFileSelect={(file) => handleFileUpload(backendFieldName, file)}
                         onFileRemove={() => handleFileRemove(backendFieldName)}
                         currentFile={formData[backendFieldName] || ''}
-                        placeholder={`Upload your ${displayName} (PDF only)`}
+                        placeholder={`Upload your ${displayName} (PDF only, max 1 MB)`}
                         disabled={uploading === backendFieldName}
                     />
                     {uploading === backendFieldName && (
