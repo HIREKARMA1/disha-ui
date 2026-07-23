@@ -469,11 +469,11 @@ export function StudentProfile() {
                                                     </div>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="default"
                                                         onClick={() => setEditing('basic')}
-                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
+                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
                                                         Edit
                                                     </Button>
                                                 </div>
@@ -591,11 +591,11 @@ export function StudentProfile() {
                                                     </div>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="default"
                                                         onClick={() => setEditing('academic')}
-                                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
+                                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
                                                         Edit
                                                     </Button>
                                                 </div>
@@ -700,11 +700,11 @@ export function StudentProfile() {
                                                     </div>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="default"
                                                         onClick={() => setEditing('skills')}
-                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-xs transition-all duration-200"
+                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
                                                         Edit
                                                     </Button>
                                                 </div>
@@ -814,11 +814,11 @@ export function StudentProfile() {
                                                     </div>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="default"
                                                         onClick={() => setEditing('experience')}
-                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-xs transition-all duration-200"
+                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
                                                         Edit
                                                     </Button>
                                                 </div>
@@ -931,11 +931,11 @@ export function StudentProfile() {
                                                     </div>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="default"
                                                         onClick={() => setEditing('documents')}
-                                                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-xs transition-all duration-200"
+                                                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
                                                         Edit
                                                     </Button>
                                                 </div>
@@ -1080,11 +1080,11 @@ export function StudentProfile() {
                                                     </div>
                                                     <Button
                                                         variant="ghost"
-                                                        size="sm"
+                                                        size="default"
                                                         onClick={() => setEditing('social')}
-                                                        className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-xs transition-all duration-200"
+                                                        className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
                                                     >
-                                                        <ChevronRight className="w-3 h-3 mr-1" />
+                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
                                                         Edit
                                                     </Button>
                                                 </div>

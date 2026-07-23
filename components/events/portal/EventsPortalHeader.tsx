@@ -2,13 +2,11 @@
 
 import { memo } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { useTheme } from 'next-themes'
-import { usePathname } from 'next/navigation'
 import { User, ExternalLink, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { BrandLogo } from '@/components/ui/BrandLogo'
 import { cn } from '@/lib/utils'
 
 const CANDIDATE_PORTAL_URL = 'https://disha.hirekarma.in'
@@ -20,11 +18,6 @@ function getDashboardPath(userType?: string) {
 
 function EventsPortalHeaderComponent() {
   const { user, isAuthenticated, isLoading, logout } = useAuth()
-  const { theme, resolvedTheme } = useTheme()
-
-  const isDark =
-    resolvedTheme === 'dark' || (resolvedTheme === 'system' && theme === 'dark')
-  const logoSrc = isDark ? '/images/HKlogowhite.png' : '/images/HKlogoblack.png'
 
   return (
     <header
@@ -34,16 +27,7 @@ function EventsPortalHeaderComponent() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/events" className="flex shrink-0 items-center">
-          <Image
-            src={logoSrc}
-            alt="HireKarma"
-            width={140}
-            height={44}
-            className="h-9 w-auto object-contain sm:h-10"
-            priority
-          />
-        </Link>
+        <BrandLogo href="/events" priority />
 
         <nav className="hidden items-center gap-6 md:flex">
           <Link
