@@ -346,7 +346,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
                 service_agreement_details: formData.service_agreement_details || null,
-                expiration_date: formData.expiration_date ? formData.expiration_date : null,
+                expiration_date: null,
                 ctc_with_probation: formData.ctc_with_probation || null,
                 ctc_after_probation: formData.ctc_after_probation || null
             }
@@ -1086,18 +1086,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                             value={formData.number_of_openings}
                                             onChange={(e) => handleInputChange('number_of_openings', e.target.value)}
                                             placeholder="e.g., 3"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Expiration Date
-                                        </label>
-                                        <DateTimePicker
-                                            value={formData.expiration_date}
-                                            onChange={(value) => handleInputChange('expiration_date', value)}
-                                            placeholder="Select expiration date"
-                                            autoClose={true}
                                         />
                                     </div>
                                 </div>
