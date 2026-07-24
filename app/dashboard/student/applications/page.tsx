@@ -178,7 +178,7 @@ export default function StudentApplicationsPage() {
 
     return (
         <StudentDashboardLayout>
-            <div className="space-y-6 main-content">
+            <div className="space-y-6 main-content pb-24 md:pb-0">
                 {/* Application Management Header */}
                 <StudentApplicationManagementHeader
                     totalApplications={totalApplications}
