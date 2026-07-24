@@ -10,6 +10,7 @@ import { UniversityAnalyticsChart } from './UniversityAnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { UniversityRecentActivities } from './UniversityRecentActivities'
 import { UniversityLockScreen } from './UniversityLockScreen'
+import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
@@ -104,6 +105,7 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                         </>
                     ) : (
                         <>
+                            <EventPopup />
                             <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
                                 {/* Loading State */}
                                 {isLoading && (
