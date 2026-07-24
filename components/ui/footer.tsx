@@ -14,11 +14,11 @@ export function Footer() {
     }
 
     return (
-        <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-10">
+        <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-10 md:pt-16 pb-8 md:pb-10">
             <div className="container mx-auto px-6 sm:px-8 lg:px-10 py-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-14 md:gap-12 lg:gap-16 mb-14">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-16 mb-10 md:mb-14">
                     {/* Brand Section */}
-                    <div className="space-y-5 text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                    <div className="space-y-5 text-center md:text-left flex flex-col items-center md:items-start">
                         <Link href="/" className="inline-block">
                             <Image
                                 src={getLogoSrc()}
@@ -51,7 +51,7 @@ export function Footer() {
                     </div>
 
                     {/* Quick Links */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
                         <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Quick Links</h3>
                         <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li>
@@ -78,7 +78,7 @@ export function Footer() {
                     </div>
 
                     {/* Resources */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
                         <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Resources</h3>
                         <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li>
@@ -105,7 +105,7 @@ export function Footer() {
                     </div>
 
                     {/* Contact Info */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start px-2 md:px-0">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
                         <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Contact Us</h3>
                         <ul className="space-y-4 flex flex-col items-center md:items-start">
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">

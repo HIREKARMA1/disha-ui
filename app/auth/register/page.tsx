@@ -676,17 +676,19 @@ function RegisterPageContent() {
                 >
                     {/* Header - Only show on form step */}
                     {currentStep === 'form' && (
-                        <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-6">
+                        <div className="text-center mb-1 md:mb-8">
+                            <div className="inline-flex items-center justify-center w-8 h-8 md:w-20 md:h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-md md:rounded-2xl mb-1 md:mb-6">
                                 {(() => {
                                     const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
-                                    return <IconComponent className="w-10 h-10 text-white" />
+                                    return <IconComponent className="w-4 h-4 md:w-10 md:h-10 text-white" />
                                 })()}
                             </div>
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+
+                            <h1 className="text-base md:text-3xl font-bold text-gray-900 dark:text-white leading-none mb-0.5 md:mb-4">
                                 Create Your {selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)} Account
                             </h1>
-                            <p className="text-lg text-gray-600 dark:text-gray-400">
+
+                            <p className="text-[10px] md:text-lg text-gray-600 dark:text-gray-400 leading-none">
                                 Join HireKarma and start your journey today
                             </p>
                         </div>

@@ -234,14 +234,19 @@ function LoginPageContent() {
                     className="w-full max-w-md"
                 >
                     {/* Logo */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl mb-4">
-                            <Shield className="w-8 h-8 text-white" />
+                    <div className="text-center mb-1 md:mb-8">
+                        <div className="inline-flex items-center justify-center w-8 h-8 md:w-16 md:h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-md md:rounded-2xl mb-1 md:mb-4">
+                            {(() => {
+                                const IconComponent = userTypeIcons[selectedUserType as UserType]
+                                return <IconComponent className="w-4 h-4 md:w-8 md:h-8 text-white" />
+                            })()}
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+
+                        <h1 className="text-base md:text-3xl font-bold text-gray-900 dark:text-white leading-none mb-0.5 md:mb-2">
                             Welcome Back
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+
+                        <p className="text-[10px] md:text-base text-gray-600 dark:text-gray-400 leading-none">
                             Sign in to your account to continue
                         </p>
                     </div>
