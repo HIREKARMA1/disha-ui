@@ -6,7 +6,6 @@ import {
     ChevronUp,
     ChevronDown,
     Eye,
-    Download,
     Calendar,
     Building,
     Clock,
@@ -15,7 +14,7 @@ import {
     UserCheck,
     FileText,
     ClipboardList,
-    Undo2
+    Undo2,
 } from 'lucide-react'
 import { formatAmountINR } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
@@ -215,6 +214,162 @@ export function StudentApplicationTable({
 
     const canWithdraw = (status: string) => ['applied', 'shortlisted', 'pending'].includes(status)
 
+    const getActionFlags = (application: ApplicationData) => {
+        const showWithdraw =
+            !onStatusUpdate && !!onWithdraw && canWithdraw(application.status)
+        const showMessages = !onStatusUpdate && !!onViewMessages
+        const showOfferLetter =
+            !onStatusUpdate &&
+            application.status === 'selected' &&
+            !!application.offer_letter_url
+        const showStatusPlaceholder =
+            !onStatusUpdate &&
+            !application.has_assignment &&
+            !showWithdraw &&
+            !showMessages &&
+            !showOfferLetter &&
+            application.status !== 'withdrawn' &&
+            (application.status !== 'selected' || !application.offer_letter_url)
+
+        return { showWithdraw, showMessages, showOfferLetter, showStatusPlaceholder }
+    }
+
+    const renderApplicationActions = (
+        application: ApplicationData,
+        opts?: { showLabels?: boolean; fullWidth?: boolean }
+    ) => {
+        const showLabels = opts?.showLabels ?? false
+        const fullWidth = opts?.fullWidth ?? false
+        const { showWithdraw, showMessages, showOfferLetter, showStatusPlaceholder } =
+            getActionFlags(application)
+
+        const btnClass = fullWidth
+            ? 'flex w-full items-center justify-center gap-2'
+            : 'flex items-center gap-1 shrink-0'
+
+        return (
+            <div
+                className={
+                    fullWidth
+                        ? 'flex w-full flex-col gap-2'
+                        : 'inline-flex items-center gap-2 flex-wrap'
+                }
+            >
+                {onStatusUpdate && (
+                    application.creator_type === "Company" ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onStatusUpdate(application)}
+                            className={btnClass}
+                            title="View Application Details"
+                        >
+                            <Eye className="w-4 h-4" />
+                            <span>View</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onStatusUpdate(application)}
+                            className={btnClass}
+                            title={application.can_update_status ? "Update Application Status" : "View Application Details"}
+                        >
+                            <Eye className="w-4 h-4" />
+                            {fullWidth && <span>View</span>}
+                        </Button>
+                    )
+                )}
+
+                {!onStatusUpdate && application.has_assignment && (
+                    <>
+                        {(application.creator_type === "University" || application.is_university_created === true) &&
+                         checkExamSubmitted(application) &&
+                         application.status === 'applied' ? (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Coming Soon</span>
+                        ) : (application.creator_type === "University" || application.is_university_created === true) &&
+                         checkExamSubmitted(application) &&
+                         application.status !== 'applied' &&
+                         application.status !== 'selected' ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewApplicationDetails(application)}
+                                className={btnClass}
+                                title="View Application Details"
+                            >
+                                <Eye className="w-4 h-4" />
+                                <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Details</span>
+                            </Button>
+                        ) : (
+                            !((application.creator_type === "University" || application.is_university_created === true) && application.status === 'selected') && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewAssignment(application)}
+                                    className={`${btnClass} text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700`}
+                                    title="View Practice Assignment"
+                                >
+                                    <ClipboardList className="w-4 h-4" />
+                                    <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Assignment</span>
+                                </Button>
+                            )
+                        )}
+                    </>
+                )}
+
+                {showWithdraw && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onWithdraw?.(application)}
+                        className={`${btnClass} text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400`}
+                        title="Withdraw Application"
+                    >
+                        <Undo2 className="w-4 h-4" />
+                        <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>Withdraw</span>
+                    </Button>
+                )}
+
+                {showMessages && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewMessages?.(application)}
+                        className={btnClass}
+                        title="View Messages"
+                    >
+                        <Eye className="w-4 h-4" />
+                        {(showLabels || fullWidth) && <span>Messages</span>}
+                    </Button>
+                )}
+
+                {showOfferLetter && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewOfferLetter(application)}
+                        className={`${btnClass} text-green-600 hover:text-green-700 border-green-600 hover:border-green-700`}
+                        title="View Offer Letter"
+                    >
+                        <Eye className="w-4 h-4" />
+                        <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Offer</span>
+                    </Button>
+                )}
+
+                {showStatusPlaceholder && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                        {application.status === 'selected'
+                            ? 'Offer letter pending'
+                            : application.status === 'rejected'
+                                ? 'Application rejected'
+                                : `Application ${application.status}`}
+                    </span>
+                )}
+            </div>
+        )
+    }
+
     const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <button
             onClick={() => onSort(field)}
@@ -258,9 +413,83 @@ export function StudentApplicationTable({
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {/* Table */}
-            <div className="overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-visible md:overflow-hidden h-auto min-h-fit">
+            {/* Mobile: stacked cards — all fields + actions fully visible */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700 overflow-visible">
+                {applications.map((application) => (
+                    <article
+                        key={`mobile-${application.id}`}
+                        className="p-4 space-y-4 h-auto overflow-visible"
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 shrink-0 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-base text-gray-900 dark:text-white break-words">
+                                    {application.job_title || 'N/A'}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
+                                    Job ID: {application.job_id.slice(0, 8)}...
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 text-sm">
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                                    Created By
+                                </p>
+                                <div className="flex items-start gap-2">
+                                    <Building className="w-4 h-4 shrink-0 text-gray-400 mt-0.5" />
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-gray-900 dark:text-white break-words">
+                                            {application.corporate_name || 'N/A'}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {application.creator_type || 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                                    Status
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    {getStatusIcon(application.status)}
+                                    <span className={`font-medium ${getStatusColor(application.status)}`}>
+                                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                                    Applied Date
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 shrink-0 text-gray-400" />
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                        {formatDate(application.applied_at)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2 overflow-visible">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                Actions
+                            </p>
+                            {renderApplicationActions(application, { showLabels: true, fullWidth: true })}
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            {/* Desktop / tablet: original table */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -285,8 +514,7 @@ export function StudentApplicationTable({
                                 key={application.id}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${hoveredRow === application.id ? 'bg-gray-50 dark:bg-gray-700' : ''
-                                    }`}
+                                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${hoveredRow === application.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                                 onMouseEnter={() => setHoveredRow(application.id)}
                                 onMouseLeave={() => setHoveredRow(null)}
                             >
@@ -335,137 +563,8 @@ export function StudentApplicationTable({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center justify-center gap-2">
-                                        {/* University/Corporate View - Status Update Actions */}
-                                        {onStatusUpdate && (
-                                            <>
-                                                {/* Corporate applications - Show "View" button */}
-                                                {application.creator_type === "Company" ? (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => onStatusUpdate(application)}
-                                                        className="flex items-center gap-1"
-                                                        title="View Application Details"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                        <span>View</span>
-                                                    </Button>
-                                                ) : (
-                                                    /* University applications - Show only eye icon */
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => onStatusUpdate(application)}
-                                                        className="flex items-center gap-1"
-                                                        title={application.can_update_status ? "Update Application Status" : "View Application Details"}
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </Button>
-                                                )}
-                                            </>
-                                        )}
-                                        
-                                        {/* Student View - View Assignment Button (if job has assignments) */}
-                                        {!onStatusUpdate && application.has_assignment && (
-                                            <>
-                                                {/* For on-campus features: show "coming soon" ONLY if exam is submitted AND status is still "applied" (university hasn't updated yet) */}
-                                                {(application.creator_type === "University" || application.is_university_created === true) && 
-                                                 checkExamSubmitted(application) && 
-                                                 application.status === 'applied' ? (
-                                                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                                                        <span className="text-xs">Coming Soon</span>
-                                                    </div>
-                                                ) : /* For on-campus features: show eye icon if exam is submitted AND status has been updated (shortlisted, etc.) BUT NOT selected */
-                                                (application.creator_type === "University" || application.is_university_created === true) && 
-                                                 checkExamSubmitted(application) && 
-                                                 application.status !== 'applied' && 
-                                                 application.status !== 'selected' ? (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleViewApplicationDetails(application)}
-                                                        className="flex items-center gap-1"
-                                                        title="View Application Details"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                        <span className="hidden sm:inline">View Details</span>
-                                                    </Button>
-                                                ) : (
-                                                    /* For regular jobs OR on-campus jobs without special conditions: show View Assignment button */
-                                                    /* Only hide View Assignment for on-campus jobs when status is selected */
-                                                    !((application.creator_type === "University" || application.is_university_created === true) && application.status === 'selected') && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleViewAssignment(application)}
-                                                            className="flex items-center gap-1 text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700"
-                                                            title="View Practice Assignment"
-                                                        >
-                                                            <ClipboardList className="w-4 h-4" />
-                                                            <span className="hidden sm:inline">View Assignment</span>
-                                                        </Button>
-                                                    )
-                                                )}
-                                            </>
-                                        )}
-
-                                        {/* Student View - Withdraw Application */}
-                                        {!onStatusUpdate && onWithdraw && canWithdraw(application.status) && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onWithdraw(application)}
-                                                className="flex items-center gap-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400"
-                                                title="Withdraw Application"
-                                            >
-                                                <Undo2 className="w-4 h-4" />
-                                                <span className="hidden sm:inline">Withdraw</span>
-                                            </Button>
-                                        )}
-
-                                        {/* Student View - View Application Messages */}
-                                        {!onStatusUpdate && onViewMessages && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onViewMessages(application)}
-                                                className="flex items-center gap-1"
-                                                title="View Messages"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
-                                        )}
-
-                                        {/* Student View - View Offer Letter (only for selected applications with offer letter) */}
-                                        {!onStatusUpdate && application.status === 'selected' && application.offer_letter_url && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onViewOfferLetter(application)}
-                                                className="flex items-center gap-1 text-green-600 hover:text-green-700 border-green-600 hover:border-green-700"
-                                                title="View Offer Letter"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                <span className="hidden sm:inline">View Offer</span>
-                                            </Button>
-                                        )}
-
-
-
-                                        {/* Student View - No offer letter available yet */}
-                                        {!onStatusUpdate && !application.has_assignment && (application.status !== 'selected' || !application.offer_letter_url) && application.status !== 'withdrawn' && (
-                                            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
-                                                {application.status === 'selected' ? (
-                                                    <span className="text-xs">Offer letter pending</span>
-                                                ) : application.status === 'rejected' ? (
-                                                    <span className="text-xs text-red-500">Application rejected</span>
-                                                ) : (
-                                                    <span className="text-xs">Application {application.status}</span>
-                                                )}
-                                            </div>
-                                        )}
-                     
+                                    <div className="flex items-center justify-center">
+                                        {renderApplicationActions(application)}
                                     </div>
                                 </td>
                             </motion.tr>
@@ -476,8 +575,8 @@ export function StudentApplicationTable({
 
             {/* Pagination */}
             {pagination.total_pages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
+                <div className="px-4 md:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="text-sm text-gray-700 dark:text-gray-300">
                             Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} applications
                         </div>
