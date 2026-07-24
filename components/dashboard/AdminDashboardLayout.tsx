@@ -7,6 +7,7 @@ import { AdminDashboardStats } from './AdminDashboardStats'
 import { AdminAnalyticsChart } from './AdminAnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { AdminRecentActivities } from './AdminRecentActivities'
+import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdminUserStatsContext, AdminUserStatsProvider } from '@/contexts/AdminUserStatsContext'
 import { LoadingOverlay } from './LoadingOverlay'
@@ -79,6 +80,7 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
                         children
                     ) : (
                         <div className="space-y-6">
+                            <EventPopup />
                             {/* Loading State */}
                             {isLoading && (
                                 <div className="flex items-center justify-center py-12">
