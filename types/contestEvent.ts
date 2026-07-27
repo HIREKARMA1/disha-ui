@@ -222,6 +222,67 @@ export interface ContestEventAnalytics {
   top_locations: { name: string; count: number }[]
 }
 
+export interface EventRegisteredUserItem {
+  registration_id: string
+  user_id?: string
+  user_type?: string
+  profile_picture?: string
+  full_name?: string
+  email?: string
+  phone?: string
+  gender?: string
+  date_of_birth?: string
+  college?: string
+  degree?: string
+  branch?: string
+  year_of_passing?: number
+  cgpa?: number
+  percentage?: number
+  country?: string
+  state?: string
+  city?: string
+  skills?: string
+  experience?: string
+  resume_url?: string
+  linkedin_url?: string
+  github_url?: string
+  registration_date: string
+  registration_status: string
+  score?: number | null
+}
+
+export interface EventAnalyticsUsersFilterOptions {
+  colleges: string[]
+  degrees: string[]
+  branches: string[]
+  statuses: string[]
+}
+
+export interface EventAnalyticsUsersResponse {
+  users: EventRegisteredUserItem[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+  filter_options: EventAnalyticsUsersFilterOptions
+}
+
+export interface EventAnalyticsUsersParams {
+  search?: string
+  registration_status?: string
+  college?: string
+  degree?: string
+  branch?: string
+  date_from?: string
+  date_to?: string
+  sort_by?: 'registration_date' | 'name' | 'college'
+  sort_order?: 'asc' | 'desc'
+  page?: number
+  page_size?: number
+}
+
 export interface EventRegistrationItem {
   id: string
   user_id?: string
