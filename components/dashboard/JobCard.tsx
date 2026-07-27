@@ -1,11 +1,10 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, CheckCircle, Calendar, X } from 'lucide-react'
+import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, CheckCircle, Calendar, X, Bookmark } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { MatchScorePieChart } from './MatchScorePieChart'
 
 interface Job {
     id: string
@@ -41,6 +40,7 @@ interface Job {
     university_id?: string | null
     // Company information fields (for university-created jobs)
     company_name?: string
+    company_logo?: string
     is_active: boolean
     can_apply: boolean
     application_status?: string
@@ -77,25 +77,6 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         )
     }
 
-    // Generate distinct color combinations for consecutive job cards
-    const getCardColorScheme = (index: number) => {
-        const colors = [
-            { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-700', hover: 'hover:border-blue-300 dark:hover:border-blue-600' },
-            { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-700', hover: 'hover:border-green-300 dark:hover:border-green-600' },
-            { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-700', hover: 'hover:border-emerald-300 dark:hover:border-emerald-600' },
-            { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-700', hover: 'hover:border-red-300 dark:hover:border-red-600' },
-            { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-700', hover: 'hover:border-purple-300 dark:hover:border-purple-600' },
-            { bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-700', hover: 'hover:border-orange-300 dark:hover:border-orange-600' },
-            { bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-200 dark:border-cyan-700', hover: 'hover:border-cyan-300 dark:hover:border-cyan-600' },
-            { bg: 'bg-pink-50 dark:bg-pink-900/20', border: 'border-pink-200 dark:border-pink-700', hover: 'hover:border-pink-300 dark:hover:border-pink-600' },
-            { bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-200 dark:border-indigo-700', hover: 'hover:border-indigo-300 dark:hover:border-indigo-600' }
-        ]
-
-        // Use card index to ensure consecutive cards have distinct colors
-        return colors[index % colors.length]
-    }
-
-    const cardColors = getCardColorScheme(cardIndex)
     const formatExperience = (min?: number, max?: number) => {
         try {
             if (!min && !max) return 'Not specified'
@@ -131,11 +112,11 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
 
     const getJobTypeColor = (jobType: string) => {
         const colors = {
-            full_time: 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-            part_time: 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-            contract: 'bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
-            internship: 'bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
-            freelance: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+            full_time: 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800',
+            part_time: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+            contract: 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+            internship: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+            freelance: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'
         }
         return colors[jobType as keyof typeof colors] || colors.full_time
     }
@@ -230,136 +211,185 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         }
     }
 
+    const getWorkModeBadge = () => {
+        if (job.mode_of_work) {
+            if (job.mode_of_work === 'hybrid') {
+                return (
+                    <span className="text-[10px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                        Hybrid
+                    </span>
+                )
+            } else if (job.mode_of_work === 'onsite') {
+                return (
+                    <span className="text-[10px] font-medium bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full">
+                        Onsite
+                    </span>
+                )
+            } else if (job.mode_of_work === 'remote') {
+                return (
+                    <span className="text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full">
+                        Remote
+                    </span>
+                )
+            }
+        } else {
+            if (job.remote_work) {
+                return (
+                    <span className="text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full">
+                        Remote
+                    </span>
+                )
+            } else {
+                return (
+                    <span className="text-[10px] font-medium bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full">
+                        Onsite
+                    </span>
+                )
+            }
+        }
+        return null
+    }
+
+    const companyDisplayName =
+        (typeof job.company_name === 'string' && job.company_name) ||
+        (typeof job.corporate_name === 'string' && job.corporate_name) ||
+        ''
+    const companyInitial = companyDisplayName ? companyDisplayName.charAt(0).toUpperCase() : '?'
+    const jobType = typeof job.job_type === 'string' ? job.job_type : String(job.job_type || '')
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -2 }}
             transition={{ duration: 0.3 }}
-            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full`}
+            className="group flex flex-col h-full rounded-2xl border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-900/50 shadow-sm hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 overflow-hidden"
         >
             {/* Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
+            <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+                <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                    {/* Company avatar */}
+                    {job.company_logo ? (
+                        <div className="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                            <img
+                                src={job.company_logo}
+                                alt={companyDisplayName || 'Company logo'}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                    ) : (
+                        <div className="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-lg font-bold shadow-sm shadow-primary-500/20">
+                            {companyInitial}
+                        </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 leading-snug">
                             {typeof job.title === 'string' ? job.title : String(job.title || '')}
                         </h3>
-                        {job.corporate_name && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
-                                <Building className="w-4 h-4" />
-                                {typeof job.corporate_name === 'string' ? job.corporate_name : String(job.corporate_name || '')}
+                        {companyDisplayName && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1.5 truncate">
+                                <Building className="w-3.5 h-3.5 shrink-0" />
+                                {companyDisplayName}
                             </p>
                         )}
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                            {/* On Campus Badge - matches UniversityJobCard styling */}
-                            {isOnCampusJob() && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700">
-                                    🎓 On Campus
-                                </span>
-                            )}
-                            <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                getJobTypeColor(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))
-                            )}>
-                                {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
-                            </span>
-                        </div>
-                        {/* Prominent Match Score Badge */}
-                        {showMatchScore && matchScore !== undefined && (
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${matchScore >= 80 ? 'bg-green-500 text-white' :
+
+                    {/* Bookmark (visual only) */}
+                    <button
+                        type="button"
+                        onClick={(e) => e.preventDefault()}
+                        className="shrink-0 p-2 rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                        aria-label="Bookmark job"
+                    >
+                        <Bookmark className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* Badges */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                    {isOnCampusJob() && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                            🎓 On Campus
+                        </span>
+                    )}
+                    <span className={cn(
+                        "inline-flex items-center px-2.5 py-0.5 text-[11px] font-medium rounded-full border",
+                        getJobTypeColor(jobType)
+                    )}>
+                        {getJobTypeLabel(jobType)}
+                    </span>
+                    {showMatchScore && matchScore !== undefined && (
+                        <span className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold rounded-full shadow-sm",
+                            matchScore >= 80 ? 'bg-green-500 text-white' :
                                 matchScore >= 60 ? 'bg-orange-500 text-white' :
                                     'bg-red-500 text-white'
-                                }`}>
-                                {Math.round(matchScore)}% Match
-                            </div>
-                        )}
-                    </div>
+                        )}>
+                            {Math.round(matchScore)}% Match
+                        </span>
+                    )}
                 </div>
 
                 {/* Job Meta */}
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <MapPin className="w-4 h-4" />
-                        <span className="truncate">{Array.isArray(job.location) ? job.location.join(', ') : (job.location || '')}</span>
-                        {(() => {
-                            // Determine work mode display
-                            if (job.mode_of_work) {
-                                if (job.mode_of_work === 'hybrid') {
-                                    return (
-                                        <span className="text-xs bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 px-2 py-0.5 rounded">
-                                            Hybrid
-                                        </span>
-                                    )
-                                } else if (job.mode_of_work === 'onsite') {
-                                    return (
-                                        <span className="text-xs bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded">
-                                            Onsite
-                                        </span>
-                                    )
-                                } else if (job.mode_of_work === 'remote') {
-                                    return (
-                                        <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
-                                            Remote
-                                        </span>
-                                    )
-                                }
-                            } else {
-                                // Fallback for existing jobs
-                                if (job.remote_work) {
-                                    return (
-                                        <span className="text-xs bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-0.5 rounded">
-                                            Remote
-                                        </span>
-                                    )
-                                } else {
-                                    return (
-                                        <span className="text-xs bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded">
-                                            Onsite
-                                        </span>
-                                    )
-                                }
-                            }
-                        })()}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                            <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
+                            <span className="truncate text-gray-700 dark:text-gray-300">
+                                {Array.isArray(job.location) ? job.location.join(', ') : (job.location || '')}
+                            </span>
+                            {getWorkModeBadge()}
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <IndianRupee className="w-4 h-4" />
-                        <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                            <IndianRupee className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <span className="truncate text-gray-700 dark:text-gray-300 font-medium">
+                            {formatSalaryRange(job.salary_min, job.salary_max)}
+                        </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Briefcase className="w-4 h-4" />
-                        <span className="truncate">{formatExperience(job.experience_min, job.experience_max)}</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                            <Briefcase className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <span className="truncate text-gray-700 dark:text-gray-300">
+                            {formatExperience(job.experience_min, job.experience_max)}
+                        </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Users className="w-4 h-4" />
-                        <span className="truncate">{Number(job.current_applications || 0)}</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="shrink-0 w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+                            <Users className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <span className="truncate text-gray-700 dark:text-gray-300">
+                            {Number(job.current_applications || 0)} applicants
+                        </span>
                     </div>
                 </div>
 
-
-
                 {/* Skills */}
                 {job.skills_required && Array.isArray(job.skills_required) && job.skills_required.length > 0 && (
-                    <div className="mt-4">
-                        <div className="flex flex-wrap gap-2">
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex flex-wrap gap-1.5">
                             {job.skills_required.slice(0, 3).map((skill, index) => {
-                                // Ensure skill is a string
                                 const skillText = typeof skill === 'string' ? skill : String(skill || '')
                                 return (
                                     <span
                                         key={index}
-                                        className="px-2 py-1 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md"
+                                        className="px-2.5 py-1 text-[11px] font-medium bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full border border-gray-200 dark:border-gray-700"
                                     >
                                         {skillText}
                                     </span>
                                 )
                             })}
                             {job.skills_required.length > 3 && (
-                                <span className="px-2 py-1 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md">
+                                <span className="px-2.5 py-1 text-[11px] font-medium bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full border border-gray-200 dark:border-gray-700">
                                     +{job.skills_required.length - 3} more
                                 </span>
                             )}
@@ -369,8 +399,8 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
             </div>
 
             {/* Content */}
-            <div className="p-6 flex-1 flex flex-col">
-                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
+            <div className="p-5 sm:p-6 flex-1 flex flex-col">
+                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4 leading-relaxed">
                     {typeof job.description === 'string' ? job.description : String(job.description || '')}
                 </p>
 
@@ -378,14 +408,14 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                 <div className="space-y-2 mb-4 flex-1">
                     {job.industry && (
                         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <Building className="w-3 h-3" />
+                            <Building className="w-3 h-3 shrink-0" />
                             <span>{typeof job.industry === 'string' ? job.industry : String(job.industry || '')}</span>
                         </div>
                     )}
 
                     {job.application_deadline && (
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <Calendar className="w-3 h-3" />
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+                            <Calendar className="w-3 h-3 shrink-0" />
                             <span>Deadline: {formatDate(job.application_deadline)}</span>
                             {isDeadlineNear() && (
                                 <span className="text-orange-600 dark:text-orange-400 font-medium">
@@ -401,7 +431,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                     )}
 
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3 h-3 shrink-0" />
                         <span>Posted {formatDate(job.created_at)}</span>
                     </div>
                 </div>
@@ -422,13 +452,14 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 mt-auto pt-4">
+                <div className="flex flex-col xs:flex-row gap-2.5 sm:gap-3 mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
                     <Button
                         onClick={onViewDescription}
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="flex-1 gap-2 rounded-xl border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-all duration-200"
                     >
+                        <Eye className="w-4 h-4" />
                         View JD
                     </Button>
 
@@ -437,10 +468,10 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                         disabled={!canApply() || isApplying}
                         size="sm"
                         className={cn(
-                            "flex-1 flex items-center gap-2 transition-all duration-200 hover:shadow-md",
+                            "flex-1 flex items-center justify-center gap-2 rounded-xl transition-all duration-200",
                             !canApply()
-                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
-                                : "bg-primary-500 hover:bg-primary-600"
+                                ? "bg-gray-300 dark:bg-gray-600 cursor-not-allowed hover:bg-gray-300 dark:hover:bg-gray-600"
+                                : "bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-md shadow-primary-500/20 hover:shadow-lg hover:shadow-primary-500/30 text-white border-0"
                         )}
                     >
                         {isApplying ? (

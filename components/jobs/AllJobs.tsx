@@ -424,37 +424,46 @@ export function AllJobs() {
 
     return (
         <div className="w-full">
-            {/* Search Bar */}
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Job Opportunities
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                            Discover and apply for exciting career opportunities
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                Career Growth
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                New Opportunities
-                            </span>
-                        </div>
+            {/* Hero */}
+            <div className="relative overflow-hidden rounded-2xl mb-6 border border-primary-200/60 dark:border-primary-700/40 bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/20">
+                <div className="pointer-events-none absolute inset-0 opacity-30" aria-hidden>
+                    <div className="absolute -top-16 -right-10 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+                    <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-sky-300/30 blur-3xl" />
+                    <svg className="absolute right-4 bottom-0 w-40 sm:w-56 opacity-20" viewBox="0 0 200 160" fill="none">
+                        <rect x="40" y="40" width="120" height="90" rx="12" stroke="white" strokeWidth="3" />
+                        <path d="M70 90h60M70 105h40" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                        <circle cx="100" cy="55" r="12" stroke="white" strokeWidth="3" />
+                    </svg>
+                </div>
+                <div className="relative p-5 sm:p-7 lg:p-8">
+                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-white/80 mb-2">
+                        HireKarma Careers
+                    </p>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-2">
+                        Job Opportunities
+                    </h1>
+                    <p className="text-sm sm:text-base text-white/90 max-w-xl mb-4">
+                        Discover and apply for exciting career opportunities tailored for you
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        </span>
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
+                            Career Growth
+                        </span>
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
+                            New Opportunities
+                        </span>
                     </div>
                 </div>
             </div>
 
             {/* Search and Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-6 p-6">
-                {/* Search Bar */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <div className="flex-1 relative">
+            <div className="bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 mb-6 p-3 sm:p-4 shadow-sm">
+                {/* Search row */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <div className="flex-1 relative min-w-0">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
                             type="text"
@@ -462,32 +471,44 @@ export function AllJobs() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
-                            className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
+                            className="pl-9 h-10 rounded-xl border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500/20"
                         />
                     </div>
                     <Button
-                        variant="outline"
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
+                        onClick={(e) => handleSearch(e)}
+                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white font-semibold px-5 h-10 rounded-xl transition-all duration-200 shadow-md shadow-primary-500/20 w-full sm:w-auto shrink-0"
                     >
-                        <Filter className="w-4 h-4" />
-                        {showFilters ? 'Hide Filters' : 'Show Filters'}
+                        Search
                     </Button>
-                    <div className="relative">
+                </div>
+
+                {/* Compact filter controls */}
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="h-9 rounded-lg border-gray-200 dark:border-gray-600 px-3 text-sm shrink-0"
+                    >
+                        <Filter className="w-3.5 h-3.5 mr-1.5" />
+                        {showFilters ? 'Hide' : 'Filters'}
+                    </Button>
+                    <div className="relative shrink-0">
                         <select
                             value={jobStatusFilter}
                             onChange={(e) => {
                                 const newFilter = e.target.value as 'all' | 'open' | 'closed'
                                 setJobStatusFilter(newFilter)
                             }}
-                            className="appearance-none px-2 py-2 pr-10 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10 font-medium cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                            className="appearance-none h-9 pl-2.5 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 font-medium cursor-pointer max-w-[9.5rem]"
+                            aria-label="Job status"
                         >
                             <option value="all">All Jobs</option>
-                            <option value="open">Open Jobs</option>
-                            <option value="closed">Closed Jobs</option>
+                            <option value="open">Open</option>
+                            <option value="closed">Closed</option>
                         </select>
                         <svg
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -495,23 +516,24 @@ export function AllJobs() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </div>
-                    <div className="relative">
+                    <div className="relative shrink-0">
                         <select
                             value={datePostedFilter}
                             onChange={(e) => {
                                 const newFilter = e.target.value as 'all' | '24h' | '7d' | '15d' | '30d'
                                 setDatePostedFilter(newFilter)
                             }}
-                            className="appearance-none px-2 py-2 pr-10 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10 font-medium cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                            className="appearance-none h-9 pl-2.5 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 font-medium cursor-pointer max-w-[10.5rem]"
+                            aria-label="Date posted"
                         >
                             <option value="all">All Time</option>
-                            <option value="24h">Within 24 hours</option>
-                            <option value="7d">Within 7 days</option>
-                            <option value="15d">Within 15 days</option>
-                            <option value="30d">Within 30 days</option>
+                            <option value="24h">Last 24h</option>
+                            <option value="7d">Last 7 days</option>
+                            <option value="15d">Last 15 days</option>
+                            <option value="30d">Last 30 days</option>
                         </select>
                         <svg
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -519,17 +541,11 @@ export function AllJobs() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </div>
-                    <Button
-                        onClick={(e) => handleSearch(e)}
-                        className="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 h-10 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
-                    >
-                        Search
-                    </Button>
                 </div>
 
                 {/* Filters */}
                 {showFilters && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Location
@@ -669,24 +685,24 @@ export function AllJobs() {
             {/* Jobs Grid */}
             {loading ? (
                 <div className="flex justify-center items-center h-64">
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-                        <p className="text-gray-500">Loading opportunities...</p>
+                        <p className="text-gray-500 dark:text-gray-300 text-sm">Loading opportunities...</p>
                     </div>
                 </div>
             ) : jobs.length === 0 ? (
-                <div className="text-center py-16">
-                    <p className="text-gray-500 text-lg">No jobs found matching your criteria.</p>
+                <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40">
+                    <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-medium">No jobs found matching your criteria.</p>
                     <Button
                         variant="link"
                         onClick={() => { setSearchTerm(''); fetchJobs(1) }}
-                        className="mt-2 text-primary-600"
+                        className="mt-2 text-primary-600 dark:text-primary-400"
                     >
                         Clear search
                     </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {jobs.map((job, index) => (
                         <JobCard
                             key={job.id}

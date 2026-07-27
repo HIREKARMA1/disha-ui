@@ -366,8 +366,8 @@ export function StudentProfile() {
                                             {/* Profile Stats */}
                                             <div className="flex-1">
                                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 mb-3 lg:mb-4">
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Email</span>
+                                                    <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/25 dark:to-emerald-900/20 rounded-xl border border-green-200/60 dark:border-green-700/50 backdrop-blur-sm shadow-sm">
+                                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Email</span>
                                                         {(profile.email_verified || !!profile.email) ? (
                                                             <div className="p-1 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 text-white" />
@@ -378,8 +378,8 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Phone</span>
+                                                    <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/25 dark:to-indigo-900/20 rounded-xl border border-blue-200/60 dark:border-blue-700/50 backdrop-blur-sm shadow-sm">
+                                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Phone</span>
                                                         {(profile.phone_verified || !!profile.phone) ? (
                                                             <div className="p-1 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 text-white" />
@@ -390,8 +390,8 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Photo</span>
+                                                    <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/25 dark:to-violet-900/20 rounded-xl border border-purple-200/60 dark:border-purple-700/50 backdrop-blur-sm shadow-sm">
+                                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Photo</span>
                                                         {profile.profile_picture ? (
                                                             <div className="p-1 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 text-white" />
@@ -402,8 +402,8 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Resume</span>
+                                                    <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/25 dark:to-orange-900/20 rounded-xl border border-amber-200/60 dark:border-amber-700/50 backdrop-blur-sm shadow-sm">
+                                                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">Resume</span>
                                                         {profile.resume ? (
                                                             <div className="p-1 bg-green-500 rounded-full">
                                                                 <CheckCircle className="w-3 h-3 text-white" />
@@ -432,17 +432,17 @@ export function StudentProfile() {
                                 <div className="xl:col-span-3">
                                     {/* Tab Navigation */}
                                     <div className="mb-6">
-                                        <div className="border-b border-gray-200 dark:border-gray-700">
-                                            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                                        <div className="border-b border-gray-200 dark:border-gray-700 -mx-1 px-1">
+                                            <nav className="-mb-px flex gap-4 sm:gap-8 overflow-x-auto scrollbar-none pb-px">
                                                 {tabs.map((tab) => (
                                                     <button
                                                         key={tab.id}
                                                         onClick={() => setActiveTab(tab.id)}
                                                         className={cn(
-                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
+                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-sm sm:text-base transition-colors duration-200 whitespace-nowrap shrink-0",
                                                             activeTab === tab.id
                                                                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                                                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                                                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-100"
                                                         )}
                                                     >
                                                         <tab.icon className="w-4 h-4" />
@@ -2302,22 +2302,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 </div>
             )}
 
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onCancel}
-                    className="px-6 py-2"
-                >
-                    Cancel
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={saving || hasFieldErrors}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel}
+                        className="w-full sm:w-auto h-11 sm:h-10 px-6 text-sm font-medium"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={saving || hasFieldErrors}
+                        className="w-full sm:w-auto h-11 sm:h-10 px-6 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
+                    >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
         </form>
     )

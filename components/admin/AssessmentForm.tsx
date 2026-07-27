@@ -187,17 +187,17 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   return (
     <form onSubmit={handleSubmit} className="space-y-8 w-full">
       {/* 1. Basic Details Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+            <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <FileText size={18} />
             </div>
-            <h2 className="text-lg font-semibold text-gray-800">Basic Details</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Basic Details</h2>
           </div>
 
           {formData.job_id && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-100">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-800">
               <Briefcase size={14} />
               <span className="font-medium">Linked to Job: {formData.job_id.substring(0, 8)}...</span>
             </div>
@@ -208,7 +208,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
           {/* Name & Mode */}
           <div className="grid grid-cols-1 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Assessment Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -216,7 +216,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
                 value={formData.assessment_name}
                 onChange={(e) => handleChange("assessment_name", e.target.value)}
                 placeholder="e.g., Full Stack Developer Assessment"
-                className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none ${errors.assessment_name ? "border-red-500 bg-red-50/10" : "border-gray-200"
+                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 ${errors.assessment_name ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : "border-gray-200 dark:border-gray-700"
                   }`}
               />
               {errors.assessment_name && (
@@ -244,27 +244,27 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Description</label>
             <textarea
               value={formData.metadata.description}
               onChange={(e) => handleMetadataChange("description", e.target.value)}
               placeholder="Brief description of this assessment..."
               rows={3}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400"
             />
           </div>
 
           {/* Instructions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Instructions for Students</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Instructions for Students</label>
             <textarea
               value={formData.metadata.instructions}
               onChange={(e) => handleMetadataChange("instructions", e.target.value)}
               placeholder="Enter detailed instructions for the students..."
               rows={4}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400"
             />
-            <p className="text-xs text-gray-500 mt-2">These instructions will be displayed to students before they start the assessment.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">These instructions will be displayed to students before they start the assessment.</p>
           </div>
 
           {/* Auto-submit */}
@@ -287,33 +287,33 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
           {/* Time & Criteria */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Start Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="datetime-local"
                 value={formData.time_window.start_time}
                 onChange={(e) => handleTimeChange("start_time", e.target.value)}
-                className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer ${errors.start_time ? "border-red-500" : "border-gray-200"
+                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white ${errors.start_time ? "border-red-500" : "border-gray-200 dark:border-gray-700"
                   }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 End Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="datetime-local"
                 value={formData.time_window.end_time}
                 onChange={(e) => handleTimeChange("end_time", e.target.value)}
-                className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer ${errors.end_time ? "border-red-500" : "border-gray-200"
+                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white ${errors.end_time ? "border-red-500" : "border-gray-200 dark:border-gray-700"
                   }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Passing Percentage (%)
               </label>
               <input
@@ -327,12 +327,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
                     overall_percentage: parseInt(e.target.value),
                   })
                 }
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white"
               />
             </div>
           </div>
           {(errors.start_time || errors.end_time || errors.timeWindow) && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-2 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm px-4 py-2 rounded-lg border border-red-100 dark:border-red-800">
               {errors.start_time || errors.end_time || errors.timeWindow}
             </div>
           )}
@@ -343,12 +343,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
       </div>
 
       {/* 2. Rounds Configuration */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
             <Layers size={18} />
           </div>
-          <h2 className="text-lg font-semibold text-gray-800">Rounds Configuration</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Rounds Configuration</h2>
         </div>
         <div className="p-6">
           <RoundConfigurator
@@ -356,7 +356,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
             onRoundsChange={(rounds) => handleChange("rounds", rounds)}
           />
           {errors.rounds && (
-            <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm rounded-lg border border-red-100 dark:border-red-800">
               {errors.rounds}
             </div>
           )}

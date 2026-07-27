@@ -29,7 +29,7 @@ export function AssessmentList({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-64 rounded-xl bg-gray-100 animate-pulse border border-gray-200" />
+          <div key={i} className="h-64 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse border border-gray-200 dark:border-gray-700" />
         ))}
       </div>
     );
@@ -37,12 +37,12 @@ export function AssessmentList({
 
   if (assessments.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-        <div className="bg-white p-4 rounded-full shadow-sm mb-4">
-          <Filter className="h-8 w-8 text-gray-400" />
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50/50 dark:bg-gray-900/30">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm mb-4">
+          <Filter className="h-8 w-8 text-gray-400 dark:text-gray-500" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">No assessments found</h3>
-        <p className="text-gray-500 max-w-sm mx-auto mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No assessments found</h3>
+        <p className="text-gray-500 dark:text-gray-300 max-w-sm mx-auto mb-6">
           We couldn&apos;t find any assessments matching your filters. Try adjusting your search or create a new assessment.
         </p>
         <Link href="/dashboard/admin/assessments/create">
