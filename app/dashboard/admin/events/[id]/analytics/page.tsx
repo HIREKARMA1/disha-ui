@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
+import { RegisteredUsersAnalytics } from '@/components/admin/RegisteredUsersAnalytics'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventAnalytics } from '@/types/contestEvent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -108,6 +109,9 @@ export default function EventAnalyticsPage({ params }: PageProps) {
                 </Card>
               ))}
             </div>
+
+            {/* Registered Users Analytics — additive section; existing KPIs unchanged */}
+            <RegisteredUsersAnalytics eventId={params.id} />
           </>
         )}
       </div>
