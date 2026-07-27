@@ -191,43 +191,66 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Navbar variant="transparent" />
 
-      {/* Hero Banner */}
+      {/* Hero Banner — object-contain so the full uploaded image stays visible */}
       <div className="relative pt-16">
-        <div className="relative aspect-[21/9] md:aspect-[21/7] max-h-[420px] w-full overflow-hidden bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600">
+        <div className="relative flex w-full items-center justify-center overflow-hidden bg-gray-100 dark:bg-gray-800">
           {event.banner_url ? (
-            <>
-              <img src={event.banner_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/30 to-transparent" />
-            </>
+            <img
+              src={event.banner_url}
+              alt={event.title ? `${event.title} banner` : 'Event banner'}
+              className="mx-auto block h-auto max-h-[220px] w-auto max-w-full object-contain object-center sm:max-h-[300px] md:max-h-[420px]"
+            />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600" />
+            <div
+              className="w-full aspect-[21/9] max-h-[420px] bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600 md:aspect-[21/7]"
+              aria-hidden
+            />
           )}
         </div>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <div className="relative -mt-16 md:-mt-20 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 md:p-8">
-            <div className="flex flex-col md:flex-row gap-6 md:items-start">
+          {/*
+            Mobile: card sits just below the banner (no overlap); logo lives inside the card.
+            Desktop: keep the overlapping logo + pulled-up card layout unchanged.
+          */}
+          <div
+            className={cn(
+              'relative rounded-2xl border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none',
+              'mt-3 p-4 sm:mt-4 sm:p-5 md:-mt-20 md:p-8'
+            )}
+          >
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-start">
+              {/* Desktop-only logo — overlapping banner (unchanged) */}
               {event.organizer_logo_url && (
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-gray-100 dark:border-gray-700 p-2.5 bg-white dark:bg-gray-900 shadow-md flex-shrink-0 -mt-12 md:-mt-14 ring-4 ring-white dark:ring-gray-800">
+                <div className="hidden md:flex w-24 h-24 rounded-2xl border-2 border-gray-100 dark:border-gray-700 p-2.5 bg-white dark:bg-gray-900 shadow-md flex-shrink-0 -mt-14 ring-4 ring-white dark:ring-gray-800">
                   <img src={event.organizer_logo_url} alt="" className="w-full h-full object-contain" />
                 </div>
               )}
+
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {event.category && (
-                    <Badge variant="outline">{CATEGORY_LABELS[event.category] || event.category}</Badge>
+                {/* Mobile: Logo | badges in one row; Desktop: badges only (logo is beside) */}
+                <div className="flex items-start gap-3 mb-3">
+                  {event.organizer_logo_url && (
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 border-gray-100 bg-white p-1.5 shadow-sm dark:border-gray-700 dark:bg-gray-900 md:hidden">
+                      <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
+                    </div>
                   )}
-                  {isCancelled ? (
-                    <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">CANCELLED</Badge>
-                  ) : isPostponed ? (
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">POSTPONED</Badge>
-                  ) : (
-                    <Badge className="bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                      {CONTEST_STATUS_LABELS[event.contest_status]}
-                    </Badge>
-                  )}
-                  {showRegister && (
-                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Registration Open</Badge>
-                  )}
+                  <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+                    {event.category && (
+                      <Badge variant="outline">{CATEGORY_LABELS[event.category] || event.category}</Badge>
+                    )}
+                    {isCancelled ? (
+                      <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">CANCELLED</Badge>
+                    ) : isPostponed ? (
+                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">POSTPONED</Badge>
+                    ) : (
+                      <Badge className="bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                        {CONTEST_STATUS_LABELS[event.contest_status]}
+                      </Badge>
+                    )}
+                    {showRegister && (
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Registration Open</Badge>
+                    )}
+                  </div>
                 </div>
                 {isPostponed && event.postponed_reason && (
                   <div className="mb-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200">
