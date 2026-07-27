@@ -5,6 +5,8 @@ import type {
   ContestEventUpdatePayload,
   ContestEventDetail,
   ContestEventListResponse,
+  EventAnalyticsUsersParams,
+  EventAnalyticsUsersResponse,
   EventRegistrationItem,
 } from '@/types/contestEvent'
 
@@ -144,6 +146,28 @@ export class ContestEventService {
 
   async getAnalytics(eventId: string): Promise<ContestEventAnalytics> {
     const response = await apiClient.client.get(`/events/contests/${eventId}/analytics`)
+    return response.data
+  }
+
+  async getAnalyticsUsers(
+    eventId: string,
+    params: EventAnalyticsUsersParams = {}
+  ): Promise<EventAnalyticsUsersResponse> {
+    const response = await apiClient.client.get(`/events/contests/${eventId}/analytics/users`, {
+      params,
+    })
+    return response.data
+  }
+
+  async exportAnalyticsUsers(
+    eventId: string,
+    format: 'csv' | 'excel' | 'pdf',
+    params: EventAnalyticsUsersParams = {}
+  ): Promise<Blob> {
+    const response = await apiClient.client.get(`/events/contests/${eventId}/analytics/users/export`, {
+      params: { ...params, format },
+      responseType: 'blob',
+    })
     return response.data
   }
 
