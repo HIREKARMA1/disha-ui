@@ -111,13 +111,13 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
     }
 
     return (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Job Application Analytics
+        <div className={`bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/80 dark:border-gray-700/70 p-4 sm:p-5 ${className}`}>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                    Application Analytics
                 </h2>
                 <div className="flex items-center space-x-2">
-                    <BarChart3 className="w-5 h-5 text-gray-400" />
+                    <BarChart3 className="w-4 h-4 text-gray-400" />
                     <PieChart className="w-5 h-5 text-gray-400" />
                 </div>
             </div>

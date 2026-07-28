@@ -424,123 +424,136 @@ export function AllJobs() {
 
     return (
         <div className="w-full">
-            {/* Hero */}
-            <div className="relative overflow-hidden rounded-2xl mb-6 border border-primary-200/60 dark:border-primary-700/40 bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/20">
+            {/* Hero — compact on mobile */}
+            <div className="relative overflow-hidden rounded-xl sm:rounded-2xl mb-3 sm:mb-5 border border-primary-200/60 dark:border-primary-700/40 bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500 text-white shadow-md sm:shadow-lg shadow-primary-500/20">
                 <div className="pointer-events-none absolute inset-0 opacity-30" aria-hidden>
-                    <div className="absolute -top-16 -right-10 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
-                    <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-sky-300/30 blur-3xl" />
-                    <svg className="absolute right-4 bottom-0 w-40 sm:w-56 opacity-20" viewBox="0 0 200 160" fill="none">
+                    <div className="absolute -top-12 -right-8 h-36 w-36 sm:h-56 sm:w-56 rounded-full bg-white/20 blur-2xl" />
+                    <div className="absolute -bottom-14 -left-8 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-sky-300/30 blur-3xl" />
+                </div>
+                <div className="relative flex items-center gap-3 px-3 py-2.5 sm:p-6 lg:p-7">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] sm:text-sm font-semibold uppercase tracking-wider text-white/80 mb-0.5 sm:mb-2">
+                            HireKarma Careers
+                        </p>
+                        <h1 className="text-lg sm:text-3xl lg:text-4xl font-bold tracking-tight mb-0.5 sm:mb-2 leading-tight">
+                            Job Opportunities
+                        </h1>
+                        <p className="text-[11px] sm:text-base text-white/90 max-w-xl mb-1.5 sm:mb-4 leading-snug line-clamp-2 sm:line-clamp-none">
+                            Discover and apply for exciting career opportunities tailored for you
+                        </p>
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
+                            <span className="inline-flex items-center px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
+                                {new Date().toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                })}
+                            </span>
+                            <span className="inline-flex items-center px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
+                                Career Growth
+                            </span>
+                            <span className="inline-flex items-center px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
+                                New Opportunities
+                            </span>
+                        </div>
+                    </div>
+                    {/* Illustration — smaller on mobile, vertically centered */}
+                    <svg
+                        className="shrink-0 w-14 h-12 sm:w-40 sm:h-32 lg:w-52 lg:h-40 opacity-25 sm:opacity-20 self-center"
+                        viewBox="0 0 200 160"
+                        fill="none"
+                        aria-hidden
+                    >
                         <rect x="40" y="40" width="120" height="90" rx="12" stroke="white" strokeWidth="3" />
                         <path d="M70 90h60M70 105h40" stroke="white" strokeWidth="3" strokeLinecap="round" />
                         <circle cx="100" cy="55" r="12" stroke="white" strokeWidth="3" />
                     </svg>
                 </div>
-                <div className="relative p-5 sm:p-7 lg:p-8">
-                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-white/80 mb-2">
-                        HireKarma Careers
-                    </p>
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-2">
-                        Job Opportunities
-                    </h1>
-                    <p className="text-sm sm:text-base text-white/90 max-w-xl mb-4">
-                        Discover and apply for exciting career opportunities tailored for you
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </span>
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
-                            Career Growth
-                        </span>
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-white/15 backdrop-blur-sm border border-white/20">
-                            New Opportunities
-                        </span>
-                    </div>
-                </div>
             </div>
 
-            {/* Search and Filters */}
-            <div className="bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 mb-6 p-3 sm:p-4 shadow-sm">
+            {/* Search and Filters — tight gap under hero */}
+            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-gray-200/80 dark:border-gray-700/60 mb-3 sm:mb-4 p-2.5 sm:p-4 shadow-sm">
                 {/* Search row */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-3">
                     <div className="flex-1 relative min-w-0">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <Input
                             type="text"
                             placeholder="Search jobs by title, skills, or company..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
-                            className="pl-9 h-10 rounded-xl border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500/20"
+                            className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm rounded-lg sm:rounded-xl border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500/20"
                         />
                     </div>
                     <Button
                         onClick={(e) => handleSearch(e)}
-                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white font-semibold px-5 h-10 rounded-xl transition-all duration-200 shadow-md shadow-primary-500/20 w-full sm:w-auto shrink-0"
+                        className="hidden sm:inline-flex bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white font-semibold px-5 h-10 rounded-xl transition-all duration-200 shadow-md shadow-primary-500/20 shrink-0"
                     >
                         Search
                     </Button>
                 </div>
 
-                {/* Compact filter controls */}
-                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                {/* Category tabs */}
+                <div className="mt-2 sm:mt-3 -mx-0.5 px-0.5 overflow-x-auto scrollbar-none">
+                    <div className="flex gap-1 sm:gap-1.5 min-w-max">
+                        {[
+                            { value: 'all', label: 'All Jobs' },
+                            { value: 'open', label: 'Open' },
+                            { value: 'closed', label: 'Closed' },
+                        ].map((tab) => {
+                            const active = jobStatusFilter === tab.value
+                            return (
+                                <button
+                                    key={tab.value}
+                                    type="button"
+                                    onClick={() => setJobStatusFilter(tab.value as 'all' | 'open' | 'closed')}
+                                    className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                                        active
+                                            ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-sm'
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            )
+                        })}
+                        {[
+                            { value: 'all', label: 'Any time' },
+                            { value: '24h', label: '24h' },
+                            { value: '7d', label: '7d' },
+                            { value: '30d', label: '30d' },
+                        ].map((tab) => {
+                            const active = datePostedFilter === tab.value
+                            return (
+                                <button
+                                    key={`date-${tab.value}`}
+                                    type="button"
+                                    onClick={() => setDatePostedFilter(tab.value as 'all' | '24h' | '7d' | '15d' | '30d')}
+                                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium transition-all whitespace-nowrap ${
+                                        active
+                                            ? 'bg-primary-50 text-primary-700 border border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-700'
+                                            : 'text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-200 dark:hover:border-gray-600'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Filter toggle */}
+                <div className="mt-1.5 sm:mt-2.5 flex flex-wrap items-center gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowFilters(!showFilters)}
-                        className="h-9 rounded-lg border-gray-200 dark:border-gray-600 px-3 text-sm shrink-0"
+                        className="h-7 sm:h-9 rounded-lg border-gray-200 dark:border-gray-600 px-2.5 sm:px-3 text-[11px] sm:text-sm shrink-0"
                     >
-                        <Filter className="w-3.5 h-3.5 mr-1.5" />
+                        <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5" />
                         {showFilters ? 'Hide' : 'Filters'}
                     </Button>
-                    <div className="relative shrink-0">
-                        <select
-                            value={jobStatusFilter}
-                            onChange={(e) => {
-                                const newFilter = e.target.value as 'all' | 'open' | 'closed'
-                                setJobStatusFilter(newFilter)
-                            }}
-                            className="appearance-none h-9 pl-2.5 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 font-medium cursor-pointer max-w-[9.5rem]"
-                            aria-label="Job status"
-                        >
-                            <option value="all">All Jobs</option>
-                            <option value="open">Open</option>
-                            <option value="closed">Closed</option>
-                        </select>
-                        <svg
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                    <div className="relative shrink-0">
-                        <select
-                            value={datePostedFilter}
-                            onChange={(e) => {
-                                const newFilter = e.target.value as 'all' | '24h' | '7d' | '15d' | '30d'
-                                setDatePostedFilter(newFilter)
-                            }}
-                            className="appearance-none h-9 pl-2.5 pr-8 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 font-medium cursor-pointer max-w-[10.5rem]"
-                            aria-label="Date posted"
-                        >
-                            <option value="all">All Time</option>
-                            <option value="24h">Last 24h</option>
-                            <option value="7d">Last 7 days</option>
-                            <option value="15d">Last 15 days</option>
-                            <option value="30d">Last 30 days</option>
-                        </select>
-                        <svg
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
                 </div>
 
                 {/* Filters */}
@@ -702,7 +715,7 @@ export function AllJobs() {
                     </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                     {jobs.map((job, index) => (
                         <JobCard
                             key={job.id}

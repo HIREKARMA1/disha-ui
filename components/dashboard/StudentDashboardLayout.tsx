@@ -8,6 +8,8 @@ import { DashboardStats } from './DashboardStats'
 import { AnalyticsChart } from './AnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { RecentActivities } from './RecentActivities'
+import { StudentQuickActions } from './StudentQuickActions'
+import { StudentResumeStrength } from './StudentResumeStrength'
 import { StudentLockScreen } from './StudentLockScreen'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
@@ -83,7 +85,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     const shouldLock = isLocked && isJobOpportunitiesPage
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-sky-50/40 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
             {/* Navbar is now fixed positioned */}
             <Navbar />
 
@@ -92,7 +94,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className={`p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
+                <main className={`p-3 sm:p-5 lg:p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
                     {children ? (
                         <>
                             <div className={shouldLock ? 'opacity-40' : ''}>
@@ -109,15 +111,17 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                         </>
                     ) : (
                         <>
-                            <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
+                            <div className={`space-y-4 sm:space-y-5 ${shouldLock ? 'opacity-40' : ''}`}>
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />
-                                <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
-                                    <div className="xl:col-span-7 space-y-6">
+                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5">
+                                    <div className="xl:col-span-8 space-y-4 sm:space-y-5">
                                         <AnalyticsChart />
+                                        <StudentQuickActions />
                                         <RecentActivities />
                                     </div>
-                                    <div className="xl:col-span-3">
+                                    <div className="xl:col-span-4 space-y-4 sm:space-y-5">
+                                        <StudentResumeStrength />
                                         <AdvertisementBanner />
                                     </div>
                                 </div>

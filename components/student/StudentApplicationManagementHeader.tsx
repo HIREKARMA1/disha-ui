@@ -1,8 +1,9 @@
 "use client"
 
-import { motion } from 'framer-motion'
-import { Search, Filter, FileText, Users, CheckCircle, XCircle, Clock, UserCheck, Download } from 'lucide-react'
+import { Search, Filter, FileText, Clock, CheckCircle, XCircle, UserCheck, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { StudentStatCard } from '@/components/student/ui/StudentStatCard'
+import { cn } from '@/lib/utils'
 
 interface StudentApplicationManagementHeaderProps {
     totalApplications: number
@@ -43,235 +44,144 @@ export function StudentApplicationManagementHeader({
     jobOptions,
     selectedJobId,
     onJobChange,
-    onExport
+    onExport,
 }: StudentApplicationManagementHeaderProps) {
-    const statusOptions = [
-        { value: 'all', label: 'All Applications', count: totalApplications },
-        { value: 'applied', label: 'Applied', count: appliedApplications },
-        { value: 'shortlisted', label: 'Shortlisted', count: shortlistedApplications },
-        { value: 'selected', label: 'Selected', count: selectedApplications },
-        { value: 'rejected', label: 'Rejected', count: rejectedApplications },
-        { value: 'pending', label: 'Pending', count: pendingApplications },
-        { value: 'withdrawn', label: 'Withdrawn', count: withdrawnApplications },
+    const stats = [
+        { value: 'all', label: 'All', count: totalApplications, icon: FileText, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50/80 dark:bg-primary-900/20' },
+        { value: 'applied', label: 'Applied', count: appliedApplications, icon: Clock, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/80 dark:bg-blue-900/20' },
+        { value: 'shortlisted', label: 'Shortlisted', count: shortlistedApplications, icon: UserCheck, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50/80 dark:bg-violet-900/20' },
+        { value: 'selected', label: 'Selected', count: selectedApplications, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/80 dark:bg-emerald-900/20' },
+        { value: 'rejected', label: 'Rejected', count: rejectedApplications, icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50/80 dark:bg-red-900/20' },
+        { value: 'pending', label: 'Pending', count: pendingApplications, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50/80 dark:bg-amber-900/20' },
     ]
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'applied':
-                return <Clock className="w-6 h-6" />
-            case 'shortlisted':
-                return <UserCheck className="w-6 h-6" />
-            case 'selected':
-                return <CheckCircle className="w-6 h-6" />
-            case 'rejected':
-                return <XCircle className="w-6 h-6" />
-            case 'pending':
-                return <Clock className="w-6 h-6" />
-            case 'withdrawn':
-                return <FileText className="w-6 h-6" />
-            default:
-                return <FileText className="w-6 h-6" />
-        }
-    }
-
-    const getStatusCardStyle = (status: string) => {
-        switch (status) {
-            case 'applied':
-                return {
-                    color: 'text-blue-600',
-                    bgColor: 'bg-blue-50 dark:bg-blue-900/20'
-                }
-            case 'shortlisted':
-                return {
-                    color: 'text-purple-600',
-                    bgColor: 'bg-purple-50 dark:bg-purple-900/20'
-                }
-            case 'selected':
-                return {
-                    color: 'text-green-600',
-                    bgColor: 'bg-green-50 dark:bg-green-900/20'
-                }
-            case 'rejected':
-                return {
-                    color: 'text-orange-600',
-                    bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-                }
-            case 'pending':
-                return {
-                    color: 'text-yellow-600',
-                    bgColor: 'bg-yellow-50 dark:bg-yellow-900/20'
-                }
-            case 'withdrawn':
-                return {
-                    color: 'text-gray-600',
-                    bgColor: 'bg-gray-50 dark:bg-gray-900/20'
-                }
-            default:
-                return {
-                    color: 'text-gray-600',
-                    bgColor: 'bg-gray-50 dark:bg-gray-900/20'
-                }
-        }
-    }
+    const tabs = [
+        { value: 'all', label: 'All' },
+        { value: 'applied', label: 'Applied' },
+        { value: 'shortlisted', label: 'Shortlisted' },
+        { value: 'selected', label: 'Selected' },
+        { value: 'rejected', label: 'Rejected' },
+        { value: 'pending', label: 'Pending' },
+    ]
 
     return (
-        <div className="space-y-6">
-            {/* Header - Same style as Job Postings */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-            >
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            My Applications 📋
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                            Track your job applications and download offer letters ✨
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                📈 Career Progress
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                🚀 Job Opportunities
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
-
-            {/* Stats Cards - Same style as Dashboard Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                {statusOptions.map((option, index) => {
-                    const style = getStatusCardStyle(option.value)
-                    return (
-                        <motion.div
-                            key={option.value}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: index * 0.1 }}
-                            className="w-full"
-                        >
-                            <div className="block group w-full">
-                                <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${style.bgColor}`}>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                                {option.label}
-                                            </p>
-                                            <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                                {option.count}
-                                            </p>
-                                        </div>
-                                        <div className="p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200">
-                                            <div className={style.color}>
-                                                {getStatusIcon(option.value)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )
-                })}
+        <div className="space-y-2.5 sm:space-y-4">
+            {/* Compact hero — smaller on mobile */}
+            <div className="rounded-xl sm:rounded-2xl border border-primary-200/60 dark:border-primary-700/40 bg-gradient-to-br from-primary-50/90 via-white to-sky-50/70 dark:from-primary-900/25 dark:via-gray-800/80 dark:to-gray-900/80 backdrop-blur-sm px-3 py-2.5 sm:p-5">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                    My Applications
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-none">
+                    Track applications, interviews, and offer letters in one place
+                </p>
             </div>
 
-            {/* Search, Filters and Export */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    {/* Search */}
-                    <div className="flex-1">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <input
-                                type="text"
-                                placeholder="Search by job title, company name, or status..."
-                                value={searchTerm}
-                                onChange={(e) => onSearchChange(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-                            />
-                        </div>
+            {/* Compact stats — denser on mobile */}
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-3">
+                {stats.map((stat, index) => (
+                    <StudentStatCard
+                        key={stat.value}
+                        label={stat.label}
+                        value={stat.count}
+                        icon={stat.icon}
+                        colorClass={stat.color}
+                        bgClass={stat.bg}
+                        active={filterStatus === stat.value}
+                        onClick={() => onFilterChange(stat.value)}
+                        index={index}
+                        compact
+                    />
+                ))}
+            </div>
+
+            {/* Search + filter + tabs — one tight section */}
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200/80 dark:border-gray-700/70 bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm p-2 sm:p-3.5">
+                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2.5">
+                    <div className="relative flex-1 min-w-0">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search job or company..."
+                            value={searchTerm}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            className="w-full h-8 sm:h-10 pl-8 pr-2.5 text-xs sm:text-sm rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 outline-none"
+                        />
+                    </div>
+                    <div className="relative sm:w-40 shrink-0">
+                        <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => onFilterChange(e.target.value)}
+                            className="w-full h-8 sm:h-10 pl-7 pr-7 text-xs sm:text-sm rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white appearance-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 outline-none"
+                        >
+                            {tabs.map((t) => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                            ))}
+                            {withdrawnApplications > 0 && (
+                                <option value="withdrawn">Withdrawn ({withdrawnApplications})</option>
+                            )}
+                        </select>
                     </div>
 
-                    {/* Status Filter */}
-                    <div className="sm:w-64">
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => onFilterChange(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
-                            >
-                                {statusOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label} ({option.count})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Company Filter (optional, for university view) */}
                     {companyOptions && companyOptions.length > 0 && onCompanyChange && (
-                        <div className="sm:w-64">
-                            <div className="relative">
-                                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                <select
-                                    value={selectedCompany || 'all'}
-                                    onChange={(e) => onCompanyChange(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
-                                >
-                                    <option value="all">All Companies</option>
-                                    {companyOptions.map((name) => (
-                                        <option key={name} value={name}>
-                                            {name}
-                                        </option>
-                                    ))}
-                                </select>
-                        </div>
-                    </div>
+                        <select
+                            value={selectedCompany || 'all'}
+                            onChange={(e) => onCompanyChange(e.target.value)}
+                            className="hidden sm:block h-10 px-3 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 sm:w-44"
+                        >
+                            <option value="all">All Companies</option>
+                            {companyOptions.map((name) => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
                     )}
 
-                    {/* Job Filter (optional, for university view) */}
                     {jobOptions && jobOptions.length > 0 && onJobChange && (
-                        <div className="sm:w-64">
-                            <div className="relative">
-                                <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                <select
-                                    value={selectedJobId || 'all'}
-                                    onChange={(e) => onJobChange(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none"
-                                >
-                                    <option value="all">All Jobs</option>
-                                    {jobOptions.map((job) => (
-                                        <option key={job.id} value={job.id}>
-                                            {job.title}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                        <select
+                            value={selectedJobId || 'all'}
+                            onChange={(e) => onJobChange(e.target.value)}
+                            className="hidden sm:block h-10 px-3 text-sm rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 sm:w-44"
+                        >
+                            <option value="all">All Jobs</option>
+                            {jobOptions.map((job) => (
+                                <option key={job.id} value={job.id}>{job.title}</option>
+                            ))}
+                        </select>
                     )}
 
-                    {/* Export Button (optional, for university view) */}
                     {onExport && (
-                        <div className="sm:w-auto flex items-center">
-                            <Button
-                                type="button"
-                                onClick={onExport}
-                                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg shadow-sm"
-                            >
-                                <Download className="w-4 h-4 mr-2" />
-                                <span>Export CSV</span>
-                            </Button>
-                        </div>
+                        <Button type="button" onClick={onExport} className="hidden sm:inline-flex h-10 rounded-xl px-4 shrink-0">
+                            <Download className="w-4 h-4 mr-1.5" />
+                            Export
+                        </Button>
                     )}
+                </div>
+
+                {/* Status tabs — compact horizontal scroll */}
+                <div className="mt-2 sm:mt-3 -mx-0.5 px-0.5 overflow-x-auto scrollbar-none">
+                    <div className="flex gap-0.5 sm:gap-1 min-w-max border-b border-gray-200 dark:border-gray-700">
+                        {tabs.map((tab) => {
+                            const active = filterStatus === tab.value
+                            return (
+                                <button
+                                    key={tab.value}
+                                    type="button"
+                                    onClick={() => onFilterChange(tab.value)}
+                                    className={cn(
+                                        'px-2 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-sm font-semibold transition-colors relative whitespace-nowrap',
+                                        active
+                                            ? 'text-primary-600 dark:text-primary-400'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                    )}
+                                >
+                                    {tab.label}
+                                    {active && (
+                                        <span className="absolute left-1.5 right-1.5 sm:left-2 sm:right-2 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500" />
+                                    )}
+                                </button>
+                            )
+                        })}
+                    </div>
                 </div>
             </div>
         </div>

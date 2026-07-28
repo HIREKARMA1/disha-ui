@@ -6,18 +6,16 @@ import {
     LayoutDashboard,
     User,
     Briefcase,
-    BookOpen,
-    Users,
     FileText,
     Target,
     Search,
     Library,
     X,
-    Menu,
     LogOut,
     Brain,
     ClipboardList,
-    MessageSquare
+    Calendar,
+    MoreHorizontal,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -26,14 +24,15 @@ import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
 import SSOService from '@/services/ssoService'
+import { cn } from '@/lib/utils'
 
 interface NavItem {
     label: string
     href: string
     icon: React.ComponentType<{ className?: string }>
     description?: string
-    color?: string
     isSSO?: boolean
+    mobilePrimary?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -41,81 +40,61 @@ const navItems: NavItem[] = [
         label: 'Dashboard',
         href: '/dashboard/student',
         icon: LayoutDashboard,
-        description: 'Overview and analytics',
-        color: 'from-blue-500 to-purple-600'
+        mobilePrimary: true,
     },
     {
         label: 'Profile',
         href: '/dashboard/student/profile',
         icon: User,
-        description: 'Personal information & settings',
-        color: 'from-green-500 to-teal-600'
+        mobilePrimary: true,
     },
     {
         label: 'Live Jobs',
         href: '/jobs',
-        icon: Search,
-        description: 'View all available jobs',
-        color: 'from-sky-500 to-cyan-600'
+        icon: Briefcase,
+        mobilePrimary: true,
     },
     {
         label: 'Campus Drive',
         href: '/dashboard/student/jobs',
-        icon: Briefcase,
-        description: 'Browse and apply for jobs',
-        color: 'from-orange-500 to-red-600'
+        icon: Search,
     },
     {
         label: 'Applications',
         href: '/dashboard/student/applications',
         icon: ClipboardList,
-        description: 'Track your job applications',
-        color: 'from-blue-500 to-indigo-600'
+        mobilePrimary: true,
     },
     {
         label: 'Resume Builder',
         href: '/dashboard/student/resume-builder',
         icon: FileText,
-        description: 'Create professional resume',
-        color: 'from-purple-500 to-pink-600'
     },
     {
         label: 'Career Align',
         href: '/dashboard/student/career-align',
         icon: Target,
-        description: 'Career guidance and planning',
-        color: 'from-indigo-500 to-blue-600'
     },
-    // TODO: Uncomment when practice module bugs are fixed
     {
         label: 'Practice',
         href: '/dashboard/student/practice',
         icon: Brain,
-        description: 'Practice tests and assessments',
-        color: 'from-rose-500 to-pink-600'
     },
     {
-        label: 'Video Search',
-        href: '/dashboard/student/video-search',
-        icon: Search,
-        description: 'Educational videos and tutorials',
-        color: 'from-yellow-500 to-orange-600'
+        label: 'Events',
+        href: '/events',
+        icon: Calendar,
     },
     {
         label: 'Library',
         href: '/dashboard/student/library',
         icon: Library,
-        description: 'Resources and materials',
-        color: 'from-emerald-500 to-green-600'
     },
-    // {
-    //     label: 'Sangha Community',
-    //     href: '/dashboard/student/sangha',
-    //     icon: MessageSquare,
-    //     description: 'Join community discussions',
-    //     color: 'from-violet-500 to-purple-600',
-    //     isSSO: true
-    // }
+    {
+        label: 'Video Search',
+        href: '/dashboard/student/video-search',
+        icon: Search,
+    },
 ]
 
 interface StudentSidebarProps {
@@ -125,24 +104,20 @@ interface StudentSidebarProps {
 export function StudentSidebar({ className = '' }: StudentSidebarProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [profileData, setProfileData] = useState<any>(null)
-    const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
     const { user, getToken, logout } = useAuth()
     const desktopNavRef = useRef<HTMLDivElement>(null)
+    const { startLoading } = useLoading()
 
-    // Fetch profile data when component mounts or updates
     const fetchProfile = useCallback(async () => {
         if (user?.user_type === 'student') {
-            setIsLoadingProfile(true)
             try {
                 const data = await apiClient.getStudentProfile()
                 setProfileData(data)
-                setImageError(false) // Reset image error in case a new image is loaded
+                setImageError(false)
             } catch (error) {
                 console.error('Failed to fetch profile:', error)
-            } finally {
-                setIsLoadingProfile(false)
             }
         }
     }, [user])
@@ -163,13 +138,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
         }
     }, [fetchProfile])
 
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen)
-    }
-
-    const closeMobileMenu = () => {
-        setIsMobileMenuOpen(false)
-    }
+    const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
     const handleLogout = () => {
         logout()
@@ -183,78 +152,44 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             activeItem.scrollIntoView({
                 block: 'nearest',
                 inline: 'nearest',
-                behavior: 'smooth'
+                behavior: 'smooth',
             })
         }
     }, [pathname])
 
-    // Get display name from profile data
     const getDisplayName = () => {
-        if (profileData?.name && profileData.name.trim()) {
-            return profileData.name
-        }
-        return user?.name || 'Student Name'
+        if (profileData?.name && profileData.name.trim()) return profileData.name
+        return user?.name || 'Student'
     }
 
-    // Get display email
-    const getDisplayEmail = () => {
-        return profileData?.email || user?.email || 'student@university.edu'
-    }
+    const getDisplayEmail = () => profileData?.email || user?.email || 'student@university.edu'
+    const getProfilePicture = () => profileData?.profile_picture || null
 
-    // Get profile picture
-    const getProfilePicture = () => {
-        return profileData?.profile_picture || null
-    }
-
-    // Handle profile picture error
-    const handleImageError = () => {
-        setImageError(true)
-    }
-
-    // Determine if Campus Drive should be visible based on university/license status
     const shouldShowCampusDrive = () => {
         if (!profileData) return true
-
-        // Hide if backend explicitly indicates university is not found
         if (typeof profileData.license_status_reason === 'string') {
             const reason = profileData.license_status_reason.toLowerCase()
-            if (reason.includes('university not found')) {
-                return false
-            }
+            if (reason.includes('university not found')) return false
         }
-
-        // Fallback: hide if no university_id associated with the student
-        if (!profileData.university_id) {
-            return false
-        }
-
+        if (!profileData.university_id) return false
         return true
     }
 
-    // Filter navigation items based on profile/university state
     const filteredNavItems = navItems.filter((item) => {
-        if (item.label === 'Campus Drive') {
-            return shouldShowCampusDrive()
-        }
+        if (item.label === 'Campus Drive') return shouldShowCampusDrive()
         return true
     })
 
-    // Handle SSO redirect
-    const handleSSORedirect = async (item: NavItem) => {
-        console.log('SSO redirect triggered for:', item.label)
+    const mobilePrimaryItems = filteredNavItems.filter((item) => item.mobilePrimary)
 
+    const handleSSORedirect = async (item: NavItem) => {
         const token = getToken()
         if (!token) {
-            console.error('User not authenticated - no token available')
             alert('Please log in to access Sangha Community')
             return
         }
-
-        console.log('User token available, initiating SSO...')
-
         try {
             const ssoService = new SSOService(token)
-            console.log('SSO service created, calling redirectToSangha...')
             await ssoService.redirectToSangha()
         } catch (error) {
             console.error('SSO Error:', error)
@@ -262,53 +197,71 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
         }
     }
 
+    const isItemActive = (href: string) => {
+        if (href === '/dashboard/student') return pathname === href
+        return pathname === href || pathname.startsWith(href + '/')
+    }
+
+    const navClass = (active: boolean) =>
+        cn(
+            'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+            active
+                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-md shadow-primary-500/20'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-700/50'
+        )
+
+    const renderAvatar = (size: 'sm' | 'md' = 'md') => {
+        const dim = size === 'sm' ? 'w-9 h-9' : 'w-11 h-11'
+        const img = size === 'sm' ? 36 : 44
+        return (
+            <div className={cn(dim, 'rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 overflow-hidden shrink-0')}>
+                {getProfilePicture() && !imageError ? (
+                    <Image
+                        src={getProfilePicture()}
+                        alt="Profile"
+                        width={img}
+                        height={img}
+                        className="w-full h-full object-cover"
+                        onError={() => setImageError(true)}
+                    />
+                ) : (
+                    <span className="text-white font-semibold text-sm">
+                        {getDisplayName().charAt(0).toUpperCase()}
+                    </span>
+                )}
+            </div>
+        )
+    }
+
     return (
         <>
             {/* Desktop Sidebar */}
-            <div className={`student-sidebar hidden lg:flex flex-col w-64 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${className}`}>
-                {/* User Profile Section */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 overflow-hidden">
-                            {getProfilePicture() && !imageError ? (
-                                <Image
-                                    src={getProfilePicture()}
-                                    alt="Profile"
-                                    width={48}
-                                    height={48}
-                                    className="w-full h-full object-cover"
-                                    onError={handleImageError}
-                                />
-                            ) : getDisplayName() !== 'Student Name' ? (
-                                <span className="text-white font-semibold text-lg">
-                                    {getDisplayName().charAt(0).toUpperCase()}
-                                </span>
-                            ) : (
-                                <User className="w-6 h-6 text-white" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">
-                                {getDisplayName()}
-                            </p>
-                            <p className="text-xs text-white/80 truncate">
-                                {getDisplayEmail()}
-                            </p>
+            <aside
+                className={cn(
+                    'student-sidebar hidden lg:flex flex-col w-64 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md border-r border-gray-200/80 dark:border-gray-700/70 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40',
+                    className
+                )}
+            >
+                <div className="p-4 border-b border-gray-200/80 dark:border-gray-700/70">
+                    <div className="rounded-2xl bg-gradient-to-r from-primary-500 to-secondary-500 p-3.5 shadow-md shadow-primary-500/20">
+                        <div className="flex items-center gap-3">
+                            {renderAvatar('md')}
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-white truncate">{getDisplayName()}</p>
+                                <p className="text-[11px] text-white/80 truncate">{getDisplayEmail()}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Navigation */}
-                <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
+                <nav ref={desktopNavRef} className="flex-1 p-3 space-y-1 overflow-y-auto">
                     {filteredNavItems.map((item) => {
-                        const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
+                        const active = isItemActive(item.href)
                         const handleClick = (e: React.MouseEvent) => {
                             if (item.isSSO) {
                                 e.preventDefault()
                                 handleSSORedirect(item)
-                            } else if (!isActive) {
+                            } else if (!active) {
                                 startLoading()
                             }
                         }
@@ -318,32 +271,11 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                 <button
                                     key={item.href}
                                     onClick={handleClick}
-                                    className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg w-full text-left ${isActive
-                                        ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
-                                        : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-                                        }`}
-                                    data-sidebar-item={isActive ? 'active' : 'inactive'}
+                                    className={cn(navClass(active), 'w-full text-left')}
+                                    data-sidebar-item={active ? 'active' : 'inactive'}
                                 >
-                                    <div className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isActive
-                                        ? 'bg-white/20 backdrop-blur-sm'
-                                        : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-white/50 dark:group-hover:bg-gray-600/50'
-                                        }`}>
-                                        <item.icon className={`w-5 h-5 ${isActive
-                                            ? 'text-white'
-                                            : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                                            }`} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="font-medium">{item.label}</div>
-                                        {item.description && (
-                                            <div className={`text-xs mt-0.5 ${isActive
-                                                ? 'text-white/90'
-                                                : 'text-gray-600 dark:text-gray-300'
-                                                }`}>
-                                                {item.description}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <item.icon className="w-4.5 h-4.5 w-5 h-5 shrink-0" />
+                                    <span>{item.label}</span>
                                 </button>
                             )
                         }
@@ -353,122 +285,104 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                 key={item.href}
                                 href={item.href}
                                 onClick={handleClick}
-                                data-sidebar-item={isActive ? 'active' : 'inactive'}
-                                className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${isActive
-                                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-                                    }`}
+                                data-sidebar-item={active ? 'active' : 'inactive'}
+                                className={navClass(active)}
                             >
-                                <div className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isActive
-                                    ? 'bg-white/20 backdrop-blur-sm'
-                                    : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-white/50 dark:group-hover:bg-gray-600/50'
-                                    }`}>
-                                    <item.icon className={`w-5 h-5 ${isActive
-                                        ? 'text-white'
-                                        : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                                        }`} />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-medium">{item.label}</div>
-                                    {item.description && (
-                                        <div className={`text-xs mt-0.5 ${isActive
-                                            ? 'text-white/90'
-                                            : 'text-gray-600 dark:text-gray-300'
-                                            }`}>
-                                            {item.description}
-                                        </div>
-                                    )}
-                                </div>
+                                <item.icon className="w-5 h-5 shrink-0" />
+                                <span>{item.label}</span>
                             </Link>
                         )
                     })}
                 </nav>
 
-                {/* Logout Section */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-3 border-t border-gray-200/80 dark:border-gray-700/70">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 group"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                     >
-                        <div className="p-2 rounded-lg mr-3 bg-red-100 dark:bg-red-900/20 group-hover:bg-red-200 dark:group-hover:bg-red-900/30 transition-colors">
-                            <LogOut className="w-5 h-5" />
-                        </div>
+                        <LogOut className="w-5 h-5" />
                         <span>Logout</span>
                     </button>
                 </div>
-            </div>
+            </aside>
 
             {/* Mobile Bottom Navigation */}
-            <div className="student-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
-                <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {filteredNavItems.slice(0, 5).map((item) => {
-                        const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
-                        const handleClick = () => {
-                            if (!isActive) {
-                                startLoading()
-                            }
-                        }
-
+            <nav className="student-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe">
+                <div className="flex items-stretch justify-around px-1 py-1">
+                    {mobilePrimaryItems.map((item) => {
+                        const active = isItemActive(item.href)
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                onClick={handleClick}
-                                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[20%] ${isActive
-                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    }`}
+                                onClick={() => {
+                                    if (!active) startLoading()
+                                }}
+                                className={cn(
+                                    'flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl transition-colors min-w-0',
+                                    active
+                                        ? 'text-primary-600 dark:text-primary-400'
+                                        : 'text-gray-500 dark:text-gray-400'
+                                )}
                             >
-                                <item.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <div
+                                    className={cn(
+                                        'p-1.5 rounded-xl transition-colors',
+                                        active && 'bg-primary-50 dark:bg-primary-900/30'
+                                    )}
+                                >
+                                    <item.icon className="w-5 h-5" />
+                                </div>
+                                <span className="text-[10px] font-medium truncate max-w-full px-0.5">
+                                    {item.label === 'Applications' ? 'Apps' : item.label.split(' ')[0]}
+                                </span>
                             </Link>
                         )
                     })}
                     <button
-                        onClick={toggleMobileMenu}
-                        className="flex items-center justify-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 w-full max-w-[20%]"
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl text-gray-500 dark:text-gray-400 min-w-0"
                     >
-                        <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <div className="p-1.5 rounded-xl">
+                            <MoreHorizontal className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-medium">More</span>
                     </button>
                 </div>
-            </div>
+            </nav>
 
-            {/* Mobile Menu Overlay */}
+            {/* Mobile More Drawer */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
+                        className="lg:hidden fixed inset-0 bg-black/50 z-50"
                         onClick={closeMobileMenu}
                     >
                         <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl flex flex-col"
+                            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+                            className="absolute right-0 top-0 h-full w-[min(20rem,88vw)] bg-white dark:bg-gray-900 shadow-xl flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500 flex-shrink-0">
-                                <h2 className="text-lg font-semibold text-white">
-                                    Menu
-                                </h2>
+                            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
+                                <h2 className="text-base font-semibold text-white">Menu</h2>
                                 <button
                                     onClick={closeMobileMenu}
                                     className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+                                    aria-label="Close menu"
                                 >
                                     <X className="w-5 h-5 text-white" />
                                 </button>
                             </div>
 
-                            {/* User Profile in Mobile */}
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center overflow-hidden">
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden">
                                         {getProfilePicture() && !imageError ? (
                                             <Image
                                                 src={getProfilePicture()}
@@ -476,17 +390,15 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                                 width={40}
                                                 height={40}
                                                 className="w-full h-full object-cover"
-                                                onError={handleImageError}
+                                                onError={() => setImageError(true)}
                                             />
-                                        ) : getDisplayName() !== 'Student Name' ? (
+                                        ) : (
                                             <span className="text-white font-semibold text-sm">
                                                 {getDisplayName().charAt(0).toUpperCase()}
                                             </span>
-                                        ) : (
-                                            <User className="w-5 h-5 text-white" />
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="min-w-0">
                                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                             {getDisplayName()}
                                         </p>
@@ -497,77 +409,33 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                 </div>
                             </div>
 
-                            {/* Navigation - Scrollable */}
-                            <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
+                            <nav className="flex-1 overflow-y-auto p-3 space-y-1">
                                 {filteredNavItems.map((item) => {
-                                    const isActive = pathname === item.href
-                                    const { startLoading } = useLoading()
-
-                                    const handleClick = (e: React.MouseEvent) => {
-                                        closeMobileMenu()
-                                        if (item.isSSO) {
-                                            e.preventDefault()
-                                            handleSSORedirect(item)
-                                        } else if (!isActive) {
-                                            startLoading()
-                                        }
-                                    }
-
-                                    if (item.isSSO) {
-                                        return (
-                                            <button
-                                                key={item.href}
-                                                onClick={handleClick}
-                                                className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left ${isActive
-                                                    ? `bg-gradient-to-r ${item.color} text-white`
-                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                                                    }`}
-                                            >
-                                                <item.icon className="w-5 h-5 mr-3" />
-                                                <div>
-                                                    <div className="font-medium">{item.label}</div>
-                                                    {item.description && (
-                                                        <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
-                                                            {item.description}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </button>
-                                        )
-                                    }
-
+                                    const active = isItemActive(item.href)
                                     return (
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            onClick={handleClick}
-                                            className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left ${isActive
-                                                ? `bg-gradient-to-r ${item.color} text-white`
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                                                }`}
+                                            onClick={() => {
+                                                closeMobileMenu()
+                                                if (!active) startLoading()
+                                            }}
+                                            className={navClass(active)}
                                         >
-                                            <item.icon className="w-5 h-5 mr-3" />
-                                            <div>
-                                                <div className="font-medium">{item.label}</div>
-                                                {item.description && (
-                                                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
-                                                        {item.description}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <item.icon className="w-5 h-5 shrink-0" />
+                                            <span>{item.label}</span>
                                         </Link>
                                     )
                                 })}
                             </nav>
 
-                            {/* Logout in Mobile */}
-                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                 >
-                                    <LogOut className="w-5 h-5 mr-3" />
-                                    <span>Logout</span>
+                                    <LogOut className="w-5 h-5" />
+                                    Logout
                                 </button>
                             </div>
                         </motion.div>
