@@ -94,7 +94,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className={`p-3 sm:p-5 lg:p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
+                <main className={`p-6 pb-28 lg:pb-6 min-h-screen relative overflow-visible ${shouldLock ? 'pointer-events-none' : ''}`}>
                     {children ? (
                         <>
                             <div className={shouldLock ? 'opacity-40' : ''}>
@@ -114,14 +114,13 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                             <div className={`space-y-4 sm:space-y-5 ${shouldLock ? 'opacity-40' : ''}`}>
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />
-                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5">
-                                    <div className="xl:col-span-8 space-y-4 sm:space-y-5">
+                                <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
+                                    <div className="xl:col-span-7 space-y-6">
                                         <AnalyticsChart />
                                         <StudentQuickActions />
                                         <RecentActivities />
                                     </div>
-                                    <div className="xl:col-span-4 space-y-4 sm:space-y-5">
-                                        <StudentResumeStrength />
+                                    <div className="xl:col-span-3">
                                         <AdvertisementBanner />
                                     </div>
                                 </div>

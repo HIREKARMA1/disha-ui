@@ -5,6 +5,7 @@ import {
     ChevronUp,
     ChevronDown,
     Eye,
+    Calendar,
     Building,
     FileText,
     ClipboardList,
@@ -151,6 +152,162 @@ export function StudentApplicationTable({
 
     const canWithdraw = (status: string) => ['applied', 'shortlisted', 'pending'].includes(status)
 
+    const getActionFlags = (application: ApplicationData) => {
+        const showWithdraw =
+            !onStatusUpdate && !!onWithdraw && canWithdraw(application.status)
+        const showMessages = !onStatusUpdate && !!onViewMessages
+        const showOfferLetter =
+            !onStatusUpdate &&
+            application.status === 'selected' &&
+            !!application.offer_letter_url
+        const showStatusPlaceholder =
+            !onStatusUpdate &&
+            !application.has_assignment &&
+            !showWithdraw &&
+            !showMessages &&
+            !showOfferLetter &&
+            application.status !== 'withdrawn' &&
+            (application.status !== 'selected' || !application.offer_letter_url)
+
+        return { showWithdraw, showMessages, showOfferLetter, showStatusPlaceholder }
+    }
+
+    const renderApplicationActions = (
+        application: ApplicationData,
+        opts?: { showLabels?: boolean; fullWidth?: boolean }
+    ) => {
+        const showLabels = opts?.showLabels ?? false
+        const fullWidth = opts?.fullWidth ?? false
+        const { showWithdraw, showMessages, showOfferLetter, showStatusPlaceholder } =
+            getActionFlags(application)
+
+        const btnClass = fullWidth
+            ? 'flex w-full items-center justify-center gap-2'
+            : 'flex items-center gap-1 shrink-0'
+
+        return (
+            <div
+                className={
+                    fullWidth
+                        ? 'flex w-full flex-col gap-2'
+                        : 'inline-flex items-center gap-2 flex-wrap'
+                }
+            >
+                {onStatusUpdate && (
+                    application.creator_type === "Company" ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onStatusUpdate(application)}
+                            className={btnClass}
+                            title="View Application Details"
+                        >
+                            <Eye className="w-4 h-4" />
+                            <span>View</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onStatusUpdate(application)}
+                            className={btnClass}
+                            title={application.can_update_status ? "Update Application Status" : "View Application Details"}
+                        >
+                            <Eye className="w-4 h-4" />
+                            {fullWidth && <span>View</span>}
+                        </Button>
+                    )
+                )}
+
+                {!onStatusUpdate && application.has_assignment && (
+                    <>
+                        {(application.creator_type === "University" || application.is_university_created === true) &&
+                         checkExamSubmitted(application) &&
+                         application.status === 'applied' ? (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Coming Soon</span>
+                        ) : (application.creator_type === "University" || application.is_university_created === true) &&
+                         checkExamSubmitted(application) &&
+                         application.status !== 'applied' &&
+                         application.status !== 'selected' ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewApplicationDetails(application)}
+                                className={btnClass}
+                                title="View Application Details"
+                            >
+                                <Eye className="w-4 h-4" />
+                                <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Details</span>
+                            </Button>
+                        ) : (
+                            !((application.creator_type === "University" || application.is_university_created === true) && application.status === 'selected') && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewAssignment(application)}
+                                    className={`${btnClass} text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700`}
+                                    title="View Practice Assignment"
+                                >
+                                    <ClipboardList className="w-4 h-4" />
+                                    <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Assignment</span>
+                                </Button>
+                            )
+                        )}
+                    </>
+                )}
+
+                {showWithdraw && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onWithdraw?.(application)}
+                        className={`${btnClass} text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400`}
+                        title="Withdraw Application"
+                    >
+                        <Undo2 className="w-4 h-4" />
+                        <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>Withdraw</span>
+                    </Button>
+                )}
+
+                {showMessages && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewMessages?.(application)}
+                        className={btnClass}
+                        title="View Messages"
+                    >
+                        <Eye className="w-4 h-4" />
+                        {(showLabels || fullWidth) && <span>Messages</span>}
+                    </Button>
+                )}
+
+                {showOfferLetter && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewOfferLetter(application)}
+                        className={`${btnClass} text-green-600 hover:text-green-700 border-green-600 hover:border-green-700`}
+                        title="View Offer Letter"
+                    >
+                        <Eye className="w-4 h-4" />
+                        <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Offer</span>
+                    </Button>
+                )}
+
+                {showStatusPlaceholder && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                        {application.status === 'selected'
+                            ? 'Offer letter pending'
+                            : application.status === 'rejected'
+                                ? 'Application rejected'
+                                : `Application ${application.status}`}
+                    </span>
+                )}
+            </div>
+        )
+    }
+
     const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <button
             onClick={() => onSort(field)}
@@ -288,135 +445,195 @@ export function StudentApplicationTable({
     }
 
     return (
-        <div className="space-y-2 sm:space-y-3">
-            {/* Mobile cards */}
-            <div className="md:hidden space-y-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-visible md:overflow-hidden h-auto min-h-fit">
+            {/* Mobile: stacked cards — all fields + actions fully visible */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700 overflow-visible">
                 {applications.map((application) => (
-                    <ApplicationCard
-                        key={application.id}
-                        application={{
-                            id: application.id,
-                            job_title: application.job_title,
-                            corporate_name: application.corporate_name,
-                            status: application.status,
-                            applied_at: application.applied_at,
-                            location: application.interview_location || undefined,
-                            salary: application.expected_salary
-                                ? formatAmountINR(application.expected_salary)
-                                : undefined,
-                            job_type: (application as ApplicationData & { job_type?: string }).job_type,
-                        }}
-                        onView={() => {
-                            if (onViewMessages) onViewMessages(application)
-                            else if (application.offer_letter_url) onViewOfferLetter(application)
-                            else handleViewApplicationDetails(application)
-                        }}
-                        onWithdraw={
-                            onWithdraw && canWithdraw(application.status)
-                                ? () => onWithdraw(application)
-                                : undefined
-                        }
-                    />
+                    <article
+                        key={`mobile-${application.id}`}
+                        className="p-4 space-y-4 h-auto overflow-visible"
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 shrink-0 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-base text-gray-900 dark:text-white break-words">
+                                    {application.job_title || 'N/A'}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
+                                    Job ID: {application.job_id.slice(0, 8)}...
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 text-sm">
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                                    Created By
+                                </p>
+                                <div className="flex items-start gap-2">
+                                    <Building className="w-4 h-4 shrink-0 text-gray-400 mt-0.5" />
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-gray-900 dark:text-white break-words">
+                                            {application.corporate_name || 'N/A'}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {application.creator_type || 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                                    Status
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    {getStatusIcon(application.status)}
+                                    <span className={`font-medium ${getStatusColor(application.status)}`}>
+                                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                                    Applied Date
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 shrink-0 text-gray-400" />
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                        {formatDate(application.applied_at)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2 overflow-visible">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                Actions
+                            </p>
+                            {renderApplicationActions(application, { showLabels: true, fullWidth: true })}
+                        </div>
+                    </article>
                 ))}
             </div>
 
-            {/* Desktop dense table */}
-            <div className="hidden md:block rounded-2xl border border-gray-200/80 dark:border-gray-700/70 bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50/90 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-700">
-                            <tr>
-                                <th className="px-3 py-2.5 text-left"><SortButton field="job_title">Job</SortButton></th>
-                                <th className="px-3 py-2.5 text-left"><SortButton field="corporate_name">Company</SortButton></th>
-                                <th className="px-3 py-2.5 text-left"><SortButton field="status">Status</SortButton></th>
-                                <th className="px-3 py-2.5 text-left whitespace-nowrap"><SortButton field="applied_at">Applied</SortButton></th>
-                                <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/80">
-                            {applications.map((application) => {
-                                const company = application.corporate_name || 'Company'
-                                const initial = company.charAt(0).toUpperCase()
-                                return (
-                                    <tr
-                                        key={application.id}
-                                        className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors"
-                                    >
-                                        <td className="px-3 py-2.5 align-middle">
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                                                    {initial}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-medium text-gray-900 dark:text-white truncate max-w-[220px]">
-                                                        {application.job_title || 'Untitled'}
-                                                    </p>
-                                                    {application.creator_type && (
-                                                        <span className="inline-flex mt-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                                            {application.creator_type}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-3 py-2.5 align-middle">
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                                <Building className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                                <span className="text-gray-800 dark:text-gray-200 truncate max-w-[160px]">
-                                                    {company}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-3 py-2.5 align-middle">
-                                            <StatusBadge status={application.status} />
-                                        </td>
-                                        <td className="px-3 py-2.5 align-middle whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">
+            {/* Desktop / tablet: original table */}
+            <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th className="px-6 py-4 text-left">
+                                <SortButton field="job_title">Job Title</SortButton>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <SortButton field="corporate_name">Created By</SortButton>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <SortButton field="status">Status</SortButton>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <SortButton field="applied_at">Applied Date</SortButton>
+                            </th>
+                            <th className="px-6 py-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {applications.map((application) => (
+                            <motion.tr
+                                key={application.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${hoveredRow === application.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                                onMouseEnter={() => setHoveredRow(application.id)}
+                                onMouseLeave={() => setHoveredRow(null)}
+                            >
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-900 dark:text-white">
+                                                {application.job_title || 'N/A'}
+                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                Job ID: {application.job_id.slice(0, 8)}...
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-start gap-2">
+                                        <Building className="w-4 h-4 text-gray-400 mt-1" />
+                                        <div>
+                                            <p className="text-gray-900 dark:text-white font-medium">
+                                                {application.corporate_name || 'N/A'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {application.creator_type || 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                        {getStatusIcon(application.status)}
+                                        <span className={`font-medium ${getStatusColor(application.status)}`}>
+                                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-gray-400" />
+                                        <span className="text-gray-900 dark:text-white">
                                             {formatDate(application.applied_at)}
-                                        </td>
-                                        <td className="px-3 py-2.5 align-middle">
-                                            {renderActions(application)}
-                                        </td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Compact pagination */}
-                <div className="px-3 py-2.5 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 order-2 sm:order-1">
-                        {((pagination.page - 1) * pagination.limit) + 1}–
-                        {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-                    </p>
-                    <div className="flex items-center gap-1.5 order-1 sm:order-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-2.5 text-xs rounded-lg"
-                            onClick={() => onPageChange(pagination.page - 1)}
-                            disabled={pagination.page <= 1}
-                        >
-                            Prev
-                        </Button>
-                        <span className="text-xs text-gray-600 dark:text-gray-300 px-2 tabular-nums">
-                            {pagination.page} / {Math.max(pagination.total_pages, 1)}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-2.5 text-xs rounded-lg"
-                            onClick={() => onPageChange(pagination.page + 1)}
-                            disabled={pagination.page >= pagination.total_pages}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center justify-center">
+                                        {renderApplicationActions(application)}
+                                    </div>
+                                </td>
+                            </motion.tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
 
             {/* Mobile pagination */}
             {pagination.total_pages > 1 && (
+                <div className="px-4 md:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} applications
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onPageChange(pagination.page - 1)}
+                                disabled={pagination.page <= 1}
+                            >
+                                Previous
+                            </Button>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                                Page {pagination.page} of {pagination.total_pages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onPageChange(pagination.page + 1)}
+                                disabled={pagination.page >= pagination.total_pages}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 <div className="md:hidden flex items-center justify-center gap-2">
                     <Button
                         variant="outline"

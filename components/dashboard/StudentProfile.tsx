@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -66,7 +66,24 @@ export function StudentProfile() {
         imageUrl: '',
         altText: ''
     })
-    const basicFormRef = useRef<HTMLDivElement>(null);
+    const basicFormRef = useRef<HTMLDivElement>(null)
+    const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+    // Mobile: keep the active profile tab fully visible / centered in the horizontal nav
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        // Desktop tab row fits without horizontal scroll — leave it alone
+        if (window.matchMedia('(min-width: 768px)').matches) return
+
+        const activeButton = tabButtonRefs.current[activeTab]
+        if (!activeButton) return
+
+        activeButton.scrollIntoView({
+            behavior: 'smooth',
+            inline: 'center',
+            block: 'nearest',
+        })
+    }, [activeTab])
 
     const profileSections: ProfileSection[] = [
         {
@@ -353,20 +370,108 @@ export function StudentProfile() {
                         </div>
 
                         {/* Profile Content */}
-                        <div className="space-y-3 sm:space-y-4">
-                            <ProfileSummaryCard
-                                profile={profile}
-                                onEditProfile={() => {
-                                    setActiveTab('basic')
-                                    setEditing('basic')
-                                }}
-                                onChangePhoto={() => {
-                                    setActiveTab('social')
-                                    setEditing('social')
-                                }}
-                            />
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
+                                {/* Top Horizontal Section - Profile Overview */}
+                                <div className="xl:col-span-4">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border-2 border-primary-300 dark:border-primary-700/50 p-3 lg:p-4 hover:shadow-md transition-all duration-300">
+                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 lg:gap-4">
+                                            {/* Profile Avatar & Info */}
+                                            <div className="text-center lg:text-left">
+                                                <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto lg:mx-0 mb-2 relative">
+                                                    <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                                        {profile.profile_picture ? (
+                                                            <img
+                                                                src={profile.profile_picture}
+                                                                alt={profile.name}
+                                                                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xl lg:text-2xl font-bold text-white">
+                                                                {getInitials(profile.name)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
+                                                        onClick={() => {
+                                                            setActiveTab('social');
+                                                            setEditing('social');
+                                                        }}
+                                                        title="Change profile picture (Social tab)"
+                                                    >
+                                                        <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                                                    </button>
 
-                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+                                                </div>
+                                                <h3 className="text-sm lg:text-base font-semibold text-gray-900 dark:text-white mb-1">
+                                                    {profile.name}
+                                                </h3>
+                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                    {profile.institution || 'University Student'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {profile.degree} • {profile.branch}
+                                                </p>
+                                            </div>
+
+                                            {/* Profile Stats */}
+                                            <div className="flex-1">
+                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 mb-3 lg:mb-4">
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Email</span>
+                                                        {(profile.email_verified || !!profile.email) ? (
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Phone</span>
+                                                        {(profile.phone_verified || !!profile.phone) ? (
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Photo</span>
+                                                        {profile.profile_picture ? (
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
+                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Resume</span>
+                                                        {profile.resume ? (
+                                                            <div className="p-1 bg-green-500 rounded-full">
+                                                                <CheckCircle className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
+                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Profile Completion Card */}
                                 <div className="xl:col-span-1 order-1">
                                     <ProfileCompletion
@@ -376,18 +481,17 @@ export function StudentProfile() {
                                 </div>
 
                                 {/* Tab-based Profile Sections */}
-                                <div className="xl:col-span-3 order-2 min-w-0">
-                                    {/* Tab Navigation — horizontal scroll on mobile */}
-                                    <div className="mb-3 sm:mb-4">
-                                        <div className="rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/80 px-1 sm:px-2 overflow-x-auto scrollbar-none">
-                                            <nav className="flex gap-0.5 min-w-max py-1">
+                                <div className="xl:col-span-3">
+                                    {/* Tab Navigation */}
+                                    <div className="mb-6">
+                                        <div className="border-b border-gray-200 dark:border-gray-700">
+                                            <nav className="-mb-px flex space-x-8 overflow-x-auto">
                                                 {tabs.map((tab) => (
                                                     <button
                                                         key={tab.id}
-                                                        type="button"
                                                         onClick={() => setActiveTab(tab.id)}
                                                         className={cn(
-                                                            'flex items-center gap-1.5 py-2 px-3 sm:px-3.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0',
+                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
                                                             activeTab === tab.id
                                                                 ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 shadow-sm'
                                                                 : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/50'
