@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -36,7 +36,6 @@ import { LookupSelect } from '@/components/ui/lookup-select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
-import { useRef } from 'react'
 
 interface ProfileSection {
     id: string
@@ -61,7 +60,24 @@ export function StudentProfile() {
         imageUrl: '',
         altText: ''
     })
-    const basicFormRef = useRef<HTMLDivElement>(null);
+    const basicFormRef = useRef<HTMLDivElement>(null)
+    const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+    // Mobile: keep the active profile tab fully visible / centered in the horizontal nav
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        // Desktop tab row fits without horizontal scroll — leave it alone
+        if (window.matchMedia('(min-width: 768px)').matches) return
+
+        const activeButton = tabButtonRefs.current[activeTab]
+        if (!activeButton) return
+
+        activeButton.scrollIntoView({
+            behavior: 'smooth',
+            inline: 'center',
+            block: 'nearest',
+        })
+    }, [activeTab])
 
     const profileSections: ProfileSection[] = [
         {
@@ -325,14 +341,14 @@ export function StudentProfile() {
                                     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border-2 border-primary-300 dark:border-primary-700/50 p-3 lg:p-4 hover:shadow-md transition-all duration-300">
                                         <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 lg:gap-4">
                                             {/* Profile Avatar & Info */}
-                                            <div className="text-center lg:text-left">
-                                                <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto lg:mx-0 mb-2 relative">
-                                                    <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                            <div className="flex flex-col items-center lg:items-start text-center lg:text-left w-full lg:w-auto">
+                                                <div className="relative mb-3 shrink-0">
+                                                    <div className="h-16 w-16 lg:h-20 lg:w-20 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-gray-800">
                                                         {profile.profile_picture ? (
                                                             <img
                                                                 src={profile.profile_picture}
                                                                 alt={profile.name}
-                                                                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover"
+                                                                className="h-full w-full object-cover"
                                                             />
                                                         ) : (
                                                             <span className="text-xl lg:text-2xl font-bold text-white">
@@ -341,16 +357,16 @@ export function StudentProfile() {
                                                         )}
                                                     </div>
                                                     <button
-                                                        className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
+                                                        type="button"
+                                                        className="absolute bottom-0 right-0 z-10 flex h-6 w-6 lg:h-6 lg:w-6 items-center justify-center rounded-full bg-white text-blue-600 shadow-md border border-gray-200 hover:bg-blue-50 hover:scale-110 transition-all duration-200"
                                                         onClick={() => {
                                                             setActiveTab('social');
                                                             setEditing('social');
                                                         }}
                                                         title="Change profile picture (Social tab)"
                                                     >
-                                                        <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                                                        <Camera className="h-3 w-3" />
                                                     </button>
-
                                                 </div>
                                                 <h3 className="text-sm lg:text-base font-semibold text-gray-900 dark:text-white mb-1">
                                                     {profile.name}
@@ -433,13 +449,16 @@ export function StudentProfile() {
                                     {/* Tab Navigation */}
                                     <div className="mb-6">
                                         <div className="border-b border-gray-200 dark:border-gray-700">
-                                            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                                            <nav className="-mb-px flex space-x-8 overflow-x-auto scroll-smooth scrollbar-hide">
                                                 {tabs.map((tab) => (
                                                     <button
                                                         key={tab.id}
+                                                        ref={(el) => {
+                                                            tabButtonRefs.current[tab.id] = el
+                                                        }}
                                                         onClick={() => setActiveTab(tab.id)}
                                                         className={cn(
-                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
+                                                            "flex shrink-0 items-center space-x-2 whitespace-nowrap py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
                                                             activeTab === tab.id
                                                                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
                                                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
