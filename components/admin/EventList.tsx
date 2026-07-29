@@ -179,6 +179,14 @@ export function EventList() {
         case 'unpublish': await contestEventService.unpublishEvent(eventId); toast.success('Event unpublished'); break
         case 'archive': await contestEventService.archiveEvent(eventId); toast.success('Event archived'); break
         case 'duplicate': await contestEventService.duplicateEvent(eventId); toast.success('Event duplicated'); break
+        case 'open-registration':
+          await contestEventService.openRegistration(eventId)
+          toast.success('Registration opened')
+          break
+        case 'close-registration':
+          await contestEventService.closeRegistration(eventId)
+          toast.success('Registration closed')
+          break
         case 'delete':
           if (confirm('Delete this event? Registrations will be preserved.')) {
             await contestEventService.deleteEvent(eventId)
@@ -198,8 +206,9 @@ export function EventList() {
         }
       }
       refreshAll()
-    } catch {
-      toast.error('Action failed')
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      toast.error(typeof detail === 'string' ? detail : 'Action failed')
     } finally {
       setActionLoading(null)
     }

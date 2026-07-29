@@ -102,6 +102,8 @@ export interface ContestEventListItem {
   prize_type?: PrizeType
   publication_status?: PublicationStatus
   registration_is_open?: boolean
+  /** Raw admin toggle (DB flag). Prefer this when editing — not the computed open state. */
+  registration_enabled?: boolean
   registration_end_date?: string
   event_start_date: string
   event_end_date?: string
