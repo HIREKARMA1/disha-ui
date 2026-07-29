@@ -30,6 +30,8 @@ export interface ApplicationData {
     job_title: string
     student_name: string
     student_email: string
+    student_phone?: string
+    phone?: string
     corporate_name: string
 }
 
@@ -53,17 +55,44 @@ export default function CorporateApplications() {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [totalCount, setTotalCount] = useState(0)
+    const [pageSize, setPageSize] = useState(10)
 
     const fetchApplications = async () => {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await apiClient.getCorporateApplications({
-                status: filterStatus === 'all' ? undefined : filterStatus,
-                page: currentPage,
-                limit: 20
-            })
-            setApplications(response.applications)
+            const [response, detailedRes] = await Promise.all([
+                apiClient.getCorporateApplications({
+                    status: filterStatus === 'all' ? undefined : filterStatus,
+                    page: currentPage,
+                    limit: pageSize,
+                }),
+                apiClient.client.get('/corporates/applications').catch(() => null),
+            ])
+
+            const phoneByStudentId: Record<string, string> = {}
+            const phoneByAppId: Record<string, string> = {}
+            const detailedApps = detailedRes?.data?.applications || []
+            if (Array.isArray(detailedApps)) {
+                detailedApps.forEach((app: any) => {
+                    const phone = app.phone || app.student_phone
+                    if (!phone) return
+                    if (app.student_id) phoneByStudentId[String(app.student_id)] = phone
+                    if (app.id) phoneByAppId[String(app.id)] = phone
+                })
+            }
+
+            const enriched = (response.applications || []).map((app: ApplicationData) => ({
+                ...app,
+                student_phone:
+                    app.student_phone ||
+                    app.phone ||
+                    phoneByAppId[app.id] ||
+                    phoneByStudentId[app.student_id] ||
+                    undefined,
+            }))
+
+            setApplications(enriched)
             setTotalPages(response.total_pages)
             setTotalCount(response.total_count)
         } catch (err) {
@@ -77,7 +106,7 @@ export default function CorporateApplications() {
 
     useEffect(() => {
         fetchApplications()
-    }, [filterStatus, currentPage])
+    }, [filterStatus, currentPage, pageSize])
 
     const filteredApplications = applications.filter(application => {
         const matchesSearch =
@@ -124,10 +153,14 @@ export default function CorporateApplications() {
         setShowOfferLetterModal(true)
     }
 
+    const handlePageSizeChange = (size: number) => {
+        setPageSize(size)
+        setCurrentPage(1)
+    }
+
     return (
         <CorporateDashboardLayout>
-            <div className="space-y-6">
-                {/* Application Management Header */}
+            <div className="space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
                 <ApplicationManagementHeader
                     totalApplications={totalCount}
                     pendingApplications={applications.filter(a => a.status === 'applied').length}
@@ -137,10 +170,12 @@ export default function CorporateApplications() {
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
                     filterStatus={filterStatus}
-                    onFilterChange={setFilterStatus}
+                    onFilterChange={(status) => {
+                        setFilterStatus(status)
+                        setCurrentPage(1)
+                    }}
                 />
 
-                {/* Application Table */}
                 <ApplicationTable
                     applications={filteredApplications}
                     isLoading={isLoading}
@@ -151,9 +186,11 @@ export default function CorporateApplications() {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageSizeChange={handlePageSizeChange}
                 />
 
-                {/* Modals */}
                 <StatusUpdateModal
                     isOpen={showStatusModal}
                     onClose={() => {
