@@ -10,16 +10,12 @@ import {
     FileText,
     ClipboardList,
     Undo2,
-    MessageSquare,
 } from 'lucide-react'
-import { formatAmountINR } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { ViewAssignmentModal } from './ViewAssignmentModal'
 import { ViewApplicationDetailsModal } from '@/components/university/ViewApplicationDetailsModal'
-import { ApplicationCard } from '@/components/student/ui/ApplicationCard'
 import { StatusBadge } from '@/components/student/ui/StatusBadge'
 import { apiClient } from '@/lib/api'
-import { cn } from '@/lib/utils'
 
 interface ApplicationData {
     id: string
@@ -174,23 +170,30 @@ export function StudentApplicationTable({
 
     const renderApplicationActions = (
         application: ApplicationData,
-        opts?: { showLabels?: boolean; fullWidth?: boolean }
+        opts?: { showLabels?: boolean; fullWidth?: boolean; compact?: boolean }
     ) => {
         const showLabels = opts?.showLabels ?? false
         const fullWidth = opts?.fullWidth ?? false
+        const compact = opts?.compact ?? false
         const { showWithdraw, showMessages, showOfferLetter, showStatusPlaceholder } =
             getActionFlags(application)
 
         const btnClass = fullWidth
             ? 'flex w-full items-center justify-center gap-2'
-            : 'flex items-center gap-1 shrink-0'
+            : compact
+                ? 'flex items-center gap-0.5 shrink-0 h-7 px-2 text-[10px] rounded-md'
+                : 'flex items-center gap-1 shrink-0'
+
+        const iconClass = compact ? 'w-3 h-3' : 'w-4 h-4'
 
         return (
             <div
                 className={
                     fullWidth
                         ? 'flex w-full flex-col gap-2'
-                        : 'inline-flex items-center gap-2 flex-wrap'
+                        : compact
+                            ? 'flex items-center gap-1 flex-wrap'
+                            : 'inline-flex items-center gap-2 flex-wrap'
                 }
             >
                 {onStatusUpdate && (
@@ -202,7 +205,7 @@ export function StudentApplicationTable({
                             className={btnClass}
                             title="View Application Details"
                         >
-                            <Eye className="w-4 h-4" />
+                            <Eye className={iconClass} />
                             <span>View</span>
                         </Button>
                     ) : (
@@ -213,8 +216,8 @@ export function StudentApplicationTable({
                             className={btnClass}
                             title={application.can_update_status ? "Update Application Status" : "View Application Details"}
                         >
-                            <Eye className="w-4 h-4" />
-                            {fullWidth && <span>View</span>}
+                            <Eye className={iconClass} />
+                            {(fullWidth || showLabels) && <span>View</span>}
                         </Button>
                     )
                 )}
@@ -236,7 +239,7 @@ export function StudentApplicationTable({
                                 className={btnClass}
                                 title="View Application Details"
                             >
-                                <Eye className="w-4 h-4" />
+                                <Eye className={iconClass} />
                                 <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Details</span>
                             </Button>
                         ) : (
@@ -248,7 +251,7 @@ export function StudentApplicationTable({
                                     className={`${btnClass} text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700`}
                                     title="View Practice Assignment"
                                 >
-                                    <ClipboardList className="w-4 h-4" />
+                                    <ClipboardList className={iconClass} />
                                     <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Assignment</span>
                                 </Button>
                             )
@@ -264,7 +267,7 @@ export function StudentApplicationTable({
                         className={`${btnClass} text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400`}
                         title="Withdraw Application"
                     >
-                        <Undo2 className="w-4 h-4" />
+                        <Undo2 className={iconClass} />
                         <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>Withdraw</span>
                     </Button>
                 )}
@@ -277,7 +280,7 @@ export function StudentApplicationTable({
                         className={btnClass}
                         title="View Messages"
                     >
-                        <Eye className="w-4 h-4" />
+                        <Eye className={iconClass} />
                         {(showLabels || fullWidth) && <span>Messages</span>}
                     </Button>
                 )}
@@ -290,13 +293,13 @@ export function StudentApplicationTable({
                         className={`${btnClass} text-green-600 hover:text-green-700 border-green-600 hover:border-green-700`}
                         title="View Offer Letter"
                     >
-                        <Eye className="w-4 h-4" />
+                        <Eye className={iconClass} />
                         <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Offer</span>
                     </Button>
                 )}
 
                 {showStatusPlaceholder && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                    <span className={compact ? 'text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap' : 'text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap'}>
                         {application.status === 'selected'
                             ? 'Offer letter pending'
                             : application.status === 'rejected'
@@ -321,101 +324,6 @@ export function StudentApplicationTable({
                     <ChevronDown className="w-3 h-3" />
                 ))}
         </button>
-    )
-
-    const iconBtn =
-        'h-8 w-8 p-0 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-
-    const renderActions = (application: ApplicationData) => (
-        <div className="flex items-center justify-end gap-1 flex-wrap">
-            {onStatusUpdate && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onStatusUpdate(application)}
-                    className={iconBtn}
-                    title="View"
-                >
-                    <Eye className="w-3.5 h-3.5" />
-                </Button>
-            )}
-
-            {!onStatusUpdate && application.has_assignment && (
-                <>
-                    {(application.creator_type === 'University' || application.is_university_created === true) &&
-                    checkExamSubmitted(application) &&
-                    application.status === 'applied' ? (
-                        <span className="text-[10px] text-gray-400 px-1">Soon</span>
-                    ) : (application.creator_type === 'University' ||
-                          application.is_university_created === true) &&
-                      checkExamSubmitted(application) &&
-                      application.status !== 'applied' &&
-                      application.status !== 'selected' ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewApplicationDetails(application)}
-                            className={iconBtn}
-                            title="View Details"
-                        >
-                            <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                    ) : !(
-                          (application.creator_type === 'University' ||
-                              application.is_university_created === true) &&
-                          application.status === 'selected'
-                      ) ? (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewAssignment(application)}
-                            className={cn(iconBtn, 'text-primary-600 border-primary-200')}
-                            title="View Assignment"
-                        >
-                            <ClipboardList className="w-3.5 h-3.5" />
-                        </Button>
-                    ) : null}
-                </>
-            )}
-
-            {!onStatusUpdate && onViewMessages && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onViewMessages(application)}
-                    className={iconBtn}
-                    title="View Messages"
-                >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                </Button>
-            )}
-
-            {!onStatusUpdate &&
-                application.status === 'selected' &&
-                application.offer_letter_url && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onViewOfferLetter(application)}
-                        className={cn(iconBtn, 'text-emerald-600 border-emerald-200')}
-                        title="View Offer Letter"
-                    >
-                        <Eye className="w-3.5 h-3.5" />
-                    </Button>
-                )}
-
-            {!onStatusUpdate && onWithdraw && canWithdraw(application.status) && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onWithdraw(application)}
-                    className={cn(iconBtn, 'text-red-600 border-red-200')}
-                    title="Withdraw"
-                >
-                    <Undo2 className="w-3.5 h-3.5" />
-                </Button>
-            )}
-        </div>
     )
 
     if (loading) {
@@ -446,75 +354,40 @@ export function StudentApplicationTable({
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-visible md:overflow-hidden h-auto min-h-fit">
-            {/* Mobile: stacked cards — all fields + actions fully visible */}
-            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700 overflow-visible">
+            {/* Mobile: compact cards */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-white/10 overflow-visible">
                 {applications.map((application) => (
                     <article
                         key={`mobile-${application.id}`}
-                        className="p-4 space-y-4 h-auto overflow-visible"
+                        className="p-2.5 space-y-2 h-auto overflow-visible"
                     >
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 shrink-0 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                        <div className="flex items-start gap-2">
+                            <div className="w-8 h-8 shrink-0 rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold flex items-center justify-center">
+                                {(application.corporate_name || 'C').charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-base text-gray-900 dark:text-white break-words">
-                                    {application.job_title || 'N/A'}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
-                                    Job ID: {application.job_id.slice(0, 8)}...
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 text-sm">
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                                    Created By
-                                </p>
-                                <div className="flex items-start gap-2">
-                                    <Building className="w-4 h-4 shrink-0 text-gray-400 mt-0.5" />
+                                <div className="flex items-start justify-between gap-1.5">
                                     <div className="min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white break-words">
-                                            {application.corporate_name || 'N/A'}
+                                        <p className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-1 leading-snug">
+                                            {application.job_title || 'N/A'}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {application.creator_type || 'N/A'}
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 truncate">
+                                            <Building className="w-2.5 h-2.5 shrink-0" />
+                                            {application.corporate_name || 'N/A'}
+                                            {application.creator_type ? ` · ${application.creator_type}` : ''}
                                         </p>
                                     </div>
+                                    <StatusBadge status={application.status} className="shrink-0 scale-90 origin-top-right" />
                                 </div>
-                            </div>
-
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                                    Status
+                                <p className="text-[9px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                    <Calendar className="w-2.5 h-2.5" />
+                                    Applied {formatDate(application.applied_at)}
                                 </p>
-                                <div className="flex items-center gap-2">
-                                    {getStatusIcon(application.status)}
-                                    <span className={`font-medium ${getStatusColor(application.status)}`}>
-                                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                                    Applied Date
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 shrink-0 text-gray-400" />
-                                    <span className="font-medium text-gray-900 dark:text-white">
-                                        {formatDate(application.applied_at)}
-                                    </span>
-                                </div>
                             </div>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2 overflow-visible">
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                Actions
-                            </p>
-                            {renderApplicationActions(application, { showLabels: true, fullWidth: true })}
+                        <div className="overflow-visible">
+                            {renderApplicationActions(application, { showLabels: true, fullWidth: false, compact: true })}
                         </div>
                     </article>
                 ))}
@@ -542,13 +415,9 @@ export function StudentApplicationTable({
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {applications.map((application) => (
-                            <motion.tr
+                            <tr
                                 key={application.id}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${hoveredRow === application.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                                onMouseEnter={() => setHoveredRow(application.id)}
-                                onMouseLeave={() => setHoveredRow(null)}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
@@ -579,12 +448,7 @@ export function StudentApplicationTable({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        {getStatusIcon(application.status)}
-                                        <span className={`font-medium ${getStatusColor(application.status)}`}>
-                                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                                        </span>
-                                    </div>
+                                    <StatusBadge status={application.status} />
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2">
@@ -599,29 +463,32 @@ export function StudentApplicationTable({
                                         {renderApplicationActions(application)}
                                     </div>
                                 </td>
-                            </motion.tr>
+                            </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
 
-            {/* Mobile pagination */}
+            {/* Pagination */}
             {pagination.total_pages > 1 && (
-                <div className="px-4 md:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="text-sm text-gray-700 dark:text-gray-300">
-                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} applications
+                <div className="px-2.5 md:px-6 py-2 md:py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3">
+                        <div className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300">
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                            {pagination.total} applications
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => onPageChange(pagination.page - 1)}
                                 disabled={pagination.page <= 1}
+                                className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-sm"
                             >
                                 Previous
                             </Button>
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300">
                                 Page {pagination.page} of {pagination.total_pages}
                             </span>
                             <Button
@@ -629,33 +496,12 @@ export function StudentApplicationTable({
                                 size="sm"
                                 onClick={() => onPageChange(pagination.page + 1)}
                                 disabled={pagination.page >= pagination.total_pages}
+                                className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-sm"
                             >
                                 Next
                             </Button>
                         </div>
                     </div>
-                <div className="md:hidden flex items-center justify-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg"
-                        onClick={() => onPageChange(pagination.page - 1)}
-                        disabled={pagination.page <= 1}
-                    >
-                        Prev
-                    </Button>
-                    <span className="text-xs text-gray-500">
-                        {pagination.page} / {pagination.total_pages}
-                    </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg"
-                        onClick={() => onPageChange(pagination.page + 1)}
-                        disabled={pagination.page >= pagination.total_pages}
-                    >
-                        Next
-                    </Button>
                 </div>
             )}
 

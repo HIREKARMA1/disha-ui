@@ -206,6 +206,18 @@ body.hide-sidebar .main-navbar {
   margin-bottom: env(safe-area-inset-bottom);
 }
 
+/* Hide native select arrow — custom ChevronDown is used instead */
+.student-filter-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: none !important;
+}
+
+.student-filter-select::-ms-expand {
+  display: none !important;
+}
+
 /* Prevent horizontal scrolling on mobile */
 html, body {
   overflow-x: hidden;

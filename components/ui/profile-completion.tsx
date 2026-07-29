@@ -114,7 +114,7 @@ export function ProfileCompletion({
     return (
         <div
             className={cn(
-                'bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5',
+                'bg-white/95 dark:bg-[#151b2b]/90 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/80 dark:border-white/10 p-4 sm:p-5',
                 className
             )}
         >

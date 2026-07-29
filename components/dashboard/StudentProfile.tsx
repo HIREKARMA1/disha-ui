@@ -21,14 +21,14 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StudentSidebar } from './StudentSidebar'
-import { Navbar } from '../ui/navbar'
+import { StudentTopNav } from './StudentTopNav'
 import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
 import { ProfilePictureUpload } from '../profile/ProfilePictureUpload'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
-import { cn, truncateText } from '@/lib/utils'
+import { cn, truncateText, getInitials } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
@@ -41,7 +41,7 @@ import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { ProfileSummaryCard } from '@/components/student/ui/ProfileSummaryCard'
-import { useRef } from 'react'
+import { StudentChip } from '@/components/student/ui/StudentChip'
 
 interface ProfileSection {
     id: string
@@ -231,7 +231,7 @@ export function StudentProfile() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Navbar />
+                <StudentTopNav />
                 <StudentSidebar />
                 <div className="pt-16 lg:pl-64">
                     <main className="flex-1 p-4 lg:p-6">
@@ -259,7 +259,7 @@ export function StudentProfile() {
     if (error && !profile) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Navbar />
+                <StudentTopNav />
                 <div className="flex">
                     <StudentSidebar />
                     <main className="flex-1 p-4 lg:p-6">
@@ -286,7 +286,7 @@ export function StudentProfile() {
     if (!profile) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Navbar />
+                <StudentTopNav />
                 <div className="flex">
                     <StudentSidebar />
                     <main className="flex-1 p-4 lg:p-6">
@@ -315,163 +315,61 @@ export function StudentProfile() {
     })
 
     return (
-        <div className="min-h-screen bg-[#F5F8FC] dark:bg-gray-900 pb-20 lg:pb-0">
-            <Navbar />
+        <div className="min-h-screen bg-[#F5F7FB] dark:bg-[#0a0c14] pb-20 lg:pb-0">
+            <StudentTopNav />
             <StudentSidebar />
             <div className="pt-16 lg:pl-64">
                 <main className="flex-1 p-3 sm:p-4 lg:p-6">
                     <div className="w-full max-w-[1400px] mx-auto">
                         {/* Hero */}
-                        <div className="relative overflow-hidden rounded-2xl border border-primary-200/70 dark:border-primary-700/40 bg-gradient-to-br from-[#E8F4FF] via-white to-[#F0F7FF] dark:from-primary-900/30 dark:via-gray-800/90 dark:to-gray-900/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
-                            <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-primary-300/25 blur-3xl" />
-                            <div className="pointer-events-none absolute -bottom-16 left-10 h-36 w-36 rounded-full bg-sky-300/20 blur-3xl" />
+                        <div className="relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
+                            <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
                             <div className="relative flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                                 <div className="flex-1 min-w-0">
-                                    <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight">
+                                    <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
                                         Student Profile
+                                        <CheckCircle className="w-5 h-5 text-blue-500" />
                                     </h1>
-                                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300 max-w-xl">
+                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-xl">
                                         Manage your personal information and career details
                                     </p>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 px-2.5 py-1 text-[11px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 shadow-sm">
-                                            <Calendar className="w-3 h-3 text-primary-500" />
-                                            {todayLabel}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200/80 dark:border-emerald-700/50 px-2.5 py-1 text-[11px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 shadow-sm">
-                                            <TrendingUp className="w-3 h-3" />
-                                            Career Growth
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 dark:bg-sky-900/30 border border-sky-200/80 dark:border-sky-700/50 px-2.5 py-1 text-[11px] sm:text-xs font-medium text-sky-700 dark:text-sky-300 shadow-sm">
-                                            <Sparkles className="w-3 h-3" />
-                                            New Opportunities
-                                        </span>
+                                    <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">
+                                        Keep your profile updated to get better job opportunities.
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+                                        <StudentChip icon={Calendar} label={todayLabel} tone="blue" />
+                                        <StudentChip icon={TrendingUp} label="Career Growth" tone="green" />
+                                        <StudentChip icon={Sparkles} label="New Opportunities" tone="purple" />
                                     </div>
                                 </div>
-                                {/* Illustration */}
-                                <div className="hidden sm:flex shrink-0 w-36 h-28 lg:w-48 lg:h-36 items-end justify-center relative">
-                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary-100 to-sky-100 dark:from-primary-900/40 dark:to-sky-900/30" />
+                                <div className="hidden sm:flex shrink-0 w-36 h-28 lg:w-48 lg:h-36 items-center justify-center relative">
+                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-500/20 to-violet-500/20" />
                                     <svg viewBox="0 0 200 160" className="relative w-full h-full" aria-hidden>
-                                        <ellipse cx="100" cy="140" rx="70" ry="10" fill="#00a2e5" opacity="0.15" />
-                                        <rect x="55" y="70" width="90" height="55" rx="10" fill="#00a2e5" opacity="0.9" />
-                                        <rect x="70" y="55" width="60" height="20" rx="6" fill="#098855" />
+                                        <ellipse cx="100" cy="140" rx="70" ry="10" fill="#3B82F6" opacity="0.2" />
+                                        <rect x="55" y="70" width="90" height="55" rx="10" fill="#3B82F6" opacity="0.85" />
+                                        <rect x="70" y="55" width="60" height="20" rx="6" fill="#8B5CF6" />
                                         <circle cx="100" cy="40" r="18" fill="#f5d0b0" />
                                         <path d="M82 40c0-10 8-18 18-18s18 8 18 18" fill="#1e3a5f" />
                                         <rect x="85" y="85" width="30" height="20" rx="3" fill="white" opacity="0.85" />
-                                        <circle cx="160" cy="50" r="8" fill="#f58020" opacity="0.8" />
-                                        <circle cx="40" cy="60" r="6" fill="#00a2e5" opacity="0.5" />
                                     </svg>
-                                </div>
-                                {/* Mobile compact illustration */}
-                                <div className="sm:hidden absolute right-3 top-3 w-16 h-16 rounded-xl bg-gradient-to-br from-primary-100 to-sky-100 dark:from-primary-900/40 dark:to-sky-900/30 flex items-center justify-center opacity-90">
-                                    <User className="w-8 h-8 text-primary-500" />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Profile Content */}
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
-                                {/* Top Horizontal Section - Profile Overview */}
-                                <div className="xl:col-span-4">
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border-2 border-primary-300 dark:border-primary-700/50 p-3 lg:p-4 hover:shadow-md transition-all duration-300">
-                                        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 lg:gap-4">
-                                            {/* Profile Avatar & Info */}
-                                            <div className="text-center lg:text-left">
-                                                <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto lg:mx-0 mb-2 relative">
-                                                    <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                                                        {profile.profile_picture ? (
-                                                            <img
-                                                                src={profile.profile_picture}
-                                                                alt={profile.name}
-                                                                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <span className="text-xl lg:text-2xl font-bold text-white">
-                                                                {getInitials(profile.name)}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <button
-                                                        className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
-                                                        onClick={() => {
-                                                            setActiveTab('social');
-                                                            setEditing('social');
-                                                        }}
-                                                        title="Change profile picture (Social tab)"
-                                                    >
-                                                        <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
-                                                    </button>
+                        <div className="space-y-3 sm:space-y-4">
+                            <ProfileSummaryCard
+                                profile={profile}
+                                onEditProfile={() => {
+                                    setActiveTab('basic')
+                                    setEditing('basic')
+                                }}
+                                onChangePhoto={() => {
+                                    setActiveTab('social')
+                                    setEditing('social')
+                                }}
+                            />
 
-                                                </div>
-                                                <h3 className="text-sm lg:text-base font-semibold text-gray-900 dark:text-white mb-1">
-                                                    {profile.name}
-                                                </h3>
-                                                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                                    {profile.institution || 'University Student'}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {profile.degree} • {profile.branch}
-                                                </p>
-                                            </div>
-
-                                            {/* Profile Stats */}
-                                            <div className="flex-1">
-                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 mb-3 lg:mb-4">
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Email</span>
-                                                        {(profile.email_verified || !!profile.email) ? (
-                                                            <div className="p-1 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Phone</span>
-                                                        {(profile.phone_verified || !!profile.phone) ? (
-                                                            <div className="p-1 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Photo</span>
-                                                        {profile.profile_picture ? (
-                                                            <div className="p-1 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                        <span className="text-xs text-gray-700 dark:text-gray-300">Resume</span>
-                                                        {profile.resume ? (
-                                                            <div className="p-1 bg-green-500 rounded-full">
-                                                                <CheckCircle className="w-3 h-3 text-white" />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                                <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
+                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
                                 {/* Profile Completion Card */}
                                 <div className="xl:col-span-1 order-1">
                                     <ProfileCompletion
@@ -481,24 +379,28 @@ export function StudentProfile() {
                                 </div>
 
                                 {/* Tab-based Profile Sections */}
-                                <div className="xl:col-span-3">
-                                    {/* Tab Navigation */}
-                                    <div className="mb-6">
-                                        <div className="border-b border-gray-200 dark:border-gray-700">
-                                            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                                <div className="xl:col-span-3 order-2">
+                                    {/* Tab Navigation — underline style matching reference */}
+                                    <div className="mb-3 sm:mb-4">
+                                        <div className="border-b border-gray-200 dark:border-white/10 overflow-x-auto scrollbar-none">
+                                            <nav className="flex gap-1 sm:gap-4 min-w-max">
                                                 {tabs.map((tab) => (
                                                     <button
                                                         key={tab.id}
+                                                        type="button"
                                                         onClick={() => setActiveTab(tab.id)}
                                                         className={cn(
-                                                            "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
+                                                            'flex items-center gap-1.5 py-2.5 px-1 sm:px-2 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0 relative',
                                                             activeTab === tab.id
-                                                                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 shadow-sm'
-                                                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700/50'
+                                                                ? 'text-blue-500'
+                                                                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
                                                         )}
                                                     >
                                                         <tab.icon className="w-3.5 h-3.5" />
                                                         <span>{tab.label}</span>
+                                                        {activeTab === tab.id && (
+                                                            <span className="absolute left-0 right-0 -bottom-px h-0.5 rounded-full bg-blue-500" />
+                                                        )}
                                                     </button>
                                                 ))}
                                             </nav>
