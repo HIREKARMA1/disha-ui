@@ -178,3 +178,15 @@ export function useJobCategories(options: UseLookupOptions = {}) {
   )
   return useLookup(fetchFn, { enabled, refetchOnMount })
 }
+
+/**
+ * Hook for fetching location preferences
+ */
+export function useLocationPreferences(options: UseLookupOptions = {}) {
+  const { skip = 0, limit = 100, enabled = true, refetchOnMount = true } = options
+  const fetchFn = useCallback(
+    () => lookupService.getLocationPreferences({ skip, limit }),
+    [skip, limit]
+  )
+  return useLookup(fetchFn, { enabled, refetchOnMount })
+}

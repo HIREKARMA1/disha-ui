@@ -59,6 +59,7 @@ const BULK_EMAIL_SELECT_CONTENT_PROPS = {
     sideOffset: 4,
     collisionPadding: 16,
     onOpenAutoFocus: (event: Event) => event.preventDefault(),
+    onCloseAutoFocus: (event: Event) => event.preventDefault(),
 }
 
 function roleIcon(userType?: string | null) {

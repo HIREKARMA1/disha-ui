@@ -77,7 +77,7 @@ export function UniversityLockScreen({ isOpen, universityName, email }: Universi
 
     // Admin contact information
     const adminEmail = "info@hirekarma.in"
-    const adminPhone = "+91  90786 83876"
+    const adminPhone = "+91 91243 64764"
 
     const handleContactClick = () => {
         window.location.href = `mailto:${adminEmail}?subject=Access Request for ${universityName || 'University Dashboard'}`

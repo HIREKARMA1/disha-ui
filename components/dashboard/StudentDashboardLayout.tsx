@@ -9,6 +9,7 @@ import { AnalyticsChart } from './AnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { RecentActivities } from './RecentActivities'
 import { StudentLockScreen } from './StudentLockScreen'
+import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
@@ -92,7 +93,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className={`p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
+                <main className={`p-6 pb-28 lg:pb-6 min-h-screen relative overflow-visible ${shouldLock ? 'pointer-events-none' : ''}`}>
                     {children ? (
                         <>
                             <div className={shouldLock ? 'opacity-40' : ''}>
@@ -109,15 +110,20 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                         </>
                     ) : (
                         <>
+                            <EventPopup />
                             <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />
+                                {/* Mobile only: surface Upcoming Events above other widgets */}
+                                <div className="md:hidden">
+                                    <AdvertisementBanner />
+                                </div>
                                 <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
                                     <div className="xl:col-span-7 space-y-6">
                                         <AnalyticsChart />
                                         <RecentActivities />
                                     </div>
-                                    <div className="xl:col-span-3">
+                                    <div className="xl:col-span-3 hidden md:block">
                                         <AdvertisementBanner />
                                     </div>
                                 </div>

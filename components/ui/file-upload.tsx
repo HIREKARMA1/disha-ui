@@ -90,7 +90,7 @@ export function FileUpload({
 
         // Check file size
         if (file.size > maxSize * 1024 * 1024) {
-            setError(`File size must be less than ${maxSize}MB`)
+            setError(`File size must be less than ${maxSize} MB`)
             return
         }
 
@@ -141,9 +141,9 @@ export function FileUpload({
     }
 
     const getAcceptedTypesText = () => {
-        if (type === 'image') return 'PNG, JPG, JPEG up to 5MB'
-        if (type === 'document') return 'PDF only up to 5MB'
-        return 'PDF only up to 5MB'
+        if (type === 'image') return `PNG, JPG, JPEG up to ${maxSize} MB`
+        if (type === 'document') return `PDF only up to ${maxSize} MB`
+        return `PDF only up to ${maxSize} MB`
     }
 
     return (

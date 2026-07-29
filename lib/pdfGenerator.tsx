@@ -1,8 +1,24 @@
 import React from 'react'
-import { Document, Page, Text, View, Image, StyleSheet, pdf } from '@react-pdf/renderer'
+import { Document, Page, Text, View, Image, StyleSheet, pdf, Font } from '@react-pdf/renderer'
 import { config } from './config'
 import { formatEducationFieldForDisplay, parseEducationField } from './parseEducationField'
 import { formatSalaryRange } from './currency'
+
+// Unicode font so ₹ renders correctly (Helvetica maps it to ¹).
+let pdfFontsRegistered = false
+function ensurePdfFontsRegistered() {
+  if (pdfFontsRegistered) return
+  const base =
+    typeof window !== 'undefined' ? `${window.location.origin}/fonts` : '/fonts'
+  Font.register({
+    family: 'NotoSans',
+    fonts: [
+      { src: `${base}/NotoSans-Regular.ttf`, fontWeight: 'normal' },
+      { src: `${base}/NotoSans-Bold.ttf`, fontWeight: 'bold' },
+    ],
+  })
+  pdfFontsRegistered = true
+}
 
 interface JobData {
   id: string
@@ -65,7 +81,7 @@ const styles = StyleSheet.create({
     paddingBottom: 60, // Space for footer + extra space before page break
     paddingHorizontal: 25,
     fontSize: 12,
-    fontFamily: 'Helvetica',
+    fontFamily: 'NotoSans',
   },
   header: {
     position: 'absolute',
@@ -653,6 +669,8 @@ const JobDescriptionDocument = ({
 export class JobDescriptionPDFGenerator {
   async generatePDF(job: JobData, corporateProfile?: CorporateProfile): Promise<Blob> {
     try {
+      ensurePdfFontsRegistered()
+
       // Load company logo if available
       let logoDataUrl: string | null = null
       if (corporateProfile?.company_logo) {

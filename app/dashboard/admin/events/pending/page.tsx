@@ -1,12 +1,16 @@
 "use client"
 
-import { AdminEventLayout } from '@/components/admin/AdminEventLayout'
+import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { PendingApprovalEvents } from '@/components/admin/PendingApprovalEvents'
+import { EventManagementSubNav } from '@/components/dashboard/admin/events/EventManagementNav'
 
 export default function PendingApprovalPage() {
-    return (
-        <AdminEventLayout>
-            <PendingApprovalEvents />
-        </AdminEventLayout>
-    )
+  return (
+    <AdminDashboardLayout>
+      <div className="space-y-6">
+        <EventManagementSubNav />
+        <PendingApprovalEvents />
+      </div>
+    </AdminDashboardLayout>
+  )
 }

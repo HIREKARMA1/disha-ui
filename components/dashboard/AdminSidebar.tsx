@@ -23,7 +23,8 @@ import {
     Briefcase,
     Brain,
     Library,
-    Mail
+    Mail,
+    MessageCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -32,12 +33,7 @@ import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
 import { adminProfileService } from '@/services/adminProfileService'
-
-function navItemIsActive(pathname: string, href: string) {
-    if (pathname === href) return true
-    if (href === '/dashboard/admin') return false
-    return pathname.startsWith(`${href}/`)
-}
+import { navItemIsActive } from '@/lib/adminNav'
 
 interface NavItem {
     label: string
@@ -123,7 +119,7 @@ const navItems: NavItem[] = [
         href: '/dashboard/admin/events',
         icon: Calendar,
         description: 'Manage events',
-        color: 'from-rose-500 to-pink-600'
+        color: 'from-primary-500 to-secondary-500'
     },
     {
         label: 'Bulk Email',
@@ -131,6 +127,13 @@ const navItems: NavItem[] = [
         icon: Mail,
         description: 'Send bulk emails to users',
         color: 'from-sky-500 to-blue-600'
+    },
+    {
+        label: 'Bulk WhatsApp',
+        href: '/dashboard/admin/bulk-whatsapp',
+        icon: MessageCircle,
+        description: 'Send bulk WhatsApp messages',
+        color: 'from-emerald-500 to-green-600'
     },
     {
         label: 'System Monitor',
