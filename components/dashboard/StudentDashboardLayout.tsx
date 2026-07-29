@@ -9,6 +9,7 @@ import { AnalyticsChart } from './AnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { RecentActivities } from './RecentActivities'
 import { StudentLockScreen } from './StudentLockScreen'
+import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
@@ -109,6 +110,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                         </>
                     ) : (
                         <>
+                            <EventPopup />
                             <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />

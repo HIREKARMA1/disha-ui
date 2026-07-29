@@ -8,6 +8,7 @@ import { CorporateDashboardStats } from './CorporateDashboardStats'
 import { CorporateAnalyticsChart } from './CorporateAnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { CorporateRecentActivities } from './CorporateRecentActivities'
+import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
@@ -68,6 +69,7 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
                         children
                     ) : (
                         <div className="space-y-6">
+                            <EventPopup />
                             {/* Loading State */}
                             {isLoading && (
                                 <div className="flex items-center justify-center py-12">
