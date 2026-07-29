@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { markEventPopupLoginPending, clearEventPopupState } from '@/lib/eventPopupStorage'
 
 export interface User {
     id: string
@@ -96,6 +97,7 @@ export function useAuth() {
         localStorage.setItem('access_token', accessToken)
         localStorage.setItem('refresh_token', refreshToken)
         localStorage.setItem('user_data', JSON.stringify(userData))
+        markEventPopupLoginPending()
         setUser(userData)
         setIsAuthenticated(true)
     }
@@ -106,6 +108,7 @@ export function useAuth() {
         localStorage.removeItem('user_data')
         localStorage.removeItem('temp_user_data')
         localStorage.removeItem('temp_user_type')
+        clearEventPopupState()
         setUser(null)
         setIsAuthenticated(false)
         router.push('/auth/login')
