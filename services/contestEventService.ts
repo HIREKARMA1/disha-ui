@@ -53,6 +53,12 @@ export class ContestEventService {
     return response.data
   }
 
+  /** Admin preview by slug — works for draft/closed/cancelled/reg-closed events. */
+  async getAdminEventBySlug(slug: string): Promise<ContestEventDetail> {
+    const response = await apiClient.client.get(`/events/contests/by-slug/${encodeURIComponent(slug)}`)
+    return response.data
+  }
+
   async createEvent(data: ContestEventCreatePayload): Promise<ContestEventDetail> {
     const response = await apiClient.client.post('/events/contests', data)
     return response.data

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
+import { useAuth } from '@/hooks/useAuth'
 
 const SECTIONS = [
   { id: 'description', label: 'Description', shortLabel: 'Description' },
@@ -51,6 +52,8 @@ interface EventDetailPageProps {
 
 export function EventDetailPage({ slug }: EventDetailPageProps) {
   const router = useRouter()
+  const { user, isLoading: authLoading } = useAuth()
+  const isAdmin = user?.user_type === 'admin'
   const [event, setEvent] = useState<ContestEventDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
@@ -59,13 +62,51 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
 
   useEffect(() => {
-    const visitorId = localStorage.getItem('event_visitor_id') || crypto.randomUUID()
-    localStorage.setItem('event_visitor_id', visitorId)
-    contestEventService.getEventBySlug(slug, visitorId)
-      .then(setEvent)
-      .catch(() => setEvent(null))
-      .finally(() => setLoading(false))
-  }, [slug])
+    // Wait for auth so admins load via unrestricted admin API (draft/closed/cancelled/reg-closed).
+    if (authLoading) return
+
+    let cancelled = false
+    setLoading(true)
+
+    const loadEvent = async () => {
+      try {
+        if (isAdmin) {
+          const adminEvent = await contestEventService.getAdminEventBySlug(slug)
+          if (!cancelled) setEvent(adminEvent)
+          return
+        }
+        const visitorId = localStorage.getItem('event_visitor_id') || crypto.randomUUID()
+        localStorage.setItem('event_visitor_id', visitorId)
+        const publicEvent = await contestEventService.getEventBySlug(slug, visitorId)
+        if (!cancelled) setEvent(publicEvent)
+      } catch {
+        // Admin fallback: public slug may 404 for unpublished; admin by-slug should succeed.
+        if (!isAdmin) {
+          try {
+            const token = localStorage.getItem('access_token')
+            if (token) {
+              const payload = JSON.parse(atob(token.split('.')[1]))
+              if (payload?.user_type === 'admin') {
+                const adminEvent = await contestEventService.getAdminEventBySlug(slug)
+                if (!cancelled) setEvent(adminEvent)
+                return
+              }
+            }
+          } catch {
+            // ignore and show not found
+          }
+        }
+        if (!cancelled) setEvent(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void loadEvent()
+    return () => {
+      cancelled = true
+    }
+  }, [slug, authLoading, isAdmin])
 
   // Register Now from listing → land on details with register CTA in view
   useEffect(() => {
@@ -138,8 +179,12 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     try {
       await contestEventService.registerForEvent(slug)
       toast.success('Successfully registered for the event!')
-      const visitorId = localStorage.getItem('event_visitor_id') || undefined
-      const updated = await contestEventService.getEventBySlug(slug, visitorId)
+      const updated = isAdmin
+        ? await contestEventService.getAdminEventBySlug(slug)
+        : await contestEventService.getEventBySlug(
+            slug,
+            localStorage.getItem('event_visitor_id') || undefined
+          )
       setEvent(updated)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Registration failed'
