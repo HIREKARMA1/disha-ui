@@ -3,8 +3,20 @@ import { apiClient } from '@/lib/api'
 export interface DashboardStats {
     totalJobs: number
     appliedJobs: number
+    appliedToOpenJobs: number
     selected: number
+    offered: number
     rejected: number
+    pending: number
+    applicationRate: number
+    selectionRate: number
+    offerRate: number
+    rejectionRate: number
+}
+
+function clampPct(value: unknown): number {
+    const n = typeof value === 'number' ? value : Number(value) || 0
+    return Math.min(100, Math.max(0, n))
 }
 
 export interface JobApplication {
@@ -36,24 +48,35 @@ export interface JobSearchResponse {
 class DashboardService {
     async getDashboardStats(): Promise<DashboardStats> {
         try {
-            // Check if user is authenticated
             if (!apiClient.isAuthenticated()) {
                 throw new Error('User not authenticated. Please log in.')
             }
 
-            // Get student dashboard stats from the dedicated endpoint
             const response = await apiClient.getStudentDashboard()
-            
+            const totalJobs = response.total_jobs || 0
+            const appliedJobs = response.applied_jobs || 0
+            const appliedToOpenJobs = response.applied_to_open_jobs ?? 0
+            const selected = response.selected || 0
+            const offered = response.offered ?? 0
+            const rejected = response.rejected || 0
+            const pending = response.pending ?? Math.max(0, appliedJobs - selected - rejected)
+
             return {
-                totalJobs: response.total_jobs || 0,
-                appliedJobs: response.applied_jobs || 0,
-                selected: response.selected || 0,
-                rejected: response.rejected || 0
+                totalJobs,
+                appliedJobs,
+                appliedToOpenJobs,
+                selected,
+                offered,
+                rejected,
+                pending,
+                applicationRate: clampPct(response.application_rate),
+                selectionRate: clampPct(response.selection_rate),
+                offerRate: clampPct(response.offer_rate),
+                rejectionRate: clampPct(response.rejection_rate),
             }
         } catch (error: any) {
             console.error('Error fetching dashboard stats:', error)
             
-            // Handle specific error cases
             if (error.response?.status === 401) {
                 throw new Error('Authentication failed. Please log in again.')
             } else if (error.response?.status === 403) {

@@ -17,6 +17,12 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
+import {
+  buildEventRegisterRedirect,
+  clearPendingEventRegistration,
+  peekPendingEventRegistration,
+  storePendingEventRegistration,
+} from '@/lib/pendingEventRegistration'
 
 const SECTIONS = [
   { id: 'description', label: 'Description', shortLabel: 'Description' },
@@ -60,6 +66,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const [activeSection, setActiveSection] = useState('description')
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
+  const autoRegisterAttempted = useRef(false)
 
   useEffect(() => {
     // Wait for auth so admins load via unrestricted admin API (draft/closed/cancelled/reg-closed).
@@ -125,6 +132,147 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     return () => window.clearTimeout(timer)
   }, [event])
 
+  const handleRegister = useCallback(async () => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      const redirectPath = buildEventRegisterRedirect(slug, event?.id)
+      storePendingEventRegistration(slug, event?.id)
+      localStorage.setItem('redirect_after_login', redirectPath)
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+      return
+    }
+    if (event?.registration_external_url) {
+      clearPendingEventRegistration()
+      window.open(event.registration_external_url, '_blank')
+      return
+    }
+    if (event?.is_registered) {
+      clearPendingEventRegistration()
+      toast.success('You are already registered for this event.')
+      return
+    }
+    setRegistering(true)
+    try {
+      await contestEventService.registerForEvent(slug)
+      clearPendingEventRegistration()
+      toast.success('Successfully registered for the event!')
+      // Immediate UI update — don't wait for refetch to disable Register Now
+      setEvent((prev) =>
+        prev
+          ? {
+              ...prev,
+              is_registered: true,
+              registration_status: 'registered',
+              participant_count: (prev.participant_count || 0) + 1,
+            }
+          : prev
+      )
+      // Clean auto-register query params so refresh does not re-trigger
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('register')
+        url.searchParams.delete('action')
+        url.searchParams.delete('eventId')
+        window.history.replaceState({}, '', url.pathname + (url.hash || ''))
+      }
+      try {
+        const updated = isAdmin
+          ? await contestEventService.getAdminEventBySlug(slug)
+          : await contestEventService.getEventBySlug(
+              slug,
+              localStorage.getItem('event_visitor_id') || undefined
+            )
+        setEvent({
+          ...updated,
+          is_registered: true,
+          registration_status: updated.registration_status || 'registered',
+        })
+      } catch {
+        // Keep optimistic registered state if refresh fails
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { detail?: string }; status?: number } })?.response?.data
+          ?.detail || 'Registration failed'
+      const status = (err as { response?: { status?: number } })?.response?.status
+      // Already registered — treat as success for seamless flow
+      if (
+        typeof msg === 'string' &&
+        (msg.toLowerCase().includes('already registered') || status === 409)
+      ) {
+        clearPendingEventRegistration()
+        toast.success('You are already registered for this event.')
+        setEvent((prev) =>
+          prev ? { ...prev, is_registered: true, registration_status: 'registered' } : prev
+        )
+        try {
+          const updated = isAdmin
+            ? await contestEventService.getAdminEventBySlug(slug)
+            : await contestEventService.getEventBySlug(
+                slug,
+                localStorage.getItem('event_visitor_id') || undefined
+              )
+          setEvent({
+            ...updated,
+            is_registered: true,
+            registration_status: updated.registration_status || 'registered',
+          })
+        } catch {
+          // ignore refresh failure
+        }
+        return
+      }
+      // Session expired — re-store intent and send to login
+      if (status === 401) {
+        const redirectPath = buildEventRegisterRedirect(slug, event?.id)
+        storePendingEventRegistration(slug, event?.id)
+        localStorage.setItem('redirect_after_login', redirectPath)
+        router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+        return
+      }
+      toast.error(typeof msg === 'string' ? msg : 'Registration failed')
+    } finally {
+      setRegistering(false)
+    }
+  }, [slug, event, isAdmin, router])
+
+  // After login: auto-trigger registration when ?register=1&action=register (or pending storage)
+  useEffect(() => {
+    if (!event || authLoading || registering || autoRegisterAttempted.current) return
+    if (typeof window === 'undefined') return
+
+    const token = localStorage.getItem('access_token')
+    const params = new URLSearchParams(window.location.search)
+    const pending = peekPendingEventRegistration()
+    const wantsRegister =
+      (params.get('register') === '1' && params.get('action') === 'register') ||
+      (params.get('register') === '1' && !!pending && pending.slug === slug) ||
+      (!!pending && pending.slug === slug && pending.action === 'register')
+
+    if (!wantsRegister) return
+
+    // Guest with register intent → login, then return here to auto-register
+    if (!token) {
+      const redirectPath = buildEventRegisterRedirect(slug, event.id)
+      storePendingEventRegistration(slug, event.id)
+      localStorage.setItem('redirect_after_login', redirectPath)
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+      return
+    }
+
+    if (event.is_registered) {
+      clearPendingEventRegistration()
+      return
+    }
+    if (!event.registration_is_open && !event.registration_external_url) {
+      clearPendingEventRegistration()
+      return
+    }
+
+    autoRegisterAttempted.current = true
+    void handleRegister()
+  }, [event, authLoading, registering, slug, handleRegister, router])
+
   // Hash navigation on load
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
@@ -163,36 +311,6 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       setActiveSection(id)
     }
   }, [])
-
-  const handleRegister = async () => {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      localStorage.setItem('redirect_after_login', `/events/${slug}?register=1`)
-      router.push(`/auth/login?redirect=${encodeURIComponent(`/events/${slug}?register=1`)}`)
-      return
-    }
-    if (event?.registration_external_url) {
-      window.open(event.registration_external_url, '_blank')
-      return
-    }
-    setRegistering(true)
-    try {
-      await contestEventService.registerForEvent(slug)
-      toast.success('Successfully registered for the event!')
-      const updated = isAdmin
-        ? await contestEventService.getAdminEventBySlug(slug)
-        : await contestEventService.getEventBySlug(
-            slug,
-            localStorage.getItem('event_visitor_id') || undefined
-          )
-      setEvent(updated)
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Registration failed'
-      toast.error(msg)
-    } finally {
-      setRegistering(false)
-    }
-  }
 
   const handleShare = async () => {
     if (!event) return
@@ -779,7 +897,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
               <Button
                 className="h-12 flex-1 text-base font-semibold shadow-sm"
                 onClick={handleRegister}
-                disabled={registering}
+                disabled={registering || event.is_registered}
               >
                 {registering ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

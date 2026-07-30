@@ -10,6 +10,8 @@ import { useState, useEffect } from 'react'
 import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
 import { formatEducationLabel, parseEducationField } from '@/lib/parseEducationField'
 import { toast } from 'react-hot-toast'
+import { useAuth } from '@/hooks/useAuth'
+import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 
 interface Job {
     id: string
@@ -94,10 +96,17 @@ interface JobDescriptionModalProps {
 }
 
 export function JobDescriptionModal({ job, onClose, onApply, isApplying = false, showApplyButton = true, applicationStatus, hideSensitiveInfo = false }: JobDescriptionModalProps) {
+    const { user, isAuthenticated } = useAuth()
     const [corporateProfile, setCorporateProfile] = useState<CorporateProfile | null>(null)
     const [loadingCorporate, setLoadingCorporate] = useState(false)
     const [corporateError, setCorporateError] = useState<string | null>(null)
     const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
+
+    // Download PDF: management roles only (admin / corporate / university)
+    const canDownloadPdf =
+        isAuthenticated &&
+        !!user &&
+        (user.user_type === 'admin' || user.user_type === 'corporate' || user.user_type === 'university')
 
     useEffect(() => {
         const fetchCorporateProfile = async () => {
@@ -173,6 +182,10 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     }, [job.corporate_id, job.company_name, job.company_logo, job.company_website, job.company_address, job.company_description, job.contact_person])
 
     const handleDownloadPDF = async () => {
+        if (!canDownloadPdf) {
+            toast.error('You do not have permission to download this PDF.')
+            return
+        }
         setIsDownloadingPDF(true)
         try {
             // Helper function to convert education data to readable string
@@ -244,12 +257,13 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     }
 
 
-    const formatExperience = (min?: number, max?: number) => {
-        if (min === undefined && max === undefined) return 'Not specified'
-        if (min !== undefined && max !== undefined) return `${min}-${max} years`
-        if (min !== undefined) return `${min}+ years`
-        if (max !== undefined) return `Up to ${max} years`
-        return 'Not specified'
+    const formatExperience = (min?: number | null, max?: number | null) => {
+        const hasMin = min !== undefined && min !== null && !Number.isNaN(Number(min))
+        const hasMax = max !== undefined && max !== null && !Number.isNaN(Number(max))
+        if (!hasMin && !hasMax) return 'Not specified'
+        if (hasMin && hasMax) return `${min}-${max} years`
+        if (hasMin) return `${min}+ years`
+        return `Up to ${max} years`
     }
 
     const formatDate = (dateString: string) => {
@@ -303,7 +317,13 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     {/* Header */}
                     <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-2 border-b border-primary-200 dark:border-primary-700">
                         <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                            <div className="flex flex-1 items-start gap-3">
+                                <CompanyLogo
+                                    logoUrl={job.company_logo || corporateProfile?.company_logo}
+                                    companyName={job.company_name || job.corporate_name || corporateProfile?.company_name}
+                                    size="lg"
+                                />
+                                <div className="min-w-0 flex-1">
                                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{job.title}</h2>
                                 {(job.company_name || job.corporate_name) && (
                                     <p className="text-lg text-gray-600 dark:text-gray-300 flex items-center gap-2">
@@ -311,6 +331,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         {job.company_name || job.corporate_name}
                                     </p>
                                 )}
+                                </div>
                             </div>
                             <button
                                 onClick={onClose}
@@ -507,13 +528,11 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             ) : corporateProfile ? (
                                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                                     <div className="flex items-start gap-4">
-                                        {corporateProfile.company_logo && (
-                                            <img
-                                                src={corporateProfile.company_logo}
-                                                alt={corporateProfile.company_name}
-                                                className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
-                                            />
-                                        )}
+                                        <CompanyLogo
+                                            logoUrl={corporateProfile.company_logo || job.company_logo}
+                                            companyName={corporateProfile.company_name}
+                                            size="lg"
+                                        />
                                         <div className="flex-1">
                                             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                                                 {corporateProfile.company_name}
@@ -1024,6 +1043,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     <div className="bg-white dark:bg-gray-800 p-6 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col sm:flex-row gap-3 justify-end items-center">
                             <div className="flex gap-3">
+                                {canDownloadPdf && (
                                 <Button
                                     variant="outline"
                                     onClick={handleDownloadPDF}
@@ -1042,6 +1062,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         </>
                                     )}
                                 </Button>
+                                )}
                                 {showApplyButton && (
                                     <Button
                                         onClick={onApply}

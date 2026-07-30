@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, FileText, Calendar, IndianRupee, Send, Building, MapPin, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 
@@ -12,6 +13,8 @@ interface Job {
     id: string
     title: string
     company_name?: string
+    company_logo?: string
+    corporate_name?: string
     location: string | string[]
     job_type: string
     salary_min?: number
@@ -111,15 +114,21 @@ Best regards,
                 >
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-blue-200/20 dark:border-blue-500/20 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex min-w-0 items-start gap-3">
+                                <CompanyLogo
+                                    logoUrl={job.company_logo}
+                                    companyName={job.company_name || job.corporate_name}
+                                    size="md"
+                                />
+                                <div className="min-w-0">
                                 <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                                     Apply for {job.title}
                                 </h2>
                                 <div className="flex items-center gap-4 mt-2 text-gray-600 dark:text-gray-300">
                                     <div className="flex items-center gap-2">
                                         <Building className="w-4 h-4" />
-                                        <span>{job.company_name || 'Company'}</span>
+                                        <span>{job.company_name || job.corporate_name || 'Company'}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <MapPin className="w-4 h-4" />
@@ -129,6 +138,7 @@ Best regards,
                                         <Briefcase className="w-4 h-4" />
                                         <span className="capitalize">{job.job_type.replace('_', ' ')}</span>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                             <Button
