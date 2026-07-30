@@ -1,293 +1,211 @@
-"use client"
+'use client'
 
-import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, BarChart3, PieChart, Target, Users, Briefcase, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AlertCircle, Briefcase } from 'lucide-react'
 import { dashboardService, type DashboardStats } from '@/services/dashboardService'
+import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
+import { cn } from '@/lib/utils'
 
 interface AnalyticsChartProps {
-    className?: string
-}
-
-interface PieChartData {
-    label: string
-    value: number
-    color: string
-    percentage: number
+  className?: string
 }
 
 export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
-    const [stats, setStats] = useState<DashboardStats>({
-        totalJobs: 0,
-        appliedJobs: 0,
-        selected: 0,
-        rejected: 0
-    })
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const router = useRouter()
+  const [stats, setStats] = useState<DashboardStats>({
+    totalJobs: 0,
+    appliedJobs: 0,
+    selected: 0,
+    rejected: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true)
-                setError(null)
-                const dashboardStats = await dashboardService.getDashboardStats()
-                setStats(dashboardStats)
-            } catch (error: any) {
-                console.error('Failed to fetch dashboard stats:', error)
-
-                // Handle authentication errors
-                if (error.message.includes('not authenticated') || error.message.includes('Authentication failed')) {
-                    // Redirect to login
-                    router.push('/auth/login')
-                    return
-                }
-
-                setError(error.message || 'Unable to fetch analytics data. Please try again later.')
-            } finally {
-                setLoading(false)
-            }
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const dashboardStats = await dashboardService.getDashboardStats()
+        setStats(dashboardStats)
+      } catch (error: any) {
+        console.error('Failed to fetch analytics:', error)
+        if (
+          error.message?.includes('not authenticated') ||
+          error.message?.includes('Authentication failed')
+        ) {
+          router.push('/auth/login')
+          return
         }
-
-        fetchStats()
-    }, [router])
-
-    const { totalJobs, appliedJobs, selected, rejected } = stats
-
-    const applicationRate = totalJobs > 0 ? ((appliedJobs / totalJobs) * 100).toFixed(1) : '0.0'
-    const selectionRate = appliedJobs > 0 ? ((selected / appliedJobs) * 100).toFixed(1) : '0.0'
-
-    // Calculate total for pie chart
-    const totalForPie = totalJobs + appliedJobs + selected + rejected
-
-    const pieChartData: PieChartData[] = [
-        { label: 'Total Jobs', value: totalJobs, color: '#3B82F6', percentage: 100 },
-        { label: 'Applied Jobs', value: appliedJobs, color: '#10B981', percentage: totalJobs > 0 ? (appliedJobs / totalJobs) * 100 : 0 },
-        { label: 'Selected', value: selected, color: '#8B5CF6', percentage: totalJobs > 0 ? (selected / totalJobs) * 100 : 0 },
-        { label: 'Rejected', value: rejected, color: '#EF4444', percentage: totalJobs > 0 ? (rejected / totalJobs) * 100 : 0 }
-    ]
-
-    if (loading) {
-        return (
-            <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-                <div className="animate-pulse space-y-6">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[...Array(4)].map((_, index) => (
-                            <div key={index} className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        {[...Array(2)].map((_, index) => (
-                            <div key={index} className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {[...Array(2)].map((_, index) => (
-                            <div key={index} className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        )
+        setError(error.message || 'Unable to fetch analytics data.')
+      } finally {
+        setLoading(false)
+      }
     }
+    fetchStats()
+  }, [router])
 
-    if (error) {
-        return (
-            <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-                <div className="text-center">
-                    <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        Unable to Load Analytics Data
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        Please refresh the page to try again.
-                    </p>
-                </div>
-            </div>
-        )
-    }
+  const { totalJobs, appliedJobs, selected, rejected } = stats
+  const applicationRate = totalJobs > 0 ? (appliedJobs / totalJobs) * 100 : 0
+  const selectionRate = appliedJobs > 0 ? (selected / appliedJobs) * 100 : 0
 
+  const legend = [
+    { label: 'Applied', value: appliedJobs, color: '#3B82F6', pct: totalJobs > 0 ? (appliedJobs / totalJobs) * 100 : 0 },
+    { label: 'Selected', value: selected, color: '#10B981', pct: appliedJobs > 0 ? (selected / appliedJobs) * 100 : 0 },
+    { label: 'Rejected', value: rejected, color: '#EF4444', pct: appliedJobs > 0 ? (rejected / appliedJobs) * 100 : 0 },
+    { label: 'Open Jobs', value: totalJobs, color: '#8B5CF6', pct: 100 },
+  ]
+
+  const donutSegments = [
+    { value: appliedJobs, color: '#3B82F6' },
+    { value: selected, color: '#10B981' },
+    { value: rejected, color: '#EF4444' },
+    { value: Math.max(totalJobs - appliedJobs, 0), color: '#64748B' },
+  ]
+  const donutTotal = donutSegments.reduce((s, d) => s + d.value, 0) || 1
+
+  if (loading) {
     return (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Job Application Analytics
-                </h2>
-                <div className="flex items-center space-x-2">
-                    <BarChart3 className="w-5 h-5 text-gray-400" />
-                    <PieChart className="w-5 h-5 text-gray-400" />
-                </div>
-            </div>
-
-            {/* Conversion Rates */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                        <TrendingUp className="w-4 h-4 text-blue-500" />
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Application Rate</span>
-                    </div>
-                    <p className="text-lg font-bold text-blue-600">{applicationRate}%</p>
-                    <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${applicationRate}%` }}></div>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {appliedJobs} out of {totalJobs} jobs applied
-                    </p>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                        <span className="text-sm font-medium text-green-700 dark:text-green-300">Selection Rate</span>
-                    </div>
-                    <p className="text-lg font-bold text-green-600">{selectionRate}%</p>
-                    <div className="w-full bg-green-200 rounded-full h-2 mt-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: `${selectionRate}%` }}></div>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {selected} out of {appliedJobs} applications selected
-                    </p>
-                </div>
-            </div>
-
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Enhanced Bar Chart */}
-                <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Job Application Overview</h3>
-
-                    {/* Simple Horizontal Bar Chart */}
-                    <div className="space-y-4">
-                        {/* Total Jobs */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Jobs</span>
-                                <span className="text-sm font-bold text-blue-600">{totalJobs}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                                <div
-                                    className="bg-blue-500 h-3 rounded-full transition-all duration-500"
-                                    style={{ width: '100%' }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* Applied Jobs */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Applied Jobs</span>
-                                <span className="text-sm font-bold text-green-600">{appliedJobs}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                                <div
-                                    className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                                    style={{ width: totalJobs > 0 ? `${(appliedJobs / totalJobs) * 100}%` : '0%' }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* Selected */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected</span>
-                                <span className="text-sm font-bold text-purple-600">{selected}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                                <div
-                                    className="bg-purple-500 h-3 rounded-full transition-all duration-500"
-                                    style={{ width: totalJobs > 0 ? `${(selected / totalJobs) * 100}%` : '0%' }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* Rejected */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Rejected</span>
-                                <span className="text-sm font-bold text-red-600">{rejected}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                                <div
-                                    className="bg-red-500 h-3 rounded-full transition-all duration-500"
-                                    style={{ width: totalJobs > 0 ? `${(rejected / totalJobs) * 100}%` : '0%' }}
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Legend */}
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mt-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <div className="flex items-center space-x-2 justify-center sm:justify-start">
-                                <div className="w-3 h-3 bg-blue-500 rounded flex-shrink-0"></div>
-                                <span className="text-xs sm:text-sm truncate">Total Jobs</span>
-                            </div>
-                            <div className="flex items-center space-x-2 justify-center sm:justify-start">
-                                <div className="w-3 h-3 bg-green-500 rounded flex-shrink-0"></div>
-                                <span className="text-xs sm:text-sm truncate">Applied</span>
-                            </div>
-                            <div className="flex items-center space-x-2 justify-center sm:justify-start">
-                                <div className="w-3 h-3 bg-purple-500 rounded flex-shrink-0"></div>
-                                <span className="text-xs sm:text-sm truncate">Selected</span>
-                            </div>
-                            <div className="flex items-center space-x-2 justify-center sm:justify-start">
-                                <div className="w-3 h-3 bg-red-500 rounded flex-shrink-0"></div>
-                                <span className="text-xs sm:text-sm truncate">Rejected</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Enhanced Pie Chart */}
-                <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Job Application Overview</h3>
-                    <div className="flex items-center justify-center h-52">
-                        <div className="relative w-44 h-44">
-                            <svg className="w-full h-full transform -rotate-90">
-                                {pieChartData.map((item, index) => {
-                                    const total = pieChartData.reduce((sum, d) => sum + d.value, 0)
-                                    const percentage = total > 0 ? (item.value / total) * 100 : 0
-                                    const circumference = 2 * Math.PI * 75 // radius = 75
-                                    const strokeDasharray = circumference
-                                    const strokeDashoffset = circumference - (percentage / 100) * circumference
-
-                                    return (
-                                        <circle
-                                            key={item.label}
-                                            cx="88"
-                                            cy="88"
-                                            r="75"
-                                            fill="none"
-                                            stroke={item.color}
-                                            strokeWidth="20"
-                                            strokeDasharray={strokeDasharray}
-                                            strokeDashoffset={strokeDashoffset}
-                                            className="transition-all duration-1000 ease-out"
-                                        />
-                                    )
-                                })}
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-3xl font-bold text-gray-900 dark:text-white">{totalForPie}</div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                        {pieChartData.map((item) => (
-                            <div key={item.label} className="flex items-center space-x-2">
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{item.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className={cn('space-y-3', className)}>
+        <div className="h-36 rounded-2xl bg-gray-100 dark:bg-[#151b2b] animate-pulse" />
+        <div className="h-48 rounded-2xl bg-gray-100 dark:bg-[#151b2b] animate-pulse" />
+      </div>
     )
+  }
+
+  if (error) {
+    return (
+      <StudentSectionCard className={className}>
+        <div className="text-center py-6">
+          <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">Unable to load analytics</p>
+        </div>
+      </StudentSectionCard>
+    )
+  }
+
+  // Build conic-gradient for donut
+  let cursor = 0
+  const conicParts = donutSegments
+    .map((seg) => {
+      const start = cursor
+      const pct = (seg.value / donutTotal) * 100
+      cursor += pct
+      return `${seg.color} ${start}% ${cursor}%`
+    })
+    .join(', ')
+
+  return (
+    <div className={cn('space-y-3 sm:space-y-4', className)}>
+      {/* Application Analytics — progress bars */}
+      <StudentSectionCard>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+            Application Analytics
+          </h2>
+          <Link
+            href="/dashboard/student/applications"
+            className="text-xs sm:text-sm font-semibold text-blue-500 hover:text-blue-400"
+          >
+            View Details &gt;
+          </Link>
+        </div>
+
+        <div className="space-y-4">
+          <ProgressRow
+            label="Application Rate"
+            value={`${applicationRate.toFixed(1)}%`}
+            hint={`${appliedJobs} of ${totalJobs} jobs applied`}
+            percent={Math.min(applicationRate, 100)}
+            barClass="bg-blue-500"
+          />
+          <ProgressRow
+            label="Selection Rate"
+            value={`${selectionRate.toFixed(1)}%`}
+            hint={`${selected} of ${appliedJobs} applications selected`}
+            percent={Math.min(selectionRate, 100)}
+            barClass="bg-emerald-500"
+          />
+        </div>
+      </StudentSectionCard>
+
+      {/* Application Overview — donut */}
+      <StudentSectionCard>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Application Overview
+        </h2>
+        <div className="flex flex-col sm:flex-row items-center gap-5">
+          <div
+            className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full shrink-0"
+            style={{
+              background: `conic-gradient(${conicParts})`,
+            }}
+          >
+            <div className="absolute inset-[18%] rounded-full bg-white dark:bg-[#151b2b] flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                {appliedJobs}
+              </span>
+              <span className="text-[10px] uppercase tracking-wide text-gray-500">Total</span>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-2">
+            {legend.map((item) => (
+              <div key={item.label} className="flex items-center justify-between gap-2 text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-gray-600 dark:text-gray-300 truncate">{item.label}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                  <span className="font-semibold text-gray-900 dark:text-white">{item.value}</span>
+                  <span className="text-xs text-gray-500 w-12 text-right">
+                    {item.pct.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+            <div className="pt-2 flex items-center gap-1.5 text-xs text-blue-500">
+              <Briefcase className="w-3.5 h-3.5" />
+              Total Jobs: {totalJobs}
+            </div>
+          </div>
+        </div>
+      </StudentSectionCard>
+    </div>
+  )
+}
+
+function ProgressRow({
+  label,
+  value,
+  hint,
+  percent,
+  barClass,
+}: {
+  label: string
+  value: string
+  hint: string
+  percent: number
+  barClass: string
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{value}</span>
+      </div>
+      <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-all duration-700', barClass)}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{hint}</p>
+    </div>
+  )
 }

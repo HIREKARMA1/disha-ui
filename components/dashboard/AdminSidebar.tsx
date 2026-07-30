@@ -457,7 +457,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                             {getDisplayName()}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        <p className="text-xs text-gray-500 dark:text-gray-300 truncate">
                                             {getDisplayEmail()}
                                         </p>
                                     </div>

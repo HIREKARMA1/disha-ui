@@ -1,25 +1,20 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import {
     ChevronUp,
     ChevronDown,
     Eye,
     Calendar,
     Building,
-    Clock,
-    CheckCircle,
-    XCircle,
-    UserCheck,
     FileText,
     ClipboardList,
     Undo2,
 } from 'lucide-react'
-import { formatAmountINR } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { ViewAssignmentModal } from './ViewAssignmentModal'
 import { ViewApplicationDetailsModal } from '@/components/university/ViewApplicationDetailsModal'
+import { StatusBadge } from '@/components/student/ui/StatusBadge'
 import { apiClient } from '@/lib/api'
 
 interface ApplicationData {
@@ -41,10 +36,10 @@ interface ApplicationData {
     job_title?: string
     student_name?: string
     corporate_name?: string
-    creator_type?: string  // NEW: Explicit creator type from backend ("University" or "Company")
+    creator_type?: string
     is_university_created?: boolean
-    can_update_status?: boolean  // NEW: Whether current university can update this application
-    has_assignment?: boolean  // NEW: Whether this job has practice assignments
+    can_update_status?: boolean
+    has_assignment?: boolean
 }
 
 interface StudentApplicationTableProps {
@@ -78,75 +73,54 @@ export function StudentApplicationTable({
     onViewMessages,
     onStatusUpdate,
     pagination,
-    onPageChange
+    onPageChange,
 }: StudentApplicationTableProps) {
-    const [hoveredRow, setHoveredRow] = useState<string | null>(null)
     const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
     const [selectedApplication, setSelectedApplication] = useState<ApplicationData | null>(null)
     const [submittedJobModules, setSubmittedJobModules] = useState<Map<string, boolean>>(new Map())
     const [showApplicationDetailsModal, setShowApplicationDetailsModal] = useState(false)
     const [selectedApplicationForDetails, setSelectedApplicationForDetails] = useState<ApplicationData | null>(null)
 
-    // Fetch modules for on-campus jobs and check submission status
     useEffect(() => {
         const checkSubmissions = async () => {
-            // Get submitted modules from localStorage
             const submittedModulesStr = localStorage.getItem('submitted_practice_modules')
-            if (!submittedModulesStr) {
-                return
-            }
+            if (!submittedModulesStr) return
 
             try {
                 const submittedModuleIds = JSON.parse(submittedModulesStr) as string[]
-                if (submittedModuleIds.length === 0) {
-                    return
-                }
+                if (submittedModuleIds.length === 0) return
 
-                // Find all on-campus jobs with assignments
                 const onCampusJobs = applications.filter(
-                    app => (app.creator_type === "University" || app.is_university_created === true) && app.has_assignment
+                    (app) =>
+                        (app.creator_type === 'University' || app.is_university_created === true) &&
+                        app.has_assignment
                 )
 
-                // Check each job's modules
                 const submissionStatus = new Map<string, boolean>()
                 for (const job of onCampusJobs) {
                     try {
-                        // Fetch modules for this job
                         const modules = await apiClient.getPracticeModulesByJobId(job.job_id)
-                        
-                        // Check if any module for this job is submitted
-                        const hasSubmittedModule = modules.some((module: any) => 
+                        const hasSubmittedModule = modules.some((module: any) =>
                             submittedModuleIds.includes(module.id)
                         )
-                        
                         submissionStatus.set(job.job_id, hasSubmittedModule)
-                    } catch (error) {
-                        console.error(`Error checking modules for job ${job.job_id}:`, error)
+                    } catch {
                         submissionStatus.set(job.job_id, false)
                     }
                 }
-
                 setSubmittedJobModules(submissionStatus)
             } catch (error) {
                 console.error('Error checking submitted modules:', error)
             }
         }
 
-        if (applications.length > 0) {
-            checkSubmissions()
-        }
+        if (applications.length > 0) checkSubmissions()
     }, [applications])
 
-    // Check if exam is submitted for on-campus jobs
     const checkExamSubmitted = (application: ApplicationData): boolean => {
-        // Only check for on-campus features (university-created jobs)
-        const isOnCampus = application.creator_type === "University" || application.is_university_created === true
-        
-        if (!isOnCampus || !application.has_assignment) {
-            return false
-        }
-
-        // Check cached submission status
+        const isOnCampus =
+            application.creator_type === 'University' || application.is_university_created === true
+        if (!isOnCampus || !application.has_assignment) return false
         return submittedJobModules.get(application.job_id) || false
     }
 
@@ -160,57 +134,17 @@ export function StudentApplicationTable({
         setShowApplicationDetailsModal(true)
     }
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'applied':
-                return <Clock className="w-4 h-4 text-blue-500" />
-            case 'shortlisted':
-                return <UserCheck className="w-4 h-4 text-purple-500" />
-            case 'selected':
-                return <CheckCircle className="w-4 h-4 text-green-500" />
-            case 'rejected':
-                return <XCircle className="w-4 h-4 text-red-500" />
-            case 'pending':
-                return <Clock className="w-4 h-4 text-yellow-500" />
-            case 'withdrawn':
-                return <Undo2 className="w-4 h-4 text-gray-500" />
-            default:
-                return <FileText className="w-4 h-4 text-gray-500" />
-        }
-    }
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'applied':
-                return 'text-blue-600 dark:text-blue-400'
-            case 'shortlisted':
-                return 'text-purple-600 dark:text-purple-400'
-            case 'selected':
-                return 'text-green-600 dark:text-green-400'
-            case 'rejected':
-                return 'text-red-600 dark:text-red-400'
-            case 'pending':
-                return 'text-yellow-600 dark:text-yellow-400'
-            case 'withdrawn':
-                return 'text-gray-600 dark:text-gray-400'
-            default:
-                return 'text-gray-600 dark:text-gray-400'
-        }
-    }
-
     const formatDate = (dateString: string) => {
         try {
-            return new Date(dateString).toLocaleDateString('en-US', {
-                year: 'numeric',
+            return new Date(dateString).toLocaleDateString('en-IN', {
+                day: 'numeric',
                 month: 'short',
-                day: 'numeric'
+                year: '2-digit',
             })
         } catch {
-            return 'Invalid Date'
+            return '—'
         }
     }
-
-    const formatSalary = formatAmountINR
 
     const canWithdraw = (status: string) => ['applied', 'shortlisted', 'pending'].includes(status)
 
@@ -236,23 +170,30 @@ export function StudentApplicationTable({
 
     const renderApplicationActions = (
         application: ApplicationData,
-        opts?: { showLabels?: boolean; fullWidth?: boolean }
+        opts?: { showLabels?: boolean; fullWidth?: boolean; compact?: boolean }
     ) => {
         const showLabels = opts?.showLabels ?? false
         const fullWidth = opts?.fullWidth ?? false
+        const compact = opts?.compact ?? false
         const { showWithdraw, showMessages, showOfferLetter, showStatusPlaceholder } =
             getActionFlags(application)
 
         const btnClass = fullWidth
             ? 'flex w-full items-center justify-center gap-2'
-            : 'flex items-center gap-1 shrink-0'
+            : compact
+                ? 'flex items-center gap-0.5 shrink-0 h-7 px-2 text-[10px] rounded-md'
+                : 'flex items-center gap-1 shrink-0'
+
+        const iconClass = compact ? 'w-3 h-3' : 'w-4 h-4'
 
         return (
             <div
                 className={
                     fullWidth
                         ? 'flex w-full flex-col gap-2'
-                        : 'inline-flex items-center gap-2 flex-wrap'
+                        : compact
+                            ? 'flex items-center gap-1 flex-wrap'
+                            : 'inline-flex items-center gap-2 flex-wrap'
                 }
             >
                 {onStatusUpdate && (
@@ -264,7 +205,7 @@ export function StudentApplicationTable({
                             className={btnClass}
                             title="View Application Details"
                         >
-                            <Eye className="w-4 h-4" />
+                            <Eye className={iconClass} />
                             <span>View</span>
                         </Button>
                     ) : (
@@ -275,8 +216,8 @@ export function StudentApplicationTable({
                             className={btnClass}
                             title={application.can_update_status ? "Update Application Status" : "View Application Details"}
                         >
-                            <Eye className="w-4 h-4" />
-                            {fullWidth && <span>View</span>}
+                            <Eye className={iconClass} />
+                            {(fullWidth || showLabels) && <span>View</span>}
                         </Button>
                     )
                 )}
@@ -298,7 +239,7 @@ export function StudentApplicationTable({
                                 className={btnClass}
                                 title="View Application Details"
                             >
-                                <Eye className="w-4 h-4" />
+                                <Eye className={iconClass} />
                                 <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Details</span>
                             </Button>
                         ) : (
@@ -310,7 +251,7 @@ export function StudentApplicationTable({
                                     className={`${btnClass} text-primary-600 hover:text-primary-700 border-primary-600 hover:border-primary-700`}
                                     title="View Practice Assignment"
                                 >
-                                    <ClipboardList className="w-4 h-4" />
+                                    <ClipboardList className={iconClass} />
                                     <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Assignment</span>
                                 </Button>
                             )
@@ -326,7 +267,7 @@ export function StudentApplicationTable({
                         className={`${btnClass} text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 dark:text-red-400`}
                         title="Withdraw Application"
                     >
-                        <Undo2 className="w-4 h-4" />
+                        <Undo2 className={iconClass} />
                         <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>Withdraw</span>
                     </Button>
                 )}
@@ -339,7 +280,7 @@ export function StudentApplicationTable({
                         className={btnClass}
                         title="View Messages"
                     >
-                        <Eye className="w-4 h-4" />
+                        <Eye className={iconClass} />
                         {(showLabels || fullWidth) && <span>Messages</span>}
                     </Button>
                 )}
@@ -352,13 +293,13 @@ export function StudentApplicationTable({
                         className={`${btnClass} text-green-600 hover:text-green-700 border-green-600 hover:border-green-700`}
                         title="View Offer Letter"
                     >
-                        <Eye className="w-4 h-4" />
+                        <Eye className={iconClass} />
                         <span className={showLabels || fullWidth ? 'inline' : 'hidden sm:inline'}>View Offer</span>
                     </Button>
                 )}
 
                 {showStatusPlaceholder && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                    <span className={compact ? 'text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap' : 'text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap'}>
                         {application.status === 'selected'
                             ? 'Offer letter pending'
                             : application.status === 'rejected'
@@ -373,23 +314,24 @@ export function StudentApplicationTable({
     const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
         <button
             onClick={() => onSort(field)}
-            className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            className="inline-flex items-center gap-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
         >
             {children}
-            {sortBy === field && (
-                sortOrder === 'asc' ?
-                    <ChevronUp className="w-4 h-4" /> :
-                    <ChevronDown className="w-4 h-4" />
-            )}
+            {sortBy === field &&
+                (sortOrder === 'asc' ? (
+                    <ChevronUp className="w-3 h-3" />
+                ) : (
+                    <ChevronDown className="w-3 h-3" />
+                ))}
         </button>
     )
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                <div className="animate-pulse space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                <div className="animate-pulse space-y-2">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
                     ))}
                 </div>
             </div>
@@ -398,15 +340,13 @@ export function StudentApplicationTable({
 
     if (applications.length === 0) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-                <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText className="w-12 h-12 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-gray-800/50 p-10 text-center">
+                <FileText className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
                     No applications found
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    You haven't applied to any jobs yet. Start exploring job opportunities!
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Apply to jobs to see them tracked here.
                 </p>
             </div>
         )
@@ -414,75 +354,40 @@ export function StudentApplicationTable({
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-visible md:overflow-hidden h-auto min-h-fit">
-            {/* Mobile: stacked cards — all fields + actions fully visible */}
-            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700 overflow-visible">
+            {/* Mobile: compact cards */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-white/10 overflow-visible">
                 {applications.map((application) => (
                     <article
                         key={`mobile-${application.id}`}
-                        className="p-4 space-y-4 h-auto overflow-visible"
+                        className="p-2.5 space-y-2 h-auto overflow-visible"
                     >
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 shrink-0 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                        <div className="flex items-start gap-2">
+                            <div className="w-8 h-8 shrink-0 rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold flex items-center justify-center">
+                                {(application.corporate_name || 'C').charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-base text-gray-900 dark:text-white break-words">
-                                    {application.job_title || 'N/A'}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
-                                    Job ID: {application.job_id.slice(0, 8)}...
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 text-sm">
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                                    Created By
-                                </p>
-                                <div className="flex items-start gap-2">
-                                    <Building className="w-4 h-4 shrink-0 text-gray-400 mt-0.5" />
+                                <div className="flex items-start justify-between gap-1.5">
                                     <div className="min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white break-words">
-                                            {application.corporate_name || 'N/A'}
+                                        <p className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-1 leading-snug">
+                                            {application.job_title || 'N/A'}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {application.creator_type || 'N/A'}
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 truncate">
+                                            <Building className="w-2.5 h-2.5 shrink-0" />
+                                            {application.corporate_name || 'N/A'}
+                                            {application.creator_type ? ` · ${application.creator_type}` : ''}
                                         </p>
                                     </div>
+                                    <StatusBadge status={application.status} className="shrink-0 scale-90 origin-top-right" />
                                 </div>
-                            </div>
-
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                                    Status
+                                <p className="text-[9px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                    <Calendar className="w-2.5 h-2.5" />
+                                    Applied {formatDate(application.applied_at)}
                                 </p>
-                                <div className="flex items-center gap-2">
-                                    {getStatusIcon(application.status)}
-                                    <span className={`font-medium ${getStatusColor(application.status)}`}>
-                                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                                    Applied Date
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 shrink-0 text-gray-400" />
-                                    <span className="font-medium text-gray-900 dark:text-white">
-                                        {formatDate(application.applied_at)}
-                                    </span>
-                                </div>
                             </div>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2 overflow-visible">
-                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                Actions
-                            </p>
-                            {renderApplicationActions(application, { showLabels: true, fullWidth: true })}
+                        <div className="overflow-visible">
+                            {renderApplicationActions(application, { showLabels: true, fullWidth: false, compact: true })}
                         </div>
                     </article>
                 ))}
@@ -510,13 +415,9 @@ export function StudentApplicationTable({
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {applications.map((application) => (
-                            <motion.tr
+                            <tr
                                 key={application.id}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${hoveredRow === application.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                                onMouseEnter={() => setHoveredRow(application.id)}
-                                onMouseLeave={() => setHoveredRow(null)}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
@@ -547,12 +448,7 @@ export function StudentApplicationTable({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        {getStatusIcon(application.status)}
-                                        <span className={`font-medium ${getStatusColor(application.status)}`}>
-                                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                                        </span>
-                                    </div>
+                                    <StatusBadge status={application.status} />
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2">
@@ -567,7 +463,7 @@ export function StudentApplicationTable({
                                         {renderApplicationActions(application)}
                                     </div>
                                 </td>
-                            </motion.tr>
+                            </tr>
                         ))}
                     </tbody>
                 </table>
@@ -575,21 +471,24 @@ export function StudentApplicationTable({
 
             {/* Pagination */}
             {pagination.total_pages > 1 && (
-                <div className="px-4 md:px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="text-sm text-gray-700 dark:text-gray-300">
-                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} applications
+                <div className="px-2.5 md:px-6 py-2 md:py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3">
+                        <div className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300">
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                            {pagination.total} applications
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => onPageChange(pagination.page - 1)}
                                 disabled={pagination.page <= 1}
+                                className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-sm"
                             >
                                 Previous
                             </Button>
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300">
                                 Page {pagination.page} of {pagination.total_pages}
                             </span>
                             <Button
@@ -597,6 +496,7 @@ export function StudentApplicationTable({
                                 size="sm"
                                 onClick={() => onPageChange(pagination.page + 1)}
                                 disabled={pagination.page >= pagination.total_pages}
+                                className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-sm"
                             >
                                 Next
                             </Button>
@@ -605,7 +505,6 @@ export function StudentApplicationTable({
                 </div>
             )}
 
-            {/* View Assignment Modal */}
             {selectedApplication && (
                 <ViewAssignmentModal
                     isOpen={assignmentModalOpen}
@@ -615,11 +514,13 @@ export function StudentApplicationTable({
                     }}
                     jobId={selectedApplication.job_id}
                     jobTitle={selectedApplication.job_title || 'Job'}
-                    isOnCampus={selectedApplication.creator_type === "University" || selectedApplication.is_university_created === true}
+                    isOnCampus={
+                        selectedApplication.creator_type === 'University' ||
+                        selectedApplication.is_university_created === true
+                    }
                 />
             )}
 
-            {/* View Application Details Modal */}
             <ViewApplicationDetailsModal
                 isOpen={showApplicationDetailsModal}
                 onClose={() => {

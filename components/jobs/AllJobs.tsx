@@ -9,7 +9,7 @@ import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
 import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
@@ -83,6 +83,7 @@ interface JobSearchResponse {
 
 export function AllJobs() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -109,6 +110,7 @@ export function AllJobs() {
     // Filter state
     const [showFilters, setShowFilters] = useState(false)
     const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+    const [categoryChip, setCategoryChip] = useState<'recommended' | 'all' | 'open' | 'closed'>('recommended')
     const [datePostedFilter, setDatePostedFilter] = useState<'all' | '24h' | '7d' | '15d' | '30d'>('all')
     const [filters, setFilters] = useState({
         location: '',
@@ -178,6 +180,18 @@ export function AllJobs() {
         // Refetch when date posted filter changes
         fetchJobs(1)
     }, [datePostedFilter])
+
+    // Open job detail from Recommended Jobs / deep link (?jobId=)
+    useEffect(() => {
+        const jobId = searchParams?.get('jobId')
+        if (!jobId || loading || jobs.length === 0) return
+        const match = jobs.find((j) => j.id === jobId)
+        if (match) {
+            setViewJob(match)
+            // Clear query so refresh doesn't re-open forever
+            router.replace('/jobs', { scroll: false })
+        }
+    }, [searchParams, jobs, loading, router])
 
     // Search debounce could be added here, simplified for now
     const handleSearch = (e: React.FormEvent) => {
@@ -424,112 +438,126 @@ export function AllJobs() {
 
     return (
         <div className="w-full">
-            {/* Search Bar */}
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Job Opportunities
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                            Discover and apply for exciting career opportunities
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                Career Growth
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                New Opportunities
-                            </span>
-                        </div>
-                    </div>
-                </div>
+            {/* Compact header matching reference */}
+            <div className="mb-3 sm:mb-4">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    Live Jobs
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    Discover and apply to the best job opportunities.
+                </p>
             </div>
 
-            {/* Search and Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-6 p-6">
-                {/* Search Bar */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-4 lg:items-start">
+            <div className="min-w-0">
+
+            {/* Search and Filters — tight gap under hero */}
+            <div className="bg-white dark:bg-[#151b2b]/90 backdrop-blur-md rounded-xl sm:rounded-2xl border border-gray-200/70 dark:border-white/10 mb-3 sm:mb-4 p-2.5 sm:p-4 shadow-sm">
+                {/* Search row */}
+                <div className="flex gap-1.5 sm:gap-3">
+                    <div className="flex-1 relative min-w-0">
+                        <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <Input
                             type="text"
-                            placeholder="Search jobs by title, skills, or company..."
+                            placeholder="Search for jobs, roles, skills or companies..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
-                            className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
+                            className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm rounded-lg sm:rounded-xl border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f1219] focus:border-blue-500 focus:ring-blue-500/20"
                         />
                     </div>
                     <Button
+                        type="button"
                         variant="outline"
+                        size="sm"
                         onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
+                        className="lg:hidden h-9 w-9 sm:w-auto sm:px-3 rounded-lg border-gray-200 dark:border-white/10 shrink-0"
+                        aria-label="Filters"
                     >
                         <Filter className="w-4 h-4" />
-                        {showFilters ? 'Hide Filters' : 'Show Filters'}
+                        <span className="hidden sm:inline ml-1.5 text-xs">Filters</span>
                     </Button>
-                    <div className="relative">
-                        <select
-                            value={jobStatusFilter}
-                            onChange={(e) => {
-                                const newFilter = e.target.value as 'all' | 'open' | 'closed'
-                                setJobStatusFilter(newFilter)
-                            }}
-                            className="appearance-none px-2 py-2 pr-10 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10 font-medium cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
-                        >
-                            <option value="all">All Jobs</option>
-                            <option value="open">Open Jobs</option>
-                            <option value="closed">Closed Jobs</option>
-                        </select>
-                        <svg
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                    <div className="relative">
-                        <select
-                            value={datePostedFilter}
-                            onChange={(e) => {
-                                const newFilter = e.target.value as 'all' | '24h' | '7d' | '15d' | '30d'
-                                setDatePostedFilter(newFilter)
-                            }}
-                            className="appearance-none px-2 py-2 pr-10 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 text-sm h-10 font-medium cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
-                        >
-                            <option value="all">All Time</option>
-                            <option value="24h">Within 24 hours</option>
-                            <option value="7d">Within 7 days</option>
-                            <option value="15d">Within 15 days</option>
-                            <option value="30d">Within 30 days</option>
-                        </select>
-                        <svg
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
                     <Button
                         onClick={(e) => handleSearch(e)}
-                        className="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-6 h-10 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
+                        className="hidden sm:inline-flex bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 h-10 rounded-xl transition-all duration-200 shadow-md shadow-blue-500/20 shrink-0"
                     >
                         Search
                     </Button>
                 </div>
 
-                {/* Filters */}
+                {/* Category tabs */}
+                <div className="mt-2 sm:mt-3 -mx-0.5 px-0.5 overflow-x-auto scrollbar-none">
+                    <div className="flex gap-1 sm:gap-1.5 min-w-max">
+                        {[
+                            { value: 'recommended', label: 'Recommended' },
+                            { value: 'all', label: 'All Jobs' },
+                            { value: 'open', label: 'Open' },
+                            { value: 'closed', label: 'Closed' },
+                        ].map((tab) => {
+                            const isActive = categoryChip === tab.value
+                            return (
+                                <button
+                                    key={tab.value}
+                                    type="button"
+                                    onClick={() => {
+                                        setCategoryChip(tab.value as typeof categoryChip)
+                                        if (tab.value === 'recommended' || tab.value === 'all') {
+                                            setJobStatusFilter('all')
+                                        } else {
+                                            setJobStatusFilter(tab.value as 'open' | 'closed')
+                                        }
+                                    }}
+                                    className={`px-3 sm:px-3.5 py-1.5 rounded-full text-[11px] sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                                        isActive
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            )
+                        })}
+                        {[
+                            { value: 'all', label: 'Any time' },
+                            { value: '24h', label: '24h' },
+                            { value: '7d', label: '7d' },
+                            { value: '30d', label: '30d' },
+                        ].map((tab) => {
+                            const active = datePostedFilter === tab.value
+                            return (
+                                <button
+                                    key={`date-${tab.value}`}
+                                    type="button"
+                                    onClick={() => setDatePostedFilter(tab.value as 'all' | '24h' | '7d' | '15d' | '30d')}
+                                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium transition-all whitespace-nowrap ${
+                                        active
+                                            ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
+                                            : 'text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-200 dark:hover:border-white/10'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Filter toggle — mobile/tablet only; desktop uses sidebar */}
+                <div className="mt-1.5 sm:mt-2.5 flex flex-wrap items-center gap-2 lg:hidden">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="h-7 sm:h-9 rounded-lg border-gray-200 dark:border-white/10 px-2.5 sm:px-3 text-[11px] sm:text-sm shrink-0"
+                    >
+                        <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5" />
+                        {showFilters ? 'Hide' : 'Filters'}
+                    </Button>
+                </div>
+
+                {/* Filters — expandable on mobile */}
                 {showFilters && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 mt-3 border-t border-gray-200 dark:border-white/10">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Location
@@ -669,24 +697,24 @@ export function AllJobs() {
             {/* Jobs Grid */}
             {loading ? (
                 <div className="flex justify-center items-center h-64">
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-                        <p className="text-gray-500">Loading opportunities...</p>
+                        <p className="text-gray-500 dark:text-gray-300 text-sm">Loading opportunities...</p>
                     </div>
                 </div>
             ) : jobs.length === 0 ? (
-                <div className="text-center py-16">
-                    <p className="text-gray-500 text-lg">No jobs found matching your criteria.</p>
+                <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40">
+                    <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg font-medium">No jobs found matching your criteria.</p>
                     <Button
                         variant="link"
                         onClick={() => { setSearchTerm(''); fetchJobs(1) }}
-                        className="mt-2 text-primary-600"
+                        className="mt-2 text-primary-600 dark:text-primary-400"
                     >
                         Clear search
                     </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 gap-3">
                     {jobs.map((job, index) => (
                         <JobCard
                             key={job.id}
@@ -786,6 +814,108 @@ export function AllJobs() {
                     </div>
                 </div>
             )}
+
+            </div>{/* end main column */}
+
+            {/* Desktop filter sidebar */}
+            <aside className="hidden lg:block sticky top-20 self-start">
+                <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Filter Jobs</h2>
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="text-xs font-semibold text-blue-500 hover:text-blue-400"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+
+                    <div className="space-y-4 text-sm">
+                        <div>
+                            <p className="font-medium text-gray-700 dark:text-gray-200 mb-2">Job Type</p>
+                            <div className="space-y-1.5">
+                                {[
+                                    { value: '', label: 'All Types' },
+                                    { value: 'full_time', label: 'Full Time' },
+                                    { value: 'part_time', label: 'Part Time' },
+                                    { value: 'internship', label: 'Internship' },
+                                    { value: 'contract', label: 'Contract' },
+                                ].map((opt) => (
+                                    <label key={opt.value || 'all'} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="job_type_sidebar"
+                                            checked={filters.job_type === opt.value}
+                                            onChange={() => handleFilterChange('job_type', opt.value)}
+                                            className="accent-blue-500"
+                                        />
+                                        {opt.label}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="font-medium text-gray-700 dark:text-gray-200 mb-1.5 block">Location</label>
+                            <Input
+                                placeholder="City, State"
+                                value={filters.location}
+                                onChange={(e) => handleFilterChange('location', e.target.value)}
+                                className="h-9 text-sm border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f1219]"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="font-medium text-gray-700 dark:text-gray-200 mb-1.5 block">Industry</label>
+                            <select
+                                value={filters.industry}
+                                onChange={(e) => handleFilterChange('industry', e.target.value)}
+                                className="w-full h-9 px-2 text-sm rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f1219] text-gray-900 dark:text-white"
+                            >
+                                <option value="">All Industries</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Education">Education</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <p className="font-medium text-gray-700 dark:text-gray-200 mb-2">Date Posted</p>
+                            <div className="space-y-1.5">
+                                {[
+                                    { value: 'all', label: 'Anytime' },
+                                    { value: '24h', label: 'Last 24 hours' },
+                                    { value: '7d', label: 'Last 7 days' },
+                                    { value: '30d', label: 'Last 30 days' },
+                                ].map((opt) => (
+                                    <label key={opt.value} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="date_posted_sidebar"
+                                            checked={datePostedFilter === opt.value}
+                                            onChange={() => setDatePostedFilter(opt.value as typeof datePostedFilter)}
+                                            className="accent-blue-500"
+                                        />
+                                        {opt.label}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <Button
+                            type="button"
+                            onClick={(e) => handleSearch(e)}
+                            className="w-full h-10 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+                        >
+                            Show Results
+                        </Button>
+                    </div>
+                </div>
+            </aside>
+            </div>{/* end lg grid */}
 
             {/* Modals */}
             {showApplicationModal && selectedJob && (

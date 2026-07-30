@@ -139,22 +139,24 @@ export function ProfileSectionForm({ section, profile, onSave, saving }: Profile
                 ))}
             </div>
 
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => window.history.back()}
-                    className="px-6 py-2"
-                >
-                    Cancel
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={saving}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => window.history.back()}
+                        className="w-full sm:w-auto h-11 sm:h-10 px-6 text-sm font-medium"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={saving}
+                        className="w-full sm:w-auto h-11 sm:h-10 px-6 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-medium"
+                    >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </div>
             </div>
         </form>
     )

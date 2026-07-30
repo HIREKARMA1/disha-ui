@@ -222,47 +222,46 @@ function LoginPageContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Navbar */}
+        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/40 to-sky-100/50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
+            {/* Ambient background accents */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+                <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-3xl dark:bg-primary-500/10" />
+                <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-secondary-400/15 blur-3xl dark:bg-secondary-500/10" />
+            </div>
+
             <Navbar variant="solid" />
 
-            <div className="min-h-screen flex items-center justify-center px-4 pt-20">
+            <div className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-20 pb-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.5 }}
                     className="w-full max-w-md"
                 >
-                    {/* Logo */}
-                    <div className="text-center mb-1 md:mb-8">
-                        <div className="inline-flex items-center justify-center w-8 h-8 md:w-16 md:h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-md md:rounded-2xl mb-1 md:mb-4">
+                    {/* Header */}
+                    <div className="text-center mb-6 sm:mb-8">
+                        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl mb-4 shadow-lg shadow-primary-500/25">
                             {(() => {
                                 const IconComponent = userTypeIcons[selectedUserType as UserType]
-                                return <IconComponent className="w-4 h-4 md:w-8 md:h-8 text-white" />
+                                return <IconComponent className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                             })()}
                         </div>
 
-                        <h1 className="text-base md:text-3xl font-bold text-gray-900 dark:text-white leading-none mb-0.5 md:mb-2">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">
                             Welcome Back
                         </h1>
 
-                        <p className="text-[10px] md:text-base text-gray-600 dark:text-gray-400 leading-none">
-                            Sign in to your account to continue
+                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+                            Sign in to your HireKarma account
                         </p>
                     </div>
 
                     {/* User Type Selection */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <div className="mb-5 sm:mb-6">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2.5">
                             I am a
                         </label>
-                        <div className="
-                                        grid 
-                                        sm:grid-cols-3
-                                        grid-cols-1
-                                        gap-3
-                                        w-full
-                                    ">
+                        <div className="grid grid-cols-2 gap-3 w-full">
                             {userTypeOptions.map((option) => {
                                 const Icon = userTypeIcons[option.value as UserType]
                                 const isSelected = selectedUserType === option.value
@@ -272,27 +271,26 @@ function LoginPageContent() {
                                         key={option.value}
                                         type="button"
                                         onClick={() => handleUserTypeChange(option.value)}
-                                        className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${isSelected
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-400'
+                                        className={`p-3.5 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${isSelected
+                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 shadow-sm shadow-primary-500/10'
+                                            : 'border-gray-200/80 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-300'
                                             }`}
                                     >
-                                        <Icon className={`w-5 h-5 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                                        <span className="text-sm font-medium">{option.label}</span>
+                                        <Icon className={`w-5 h-5 ${isSelected ? 'text-primary-600 dark:text-primary-300' : ''}`} />
+                                        <span className="text-sm font-semibold">{option.label}</span>
                                     </button>
                                 )
                             })}
                         </div>
                     </div>
 
-                    {/* Login Form */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                            {/* Hidden user_type field */}
+                    {/* Login Form — glass card */}
+                    <div className="bg-white/80 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-gray-900/5 dark:shadow-black/20 border border-white/60 dark:border-gray-700/60 p-5 sm:p-7">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                             <input type="hidden" {...register('user_type')} />
 
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                                     Email Address
                                 </label>
                                 <Input
@@ -301,17 +299,18 @@ function LoginPageContent() {
                                     placeholder="Enter your email address"
                                     leftIcon={<Mail className="w-4 h-4" />}
                                     error={!!errors.email}
+                                    className="h-12 rounded-xl"
                                     {...register('email')}
                                 />
                                 {errors.email && (
-                                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 flex items-start gap-1">
                                         {errors.email.message}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                                     Password
                                 </label>
                                 <Input
@@ -323,23 +322,24 @@ function LoginPageContent() {
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition-colors"
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
                                         >
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     }
                                     error={!!errors.password}
+                                    className="h-12 rounded-xl"
                                     {...register('password')}
                                 />
                                 {errors.password && (
-                                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
                                         {errors.password.message}
                                     </p>
                                 )}
                             </div>
 
-                            {/* Terms and Privacy Policy Checkbox */}
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div
                                     className="cursor-pointer flex-1"
                                     onClick={() => setShowTermsModal(true)}
@@ -359,11 +359,10 @@ function LoginPageContent() {
                                     />
                                 </div>
 
-                                {/* Forgot Password Link - Only show for non-admin users */}
                                 {selectedUserType !== 'admin' && (
                                     <Link
                                         href={`/auth/forgot-password?type=${selectedUserType}`}
-                                        className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors whitespace-nowrap"
+                                        className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors whitespace-nowrap self-start sm:self-auto"
                                     >
                                         Forgot Password?
                                     </Link>
@@ -372,50 +371,38 @@ function LoginPageContent() {
 
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                                className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg shadow-primary-500/25 transition-all duration-200"
                                 loading={isLoading}
                             >
                                 Sign In
                             </Button>
                         </form>
 
-                        {/* Only show "Create one" link for non-admin user types */}
                         {selectedUserType !== 'admin' && (
-                            <div className="mt-6 text-center">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Don't have an account?{' '}
+                            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    Don&apos;t have an account?{' '}
                                     <Link
                                         href={registerLink}
-                                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
+                                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors"
                                     >
-                                        Create one
+                                        Create Account
                                     </Link>
                                 </p>
                             </div>
                         )}
 
-                        {/* Show admin-specific message when admin is selected */}
                         {selectedUserType === 'admin' && (
-                            <div className="mt-6 text-center">
-                                <p className="text-sm text-gray-500 dark:text-gray-500 italic">
+                            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 italic">
                                     Admin accounts are created by authorized personnel only
                                 </p>
                             </div>
                         )}
-
-                        {/* <div className="mt-4 text-center">
-                            <Link
-                                href="/auth/forgot-password"
-                                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-                            >
-                                Forgot your password?
-                            </Link>
-                        </div> */}
                     </div>
                 </motion.div>
             </div>
 
-            {/* Terms and Conditions Modal */}
             <Modal
                 isOpen={showTermsModal}
                 onClose={() => setShowTermsModal(false)}
@@ -425,7 +412,7 @@ function LoginPageContent() {
                 <TermsModalContent />
 
                 <div className="mt-6 flex justify-end">
-                    <Button onClick={handleTermsAndPrivacyAccept} className="bg-primary-600 hover:bg-primary-700">
+                    <Button onClick={handleTermsAndPrivacyAccept} className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-xl">
                         Accept Terms and Conditions and Privacy Policy
                     </Button>
                 </div>
