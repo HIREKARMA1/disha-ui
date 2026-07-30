@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Eye, Edit, Trash2, Copy, Users, Calendar, Clock, MapPin, Building2,
-  Megaphone, Lock, BarChart3, Pause, XCircle, Loader2,
+  Megaphone, Lock, BarChart3, Pause, XCircle, Loader2, Unlock, Ban,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -121,13 +121,17 @@ export function AdminEventCard({
             )}
           </div>
 
-          {/* Actions */}
+          {/* Actions — View is never gated by registration/publication status for admins */}
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 dark:border-gray-700/80">
-            {event.slug && (
+            {event.slug ? (
               <Button variant="outline" size="sm" className="h-8" asChild>
-                <Link href={`/events/${event.slug}`} target="_blank">
+                <Link href={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer">
                   <Eye className="mr-1.5 h-3.5 w-3.5" /> View
                 </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" className="h-8" disabled title="Event slug missing">
+                <Eye className="mr-1.5 h-3.5 w-3.5" /> View
               </Button>
             )}
             <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/dashboard/admin/events/${event.id}/edit`)}>
@@ -156,6 +160,37 @@ export function AdminEventCard({
                 <Button variant="outline" size="sm" className="h-8" onClick={() => onPostpone(event)}>
                   <Pause className="mr-1.5 h-3.5 w-3.5" /> Postpone
                 </Button>
+                {event.registration_is_open ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    disabled={loading('close-registration')}
+                    onClick={() => onAction(event.id, 'close-registration')}
+                  >
+                    {loading('close-registration') ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Ban className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Close Reg
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    disabled={loading('open-registration')}
+                    onClick={() => onAction(event.id, 'open-registration')}
+                  >
+                    {loading('open-registration') ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Unlock className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Open Reg
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="h-8 text-red-600 hover:text-red-700" onClick={() => onCancel(event)}>
                   <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel
                 </Button>
