@@ -1,7 +1,23 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
+import {
+    MapPin,
+    Briefcase,
+    IndianRupee,
+    Building,
+    FileText,
+    CheckCircle,
+    Calendar,
+    GraduationCap,
+    XCircle,
+    MoreVertical,
+    Edit,
+    Trash2,
+    UserCheck,
+    Send,
+    Eye,
+} from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -35,7 +51,6 @@ interface UniversityJob {
     approval_status?: string
     corporate_id?: string
     university_id?: string
-    // Additional fields for complete job data
     remote_work?: boolean
     travel_required?: boolean
     onsite_office?: boolean
@@ -55,7 +70,6 @@ interface UniversityJob {
     created_at?: string
     is_active?: boolean
     can_apply?: boolean
-    // Company information fields (for university-created jobs)
     company_logo?: string
     company_website?: string
     company_address?: string
@@ -82,11 +96,29 @@ interface UniversityJobCardProps {
     onViewResults?: () => void
 }
 
+const ACCENT_SCHEMES = [
+    {
+        border: 'border-blue-200 dark:border-blue-500/30',
+        logo: 'bg-blue-500',
+    },
+    {
+        border: 'border-emerald-200 dark:border-emerald-500/30',
+        logo: 'bg-emerald-500',
+    },
+    {
+        border: 'border-violet-200 dark:border-violet-500/30',
+        logo: 'bg-violet-500',
+    },
+    {
+        border: 'border-orange-200 dark:border-orange-500/30',
+        logo: 'bg-orange-500',
+    },
+]
+
 export function UniversityJobCard({
     job,
     onViewDescription,
     onApprove,
-    onReject,
     onNotApprove,
     isProcessing = false,
     cardIndex = 0,
@@ -94,388 +126,287 @@ export function UniversityJobCard({
     onEdit,
     onDelete,
     onSendAssignment,
-    onViewResults
+    onViewResults,
 }: UniversityJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowDropdown(false)
             }
         }
-
         document.addEventListener('mousedown', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
+        return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
-    console.log('Rendering job card:', job.id, 'Status:', job.approval_status, 'Approved:', job.approved, 'Rejected:', job.rejected)
-    // Safety check - ensure job object is valid
+
     if (!job || typeof job !== 'object') {
-        console.error('Invalid job object:', job)
         return (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+            <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
                 <p className="text-red-600 dark:text-red-400 text-center">Invalid job data</p>
             </div>
         )
     }
 
-    // Generate distinct color combinations for consecutive job cards
-    const getCardColorScheme = (index: number) => {
-        const colors = [
-            { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-700', hover: 'hover:border-blue-300 dark:hover:border-blue-600' },
-            { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-700', hover: 'hover:border-green-300 dark:hover:border-green-600' },
-            { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-700', hover: 'hover:border-emerald-300 dark:hover:border-emerald-600' },
-            { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-700', hover: 'hover:border-red-300 dark:hover:border-red-600' },
-            { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-700', hover: 'hover:border-purple-300 dark:hover:border-purple-600' },
-            { bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-700', hover: 'hover:border-orange-300 dark:hover:border-orange-600' },
-            { bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-200 dark:border-cyan-700', hover: 'hover:border-cyan-300 dark:hover:border-cyan-600' },
-            { bg: 'bg-pink-50 dark:bg-pink-900/20', border: 'border-pink-200 dark:border-pink-700', hover: 'hover:border-pink-300 dark:hover:border-pink-600' },
-            { bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-200 dark:border-indigo-700', hover: 'hover:border-indigo-300 dark:hover:border-indigo-600' }
-        ]
-
-        // Use card index to ensure consecutive cards have distinct colors
-        return colors[index % colors.length]
-    }
-
-    const cardColors = getCardColorScheme(cardIndex)
+    const accent = ACCENT_SCHEMES[cardIndex % ACCENT_SCHEMES.length]
+    const locationText = Array.isArray(job.location) ? job.location.join(', ') : String(job.location || '')
+    const companyInitial = (job.company_name || job.title || 'J').charAt(0).toUpperCase()
+    const isUniversityCreated = job.university_id && !job.corporate_id
 
     const formatDate = (dateString: string) => {
         try {
-            if (!dateString || typeof dateString !== 'string') {
-                return 'Invalid date'
-            }
+            if (!dateString || typeof dateString !== 'string') return '—'
             const date = new Date(dateString)
-            if (isNaN(date.getTime())) {
-                return 'Invalid date'
-            }
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            })
-        } catch (error) {
-            console.error('Error formatting date:', error, dateString)
-            return 'Invalid date'
+            if (isNaN(date.getTime())) return '—'
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        } catch {
+            return '—'
         }
-    }
-
-    const getJobTypeColor = (jobType: string) => {
-        const colors = {
-            full_time: 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-            part_time: 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-            contract: 'bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
-            internship: 'bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
-            freelance: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-        }
-        return colors[jobType as keyof typeof colors] || colors.full_time
     }
 
     const getJobTypeLabel = (jobType: string) => {
-        const labels = {
+        const labels: Record<string, string> = {
             full_time: 'Full Time',
             part_time: 'Part Time',
             contract: 'Contract',
             internship: 'Internship',
-            freelance: 'Freelance'
+            freelance: 'Freelance',
         }
-        return labels[jobType as keyof typeof labels] || jobType
+        return labels[jobType] || jobType
     }
 
-    const getApprovalStatusColor = (approved: boolean, rejected?: boolean) => {
-        if (rejected) {
-            return 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+    const getApprovalStatusColor = () => {
+        if (job.rejected || job.approval_status === 'rejected') {
+            return 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'
         }
-        return approved
-            ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-            : 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+        if (job.approved || job.approval_status === 'approved') {
+            return 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+        }
+        return 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300'
     }
 
-    const getApprovalStatusLabel = (approved: boolean, rejected?: boolean) => {
-        if (rejected) {
-            return 'Not Approved'
-        }
-        return approved ? 'Approved' : 'Pending'
-    }
-
-    const isDeadlineNear = () => {
-        try {
-            if (!job.application_deadline || typeof job.application_deadline !== 'string') return false
-            const deadline = new Date(job.application_deadline)
-            if (isNaN(deadline.getTime())) return false
-            const now = new Date()
-            const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-            return diffDays <= 7 && diffDays > 0
-        } catch (error) {
-            console.error('Error checking deadline near:', error)
-            return false
-        }
+    const getApprovalStatusLabel = () => {
+        if (job.rejected || job.approval_status === 'rejected') return 'Not Approved'
+        if (job.approved || job.approval_status === 'approved') return 'Approved'
+        return 'Pending'
     }
 
     const isDeadlineExpired = () => {
         try {
-            if (!job.application_deadline || typeof job.application_deadline !== 'string') return false
+            if (!job.application_deadline) return false
             const deadline = new Date(job.application_deadline)
-            if (isNaN(deadline.getTime())) return false
-            const now = new Date()
-            return deadline < now
-        } catch (error) {
-            console.error('Error checking deadline expired:', error)
+            return !isNaN(deadline.getTime()) && deadline < new Date()
+        } catch {
             return false
         }
     }
 
+    const DropdownMenu = ({ className }: { className?: string }) => (
+        showDropdown ? (
+            <div className={cn(
+                'absolute right-0 z-50 w-52 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#161d2c] shadow-xl overflow-hidden',
+                className
+            )}>
+                <div className="py-1">
+                    {onViewApplications && (
+                        <button
+                            onClick={() => { onViewApplications(); setShowDropdown(false) }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 flex items-center gap-2"
+                        >
+                            <UserCheck className="w-4 h-4" />
+                            View Application
+                        </button>
+                    )}
+                    {onEdit && (
+                        <button
+                            onClick={() => { onEdit(); setShowDropdown(false) }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 flex items-center gap-2"
+                        >
+                            <Edit className="w-4 h-4" />
+                            Edit Job
+                        </button>
+                    )}
+                    {onDelete && (
+                        <button
+                            onClick={() => { onDelete(); setShowDropdown(false) }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Job
+                        </button>
+                    )}
+                    {onSendAssignment && (
+                        <button
+                            onClick={() => { onSendAssignment(); setShowDropdown(false) }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 flex items-center gap-2"
+                        >
+                            <Send className="w-4 h-4" />
+                            Send Assignment
+                        </button>
+                    )}
+                    {onViewResults && (
+                        <button
+                            onClick={() => { onViewResults(); setShowDropdown(false) }}
+                            className="w-full px-4 py-2.5 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 flex items-center gap-2"
+                        >
+                            <Eye className="w-4 h-4" />
+                            View Results
+                        </button>
+                    )}
+                </div>
+            </div>
+        ) : null
+    )
+
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full`}
+            transition={{ duration: 0.35 }}
+            className={cn(
+                'relative rounded-[18px] border bg-white/90 dark:bg-[#0D1628]',
+                'shadow-sm dark:shadow-[0_8px_32px_rgba(59,130,246,0.08)] hover:shadow-lg transition-all duration-300',
+                'p-4 md:p-5 lg:p-6',
+                accent.border
+            )}
         >
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
-                            {typeof job.title === 'string' ? job.title : String(job.title || '')}
-                        </h3>
-                        {job.company_name && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
-                                <Building className="w-4 h-4" />
-                                <span className="flex items-center gap-2">
-                                    {typeof job.company_name === 'string' ? job.company_name : String(job.company_name || '')}
-                                    {job.company_verified && (
-                                        <span className="text-green-600 dark:text-green-400">
-                                            <CheckCircle className="w-3 h-3" />
-                                        </span>
-                                    )}
-                                    {job.university_id && !job.corporate_id && (
-                                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700">
-                                            🎓 On Campus
-                                        </span>
-                                    )}
-                                </span>
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                            <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                getJobTypeColor(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))
-                            )}>
-                                {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
-                            </span>
-                            <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                getApprovalStatusColor(job.approved, job.rejected)
-                            )}>
-                                {getApprovalStatusLabel(job.approved, job.rejected)}
-                            </span>
+            {/* Mobile menu */}
+            {isUniversityCreated && (
+                <div className="absolute top-3 right-3 z-10 lg:hidden" ref={dropdownRef}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowDropdown(!showDropdown)}
+                        className="h-8 w-8 p-0 rounded-lg"
+                    >
+                        <MoreVertical className="w-4 h-4" />
+                    </Button>
+                    <DropdownMenu className="top-9" />
+                </div>
+            )}
+
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-4 lg:gap-5">
+                    <div className="flex items-start gap-3 lg:contents">
+                        <div className={cn(
+                            'w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0 shadow-md overflow-hidden',
+                            accent.logo
+                        )}>
+                            {job.company_logo ? (
+                                <img src={job.company_logo} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                companyInitial
+                            )}
                         </div>
 
-                        {/* 3-dots dropdown menu - only show if job was created by university (has university_id and no corporate_id) */}
-                        {job.university_id && !job.corporate_id && (
-                            <div className="relative" ref={dropdownRef}>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowDropdown(!showDropdown)}
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                >
-                                    <MoreVertical className="w-4 h-4" />
-                                </Button>
-
-                                {showDropdown && (
-                                    <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-                                        <div className="py-1">
-                                            {onViewApplications && (
-                                                <button
-                                                    onClick={() => {
-                                                        onViewApplications()
-                                                        setShowDropdown(false)
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
-                                                >
-                                                    <UserCheck className="w-4 h-4" />
-                                                    View Application
-                                                </button>
-                                            )}
-
-                                            {onEdit && (
-                                                <button
-                                                    onClick={() => {
-                                                        onEdit()
-                                                        setShowDropdown(false)
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                    Edit Job
-                                                </button>
-                                            )}
-
-                                            {onDelete && (
-                                                <button
-                                                    onClick={() => {
-                                                        onDelete()
-                                                        setShowDropdown(false)
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete Job
-                                                </button>
-                                            )}
-
-                                            {onSendAssignment && (
-                                                <button
-                                                    onClick={() => {
-                                                        onSendAssignment()
-                                                        setShowDropdown(false)
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                    Send Assignment
-                                                </button>
-                                            )}
-
-                                            {onViewResults && (
-                                                <button
-                                                    onClick={() => {
-                                                        onViewResults()
-                                                        setShowDropdown(false)
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                    View Results
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
+                        <div className="flex-1 min-w-0 space-y-2 pr-8 lg:pr-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white line-clamp-2">
+                                    {typeof job.title === 'string' ? job.title : String(job.title || '')}
+                                </h3>
+                                <span className="px-2 py-0.5 text-[10px] md:text-xs font-medium rounded-full border border-gray-200 dark:border-white/15 text-gray-700 dark:text-gray-300">
+                                    {getJobTypeLabel(typeof job.job_type === 'string' ? job.job_type : String(job.job_type || ''))}
+                                </span>
+                                <span className={cn('px-2 py-0.5 text-[10px] md:text-xs font-semibold rounded-full', getApprovalStatusColor())}>
+                                    {getApprovalStatusLabel()}
+                                </span>
+                                {isUniversityCreated && (
+                                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-500/30">
+                                        On Campus
+                                    </span>
                                 )}
                             </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* Job Meta */}
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <MapPin className="w-4 h-4" />
-                        <span className="truncate">{typeof job.location === 'string' ? job.location : String(job.location || '')}</span>
-                    </div>
+                            {job.company_name && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                    <Building className="w-3.5 h-3.5" />
+                                    {typeof job.company_name === 'string' ? job.company_name : String(job.company_name || '')}
+                                    {job.company_verified && (
+                                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                                    )}
+                                </p>
+                            )}
 
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <IndianRupee className="w-4 h-4" />
-                        <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
-                    </div>
-
-                    {job.campus_drive_date && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <Calendar className="w-4 h-4" />
-                            <span className="truncate">Drive: {formatDate(job.campus_drive_date)}</span>
-                        </div>
-                    )}
-
-                    {job.venue && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <VenueIcon className="w-4 h-4" />
-                            <span className="truncate">{job.venue}</span>
-                        </div>
-                    )}
-
-                    {job.max_students && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 col-span-2">
-                            <GraduationCap className="w-4 h-4" />
-                            <span className="truncate">Max Students: {job.max_students}</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Skills */}
-                {job.skills_required && Array.isArray(job.skills_required) && job.skills_required.length > 0 && (
-                    <div className="mt-4">
-                        <div className="flex flex-wrap gap-2">
-                            {job.skills_required.slice(0, 3).map((skill, index) => {
-                                // Ensure skill is a string
-                                const skillText = typeof skill === 'string' ? skill : String(skill || '')
-                                return (
-                                    <span
-                                        key={index}
-                                        className="px-2 py-1 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md"
-                                    >
-                                        {skillText}
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    {locationText || '—'}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <IndianRupee className="w-3.5 h-3.5" />
+                                    {formatSalaryRange(job.salary_min, job.salary_max)}
+                                </span>
+                                {job.campus_drive_date && (
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        Drive: {formatDate(job.campus_drive_date)}
                                     </span>
-                                )
-                            })}
-                            {job.skills_required.length > 3 && (
-                                <span className="px-2 py-1 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md">
-                                    +{job.skills_required.length - 3} more
-                                </span>
+                                )}
+                                {job.max_students && (
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <GraduationCap className="w-3.5 h-3.5" />
+                                        Max: {job.max_students}
+                                    </span>
+                                )}
+                            </div>
+
+                            {job.skills_required && Array.isArray(job.skills_required) && job.skills_required.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {job.skills_required.slice(0, 5).map((skill, i) => (
+                                        <span
+                                            key={i}
+                                            className="px-2.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-gray-300"
+                                        >
+                                            {typeof skill === 'string' ? skill : String(skill || '')}
+                                        </span>
+                                    ))}
+                                    {job.skills_required.length > 5 && (
+                                        <span className="px-2.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-white/[0.06] text-gray-500">
+                                            +{job.skills_required.length - 5}
+                                        </span>
+                                    )}
+                                </div>
                             )}
+
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                {typeof job.description === 'string' ? job.description : String(job.description || '')}
+                            </p>
                         </div>
                     </div>
-                )}
-            </div>
 
-            {/* Content */}
-            <div className="p-6 flex-1 flex flex-col">
-                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
-                    {typeof job.description === 'string' ? job.description : String(job.description || '')}
-                </p>
-
-                {/* Additional Info */}
-                <div className="space-y-2 mb-4 flex-1">
-                    {job.industry && (
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <Building className="w-3 h-3" />
-                            <span>{typeof job.industry === 'string' ? job.industry : String(job.industry || '')}</span>
-                        </div>
-                    )}
-
-                    {job.application_deadline && (
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                            <Calendar className="w-3 h-3" />
-                            <span>Deadline: {formatDate(job.application_deadline)}</span>
-                            {isDeadlineNear() && (
-                                <span className="text-orange-600 dark:text-orange-400 font-medium">
-                                    (Deadline near!)
-                                </span>
-                            )}
-                            {isDeadlineExpired() && (
-                                <span className="text-red-600 dark:text-red-400 font-medium">
-                                    (Expired)
-                                </span>
-                            )}
+                    {/* Desktop menu */}
+                    {isUniversityCreated && (
+                        <div className="hidden lg:block relative flex-shrink-0" ref={dropdownRef}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowDropdown(!showDropdown)}
+                                className="h-9 w-9 p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10"
+                            >
+                                <MoreVertical className="w-4 h-4" />
+                            </Button>
+                            <DropdownMenu className="top-10" />
                         </div>
                     )}
                 </div>
 
-                {/* Status Indicators - moved above buttons for consistent alignment */}
                 {isDeadlineExpired() && (
-                    <div className="mb-3 text-center">
-                        <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-                            Application Deadline Expired
-                        </span>
-                    </div>
+                    <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                        Application deadline expired
+                    </p>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 mt-auto pt-4">
+                {/* Action buttons */}
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
                     <Button
                         onClick={onViewDescription}
                         variant="outline"
                         size="sm"
-                        className="w-full sm:flex-1 sm:min-w-[100px] flex items-center justify-center gap-1.5 text-xs border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                        className="rounded-xl border-gray-200 dark:border-white/10 hover:border-blue-400 dark:hover:border-blue-500/50"
                     >
-                        <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="truncate">View Details</span>
+                        <FileText className="w-4 h-4 mr-1.5" />
+                        View Details
                     </Button>
 
                     {job.approval_status === 'pending' && (
@@ -484,64 +415,44 @@ export function UniversityJobCard({
                                 onClick={onApprove}
                                 disabled={isProcessing}
                                 size="sm"
-                                className="w-full sm:flex-1 sm:min-w-[90px] flex items-center justify-center gap-1.5 text-xs bg-green-500 hover:bg-green-600 text-white transition-all duration-200 hover:shadow-md"
+                                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
                             >
                                 {isProcessing ? (
-                                    <>
-                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                                        <span className="truncate">Processing...</span>
-                                    </>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 ) : (
                                     <>
-                                        <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                        <span className="truncate">Approve</span>
+                                        <CheckCircle className="w-4 h-4 mr-1.5" />
+                                        Approve
                                     </>
                                 )}
                             </Button>
                             {onNotApprove && (
                                 <Button
-                                    onClick={() => {
-                                        if (onNotApprove) {
-                                            onNotApprove()
-                                        }
-                                    }}
+                                    onClick={onNotApprove}
                                     disabled={isProcessing}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full sm:flex-1 sm:min-w-[90px] flex items-center justify-center gap-1.5 text-xs border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                                    className="rounded-xl border-gray-200 dark:border-white/10"
                                 >
-                                    {isProcessing ? (
-                                        <>
-                                            <div className="w-3.5 h-3.5 border-2 border-gray-600 dark:border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                                            <span className="truncate">Processing...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                            <span className="truncate">Not Approve</span>
-                                        </>
-                                    )}
+                                    <XCircle className="w-4 h-4 mr-1.5" />
+                                    Not Approve
                                 </Button>
                             )}
                         </>
                     )}
 
                     {job.approval_status === 'approved' && (
-                        <div className="w-full sm:flex-1 flex items-center justify-center">
-                            <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" />
-                                Approved
-                            </span>
-                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium px-2">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Approved
+                        </span>
                     )}
 
                     {job.approval_status === 'rejected' && (
-                        <div className="w-full sm:flex-1 flex items-center justify-center">
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
-                                <XCircle className="w-3 h-3" />
-                                Not Approved
-                            </span>
-                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 font-medium px-2">
+                            <XCircle className="w-3.5 h-3.5" />
+                            Not Approved
+                        </span>
                     )}
                 </div>
             </div>

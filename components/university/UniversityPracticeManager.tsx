@@ -47,7 +47,11 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown'
 import { BranchSelection } from '@/components/ui/BranchSelection'
 import toast from 'react-hot-toast'
-import { LoadingSkeleton, TableSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
+import { LoadingSkeleton, TableSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
+import { CorporatePageHero } from '@/components/corporate/ui/CorporatePageHero'
+import { CorporateStatCard } from '@/components/corporate/ui/CorporateStatCard'
+import { STAT_ACCENTS, corpCard, corpInput } from '@/components/corporate/ui/corporate-theme'
+import { cn } from '@/lib/utils'
 
 // Helper function to parse options from various formats
 const parseQuestionOptions = (options: any): Array<{ id: string; text: string }> => {
@@ -570,123 +574,89 @@ export function UniversityPracticeManager() {
         <div className="space-y-6 main-content">
             {/* Header - Only show on main modules view */}
             {currentView === 'modules' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Practice Module Management 🧠
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage practice tests, questions, and view student attempts ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🧠 {currentDate}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📚 Question Management
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🎯 Student Analytics
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+                <CorporatePageHero
+                    title="Practice Tests"
+                    subtitle="Manage practice tests, questions, and view student attempts"
+                    chips={[
+                        {
+                            label: currentDate || new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+                            tone: 'blue',
+                            icon: <Brain className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Question Management',
+                            tone: 'green',
+                            icon: <Target className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Student Analytics',
+                            tone: 'purple',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                    actions={
+                        <Button
+                            onClick={handleCreateModule}
+                            className="h-10 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white shadow-lg shadow-blue-500/20"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Module
+                        </Button>
+                    }
+                />
             )}
 
             {/* Stats Cards - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                    {
-                        label: 'Total Modules',
-                        value: statistics?.total_modules?.toString() || filteredModules.length.toString(),
-                        icon: Brain,
-                        color: 'text-blue-600',
-                        bgColor: 'bg-blue-50 dark:bg-blue-900/20'
-                    },
-                    {
-                        label: 'Total Questions',
-                        value: statistics?.total_questions?.toString() || filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
-                        icon: Target,
-                        color: 'text-green-600',
-                        bgColor: 'bg-green-50 dark:bg-green-900/20'
-                    },
-                    {
-                        label: 'Active Modules',
-                        value: statistics?.active_modules?.toString() || filteredModules.length.toString(),
-                        icon: Users,
-                        color: 'text-purple-600',
-                        bgColor: 'bg-purple-50 dark:bg-purple-900/20'
-                    },
-                    {
-                        label: 'Total Attempts',
-                        value: statistics?.total_attempts?.toString() || '0',
-                        icon: Clock,
-                        color: 'text-orange-600',
-                        bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-                    }
-                ].map((stat, index) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="w-full"
-                    >
-                        <div className="block group w-full">
-                            <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                            {stat.label}
-                                        </p>
-                                        <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                            {(modulesLoading || statisticsLoading) ? (
-                                                <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
-                                            ) : (
-                                                stat.value
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
+                <>
+                <div className="md:hidden grid grid-cols-4 gap-1.5">
+                    {[
+                        { label: 'Total Modules', value: statistics?.total_modules?.toString() || filteredModules.length.toString(), icon: Brain, accent: 'blue' as const },
+                        { label: 'Total Questions', value: statistics?.total_questions?.toString() || filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(), icon: Target, accent: 'green' as const },
+                        { label: 'Active Modules', value: statistics?.active_modules?.toString() || filteredModules.length.toString(), icon: Users, accent: 'purple' as const },
+                        { label: 'Total Attempts', value: statistics?.total_attempts?.toString() || '0', icon: Clock, accent: 'orange' as const },
+                    ].map((stat, index) => {
+                        const tones = STAT_ACCENTS[stat.accent]
+                        const Icon = stat.icon
+                        return (
+                            <motion.div key={stat.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} className={cn('rounded-xl border p-2 min-w-0', tones.card)}>
+                                <div className={cn('w-6 h-6 rounded-md flex items-center justify-center mb-1.5', tones.icon)}><Icon className="w-3 h-3" /></div>
+                                <p className="text-[9px] font-medium text-gray-500 dark:text-gray-400 leading-tight line-clamp-2 mb-1">{stat.label}</p>
+                                <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums leading-none">{(modulesLoading || statisticsLoading) ? '—' : stat.value}</p>
+                            </motion.div>
+                        )
+                    })}
                 </div>
+                <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <CorporateStatCard label="Total Modules" value={statistics?.total_modules ?? filteredModules.length} subtitle="All practice modules" icon={Brain} accent="blue" index={0} isLoading={modulesLoading || statisticsLoading} />
+                    <CorporateStatCard label="Total Questions" value={statistics?.total_questions ?? filteredModules.reduce((sum, m) => sum + m.questions_count, 0)} subtitle="Across all modules" icon={Target} accent="green" index={1} isLoading={modulesLoading || statisticsLoading} />
+                    <CorporateStatCard label="Active Modules" value={statistics?.active_modules ?? filteredModules.length} subtitle="Currently available" icon={Users} accent="purple" index={2} isLoading={modulesLoading || statisticsLoading} />
+                    <CorporateStatCard label="Total Attempts" value={statistics?.total_attempts ?? 0} subtitle="Student attempts" icon={Clock} accent="orange" index={3} isLoading={modulesLoading || statisticsLoading} />
+                </div>
+                </>
             )}
 
             {/* Search and Filters - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div className={cn(corpCard, 'p-4 md:p-5')}>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
                                 type="text"
                                 placeholder="Search practice modules by title, role, or tags..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
+                                className={cn(corpInput, 'pl-10 h-11')}
                             />
                         </div>
                         <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value as PracticeCategory | 'all')}
-                                className="pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none min-w-[200px]"
+                                className={cn(corpInput, 'pl-10 pr-8 h-11 appearance-none min-w-[200px]')}
                             >
                                 {categories.map((category) => (
                                     <option key={category.id} value={category.id}>
@@ -694,19 +664,14 @@ export function UniversityPracticeManager() {
                                     </option>
                                 ))}
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                </svg>
-                            </div>
                         </div>
                         {(searchTerm || selectedCategory !== 'all') && (
                             <Button
                                 variant="outline"
                                 onClick={handleClearFilters}
-                                className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                                className="h-11 rounded-xl border-gray-200 dark:border-white/10"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-4 h-4 mr-2" />
                                 Clear
                             </Button>
                         )}
@@ -714,24 +679,11 @@ export function UniversityPracticeManager() {
                 </div>
             )}
 
-            {/* Create Module Button - Only show on main modules view */}
-            {currentView === 'modules' && (
-                <div className="flex justify-end">
-                    <Button
-                        onClick={handleCreateModule}
-                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create New Module
-                    </Button>
-                </div>
-            )}
-
             {/* Loading and Error States - Only show on main modules view */}
             {currentView === 'modules' && modulesLoading && (
                 <div className="space-y-6">
                     <StatsSkeleton count={4} />
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <div className={cn(corpCard, 'p-6')}>
                         <div className="mb-4">
                             <LoadingSkeleton height="h-6" width="w-48" />
                         </div>
@@ -741,7 +693,7 @@ export function UniversityPracticeManager() {
             )}
 
             {currentView === 'modules' && modulesError && (
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-700 p-6">
+                <div className={cn(corpCard, 'p-6 border-red-200 dark:border-red-500/30')}>
                     <div className="flex items-center">
                         <div className="flex-shrink-0">
                             <XCircle className="h-5 w-5 text-red-400" />
@@ -770,62 +722,36 @@ export function UniversityPracticeManager() {
 
             {/* Modules Table - Only show on main modules view */}
             {currentView === 'modules' && !modulesLoading && !modulesError && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    {/* Table Header */}
+                <div className={cn(corpCard, 'overflow-hidden p-0')}>
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        <div className="flex items-center space-x-1">
-                                            <span>Practice Module</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        <div className="flex items-center space-x-1">
-                                            <span>Category</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        <div className="flex items-center space-x-1">
-                                            <span>Role</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        <div className="flex items-center space-x-1">
-                                            <span>Questions</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        <div className="flex items-center space-x-1">
-                                            <span>Duration</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Actions
-                                    </th>
+                            <thead>
+                                <tr className="border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/80 dark:bg-white/[0.02]">
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Practice Module</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Category</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Role</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Questions</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Duration</th>
+                                    <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tbody>
                                 {filteredModules.map((module, index) => (
                                     <motion.tr
                                         key={module.id}
-                                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer"
-                                        initial={{ opacity: 0, y: 20 }}
+                                        className="border-b border-gray-50 dark:border-white/[0.04] hover:bg-blue-50/40 dark:hover:bg-blue-500/[0.06] transition-colors cursor-pointer"
+                                        initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                                        transition={{ duration: 0.25, delay: index * 0.03 }}
                                         onClick={() => handleViewModule(module)}
                                     >
-                                        {/* Practice Module */}
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10">
-                                                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-                                                        <Brain className="h-5 w-5 text-white" />
-                                                    </div>
+                                        <td className="px-5 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                                                    <Brain className="h-5 w-5 text-white" />
                                                 </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                <div>
+                                                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
                                                         {module.title}
                                                     </div>
                                                     <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -834,39 +760,34 @@ export function UniversityPracticeManager() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${module.category === 'ai-mock-tests'
-                                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/20 dark:text-rose-400'
+                                        <td className="px-5 py-4 whitespace-nowrap">
+                                            <span className={cn('px-2.5 py-1 text-xs font-semibold rounded-full', module.category === 'ai-mock-tests'
+                                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
                                                 : module.category === 'ai-mock-interviews'
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
                                                     : module.category === 'coding-practice'
-                                                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
+                                                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300'
                                                         : module.category === 'challenges-engagement'
-                                                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400'
-                                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                                                }`}>
+                                                            ? 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300'
+                                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
+                                                )}>
                                                 {module.category ? module.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded-full">
+                                        <td className="px-5 py-4 whitespace-nowrap">
+                                            <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
                                                 {module.role}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                             {module.questions_count}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                             {Math.floor(module.duration_seconds / 60)}m
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <Button
-                                                    onClick={() => handleViewModule(module)}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    title="View Module Details"
-                                                >
+                                                <Button onClick={() => handleViewModule(module)} variant="outline" size="sm" title="View Module Details" className="rounded-lg border-gray-200 dark:border-white/10">
                                                     <Eye className="w-4 h-4" />
                                                 </Button>
                                                 <Button

@@ -1,21 +1,11 @@
-"use client"
+'use client'
 
+import { Users, Briefcase, Building, CheckCircle } from 'lucide-react'
+import { CorporateStatCard } from '@/components/corporate/ui/CorporateStatCard'
+import { STAT_ACCENTS } from '@/components/corporate/ui/corporate-theme'
+import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import {
-    Users,
-    Briefcase,
-    Building,
-    CheckCircle
-} from 'lucide-react'
 import { StudentStatistics, JobStatistics } from '@/types/university'
-
-interface StatCard {
-    label: string
-    value: string
-    icon: React.ComponentType<{ className?: string }>
-    color: string
-    bgColor: string
-}
 
 interface UniversityDashboardStatsProps {
     studentStats?: StudentStatistics
@@ -28,76 +18,100 @@ export function UniversityDashboardStats({
     studentStats,
     jobStats,
     className = '',
-    isLoading = false
+    isLoading = false,
 }: UniversityDashboardStatsProps) {
-    const formatNumber = (num: number) => {
-        return new Intl.NumberFormat('en-US').format(num)
-    }
+    const totalStudents = studentStats?.total_students || 0
+    const placedStudents = studentStats?.placed_students || 0
+    const activeJobs = jobStats?.total_jobs_approved || 0
+    const totalJobs = (jobStats?.total_jobs_approved || 0) + (jobStats?.pending_approvals || 0)
 
-    const statCards: StatCard[] = [
+    const cards = [
         {
             label: 'Total Students',
-            value: formatNumber(studentStats?.total_students || 0),
+            shortLabel: 'Students',
+            value: totalStudents,
+            subtitle: 'Active enrolled',
             icon: Users,
-            color: 'text-blue-600',
-            bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+            accent: 'blue' as const,
         },
         {
             label: 'Selected Students',
-            value: formatNumber(studentStats?.placed_students || 0),
+            shortLabel: 'Selected',
+            value: placedStudents,
+            subtitle: 'Successfully placed',
             icon: CheckCircle,
-            color: 'text-green-600',
-            bgColor: 'bg-green-50 dark:bg-green-900/20'
+            accent: 'green' as const,
         },
         {
             label: 'Active Jobs',
-            value: formatNumber(jobStats?.total_jobs_approved || 0),
+            shortLabel: 'Active Jobs',
+            value: activeJobs,
+            subtitle: 'Approved listings',
             icon: Briefcase,
-            color: 'text-purple-600',
-            bgColor: 'bg-purple-50 dark:bg-purple-900/20'
+            accent: 'purple' as const,
         },
         {
             label: 'Total Jobs',
-            value: formatNumber((jobStats?.total_jobs_approved || 0) + (jobStats?.pending_approvals || 0)),
+            shortLabel: 'Total Jobs',
+            value: totalJobs,
+            subtitle: 'Approved + pending',
             icon: Building,
-            color: 'text-orange-600',
-            bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-        }
+            accent: 'orange' as const,
+        },
     ]
 
     return (
-        <div className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full ${className}`}>
-            {statCards.map((stat, index) => (
-                <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="w-full"
-                >
-                    <div className="block group w-full">
-                        <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        {stat.label}
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                        {isLoading ? (
-                                            <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
-                                        ) : (
-                                            stat.value
-                                        )}
-                                    </p>
-                                </div>
-                                <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                                </div>
+        <div className={className}>
+            {/* Mobile: all 4 in one row */}
+            <div className="md:hidden grid grid-cols-4 gap-1.5">
+                {cards.map((stat, index) => {
+                    const tones = STAT_ACCENTS[stat.accent]
+                    const Icon = stat.icon
+                    return (
+                        <motion.div
+                            key={stat.label}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.04 }}
+                            className={cn('rounded-xl border p-2 min-w-0', tones.card)}
+                        >
+                            <div
+                                className={cn(
+                                    'w-6 h-6 rounded-md flex items-center justify-center mb-1.5',
+                                    tones.icon
+                                )}
+                            >
+                                <Icon className="w-3 h-3" />
                             </div>
-                        </div>
-                    </div>
-                </motion.div>
-            ))}
+                            <p className="text-[9px] font-medium text-gray-500 dark:text-gray-400 leading-tight line-clamp-2 mb-1">
+                                {stat.shortLabel}
+                            </p>
+                            <p className="text-lg font-bold text-gray-900 dark:text-white leading-none tabular-nums">
+                                {isLoading ? '—' : stat.value}
+                            </p>
+                            <p className="text-[8px] text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                {stat.subtitle}
+                            </p>
+                        </motion.div>
+                    )
+                })}
+            </div>
+
+            {/* Desktop grid */}
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full items-stretch">
+                {cards.map((stat, index) => (
+                    <CorporateStatCard
+                        key={stat.label}
+                        label={stat.label}
+                        value={isLoading ? '—' : stat.value}
+                        subtitle={stat.subtitle}
+                        icon={stat.icon}
+                        accent={stat.accent}
+                        index={index}
+                        isLoading={isLoading}
+                    />
+                ))}
+            </div>
         </div>
     )
 }

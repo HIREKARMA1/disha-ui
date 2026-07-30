@@ -9,6 +9,7 @@ export interface ApplicationCardData {
   id: string
   job_title?: string
   corporate_name?: string
+  company_logo?: string
   status: string
   applied_at: string
   location?: string
@@ -50,9 +51,17 @@ export function ApplicationCard({ application, onView, onWithdraw, className }: 
       )}
     >
       <div className="flex items-start gap-2">
-        <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-          {initial}
-        </div>
+        {application.company_logo ? (
+          <img
+            src={application.company_logo}
+            alt={company}
+            className="w-8 h-8 rounded-md object-cover border border-gray-200 dark:border-white/10 bg-white shrink-0"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+            {initial}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-1.5">
             <div className="min-w-0">

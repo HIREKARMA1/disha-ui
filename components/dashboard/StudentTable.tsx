@@ -23,6 +23,9 @@ import {
 import { StudentListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
 import StudentProfileModal from './StudentProfileModal'
+import { CorporatePagination } from '@/components/corporate/ui/CorporatePagination'
+import { corpCard } from '@/components/corporate/ui/corporate-theme'
+import { cn } from '@/lib/utils'
 
 interface StudentTableProps {
     students: StudentListItem[]
@@ -76,35 +79,24 @@ export function StudentTable({
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'placed':
-                return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
             case 'unplaced':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+                return 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300'
             case 'shortlisted':
-                return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
+                return 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300'
             case 'selected':
-                return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
             case 'rejected':
-                return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                return 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300'
             case 'applied':
-                return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
+                return 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300'
             case 'inactive':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+                return 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300'
             case 'pending':
-                return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300'
+                return 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300'
             default:
-                return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-300'
         }
-    }
-
-    // Row color function - alternating transparent cool colors
-    const getRowColor = (index: number) => {
-        const colors = [
-            'bg-blue-50/30 dark:bg-blue-900/10', // Light blue
-            'bg-green-50/30 dark:bg-green-900/10', // Light green
-            'bg-purple-50/30 dark:bg-purple-900/10', // Light purple
-            'bg-orange-50/30 dark:bg-orange-900/10', // Light orange
-        ]
-        return colors[index % colors.length]
     }
 
     // Sorting function
@@ -296,54 +288,49 @@ export function StudentTable({
 
     if (isLoading) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                </div>
+            <div className={cn(corpCard, 'p-10 flex items-center justify-center')}>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
             </div>
         )
     }
 
     if (error) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="text-center py-12">
-                    <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
-                    <button
-                        onClick={onRetry}
-                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200"
-                    >
-                        Retry
-                    </button>
-                </div>
+            <div className={cn(corpCard, 'p-8 text-center')}>
+                <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+                <button
+                    onClick={onRetry}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors duration-200"
+                >
+                    Retry
+                </button>
             </div>
         )
     }
 
     if (students.length === 0) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <div className="text-center py-12">
-                    <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        No students found
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        Start by adding students to your university.
-                    </p>
-                </div>
+            <div className={cn(corpCard, 'p-8 text-center')}>
+                <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    No students found
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                    Start by adding students to your university.
+                </p>
             </div>
         )
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="space-y-4">
+            <div className={cn(corpCard, 'overflow-hidden p-0')}>
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                        <tr>
+                    <thead>
+                        <tr className="border-b border-gray-100 dark:border-white/[0.06] bg-gray-50/80 dark:bg-white/[0.02]">
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('name')}
                             >
                                 <div className="flex items-center gap-1">
@@ -352,7 +339,7 @@ export function StudentTable({
                                 </div>
                             </th>
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('phone')}
                             >
                                 <div className="flex items-center gap-1">
@@ -361,7 +348,7 @@ export function StudentTable({
                                 </div>
                             </th>
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('degree')}
                             >
                                 <div className="flex items-center gap-1">
@@ -370,7 +357,7 @@ export function StudentTable({
                                 </div>
                             </th>
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('placement_status')}
                             >
                                 <div className="flex items-center gap-1">
@@ -379,7 +366,7 @@ export function StudentTable({
                                 </div>
                             </th>
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('total_applications')}
                             >
                                 <div className="flex items-center gap-1">
@@ -388,7 +375,7 @@ export function StudentTable({
                                 </div>
                             </th>
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('profile_completion_percentage')}
                             >
                                 <div className="flex items-center gap-1">
@@ -397,7 +384,7 @@ export function StudentTable({
                                 </div>
                             </th>
                             <th
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                                className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 onClick={() => handleSort('created_at')}
                             >
                                 <div className="flex items-center gap-1">
@@ -405,28 +392,26 @@ export function StudentTable({
                                     {getSortIcon('created_at')}
                                 </div>
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody>
                         {paginatedStudents.map((student, index) => (
                             <motion.tr
                                 key={student.id}
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: index * 0.05 }}
-                                className={`${getRowColor(index)} hover:bg-opacity-50 transition-colors duration-200 cursor-pointer`}
+                                transition={{ duration: 0.25, delay: index * 0.03 }}
+                                className="border-b border-gray-50 dark:border-white/[0.04] hover:bg-blue-50/40 dark:hover:bg-blue-500/[0.06] transition-colors cursor-pointer"
                                 onClick={() => handleRowClick(student)}
                             >
                                 {/* Student Info */}
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-10 w-10">
-                                            <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                                                <User className="w-5 h-5 text-primary-600" />
-                                            </div>
+                                <td className="px-5 py-4 whitespace-nowrap">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                                            <User className="w-5 h-5 text-white" />
                                         </div>
                                         <div className="ml-4">
                                             <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -440,7 +425,7 @@ export function StudentTable({
                                 </td>
 
                                 {/* Contact */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900 dark:text-white">
                                         <div className="flex items-center gap-1 mb-1">
                                             <Phone className="w-3 h-3 text-gray-400" />
@@ -450,7 +435,7 @@ export function StudentTable({
                                 </td>
 
                                 {/* Academic */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900 dark:text-white">
                                         <div className="flex items-center gap-1 mb-1">
                                             <GraduationCap className="w-3 h-3 text-gray-400" />
@@ -471,9 +456,9 @@ export function StudentTable({
                                 </td>
 
                                 {/* Placement */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900 dark:text-white">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(student.placement_status)}`}>
+                                        <span className={cn('inline-flex px-2.5 py-1 text-xs font-semibold rounded-full', getStatusColor(student.placement_status))}>
                                             {student.placement_status}
                                         </span>
                                         {student.placed_company && (
@@ -490,7 +475,7 @@ export function StudentTable({
                                 </td>
 
                                 {/* Applications */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900 dark:text-white">
                                         <div className="flex items-center gap-1 mb-1">
                                             <Briefcase className="w-3 h-3 text-gray-400" />
@@ -506,7 +491,7 @@ export function StudentTable({
                                 </td>
 
                                 {/* Status */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900 dark:text-white">
                                         <div className="flex items-center gap-2">
                                             {student.is_archived ? (
@@ -515,16 +500,16 @@ export function StudentTable({
                                                     Archived
                                                 </span>
                                             ) : student.status?.toLowerCase() === 'inactive' ? (
-                                                <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('inactive')}`}>
+                                                <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full', getStatusColor('inactive'))}>
                                                     Inactive
                                                 </span>
                                             ) : student.status?.toLowerCase() === 'pending' ? (
-                                                <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor('pending')}`}>
+                                                <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full', getStatusColor('pending'))}>
                                                     <Hourglass className="w-3 h-3" />
                                                     Pending
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
                                                     <Eye className="w-3 h-3" />
                                                     Active
                                                 </span>
@@ -537,7 +522,7 @@ export function StudentTable({
                                 </td>
 
                                 {/* Created Date */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-5 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900 dark:text-white">
                                         <div className="flex items-center gap-1 mb-1">
                                             <Calendar className="w-3 h-3 text-gray-400" />
@@ -589,99 +574,17 @@ export function StudentTable({
                     </tbody>
                 </table>
             </div>
+            </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                    <div className="flex-1 flex justify-between sm:hidden">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                    </div>
-                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                                Showing{' '}
-                                <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
-                                {' '}to{' '}
-                                <span className="font-medium">
-                                    {Math.min(currentPage * itemsPerPage, sortedStudents.length)}
-                                </span>
-                                {' '}of{' '}
-                                <span className="font-medium">{sortedStudents.length}</span>
-                                {' '}results
-                            </p>
-                        </div>
-                        <div>
-                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <span className="sr-only">Previous</span>
-                                    <ChevronDown className="h-5 w-5 rotate-90" aria-hidden="true" />
-                                </button>
-
-                                {/* Page numbers */}
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                                    // Show first page, last page, current page, and pages around current page
-                                    if (
-                                        page === 1 ||
-                                        page === totalPages ||
-                                        (page >= currentPage - 1 && page <= currentPage + 1)
-                                    ) {
-                                        return (
-                                            <button
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
-                                                    ? 'z-10 bg-primary-50 dark:bg-primary-900/20 border-primary-500 dark:border-primary-400 text-primary-600 dark:text-primary-300'
-                                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
-                                                    }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        )
-                                    } else if (
-                                        page === currentPage - 2 ||
-                                        page === currentPage + 2
-                                    ) {
-                                        return (
-                                            <span
-                                                key={page}
-                                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300"
-                                            >
-                                                ...
-                                            </span>
-                                        )
-                                    }
-                                    return null
-                                })}
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <span className="sr-only">Next</span>
-                                    <ChevronDown className="h-5 w-5 -rotate-90" aria-hidden="true" />
-                                </button>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+                <CorporatePagination
+                    page={currentPage}
+                    totalPages={totalPages}
+                    total={sortedStudents.length}
+                    limit={itemsPerPage}
+                    itemLabel="students"
+                    onPageChange={setCurrentPage}
+                />
             )}
 
             {/* Archive Confirmation Modal */}
