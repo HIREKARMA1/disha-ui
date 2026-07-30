@@ -34,7 +34,7 @@ export function AnalyticsChartCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
-      className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 ${className}`}
+      className={`bg-white dark:bg-[#121826]/90 dark:backdrop-blur-md rounded-2xl border border-gray-200 dark:border-white/[0.08] p-5 sm:p-6 shadow-sm dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)] hover:shadow-md transition-shadow duration-300 ${className}`}
     >
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
         <div>

@@ -111,7 +111,9 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             registration_button_text: event.registration_button_text,
             registration_external_url: event.registration_external_url,
             publication_status: event.publication_status,
-            registration_is_open: event.registration_is_open,
+            // Use raw DB flag — computed registration_is_open is false when full/deadline passed
+            // and must not be saved back (that permanently closes registration).
+            registration_is_open: event.registration_enabled ?? event.registration_is_open,
             visibility: event.visibility,
             faqs: event.faqs,
             rounds: event.rounds,
@@ -347,8 +349,35 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           <div><label className="text-sm font-medium">Registration End</label><Input type="datetime-local" value={form.registration_end_date || ''} onChange={(e) => update('registration_end_date', e.target.value)} /></div>
           <div><label className="text-sm font-medium">Event Start *</label><Input type="datetime-local" value={form.event_start_date} onChange={(e) => update('event_start_date', e.target.value)} required /></div>
           <div><label className="text-sm font-medium">Event End</label><Input type="datetime-local" value={form.event_end_date || ''} onChange={(e) => update('event_end_date', e.target.value)} /></div>
-          <div><label className="text-sm font-medium">Max Participants</label><Input type="number" value={form.max_participants || ''} onChange={(e) => update('max_participants', parseInt(e.target.value))} /></div>
-          <div><label className="text-sm font-medium">Registration Limit</label><Input type="number" value={form.registration_limit || ''} onChange={(e) => update('registration_limit', parseInt(e.target.value))} /></div>
+          <div>
+            <label className="text-sm font-medium">Max Participants</label>
+            <Input
+              type="number"
+              min={1}
+              value={form.max_participants ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                const next = raw === '' ? undefined : parseInt(raw, 10)
+                const value = Number.isFinite(next as number) ? next : undefined
+                // Keep both capacity fields in sync so a stale lower limit cannot block Reg. Open
+                setForm((f) => ({ ...f, max_participants: value, registration_limit: value }))
+              }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Registration Limit</label>
+            <Input
+              type="number"
+              min={1}
+              value={form.registration_limit ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value
+                const next = raw === '' ? undefined : parseInt(raw, 10)
+                const value = Number.isFinite(next as number) ? next : undefined
+                setForm((f) => ({ ...f, registration_limit: value, max_participants: value }))
+              }}
+            />
+          </div>
           <div><label className="text-sm font-medium">Prize Pool</label><Input value={form.prize_pool || ''} onChange={(e) => update('prize_pool', e.target.value)} placeholder="₹5,00,000" /></div>
           <div>
             <label className="text-sm font-medium">Prize Type</label>

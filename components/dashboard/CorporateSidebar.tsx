@@ -1,19 +1,22 @@
-"use client"
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
-    User,
     Briefcase,
-    Users,
     FileText,
     X,
     Menu,
     LogOut,
     Building2,
     Brain,
-    BarChart3
+    BarChart3,
+    Settings,
+    Users,
+    Layers,
+    MoreHorizontal,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -21,13 +24,14 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import { corpActiveNav, corpBadgeCorporate, corpSidebar } from '@/components/corporate/ui/corporate-theme'
+import { cn } from '@/lib/utils'
 
 interface NavItem {
     label: string
     href: string
     icon: React.ComponentType<{ className?: string }>
     description?: string
-    color?: string
 }
 
 const navItems: NavItem[] = [
@@ -35,73 +39,44 @@ const navItems: NavItem[] = [
         label: 'Dashboard',
         href: '/dashboard/corporate',
         icon: LayoutDashboard,
-        description: 'Overview and analytics',
-        color: 'from-blue-500 to-purple-600'
+        description: 'Overview & analytics',
     },
     {
         label: 'Profile',
         href: '/dashboard/corporate/profile',
         icon: Building2,
-        description: 'Company information & settings',
-        color: 'from-green-500 to-teal-600'
+        description: 'Company information',
     },
     {
         label: 'Job Postings',
         href: '/dashboard/corporate/jobs',
         icon: Briefcase,
-        description: 'Manage job listings',
-        color: 'from-orange-500 to-red-600'
+        description: 'Manage job postings',
     },
-    // {
-    //     label: 'Candidates',
-    //     href: '/dashboard/corporate/candidates',
-    //     icon: Users,
-    //     description: 'Browse talent pool',
-    //     color: 'from-purple-500 to-pink-600'
-    // },
     {
         label: 'Applications',
         href: '/dashboard/corporate/applications',
         icon: FileText,
-        description: 'Review applications',
-        color: 'from-indigo-500 to-blue-600'
+        description: 'View & manage applicants',
     },
-    // TODO: Uncomment when practice module bugs are fixed
     {
         label: 'Practice',
         href: '/dashboard/corporate/practice',
         icon: Brain,
         description: 'Manage practice modules',
-        color: 'from-purple-500 to-pink-600'
     },
-    // {
-    //     label: 'Interviews',
-    //     href: '/dashboard/corporate/interviews',
-    //     icon: Calendar,
-    //     description: 'Schedule interviews',
-    //     color: 'from-rose-500 to-pink-600'
-    // },
     {
         label: 'Analytics',
         href: '/dashboard/corporate/analytics',
         icon: BarChart3,
-        description: 'Hiring insights',
-        color: 'from-yellow-500 to-orange-600'
+        description: 'Reports & insights',
     },
-    // {
-    //     label: 'Talent Search',
-    //     href: '/dashboard/corporate/talent-search',
-    //     icon: Search,
-    //     description: 'Find candidates',
-    //     color: 'from-emerald-500 to-green-600'
-    // },
-    // {
-    //     label: 'Settings',
-    //     href: '/dashboard/corporate/settings',
-    //     icon: Settings,
-    //     description: 'Account settings',
-    //     color: 'from-cyan-500 to-blue-600'
-    // }
+    {
+        label: 'Settings',
+        href: '/dashboard/corporate/settings',
+        icon: Settings,
+        description: 'Account settings',
+    },
 ]
 
 interface CorporateSidebarProps {
@@ -111,168 +86,191 @@ interface CorporateSidebarProps {
 export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [profileData, setProfileData] = useState<any>(null)
-    const [isLoadingProfile, setIsLoadingProfile] = useState(false)
     const [imageError, setImageError] = useState(false)
+    const [mounted, setMounted] = useState(false)
+    const [isMobileViewport, setIsMobileViewport] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
     const desktopNavRef = useRef<HTMLDivElement>(null)
+    const { startLoading } = useLoading()
 
-    // Fetch profile data when component mounts
+    useEffect(() => {
+        setMounted(true)
+        const mq = window.matchMedia('(max-width: 1023px)')
+        const sync = () => setIsMobileViewport(mq.matches)
+        sync()
+        mq.addEventListener('change', sync)
+        return () => mq.removeEventListener('change', sync)
+    }, [])
+
     useEffect(() => {
         const fetchProfile = async () => {
             if (user?.user_type === 'corporate') {
-                setIsLoadingProfile(true)
                 try {
-                    // TODO: Replace with actual corporate profile API call
                     const data = await apiClient.getCorporateProfile()
                     setProfileData(data)
                 } catch (error) {
                     console.error('Failed to fetch profile:', error)
-                } finally {
-                    setIsLoadingProfile(false)
                 }
             }
         }
-
         fetchProfile()
     }, [user])
 
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen)
-    }
+    useEffect(() => {
+        if (!desktopNavRef.current) return
+        const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
+        if (activeItem instanceof HTMLElement) {
+            activeItem.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+        }
+    }, [pathname])
 
-    const closeMobileMenu = () => {
-        setIsMobileMenuOpen(false)
-    }
+    useEffect(() => {
+        const openMenu = () => setIsMobileMenuOpen(true)
+        window.addEventListener('corporate-open-menu', openMenu)
+        return () => window.removeEventListener('corporate-open-menu', openMenu)
+    }, [])
+
+    const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
     const handleLogout = () => {
         logout()
         closeMobileMenu()
     }
 
-    useEffect(() => {
-        if (!desktopNavRef.current) return
-        const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
-        if (activeItem instanceof HTMLElement) {
-            activeItem.scrollIntoView({
-                block: 'nearest',
-                inline: 'nearest',
-                behavior: 'smooth'
-            })
+    const getDisplayName = () => profileData?.company_name || profileData?.name || user?.name || 'Company'
+    const getDisplayEmail = () => profileData?.email || user?.email || 'corporate@company.com'
+    const getProfilePicture = () => profileData?.company_logo || profileData?.profile_picture || null
+
+    const isItemActive = (href: string) => {
+        if (href === '/dashboard/corporate') return pathname === href
+        return pathname === href || pathname?.startsWith(`${href}/`)
+    }
+
+    const NavLink = ({
+        item,
+        onNavigate,
+        compact = false,
+    }: {
+        item: NavItem
+        onNavigate?: () => void
+        compact?: boolean
+    }) => {
+        const active = isItemActive(item.href)
+        const handleClick = () => {
+            onNavigate?.()
+            if (!active) startLoading()
         }
-    }, [pathname])
 
-    // Get display name from profile data
-    const getDisplayName = () => {
-        return profileData?.name || user?.name || 'Corporate Name'
+        return (
+            <Link
+                key={item.href}
+                href={item.href}
+                onClick={handleClick}
+                data-sidebar-item={active ? 'active' : 'inactive'}
+                className={cn(
+                    'group flex items-center rounded-xl text-sm font-medium transition-all duration-300',
+                    compact ? 'px-3 py-3' : 'px-3.5 py-3',
+                    active
+                        ? corpActiveNav
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-white'
+                )}
+            >
+                <div
+                    className={cn(
+                        'p-2 rounded-lg mr-3 transition-all duration-300',
+                        active
+                            ? 'bg-white/20'
+                            : 'bg-gray-100 dark:bg-white/[0.06] group-hover:bg-white/60 dark:group-hover:bg-white/10'
+                    )}
+                >
+                    <item.icon
+                        className={cn(
+                            'w-5 h-5',
+                            active ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
+                        )}
+                    />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate">{item.label}</div>
+                    {item.description && (
+                        <div
+                            className={cn(
+                                'text-[11px] mt-0.5 truncate',
+                                active ? 'text-white/85' : 'text-gray-500 dark:text-gray-400'
+                            )}
+                        >
+                            {item.description}
+                        </div>
+                    )}
+                </div>
+            </Link>
+        )
     }
 
-    // Get display email
-    const getDisplayEmail = () => {
-        return profileData?.email || user?.email || 'corporate@company.com'
-    }
-
-    // Get profile picture
-    const getProfilePicture = () => {
-        return profileData?.profile_picture || null
-    }
-
-    // Handle profile picture error
-    const handleImageError = () => {
-        setImageError(true)
-    }
+    const ProfileBlock = ({ mobile = false }: { mobile?: boolean }) => (
+        <div
+            className={cn(
+                'border-b border-gray-200 dark:border-white/[0.06]',
+                mobile ? 'p-4' : 'p-5'
+            )}
+        >
+            <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center overflow-hidden ring-2 ring-blue-500/30 flex-shrink-0">
+                    {getProfilePicture() && !imageError ? (
+                        <Image
+                            src={getProfilePicture()}
+                            alt="Company Logo"
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                            onError={() => setImageError(true)}
+                        />
+                    ) : (
+                        <span className="text-white font-bold text-lg">
+                            {getDisplayName().charAt(0).toUpperCase()}
+                        </span>
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            {getDisplayName()}
+                        </p>
+                        <span className={corpBadgeCorporate}>Corporate</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                        {getDisplayEmail()}
+                    </p>
+                </div>
+            </div>
+        </div>
+    )
 
     return (
         <>
             {/* Desktop Sidebar */}
-            <div className={`hidden lg:flex flex-col w-64 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 ${className}`}>
-                {/* User Profile Section */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
-                    <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 overflow-hidden">
-                            {getProfilePicture() && !imageError ? (
-                                <Image
-                                    src={getProfilePicture()}
-                                    alt="Company Logo"
-                                    width={48}
-                                    height={48}
-                                    className="w-full h-full object-cover"
-                                    onError={handleImageError}
-                                />
-                            ) : getDisplayName() !== 'Corporate Name' ? (
-                                <span className="text-white font-semibold text-lg">
-                                    {getDisplayName().charAt(0).toUpperCase()}
-                                </span>
-                            ) : (
-                                <Building2 className="w-6 h-6 text-white" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">
-                                {getDisplayName()}
-                            </p>
-                            <p className="text-xs text-white/80 truncate">
-                                {getDisplayEmail()}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            <div
+                className={cn(
+                    'hidden lg:flex flex-col w-64 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40',
+                    corpSidebar,
+                    className
+                )}
+            >
+                <ProfileBlock />
 
-                {/* Navigation */}
-                <nav ref={desktopNavRef} className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
-                        const handleClick = () => {
-                            if (!isActive) {
-                                startLoading()
-                            }
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={handleClick}
-                                data-sidebar-item={isActive ? 'active' : 'inactive'}
-                                className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover:shadow-lg ${isActive
-                                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg transform scale-105`
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-                                    }`}
-                            >
-                                <div className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isActive
-                                    ? 'bg-white/20 backdrop-blur-sm'
-                                    : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-white/50 dark:group-hover:bg-gray-600/50'
-                                    }`}>
-                                    <item.icon className={`w-5 h-5 ${isActive
-                                        ? 'text-white'
-                                        : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'
-                                        }`} />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-medium">{item.label}</div>
-                                    {item.description && (
-                                        <div className={`text-xs mt-0.5 ${isActive
-                                            ? 'text-white/90'
-                                            : 'text-gray-600 dark:text-gray-300'
-                                            }`}>
-                                            {item.description}
-                                        </div>
-                                    )}
-                                </div>
-                            </Link>
-                        )
-                    })}
+                <nav ref={desktopNavRef} className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+                    {navItems.map((item) => (
+                        <NavLink key={item.href} item={item} />
+                    ))}
                 </nav>
 
-                {/* Logout Section */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-3 border-t border-gray-200 dark:border-white/[0.06]">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center px-4 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 group"
+                        className="w-full flex items-center px-3.5 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-300 group"
                     >
-                        <div className="p-2 rounded-lg mr-3 bg-red-100 dark:bg-red-900/20 group-hover:bg-red-200 dark:group-hover:bg-red-900/30 transition-colors">
+                        <div className="p-2 rounded-lg mr-3 bg-red-100 dark:bg-red-500/15 group-hover:bg-red-200 dark:group-hover:bg-red-500/25 transition-colors">
                             <LogOut className="w-5 h-5" />
                         </div>
                         <span>Logout</span>
@@ -280,41 +278,80 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                 </div>
             </div>
 
-            {/* Mobile Bottom Navigation */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
-                <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {navItems.slice(0, 5).map((item) => {
-                        const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
-                        const handleClick = () => {
-                            if (!isActive) {
-                                startLoading()
-                            }
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={handleClick}
-                                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[20%] ${isActive
-                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <item.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </Link>
-                        )
-                    })}
-                    <button
-                        onClick={toggleMobileMenu}
-                        className="flex items-center justify-center p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 w-full max-w-[20%]"
+            {/* Mobile Bottom Navigation — fixed floating bar (portaled to body) */}
+            {mounted &&
+                isMobileViewport &&
+                createPortal(
+                    <nav
+                        aria-label="Corporate mobile navigation"
+                        style={{
+                            position: 'fixed',
+                            left: 12,
+                            right: 12,
+                            bottom: 12,
+                            zIndex: 9999,
+                            touchAction: 'none',
+                        }}
                     >
-                        <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
-                </div>
-            </div>
+                        <div
+                            className="rounded-2xl border border-white/10 bg-[#0B1220]/92 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.55)]"
+                            style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
+                        >
+                            <div className="flex justify-around items-center px-1 py-2">
+                                {(
+                                    [
+                                        { label: 'Dashboard', href: '/dashboard/corporate', icon: LayoutDashboard },
+                                        { label: 'Jobs', href: '/dashboard/corporate/jobs', icon: Briefcase },
+                                        { label: 'Applicants', href: '/dashboard/corporate/applications', icon: Users },
+                                        { label: 'Batches', href: '/dashboard/corporate/practice', icon: Layers },
+                                    ] as const
+                                ).map((item) => {
+                                    const active = isItemActive(item.href)
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => {
+                                                if (!active) startLoading()
+                                            }}
+                                            className={cn(
+                                                'relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-xl transition-colors',
+                                                active ? 'text-blue-400' : 'text-gray-400'
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'flex items-center justify-center w-9 h-9 rounded-xl transition-all',
+                                                    active &&
+                                                        'bg-gradient-to-br from-blue-500 to-violet-600 text-white shadow-md shadow-blue-500/35'
+                                                )}
+                                            >
+                                                <item.icon className="w-[18px] h-[18px]" />
+                                            </span>
+                                            <span className="text-[9px] font-medium truncate max-w-full leading-tight">
+                                                {item.label}
+                                            </span>
+                                            {active && (
+                                                <span className="absolute -bottom-0.5 w-5 h-0.5 rounded-full bg-blue-500" />
+                                            )}
+                                        </Link>
+                                    )
+                                })}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMobileMenuOpen(true)}
+                                    className="relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-xl text-gray-400"
+                                >
+                                    <span className="flex items-center justify-center w-9 h-9 rounded-xl">
+                                        <MoreHorizontal className="w-[18px] h-[18px]" />
+                                    </span>
+                                    <span className="text-[9px] font-medium leading-tight">More</span>
+                                </button>
+                            </div>
+                        </div>
+                    </nav>,
+                    document.body
+                )}
 
             {/* Mobile Menu Overlay */}
             <AnimatePresence>
@@ -323,22 +360,20 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
+                        className="fixed inset-0 bg-black/60 z-[10000] backdrop-blur-sm"
+                        style={{ position: 'fixed' }}
                         onClick={closeMobileMenu}
                     >
                         <motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 shadow-xl flex flex-col"
+                            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                            className={cn('absolute right-0 top-0 h-full w-80 shadow-2xl flex flex-col', corpSidebar)}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500 flex-shrink-0">
-                                <h2 className="text-lg font-semibold text-white">
-                                    Menu
-                                </h2>
+                            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/[0.06] bg-gradient-to-r from-blue-500 to-violet-600 flex-shrink-0">
+                                <h2 className="text-lg font-semibold text-white">Menu</h2>
                                 <button
                                     onClick={closeMobileMenu}
                                     className="p-2 rounded-lg hover:bg-white/20 transition-colors"
@@ -347,80 +382,18 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                 </button>
                             </div>
 
-                            {/* User Profile in Mobile */}
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center overflow-hidden">
-                                        {getProfilePicture() && !imageError ? (
-                                            <Image
-                                                src={getProfilePicture()}
-                                                alt="Company Logo"
-                                                width={40}
-                                                height={40}
-                                                className="w-full h-full object-cover"
-                                                onError={handleImageError}
-                                            />
-                                        ) : getDisplayName() !== 'Corporate Name' ? (
-                                            <span className="text-white font-semibold text-sm">
-                                                {getDisplayName().charAt(0).toUpperCase()}
-                                            </span>
-                                        ) : (
-                                            <Building2 className="w-5 h-5 text-white" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                            {getDisplayName()}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            {getDisplayEmail()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                            <ProfileBlock mobile />
 
-                            {/* Navigation - Scrollable */}
-                            <nav className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
-                                {navItems.map((item) => {
-                                    const isActive = pathname === item.href
-                                    const { startLoading } = useLoading()
-
-                                    const handleClick = () => {
-                                        closeMobileMenu()
-                                        if (!isActive) {
-                                            startLoading()
-                                        }
-                                    }
-
-                                    return (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={handleClick}
-                                            className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                                ? `bg-gradient-to-r ${item.color} text-white`
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                                                }`}
-                                        >
-                                            <item.icon className="w-5 h-5 mr-3" />
-                                            <div>
-                                                <div className="font-medium">{item.label}</div>
-                                                {item.description && (
-                                                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
-                                                        {item.description}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Link>
-                                    )
-                                })}
+                            <nav className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-0">
+                                {navItems.map((item) => (
+                                    <NavLink key={item.href} item={item} onNavigate={closeMobileMenu} compact />
+                                ))}
                             </nav>
 
-                            {/* Logout in Mobile */}
-                            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                            <div className="p-3 border-t border-gray-200 dark:border-white/[0.06] flex-shrink-0">
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full flex items-center px-3 py-3 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                                    className="w-full flex items-center px-3 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
                                 >
                                     <LogOut className="w-5 h-5 mr-3" />
                                     <span>Logout</span>

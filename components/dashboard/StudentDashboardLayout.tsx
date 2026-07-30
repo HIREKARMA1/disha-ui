@@ -12,6 +12,7 @@ import { StudentQuickActions } from './StudentQuickActions'
 import { StudentResumeStrength } from './StudentResumeStrength'
 import { RecommendedJobs } from './RecommendedJobs'
 import { StudentLockScreen } from './StudentLockScreen'
+import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
@@ -112,7 +113,8 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                         </>
                     ) : (
                         <>
-                            <div className={`space-y-3 sm:space-y-4 ${shouldLock ? 'opacity-40' : ''}`}>
+                            <EventPopup />
+                            <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />
                                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-4 items-start">
