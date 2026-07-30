@@ -8,15 +8,20 @@ import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import {
     exportAnalyticsToCSV,
+    exportAnalyticsToPDF,
     buildAppliedStudentLookups,
     resolveAppliedStudentProfile,
     mapAttemptStudentProfileToExport,
     type AppliedStudentExport,
+    type AnalyticsExport,
 } from '@/utils/exportToExcel'
 import {
     formatAttemptPercentage,
     formatAttemptScore,
+    formatDisqualificationReason,
+    formatPassFailDisplay,
     getAttemptMaxScore,
+    getDisqualificationReason,
     getPassFailLabel,
     getTotalQuestionsFromAssessment,
     isAttemptEvaluated,
@@ -83,6 +88,7 @@ export default function AssessmentAnalyticsPage() {
             case 'PASSED': return 'bg-green-100 text-green-800 border-green-200'
             case 'FAILED': return 'bg-red-100 text-red-800 border-red-200'
             case 'COMPLETED': return 'bg-blue-100 text-blue-800 border-blue-200'
+            case 'DISQUALIFIED': return 'bg-amber-100 text-amber-800 border-amber-200'
             default: return 'bg-gray-100 text-gray-800 border-gray-200'
         }
     }
@@ -123,54 +129,63 @@ export default function AssessmentAnalyticsPage() {
         (attempts[0]?.total_questions as number | undefined) ||
         0
 
-    const handleExport = async () => {
+    const buildExportData = async (): Promise<AnalyticsExport[] | null> => {
+        if (!assessmentDetails || !filteredAttempts.length) return null
+
+        const jobId =
+            assessmentDetails.passing_criteria?.job_id ||
+            assessmentDetails.job_id ||
+            null
+
+        let appliedLookups = buildAppliedStudentLookups([])
+
+        if (jobId) {
+            try {
+                const appliedStudents: AppliedStudentExport[] =
+                    await apiClient.getAppliedStudentsAdmin(jobId)
+                appliedLookups = buildAppliedStudentLookups(appliedStudents)
+            } catch (err) {
+                console.warn('Could not load job application extras for export:', err)
+            }
+        }
+
+        return filteredAttempts.map((attempt) => {
+            const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
+            const passFail = getPassFailLabel(attempt, assessmentDetails)
+            const jobApplication = resolveAppliedStudentProfile(attempt, appliedLookups)
+            const profile = mapAttemptStudentProfileToExport(attempt, jobApplication)
+
+            return {
+                email: attempt.email || attempt.student_email || '-',
+                student_name: attempt.student_name || 'Unknown',
+                status: attempt.status,
+                total_score: attempt.total_score,
+                max_score: maxScore,
+                percentage: attempt.percentage,
+                pass_fail: formatPassFailDisplay(passFail),
+                rounds_completed: attempt.result_data?.rounds?.length || 0,
+                snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
+                snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
+                snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
+                snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
+                profile,
+            }
+        })
+    }
+
+    const handleExport = async (format: 'csv' | 'pdf' = 'csv') => {
         if (!assessmentDetails || !filteredAttempts.length) return
 
         try {
             setExporting(true)
-
-            const jobId =
-                assessmentDetails.passing_criteria?.job_id ||
-                assessmentDetails.job_id ||
-                null
-
-            let appliedLookups = buildAppliedStudentLookups([])
-
-            // Optional: job application adds applied date / expected salary only
-            if (jobId) {
-                try {
-                    const appliedStudents: AppliedStudentExport[] =
-                        await apiClient.getAppliedStudentsAdmin(jobId)
-                    appliedLookups = buildAppliedStudentLookups(appliedStudents)
-                } catch (err) {
-                    console.warn('Could not load job application extras for export:', err)
-                }
+            const exportData = await buildExportData()
+            if (!exportData) return
+            const name = assessmentDetails.assessment_name || 'Assessment'
+            if (format === 'pdf') {
+                await exportAnalyticsToPDF(exportData, name)
+            } else {
+                exportAnalyticsToCSV(exportData, name)
             }
-
-            const exportData = filteredAttempts.map((attempt) => {
-                const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
-                const passFail = getPassFailLabel(attempt, assessmentDetails)
-                const jobApplication = resolveAppliedStudentProfile(attempt, appliedLookups)
-                const profile = mapAttemptStudentProfileToExport(attempt, jobApplication)
-
-                return {
-                    email: attempt.email || attempt.student_email || '-',
-                    student_name: attempt.student_name || 'Unknown',
-                    status: attempt.status,
-                    total_score: attempt.total_score,
-                    max_score: maxScore,
-                    percentage: attempt.percentage,
-                    pass_fail: passFail,
-                    rounds_completed: attempt.result_data?.rounds?.length || 0,
-                    snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
-                    snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
-                    snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
-                    snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
-                    profile,
-                }
-            })
-
-            exportAnalyticsToCSV(exportData, assessmentDetails.assessment_name || 'Assessment')
         } finally {
             setExporting(false)
         }
@@ -237,10 +252,10 @@ export default function AssessmentAnalyticsPage() {
                     <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-4 text-sm text-amber-900 dark:text-amber-100">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1">
-                                <p className="font-semibold">Results not received from Solviq yet</p>
+                                <p className="font-semibold">Some attempts are still in progress</p>
                                 <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
-                                    Students may have finished on Solviq, but the callback did not reach DISHA.
-                                    Use the button to ask Solviq to send scores again.
+                                    Results appear here automatically when students submit, are auto-submitted,
+                                    or are disqualified. Refresh to load the latest data.
                                 </p>
                                 {pullMessage && (
                                     <p className="mt-2 text-amber-900 dark:text-amber-100">{pullMessage}</p>
@@ -249,7 +264,18 @@ export default function AssessmentAnalyticsPage() {
                             <Button
                                 variant="outline"
                                 className="shrink-0 border-amber-300 bg-white hover:bg-amber-50 dark:bg-gray-900"
-                                onClick={handlePullSolviqResults}
+                                onClick={async () => {
+                                    setPullingResults(true)
+                                    setPullMessage(null)
+                                    try {
+                                        await fetchData()
+                                        setPullMessage('Refreshed latest attempt results.')
+                                    } catch (err: any) {
+                                        setPullMessage(err.message || 'Could not refresh results')
+                                    } finally {
+                                        setPullingResults(false)
+                                    }
+                                }}
                                 disabled={pullingResults}
                             >
                                 {pullingResults ? (
@@ -257,7 +283,7 @@ export default function AssessmentAnalyticsPage() {
                                 ) : (
                                     <RefreshCw className="h-4 w-4 mr-2" />
                                 )}
-                                Pull results from Solviq
+                                Refresh results
                             </Button>
                         </div>
                     </div>
@@ -337,13 +363,14 @@ export default function AssessmentAnalyticsPage() {
                                 <option value="ALL">All Status</option>
                                 <option value="PASSED">Passed</option>
                                 <option value="FAILED">Failed</option>
+                                <option value="DISQUALIFIED">Disqualified</option>
                                 <option value="COMPLETED">Completed</option>
                             </select>
                         </div>
                         <Button
                             variant="outline"
                             className="gap-2"
-                            onClick={handleExport}
+                            onClick={() => void handleExport('csv')}
                             disabled={filteredAttempts.length === 0 || exporting}
                         >
                             {exporting ? (
@@ -352,6 +379,19 @@ export default function AssessmentAnalyticsPage() {
                                 <Download size={16} />
                             )}
                             Export CSV
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => void handleExport('pdf')}
+                            disabled={filteredAttempts.length === 0 || exporting}
+                        >
+                            {exporting ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Download size={16} />
+                            )}
+                            Export PDF
                         </Button>
                     </div>
 
@@ -439,9 +479,10 @@ export default function AssessmentAnalyticsPage() {
                                                     return (
                                                         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${label === 'PASS' ? 'bg-blue-600 text-white' :
                                                                 label === 'FAIL' ? 'bg-red-500 text-white' :
+                                                                    label === 'MALPRACTICE' ? 'bg-amber-500 text-white' :
                                                                     'bg-gray-200 text-gray-700'
                                                             }`}>
-                                                            {label}
+                                                            {formatPassFailDisplay(label)}
                                                         </span>
                                                     )
                                                 })()}
@@ -612,10 +653,16 @@ function AttemptDetailsModal({
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Status</p>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${passFail === 'PASS' ? 'bg-blue-600 text-white' :
                                     passFail === 'FAIL' ? 'bg-red-500 text-white' :
+                                    passFail === 'MALPRACTICE' ? 'bg-amber-500 text-white' :
                                         'bg-gray-200 text-gray-700'
                                 }`}>
-                                {passFail}
+                                {formatPassFailDisplay(passFail)}
                             </span>
+                            {passFail === 'MALPRACTICE' && formatDisqualificationReason(getDisqualificationReason(attempt)) && (
+                                <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">
+                                    Reason: {formatDisqualificationReason(getDisqualificationReason(attempt))}
+                                </p>
+                            )}
                         </div>
                     </div>
 

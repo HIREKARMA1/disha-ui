@@ -62,8 +62,8 @@ export function StudentExamLinkSection({
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Student exam link</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-            Share this link with candidates. They must sign in or register as a student, then they can start the test
-            in Solviq.
+            Share this link with candidates. They must sign in or register as a student, then take the exam
+            on Disha (camera and fullscreen required).
           </p>
         </div>
       </div>

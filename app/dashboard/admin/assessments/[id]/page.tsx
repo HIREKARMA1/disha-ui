@@ -157,18 +157,8 @@ export default function AssessmentDetailPage() {
           ),
         );
 
-        const packageId = getQuestionsPackageId(assessmentRes);
-        setQuestionPackageId(packageId);
-        if (packageId) {
-          fetchQuestions(packageId);
-        } else {
-          setQuestionsData(null);
-          setQuestionsError(
-            assessmentRes.is_published_to_solviq
-              ? "Question package UUID is missing. Publish or sync this assessment to SOLVIQ to load questions."
-              : "Publish this assessment to SOLVIQ to generate and manage questions.",
-          );
-        }
+        setQuestionPackageId(assessmentRes.id);
+        await fetchQuestions(assessmentRes.id, assessmentRes.rounds || []);
       } catch (err: any) {
         console.error("Failed to fetch assessment:", err);
         setError(err.message || "Failed to load assessment");
@@ -192,23 +182,46 @@ export default function AssessmentDetailPage() {
     }
   }, []);
 
-  const fetchQuestions = async (packageId: string) => {
-    if (!UUID_PATTERN.test(packageId)) {
-      setQuestionsData(null);
-      setQuestionsError(
-        "Question package UUID is missing. Publish or sync this assessment to SOLVIQ to load questions.",
-      );
-      return;
-    }
-
+  const fetchQuestions = async (assessmentKey: string, roundsHint: any[] = []) => {
     try {
       setLoadingQuestions(true);
       setQuestionsError(null);
-      const data = await apiClient.get(
-        `/disha/assessments/${packageId}/questions-answers`,
-      );
+      // Prefer grouped legacy-compatible endpoint
+      let data: any;
+      try {
+        data = await apiClient.get(
+          `/disha/assessments/${assessmentKey}/questions-answers`,
+        );
+      } catch {
+        const list = await apiClient.get(
+          `/admin/assessments/${assessmentKey}/questions`,
+        );
+        const questions = Array.isArray(list) ? list : list?.questions || [];
+        const roundsSrc = roundsHint.length
+          ? roundsHint
+          : assessment?.rounds || [];
+        const byRound: Record<string, any[]> = {};
+        questions.forEach((q: any) => {
+          const rid = q.round_id || "unknown";
+          if (!byRound[rid]) byRound[rid] = [];
+          byRound[rid].push(q);
+        });
+        data = {
+          rounds: roundsSrc.map((round: any) => ({
+            round_id: round.id,
+            round_number: round.round_number,
+            round_type: round.round_type,
+            round_name: round.round_name,
+            expected_questions: round?.config?.num_questions,
+            questions_count: (byRound[round.id] || []).length,
+            questions: byRound[round.id] || [],
+          })),
+          questions,
+          count: questions.length,
+        };
+      }
       setQuestionsData(data);
-      setQuestionPackageId(getQuestionsPackageId(data) || packageId);
+      setQuestionPackageId(assessmentKey);
       setExpandedRounds((prev) => {
         const next = { ...prev };
         (data.rounds || []).forEach((round: any) => {
@@ -222,7 +235,7 @@ export default function AssessmentDetailPage() {
     } catch (error) {
       console.error("Error fetching questions:", error);
       setQuestionsError(
-        getErrorMessage(error, "Failed to load questions from SOLVIQ."),
+        getErrorMessage(error, "Failed to load questions."),
       );
     } finally {
       setLoadingQuestions(false);
@@ -242,12 +255,12 @@ export default function AssessmentDetailPage() {
     try {
       setDeletingQuestionId(questionId);
       setQuestionActionMessage(null);
-      await apiClient.delete(`/disha/assessments/questions/${questionId}`);
+      await apiClient.delete(`/admin/assessments/${assessmentId}/questions/${questionId}`);
       setQuestionActionMessage(
         "Question deleted. Use Replenish missing questions to recreate the required count.",
       );
       if (questionPackageId) {
-        fetchQuestions(questionPackageId);
+        fetchQuestions(assessmentId, assessment?.rounds || []);
       }
     } catch (error) {
       console.error("Error deleting question:", error);
@@ -260,7 +273,7 @@ export default function AssessmentDetailPage() {
   const handleReplenishQuestions = async () => {
     if (!questionPackageId) {
       setQuestionsError(
-        "Question package UUID is missing. Publish or sync this assessment to SOLVIQ first.",
+        "Assessment id missing; reload the page.",
       );
       return;
     }
@@ -270,13 +283,13 @@ export default function AssessmentDetailPage() {
       setQuestionActionMessage(null);
       setQuestionsError(null);
       const res = await apiClient.post(
-        `/disha/assessments/${questionPackageId}/fill-questions`,
+        `/admin/assessments/${assessmentId}/questions/fill`,
         {},
       );
       setQuestionActionMessage(
-        `Questions replenished. Total questions added: ${res.total_questions_added || 0}.`,
+        `Questions replenished. Added: ${res.added ?? res.total_questions_added ?? 0}.`,
       );
-      fetchQuestions(questionPackageId);
+      fetchQuestions(assessmentId, assessment?.rounds || []);
     } catch (error) {
       console.error("Error replenishing questions:", error);
       setQuestionsError(getErrorMessage(error, "Error replenishing questions"));
@@ -294,15 +307,9 @@ export default function AssessmentDetailPage() {
         {},
       );
       setAssessment(response);
-      const packageId = getQuestionsPackageId(response);
-      setQuestionPackageId(packageId);
-      if (packageId) {
-        fetchQuestions(packageId);
-      } else {
-        setQuestionsError(
-          "Assessment was published, but no SOLVIQ package UUID was returned. Please sync again before managing questions.",
-        );
-      }
+      setQuestionPackageId(response.id);
+      setQuestionsError(null);
+      await fetchQuestions(response.id, response.rounds || []);
     } catch (err: any) {
       setError(err.message || "Failed to publish assessment");
     } finally {
@@ -339,8 +346,8 @@ export default function AssessmentDetailPage() {
   };
 
   const copySolviqUrl = () => {
-    if (generatedToken?.solviq_url) {
-      navigator.clipboard.writeText(generatedToken.solviq_url);
+    if (generatedToken?.exam_url || generatedToken?.solviq_url) {
+      navigator.clipboard.writeText(generatedToken.exam_url || generatedToken.solviq_url);
       setCopiedSolviq(true);
       setTimeout(() => setCopiedSolviq(false), 2000);
     }
@@ -444,7 +451,7 @@ export default function AssessmentDetailPage() {
               disabled={isPublishing}
               className="bg-green-600 hover:bg-green-700"
             >
-              {isPublishing ? "Publishing..." : "Publish to SOLVIQ"}
+              {isPublishing ? "Publishing..." : "Publish Assessment"}
             </Button>
           )}
         </div>
@@ -528,7 +535,7 @@ export default function AssessmentDetailPage() {
                 <p className="mt-1 text-sm text-gray-600">
                   {canManageQuestions
                     ? `${totalLoadedQuestions} of ${totalExpectedQuestions || totalLoadedQuestions} questions loaded across ${assessment.rounds.length} rounds.`
-                    : "Publish or sync this assessment to load generated questions from SOLVIQ."}
+                    : "Questions will appear here after generation. Use Replenish if any are missing."}
                 </p>
                 {questionPackageId && (
                   <p className="mt-1 text-xs text-gray-500">
@@ -870,7 +877,7 @@ export default function AssessmentDetailPage() {
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm text-gray-600">SOLVIQ URL:</p>
+                    <p className="text-sm text-gray-600">Exam URL:</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -882,7 +889,7 @@ export default function AssessmentDetailPage() {
                     </Button>
                   </div>
                   <p className="text-sm font-mono bg-white p-2 rounded border border-gray-300 break-all">
-                    {generatedToken.solviq_url}
+                    {generatedToken.exam_url || generatedToken.solviq_url}
                   </p>
                 </div>
                 <div>

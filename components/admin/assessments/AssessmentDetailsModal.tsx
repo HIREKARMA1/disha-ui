@@ -122,25 +122,20 @@ export function AssessmentDetailsModal({
                     </div>
                 </div>
 
-                {/* Integration Status */}
+                {/* Publish status */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Integration Status</h4>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Publish Status</h4>
                     <div className="flex items-center gap-2">
                         {assessment.is_published_to_solviq ? (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-md border border-green-200 text-sm">
                                 <CheckCircle className="w-4 h-4" />
-                                <span>Synced with Solviq</span>
+                                <span>Published for students</span>
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-md border border-yellow-200 text-sm">
                                 <AlertCircle className="w-4 h-4" />
-                                <span>Not Synced</span>
+                                <span>Not published</span>
                             </div>
-                        )}
-                        {assessment.solviq_assessment_id && (
-                            <span className="text-xs text-gray-400 font-mono self-center ml-2">
-                                {assessment.solviq_assessment_id}
-                            </span>
                         )}
                     </div>
                     <div className="mt-4">

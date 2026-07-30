@@ -14,11 +14,19 @@ export type AttemptLike = {
   total_score?: number | null
   percentage?: number | null
   submitted_at?: string | null
-  result_data?: { rounds?: unknown[] } | null
+  result_data?: { rounds?: unknown[]; disqualification_reason?: string | null } | null
   total_questions?: number | null
+  disqualification_reason?: string | null
 }
 
-const EVALUATED_STATUSES = new Set(['COMPLETED', 'PASSED', 'FAILED', 'SUBMITTED'])
+const EVALUATED_STATUSES = new Set([
+  'COMPLETED',
+  'PASSED',
+  'FAILED',
+  'SUBMITTED',
+  'DISQUALIFIED',
+  'AUTO_SUBMITTED',
+])
 
 export function getTotalQuestionsFromAssessment(assessment?: AssessmentLike | null): number {
   if (!assessment?.rounds?.length) return 0
@@ -73,19 +81,47 @@ export function getPassingPercentage(assessment?: AssessmentLike | null): number
   return assessment?.passing_criteria?.overall_percentage ?? 60
 }
 
+export function getDisqualificationReason(attempt: AttemptLike): string | null {
+  const reason =
+    attempt.disqualification_reason ||
+    attempt.result_data?.disqualification_reason ||
+    null
+  return reason ? String(reason).trim() : null
+}
+
+/** Human-readable malpractice reason for admin UI. */
+export function formatDisqualificationReason(reason: string | null | undefined): string | null {
+  if (!reason) return null
+  const key = reason.trim().toUpperCase()
+  if (key === 'FULLSCREEN_EXIT') return 'Fullscreen exit'
+  if (key === 'TAB_SWITCH') return 'Tab switch'
+  return reason.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
+}
+
 export function getPassFailLabel(
   attempt: AttemptLike,
   assessment?: AssessmentLike | null
-): 'PASS' | 'FAIL' | 'PENDING' {
+): 'PASS' | 'FAIL' | 'MALPRACTICE' | 'PENDING' {
   if (!isAttemptEvaluated(attempt)) return 'PENDING'
-  const threshold = getPassingPercentage(assessment)
   const status = (attempt.status || '').toUpperCase()
+  const reason = getDisqualificationReason(attempt)
+  if (status === 'DISQUALIFIED' || reason) return 'MALPRACTICE'
+
+  const threshold = getPassingPercentage(assessment)
   if (status === 'PASSED') return 'PASS'
   if (status === 'FAILED') return 'FAIL'
   if (typeof attempt.percentage === 'number') {
     return attempt.percentage >= threshold ? 'PASS' : 'FAIL'
   }
   return 'PENDING'
+}
+
+/** Display text for pass/fail/disqualified badges and exports. */
+export function formatPassFailDisplay(
+  label: 'PASS' | 'FAIL' | 'MALPRACTICE' | 'PENDING'
+): string {
+  if (label === 'MALPRACTICE') return 'Disqualified'
+  return label
 }
 
 export function formatAttemptScore(attempt: AttemptLike, assessment?: AssessmentLike | null): string {

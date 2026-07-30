@@ -20,6 +20,7 @@ interface RoundConfiguratorProps {
 
 const ROUND_TYPES = [
   { value: "aptitude", label: "Aptitude Test" },
+  { value: "mcq", label: "MCQ based Question" },
   { value: "soft_skills", label: "Soft Skills" },
   { value: "technical_mcq", label: "Technical MCQ" },
   { value: "coding", label: "Coding Challenge" },
@@ -209,10 +210,10 @@ function RoundEditor({ round, onSave, onCancel }: any) {
         {/* Hide "Number of Questions" for Group Discussion rounds, show "Number of Rounds" instead */}
         {formData.round_type !== 'group_discussion' ? (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions (min 10)</label>
             <input
               type="number"
-              min="1"
+              min={10}
               value={formData.config.num_questions}
               onChange={(e) => handleChange("config.num_questions", parseInt(e.target.value))}
               className="w-full px-3 py-2 border rounded-lg"
@@ -250,9 +251,28 @@ function RoundEditor({ round, onSave, onCancel }: any) {
             type="text"
             value={formData.config.topic || ""}
             onChange={(e) => handleChange("config.topic", e.target.value)}
-            placeholder="e.g. Java, Data Structures, General Aptitude"
+            placeholder={
+              formData.round_type === "aptitude"
+                ? "e.g. quantitative, logical reasoning, verbal"
+                : formData.round_type === "technical_mcq" || formData.round_type === "mcq"
+                  ? "e.g. Java, Python, SQL, Data Structures"
+                  : formData.round_type === "soft_skills"
+                    ? "e.g. communication, teamwork, leadership"
+                    : "e.g. topic focus for this round"
+            }
             className="w-full px-3 py-2 border rounded-lg"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            {formData.round_type === "aptitude"
+              ? "Aptitude rounds generate quantitative/logical/verbal MCQs from these areas — not programming languages."
+              : formData.round_type === "mcq"
+                ? "MCQ based Question rounds generate topic-focused MCQs (e.g. Java, Python, SQL)."
+                : formData.round_type === "technical_mcq"
+                  ? "Technical MCQ rounds generate questions for this subject (use Technical MCQ + Java for Java questions)."
+                  : formData.round_type === "soft_skills"
+                    ? "Soft-skills rounds focus questions on this workplace topic."
+                    : "Questions are generated to match this round type and topic."}
+          </p>
         </div>
         {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Passing Percentage (%)</label>

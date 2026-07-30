@@ -763,7 +763,7 @@ class ApiClient {
     return response.data;
   }
 
-  // Assessment Management (DISHA-SOLVIQ)
+  // Assessment Management (local Disha exam runtime)
   async getAdminAssessments(params: {
     skip?: number;
     limit?: number;
@@ -824,12 +824,69 @@ class ApiClient {
     };
   }
 
-  /** Student or admin: issue Solviq token; `assessment_id` is taken from the URL path. */
+  /** Student or admin: create local exam session; returns exam_url on Disha. */
   async generateAssessmentToken(
     assessmentId: string,
     body: { student_id: string; expires_in_minutes?: number; university_id?: string; corporate_id?: string }
   ): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/token`, body);
+    return response.data;
+  }
+
+  async startAssessmentExam(assessmentId: string, attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/start`
+    );
+    return response.data;
+  }
+
+  async getAssessmentExamQuestions(assessmentId: string, attemptId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/attempts/${attemptId}/questions`
+    );
+    return response.data;
+  }
+
+  async submitAssessmentExam(
+    assessmentId: string,
+    attemptId: string,
+    body: { answers: Array<{ question_id: string; answer?: any; time_spent?: number }>; auto_submit?: boolean }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/submit`,
+      body
+    );
+    return response.data;
+  }
+
+  async disqualifyAssessmentExam(
+    assessmentId: string,
+    attemptId: string,
+    body: { reason: string; answers?: Array<{ question_id: string; answer?: any; time_spent?: number }> }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/disqualify`,
+      body
+    );
+    return response.data;
+  }
+
+  async uploadAssessmentProctoringSnapshot(
+    assessmentId: string,
+    attemptId: string,
+    snapshotIndex: number,
+    blob: Blob,
+    roundNumber?: number
+  ): Promise<any> {
+    const form = new FormData();
+    form.append('snapshot_index', String(snapshotIndex));
+    if (roundNumber != null) form.append('round_number', String(roundNumber));
+    form.append('file', blob, `snapshot_${snapshotIndex}.jpg`);
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/proctoring/snapshots`,
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
     return response.data;
   }
 

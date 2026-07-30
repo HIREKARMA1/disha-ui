@@ -4,6 +4,10 @@ import React, { useState, useEffect } from "react";
 import { RoundConfigurator } from "./RoundConfigurator";
 import { FileText, Settings, Layers, Briefcase } from "lucide-react";
 import { normalizeAssessmentTimeWindow } from "@/lib/datetime";
+import {
+  assessmentFormSchema,
+  mapAssessmentFormErrors,
+} from "@/lib/validations/assessment";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -111,21 +115,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.assessment_name) newErrors.assessment_name = "Assessment name is required";
-    if (!formData.time_window.start_time) newErrors.start_time = "Start time is required";
-    if (!formData.time_window.end_time) newErrors.end_time = "End time is required";
-    if (formData.rounds.length === 0) newErrors.rounds = "At least one round is required";
-
-    if (formData.time_window.start_time && formData.time_window.end_time) {
-      const start = new Date(formData.time_window.start_time);
-      const end = new Date(formData.time_window.end_time);
-      if (start >= end) {
-        newErrors.timeWindow = "End time must be after start time";
-      }
-    }
-
+    const result = assessmentFormSchema.safeParse({
+      assessment_name: formData.assessment_name,
+      time_window: formData.time_window,
+      rounds: formData.rounds,
+    });
+    const newErrors = mapAssessmentFormErrors(result);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
