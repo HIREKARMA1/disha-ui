@@ -255,10 +255,25 @@ export function Navbar({
 
     return (
         <nav className={`main-navbar ${getNavbarClasses()} ${className}`}>
-            <div className="container mx-auto px-4 py-4">
-                <div className="flex items-center justify-between">
+            <div className="container mx-auto px-4 py-3 md:py-4">
+                <div className="flex items-center justify-between min-h-[40px] md:min-h-0">
                     {/* Logo */}
                     <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                        {isAuthenticated && user?.user_type === 'corporate' && pathname?.startsWith('/dashboard/corporate') && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="xl:hidden p-2 -ml-1"
+                                onClick={() => {
+                                    if (typeof window !== 'undefined') {
+                                        window.dispatchEvent(new Event('corporate-open-menu'))
+                                    }
+                                }}
+                                aria-label="Open menu"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </Button>
+                        )}
                         <Link href={isAuthenticated ? getDashboardPath() : "/"} className="flex items-center">
                             <Image
                                 src={getLogoSrc()}
@@ -454,20 +469,46 @@ export function Navbar({
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="xl:hidden flex items-center space-x-2">
-                        <ThemeToggle />
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="p-2"
-                        >
-                            {isMobileMenuOpen ? (
-                                <X className="w-5 h-5" />
-                            ) : (
-                                <Menu className="w-5 h-5" />
-                            )}
-                        </Button>
+                    <div className="xl:hidden flex items-center space-x-1.5 sm:space-x-2">
+                        {isAuthenticated && user?.user_type === 'corporate' && pathname?.startsWith('/dashboard/corporate') ? (
+                            <>
+                                <Link href="/dashboard/corporate">
+                                    <Button
+                                        size="sm"
+                                        className="h-9 px-2.5 sm:px-3 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white text-xs sm:text-sm"
+                                    >
+                                        <Building2 className="w-3.5 h-3.5 mr-1" />
+                                        <span className="hidden xs:inline sm:inline">Dashboard</span>
+                                    </Button>
+                                </Link>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleLogout}
+                                    className="p-2 text-red-600 dark:text-red-400"
+                                    aria-label="Logout"
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                </Button>
+                                <ThemeToggle />
+                            </>
+                        ) : (
+                            <>
+                                <ThemeToggle />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    className="p-2"
+                                >
+                                    {isMobileMenuOpen ? (
+                                        <X className="w-5 h-5" />
+                                    ) : (
+                                        <Menu className="w-5 h-5" />
+                                    )}
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
 

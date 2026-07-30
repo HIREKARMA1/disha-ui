@@ -1,17 +1,16 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/ui/navbar'
 import { CorporateSidebar } from './CorporateSidebar'
 import { CorporateWelcomeMessage } from './CorporateWelcomeMessage'
 import { CorporateDashboardStats } from './CorporateDashboardStats'
-import { CorporateAnalyticsChart } from './CorporateAnalyticsChart'
-import { AdvertisementBanner } from './AdvertisementBanner'
-import { CorporateRecentActivities } from './CorporateRecentActivities'
+import { CorporateHomeWidgets } from './CorporateHomeWidgets'
 import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
+import { corpPageBg } from '@/components/corporate/ui/corporate-theme'
 
 interface CorporateDashboardLayoutProps {
     children?: React.ReactNode
@@ -24,24 +23,20 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
     const [error, setError] = useState<string | null>(null)
     const { user } = useAuth()
 
-    // Fetch corporate dashboard data and profile
     useEffect(() => {
         const fetchDashboardData = async () => {
             if (user?.user_type === 'corporate') {
                 try {
                     setIsLoading(true)
-                    // Fetch dashboard data and profile in parallel
                     const [dashboardDataResult, profileData] = await Promise.all([
                         apiClient.getCorporateDashboard(),
-                        apiClient.getCorporateProfile()
+                        apiClient.getCorporateProfile(),
                     ])
-                    console.log('🎯 Corporate Dashboard Data:', dashboardDataResult)
-                    console.log('🎯 Corporate Profile Data:', profileData)
                     setDashboardData(dashboardDataResult)
                     setCorporateProfile(profileData)
                     setError(null)
-                } catch (error) {
-                    console.error('Failed to fetch corporate dashboard data:', error)
+                } catch (err) {
+                    console.error('Failed to fetch corporate dashboard data:', err)
                     setError('Failed to load dashboard data')
                     setDashboardData(null)
                     setCorporateProfile(null)
@@ -55,31 +50,26 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
     }, [user?.id, user?.user_type, user?.name])
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Navbar is now fixed positioned */}
+        <div className={corpPageBg}>
             <Navbar />
-
-            {/* CorporateSidebar is now fixed positioned */}
             <CorporateSidebar />
 
-            {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className="p-6 pb-safe lg:pb-6 min-h-screen">
+                <main className="p-4 md:p-6 lg:p-8 pb-28 lg:pb-8 min-h-screen">
                     {children ? (
                         children
                     ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
                             <EventPopup />
-                            {/* Loading State */}
+
                             {isLoading && (
-                                <div className="flex items-center justify-center py-12">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                                <div className="flex items-center justify-center py-16">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
                                 </div>
                             )}
 
-                            {/* Error State */}
                             {error && !isLoading && (
-                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+                                <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
                                     <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
                                         Error Loading Dashboard
                                     </h3>
@@ -87,22 +77,20 @@ export function CorporateDashboardContent({ children }: CorporateDashboardLayout
                                 </div>
                             )}
 
-                            {/* Dashboard Content */}
                             {!isLoading && (
                                 <>
-                                    <CorporateWelcomeMessage companyName={corporateProfile?.company_name || corporateProfile?.name || 'Company'} />
-
-                                    <CorporateDashboardStats dashboardData={dashboardData} isLoading={isLoading} />
-
-                                    <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
-                                        <div className="xl:col-span-7 space-y-6">
-                                            <CorporateAnalyticsChart />
-                                            <CorporateRecentActivities />
-                                        </div>
-                                        <div className="xl:col-span-3 space-y-6">
-                                            <AdvertisementBanner />
-                                        </div>
-                                    </div>
+                                    <CorporateWelcomeMessage
+                                        companyName={
+                                            corporateProfile?.company_name ||
+                                            corporateProfile?.name ||
+                                            'Company'
+                                        }
+                                    />
+                                    <CorporateDashboardStats
+                                        dashboardData={dashboardData}
+                                        isLoading={isLoading}
+                                    />
+                                    <CorporateHomeWidgets />
                                 </>
                             )}
                         </div>
@@ -121,4 +109,3 @@ export function CorporateDashboardLayout({ children }: CorporateDashboardLayoutP
         </>
     )
 }
-
