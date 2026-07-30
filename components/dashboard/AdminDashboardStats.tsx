@@ -139,7 +139,7 @@ export function AdminDashboardStats({ userStats, jobStats, isLoading }: AdminDas
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                             {stat.value.toLocaleString()}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                             {stat.title}
                         </p>
                     </div>

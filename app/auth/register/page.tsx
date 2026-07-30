@@ -659,36 +659,40 @@ function RegisterPageContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Navbar */}
+        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/40 to-sky-100/50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+                <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-3xl dark:bg-primary-500/10" />
+                <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-secondary-400/15 blur-3xl dark:bg-secondary-500/10" />
+            </div>
+
             <Navbar variant="solid" />
 
             {/* Main Content */}
             <div className={currentStep === 'otp'
-                ? 'min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12'
-                : 'container mx-auto px-4 py-12 pt-24 sm:pt-24'}
+                ? 'relative min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12'
+                : 'relative container mx-auto px-4 py-12 pt-24 sm:pt-24'}
             >
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.5 }}
                     className={currentStep === 'otp' ? 'w-full max-w-md' : 'max-w-2xl mx-auto'}
                 >
                     {/* Header - Only show on form step */}
                     {currentStep === 'form' && (
-                        <div className="text-center mb-1 md:mb-8">
-                            <div className="inline-flex items-center justify-center w-8 h-8 md:w-20 md:h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-md md:rounded-2xl mb-1 md:mb-6">
+                        <div className="text-center mb-6 sm:mb-8">
+                            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl mb-4 shadow-lg shadow-primary-500/25">
                                 {(() => {
                                     const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
-                                    return <IconComponent className="w-4 h-4 md:w-10 md:h-10 text-white" />
+                                    return <IconComponent className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                                 })()}
                             </div>
 
-                            <h1 className="text-base md:text-3xl font-bold text-gray-900 dark:text-white leading-none mb-0.5 md:mb-4">
+                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">
                                 Create Your {selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)} Account
                             </h1>
 
-                            <p className="text-[10px] md:text-lg text-gray-600 dark:text-gray-400 leading-none">
+                            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
                                 Join HireKarma and start your journey today
                             </p>
                         </div>
@@ -696,11 +700,11 @@ function RegisterPageContent() {
 
                     {/* User Type Selector - Only show on form step */}
                     {currentStep === 'form' && (
-                        <div className="mb-8">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                        <div className="mb-6 sm:mb-8">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2.5">
                                 I am a
                             </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
 
                                 {userTypeOptions.map((option) => {
                                     const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
@@ -711,13 +715,13 @@ function RegisterPageContent() {
                                             key={option.value}
                                             type="button"
                                             onClick={() => handleUserTypeChange(option.value)}
-                                            className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${isSelected
-                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-400'
+                                            className={`p-3.5 sm:p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${isSelected
+                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 shadow-sm shadow-primary-500/10'
+                                                : 'border-gray-200/80 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-300'
                                                 }`}
                                         >
-                                            <Icon className={`w-6 h-6 ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                                            <span className="text-sm font-medium">{option.label}</span>
+                                            <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isSelected ? 'text-primary-600 dark:text-primary-300' : ''}`} />
+                                            <span className="text-sm font-semibold">{option.label}</span>
                                         </button>
                                     )
                                 })}
@@ -726,7 +730,7 @@ function RegisterPageContent() {
                     )}
 
                     {/* Registration Form or OTP Verification */}
-                    <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-12 sm:p-8'}`}>
+                    <div className={`bg-white/80 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-gray-900/5 dark:shadow-black/20 border border-white/60 dark:border-gray-700/60 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-5 sm:p-8'}`}>
                         {currentStep === 'form' ? (
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                                 {/* Hidden user_type field */}
@@ -788,7 +792,8 @@ function RegisterPageContent() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowPassword(!showPassword)}
-                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition-colors"
+                                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                                                     >
                                                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                     </button>
@@ -817,7 +822,8 @@ function RegisterPageContent() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition-colors"
+                                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                                     >
                                                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                     </button>
@@ -837,7 +843,7 @@ function RegisterPageContent() {
 
                                 <Button
                                     type="submit"
-                                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                                    className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg shadow-primary-500/25 transition-all duration-200"
                                     loading={isLoading}
                                 >
                                     Send OTP
@@ -961,14 +967,14 @@ function RegisterPageContent() {
                             </motion.div>
                         )}
 
-                        <div className="mt-4 sm:mt-6 text-center">
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                                 Already have an account?{' '}
                                 <Link
                                     href={`/auth/login?type=${selectedUserType}`}
-                                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors touch-manipulation"
+                                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors touch-manipulation"
                                 >
-                                    Sign in
+                                    Sign In
                                 </Link>
                             </p>
                         </div>

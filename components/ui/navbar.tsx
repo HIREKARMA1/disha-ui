@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { BrandLogo } from '@/components/ui/BrandLogo'
 import {
     ChevronDown,
     Menu,
@@ -230,16 +231,11 @@ export function Navbar({
                     <div className="flex items-center justify-between">
                         {/* Logo */}
                         <div className="flex items-center">
-                            <Link href="/auth/login" className="flex items-center">
-                                <Image
-                                    src={getLogoSrc()}
-                                    alt="HireKarma Logo"
-                                    width={150}
-                                    height={50}
-                                    className="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
-                                    priority
-                                />
-                            </Link>
+                            <BrandLogo
+                                href="/auth/login"
+                                priority
+                                imageClassName="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
+                            />
                         </div>
 
                         {/* Loading state */}

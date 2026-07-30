@@ -71,9 +71,9 @@ export function UpcomingEventsCard({ className = '' }: UpcomingEventsCardProps) 
   }
 
   return (
-    <div className={className}>
+    <div className={cn('relative z-0 h-auto overflow-visible', className)}>
       {header}
-      <div className="space-y-3">
+      <div className="relative z-0 space-y-3 overflow-visible">
         {events.map((event, index) => {
           const slug = event.slug || event.id
           const eventDate = event.event_start_date
@@ -87,14 +87,23 @@ export function UpcomingEventsCard({ className = '' }: UpcomingEventsCardProps) 
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: index * 0.06 }}
+              className="relative z-0"
             >
               <Link href={`/events/${slug}`} className="block group">
                 <div className="relative overflow-hidden rounded-xl border border-gray-200/80 dark:border-gray-700/80 bg-white dark:bg-gray-800/90 p-3.5 shadow-sm hover:shadow-md hover:border-primary-300/50 dark:hover:border-primary-600/40 transition-all duration-300">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 to-secondary-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 to-secondary-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   <div className="relative flex gap-3">
                     {event.organizer_logo_url ? (
-                      <div className="h-12 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 p-1.5 shadow-sm">
-                        <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
+                      <div className="h-12 w-12 shrink-0 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 p-1.5 shadow-sm overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={event.organizer_logo_url}
+                          alt=""
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
                       </div>
                     ) : (
                       <div className="h-12 w-12 shrink-0 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
