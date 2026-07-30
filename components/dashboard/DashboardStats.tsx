@@ -14,8 +14,15 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
   const [stats, setStats] = useState<DashboardStats>({
     totalJobs: 0,
     appliedJobs: 0,
+    appliedToOpenJobs: 0,
     selected: 0,
+    offered: 0,
     rejected: 0,
+    pending: 0,
+    applicationRate: 0,
+    selectionRate: 0,
+    offerRate: 0,
+    rejectionRate: 0,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

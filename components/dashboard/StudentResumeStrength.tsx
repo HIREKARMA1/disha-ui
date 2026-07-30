@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
 import { profileService } from '@/services/profileService'
@@ -11,19 +11,35 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
   const [completion, setCompletion] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    profileService
-      .getProfileCompletion()
-      .then((data) => setCompletion(data?.completion_percentage || 0))
-      .catch(() => setCompletion(0))
-      .finally(() => setLoading(false))
+  const loadCompletion = useCallback(async () => {
+    try {
+      const data = await profileService.getProfileCompletion()
+      const pct = Math.round(Math.min(100, Math.max(0, Number(data?.completion_percentage) || 0)))
+      setCompletion(pct)
+    } catch {
+      setCompletion(0)
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    void loadCompletion()
+    const onProfileUpdated = () => {
+      setLoading(true)
+      void loadCompletion()
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('profile-updated', onProfileUpdated)
+      return () => window.removeEventListener('profile-updated', onProfileUpdated)
+    }
+  }, [loadCompletion])
 
   const size = 88
   const strokeWidth = 8
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
-  const offset = circumference - (Math.min(completion, 100) / 100) * circumference
+  const offset = circumference - (completion / 100) * circumference
   const stroke = completion >= 80 ? '#10B981' : completion >= 50 ? '#3B82F6' : '#F59E0B'
 
   const tips =
@@ -78,23 +94,20 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
         <div className="flex-1 min-w-0">
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-snug">
             {completion >= 80
-              ? 'Great job! Your resume is strong and ready for applications.'
-              : 'Complete your profile to improve job match and success rate.'}
+              ? 'Your resume looks competitive for campus roles.'
+              : 'Complete more profile sections to improve your score.'}
           </p>
-          <ul className="mt-1.5 space-y-0.5">
+          <ul className="mt-2 space-y-1">
             {tips.map((tip) => (
-              <li
-                key={tip}
-                className="flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-500"
-              >
-                <CheckCircle2 className="w-3 h-3 shrink-0" />
+              <li key={tip} className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
                 {tip}
               </li>
             ))}
           </ul>
           <Link
             href="/dashboard/student/profile"
-            className="inline-block mt-1.5 text-xs sm:text-sm font-semibold text-blue-500 hover:text-blue-400"
+            className="mt-2 inline-block text-xs font-semibold text-blue-500 hover:text-blue-400"
           >
             Improve profile →
           </Link>

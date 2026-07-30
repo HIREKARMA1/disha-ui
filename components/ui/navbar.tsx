@@ -464,154 +464,43 @@ export function Navbar({
                         <ThemeToggle />
                     </div>
 
-                    {/* Mobile Menu Button */}
+                    {/* Mobile: Logo + Theme Toggle + Menu (no Dashboard/Logout) */}
                     <div className="xl:hidden flex items-center space-x-1.5 sm:space-x-2">
-                        {isAuthenticated && user?.user_type === 'corporate' && pathname?.startsWith('/dashboard/corporate') ? (
-                            <>
-                                <Link href="/dashboard/corporate">
-                                    <Button
-                                        size="sm"
-                                        className="h-9 px-2.5 sm:px-3 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white text-xs sm:text-sm"
-                                    >
-                                        <Building2 className="w-3.5 h-3.5 mr-1" />
-                                        <span className="hidden xs:inline sm:inline">Dashboard</span>
-                                    </Button>
-                                </Link>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleLogout}
-                                    className="p-2 text-red-600 dark:text-red-400"
-                                    aria-label="Logout"
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                </Button>
-                                <ThemeToggle />
-                            </>
-                        ) : (
-                            <>
-                                <ThemeToggle />
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                    className="p-2"
-                                >
-                                    {isMobileMenuOpen ? (
-                                        <X className="w-5 h-5" />
-                                    ) : (
-                                        <Menu className="w-5 h-5" />
-                                    )}
-                                </Button>
-                            </>
+                        <ThemeToggle />
+                        {!(isAuthenticated && user) && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="p-2"
+                                aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                            >
+                                {isMobileMenuOpen ? (
+                                    <X className="w-5 h-5" />
+                                ) : (
+                                    <Menu className="w-5 h-5" />
+                                )}
+                            </Button>
                         )}
                     </div>
                 </div>
 
-                {/* Mobile Menu */}
-                {isMobileMenuOpen && (
+                {/* Mobile Menu — guest Sign In/Up only */}
+                {isMobileMenuOpen && !isAuthenticated && (
                     <div className="xl:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col space-y-3 p-4">
-                            {/* About Section */}
-                            {/* <div className="space-y-2">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">About</div>
-                                <Link href="/about/why-hirekarma" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <Target className="w-4 h-4 mr-2" />
-                                        Why HireKarma
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-6">
+                                <Link href={getAuthLink('/auth/register')} onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Button variant="outline" className="w-full justify-start mb-4 border-[#00BAE8] text-[#00BAE8] hover:bg-[#00BAE8] hover:text-white">
+                                        Sign Up
                                     </Button>
                                 </Link>
-                                <Link href="/about/mission-vision" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <Eye className="w-4 h-4 mr-2" />
-                                        Mission & Vision
+                                <Link href={getAuthLink('/auth/login')} onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Button className="w-full justify-start bg-[#00BAE8] hover:bg-[#009bc2] text-white">
+                                        Sign In
                                     </Button>
                                 </Link>
-                            </div> */}
-
-                            {/* Solutions Section */}
-                            {/* <div className="space-y-2">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Solutions</div>
-                                <Link href="/solutions/campus-placement" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <Cap className="w-4 h-4 mr-2" />
-                                        Campus Placement
-                                    </Button>
-                                </Link>
-                                <Link href="/solutions/skill-development" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <BookOpen className="w-4 h-4 mr-2" />
-                                        Skill Development
-                                    </Button>
-                                </Link>
-                                <Link href="/solutions/lateral-hiring" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <Users className="w-4 h-4 mr-2" />
-                                        Lateral Hiring
-                                    </Button>
-                                </Link>
-                                <Link href="/solutions/general-staffing" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <Wrench className="w-4 h-4 mr-2" />
-                                        General Staffing
-                                    </Button>
-                                </Link>
-                            </div> */}
-
-                            {/* Resources Section */}
-                            {/* <div className="space-y-2">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Resources</div>
-                                <Link href="/resources/moments-corner" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        Moments Corner
-                                    </Button>
-                                </Link>
-                                <Link href="/resources/insights" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <Button variant="ghost" className="w-full justify-start">
-                                        <BarChart3 className="w-4 h-4 mr-2" />
-                                        Insights
-                                    </Button>
-                                </Link>
-                            </div> */}
-
-                            {/* Auth Section */}
-                            {isAuthenticated && user ? (
-                                <>
-                                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                                        <Link href={getDashboardPath()} onClick={() => setIsMobileMenuOpen(false)}>
-                                            <Button className="w-full justify-start bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
-                                                {(() => {
-                                                    const IconComponent = getUserTypeIcon()
-                                                    return <IconComponent className="w-4 h-4 mr-2" />
-                                                })()}
-                                                Dashboard
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        onClick={handleLogout}
-                                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
-                                    >
-                                        <LogOut className="w-4 h-4 mr-2" />
-                                        Logout
-                                    </Button>
-                                </>
-                            ) : (
-                                <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-6">
-                                    <Link href={getAuthLink('/auth/register')} onClick={() => setIsMobileMenuOpen(false)}>
-                                        <Button variant="outline" className="w-full justify-start mb-4 border-[#00BAE8] text-[#00BAE8] hover:bg-[#00BAE8] hover:text-white">
-                                            Sign Up
-                                        </Button>
-                                    </Link>
-                                    <Link href={getAuthLink('/auth/login')} onClick={() => setIsMobileMenuOpen(false)}>
-                                        <Button className="w-full justify-start bg-[#00BAE8] hover:bg-[#009bc2] text-white">
-                                            Sign In
-                                        </Button>
-                                    </Link>
-                                </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}

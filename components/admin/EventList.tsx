@@ -101,17 +101,18 @@ export function EventList() {
   const fetchStats = useCallback(async () => {
     setStatsLoading(true)
     try {
-      const countFor = (status?: string) =>
+      const countFor = (status?: string, publication_status?: string) =>
         contestEventService.listAdminEvents({
           page: 1,
           limit: 1,
           ...(status ? { status } : {}),
+          ...(publication_status ? { publication_status } : {}),
         })
 
       const [totalRes, upcomingRes, liveRes, closedRes, archivedRes, cancelledRes] = await Promise.all([
         countFor(),
-        countFor('upcoming'),
-        countFor('live'),
+        countFor('upcoming', 'published'),
+        countFor('live', 'published'),
         countFor('closed'),
         countFor('archived'),
         countFor('cancelled'),
@@ -264,6 +265,7 @@ export function EventList() {
             <SelectTrigger className="h-10"><SelectValue placeholder="Type" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
               <SelectItem value="upcoming">Upcoming</SelectItem>
               <SelectItem value="live">Live</SelectItem>
               <SelectItem value="postponed">Postponed</SelectItem>

@@ -49,7 +49,7 @@ function locationLabel(event: ContestEventListItem) {
 function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCardProps) {
   const slug = event.slug || event.id
   const detailHref = `/events/${slug}`
-  const registerHref = `/events/${slug}?register=1`
+  const registerHref = `/events/${slug}?register=1&action=register`
   const eventDate = formatDisplayDate(event.event_start_date)
   const regDeadline = formatDisplayDate(event.registration_end_date)
   const categoryLabel = event.category
@@ -178,11 +178,21 @@ function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCar
         </dl>
 
         <div className="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center">
-          <Button variant="gradient" size="sm" className="w-full sm:flex-1" asChild>
-            <Link href={registerHref} onClick={onNavigate}>
-              {event.is_registered ? 'Manage Registration' : 'Register Now'}
-            </Link>
-          </Button>
+          {event.is_registered ? (
+            <Button
+              size="sm"
+              disabled
+              className="w-full cursor-default bg-emerald-600 text-white opacity-100 hover:bg-emerald-600 sm:flex-1"
+            >
+              Registered
+            </Button>
+          ) : (
+            <Button variant="gradient" size="sm" className="w-full sm:flex-1" asChild>
+              <Link href={registerHref} onClick={onNavigate}>
+                Register Now
+              </Link>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

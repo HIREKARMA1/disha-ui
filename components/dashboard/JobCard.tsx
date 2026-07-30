@@ -5,6 +5,7 @@ import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, CheckCircl
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 
 interface Job {
     id: string
@@ -41,6 +42,7 @@ interface Job {
     // Company information fields (for university-created jobs)
     company_name?: string
     company_logo?: string
+    slug?: string | null
     is_active: boolean
     can_apply: boolean
     application_status?: string
@@ -254,7 +256,6 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         (typeof job.company_name === 'string' && job.company_name) ||
         (typeof job.corporate_name === 'string' && job.corporate_name) ||
         ''
-    const companyInitial = companyDisplayName ? companyDisplayName.charAt(0).toUpperCase() : '?'
     const jobType = typeof job.job_type === 'string' ? job.job_type : String(job.job_type || '')
 
     return (
@@ -267,19 +268,11 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         >
             <div className="flex items-start gap-3 sm:gap-4">
                 {/* Company logo */}
-                {job.company_logo ? (
-                    <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white">
-                        <img
-                            src={job.company_logo}
-                            alt={companyDisplayName || 'Company logo'}
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                ) : (
-                    <div className="shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white border border-gray-200 dark:border-white/10 flex items-center justify-center text-blue-600 text-lg font-bold shadow-sm">
-                        {companyInitial}
-                    </div>
-                )}
+                <CompanyLogo
+                    logoUrl={job.company_logo}
+                    companyName={companyDisplayName}
+                    size="md"
+                />
 
                 {/* Main info */}
                 <div className="min-w-0 flex-1">

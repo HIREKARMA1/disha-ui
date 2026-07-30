@@ -36,7 +36,7 @@ function JobsPageContent() {
     return (
         <div className="min-h-screen flex flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
             <Navbar variant="transparent" />
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24 max-w-[1600px] pb-24 flex-grow">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24 max-w-[1600px] pb-24 flex-grow overflow-x-hidden">
                 <AllJobs />
             </div>
             <Footer />

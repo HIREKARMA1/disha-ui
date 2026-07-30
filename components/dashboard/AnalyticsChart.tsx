@@ -12,13 +12,26 @@ interface AnalyticsChartProps {
   className?: string
 }
 
+const EMPTY_STATS: DashboardStats = {
+  totalJobs: 0,
+  appliedJobs: 0,
+  appliedToOpenJobs: 0,
+  selected: 0,
+  offered: 0,
+  rejected: 0,
+  pending: 0,
+  applicationRate: 0,
+  selectionRate: 0,
+  offerRate: 0,
+  rejectionRate: 0,
+}
+
+function clampPct(n: number): number {
+  return Math.min(100, Math.max(0, n))
+}
+
 export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalJobs: 0,
-    appliedJobs: 0,
-    selected: 0,
-    rejected: 0,
-  })
+  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -30,41 +43,71 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
         setError(null)
         const dashboardStats = await dashboardService.getDashboardStats()
         setStats(dashboardStats)
-      } catch (error: any) {
-        console.error('Failed to fetch analytics:', error)
-        if (
-          error.message?.includes('not authenticated') ||
-          error.message?.includes('Authentication failed')
-        ) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unable to fetch analytics data.'
+        if (message.includes('not authenticated') || message.includes('Authentication failed')) {
           router.push('/auth/login')
           return
         }
-        setError(error.message || 'Unable to fetch analytics data.')
+        setError(message)
       } finally {
         setLoading(false)
       }
     }
-    fetchStats()
+    void fetchStats()
   }, [router])
 
-  const { totalJobs, appliedJobs, selected, rejected } = stats
-  const applicationRate = totalJobs > 0 ? (appliedJobs / totalJobs) * 100 : 0
-  const selectionRate = appliedJobs > 0 ? (selected / appliedJobs) * 100 : 0
+  const {
+    totalJobs,
+    appliedJobs,
+    appliedToOpenJobs,
+    selected,
+    offered,
+    rejected,
+    pending,
+    applicationRate,
+    selectionRate,
+    offerRate,
+  } = stats
 
-  const legend = [
-    { label: 'Applied', value: appliedJobs, color: '#3B82F6', pct: totalJobs > 0 ? (appliedJobs / totalJobs) * 100 : 0 },
-    { label: 'Selected', value: selected, color: '#10B981', pct: appliedJobs > 0 ? (selected / appliedJobs) * 100 : 0 },
-    { label: 'Rejected', value: rejected, color: '#EF4444', pct: appliedJobs > 0 ? (rejected / appliedJobs) * 100 : 0 },
-    { label: 'Open Jobs', value: totalJobs, color: '#8B5CF6', pct: 100 },
-  ]
+  const applicationPct = clampPct(applicationRate)
+  const selectionPct = clampPct(selectionRate)
+  const offerPct = clampPct(offerRate)
 
+  // Mutually exclusive donut segments based on applications funnel
   const donutSegments = [
-    { value: appliedJobs, color: '#3B82F6' },
-    { value: selected, color: '#10B981' },
-    { value: rejected, color: '#EF4444' },
-    { value: Math.max(totalJobs - appliedJobs, 0), color: '#64748B' },
+    { label: 'Selected', value: selected, color: '#10B981' },
+    { label: 'Rejected', value: rejected, color: '#EF4444' },
+    { label: 'In Progress', value: pending, color: '#3B82F6' },
   ]
   const donutTotal = donutSegments.reduce((s, d) => s + d.value, 0) || 1
+
+  const legend = [
+    {
+      label: 'Applied',
+      value: appliedJobs,
+      color: '#3B82F6',
+      pct: appliedJobs > 0 ? 100 : 0,
+    },
+    {
+      label: 'Selected',
+      value: selected,
+      color: '#10B981',
+      pct: clampPct(appliedJobs > 0 ? (selected / appliedJobs) * 100 : 0),
+    },
+    {
+      label: 'Offers',
+      value: offered,
+      color: '#059669',
+      pct: offerPct,
+    },
+    {
+      label: 'Rejected',
+      value: rejected,
+      color: '#EF4444',
+      pct: clampPct(appliedJobs > 0 ? (rejected / appliedJobs) * 100 : 0),
+    },
+  ]
 
   if (loading) {
     return (
@@ -86,7 +129,6 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
     )
   }
 
-  // Build conic-gradient for donut
   let cursor = 0
   const conicParts = donutSegments
     .map((seg) => {
@@ -99,7 +141,6 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
 
   return (
     <div className={cn('space-y-3 sm:space-y-4', className)}>
-      {/* Application Analytics — progress bars */}
       <StudentSectionCard>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
@@ -116,22 +157,28 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
         <div className="space-y-4">
           <ProgressRow
             label="Application Rate"
-            value={`${applicationRate.toFixed(1)}%`}
-            hint={`${appliedJobs} of ${totalJobs} jobs applied`}
-            percent={Math.min(applicationRate, 100)}
+            value={`${applicationPct.toFixed(0)}%`}
+            hint={`${appliedToOpenJobs} of ${totalJobs} open jobs applied`}
+            percent={applicationPct}
             barClass="bg-blue-500"
           />
           <ProgressRow
             label="Selection Rate"
-            value={`${selectionRate.toFixed(1)}%`}
-            hint={`${selected} of ${appliedJobs} applications selected`}
-            percent={Math.min(selectionRate, 100)}
+            value={`${selectionPct.toFixed(0)}%`}
+            hint={`${selected} of ${appliedJobs} applications shortlisted/selected`}
+            percent={selectionPct}
             barClass="bg-emerald-500"
+          />
+          <ProgressRow
+            label="Offer Rate"
+            value={`${offerPct.toFixed(0)}%`}
+            hint={`${offered} of ${appliedJobs} applications with offers`}
+            percent={offerPct}
+            barClass="bg-teal-500"
           />
         </div>
       </StudentSectionCard>
 
-      {/* Application Overview — donut */}
       <StudentSectionCard>
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Application Overview
@@ -140,14 +187,17 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
           <div
             className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full shrink-0"
             style={{
-              background: `conic-gradient(${conicParts})`,
+              background:
+                donutTotal > 0
+                  ? `conic-gradient(${conicParts})`
+                  : 'conic-gradient(#64748B 0% 100%)',
             }}
           >
             <div className="absolute inset-[18%] rounded-full bg-white dark:bg-[#151b2b] flex flex-col items-center justify-center">
               <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
                 {appliedJobs}
               </span>
-              <span className="text-[10px] uppercase tracking-wide text-gray-500">Total</span>
+              <span className="text-[10px] uppercase tracking-wide text-gray-500">Applied</span>
             </div>
           </div>
 
@@ -171,7 +221,7 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
             ))}
             <div className="pt-2 flex items-center gap-1.5 text-xs text-blue-500">
               <Briefcase className="w-3.5 h-3.5" />
-              Total Jobs: {totalJobs}
+              Open Jobs: {totalJobs}
             </div>
           </div>
         </div>
@@ -193,19 +243,20 @@ function ProgressRow({
   percent: number
   barClass: string
 }) {
+  const width = clampPct(percent)
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
         <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{value}</span>
       </div>
-      <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+      <div className="h-2 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all duration-700', barClass)}
-          style={{ width: `${percent}%` }}
+          className={cn('h-full rounded-full transition-all duration-500', barClass)}
+          style={{ width: `${width}%` }}
         />
       </div>
-      <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{hint}</p>
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{hint}</p>
     </div>
   )
 }
