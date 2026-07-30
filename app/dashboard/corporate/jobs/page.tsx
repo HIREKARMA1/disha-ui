@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Search, Filter, Plus, Eye, Edit, Trash2, MoreVertical, Calendar, MapPin, Briefcase, Clock, DollarSign, Users, Building } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Search, Filter, Plus, Briefcase, Calendar, TrendingUp, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,8 +13,12 @@ import { EditJobModal } from '@/components/dashboard/EditJobModal'
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { CorporateAppliedStudentsModal } from '@/components/corporate/CorporateAppliedStudentsModal'
+import { CorporatePageHero } from '@/components/corporate/ui/CorporatePageHero'
+import { CorporatePagination } from '@/components/corporate/ui/CorporatePagination'
+import { corpCard, corpInput } from '@/components/corporate/ui/corporate-theme'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
+import { cn } from '@/lib/utils'
 
 interface Job {
     id: string
@@ -83,7 +87,7 @@ export default function CorporateJobsPage() {
     const [selectedJobForStudents, setSelectedJobForStudents] = useState<Job | null>(null)
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 9,
+        limit: 10,
         total: 0,
         total_pages: 0
     })
@@ -229,181 +233,167 @@ export default function CorporateJobsPage() {
 
     return (
         <CorporateDashboardLayout>
-            <div className="space-y-6 main-content">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Job Postings 💼
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage your job postings and find the best talent ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🎯 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📈 Talent Acquisition
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🚀 Growth Opportunities
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+            <div className="space-y-4 md:space-y-6 main-content max-w-[1400px] mx-auto">
+                <CorporatePageHero
+                    title="Job Postings 💼"
+                    subtitle="Manage and track all your job postings."
+                    chips={[
+                        {
+                            label: new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                            }),
+                            tone: 'blue',
+                            icon: <Calendar className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Talent Acquisition',
+                            tone: 'green',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Growth Opportunities',
+                            tone: 'purple',
+                            icon: <TrendingUp className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
 
-                {/* Search and Filters */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 relative overflow-visible layout-stable">
-                    {/* Search Bar */}
-                    <div className="flex flex-col lg:flex-row gap-4 mb-4">
-                        <div className="flex-1">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <Input
-                                    type="text"
-                                    placeholder="Search jobs by title, description, or location..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
+                <div className={cn(corpCard, 'p-4 md:p-5 relative overflow-visible')}>
+                    <div className="flex flex-col lg:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input
+                                type="text"
+                                placeholder="Search jobs by title, description, or location..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className={cn(corpInput, 'pl-10 h-11')}
+                            />
                         </div>
-
                         <div className="flex items-center gap-3">
                             <Button
                                 onClick={handleCreateJob}
-                                className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                className="flex-1 lg:flex-none h-11 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white shadow-lg shadow-blue-500/20"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Create Job
                             </Button>
-
                             <Button
                                 variant="outline"
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="flex items-center gap-2"
+                                className="flex-1 lg:flex-none h-11 rounded-xl border-gray-200 dark:border-white/10"
                             >
-                                <Filter className="w-4 h-4" />
+                                <Filter className="w-4 h-4 mr-2" />
                                 Filters
                             </Button>
                         </div>
                     </div>
 
-                    {/* Advanced Filters */}
-                    {showFilters && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 relative"
-                        >
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Status
-                                </label>
-                                <Select value={filters.status || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === "all" ? "" : value }))}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Status" />
-                                    </SelectTrigger>
-                                    <SelectContent sideOffset={4} className="z-[60] w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)]">
-                                        <SelectItem value="all">All Status</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                        <SelectItem value="closed">Closed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    <AnimatePresence>
+                        {showFilters && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 mt-4 border-t border-gray-200 dark:border-white/[0.06] overflow-hidden"
+                            >
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Status
+                                    </label>
+                                    <Select
+                                        value={filters.status || 'all'}
+                                        onValueChange={(value) =>
+                                            setFilters((prev) => ({ ...prev, status: value === 'all' ? '' : value }))
+                                        }
+                                    >
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="All Status" />
+                                        </SelectTrigger>
+                                        <SelectContent sideOffset={4} className="z-[60]">
+                                            <SelectItem value="all">All Status</SelectItem>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                            <SelectItem value="closed">Closed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Job Type
+                                    </label>
+                                    <Select
+                                        value={filters.job_type || 'all'}
+                                        onValueChange={(value) =>
+                                            setFilters((prev) => ({ ...prev, job_type: value === 'all' ? '' : value }))
+                                        }
+                                    >
+                                        <SelectTrigger className="rounded-xl">
+                                            <SelectValue placeholder="All Types" />
+                                        </SelectTrigger>
+                                        <SelectContent sideOffset={4} className="z-[60]">
+                                            <SelectItem value="all">All Types</SelectItem>
+                                            <SelectItem value="full_time">Full Time</SelectItem>
+                                            <SelectItem value="part_time">Part Time</SelectItem>
+                                            <SelectItem value="contract">Contract</SelectItem>
+                                            <SelectItem value="internship">Internship</SelectItem>
+                                            <SelectItem value="freelance">Freelance</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Industry
+                                    </label>
+                                    <Input
+                                        placeholder="e.g., Technology, Finance"
+                                        value={filters.industry}
+                                        onChange={(e) => setFilters((prev) => ({ ...prev, industry: e.target.value }))}
+                                        className="rounded-xl"
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Job Type
-                                </label>
-                                <Select value={filters.job_type || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, job_type: value === "all" ? "" : value }))}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Types" />
-                                    </SelectTrigger>
-                                    <SelectContent sideOffset={4} className="z-[60] w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)]">
-                                        <SelectItem value="all">All Types</SelectItem>
-                                        <SelectItem value="full_time">Full Time</SelectItem>
-                                        <SelectItem value="part_time">Part Time</SelectItem>
-                                        <SelectItem value="contract">Contract</SelectItem>
-                                        <SelectItem value="internship">Internship</SelectItem>
-                                        <SelectItem value="freelance">Freelance</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Industry
-                                </label>
-                                <Input
-                                    placeholder="e.g., Technology, Finance"
-                                    value={filters.industry}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, industry: e.target.value }))}
-                                />
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* Clear Filters */}
                     {(searchTerm || filters.status || filters.job_type || filters.industry) && (
-                        <div className="flex justify-end mt-4">
-                            <Button variant="ghost" size="sm" onClick={clearFilters}>
+                        <div className="flex justify-end mt-3">
+                            <Button variant="ghost" size="sm" onClick={clearFilters} className="rounded-lg">
                                 Clear Filters
                             </Button>
                         </div>
                     )}
                 </div>
 
-                {/* Results Summary */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="text-gray-600 dark:text-gray-300 text-sm">
-                            {loading ? (
-                                <span className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
-                                    Loading jobs...
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-2">
-                                    📊 <span className="font-semibold text-primary-600 dark:text-primary-400">
-                                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} jobs
-                                    </span>
-                                </span>
-                            )}
-                        </div>
-                        {pagination.total > 0 && (
-                            <div className="text-xs text-primary-500 dark:text-primary-400 font-medium">
-                                📄 Page {pagination.page} of {pagination.total_pages} • {pagination.limit} jobs per page
-                            </div>
-                        )}
-                    </div>
-                </div>
+                {!loading && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 px-1">
+                        Showing{' '}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}
+                        </span>{' '}
+                        to{' '}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {Math.min(pagination.page * pagination.limit, pagination.total)}
+                        </span>{' '}
+                        of{' '}
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">{pagination.total}</span> jobs
+                    </p>
+                )}
 
-                {/* Jobs Grid */}
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[...Array(6)].map((_, index) => (
-                            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
-                                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                            </div>
+                    <div className="space-y-4">
+                        {[...Array(3)].map((_, index) => (
+                            <div
+                                key={index}
+                                className={cn(corpCard, 'p-6 animate-pulse h-32')}
+                            />
                         ))}
                     </div>
                 ) : filteredJobs.length > 0 ? (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-4">
                             {paginatedJobs.map((job, index) => (
                                 <CorporateJobCard
                                     key={job.id}
@@ -418,85 +408,50 @@ export default function CorporateJobsPage() {
                             ))}
                         </div>
 
-                        {/* Simple Pagination */}
-                        {pagination.total_pages > 1 && (
-                            <div className="mt-8 flex items-center justify-center">
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                    <div className="flex items-center gap-2">
-                                        {/* Previous Button */}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                                            disabled={pagination.page <= 1}
-                                            className="px-3 py-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            ←
-                                        </Button>
-
-                                        {/* Page Numbers */}
-                                        <div className="flex items-center gap-1">
-                                            {[...Array(pagination.total_pages)].map((_, i) => {
-                                                const pageNum = i + 1
-                                                const isCurrentPage = pageNum === pagination.page
-                                                const isNearCurrent = Math.abs(pageNum - pagination.page) <= 1
-                                                const isFirstOrLast = pageNum === 1 || pageNum === pagination.total_pages
-
-                                                if (isFirstOrLast || isNearCurrent) {
-                                                    return (
-                                                        <Button
-                                                            key={pageNum}
-                                                            variant={isCurrentPage ? "default" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                                                            className={`min-w-[32px] h-8 ${isCurrentPage
-                                                                ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-md'
-                                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md'
-                                                                }`}
-                                                        >
-                                                            {pageNum}
-                                                        </Button>
-                                                    )
-                                                } else if (pageNum === pagination.page - 2 || pageNum === pagination.page + 2) {
-                                                    return <span key={pageNum} className="px-2 text-primary-400 dark:text-primary-300">...</span>
-                                                }
-                                                return null
-                                            })}
-                                        </div>
-
-                                        {/* Next Button */}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                                            disabled={pagination.page >= pagination.total_pages}
-                                            className="px-3 py-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            →
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
+                        {pagination.total_pages > 0 && (
+                            <CorporatePagination
+                                page={pagination.page}
+                                totalPages={pagination.total_pages}
+                                total={pagination.total}
+                                limit={pagination.limit}
+                                itemLabel="jobs"
+                                onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+                                onLimitChange={(limit) =>
+                                    setPagination((prev) => ({
+                                        ...prev,
+                                        limit,
+                                        page: 1,
+                                        total_pages: Math.ceil(prev.total / limit),
+                                    }))
+                                }
+                                limitOptions={[5, 10, 20]}
+                            />
                         )}
                     </>
                 ) : (
-                    <div className="text-center py-12">
-                        <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Briefcase className="w-12 h-12 text-gray-400" />
+                    <div className={cn(corpCard, 'text-center py-12 px-6')}>
+                        <div className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Briefcase className="w-10 h-10 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                             {searchTerm || filters.status || filters.job_type || filters.industry
                                 ? 'No jobs found matching your criteria'
-                                : 'No job postings yet'
-                            }
+                                : 'No job postings yet'}
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400 mb-6">
                             {searchTerm || filters.status || filters.job_type || filters.industry
                                 ? 'Try adjusting your search or filter criteria'
-                                : 'Create your first job posting to start attracting talent..'
-                            }
+                                : 'Create your first job posting to start attracting talent.'}
                         </p>
-
+                        {!searchTerm && !filters.status && !filters.job_type && !filters.industry && (
+                            <Button
+                                onClick={handleCreateJob}
+                                className="rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 text-white"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Job
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>

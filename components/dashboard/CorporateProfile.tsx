@@ -1,13 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
     Building2,
     Globe,
-    Zap,
-    Shield,
-    Trophy,
     ChevronRight,
     CheckCircle,
     AlertCircle,
@@ -18,13 +15,14 @@ import {
     Calendar,
     Phone,
     Mail,
-    ExternalLink
+    ExternalLink,
+    Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CorporateDashboardLayout } from './CorporateDashboardLayout'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
-import { cn, getInitials, truncateText } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import { corporateProfileService } from '@/services/corporateProfileService'
 import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
 import { useAuth } from '@/hooks/useAuth'
@@ -32,14 +30,20 @@ import { useIndustries } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
-
-interface ProfileSection {
-    id: string
-    title: string
-    icon: any
-    fields: string[]
-    completed: boolean
-}
+import { CorporatePageHero } from '@/components/corporate/ui/CorporatePageHero'
+import { CorporateGlassCard } from '@/components/corporate/ui/CorporateGlassCard'
+import { corpCard } from '@/components/corporate/ui/corporate-theme'
+import {
+    AboutCompanyEditor,
+    BusinessDetailsEditor,
+    ContactInfoEditor,
+    DocumentsEditor,
+    DocumentRow,
+    SocialLinksDisplay,
+    SocialLinksEditor,
+    buildDocumentList,
+} from '@/components/corporate/CorporateProfileEditors'
+import { parseCorpExtMeta } from '@/lib/corporateProfileMeta'
 
 export function CorporateProfile() {
     const [profile, setProfile] = useState<CorporateProfile | null>(null)
@@ -47,40 +51,29 @@ export function CorporateProfile() {
     const [editing, setEditing] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState('basic')
+    const [showCompletionDetails, setShowCompletionDetails] = useState(false)
     const [imageModal, setImageModal] = useState<{ isOpen: boolean; imageUrl: string; altText: string }>({
         isOpen: false,
         imageUrl: '',
-        altText: ''
+        altText: '',
     })
 
-    const profileSections: ProfileSection[] = [
+    const profileSections = [
         {
             id: 'basic',
             title: 'Basic Information',
-            icon: Building2,
             fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'bio', 'company_logo'],
-            completed: false
         },
         {
             id: 'company',
             title: 'Company Information',
-            icon: Building2,
             fields: ['company_name', 'website_url', 'industry', 'company_size', 'founded_year', 'company_type', 'description'],
-            completed: false
         },
         {
             id: 'documents',
             title: 'Documents & Certificates',
-            icon: Shield,
             fields: ['company_logo', 'mca_gst_certificate'],
-            completed: false
-        }
-    ]
-
-    const tabs = [
-        { id: 'basic', label: 'Basic Info', icon: Building2 },
-        { id: 'company', label: 'Company', icon: Building2 }
+        },
     ]
 
     useEffect(() => {
@@ -91,11 +84,10 @@ export function CorporateProfile() {
         try {
             setLoading(true)
             setError(null)
-
             const profileData = await corporateProfileService.getProfile()
             setProfile(profileData)
-        } catch (error: any) {
-            setError(error.message)
+        } catch (err: any) {
+            setError(err.message)
         } finally {
             setLoading(false)
         }
@@ -105,56 +97,67 @@ export function CorporateProfile() {
         try {
             setSaving(true)
             setError(null)
-
-            console.log('Saving corporate profile data for section:', sectionId)
-            console.log('Form data being sent:', formData)
-
             const updatedProfile = await corporateProfileService.updateProfile(formData)
-            console.log('Profile updated successfully:', updatedProfile)
-
             setProfile(updatedProfile)
             setEditing(null)
-            
-            // Show success toast with section name
-            const sectionName = profileSections.find(s => s.id === sectionId)?.title || 'Profile'
+            const sectionName = profileSections.find((s) => s.id === sectionId)?.title || 'Profile'
             toast.success(`${sectionName} updated successfully!`)
-
-        } catch (error: any) {
-            console.error('Error saving corporate profile:', error)
-            setError(error.message)
-
-            // Show error toast with specific message
-            if (error.message.includes('network') || error.message.includes('Internet')) {
+        } catch (err: any) {
+            console.error('Error saving corporate profile:', err)
+            setError(err.message)
+            if (err.message?.includes('network') || err.message?.includes('Internet')) {
                 toast.error('Network error. Please check your connection and try again.')
-            } else if (error.message.includes('auth') || error.message.includes('login')) {
+            } else if (err.message?.includes('auth') || err.message?.includes('login')) {
                 toast.error('Authentication failed. Please log in again.')
-            } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+            } else if (err.message?.includes('validation') || err.message?.includes('invalid')) {
                 toast.error('Invalid data provided. Please check your input.')
             } else {
-                toast.error(`Failed to save: ${error.message}`)
+                toast.error(`Failed to save: ${err.message}`)
             }
         } finally {
             setSaving(false)
         }
     }
 
+    const extMeta = useMemo(() => parseCorpExtMeta(profile?.bio), [profile?.bio])
+
+    const completion = useMemo(() => {
+        if (!profile) return { percent: 0, filled: 0, total: 0, missing: [] as string[] }
+        const checks: { key: string; label: string; ok: boolean }[] = [
+            { key: 'company_name', label: 'Company Name', ok: !!profile.company_name },
+            { key: 'email', label: 'Email', ok: !!profile.email },
+            { key: 'phone', label: 'Phone', ok: !!profile.phone },
+            { key: 'address', label: 'Address', ok: !!profile.address },
+            { key: 'website_url', label: 'Website', ok: !!profile.website_url },
+            { key: 'industry', label: 'Industry', ok: !!profile.industry },
+            { key: 'company_size', label: 'Company Size', ok: !!profile.company_size },
+            { key: 'founded_year', label: 'Founded Year', ok: !!profile.founded_year },
+            { key: 'company_type', label: 'Company Type', ok: !!profile.company_type },
+            { key: 'description', label: 'Description', ok: !!profile.description },
+            { key: 'company_logo', label: 'Company Logo', ok: !!profile.company_logo },
+            { key: 'mca_gst_certificate', label: 'Certificate', ok: !!profile.mca_gst_certificate },
+            { key: 'gst_number', label: 'GST Number', ok: !!extMeta.gst_number },
+            { key: 'social', label: 'Social Links', ok: Object.values(extMeta.social_links || {}).some(Boolean) },
+        ]
+        const filled = checks.filter((c) => c.ok).length
+        return {
+            percent: Math.round((filled / checks.length) * 100),
+            filled,
+            total: checks.length,
+            missing: checks.filter((c) => !c.ok).map((c) => c.label),
+        }
+    }, [profile, extMeta])
+
     if (loading) {
         return (
             <CorporateDashboardLayout>
-                <div className="w-full">
-                    <div className="animate-pulse space-y-4 lg:space-y-6">
-                        <div className="h-6 lg:h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
-                            <div className="xl:col-span-1">
-                                <div className="h-80 lg:h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                            </div>
-                            <div className="xl:col-span-3 space-y-4 lg:space-y-6">
-                                {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="h-24 lg:h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                                ))}
-                            </div>
-                        </div>
+                <div className="w-full space-y-4 animate-pulse">
+                    <div className="h-32 bg-gray-200 dark:bg-white/10 rounded-2xl" />
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <div className="h-48 bg-gray-200 dark:bg-white/10 rounded-2xl xl:col-span-2" />
+                        <div className="h-48 bg-gray-200 dark:bg-white/10 rounded-2xl" />
                     </div>
+                    <div className="h-64 bg-gray-200 dark:bg-white/10 rounded-2xl" />
                 </div>
             </CorporateDashboardLayout>
         )
@@ -163,396 +166,369 @@ export function CorporateProfile() {
     if (error && !profile) {
         return (
             <CorporateDashboardLayout>
-                <div className="w-full text-center">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 lg:p-8 shadow-sm border border-gray-200 dark:border-gray-700 max-w-md mx-auto">
-                        <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            Unable to Load Profile
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            {error}
-                        </p>
-                        <Button onClick={loadProfile} variant="default">
-                            Try Again
-                        </Button>
-                    </div>
+                <div className="rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
+                    <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">Error Loading Profile</h3>
+                    <p className="text-red-700 dark:text-red-300 mb-4">{error}</p>
+                    <Button onClick={loadProfile}>Try Again</Button>
                 </div>
             </CorporateDashboardLayout>
         )
     }
 
-    if (!profile) {
-        return (
-            <CorporateDashboardLayout>
-                <div className="w-full text-center">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 lg:p-8 shadow-sm border border-gray-200 dark:border-gray-700 max-w-md mx-auto">
-                        <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-yellow-500 mx-auto mb-4" />
-                        <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            Profile Not Found
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Unable to load your profile. Please try again later.
-                        </p>
-                    </div>
-                </div>
-            </CorporateDashboardLayout>
-        )
+    if (!profile) return null
+
+    const websiteDisplay = profile.website_url?.replace(/^https?:\/\//, '') || '—'
+    const circumference = 2 * Math.PI * 54
+    const strokeDash = (completion.percent / 100) * circumference
+
+    const EditLink = ({ section }: { section: string }) => (
+        <button
+            type="button"
+            onClick={() => setEditing(section)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit
+        </button>
+    )
+
+    const handleSectionSaved = (updated: CorporateProfile) => {
+        setProfile(updated)
+        setEditing(null)
+    }
+
+    const documentList = buildDocumentList(profile, extMeta.documents)
+    const incorporationDisplay = extMeta.date_of_incorporation
+        ? new Date(extMeta.date_of_incorporation).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+          })
+        : profile.founded_year
+          ? `Year ${profile.founded_year}`
+          : null
+
+    const editTitle: Record<string, string> = {
+        basic: 'Edit Basic Information',
+        company: 'Edit Company Profile',
+        about: 'Edit About Company',
+        contact: 'Edit Contact Information',
+        business: 'Edit Business Details',
+        documents: 'Edit Documents',
+        social: 'Edit Social Links',
     }
 
     return (
         <CorporateDashboardLayout>
-            <div className="w-full">
-                {/* Header - Consistent with other sections */}
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700 mb-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Company Profile 🏢
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage your company information and business details ✨
+            <div className="w-full max-w-[1400px] mx-auto space-y-4 md:space-y-6">
+                <CorporatePageHero
+                    title="Company Profile 🏢"
+                    subtitle="Manage your company information and business details ✨"
+                    chips={[
+                        {
+                            label: new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                            }),
+                            tone: 'blue',
+                            icon: <Calendar className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Business Growth',
+                            tone: 'green',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Talent Acquisition',
+                            tone: 'purple',
+                            icon: <Building2 className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
+
+                {/* Company Hero Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(corpCard, 'p-5 sm:p-6')}
+                >
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                        <div className="relative flex-shrink-0 mx-auto sm:mx-0">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg ring-4 ring-blue-500/20 overflow-hidden">
+                                {profile.company_logo ? (
+                                    <img
+                                        src={profile.company_logo}
+                                        alt={profile.company_name}
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() =>
+                                            setImageModal({
+                                                isOpen: true,
+                                                imageUrl: profile.company_logo!,
+                                                altText: profile.company_name,
+                                            })
+                                        }
+                                    />
+                                ) : (
+                                    <span className="text-2xl font-bold text-white">
+                                        {getInitials(profile.company_name)}
+                                    </span>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center text-blue-600 shadow-md border border-gray-200 dark:border-white/10 hover:scale-110 transition-transform"
+                                onClick={() => setEditing('basic')}
+                                title="Change logo"
+                            >
+                                <Camera className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 min-w-0 text-center sm:text-left">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                    {profile.company_name}
+                                </h2>
+                                {profile.verified && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        Verified
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <MapPin className="w-4 h-4 text-blue-500" />
+                                    {profile.address || 'Location not set'}
+                                </span>
+                                {profile.website_url && (
+                                    <a
+                                        href={profile.website_url.startsWith('http') ? profile.website_url : `https://${profile.website_url}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    >
+                                        <Globe className="w-4 h-4 text-blue-500" />
+                                        {websiteDisplay}
+                                        <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                )}
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Users className="w-4 h-4 text-blue-500" />
+                                    {profile.company_size || 'Size not set'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditing('company')}
+                            className="flex-shrink-0 rounded-xl border-gray-200 dark:border-white/10"
+                        >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit Profile
+                        </Button>
+                    </div>
+                </motion.div>
+
+                {editing && (
+                    <CorporateGlassCard
+                        title={editTitle[editing] || 'Edit'}
+                        action={
+                            <button
+                                type="button"
+                                onClick={() => setEditing(null)}
+                                className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                            >
+                                Close
+                            </button>
+                        }
+                    >
+                        {editing === 'about' && (
+                            <AboutCompanyEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                        )}
+                        {editing === 'contact' && (
+                            <ContactInfoEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                        )}
+                        {editing === 'business' && (
+                            <BusinessDetailsEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                        )}
+                        {editing === 'social' && (
+                            <SocialLinksEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                        )}
+                        {editing === 'documents' && (
+                            <DocumentsEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                        )}
+                        {(editing === 'basic' || editing === 'company') && (
+                            <ProfileSectionForm
+                                section={{
+                                    id: editing,
+                                    title: editing === 'basic' ? 'Basic Information' : 'Company Information',
+                                    icon: Building2,
+                                    fields:
+                                        editing === 'basic'
+                                            ? ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'company_logo']
+                                            : ['company_name', 'website_url', 'industry', 'company_size', 'founded_year', 'company_type', 'description'],
+                                    completed: false,
+                                }}
+                                profile={profile}
+                                onSave={(formData) => handleSave(editing, formData)}
+                                saving={saving}
+                                onCancel={() => setEditing(null)}
+                            />
+                        )}
+                    </CorporateGlassCard>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <CorporateGlassCard className="lg:col-span-1" delay={0.05}>
+                        <div className="flex flex-col items-center text-center py-2">
+                            <div className="relative w-32 h-32 mb-4">
+                                <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" className="text-gray-200 dark:text-white/10" strokeWidth="8" />
+                                    <motion.circle
+                                        cx="60"
+                                        cy="60"
+                                        r="54"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        className="text-emerald-500"
+                                        strokeWidth="8"
+                                        strokeLinecap="round"
+                                        strokeDasharray={circumference}
+                                        initial={{ strokeDashoffset: circumference }}
+                                        animate={{ strokeDashoffset: circumference - strokeDash }}
+                                        transition={{ duration: 1, ease: 'easeOut' }}
+                                    />
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-2xl font-bold text-gray-900 dark:text-white">{completion.percent}%</span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">Complete</span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 px-1">
+                                {completion.percent === 100
+                                    ? 'Great! Your company profile is complete.'
+                                    : 'Almost there! Complete a few more fields to finish your profile.'}
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📈 Business Growth
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🚀 Talent Acquisition
-                                </span>
-                            </div>
+                            <Button
+                                className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-500 hover:from-violet-700 hover:to-blue-600 text-white"
+                                onClick={() => setShowCompletionDetails((v) => !v)}
+                            >
+                                View Completion Status
+                                <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
+                            {showCompletionDetails && (
+                                <div className="mt-4 w-full text-left space-y-1.5">
+                                    {completion.missing.length === 0 ? (
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400">All fields complete</p>
+                                    ) : (
+                                        completion.missing.map((m) => (
+                                            <p key={m} className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                                <AlertCircle className="w-3 h-3 text-orange-500" />
+                                                {m}
+                                            </p>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    </CorporateGlassCard>
+
+                    <CorporateGlassCard className="lg:col-span-2" title="About Company" action={<EditLink section="about" />} delay={0.1}>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 leading-relaxed">
+                            {profile.description || extMeta.plain_bio || 'No company description provided yet.'}
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { label: 'Industry', value: profile.industry },
+                                { label: 'Company Size', value: profile.company_size ? `${profile.company_size} Employees` : null },
+                                { label: 'Founded', value: profile.founded_year?.toString() },
+                                { label: 'Company Type', value: profile.company_type },
+                            ].map((item) => (
+                                <div key={item.label} className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.05] min-w-0">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{item.label}</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize truncate">
+                                        {item.value || 'Not specified'}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </CorporateGlassCard>
                 </div>
 
-                {/* Profile Content */}
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
-                        {/* Top Horizontal Section - Profile Overview */}
-                        <div className="xl:col-span-4">
-                            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-md transition-all duration-300">
-                                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-                                    {/* Profile Avatar & Info */}
-                                    <div className="text-center lg:text-left">
-                                        <div className="w-20 h-20 lg:w-24 lg:h-24 mx-auto lg:mx-0 mb-4 relative">
-                                            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                                                {profile.company_logo ? (
-                                                    <img
-                                                        src={profile.company_logo}
-                                                        alt={profile.company_name}
-                                                        className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <span className="text-xl lg:text-2xl font-bold text-white">
-                                                        {getInitials(profile.company_name)}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <button
-                                                className="absolute -bottom-1 -right-1 w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-200 shadow-md border border-gray-200 hover:scale-110"
-                                                onClick={() => setEditing('basic')}
-                                                title="Change profile picture"
-                                            >
-                                                <Camera className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
-                                            </button>
-                                        </div>
-                                        <h3 className="text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                                            {profile.company_name}
-                                        </h3>
-                                        <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                            {profile.industry || 'Company'}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {profile.company_size} • {profile.company_type}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                    <CorporateGlassCard title="Contact Information" action={<EditLink section="contact" />} delay={0.12}>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                { icon: Mail, label: 'Email', value: profile.email },
+                                { icon: Phone, label: 'Phone', value: profile.phone },
+                                { icon: Globe, label: 'Website', value: websiteDisplay !== '—' ? websiteDisplay : null },
+                                { icon: MapPin, label: 'Head Office', value: profile.address },
+                            ].map((row) => (
+                                <div key={row.label} className="flex items-start gap-2 min-w-0 p-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.05]">
+                                    <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex-shrink-0">
+                                        <row.icon className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{row.label}</p>
+                                        <p className="text-xs font-medium text-gray-900 dark:text-white break-words line-clamp-2">
+                                            {row.value || 'Not provided'}
                                         </p>
                                     </div>
-
-                                    {/* Profile Stats */}
-                                    <div className="flex-1">
-                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4 lg:mb-6">
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Email</span>
-                                                {profile.email_verified ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
-                                                        <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                        <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                                {profile.phone_verified ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
-                                                        <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                        <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Logo</span>
-                                                {profile.company_logo ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
-                                                        <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                        <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/50 backdrop-blur-sm">
-                                                <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300">Verified</span>
-                                                {profile.verified ? (
-                                                    <div className="p-1.5 bg-green-500 rounded-full">
-                                                        <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-1.5 bg-yellow-500 rounded-full">
-                                                        <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
+                    </CorporateGlassCard>
 
-                        {/* Tab-based Profile Sections */}
-                        <div className="xl:col-span-4">
-                            {/* Tab Navigation */}
-                            <div className="mb-6">
-                                <div className="border-b border-gray-200 dark:border-gray-700">
-                                    <nav className="-mb-px flex space-x-8 overflow-x-auto">
-                                        {tabs.map((tab) => (
-                                            <button
-                                                key={tab.id}
-                                                onClick={() => setActiveTab(tab.id)}
-                                                className={cn(
-                                                    "flex items-center space-x-2 py-3 px-1 border-b-2 font-bold text-l transition-colors duration-200",
-                                                    activeTab === tab.id
-                                                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                                                )}
-                                            >
-                                                <tab.icon className="w-4 h-4" />
-                                                <span>{tab.label}</span>
-                                            </button>
-                                        ))}
-                                    </nav>
-                                </div>
+                    <CorporateGlassCard title="Social Links" action={<EditLink section="social" />} delay={0.15}>
+                        <SocialLinksDisplay links={extMeta.social_links} />
+                    </CorporateGlassCard>
+
+                    <CorporateGlassCard title="Documents" action={<EditLink section="documents" />} delay={0.18}>
+                        {documentList.length > 0 ? (
+                            <div className="space-y-2">
+                                {documentList.map((doc) => (
+                                    <DocumentRow key={doc.id} doc={doc} />
+                                ))}
                             </div>
-
-                            {/* Tab Content */}
-                            <div className="min-h-[600px]">
-                                {activeTab === 'basic' && (
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                    <Building2 className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Company details and contact information</p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setEditing('basic')}
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-xs transition-all duration-200"
-                                            >
-                                                <ChevronRight className="w-3 h-3 mr-1" />
-                                                Edit
-                                            </Button>
-                                        </div>
-
-                                        {editing === 'basic' ? (
-                                            <ProfileSectionForm
-                                                section={{ id: 'basic', title: 'Basic Information', icon: Building2, fields: ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'bio', 'company_logo'], completed: false }}
-                                                profile={profile}
-                                                onSave={(formData) => handleSave('basic', formData)}
-                                                saving={saving}
-                                                onCancel={() => setEditing(null)}
-                                            />
-                                        ) : (
-                                            <div className="space-y-4">
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                    <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                        Company Name
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {profile.company_name || 'Company name not provided'}
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                    <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                        Contact Information
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {profile.email || 'Email not provided'}
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                        Phone: {profile.phone || 'Not provided'}
-                                                    </div>
-                                                </div>
-                                                {(profile.contact_person || profile.contact_designation) && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Contact Person Details
-                                                        </div>
-                                                        {profile.contact_person && (
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                                                <span className="font-semibold">Contact Person Name:</span> {profile.contact_person}
-                                                            </div>
-                                                        )}
-                                                        {profile.contact_designation && (
-                                                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                <span className="font-semibold">Contact Person Designation:</span> {profile.contact_designation}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                    <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                        Address
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {profile.address || 'Address not provided'}
-                                                    </div>
-                                                </div>
-
-                                                {profile.bio && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Bio
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.bio}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeTab === 'company' && (
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                    <Building2 className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Company Information</h3>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Business details and company profile</p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setEditing('company')}
-                                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-xs transition-all duration-200"
-                                            >
-                                                <ChevronRight className="w-3 h-3 mr-1" />
-                                                Edit
-                                            </Button>
-                                        </div>
-
-                                        {editing === 'company' ? (
-                                            <ProfileSectionForm
-                                                section={{ id: 'company', title: 'Company Information', icon: Building2, fields: ['company_name', 'website_url', 'industry', 'company_size', 'founded_year', 'company_type', 'description'], completed: false }}
-                                                profile={profile}
-                                                onSave={(formData) => handleSave('company', formData)}
-                                                saving={saving}
-                                                onCancel={() => setEditing(null)}
-                                            />
-                                        ) : (
-                                            <div className="space-y-4">
-                                                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                    <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                        Industry & Size
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                        {profile.industry || 'Industry not specified'} • {profile.company_size || 'Size not specified'}
-                                                    </div>
-                                                </div>
-
-                                                {profile.company_type && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Company Type
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.company_type}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {profile.founded_year && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Founded Year
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.founded_year}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {profile.website_url && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Website
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            <a
-                                                                href={profile.website_url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex items-center space-x-1 hover:text-blue-600"
-                                                            >
-                                                                <span>{profile.website_url}</span>
-                                                                <ExternalLink className="w-3 h-3" />
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {profile.description && (
-                                                    <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                        <div className="font-medium text-gray-900 dark:text-white mb-2">
-                                                            Description
-                                                        </div>
-                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {profile.description}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-
+                        ) : (
+                            <div className="text-center py-6">
+                                <FileText className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No documents uploaded</p>
+                                <Button size="sm" variant="outline" onClick={() => setEditing('documents')} className="rounded-xl">
+                                    Upload Document
+                                </Button>
                             </div>
-                        </div>
-                    </div>
+                        )}
+                    </CorporateGlassCard>
                 </div>
 
-                {/* Image Modal */}
+                <CorporateGlassCard title="Business Details" action={<EditLink section="business" />} delay={0.2}>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {[
+                            { label: 'GST Number', value: extMeta.gst_number },
+                            { label: 'PAN Number', value: extMeta.pan_number },
+                            { label: 'Registration Number', value: extMeta.registration_number },
+                            { label: 'Date of Incorporation', value: incorporationDisplay },
+                            { label: 'Company Type', value: profile.company_type },
+                            { label: 'Industry', value: profile.industry },
+                            { label: 'Company Size', value: profile.company_size },
+                        ].map((item) => (
+                            <div
+                                key={item.label}
+                                className="p-3 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.05] min-w-0"
+                            >
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">{item.label}</p>
+                                <p className="text-xs font-semibold text-gray-900 dark:text-white capitalize break-all line-clamp-2">
+                                    {item.value || 'Not provided'}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </CorporateGlassCard>
+
                 <ImageModal
                     isOpen={imageModal.isOpen}
                     imageUrl={imageModal.imageUrl}
