@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Twitter, Linkedin, Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
+import { config } from '@/lib/config'
 
 export function Footer() {
     return (
@@ -98,7 +99,7 @@ export function Footer() {
                             </li>
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <Phone className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>+91 91243 64764</span>
+                                <span>{config.support.phoneDisplay}</span>
                             </li>
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <MapPin className="w-5 h-5 text-primary-500 shrink-0" />

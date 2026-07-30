@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, Plus, Briefcase, Calendar, TrendingUp, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,12 +12,12 @@ import { CorporateJobCard } from '@/components/dashboard/CorporateJobCard'
 import { CreateJobModal } from '@/components/dashboard/CreateJobModal'
 import { EditJobModal } from '@/components/dashboard/EditJobModal'
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
-import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { CorporateAppliedStudentsModal } from '@/components/corporate/CorporateAppliedStudentsModal'
 import { CorporatePageHero } from '@/components/corporate/ui/CorporatePageHero'
 import { CorporatePagination } from '@/components/corporate/ui/CorporatePagination'
 import { corpCard, corpInput } from '@/components/corporate/ui/corporate-theme'
 import { apiClient } from '@/lib/api'
+import { getJobDetailPath } from '@/lib/jobSlug'
 import { toast } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
@@ -53,6 +54,9 @@ interface Job {
     created_at: string
     corporate_id: string
     corporate_name?: string
+    company_name?: string
+    company_logo?: string
+    slug?: string | null
     is_active: boolean
     can_apply: boolean
     // Additional fields
@@ -66,6 +70,7 @@ interface Job {
 }
 
 export default function CorporateJobsPage() {
+    const router = useRouter()
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -74,11 +79,9 @@ export default function CorporateJobsPage() {
         job_type: '',
         industry: ''
     })
-    const [selectedJob, setSelectedJob] = useState<Job | null>(null)
     const [editingJob, setEditingJob] = useState<Job | null>(null)
     const [showEditModal, setShowEditModal] = useState(false)
     const [showCreateModal, setShowCreateModal] = useState(false)
-    const [showJobModal, setShowJobModal] = useState(false)
     const [showFilters, setShowFilters] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [jobToDelete, setJobToDelete] = useState<Job | null>(null)
@@ -164,8 +167,7 @@ export default function CorporateJobsPage() {
     }
 
     const handleViewJob = (job: Job) => {
-        setSelectedJob(job)
-        setShowJobModal(true)
+        router.push(getJobDetailPath(job))
     }
 
     const handleEditJob = (job: Job) => {
@@ -483,19 +485,6 @@ export default function CorporateJobsPage() {
                 jobTitle={jobToDelete?.title || ''}
                 isDeleting={isDeleting}
             />
-
-            {selectedJob && (
-                <JobDescriptionModal
-                    job={selectedJob}
-                    onClose={() => {
-                        setShowJobModal(false)
-                        setSelectedJob(null)
-                    }}
-                    onApply={() => { }} // Not applicable for corporate view
-                    isApplying={false}
-                    showApplyButton={false} // Hide apply button in corporate context
-                />
-            )}
 
             <CorporateAppliedStudentsModal
                 isOpen={showAppliedStudentsModal}

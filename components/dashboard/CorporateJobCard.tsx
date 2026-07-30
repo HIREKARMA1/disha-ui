@@ -116,11 +116,15 @@ export function CorporateJobCard({
     cardIndex = 0,
 }: CorporateJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
-    const dropdownRef = useRef<HTMLDivElement>(null)
+    const mobileMenuRef = useRef<HTMLDivElement>(null)
+    const desktopMenuRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            const target = event.target as Node
+            const inMobile = mobileMenuRef.current?.contains(target)
+            const inDesktop = desktopMenuRef.current?.contains(target)
+            if (!inMobile && !inDesktop) {
                 setShowDropdown(false)
             }
         }
@@ -215,19 +219,22 @@ export function CorporateJobCard({
             )}
         >
             {/* Mobile menu — top right */}
-            <div className="absolute top-3 right-3 z-10 lg:hidden" ref={dropdownRef}>
+            <div className="absolute top-3 right-3 z-10 lg:hidden" ref={mobileMenuRef}>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDropdown(!showDropdown)}
                     className="h-8 w-8 p-0 rounded-lg"
+                    aria-haspopup="menu"
+                    aria-expanded={showDropdown}
                 >
                     <MoreVertical className="w-4 h-4" />
                 </Button>
                 {showDropdown && (
                     <div className="absolute right-0 top-9 z-50 w-52 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#161d2c] shadow-xl overflow-hidden">
-                        <div className="py-1">
+                        <div className="py-1" role="menu">
                             <button
+                                type="button"
                                 onClick={() => {
                                     onViewAppliedStudents()
                                     setShowDropdown(false)
@@ -238,6 +245,7 @@ export function CorporateJobCard({
                                 View Applied Students
                             </button>
                             <button
+                                type="button"
                                 onClick={() => {
                                     onEdit()
                                     setShowDropdown(false)
@@ -247,7 +255,47 @@ export function CorporateJobCard({
                                 <Edit className="w-4 h-4" />
                                 Edit Job
                             </button>
+                            {job.status !== 'active' && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onStatusChange(job, 'active')
+                                        setShowDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 flex items-center gap-2"
+                                >
+                                    <ToggleRight className="w-4 h-4" />
+                                    Set to Active
+                                </button>
+                            )}
+                            {job.status !== 'inactive' && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onStatusChange(job, 'inactive')
+                                        setShowDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 flex items-center gap-2"
+                                >
+                                    <ToggleLeft className="w-4 h-4" />
+                                    Set to Inactive
+                                </button>
+                            )}
+                            {job.status !== 'closed' && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onStatusChange(job, 'closed')
+                                        setShowDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+                                >
+                                    <ToggleLeft className="w-4 h-4" />
+                                    Set to Closed
+                                </button>
+                            )}
                             <button
+                                type="button"
                                 onClick={() => {
                                     onDelete()
                                     setShowDropdown(false)
@@ -430,19 +478,22 @@ export function CorporateJobCard({
                 </div>
 
                 <div className="hidden lg:flex items-center gap-2 flex-shrink-0 lg:flex-col xl:flex-row">
-                    <div className="relative">
+                    <div className="relative" ref={desktopMenuRef}>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowDropdown(!showDropdown)}
                             className="h-9 w-9 p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10"
+                            aria-haspopup="menu"
+                            aria-expanded={showDropdown}
                         >
                             <MoreVertical className="w-4 h-4" />
                         </Button>
                         {showDropdown && (
                             <div className="absolute right-0 top-10 z-50 w-52 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#161d2c] shadow-xl overflow-hidden">
-                                <div className="py-1">
+                                <div className="py-1" role="menu">
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             onViewAppliedStudents()
                                             setShowDropdown(false)
@@ -453,6 +504,7 @@ export function CorporateJobCard({
                                         View Applied Students
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             onEdit()
                                             setShowDropdown(false)
@@ -464,6 +516,7 @@ export function CorporateJobCard({
                                     </button>
                                     {job.status !== 'active' && (
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 onStatusChange(job, 'active')
                                                 setShowDropdown(false)
@@ -476,6 +529,7 @@ export function CorporateJobCard({
                                     )}
                                     {job.status !== 'inactive' && (
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 onStatusChange(job, 'inactive')
                                                 setShowDropdown(false)
@@ -488,6 +542,7 @@ export function CorporateJobCard({
                                     )}
                                     {job.status !== 'closed' && (
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 onStatusChange(job, 'closed')
                                                 setShowDropdown(false)
@@ -499,6 +554,7 @@ export function CorporateJobCard({
                                         </button>
                                     )}
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             onDelete()
                                             setShowDropdown(false)

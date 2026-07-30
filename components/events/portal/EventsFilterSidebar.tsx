@@ -10,6 +10,7 @@ import {
 
 export interface StatusCounts {
   all: number
+  open: number
   live: number
   closed: number
 }
@@ -28,6 +29,7 @@ function EventsFilterSidebarComponent({
   className,
 }: EventsFilterSidebarProps) {
   const countForStatus = (value: PortalStatusFilter) => {
+    if (value === 'open') return statusCounts.open
     if (value === 'live') return statusCounts.live
     if (value === 'closed') return statusCounts.closed
     return statusCounts.all
@@ -36,8 +38,9 @@ function EventsFilterSidebarComponent({
   return (
     <aside
       className={cn(
-        'rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm',
+                'rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm',
         'dark:border-gray-700/80 dark:bg-gray-900/80',
+        // Not sticky — stays in document flow so it never overlays the tabs below
         className
       )}
     >

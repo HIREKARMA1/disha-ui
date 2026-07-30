@@ -9,8 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
 /**
- * Student top bar — matches original Navbar actions:
- * HireKarma logo | [User] Dashboard (gradient) | Logout | Theme Toggle
+ * Student top bar — matches original Navbar actions on desktop.
+ * Mobile: Logo + Theme Toggle only (Dashboard/Logout via bottom nav).
  */
 export function StudentTopNav({ className = '' }: { className?: string }) {
   const { logout } = useAuth()
@@ -44,7 +44,7 @@ export function StudentTopNav({ className = '' }: { className?: string }) {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/dashboard/student">
+          <Link href="/dashboard/student" className="hidden lg:block">
             <Button className="flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white shadow-sm">
               <User className="w-4 h-4" />
               <span>Dashboard</span>
@@ -55,10 +55,10 @@ export function StudentTopNav({ className = '' }: { className?: string }) {
             type="button"
             variant="ghost"
             onClick={() => logout()}
-            className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+            className="hidden lg:flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <span>Logout</span>
           </Button>
 
           <ThemeToggle />
