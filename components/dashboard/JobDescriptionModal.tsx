@@ -507,12 +507,16 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             ) : corporateProfile ? (
                                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                                     <div className="flex items-start gap-4">
-                                        {corporateProfile.company_logo && (
+                                    {(corporateProfile.company_logo || job.company_logo) ? (
                                             <img
-                                                src={corporateProfile.company_logo}
+                                                src={corporateProfile.company_logo || job.company_logo}
                                                 alt={corporateProfile.company_name}
                                                 className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                                             />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xl font-bold flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                                                {(corporateProfile.company_name || '?').charAt(0).toUpperCase()}
+                                            </div>
                                         )}
                                         <div className="flex-1">
                                             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">

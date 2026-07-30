@@ -8,12 +8,13 @@ import { CreateStudentModal, degreeOptions } from '@/components/dashboard/Create
 import { useBranches } from '@/hooks/useLookup'
 import { BulkUploadModal } from '@/components/dashboard/BulkUploadModal'
 import { apiClient } from '@/lib/api'
-import { StudentListResponse, StudentListItem } from '@/types/university'
+import { StudentListItem } from '@/types/university'
 import { toast } from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-handler'
-import { motion } from 'framer-motion'
-import { UserPlus, Upload, Users, GraduationCap, TrendingUp, Download } from 'lucide-react'
+import { UserPlus, Upload, GraduationCap, TrendingUp, Download, Calendar, Users } from 'lucide-react'
 import { exportStudentsToCSV } from '@/utils/exportToExcel'
+import { CorporatePageHero } from '@/components/corporate/ui/CorporatePageHero'
+import { Button } from '@/components/ui/button'
 
 export default function UniversityStudents() {
     const { data: branchLookup } = useBranches({ limit: 1000 })
@@ -30,6 +31,21 @@ export default function UniversityStudents() {
     const [selectedDegree, setSelectedDegree] = useState('all')
 
     const [showFilters, setShowFilters] = useState(false)
+    const [instituteType, setInstituteType] = useState<string | null>(null)
+
+    useEffect(() => {
+        const loadInstituteType = async () => {
+            try {
+                const profile = await apiClient.getUniversityProfile()
+                if (profile?.institute_type) {
+                    setInstituteType(String(profile.institute_type))
+                }
+            } catch {
+                // optional chip — ignore
+            }
+        }
+        loadInstituteType()
+    }, [])
 
     const fetchStudents = async () => {
         setIsLoading(true)
@@ -50,11 +66,9 @@ export default function UniversityStudents() {
         fetchStudents()
     }, [includeArchived])
 
-    // Use predefined options for branches and degrees
     const branches = branchLookup.map((option) => option.name)
     const degrees = degreeOptions.map(option => option.value)
 
-    // Generate year options: previous 10 years + current year + next 10 years
     const currentYear = new Date().getFullYear()
     const years = Array.from({ length: 21 }, (_, i) => String(currentYear - 10 + i)).sort((a, b) => Number(b) - Number(a))
 
@@ -74,11 +88,13 @@ export default function UniversityStudents() {
         const matchesYear = selectedYear === 'all' || String(student.graduation_year) === selectedYear
         const matchesDegree = selectedDegree === 'all' || student.degree === selectedDegree
 
-        // Filter by archive status based on includeArchived setting
         const matchesArchiveStatus = includeArchived ? student.is_archived : !student.is_archived
 
         return matchesSearch && matchesStatus && matchesArchiveStatus && matchesBranch && matchesYear && matchesDegree
     })
+
+    const placedStudents = students.filter(s => s.placement_status === 'placed').length
+    const departmentCount = new Set(students.map(s => s.branch).filter(Boolean)).size
 
     const clearFilters = () => {
         setSearchTerm('')
@@ -96,7 +112,6 @@ export default function UniversityStudents() {
             const result = await apiClient.createStudent(studentData)
             console.log('✅ API call successful:', result)
             toast.success('Student created successfully!')
-            // Don't close modal here - let the modal handle its own success state
             fetchStudents()
             return result
         } catch (err: any) {
@@ -156,98 +171,76 @@ export default function UniversityStudents() {
         }
     }
 
+    const dateLabel = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+    })
 
     return (
         <UniversityDashboardLayout>
-            <div className="space-y-6">
-                {/* Header matching dashboard structure exactly */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex items-start space-x-4">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Student Management 🎓
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage and view student profiles for your university
-                            </p>
-
-                            {/* Tags matching dashboard structure */}
-                            <div className="flex flex-wrap gap-2">
-                                <motion.span
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.5, delay: 0.1 }}
-                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 hover:bg-primary-200 dark:hover:bg-primary-900/40 transition-colors cursor-pointer"
-                                >
-                                    🎯 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </motion.span>
-
-                                <motion.span
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
-                                >
-                                    <GraduationCap className="w-4 h-4 mr-1" />
-                                    University
-                                </motion.span>
-
-
-
-                                <motion.span
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.5, delay: 0.4 }}
-                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 hover:bg-orange-200 dark:hover:bg-orange-900/40 transition-colors cursor-pointer"
-                                >
-                                    <TrendingUp className="w-4 h-4 mr-1" />
-                                    Student Hub
-                                </motion.span>
-                            </div>
+            <div className="space-y-4 md:space-y-6 main-content max-w-[1400px] mx-auto">
+                <CorporatePageHero
+                    title="Student Management"
+                    subtitle="Manage and view student profiles for your university"
+                    chips={[
+                        {
+                            label: dateLabel,
+                            tone: 'blue',
+                            icon: <Calendar className="w-3.5 h-3.5" />,
+                        },
+                        ...(instituteType
+                            ? [
+                                  {
+                                      label: instituteType,
+                                      tone: 'green' as const,
+                                      icon: <GraduationCap className="w-3.5 h-3.5" />,
+                                  },
+                              ]
+                            : []),
+                        {
+                            label: `${students.length} Total Students`,
+                            tone: 'purple',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Placement Hub',
+                            tone: 'orange',
+                            icon: <TrendingUp className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                    actions={
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                onClick={() => setShowCreateModal(true)}
+                                className="h-10 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white shadow-lg shadow-blue-500/20"
+                            >
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Add Student
+                            </Button>
+                            <Button
+                                onClick={() => setShowBulkUploadModal(true)}
+                                className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+                            >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Bulk Upload
+                            </Button>
+                            <Button
+                                onClick={handleExportStudents}
+                                className="h-10 rounded-xl bg-orange-600 hover:bg-orange-700 text-white shadow-md"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Export CSV
+                            </Button>
                         </div>
-                    </div>
-                </motion.div>
+                    }
+                />
 
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-                    >
-                        <UserPlus className="w-5 h-5 mr-2" />
-                        Add Student
-                    </motion.button>
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowBulkUploadModal(true)}
-                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors"
-                    >
-                        <Upload className="w-5 h-5 mr-2" />
-                        Bulk Upload
-                    </motion.button>
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleExportStudents}
-                        className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg shadow-md hover:bg-orange-700 transition-colors"
-                    >
-                        <Download className="w-5 h-5 mr-2" />
-                        Export CSV
-                    </motion.button>
-                </div>
-
-                {/* Student Management Header (now only contains stats, search, filters) */}
                 <StudentManagementHeader
                     totalStudents={students.length}
                     activeStudents={students.filter(s => !s.is_archived).length}
+                    placedStudents={placedStudents}
+                    departmentCount={departmentCount}
                     archivedStudents={students.filter(s => s.is_archived).length}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
@@ -267,11 +260,8 @@ export default function UniversityStudents() {
                     showFilters={showFilters}
                     setShowFilters={setShowFilters}
                     onClearFilters={clearFilters}
-                    onAddStudent={() => setShowCreateModal(true)}
-                    onBulkUpload={() => setShowBulkUploadModal(true)}
                 />
 
-                {/* Student Table */}
                 <StudentTable
                     students={filteredStudents}
                     isLoading={isLoading}
@@ -281,7 +271,6 @@ export default function UniversityStudents() {
                     onRetry={fetchStudents}
                 />
 
-                {/* Modals */}
                 <CreateStudentModal
                     isOpen={showCreateModal}
                     onClose={() => setShowCreateModal(false)}
@@ -297,4 +286,3 @@ export default function UniversityStudents() {
         </UniversityDashboardLayout>
     )
 }
-

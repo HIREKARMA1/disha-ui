@@ -10,6 +10,7 @@ import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { buildJobPath } from '@/lib/jobSlug'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
 import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
@@ -17,6 +18,7 @@ import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 // Types (reusing from student/jobs/page.tsx logic)
 export interface Job {
     id: string
+    slug?: string
     title: string
     description: string
     requirements?: string
@@ -99,7 +101,7 @@ export function AllJobs() {
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [isApplying, setIsApplying] = useState(false)
     const [applyingJobId, setApplyingJobId] = useState<string | null>(null)
-    // Description Modal state
+    // Description Modal state (fallback only)
     const [viewJob, setViewJob] = useState<Job | null>(null)
 
     // User state
@@ -181,15 +183,16 @@ export function AllJobs() {
         fetchJobs(1)
     }, [datePostedFilter])
 
-    // Open job detail from Recommended Jobs / deep link (?jobId=)
+    // Deep link (?jobId=) → redirect to SEO job page when slug available
     useEffect(() => {
         const jobId = searchParams?.get('jobId')
         if (!jobId || loading || jobs.length === 0) return
         const match = jobs.find((j) => j.id === jobId)
         if (match) {
-            setViewJob(match)
-            // Clear query so refresh doesn't re-open forever
-            router.replace('/jobs', { scroll: false })
+            router.replace(
+                buildJobPath(match.slug, match.company_name || match.corporate_name, match.title, match.id),
+                { scroll: false }
+            )
         }
     }, [searchParams, jobs, loading, router])
 
@@ -286,6 +289,8 @@ export function AllJobs() {
                 industry: job.industry ? String(job.industry) : undefined,
                 corporate_name: job.corporate_name ? String(job.corporate_name) : undefined,
                 company_name: job.company_name ? String(job.company_name) : undefined,
+                company_logo: job.company_logo ? String(job.company_logo) : undefined,
+                slug: job.slug ? String(job.slug) : undefined,
             }))
             // --- CLEANING LOGIC END ---
 
@@ -720,7 +725,16 @@ export function AllJobs() {
                             key={job.id}
                             job={job}
                             cardIndex={index}
-                            onViewDescription={() => setViewJob(job)}
+                            onViewDescription={() =>
+                                router.push(
+                                    buildJobPath(
+                                        job.slug,
+                                        job.company_name || job.corporate_name,
+                                        job.title,
+                                        job.id
+                                    )
+                                )
+                            }
                             onApply={() => handleApplyClick(job)}
                             isApplying={applyingJobId === job.id}
                         />

@@ -6,9 +6,9 @@ import { Navbar } from '@/components/ui/navbar'
 import { UniversitySidebar } from './UniversitySidebar'
 import { UniversityWelcomeMessage } from './UniversityWelcomeMessage'
 import { UniversityDashboardStats } from './UniversityDashboardStats'
-import { UniversityAnalyticsChart } from './UniversityAnalyticsChart'
-import { AdvertisementBanner } from './AdvertisementBanner'
+import { UniversityHomeWidgets } from './UniversityHomeWidgets'
 import { UniversityRecentActivities } from './UniversityRecentActivities'
+import { corpPageBg } from '@/components/corporate/ui/corporate-theme'
 import { UniversityLockScreen } from './UniversityLockScreen'
 import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
@@ -79,7 +79,7 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
     const shouldLock = isLocked && !isAllowedPage
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className={corpPageBg}>
             {/* Navbar is now fixed positioned */}
             <Navbar />
 
@@ -88,7 +88,7 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
 
             {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className={`p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
+                <main className={`p-4 md:p-6 lg:p-8 pb-28 lg:pb-8 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
                     {children ? (
                         <>
                             <div className={shouldLock ? 'opacity-40' : ''}>
@@ -106,17 +106,17 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                     ) : (
                         <>
                             <EventPopup />
-                            <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
+                            <div className={`space-y-4 md:space-y-6 max-w-[1600px] mx-auto ${shouldLock ? 'opacity-40' : ''}`}>
                                 {/* Loading State */}
                                 {isLoading && (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                                    <div className="flex items-center justify-center py-16">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
                                     </div>
                                 )}
 
                                 {/* Error State */}
                                 {error && !isLoading && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+                                    <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
                                         <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
                                             Error Loading Dashboard
                                         </h3>
@@ -137,17 +137,11 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                                             isLoading={isLoading}
                                         />
 
-                                        <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
-                                            <div className="xl:col-span-7 space-y-6">
-                                                <UniversityAnalyticsChart />
-                                                <UniversityRecentActivities
-                                                    activities={dashboardData.recent_activity}
-                                                />
-                                            </div>
-                                            <div className="xl:col-span-3 space-y-6">
-                                                <AdvertisementBanner />
-                                            </div>
-                                        </div>
+                                        <UniversityHomeWidgets />
+
+                                        <UniversityRecentActivities
+                                            activities={dashboardData.recent_activity}
+                                        />
                                     </>
                                 )}
                             </div>

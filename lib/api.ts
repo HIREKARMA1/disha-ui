@@ -412,6 +412,13 @@ class ApiClient {
     return response.data;
   }
 
+  async getPublicJobBySlug(companySlug: string, jobSlug: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/public/jobs/by-slug/${encodeURIComponent(companySlug)}/${encodeURIComponent(jobSlug)}`
+    );
+    return response.data;
+  }
+
   // Video search endpoint
   async searchVideos(query: string, skip: number = 0, limit: number = 12): Promise<any> {
     const response: AxiosResponse = await this.client.get('/video-search/', {

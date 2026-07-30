@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 
 interface Job {
     id: string
+    slug?: string
     title: string
     description: string
     requirements?: string

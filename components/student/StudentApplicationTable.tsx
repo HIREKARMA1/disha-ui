@@ -36,6 +36,7 @@ interface ApplicationData {
     job_title?: string
     student_name?: string
     corporate_name?: string
+    company_logo?: string
     creator_type?: string
     is_university_created?: boolean
     can_update_status?: boolean
@@ -362,9 +363,17 @@ export function StudentApplicationTable({
                         className="p-2.5 space-y-2 h-auto overflow-visible"
                     >
                         <div className="flex items-start gap-2">
-                            <div className="w-8 h-8 shrink-0 rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold flex items-center justify-center">
-                                {(application.corporate_name || 'C').charAt(0).toUpperCase()}
-                            </div>
+                            {application.company_logo ? (
+                                <img
+                                    src={application.company_logo}
+                                    alt={application.corporate_name || 'Company'}
+                                    className="w-8 h-8 shrink-0 rounded-md object-cover border border-gray-200 dark:border-white/10 bg-white"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 shrink-0 rounded-md bg-gradient-to-br from-blue-500 to-violet-500 text-white text-xs font-bold flex items-center justify-center">
+                                    {(application.corporate_name || 'C').charAt(0).toUpperCase()}
+                                </div>
+                            )}
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-1.5">
                                     <div className="min-w-0">

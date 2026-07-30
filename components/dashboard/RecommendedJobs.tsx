@@ -5,14 +5,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, MapPin, Bookmark } from 'lucide-react'
 import { apiClient } from '@/lib/api'
+import { buildJobPath } from '@/lib/jobSlug'
 import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
 import { formatAmountINR } from '@/lib/currency'
 
 interface RecJob {
   id: string
+  slug?: string
   title?: string
   company_name?: string
   corporate_name?: string
+  company_logo?: string
   location?: string | string[]
   salary_min?: number
   salary_max?: number
@@ -69,8 +72,10 @@ export function RecommendedJobs({ className = '' }: { className?: string }) {
     scrollerRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' })
   }
 
-  const openJob = (jobId: string) => {
-    router.push(`/jobs?jobId=${encodeURIComponent(jobId)}`)
+  const openJob = (job: RecJob) => {
+    router.push(
+      buildJobPath(job.slug, job.company_name || job.corporate_name, job.title, job.id)
+    )
   }
 
   return (
@@ -150,13 +155,21 @@ export function RecommendedJobs({ className = '' }: { className?: string }) {
               <button
                 key={job.id}
                 type="button"
-                onClick={() => openJob(job.id)}
+                onClick={() => openJob(job)}
                 className="w-64 shrink-0 text-left rounded-xl border border-gray-200/70 dark:border-white/10 bg-gray-50/80 dark:bg-white/[0.03] p-3 hover:border-blue-500/40 transition-colors"
               >
                 <div className="flex items-start gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 text-white font-bold flex items-center justify-center shrink-0">
-                    {initial}
-                  </div>
+                  {job.company_logo ? (
+                    <img
+                      src={job.company_logo}
+                      alt={company}
+                      className="w-10 h-10 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 text-white font-bold flex items-center justify-center shrink-0">
+                      {initial}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-1">
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug">
