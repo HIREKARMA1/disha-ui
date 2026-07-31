@@ -24,7 +24,8 @@ import {
     Brain,
     Library,
     Mail,
-    MessageCircle
+    MessageCircle,
+    GraduationCap
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -71,6 +72,13 @@ const navItems: NavItem[] = [
         icon: Building2,
         description: 'Manage universities',
         color: 'from-purple-500 to-pink-600'
+    },
+    {
+        label: 'Student Management',
+        href: '/dashboard/admin/students',
+        icon: GraduationCap,
+        description: 'Manage students, import/export & onboard',
+        color: 'from-sky-500 to-indigo-600'
     },
     {
         label: 'Lookup tables',
@@ -457,7 +465,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                             {getDisplayName()}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        <p className="text-xs text-gray-500 dark:text-gray-300 truncate">
                                             {getDisplayEmail()}
                                         </p>
                                     </div>

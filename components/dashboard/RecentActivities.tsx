@@ -1,185 +1,216 @@
-"use client"
+'use client'
 
-import { motion } from 'framer-motion'
-import {
-    Briefcase,
-    Calendar,
-    MapPin,
-    Building2,
-    Clock,
-    CheckCircle,
-    AlertCircle,
-    Clock as ClockIcon
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import {
+  Briefcase,
+  Building2,
+  Clock,
+  CheckCircle,
+  Eye,
+  Calendar,
+  FileText,
+  Inbox,
+} from 'lucide-react'
+import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
+import { StatusBadge } from '@/components/student/ui/StatusBadge'
+import { apiClient } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 interface Activity {
-    id: string
-    type: 'application' | 'interview' | 'update' | 'reminder'
-    title: string
-    company?: string
-    location?: string
-    time: string
-    status: 'pending' | 'accepted' | 'rejected' | 'scheduled'
-    description?: string
+  id: string
+  title: string
+  company: string
+  time: string
+  status: string
+  icon: 'apply' | 'view' | 'interview' | 'assessment' | 'resume'
 }
 
-interface RecentActivitiesProps {
-    className?: string
+const iconMap = {
+  apply: { Icon: Briefcase, bg: 'bg-emerald-500/15 text-emerald-500' },
+  view: { Icon: Eye, bg: 'bg-blue-500/15 text-blue-500' },
+  interview: { Icon: Calendar, bg: 'bg-violet-500/15 text-violet-500' },
+  assessment: { Icon: CheckCircle, bg: 'bg-amber-500/15 text-amber-500' },
+  resume: { Icon: FileText, bg: 'bg-sky-500/15 text-sky-500' },
 }
 
-const activities: Activity[] = [
-    {
-        id: '1',
-        type: 'application',
-        title: 'Frontend Developer Intern',
-        company: 'TechCorp',
-        location: 'Remote',
-        time: '2 hours ago',
-        status: 'pending',
-        description: 'Application submitted successfully'
-    },
-    {
-        id: '2',
-        type: 'interview',
-        title: 'Software Engineer',
-        company: 'InnovateLab',
-        location: 'San Francisco, CA',
-        time: '1 day ago',
-        status: 'scheduled',
-        description: 'Interview scheduled for March 20, 2:00 PM'
-    },
-    {
-        id: '3',
-        type: 'update',
-        title: 'Data Analyst',
-        company: 'DataFlow Inc',
-        location: 'New York, NY',
-        time: '2 days ago',
-        status: 'accepted',
-        description: 'Congratulations! You\'ve been selected for the next round'
-    },
-    {
-        id: '4',
-        type: 'reminder',
-        title: 'Resume Update',
-        company: undefined,
-        location: undefined,
-        time: '3 days ago',
-        status: 'pending',
-        description: 'Your resume hasn\'t been updated in 30 days'
+function relativeTime(dateString?: string) {
+  if (!dateString) return ''
+  try {
+    const diff = Date.now() - new Date(dateString).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 60) return `${Math.max(mins, 1)}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days}d ago`
+    return new Date(dateString).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  } catch {
+    return ''
+  }
+}
+
+function mapApplicationToActivity(app: any): Activity {
+  const status = (app.status || 'applied').toLowerCase()
+  const title = app.job_title || 'Job'
+  const company = app.corporate_name || app.company_name || 'Company'
+  const time = relativeTime(app.updated_at || app.applied_at)
+
+  if (status === 'shortlisted') {
+    return {
+      id: app.id,
+      title: `Interview shortlisted — ${title}`,
+      company,
+      time,
+      status: 'shortlisted',
+      icon: 'interview',
     }
-]
-
-const getStatusIcon = (status: Activity['status']) => {
-    switch (status) {
-        case 'accepted':
-            return <CheckCircle className="w-4 h-4 text-green-500" />
-        case 'rejected':
-            return <AlertCircle className="w-4 h-4 text-red-500" />
-        case 'scheduled':
-            return <Calendar className="w-4 h-4 text-blue-500" />
-        case 'pending':
-        default:
-            return <ClockIcon className="w-4 h-4 text-yellow-500" />
+  }
+  if (status === 'selected') {
+    return {
+      id: app.id,
+      title: `Selected for ${title}`,
+      company,
+      time,
+      status: 'selected',
+      icon: 'assessment',
     }
+  }
+  if (status === 'rejected') {
+    return {
+      id: app.id,
+      title: `Update on ${title}`,
+      company,
+      time,
+      status: 'rejected',
+      icon: 'view',
+    }
+  }
+  return {
+    id: app.id,
+    title: `Applied for ${title}`,
+    company,
+    time,
+    status: status || 'applied',
+    icon: 'apply',
+  }
 }
 
-const getStatusColor = (status: Activity['status']) => {
-    switch (status) {
-        case 'accepted':
-            return 'text-green-600 bg-green-50 dark:bg-green-900/20'
-        case 'rejected':
-            return 'text-red-600 bg-red-50 dark:bg-red-900/20'
-        case 'scheduled':
-            return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
-        case 'pending':
-        default:
-            return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20'
+export function RecentActivities({ className = '' }: { className?: string }) {
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        setLoading(true)
+        const [appsRes, profile] = await Promise.all([
+          apiClient.getStudentApplications({
+            sort_by: 'updated_at',
+            sort_order: 'desc',
+            page: 1,
+            limit: 8,
+          }).catch(() => null),
+          apiClient.getStudentProfile().catch(() => null),
+        ])
+
+        const apps = (appsRes?.applications || appsRes?.items || []) as any[]
+        const mapped = apps.map(mapApplicationToActivity)
+
+        // Resume updated — if profile was updated recently
+        if (profile?.updated_at || profile?.resume) {
+          const resumeTime = profile.updated_at
+          const age = resumeTime ? Date.now() - new Date(resumeTime).getTime() : Infinity
+          if (age < 1000 * 60 * 60 * 24 * 30) {
+            mapped.unshift({
+              id: `resume-${profile.id || 'me'}`,
+              title: 'Resume Updated',
+              company: 'Your profile',
+              time: relativeTime(resumeTime),
+              status: 'under_review',
+              icon: 'resume',
+            })
+          }
+        }
+
+        if (!cancelled) setActivities(mapped.slice(0, 6))
+      } catch {
+        if (!cancelled) setActivities([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-}
+  }, [])
 
-export function RecentActivities({ className = '' }: RecentActivitiesProps) {
-    return (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative ${className}`}>
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Recent Activities
-                </h2>
-                <Link
-                    href="/dashboard/student/activities"
-                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium"
-                >
-                    View All
-                </Link>
-            </div>
+  return (
+    <StudentSectionCard className={cn('relative', className)}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+          Recent Activity
+        </h2>
+        <Link
+          href="/dashboard/student/applications"
+          className="text-xs sm:text-sm font-semibold text-blue-500 hover:text-blue-400"
+        >
+          View All
+        </Link>
+      </div>
 
-            <div className="space-y-4 blur-sm pointer-events-none">
-                {activities.map((activity, index) => (
-                    <motion.div
-                        key={activity.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer group"
-                    >
-                        <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0 mt-1">
-                                {getStatusIcon(activity.status)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                        {activity.title}
-                                    </h3>
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}>
-                                        {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
-                                    </span>
-                                </div>
-
-                                {activity.company && (
-                                    <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mb-2">
-                                        <span className="flex items-center">
-                                            <Building2 className="w-3 h-3 mr-1" />
-                                            {activity.company}
-                                        </span>
-                                        {activity.location && (
-                                            <span className="flex items-center">
-                                                <MapPin className="w-3 h-3 mr-1" />
-                                                {activity.location}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                    {activity.description}
-                                </p>
-
-                                <div className="flex items-center text-xs text-gray-400 dark:text-gray-500">
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    {activity.time}
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
-
-            {/* Coming Soon Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl">
-                <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
-                        <Clock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Coming Soon
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-                        Recent Activities functionality is under development. Stay tuned for updates!
-                    </p>
-                </div>
-            </div>
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />
+          ))}
         </div>
-    )
+      ) : activities.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
+            <Inbox className="w-6 h-6 text-gray-400" />
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">No recent activity</p>
+          <p className="text-xs text-gray-500 mt-1 max-w-[220px]">
+            Apply to jobs or update your profile to see activity here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {activities.map((activity) => {
+            const { Icon, bg } = iconMap[activity.icon]
+            return (
+              <div
+                key={activity.id}
+                className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50/80 dark:bg-white/[0.03] px-2.5 py-2"
+              >
+                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', bg)}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {activity.title}
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
+                    <Building2 className="w-3 h-3 shrink-0" />
+                    {activity.company}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  <StatusBadge status={activity.status} />
+                  {activity.time && (
+                    <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {activity.time}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </StudentSectionCard>
+  )
 }

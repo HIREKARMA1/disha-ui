@@ -41,6 +41,7 @@ export const EVENTS_PORTAL_ADS: PortalAdItem[] = []
 
 export const PORTAL_STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
+  { value: 'open', label: 'Open' },
   { value: 'live', label: 'Live' },
   { value: 'closed', label: 'Closed' },
 ] as const

@@ -9,14 +9,14 @@ export type ProfileCompletionCheck = {
     completion_percentage?: number
 }
 
-/** Apply gate: complete Basic Info tab (75%), not profile picture or other tabs alone. */
+/** Apply gate: prefer backend can_apply_for_jobs; fallback requires full core fields. */
 export function canApplyForJobs(completion?: ProfileCompletionCheck | null): boolean {
     if (!completion) return false
     if (completion.can_apply_for_jobs !== undefined) {
         return completion.can_apply_for_jobs
     }
     if (completion.core_percentage !== undefined) {
-        return completion.core_percentage >= 75
+        return completion.core_percentage >= 100
     }
     return (completion.completion_percentage ?? 0) >= 75
 }

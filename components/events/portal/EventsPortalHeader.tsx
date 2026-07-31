@@ -49,20 +49,21 @@ function EventsPortalHeaderComponent() {
             <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
           ) : isAuthenticated && user ? (
             <>
-              <Link href={getDashboardPath(user.user_type)}>
+              {/* Dashboard / Logout — desktop only (mobile uses bottom nav / dashboard) */}
+              <Link href={getDashboardPath(user.user_type)} className="hidden md:block">
                 <Button
                   size="sm"
                   className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
                 >
                   <User className="mr-1.5 h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
+                  <span>Dashboard</span>
                 </Button>
               </Link>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="hidden text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 sm:inline-flex"
+                className="hidden text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 md:inline-flex"
               >
                 <LogOut className="mr-1.5 h-4 w-4" />
                 Logout
