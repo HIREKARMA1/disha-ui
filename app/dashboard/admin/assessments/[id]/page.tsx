@@ -286,9 +286,21 @@ export default function AssessmentDetailPage() {
         `/admin/assessments/${assessmentId}/questions/fill`,
         {},
       );
-      setQuestionActionMessage(
-        `Questions replenished. Added: ${res.added ?? res.total_questions_added ?? 0}.`,
-      );
+      const added = res.added ?? res.total_questions_added ?? 0;
+      const stillMissing = res.still_missing ?? 0;
+      const serverMessage =
+        res.message || `Questions replenished. Added: ${added}.`;
+
+      if (stillMissing > 0 && added === 0) {
+        setQuestionsError(serverMessage);
+        setQuestionActionMessage(null);
+      } else if (stillMissing > 0) {
+        setQuestionActionMessage(serverMessage);
+        setQuestionsError(null);
+      } else {
+        setQuestionActionMessage(serverMessage);
+        setQuestionsError(null);
+      }
       fetchQuestions(assessmentId, assessment?.rounds || []);
     } catch (error) {
       console.error("Error replenishing questions:", error);

@@ -23,6 +23,18 @@ const roundSchema = z
         path: ["config", "num_questions"],
       });
     }
+    if (round.round_type === "mcq" || round.round_type === "technical_mcq") {
+      const topic = String(round.config?.topic || "").trim();
+      if (!topic) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Round "${round.round_name || round.round_number}" requires a topic for ${
+            round.round_type === "mcq" ? "MCQ based Question" : "Technical MCQ"
+          }`,
+          path: ["config", "topic"],
+        });
+      }
+    }
   });
 
 /** Validates assessment create/edit form fields that gate conducting an exam. */

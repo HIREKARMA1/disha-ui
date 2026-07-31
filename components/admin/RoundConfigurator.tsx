@@ -152,6 +152,10 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
 
 function RoundEditor({ round, onSave, onCancel }: any) {
   const [formData, setFormData] = useState<Round>(round);
+  const [topicError, setTopicError] = useState("");
+
+  const topicRequired =
+    formData.round_type === "mcq" || formData.round_type === "technical_mcq";
 
   const handleChange = (field: string, value: any) => {
     if (field.startsWith("config.")) {
@@ -163,12 +167,33 @@ function RoundEditor({ round, onSave, onCancel }: any) {
           [configField]: value,
         },
       });
+      if (configField === "topic") setTopicError("");
     } else {
       setFormData({
         ...formData,
         [field]: value,
       });
+      if (field === "round_type") setTopicError("");
     }
+  };
+
+  const handleSave = () => {
+    const topic = String(formData.config.topic || "").trim();
+    if (topicRequired && !topic) {
+      setTopicError(
+        formData.round_type === "mcq"
+          ? "Topic is required for MCQ based Question rounds (e.g. Java, SQL)."
+          : "Topic is required for Technical MCQ rounds (e.g. Java, Data Structures)."
+      );
+      return;
+    }
+    onSave({
+      ...formData,
+      config: {
+        ...formData.config,
+        topic,
+      },
+    });
   };
 
   return (
@@ -246,33 +271,42 @@ function RoundEditor({ round, onSave, onCancel }: any) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Topic{topicRequired ? " *" : ""}
+          </label>
           <input
             type="text"
             value={formData.config.topic || ""}
             onChange={(e) => handleChange("config.topic", e.target.value)}
+            required={topicRequired}
             placeholder={
               formData.round_type === "aptitude"
-                ? "e.g. quantitative, logical reasoning, verbal"
+                ? "e.g. percentages, time and work, logical reasoning"
                 : formData.round_type === "technical_mcq" || formData.round_type === "mcq"
                   ? "e.g. Java, Python, SQL, Data Structures"
                   : formData.round_type === "soft_skills"
                     ? "e.g. communication, teamwork, leadership"
                     : "e.g. topic focus for this round"
             }
-            className="w-full px-3 py-2 border rounded-lg"
+            className={`w-full px-3 py-2 border rounded-lg ${
+              topicError ? "border-red-500" : ""
+            }`}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            {formData.round_type === "aptitude"
-              ? "Aptitude rounds generate quantitative/logical/verbal MCQs from these areas — not programming languages."
-              : formData.round_type === "mcq"
-                ? "MCQ based Question rounds generate topic-focused MCQs (e.g. Java, Python, SQL)."
-                : formData.round_type === "technical_mcq"
-                  ? "Technical MCQ rounds generate questions for this subject (use Technical MCQ + Java for Java questions)."
-                  : formData.round_type === "soft_skills"
-                    ? "Soft-skills rounds focus questions on this workplace topic."
-                    : "Questions are generated to match this round type and topic."}
-          </p>
+          {topicError ? (
+            <p className="text-xs text-red-600 mt-1">{topicError}</p>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.round_type === "aptitude"
+                ? "Optional aptitude sub-area (percentages, ratios, etc.). Questions stay aptitude-only — not programming."
+                : formData.round_type === "mcq"
+                  ? "Required. AI generates MCQs only for this subject (e.g. Java vs SQL produce different sets)."
+                  : formData.round_type === "technical_mcq"
+                    ? "Required. Technical MCQs are generated strictly for this subject."
+                    : formData.round_type === "soft_skills"
+                      ? "Optional workplace theme for soft-skills questions."
+                      : "Questions are generated to match this round type and topic."}
+            </p>
+          )}
         </div>
         {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Passing Percentage (%)</label>
@@ -293,7 +327,7 @@ function RoundEditor({ round, onSave, onCancel }: any) {
         </button>
         <button
           type="button"
-          onClick={() => onSave(formData)}
+          onClick={handleSave}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Save Round
