@@ -8,6 +8,7 @@ import {
   assessmentFormSchema,
   mapAssessmentFormErrors,
 } from "@/lib/validations/assessment";
+import { IntegerTextField } from "@/components/ui/integer-text-field";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -143,6 +144,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
 
     const passingCriteria = {
       ...formData.metadata.passing_criteria,
+      overall_percentage:
+        formData.metadata?.passing_criteria?.overall_percentage === null ||
+        formData.metadata?.passing_criteria?.overall_percentage === undefined ||
+        formData.metadata?.passing_criteria?.overall_percentage === ""
+          ? 60
+          : Number(formData.metadata.passing_criteria.overall_percentage),
       ...(formData.job_id ? { job_id: formData.job_id } : {}),
     };
 
@@ -311,18 +318,28 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Passing Percentage (%)
               </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.metadata.passing_criteria.overall_percentage}
-                onChange={(e) =>
+              <IntegerTextField
+                value={
+                  formData.metadata?.passing_criteria?.overall_percentage ===
+                    null ||
+                  formData.metadata?.passing_criteria?.overall_percentage ===
+                    undefined ||
+                  formData.metadata?.passing_criteria?.overall_percentage === ""
+                    ? null
+                    : Number(
+                        formData.metadata.passing_criteria.overall_percentage,
+                      )
+                }
+                min={0}
+                max={100}
+                placeholder="e.g. 60"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                onChange={(n) =>
                   handleMetadataChange("passing_criteria", {
                     ...formData.metadata.passing_criteria,
-                    overall_percentage: parseInt(e.target.value),
+                    overall_percentage: n,
                   })
                 }
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
               />
             </div>
           </div>

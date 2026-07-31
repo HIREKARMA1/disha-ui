@@ -16,12 +16,33 @@ const roundSchema = z
   .superRefine((round, ctx) => {
     if (round.round_type === "group_discussion") return;
     const num = Number(round.config?.num_questions);
-    if (!Number.isFinite(num) || num < MIN_QUESTIONS_PER_ROUND) {
+    if (
+      !Number.isFinite(num) ||
+      !Number.isInteger(num) ||
+      num < MIN_QUESTIONS_PER_ROUND
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Round "${round.round_name || round.round_number}" must have at least ${MIN_QUESTIONS_PER_ROUND} questions`,
+        message: `Round "${round.round_name || round.round_number}" must have a whole number of at least ${MIN_QUESTIONS_PER_ROUND} questions`,
         path: ["config", "num_questions"],
       });
+    }
+    const aiRaw = round.config?.ai_question_count;
+    if (aiRaw !== undefined && aiRaw !== null && aiRaw !== "") {
+      const ai = Number(aiRaw);
+      if (!Number.isFinite(ai) || !Number.isInteger(ai) || ai < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Round "${round.round_name || round.round_number}" AI question count must be a whole number of 0 or greater`,
+          path: ["config", "ai_question_count"],
+        });
+      } else if (Number.isFinite(num) && ai > num) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Round "${round.round_name || round.round_number}" AI question count cannot exceed total questions`,
+          path: ["config", "ai_question_count"],
+        });
+      }
     }
     if (round.round_type === "mcq" || round.round_type === "technical_mcq") {
       const topic = String(round.config?.topic || "").trim();

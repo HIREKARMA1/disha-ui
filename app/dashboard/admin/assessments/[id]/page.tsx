@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { AdminDashboardLayout } from "@/components/dashboard/AdminDashboardLayout";
 import { StudentExamLinkSection } from "@/components/admin/assessments/StudentExamLinkSection";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 
 interface Assessment {
   id: string;
@@ -95,14 +96,94 @@ const getRoundKey = (round: any) =>
 
 const findQuestionRound = (questionsData: any, round: any) => {
   const rounds = questionsData?.rounds || [];
-  return rounds.find(
+  const matched = rounds.find(
     (candidate: any) =>
       candidate.round_number === round.round_number ||
       candidate.round_id === round.id ||
       candidate.round_id === round.round_id ||
-      candidate.round_type === round.round_type,
+      (candidate.round_type === round.round_type &&
+        candidate.round_number === round.round_number),
   );
+  if (matched?.questions?.length) return matched;
+
+  // Fallback: attach flat question list by round_id when round grouping mismatched
+  const flat = (questionsData?.questions || []).filter(
+    (q: any) => q.round_id === round.id || q.round_id === round.round_id,
+  );
+  if (flat.length) {
+    return {
+      ...(matched || {}),
+      round_id: round.id,
+      round_number: round.round_number,
+      round_type: round.round_type,
+      questions: flat,
+      questions_count: flat.length,
+    };
+  }
+  return matched;
 };
+
+const getQuestionId = (question: any): string => {
+  const raw =
+    question?.id ??
+    question?.question_id ??
+    question?.questionId ??
+    "";
+  const id = String(raw).trim();
+  if (!id || id === "undefined" || id === "null") return "";
+  return id;
+};
+
+const normalizeQuestion = (question: any) => {
+  const id = getQuestionId(question);
+  return {
+    ...question,
+    id: id || question?.id,
+    question_id: id || question?.question_id,
+    is_ai_generated: Boolean(question?.is_ai_generated),
+  };
+};
+
+const normalizeQuestionsPayload = (data: any) => {
+  if (!data) return data;
+  const questions = (data.questions || []).map(normalizeQuestion);
+  const rounds = (data.rounds || []).map((round: any) => ({
+    ...round,
+    questions: (round.questions || []).map(normalizeQuestion),
+  }));
+  return { ...data, questions, rounds };
+};
+
+const isCorrectOption = (
+  option: string,
+  optionIndex: number,
+  correctAnswer: any,
+): boolean => {
+  if (correctAnswer == null || correctAnswer === "") return false;
+  const letter = String.fromCharCode(65 + optionIndex);
+  const correct = String(correctAnswer).trim();
+  const upper = correct.toUpperCase();
+  if (upper === letter) return true;
+  if (option === correct) return true;
+  if (String(option).trim().toUpperCase() === upper) return true;
+  return false;
+};
+
+const getAiQuestionTarget = (round: any): number => {
+  const num = Number(round?.config?.num_questions) || 0;
+  const ai = round?.config?.ai_question_count;
+  if (ai === undefined || ai === null || ai === "") return num;
+  const n = Number(ai);
+  if (!Number.isFinite(n)) return num;
+  return Math.max(0, Math.min(n, num));
+};
+
+const MCQ_ROUND_TYPES = new Set([
+  "aptitude",
+  "mcq",
+  "technical_mcq",
+  "soft_skills",
+]);
 
 export default function AssessmentDetailPage() {
   const params = useParams();
@@ -130,9 +211,26 @@ export default function AssessmentDetailPage() {
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(
     null,
   );
+  const [pendingDeleteQuestionId, setPendingDeleteQuestionId] = useState<
+    string | null
+  >(null);
   const [expandedRounds, setExpandedRounds] = useState<Record<string, boolean>>(
     {},
   );
+  const [addingManualRoundId, setAddingManualRoundId] = useState<string | null>(
+    null,
+  );
+  const [manualFormByRound, setManualFormByRound] = useState<
+    Record<
+      string,
+      {
+        question_text: string;
+        options: [string, string, string, string];
+        correct_answer: string;
+        explanation: string;
+      }
+    >
+  >({});
 
   // Fetch assessment details
   useEffect(() => {
@@ -220,7 +318,7 @@ export default function AssessmentDetailPage() {
           count: questions.length,
         };
       }
-      setQuestionsData(data);
+      setQuestionsData(normalizeQuestionsPayload(data));
       setQuestionPackageId(assessmentKey);
       setExpandedRounds((prev) => {
         const next = { ...prev };
@@ -249,24 +347,141 @@ export default function AssessmentDetailPage() {
     }));
   };
 
-  const handleDeleteQuestion = async (questionId: string) => {
-    if (!questionId) return;
-    if (!confirm("Are you sure you want to delete this question?")) return;
-    try {
-      setDeletingQuestionId(questionId);
-      setQuestionActionMessage(null);
-      await apiClient.delete(`/admin/assessments/${assessmentId}/questions/${questionId}`);
-      setQuestionActionMessage(
-        "Question deleted. Use Replenish missing questions to recreate the required count.",
+  const removeQuestionFromState = (questionId: string) => {
+    setQuestionsData((prev: any) => {
+      if (!prev) return prev;
+      const filterQs = (list: any[] = []) =>
+        list.filter((q) => getQuestionId(q) !== questionId);
+      return {
+        ...prev,
+        questions: filterQs(prev.questions),
+        count: filterQs(prev.questions).length,
+        rounds: (prev.rounds || []).map((round: any) => {
+          const questions = filterQs(round.questions);
+          return {
+            ...round,
+            questions,
+            questions_count: questions.length,
+          };
+        }),
+      };
+    });
+  };
+
+  const requestDeleteQuestion = (questionId: string) => {
+    const qid = String(questionId || "").trim();
+    if (!qid || qid === "undefined" || qid === "null") {
+      setQuestionsError(
+        "Cannot delete: question id is missing. Reload the page and try again.",
       );
-      if (questionPackageId) {
-        fetchQuestions(assessmentId, assessment?.rounds || []);
+      return;
+    }
+    setPendingDeleteQuestionId(qid);
+  };
+
+  const performDeleteQuestion = async (questionId: string) => {
+    const qid = String(questionId || "").trim();
+    if (!qid) return;
+    try {
+      setDeletingQuestionId(qid);
+      setQuestionActionMessage(null);
+      setQuestionsError(null);
+      const paths = [
+        `/admin/assessments/${assessmentId}/questions/${qid}`,
+        `/disha/assessments/questions/${qid}`,
+      ];
+      let deleted = false;
+      let lastError: any = null;
+      for (const path of paths) {
+        try {
+          await apiClient.delete(path);
+          deleted = true;
+          break;
+        } catch (err) {
+          lastError = err;
+        }
       }
+      if (!deleted) {
+        throw lastError || new Error("Delete failed");
+      }
+      removeQuestionFromState(qid);
+      setPendingDeleteQuestionId(null);
+      setQuestionActionMessage(
+        "Question deleted. Replenish AI for AI shortfalls, or add a manual question to fill remaining slots.",
+      );
+      fetchQuestions(assessmentId, assessment?.rounds || []);
     } catch (error) {
       console.error("Error deleting question:", error);
       setQuestionsError(getErrorMessage(error, "Error deleting question"));
+      throw error;
     } finally {
       setDeletingQuestionId(null);
+    }
+  };
+
+  const getManualForm = (roundId: string) =>
+    manualFormByRound[roundId] || {
+      question_text: "",
+      options: ["", "", "", ""] as [string, string, string, string],
+      correct_answer: "A",
+      explanation: "",
+    };
+
+  const updateManualForm = (
+    roundId: string,
+    patch: Partial<ReturnType<typeof getManualForm>>,
+  ) => {
+    setManualFormByRound((prev) => ({
+      ...prev,
+      [roundId]: { ...getManualForm(roundId), ...patch },
+    }));
+  };
+
+  const handleAddManualQuestion = async (round: any) => {
+    const roundId = round.id || round.round_id;
+    if (!roundId) {
+      setQuestionsError("Cannot add question: round id is missing.");
+      return;
+    }
+    const form = getManualForm(roundId);
+    const text = form.question_text.trim();
+    const options = form.options.map((o) => o.trim());
+    if (!text) {
+      setQuestionsError("Question text is required.");
+      return;
+    }
+    if (options.some((o) => !o)) {
+      setQuestionsError("All four options are required.");
+      return;
+    }
+    try {
+      setAddingManualRoundId(roundId);
+      setQuestionsError(null);
+      setQuestionActionMessage(null);
+      await apiClient.post(`/admin/assessments/${assessmentId}/questions`, {
+        round_id: roundId,
+        question_text: text,
+        question_type: "mcq",
+        options,
+        correct_answer: form.correct_answer || "A",
+        explanation: form.explanation.trim() || null,
+      });
+      setManualFormByRound((prev) => ({
+        ...prev,
+        [roundId]: {
+          question_text: "",
+          options: ["", "", "", ""],
+          correct_answer: "A",
+          explanation: "",
+        },
+      }));
+      setQuestionActionMessage("Manual question added.");
+      await fetchQuestions(assessmentId, assessment?.rounds || []);
+    } catch (error) {
+      console.error("Error adding manual question:", error);
+      setQuestionsError(getErrorMessage(error, "Error adding manual question"));
+    } finally {
+      setAddingManualRoundId(null);
     }
   };
 
@@ -287,14 +502,15 @@ export default function AssessmentDetailPage() {
         {},
       );
       const added = res.added ?? res.total_questions_added ?? 0;
-      const stillMissing = res.still_missing ?? 0;
+      const stillMissingAi = res.still_missing_ai ?? res.still_missing ?? 0;
+      const stillMissingManual = res.still_missing_manual ?? 0;
       const serverMessage =
-        res.message || `Questions replenished. Added: ${added}.`;
+        res.message || `AI questions replenished. Added: ${added}.`;
 
-      if (stillMissing > 0 && added === 0) {
+      if (stillMissingAi > 0 && added === 0) {
         setQuestionsError(serverMessage);
         setQuestionActionMessage(null);
-      } else if (stillMissing > 0) {
+      } else if (stillMissingAi > 0 || stillMissingManual > 0) {
         setQuestionActionMessage(serverMessage);
         setQuestionsError(null);
       } else {
@@ -546,8 +762,8 @@ export default function AssessmentDetailPage() {
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
                   {canManageQuestions
-                    ? `${totalLoadedQuestions} of ${totalExpectedQuestions || totalLoadedQuestions} questions loaded across ${assessment.rounds.length} rounds.`
-                    : "Questions will appear here after generation. Use Replenish if any are missing."}
+                    ? `${totalLoadedQuestions} of ${totalExpectedQuestions || totalLoadedQuestions} questions loaded. Each round has Replenish AI and Add Manual Question below.`
+                    : "Questions will appear here after generation."}
                 </p>
                 {questionPackageId && (
                   <p className="mt-1 text-xs text-gray-500">
@@ -573,7 +789,7 @@ export default function AssessmentDetailPage() {
                   ) : (
                     <Sparkles size={16} className="mr-2" />
                   )}
-                  Replenish Missing Questions
+                  Replenish AI Questions Only
                 </Button>
               </div>
             </div>
@@ -597,13 +813,26 @@ export default function AssessmentDetailPage() {
                   round,
                   solviqRound,
                 );
+                const questions = solviqRound?.questions || [];
                 const currentCount =
-                  solviqRound?.questions?.length ||
+                  questions.length ||
                   solviqRound?.questions_count ||
                   0;
+                const aiTarget = getAiQuestionTarget(round);
+                const manualSlots = Math.max(0, expectedCount - aiTarget);
+                const aiCount = questions.filter(
+                  (q: any) => q.is_ai_generated,
+                ).length;
+                const manualCount = currentCount - aiCount;
+                const aiMissing = Math.max(0, aiTarget - aiCount);
+                const manualMissing = Math.max(0, manualSlots - manualCount);
                 const isShort =
                   expectedCount > 0 && currentCount < expectedCount;
                 const roundKey = String(getRoundKey(round));
+                const canAddManual =
+                  MCQ_ROUND_TYPES.has(String(round.round_type || "").toLowerCase()) &&
+                  currentCount < expectedCount;
+                const manualForm = getManualForm(round.id);
 
                 return (
                   <div
@@ -623,6 +852,12 @@ export default function AssessmentDetailPage() {
                             <p className="text-sm text-gray-600">
                               {round.round_type} • {round.duration_minutes} min
                               • {expectedCount} questions
+                              {expectedCount > 0 && (
+                                <span className="text-gray-500">
+                                  {" "}
+                                  ({aiTarget} AI / {manualSlots} manual)
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>
@@ -642,11 +877,12 @@ export default function AssessmentDetailPage() {
                       </div>
                     </div>
 
-                    {/* Questions Management Block */}
+                    {/* Questions Management Block — always visible for local assessments */}
                     {canManageQuestions && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
                         <div className="flex justify-between items-center flex-wrap gap-2">
                           <button
+                            type="button"
                             onClick={() => toggleRoundExpanded(roundKey)}
                             className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                           >
@@ -658,22 +894,30 @@ export default function AssessmentDetailPage() {
                             ) : (
                               <>
                                 <ChevronDown size={16} />
-                                View & Configure Questions ({currentCount})
+                                View Questions ({currentCount})
                               </>
                             )}
                           </button>
 
-                          {/* Missing questions warning & replenishment button */}
-                          {solviqRound && isShort && (
-                            <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isShort && (
                               <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
                                 <AlertCircle size={14} />
-                                {expectedCount - currentCount} questions missing
+                                {aiMissing > 0 && `${aiMissing} AI missing`}
+                                {aiMissing > 0 && manualMissing > 0 && " · "}
+                                {manualMissing > 0 &&
+                                  `${manualMissing} manual needed`}
+                                {aiMissing === 0 &&
+                                  manualMissing === 0 &&
+                                  `${expectedCount - currentCount} missing`}
                               </span>
+                            )}
+                            {aiMissing > 0 && (
                               <button
+                                type="button"
                                 onClick={handleReplenishQuestions}
                                 disabled={replenishing}
-                                className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded text-xs font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 shadow-sm transition-all"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 disabled:opacity-50"
                               >
                                 {replenishing ? (
                                   <RefreshCw
@@ -683,15 +927,133 @@ export default function AssessmentDetailPage() {
                                 ) : (
                                   <Sparkles size={12} />
                                 )}
-                                Replenish
+                                Replenish AI
                               </button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
 
+                        {/* Add Manual — always visible (not behind expand) */}
+                        {MCQ_ROUND_TYPES.has(
+                          String(round.round_type || "").toLowerCase(),
+                        ) && (
+                          <div
+                            id={`manual-form-${round.id}`}
+                            className="rounded-lg border-2 border-emerald-200 bg-emerald-50/40 p-4"
+                          >
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              Add Manual Question
+                            </h4>
+                            <p className="mt-1 text-xs text-gray-600">
+                              Total {expectedCount}: {aiCount} AI + {manualCount}{" "}
+                              manual loaded.{" "}
+                              {canAddManual
+                                ? `${expectedCount - currentCount} slot(s) left — fill with manual MCQs or replenish AI.`
+                                : expectedCount > 0 &&
+                                    currentCount >= expectedCount
+                                  ? "Round is full — delete a question first to add another."
+                                  : "Set total questions on the round to enable manual entry."}
+                            </p>
+                            <div className="mt-3 space-y-3">
+                              <textarea
+                                value={manualForm.question_text}
+                                onChange={(e) =>
+                                  updateManualForm(round.id, {
+                                    question_text: e.target.value,
+                                  })
+                                }
+                                disabled={!canAddManual}
+                                rows={2}
+                                placeholder="Question text"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                              />
+                              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                {manualForm.options.map((opt, oIdx) => (
+                                  <div
+                                    key={oIdx}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <span className="w-6 text-xs font-bold text-gray-500">
+                                      {String.fromCharCode(65 + oIdx)}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={opt}
+                                      disabled={!canAddManual}
+                                      onChange={(e) => {
+                                        const next = [
+                                          ...manualForm.options,
+                                        ] as [string, string, string, string];
+                                        next[oIdx] = e.target.value;
+                                        updateManualForm(round.id, {
+                                          options: next,
+                                        });
+                                      }}
+                                      placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
+                                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap items-end gap-3">
+                                <div>
+                                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Correct answer
+                                  </label>
+                                  <select
+                                    value={manualForm.correct_answer}
+                                    disabled={!canAddManual}
+                                    onChange={(e) =>
+                                      updateManualForm(round.id, {
+                                        correct_answer: e.target.value,
+                                      })
+                                    }
+                                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                  >
+                                    {["A", "B", "C", "D"].map((l) => (
+                                      <option key={l} value={l}>
+                                        {l}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="min-w-[200px] flex-1">
+                                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Explanation (optional)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={manualForm.explanation}
+                                    disabled={!canAddManual}
+                                    onChange={(e) =>
+                                      updateManualForm(round.id, {
+                                        explanation: e.target.value,
+                                      })
+                                    }
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddManualQuestion(round)}
+                                  disabled={
+                                    !canAddManual ||
+                                    addingManualRoundId === round.id
+                                  }
+                                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {addingManualRoundId === round.id
+                                    ? "Adding…"
+                                    : "Add Manual Question"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Expanded questions list */}
-                        {expandedRounds[roundKey] && (
-                          <div className="mt-4 space-y-4">
+                        {expandedRounds[roundKey] !== false && (
+                          <div className="space-y-4">
                             {loadingQuestions ? (
                               <div className="text-center py-6 text-sm text-gray-500 flex items-center justify-center gap-2">
                                 <RefreshCw
@@ -700,147 +1062,184 @@ export default function AssessmentDetailPage() {
                                 />
                                 Loading questions...
                               </div>
-                            ) : !solviqRound?.questions ||
-                              solviqRound.questions.length === 0 ? (
-                              <div className="text-center py-8 text-sm text-gray-500 border border-dashed rounded-lg bg-gray-50 flex flex-col items-center gap-2">
-                                <HelpCircle
-                                  size={24}
-                                  className="text-gray-400"
-                                />
-                                <span>
-                                  No questions generated yet for this round.
-                                </span>
-                                <button
-                                  onClick={handleReplenishQuestions}
-                                  disabled={replenishing}
-                                  className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 shadow"
-                                >
-                                  {replenishing ? (
-                                    <RefreshCw
-                                      size={12}
-                                      className="animate-spin"
-                                    />
-                                  ) : (
-                                    <Sparkles size={12} />
-                                  )}
-                                  Generate Questions
-                                </button>
-                              </div>
                             ) : (
-                              <div className="space-y-4">
-                                {solviqRound.questions.map(
-                                  (question: any, qIdx: number) => (
-                                    <div
-                                      key={question.question_id || qIdx}
-                                      className="bg-gray-50 border border-gray-200 rounded-lg p-4 relative group hover:border-gray-300 transition-all"
-                                    >
-                                      {/* Delete button */}
+                              <>
+                                {questions.length === 0 && (
+                                  <div className="text-center py-6 text-sm text-gray-500 border border-dashed rounded-lg bg-gray-50 flex flex-col items-center gap-2">
+                                    <HelpCircle
+                                      size={24}
+                                      className="text-gray-400"
+                                    />
+                                    <span>
+                                      No questions yet. Use Replenish AI and/or
+                                      Add Manual Question above.
+                                    </span>
+                                    {aiTarget > 0 && (
                                       <button
-                                        onClick={() =>
-                                          handleDeleteQuestion(
-                                            question.question_id,
-                                          )
-                                        }
-                                        disabled={
-                                          deletingQuestionId ===
-                                          question.question_id
-                                        }
-                                        className="absolute top-4 right-4 rounded-lg border border-red-100 bg-white p-1.5 text-red-600 shadow-sm hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        title="Delete Question"
+                                        type="button"
+                                        onClick={handleReplenishQuestions}
+                                        disabled={replenishing}
+                                        className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50"
                                       >
-                                        {deletingQuestionId ===
-                                        question.question_id ? (
+                                        {replenishing ? (
                                           <RefreshCw
-                                            size={16}
+                                            size={12}
                                             className="animate-spin"
                                           />
                                         ) : (
-                                          <Trash2 size={16} />
+                                          <Sparkles size={12} />
                                         )}
+                                        Generate AI Questions
                                       </button>
+                                    )}
+                                  </div>
+                                )}
 
-                                      <div className="flex items-start gap-2 pr-8">
-                                        <span className="font-bold text-gray-400 min-w-[20px]">
-                                          {qIdx + 1}.
-                                        </span>
-                                        <div className="flex-1">
-                                          <p className="font-medium text-gray-900 leading-relaxed">
-                                            {question.question_text}
-                                          </p>
+                                {questions.length > 0 && (
+                                  <div className="space-y-4">
+                                    {questions.map(
+                                      (question: any, qIdx: number) => {
+                                        const qid = getQuestionId(question);
+                                        const isAi = Boolean(
+                                          question.is_ai_generated,
+                                        );
+                                        return (
+                                          <div
+                                            key={qid || `q-${qIdx}`}
+                                            className="bg-gray-50 border border-gray-200 rounded-lg p-4 relative group hover:border-gray-300 transition-all"
+                                          >
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                requestDeleteQuestion(qid)
+                                              }
+                                              disabled={
+                                                !qid ||
+                                                deletingQuestionId === qid
+                                              }
+                                              className="absolute top-4 right-4 z-10 rounded-lg border border-red-200 bg-white p-2 text-red-600 shadow-sm hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                              title={
+                                                qid
+                                                  ? "Delete Question"
+                                                  : "Missing question id"
+                                              }
+                                            >
+                                              {deletingQuestionId === qid ? (
+                                                <RefreshCw
+                                                  size={16}
+                                                  className="animate-spin"
+                                                />
+                                              ) : (
+                                                <Trash2 size={16} />
+                                              )}
+                                            </button>
 
-                                          {/* Render Options if MCQ */}
-                                          {question.question_type === "mcq" &&
-                                            question.options && (
-                                              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                {question.options.map(
-                                                  (
-                                                    option: string,
-                                                    oIdx: number,
-                                                  ) => {
-                                                    const isCorrect =
-                                                      option ===
-                                                      question.correct_answer;
-                                                    return (
-                                                      <div
-                                                        key={oIdx}
-                                                        className={`flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all ${
-                                                          isCorrect
-                                                            ? "bg-green-50 border-green-200 text-green-800 font-medium"
-                                                            : "bg-white border-gray-200 text-gray-700"
-                                                        }`}
-                                                      >
-                                                        {isCorrect ? (
-                                                          <CheckCircle2
-                                                            size={16}
-                                                            className="text-green-600 flex-shrink-0"
-                                                          />
-                                                        ) : (
-                                                          <span className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] text-gray-400 font-bold flex-shrink-0">
-                                                            {String.fromCharCode(
-                                                              65 + oIdx,
-                                                            )}
-                                                          </span>
-                                                        )}
-                                                        <span>{option}</span>
-                                                      </div>
-                                                    );
-                                                  },
+                                            <div className="flex items-start gap-2 pr-10">
+                                              <span className="font-bold text-gray-400 min-w-[20px]">
+                                                {qIdx + 1}.
+                                              </span>
+                                              <div className="flex-1">
+                                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                  <span
+                                                    className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                                      isAi
+                                                        ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                                                        : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                                    }`}
+                                                  >
+                                                    {isAi ? "AI" : "Manual"}
+                                                  </span>
+                                                  {!qid && (
+                                                    <span className="text-[10px] text-red-600">
+                                                      Missing id — cannot delete
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <p className="font-medium text-gray-900 leading-relaxed">
+                                                  {question.question_text}
+                                                </p>
+
+                                                {question.question_type ===
+                                                  "mcq" &&
+                                                  question.options && (
+                                                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                      {question.options.map(
+                                                        (
+                                                          option: string,
+                                                          oIdx: number,
+                                                        ) => {
+                                                          const isCorrect =
+                                                            isCorrectOption(
+                                                              option,
+                                                              oIdx,
+                                                              question.correct_answer,
+                                                            );
+                                                          return (
+                                                            <div
+                                                              key={oIdx}
+                                                              className={`flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all ${
+                                                                isCorrect
+                                                                  ? "bg-green-50 border-green-200 text-green-800 font-medium"
+                                                                  : "bg-white border-gray-200 text-gray-700"
+                                                              }`}
+                                                            >
+                                                              {isCorrect ? (
+                                                                <CheckCircle2
+                                                                  size={16}
+                                                                  className="text-green-600 flex-shrink-0"
+                                                                />
+                                                              ) : (
+                                                                <span className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] text-gray-400 font-bold flex-shrink-0">
+                                                                  {String.fromCharCode(
+                                                                    65 + oIdx,
+                                                                  )}
+                                                                </span>
+                                                              )}
+                                                              <span>
+                                                                {option}
+                                                              </span>
+                                                            </div>
+                                                          );
+                                                        },
+                                                      )}
+                                                    </div>
+                                                  )}
+
+                                                {question.question_type !==
+                                                  "mcq" && (
+                                                  <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                      Correct Answer
+                                                    </p>
+                                                    <p className="text-sm font-medium text-gray-800 mt-1">
+                                                      {question.correct_answer}
+                                                    </p>
+                                                  </div>
+                                                )}
+
+                                                {question.explanation && (
+                                                  <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-gray-100 flex items-start gap-2">
+                                                    <HelpCircle
+                                                      size={14}
+                                                      className="text-blue-500 flex-shrink-0 mt-0.5"
+                                                    />
+                                                    <div>
+                                                      <span className="font-semibold text-gray-700">
+                                                        Explanation:{" "}
+                                                      </span>
+                                                      {question.explanation}
+                                                    </div>
+                                                  </div>
                                                 )}
                                               </div>
-                                            )}
-
-                                          {/* Explanations / Answers for non-MCQ */}
-                                          {question.question_type !== "mcq" && (
-                                            <div className="mt-3 p-3 bg-white rounded border border-gray-200">
-                                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                Correct Answer
-                                              </p>
-                                              <p className="text-sm font-medium text-gray-800 mt-1">
-                                                {question.correct_answer}
-                                              </p>
                                             </div>
-                                          )}
-
-                                          {question.explanation && (
-                                            <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-gray-100 flex items-start gap-2">
-                                              <HelpCircle
-                                                size={14}
-                                                className="text-blue-500 flex-shrink-0 mt-0.5"
-                                              />
-                                              <div>
-                                                <span className="font-semibold text-gray-700">
-                                                  Explanation:{" "}
-                                                </span>
-                                                {question.explanation}
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ),
+                                          </div>
+                                        );
+                                      },
+                                    )}
+                                  </div>
                                 )}
-                              </div>
+                              </>
                             )}
                           </div>
                         )}
@@ -930,6 +1329,24 @@ export default function AssessmentDetailPage() {
         </div>
       )} */}
       </div>
+
+      <ConfirmationModal
+        isOpen={!!pendingDeleteQuestionId}
+        onClose={() => {
+          if (!deletingQuestionId) setPendingDeleteQuestionId(null);
+        }}
+        onConfirm={async () => {
+          if (pendingDeleteQuestionId) {
+            await performDeleteQuestion(pendingDeleteQuestionId);
+          }
+        }}
+        title="Delete Question?"
+        message="Are you sure you want to delete this question? You can replenish AI questions or add a manual question afterward to fill the slot."
+        confirmText="Delete Question"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={!!deletingQuestionId}
+      />
     </AdminDashboardLayout>
   );
 }
