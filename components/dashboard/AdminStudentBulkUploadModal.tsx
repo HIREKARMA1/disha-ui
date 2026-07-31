@@ -117,7 +117,10 @@ export function AdminStudentBulkUploadModal({
       return
     }
     if (file.size > MAX_SIZE) {
-      setError('File size must be less than 10MB')
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(2)
+      setError(
+        `Upload failed: "${file.name}" is ${sizeMb}MB and exceeds the 10MB limit. Please upload a smaller CSV file and try again.`
+      )
       setSelectedFile(null)
       setPreview(null)
       return
