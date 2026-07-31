@@ -7,6 +7,7 @@ import { Download, ArrowLeft, RefreshCw } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { JobDescriptionPDFGenerator } from '@/lib/pdfGenerator'
 import { apiClient } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Job {
   id: string
@@ -75,7 +76,13 @@ export default function PDFViewerPage() {
 function PDFViewerPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const jobId = searchParams.get('jobId')
+
+  const canDownloadPdf =
+    isAuthenticated &&
+    !!user &&
+    (user.user_type === 'admin' || user.user_type === 'corporate' || user.user_type === 'university')
   
   const [job, setJob] = useState<Job | null>(null)
   const [corporateProfile, setCorporateProfile] = useState<CorporateProfile | null>(null)
@@ -83,6 +90,14 @@ function PDFViewerPageContent() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!canDownloadPdf) {
+      toast.error('You do not have permission to view this PDF.')
+      router.replace('/jobs')
+    }
+  }, [authLoading, canDownloadPdf, router])
 
   // Helper function to parse and format education data
   const parseEducationData = (data: string | string[] | undefined): string[] => {
@@ -230,17 +245,27 @@ function PDFViewerPageContent() {
     toast.success('PDF downloaded successfully!')
   }
 
-  // Auto-generate PDF when job data is loaded
+  // Auto-generate PDF when job data is loaded (management roles only)
   useEffect(() => {
+    if (!canDownloadPdf) return
     if (job && !pdfBlob && !isGenerating) {
       generatePDF()
     }
-  }, [job])
+  }, [job, canDownloadPdf])
 
   // Fetch job data on mount
   useEffect(() => {
+    if (!canDownloadPdf || authLoading) return
     fetchJobData()
-  }, [jobId])
+  }, [jobId, canDownloadPdf, authLoading])
+
+  if (authLoading || !canDownloadPdf) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (

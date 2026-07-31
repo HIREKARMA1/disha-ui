@@ -22,9 +22,18 @@ export const config = {
   },
 
   // WhatsApp Support Widget
+  // Prefer env; fall back to public HireKarma support number (same as footer).
   whatsapp: {
-    number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '',
+    number:
+      process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ||
+      process.env.NEXT_PUBLIC_SUPPORT_PHONE ||
+      '919124364764',
     message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi, I need help with HireKarma',
+  },
+
+  /** Public support phone (display). Digits-only variant lives in whatsapp.number. */
+  support: {
+    phoneDisplay: process.env.NEXT_PUBLIC_SUPPORT_PHONE_DISPLAY || '+91 91243 64764',
   },
 
   googleMaps: {

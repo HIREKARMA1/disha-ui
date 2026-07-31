@@ -32,6 +32,11 @@ const getRoundTypeLabel = (type: string) => {
   return ROUND_TYPES.find((t) => t.value === type)?.label || type;
 };
 
+const inputClassName =
+  "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/40 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none";
+
+const labelClassName = "block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1";
+
 export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorProps) {
   const [editingRound, setEditingRound] = useState<number | null>(null);
 
@@ -72,7 +77,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Assessment Rounds</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Assessment Rounds</h3>
         <button
           type="button"
           onClick={addRound}
@@ -85,7 +90,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
 
       <div className="space-y-3">
         {rounds.map((round, index) => (
-          <div key={index} className="border rounded-lg p-4 bg-white">
+          <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
             {editingRound === index ? (
               <RoundEditor
                 round={round}
@@ -104,9 +109,9 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
       </div>
 
       {rounds.length === 0 && (
-        <div className="border-2 border-dashed rounded-lg p-8 text-center">
-          <p className="text-gray-500">No rounds added yet</p>
-          <p className="text-gray-400 text-sm mt-2">Click "Add Round" to start configuring</p>
+        <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center bg-gray-50/50 dark:bg-gray-900/30">
+          <p className="text-gray-500 dark:text-gray-300">No rounds added yet</p>
+          <p className="text-gray-400 dark:text-gray-300 text-sm mt-2">Click "Add Round" to start configuring</p>
         </div>
       )}
     </div>
@@ -118,12 +123,12 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
     <div className="flex justify-between items-start">
       <div className="flex-1">
         <div className="flex items-center gap-3">
-          <span className="inline-block w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold">
+          <span className="inline-block w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-semibold">
             {round.round_number}
           </span>
           <div>
-            <h4 className="font-semibold text-gray-900">{round.round_name}</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="font-semibold text-gray-900 dark:text-white">{round.round_name}</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               {getRoundTypeLabel(round.round_type)}  {round.duration_minutes} min{round.round_type !== 'group_discussion' && `  ${round.config.num_questions || 0} questions`}
             </p>
           </div>
@@ -133,14 +138,14 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
         <button
           type="button"
           onClick={onEdit}
-          className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium"
+          className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 font-medium"
         >
           Edit
         </button>
         <button
           type="button"
           onClick={onRemove}
-          className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+          className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
         >
           <X size={20} />
         </button>
@@ -174,20 +179,20 @@ function RoundEditor({ round, onSave, onCancel }: any) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Round Name</label>
+          <label className={labelClassName}>Round Name</label>
           <input
             type="text"
             value={formData.round_name}
             onChange={(e) => handleChange("round_name", e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className={inputClassName}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Round Type</label>
+          <label className={labelClassName}>Round Type</label>
           <select
             value={formData.round_type}
             onChange={(e) => handleChange("round_type", e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className={inputClassName}
           >
             {ROUND_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -197,47 +202,47 @@ function RoundEditor({ round, onSave, onCancel }: any) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+          <label className={labelClassName}>Duration (minutes)</label>
           <input
             type="number"
             min="1"
             value={formData.duration_minutes}
             onChange={(e) => handleChange("duration_minutes", parseInt(e.target.value))}
-            className="w-full px-3 py-2 border rounded-lg"
+            className={inputClassName}
           />
         </div>
         {/* Hide "Number of Questions" for Group Discussion rounds, show "Number of Rounds" instead */}
         {formData.round_type !== 'group_discussion' ? (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
+            <label className={labelClassName}>Number of Questions</label>
             <input
               type="number"
               min="1"
               value={formData.config.num_questions}
               onChange={(e) => handleChange("config.num_questions", parseInt(e.target.value))}
-              className="w-full px-3 py-2 border rounded-lg"
+              className={inputClassName}
             />
           </div>
         ) : (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Rounds</label>
+            <label className={labelClassName}>Number of Rounds</label>
             <input
               type="number"
               min="1"
               value={formData.config.number_of_rounds || 5}
               onChange={(e) => handleChange("config.number_of_rounds", parseInt(e.target.value))}
               placeholder="e.g. 5"
-              className="w-full px-3 py-2 border rounded-lg"
+              className={inputClassName}
             />
-            <p className="text-xs text-gray-500 mt-1">Number of speaking turns for the candidate</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Number of speaking turns for the candidate</p>
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+          <label className={labelClassName}>Difficulty</label>
           <select
             value={formData.config.difficulty}
             onChange={(e) => handleChange("config.difficulty", e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className={inputClassName}
           >
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
@@ -245,13 +250,13 @@ function RoundEditor({ round, onSave, onCancel }: any) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+          <label className={labelClassName}>Topic</label>
           <input
             type="text"
             value={formData.config.topic || ""}
             onChange={(e) => handleChange("config.topic", e.target.value)}
             placeholder="e.g. Java, Data Structures, General Aptitude"
-            className="w-full px-3 py-2 border rounded-lg"
+            className={inputClassName}
           />
         </div>
         {/* <div>
@@ -267,8 +272,8 @@ function RoundEditor({ round, onSave, onCancel }: any) {
         </div> */}
       </div>
 
-      <div className="flex gap-3 justify-end pt-4 border-t">
-        <button type="button" onClick={onCancel} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+      <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200">
           Cancel
         </button>
         <button

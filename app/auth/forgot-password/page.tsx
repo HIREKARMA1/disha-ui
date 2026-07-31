@@ -215,7 +215,11 @@ function ForgotPasswordPageContent() {
     console.log("status:", otpRateLimit.status)
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/40 to-sky-100/50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+                <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-3xl dark:bg-primary-500/10" />
+                <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-secondary-400/15 blur-3xl dark:bg-secondary-500/10" />
+            </div>
             <Navbar variant="solid" />
 
             <div className={`min-h-screen flex items-center justify-center ${currentStep === 'otp' ? 'px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12' : 'px-4 pt-20'}`}>
@@ -251,7 +255,7 @@ function ForgotPasswordPageContent() {
                     )}
 
                     {/* Form Card */}
-                    <div className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}`}>
+                    <div className={`bg-white/80 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-gray-900/5 dark:shadow-black/20 border border-white/60 dark:border-gray-700/60 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}`}>
                         <AnimatePresence mode="wait">
                             {/* Step 1: Email Input */}
                             {currentStep === 'email' && (

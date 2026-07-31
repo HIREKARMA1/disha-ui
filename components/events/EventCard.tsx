@@ -57,7 +57,7 @@ function locationLabel(event: ContestEventListItem) {
 function ContestCardComponent({ event }: ContestCardProps) {
   const slug = event.slug || event.id
   const detailHref = `/events/${slug}`
-  const registerHref = `/events/${slug}?register=1`
+  const registerHref = `/events/${slug}?register=1&action=register`
   const deadline = formatDate(event.registration_end_date)
   const tags = [
     event.category ? CATEGORY_LABELS[event.category] || event.category : null,
@@ -194,11 +194,20 @@ function ContestCardComponent({ event }: ContestCardProps) {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href={registerHref} className="sm:flex-1">
-              <Button className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
-                {event.is_registered ? 'Manage Registration' : 'Register Now'}
+            {event.is_registered ? (
+              <Button
+                disabled
+                className="w-full sm:flex-1 cursor-default bg-emerald-600 text-white opacity-100 hover:bg-emerald-600"
+              >
+                Registered
               </Button>
-            </Link>
+            ) : (
+              <Link href={registerHref} className="sm:flex-1">
+                <Button className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
+                  Register Now
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

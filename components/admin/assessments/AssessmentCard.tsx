@@ -99,7 +99,7 @@ export function AssessmentCard({
             UNIVERSITY: 'bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
             CORPORATE: 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
         }
-        return colors[mode as keyof typeof colors] || 'bg-gray-50 text-gray-800'
+        return colors[mode as keyof typeof colors] || 'bg-gray-50 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
     }
 
     const formatDate = (dateString: string) => {
@@ -131,7 +131,7 @@ export function AssessmentCard({
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
                             {assessment.assessment_name}
                         </h3>
-                        <p className="text-xs text-gray-500 font-mono mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-300 font-mono mt-1">
                             {assessment.disha_assessment_id}
                         </p>
                     </div>

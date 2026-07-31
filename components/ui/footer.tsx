@@ -1,37 +1,22 @@
 "use client"
 
 import Link from 'next/link'
-import Image from 'next/image'
-import { useTheme } from 'next-themes'
 import { Twitter, Linkedin, Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
+import { BrandLogo } from '@/components/ui/BrandLogo'
+import { config } from '@/lib/config'
 
 export function Footer() {
-    const { theme, resolvedTheme } = useTheme()
-
-    const getLogoSrc = () => {
-        const isDark = resolvedTheme === 'dark' || (resolvedTheme === 'system' && theme === 'dark')
-        return isDark ? '/images/HKlogowhite.png' : '/images/HKlogoblack.png'
-    }
-
     return (
         <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pt-10 md:pt-16 pb-8 md:pb-10">
             <div className="container mx-auto px-6 sm:px-8 lg:px-10 py-2">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 lg:gap-16 mb-10 md:mb-14">
                     {/* Brand Section */}
                     <div className="space-y-5 text-center md:text-left flex flex-col items-center md:items-start">
-                        <Link href="/" className="inline-block">
-                            <Image
-                                src={getLogoSrc()}
-                                alt="HireKarma Logo"
-                                width={150}
-                                height={50}
-                                className="h-10 w-auto object-contain"
-                            />
-                        </Link>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                        <BrandLogo imageClassName="h-10 w-auto object-contain" />
+                        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                             A unified platform built for modern campus recruitment.
                         </p>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                             Support available for students, universities, and recruiters across India.
                         </p>
                         <div className="flex space-x-4 pt-2 justify-center md:justify-start">
@@ -114,7 +99,7 @@ export function Footer() {
                             </li>
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <Phone className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>+91 91243 64764</span>
+                                <span>{config.support.phoneDisplay}</span>
                             </li>
                             <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
                                 <MapPin className="w-5 h-5 text-primary-500 shrink-0" />
