@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   MoreVertical,
@@ -20,6 +20,9 @@ interface AdminStudentTableProps {
   students: AdminStudentListItem[]
   isLoading: boolean
   error: string | null
+  selectedIds: Set<string>
+  onSelectionChange: (ids: Set<string>) => void
+  selectAllFiltered: boolean
   onView: (student: AdminStudentListItem) => void
   onEdit: (student: AdminStudentListItem) => void
   onDelete: (studentId: string) => Promise<void> | void
@@ -28,13 +31,51 @@ interface AdminStudentTableProps {
   onRetry: () => void
 }
 
-type SortField = 'name' | 'email' | 'phone' | 'status' | 'email_verified' | 'created_at'
+type SortField = 'name' | 'email' | 'phone' | 'status' | 'email_verified' | 'created_at' | 'last_login'
 type SortDirection = 'asc' | 'desc' | null
+
+function startOfLocalDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+export function formatLastLoginLabel(dateString?: string | null): string {
+  if (!dateString) return 'Never Logged In'
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return 'Never Logged In'
+
+  const now = new Date()
+  const today = startOfLocalDay(now)
+  const target = startOfLocalDay(date)
+  const diffDays = Math.round((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24))
+
+  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  if (diffDays === 0) return `Today ${time}`
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+export function formatLastLoginTooltip(dateString?: string | null): string {
+  if (!dateString) return 'Never logged in'
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return 'Never logged in'
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
 
 export function AdminStudentTable({
   students,
   isLoading,
   error,
+  selectedIds,
+  onSelectionChange,
+  selectAllFiltered,
   onView,
   onEdit,
   onDelete,
@@ -51,6 +92,10 @@ export function AdminStudentTable({
   const [isDeleting, setIsDeleting] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [students.length])
+
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return '—'
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -62,11 +107,15 @@ export function AdminStudentTable({
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : sortDirection === 'desc' ? null : 'asc')
-      if (sortDirection === 'desc') setSortField(null)
+      if (sortDirection === 'asc') setSortDirection('desc')
+      else if (sortDirection === 'desc') {
+        setSortField(null)
+        setSortDirection(null)
+      } else setSortDirection('asc')
     } else {
       setSortField(field)
-      setSortDirection('asc')
+      // Newest login first by default for last_login
+      setSortDirection(field === 'last_login' ? 'desc' : 'asc')
     }
   }
 
@@ -80,6 +129,16 @@ export function AdminStudentTable({
   const sortedStudents = useMemo(() => {
     if (!sortField || !sortDirection) return students
     return [...students].sort((a, b) => {
+      if (sortField === 'last_login') {
+        const aTime = a.last_login ? new Date(a.last_login).getTime() : -1
+        const bTime = b.last_login ? new Date(b.last_login).getTime() : -1
+        // Never logged in sorts last for newest, first for oldest
+        if (aTime < 0 && bTime < 0) return 0
+        if (aTime < 0) return sortDirection === 'desc' ? 1 : -1
+        if (bTime < 0) return sortDirection === 'desc' ? -1 : 1
+        return sortDirection === 'asc' ? aTime - bTime : bTime - aTime
+      }
+
       let aVal: any = a[sortField]
       let bVal: any = b[sortField]
       if (sortField === 'email_verified') {
@@ -99,6 +158,26 @@ export function AdminStudentTable({
   const totalPages = Math.max(1, Math.ceil(sortedStudents.length / itemsPerPage))
   const page = Math.min(currentPage, totalPages)
   const pageStudents = sortedStudents.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+  const pageIds = pageStudents.map((s) => s.id)
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const somePageSelected = pageIds.some((id) => selectedIds.has(id)) && !allPageSelected
+
+  const toggleSelectAllPage = () => {
+    const next = new Set(selectedIds)
+    if (allPageSelected) {
+      pageIds.forEach((id) => next.delete(id))
+    } else {
+      pageIds.forEach((id) => next.add(id))
+    }
+    onSelectionChange(next)
+  }
+
+  const toggleRow = (id: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    onSelectionChange(next)
+  }
 
   const confirmDelete = async () => {
     if (!deleteTarget) return
@@ -128,10 +207,7 @@ export function AdminStudentTable({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
         <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
-        <button
-          onClick={onRetry}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
+        <button onClick={onRetry} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Retry
         </button>
       </div>
@@ -152,18 +228,43 @@ export function AdminStudentTable({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+        <input
+          type="checkbox"
+          checked={allPageSelected || selectAllFiltered}
+          ref={(el) => {
+            if (el) el.indeterminate = somePageSelected && !selectAllFiltered
+          }}
+          onChange={toggleSelectAllPage}
+          className="rounded border-gray-300"
+          aria-label="Select all on page"
+        />
+        <span>
+          Select All ({pageStudents.length})
+          {selectedIds.size > 0 && (
+            <span className="ml-2 text-blue-700 dark:text-blue-300 font-medium">
+              Selected: {selectAllFiltered ? students.length : selectedIds.size} Students
+            </span>
+          )}
+        </span>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900/40">
             <tr>
-              {[
-                { key: 'name' as SortField, label: 'Student Name' },
-                { key: 'email' as SortField, label: 'Email' },
-                { key: 'phone' as SortField, label: 'Phone Number' },
-                { key: 'status' as SortField, label: 'Status' },
-                { key: 'email_verified' as SortField, label: 'Verification' },
-                { key: 'created_at' as SortField, label: 'Registered Date' },
-              ].map((col) => (
+              <th className="px-4 py-3 w-10" />
+              {(
+                [
+                  { key: 'name' as SortField, label: 'Student Name' },
+                  { key: 'email' as SortField, label: 'Email' },
+                  { key: 'phone' as SortField, label: 'Phone Number' },
+                  { key: 'status' as SortField, label: 'Account Status' },
+                  { key: 'email_verified' as SortField, label: 'Verification' },
+                  { key: 'last_login' as SortField, label: 'Last Login' },
+                  { key: 'created_at' as SortField, label: 'Registered Date' },
+                ] as const
+              ).map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
@@ -186,9 +287,20 @@ export function AdminStudentTable({
                 key={student.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                transition={{ delay: index * 0.02 }}
+                className={`hover:bg-gray-50 dark:hover:bg-gray-700/40 ${
+                  selectedIds.has(student.id) || selectAllFiltered ? 'bg-blue-50/60 dark:bg-blue-900/20' : ''
+                }`}
               >
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selectAllFiltered || selectedIds.has(student.id)}
+                    onChange={() => toggleRow(student.id)}
+                    className="rounded border-gray-300"
+                    aria-label={`Select ${student.name}`}
+                  />
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center overflow-hidden">
@@ -207,23 +319,18 @@ export function AdminStudentTable({
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  {student.email}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                  {student.phone || '—'}
-                </td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{student.email}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{student.phone || '—'}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
                       student.status === 'active'
                         ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                        : student.status === 'inactive'
-                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
                     }`}
                   >
-                    {student.status}
+                    <span className="text-[10px]">{student.status === 'active' ? '🟢' : '🔴'}</span>
+                    {student.status === 'active' ? 'Active' : 'Inactive'}
                   </span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
@@ -236,6 +343,15 @@ export function AdminStudentTable({
                   >
                     {student.email_verified ? 'Verified' : 'Unverified'}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-sm whitespace-nowrap" title={formatLastLoginTooltip(student.last_login)}>
+                  {student.last_login ? (
+                    <span className="text-gray-700 dark:text-gray-300">{formatLastLoginLabel(student.last_login)}</span>
+                  ) : (
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                      Never Logged In
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   {formatDate(student.created_at)}
@@ -323,8 +439,8 @@ export function AdminStudentTable({
 
       <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
         <p className="text-sm text-gray-500">
-          Showing {(page - 1) * itemsPerPage + 1}–
-          {Math.min(page * itemsPerPage, sortedStudents.length)} of {sortedStudents.length}
+          Showing {(page - 1) * itemsPerPage + 1}–{Math.min(page * itemsPerPage, sortedStudents.length)} of{' '}
+          {sortedStudents.length}
         </p>
         <div className="flex gap-2">
           <button
@@ -355,7 +471,8 @@ export function AdminStudentTable({
           <div className="relative bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Student</h3>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              Are you sure you want to permanently delete <strong>{deleteTarget.name}</strong>? This cannot be undone.
+              Are you sure you want to permanently delete <strong>{deleteTarget.name}</strong>? This action cannot be
+              undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
