@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { AdminStudentManagementHeader } from '@/components/dashboard/AdminStudentManagementHeader'
-import { AdminStudentTable } from '@/components/dashboard/AdminStudentTable'
+import { AdminStudentTable, formatLastLoginLabel } from '@/components/dashboard/AdminStudentTable'
+import { AdminStudentBulkActionBar } from '@/components/dashboard/AdminStudentBulkActionBar'
 import { CreateAdminStudentModal } from '@/components/dashboard/CreateAdminStudentModal'
 import { EditAdminStudentModal } from '@/components/dashboard/EditAdminStudentModal'
 import { AdminStudentBulkUploadModal } from '@/components/dashboard/AdminStudentBulkUploadModal'
 import { adminStudentManagementService } from '@/services/adminStudentManagementService'
 import {
   AdminStudentListItem,
+  AdminStudentBulkAction,
   CreateAdminStudentRequest,
   UpdateAdminStudentRequest,
 } from '@/types/adminStudent'
@@ -19,7 +21,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Download, Upload, X } from 'lucide-react'
 
 function matchesRegistrationFilter(createdAt: string | null | undefined, filter: string): boolean {
-  if (filter === 'all' || !createdAt) return filter === 'all' ? true : false
+  if (filter === 'all') return true
+  if (!createdAt) return false
   const created = new Date(createdAt)
   if (Number.isNaN(created.getTime())) return false
   const now = new Date()
@@ -38,13 +41,81 @@ function matchesRegistrationFilter(createdAt: string | null | undefined, filter:
   return true
 }
 
+function matchesLastLoginFilter(
+  lastLogin: string | null | undefined,
+  status: string,
+  filter: string
+): boolean {
+  if (filter === 'all') return true
+  const now = new Date()
+  if (filter === 'never') return !lastLogin
+  if (filter === 'inactive30') {
+    if (status !== 'inactive') return false
+    if (!lastLogin) return true
+    const last = new Date(lastLogin)
+    if (Number.isNaN(last.getTime())) return true
+    const cutoff = new Date(now)
+    cutoff.setDate(cutoff.getDate() - 30)
+    return last < cutoff
+  }
+  if (!lastLogin) return false
+  const last = new Date(lastLogin)
+  if (Number.isNaN(last.getTime())) return false
+  if (filter === 'today') {
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    return last >= startOfToday
+  }
+  if (filter === '7days') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - 7)
+    return last >= d
+  }
+  if (filter === '30days') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - 30)
+    return last >= d
+  }
+  return true
+}
+
+const BULK_CONFIRM: Record<
+  AdminStudentBulkAction,
+  { title: string; message: (n: number) => string; danger?: boolean }
+> = {
+  activate: {
+    title: 'Activate Students',
+    message: (n) => `Activate ${n} student${n === 1 ? '' : 's'}?`,
+  },
+  deactivate: {
+    title: 'Deactivate Students',
+    message: (n) => `Deactivate ${n} student${n === 1 ? '' : 's'}?`,
+  },
+  verify: {
+    title: 'Verify Students',
+    message: (n) => `Verify ${n} student${n === 1 ? '' : 's'}?`,
+  },
+  unverify: {
+    title: 'Unverify Students',
+    message: (n) => `Unverify ${n} student${n === 1 ? '' : 's'}?`,
+  },
+  delete: {
+    title: 'Delete Students',
+    message: (n) =>
+      `Permanently delete ${n} student${n === 1 ? '' : 's'}? This action cannot be undone.`,
+    danger: true,
+  },
+}
+
 export default function AdminStudentsPage() {
   const [students, setStudents] = useState<AdminStudentListItem[]>([])
   const [stats, setStats] = useState({
     total_students: 0,
     active_students: 0,
+    inactive_students: 0,
     verified_students: 0,
     registered_today: 0,
+    logged_in_today: 0,
+    never_logged_in: 0,
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +127,12 @@ export default function AdminStudentsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [registrationFilter, setRegistrationFilter] = useState('all')
+  const [lastLoginFilter, setLastLoginFilter] = useState('all')
   const [showExportMenu, setShowExportMenu] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectAllFiltered, setSelectAllFiltered] = useState(false)
+  const [bulkConfirmAction, setBulkConfirmAction] = useState<AdminStudentBulkAction | null>(null)
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
 
   const fetchStudents = async () => {
     setIsLoading(true)
@@ -67,8 +143,11 @@ export default function AdminStudentsPage() {
       setStats({
         total_students: response.total_students || 0,
         active_students: response.active_students || 0,
+        inactive_students: response.inactive_students || 0,
         verified_students: response.verified_students || 0,
         registered_today: response.registered_today || 0,
+        logged_in_today: response.logged_in_today || 0,
+        never_logged_in: response.never_logged_in || 0,
       })
     } catch (err) {
       console.error('Failed to fetch students:', err)
@@ -84,12 +163,14 @@ export default function AdminStudentsPage() {
   }, [])
 
   const filteredStudents = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
     return students.filter((student) => {
       const matchesSearch =
-        searchTerm === '' ||
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (student.phone && student.phone.includes(searchTerm))
+        term === '' ||
+        student.name.toLowerCase().includes(term) ||
+        student.email.toLowerCase().includes(term) ||
+        (student.phone && student.phone.includes(term)) ||
+        student.id.toLowerCase().includes(term)
 
       const matchesStatus =
         filterStatus === 'all' ||
@@ -99,10 +180,32 @@ export default function AdminStudentsPage() {
         (filterStatus === 'inactive' && student.status === 'inactive')
 
       const matchesRegistration = matchesRegistrationFilter(student.created_at, registrationFilter)
+      const matchesLastLogin = matchesLastLoginFilter(student.last_login, student.status, lastLoginFilter)
 
-      return matchesSearch && matchesStatus && matchesRegistration
+      return matchesSearch && matchesStatus && matchesRegistration && matchesLastLogin
     })
-  }, [students, searchTerm, filterStatus, registrationFilter])
+  }, [students, searchTerm, filterStatus, registrationFilter, lastLoginFilter])
+
+  // Clear stale selection when filters change
+  useEffect(() => {
+    setSelectedIds(new Set())
+    setSelectAllFiltered(false)
+  }, [searchTerm, filterStatus, registrationFilter, lastLoginFilter])
+
+  const clearSelection = () => {
+    setSelectedIds(new Set())
+    setSelectAllFiltered(false)
+  }
+
+  const handleSelectionChange = (ids: Set<string>) => {
+    setSelectAllFiltered(false)
+    setSelectedIds(ids)
+  }
+
+  const selectedCount = selectAllFiltered ? filteredStudents.length : selectedIds.size
+  const idsForBulk = selectAllFiltered
+    ? filteredStudents.map((s) => s.id)
+    : Array.from(selectedIds)
 
   const handleCreateStudent = async (data: CreateAdminStudentRequest) => {
     try {
@@ -135,6 +238,7 @@ export default function AdminStudentsPage() {
       await adminStudentManagementService.deleteStudent(studentId)
       toast.success('Student deleted successfully!')
       fetchStudents()
+      clearSelection()
     } catch (err: any) {
       toast.error(getErrorMessage(err))
       throw err
@@ -167,6 +271,7 @@ export default function AdminStudentsPage() {
         format,
         status: filterStatus,
         registration: registrationFilter,
+        last_login: lastLoginFilter,
         search: searchTerm || undefined,
       })
       const url = window.URL.createObjectURL(blob)
@@ -190,6 +295,26 @@ export default function AdminStudentsPage() {
     return result
   }
 
+  const runBulkAction = async () => {
+    if (!bulkConfirmAction || idsForBulk.length === 0) return
+    setIsBulkProcessing(true)
+    const toastId = toast.loading(`Processing ${idsForBulk.length} students...`)
+    try {
+      const result = await adminStudentManagementService.bulkAction(bulkConfirmAction, idsForBulk)
+      toast.success(
+        `${result.message}: ${result.updated_count} updated${result.failed_count ? `, ${result.failed_count} failed` : ''}`,
+        { id: toastId }
+      )
+      setBulkConfirmAction(null)
+      clearSelection()
+      await fetchStudents()
+    } catch (err: any) {
+      toast.error(getErrorMessage(err), { id: toastId })
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
+
   return (
     <AdminDashboardLayout>
       <div className="space-y-6">
@@ -207,13 +332,19 @@ export default function AdminStudentsPage() {
                   📊 {stats.total_students} Total Students
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                  ✅ {stats.active_students} Active Students
+                  ✅ {stats.active_students} Active
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                  🔴 {stats.inactive_students} Inactive
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                  ✔️ {stats.verified_students} Verified Students
+                  ✔️ {stats.verified_students} Verified
                 </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
-                  🆕 {stats.registered_today} Registered Today
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-200">
+                  🟢 {stats.logged_in_today} Logged In Today
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                  ⏸ {stats.never_logged_in} Never Logged In
                 </span>
               </div>
             </div>
@@ -279,12 +410,30 @@ export default function AdminStudentsPage() {
           onFilterChange={setFilterStatus}
           registrationFilter={registrationFilter}
           onRegistrationFilterChange={setRegistrationFilter}
+          lastLoginFilter={lastLoginFilter}
+          onLastLoginFilterChange={setLastLoginFilter}
+        />
+
+        <AdminStudentBulkActionBar
+          selectedCount={selectedCount}
+          totalFilteredCount={filteredStudents.length}
+          selectAllFiltered={selectAllFiltered}
+          onSelectAllFiltered={() => {
+            setSelectAllFiltered(true)
+            setSelectedIds(new Set(filteredStudents.map((s) => s.id)))
+          }}
+          onClearSelection={clearSelection}
+          onAction={(action) => setBulkConfirmAction(action)}
+          isProcessing={isBulkProcessing}
         />
 
         <AdminStudentTable
           students={filteredStudents}
           isLoading={isLoading}
           error={error}
+          selectedIds={selectedIds}
+          onSelectionChange={handleSelectionChange}
+          selectAllFiltered={selectAllFiltered}
           onView={setViewStudent}
           onEdit={(student) => {
             setSelectedStudent(student)
@@ -348,6 +497,7 @@ export default function AdminStudentsPage() {
                   <p><span className="font-medium">Phone:</span> {viewStudent.phone || '—'}</p>
                   <p><span className="font-medium">Status:</span> {viewStudent.status}</p>
                   <p><span className="font-medium">Verification:</span> {viewStudent.email_verified ? 'Verified' : 'Unverified'}</p>
+                  <p><span className="font-medium">Last Login:</span> {formatLastLoginLabel(viewStudent.last_login)}</p>
                   <p><span className="font-medium">College:</span> {viewStudent.institution || '—'}</p>
                   <p><span className="font-medium">Department:</span> {viewStudent.degree || viewStudent.branch || '—'}</p>
                   <p><span className="font-medium">Year:</span> {viewStudent.graduation_year || '—'}</p>
@@ -370,6 +520,42 @@ export default function AdminStudentsPage() {
             </div>
           )}
         </AnimatePresence>
+
+        {bulkConfirmAction && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50" onClick={() => !isBulkProcessing && setBulkConfirmAction(null)} />
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {BULK_CONFIRM[bulkConfirmAction].title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                {BULK_CONFIRM[bulkConfirmAction].message(selectedCount)}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={isBulkProcessing}
+                  onClick={() => setBulkConfirmAction(null)}
+                  className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isBulkProcessing}
+                  onClick={runBulkAction}
+                  className={`px-4 py-2 rounded-lg text-white disabled:opacity-50 ${
+                    BULK_CONFIRM[bulkConfirmAction].danger
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {isBulkProcessing ? 'Processing...' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminDashboardLayout>
   )
