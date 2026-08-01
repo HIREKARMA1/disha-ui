@@ -186,17 +186,31 @@ export function EditAdminStudentModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Status</label>
-                  <select
-                    value={formData.status || 'active'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="pending">Pending</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Status</label>
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="student_status"
+                        value="active"
+                        checked={(formData.status || 'active') === 'active'}
+                        onChange={() => setFormData({ ...formData, status: 'active' })}
+                        className="text-blue-600"
+                      />
+                      Active
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="student_status"
+                        value="inactive"
+                        checked={formData.status === 'inactive'}
+                        onChange={() => setFormData({ ...formData, status: 'inactive' })}
+                        className="text-blue-600"
+                      />
+                      Inactive
+                    </label>
+                  </div>
                 </div>
               </div>
 

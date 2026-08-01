@@ -7,6 +7,8 @@ import {
   UpdateAdminStudentRequest,
   AdminStudentImportResponse,
   ResetPasswordResponse,
+  AdminStudentBulkActionResponse,
+  AdminStudentBulkAction,
 } from '@/types/adminStudent'
 
 export class AdminStudentManagementService {
@@ -57,6 +59,7 @@ export class AdminStudentManagementService {
     format?: 'csv' | 'xlsx'
     status?: string
     registration?: string
+    last_login?: string
     search?: string
   } = {}): Promise<Blob> {
     if (!apiClient.isAuthenticated()) {
@@ -68,6 +71,7 @@ export class AdminStudentManagementService {
         format: params.format ?? 'csv',
         status: params.status,
         registration: params.registration,
+        last_login: params.last_login,
         search: params.search,
       },
       responseType: 'blob',
@@ -114,6 +118,24 @@ export class AdminStudentManagementService {
       throw new Error('User not authenticated. Please log in.')
     }
     const response = await apiClient.client.post(`/admins/students/${studentId}/send-welcome-email`)
+    return response.data
+  }
+
+  async bulkAction(
+    action: AdminStudentBulkAction,
+    studentIds: string[]
+  ): Promise<AdminStudentBulkActionResponse> {
+    if (!apiClient.isAuthenticated()) {
+      throw new Error('User not authenticated. Please log in.')
+    }
+    const payload = { student_ids: studentIds }
+    if (action === 'delete') {
+      const response = await apiClient.client.delete('/admins/students/bulk/delete', {
+        data: payload,
+      })
+      return response.data
+    }
+    const response = await apiClient.client.post(`/admins/students/bulk/${action}`, payload)
     return response.data
   }
 }
