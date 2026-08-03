@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, MapPin, Bookmark } from 'lucide-react'
 import { apiClient } from '@/lib/api'
 import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
-import { formatAmountINR } from '@/lib/currency'
+import { formatSalaryRange } from '@/lib/currency'
 
 interface RecJob {
   id: string
@@ -141,9 +141,7 @@ export function RecommendedJobs({ className = '' }: { className?: string }) {
               : job.location
             const salary =
               job.salary_min || job.salary_max
-                ? `${job.salary_min ? formatAmountINR(job.salary_min) : '—'} - ${
-                    job.salary_max ? formatAmountINR(job.salary_max) : '—'
-                  }`
+                ? formatSalaryRange(job.salary_min, job.salary_max)
                 : null
 
             return (

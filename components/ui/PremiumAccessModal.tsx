@@ -42,7 +42,7 @@ export function PremiumAccessModal({
                             </h3>
                             <div className="mt-4">
                                 <p className="text-base text-gray-600 dark:text-gray-300">
-                                    This Job is live. Your access isn't. Applications are enabled only for premium users.
+                                    You can&apos;t apply for this job as you are not a Premium user.
                                 </p>
                                 <div className="mt-4 flex flex-col items-center gap-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
                                     <p className="font-medium mb-1">Contact for access:</p>

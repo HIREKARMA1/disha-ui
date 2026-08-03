@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe, UserPlus } from 'lucide-react'
+import { MapPin, Briefcase, Clock, Banknote, Users, Building, Eye, FileText, Calendar, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, GraduationCap, UserCheck, Link2, Globe, UserPlus } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -426,7 +426,7 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <IndianRupee className="w-4 h-4" />
+                        <Banknote className="w-4 h-4" />
                         <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
                     </div>
 

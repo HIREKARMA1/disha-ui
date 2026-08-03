@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
     MapPin,
     Briefcase,
-    IndianRupee,
+    Banknote,
     Users,
     Building,
     FileText,
@@ -401,7 +401,7 @@ export function CorporateJobCard({
                 <div className="flex items-center justify-between gap-3 lg:hidden pt-1 border-t border-gray-100 dark:border-white/[0.06]">
                     <div className="min-w-0">
                         <div className="flex items-center gap-0.5 text-sm font-bold text-gray-900 dark:text-white">
-                            <IndianRupee className="w-3.5 h-3.5" />
+                            <Banknote className="w-3.5 h-3.5" />
                             <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
                         </div>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
@@ -441,7 +441,7 @@ export function CorporateJobCard({
                 {/* Desktop salary / ring / actions — unchanged */}
                 <div className="hidden lg:block lg:text-right flex-shrink-0 space-y-1">
                     <div className="flex items-center lg:justify-end gap-1 text-base font-bold text-gray-900 dark:text-white">
-                        <IndianRupee className="w-4 h-4" />
+                        <Banknote className="w-4 h-4" />
                         {formatSalaryRange(job.salary_min, job.salary_max)}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">

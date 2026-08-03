@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, Eye, MapPin, Undo2, IndianRupee } from 'lucide-react'
+import { Building2, Eye, MapPin, Undo2, Banknote } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -81,7 +81,7 @@ export function ApplicationCard({ application, onView, onWithdraw, className }: 
             )}
             {application.salary && (
               <span className="inline-flex items-center gap-0.5 text-[9px] text-gray-500">
-                <IndianRupee className="w-2.5 h-2.5" />
+                <Banknote className="w-2.5 h-2.5" />
                 {application.salary}
               </span>
             )}
