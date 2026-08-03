@@ -28,10 +28,10 @@ const ROUND_TYPES = [
   { value: "mcq", label: "MCQ based Question" },
   { value: "soft_skills", label: "Soft Skills" },
   { value: "technical_mcq", label: "Technical MCQ" },
-  { value: "coding", label: "Coding Challenge" },
-  { value: "group_discussion", label: "Group Discussion" },
-  { value: "technical_interview", label: "Technical Interview" },
-  { value: "hr_interview", label: "HR Interview" },
+  // { value: "coding", label: "Coding Challenge" },
+  // { value: "group_discussion", label: "Group Discussion" },
+  // { value: "technical_interview", label: "Technical Interview" },
+  // { value: "hr_interview", label: "HR Interview" },
 ];
 
 const MAX_QUESTIONS = 100;
@@ -43,7 +43,7 @@ const getRoundTypeLabel = (type: string) => {
 };
 
 const inputClassName =
-  "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/40 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none";
+  "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none";
 
 const labelClassName = "block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1";
 
@@ -135,11 +135,11 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
             {round.round_number}
           </span>
           <div>
-            <h4 className="font-semibold text-gray-900">{round.round_name}</h4>
-            <p className="text-sm text-gray-600">
-              {getRoundTypeLabel(round.round_type)}  {round.duration_minutes} min
+            <h4 className="font-semibold text-gray-900 dark:text-white">{round.round_name}</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {getRoundTypeLabel(round.round_type)} • {round.duration_minutes} min
               {round.round_type !== "group_discussion" &&
-                `  ${round.config.num_questions || 0} questions` +
+                ` • ${round.config.num_questions || 0} questions` +
                   (round.config.ai_question_count != null
                     ? ` (${round.config.ai_question_count} AI / ${Math.max(0, (round.config.num_questions || 0) - (round.config.ai_question_count || 0))} manual)`
                     : "")}
@@ -300,7 +300,7 @@ function RoundEditor({
     });
   };
 
-  const inputClass = "w-full px-3 py-2 border rounded-lg";
+  const inputClass = inputClassName;
 
   return (
     <div className="space-y-4">
@@ -329,7 +329,7 @@ function RoundEditor({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelClassName}>
             Duration (minutes)
           </label>
           <IntegerTextField
@@ -352,7 +352,7 @@ function RoundEditor({
         {formData.round_type !== "group_discussion" ? (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClassName}>
                 Total Questions (min {MIN_QUESTIONS_PER_ROUND})
               </label>
               <IntegerTextField
@@ -397,7 +397,7 @@ function RoundEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={labelClassName}>
                 AI-generated Questions
               </label>
               <IntegerTextField
@@ -416,7 +416,7 @@ function RoundEditor({
                 onErrorChange={(msg) => setFieldError("ai_question_count", msg)}
                 onChange={(n) => handleChange("config.ai_question_count", n)}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Manual slots:{" "}
                 {Math.max(
                   0,
@@ -433,7 +433,7 @@ function RoundEditor({
           </>
         ) : (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={labelClassName}>
               Number of Rounds
             </label>
             <IntegerTextField
@@ -452,7 +452,7 @@ function RoundEditor({
               onErrorChange={(msg) => setFieldError("number_of_rounds", msg)}
               onChange={(n) => handleChange("config.number_of_rounds", n)}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Number of speaking turns for the candidate
             </p>
           </div>
@@ -470,7 +470,7 @@ function RoundEditor({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelClassName}>
             Topic{topicRequired ? " *" : ""}
           </label>
           <input
@@ -492,7 +492,7 @@ function RoundEditor({
           {topicError ? (
             <p className="text-xs text-red-600 mt-1">{topicError}</p>
           ) : (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {formData.round_type === "aptitude"
                 ? "Optional aptitude sub-area (percentages, ratios, etc.). Questions stay aptitude-only — not programming."
                 : formData.round_type === "mcq"

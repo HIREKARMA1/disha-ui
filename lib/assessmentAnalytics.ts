@@ -14,7 +14,11 @@ export type AttemptLike = {
   total_score?: number | null
   percentage?: number | null
   submitted_at?: string | null
-  result_data?: { rounds?: unknown[]; disqualification_reason?: string | null } | null
+  result_data?: {
+    rounds?: unknown[]
+    disqualification_reason?: string | null
+    max_points?: number | null
+  } | null
   total_questions?: number | null
   disqualification_reason?: string | null
 }
@@ -38,6 +42,11 @@ export function getTotalQuestionsFromAssessment(assessment?: AssessmentLike | nu
 
 /** Max score denominator: prefer evaluated result_data, else configured question count. */
 export function getAttemptMaxScore(attempt: AttemptLike, assessment?: AssessmentLike | null): number {
+  const fromResultMax = attempt.result_data?.max_points
+  if (typeof fromResultMax === 'number' && fromResultMax > 0) {
+    return fromResultMax
+  }
+
   if (attempt.total_questions && attempt.total_questions > 0) {
     return attempt.total_questions
   }
@@ -45,8 +54,13 @@ export function getAttemptMaxScore(attempt: AttemptLike, assessment?: Assessment
   const rounds = attempt.result_data?.rounds
   if (Array.isArray(rounds) && rounds.length > 0) {
     const fromResults = rounds.reduce((sum: number, round: unknown) => {
-      const r = round as { total_score?: number; questions?: { max_score?: number }[] }
+      const r = round as {
+        total_score?: number
+        max?: number
+        questions?: { max_score?: number }[]
+      }
       if (typeof r.total_score === 'number' && r.total_score > 0) return sum + r.total_score
+      if (typeof r.max === 'number' && r.max > 0) return sum + r.max
       if (Array.isArray(r.questions)) {
         return (
           sum +
@@ -70,9 +84,52 @@ export function getAttemptMaxScore(attempt: AttemptLike, assessment?: Assessment
   return configured > 0 ? configured : 0
 }
 
+/** Normalize round payloads from local scoring (earned/max) and Solviq (score/total_score). */
+export function normalizeAttemptRounds(attempt: AttemptLike | any): any[] {
+  const raw = attempt?.result_data?.rounds
+  if (!Array.isArray(raw) || raw.length === 0) return []
+
+  return raw.map((round: any, idx: number) => {
+    const score =
+      typeof round.score === 'number'
+        ? round.score
+        : typeof round.earned === 'number'
+          ? round.earned
+          : null
+    const total =
+      typeof round.total_score === 'number'
+        ? round.total_score
+        : typeof round.max === 'number'
+          ? round.max
+          : Array.isArray(round.questions)
+            ? round.questions.reduce(
+                (acc: number, q: any) => acc + (typeof q.max_score === 'number' ? q.max_score : 1),
+                0
+              )
+            : null
+    let percentage =
+      typeof round.percentage === 'number'
+        ? round.percentage
+        : score != null && total != null && total > 0
+          ? Math.round((score / total) * 1000) / 10
+          : null
+
+    return {
+      ...round,
+      round_number: round.round_number ?? idx + 1,
+      round_name: round.round_name || round.round_type || `Round ${round.round_number ?? idx + 1}`,
+      score,
+      total_score: total,
+      percentage,
+      questions: Array.isArray(round.questions) ? round.questions : [],
+    }
+  })
+}
+
 export function isAttemptEvaluated(attempt: AttemptLike): boolean {
   if (attempt.submitted_at) return true
   if (attempt.result_data?.rounds?.length) return true
+  if (typeof attempt.percentage === 'number' || typeof attempt.total_score === 'number') return true
   const status = (attempt.status || '').toUpperCase()
   return EVALUATED_STATUSES.has(status)
 }

@@ -101,6 +101,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const endingRef = useRef(false);
   const answersRef = useRef(answers);
   const wasFullscreenRef = useRef(false);
+  const flushSnapshotsRef = useRef<() => Promise<void>>(async () => {});
   answersRef.current = answers;
 
   const { videoRef, getVideoElement, startCamera, stopCamera, isCameraActive, status: cameraStatus } =
@@ -132,6 +133,26 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const current = roundQuestions[currentIdx];
   const isLastRound = roundIdx >= totalRounds - 1;
   const hasMoreRounds = !isLastRound && totalRounds > 1;
+  const isLastQuestionInRound =
+    roundQuestions.length > 0 && currentIdx >= roundQuestions.length - 1;
+  const isLastQuestionOfExam = isLastQuestionInRound && !hasMoreRounds;
+  const candidateName =
+    (typeof session?.student_name === 'string' && session.student_name.trim()) ||
+    'Candidate';
+
+  const roundDurationMs = useMemo(() => {
+    const rounds = session?.rounds || [];
+    const match = rounds.find(
+      (r: any) => Number(r.round_number) === Number(currentRoundNumber)
+    );
+    const mins = match?.duration_minutes;
+    if (typeof mins === 'number' && mins > 0) return mins * 60 * 1000;
+    if (examEndMs) {
+      const remainingRounds = Math.max(totalRounds - roundIdx, 1);
+      return Math.max(examEndMs - Date.now(), 60_000) / remainingRounds;
+    }
+    return 10 * 60 * 1000;
+  }, [session, currentRoundNumber, examEndMs, totalRounds, roundIdx]);
 
   const buildAnswerPayload = useCallback(() => {
     return Object.entries(answersRef.current)
@@ -150,6 +171,12 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       setSubmitting(true);
       setPhase('ending');
       try {
+        // Capture any remaining proctoring shots for the current round before submit
+        try {
+          await flushSnapshotsRef.current();
+        } catch {
+          /* non-blocking */
+        }
         const payload = buildAnswerPayload();
         if (mode === 'disqualify') {
           await apiClient.disqualifyAssessmentExam(assessmentId, attemptId, {
@@ -176,19 +203,28 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   );
 
   const onUploadSnapshot = useCallback(
-    async (index: number, blob: Blob) => {
-      await apiClient.uploadAssessmentProctoringSnapshot(assessmentId, attemptId, index, blob);
+    async (slot: number, blob: Blob, round: number) => {
+      await apiClient.uploadAssessmentProctoringSnapshot(
+        assessmentId,
+        attemptId,
+        slot,
+        blob,
+        round
+      );
     },
     [assessmentId, attemptId]
   );
 
-  useProctorSnapshots({
+  const { flushRemaining } = useProctorSnapshots({
     attemptId,
     active: phase === 'exam',
-    getVideoElement,
+    roundNumber: currentRoundNumber ?? null,
+    roundDurationMs,
     examEndMs,
+    getVideoElement,
     onUpload: onUploadSnapshot,
   });
+  flushSnapshotsRef.current = flushRemaining;
 
   useEffect(() => {
     let cancelled = false;
@@ -282,9 +318,19 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   };
 
   const goToRoundBreakOrStay = () => {
-    if (hasMoreRounds) {
-      setPhase('round_break');
-    }
+    void (async () => {
+      try {
+        await flushSnapshotsRef.current();
+      } catch {
+        /* non-blocking */
+      }
+      if (hasMoreRounds) {
+        setPhase('round_break');
+        return;
+      }
+      const unanswered = allQuestions.filter((q) => !answersRef.current[q.id]).length;
+      setConfirmModal({ kind: 'submit', unanswered });
+    })();
   };
 
   const counts = useMemo(() => {
@@ -687,13 +733,32 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
 
               <div className="z-20 flex h-16 shrink-0 items-center justify-between border-t border-gray-300 bg-white px-6">
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleMarkForReview}
-                    className="rounded bg-[#DC2626] px-6 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
-                  >
-                    Mark for review & Next
-                  </button>
+                  {!isLastQuestionOfExam && (
+                    <button
+                      type="button"
+                      onClick={handleMarkForReview}
+                      className="rounded bg-[#DC2626] px-6 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                    >
+                      Mark for review & Next
+                    </button>
+                  )}
+                  {isLastQuestionOfExam && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!current) return;
+                        setMarkedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(current.id)) next.delete(current.id);
+                          else next.add(current.id);
+                          return next;
+                        });
+                      }}
+                      className="rounded bg-[#DC2626] px-6 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                    >
+                      Mark for review
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleClearResponse}
@@ -702,15 +767,26 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                     Clear Response
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleNextQuestion}
-                  className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
-                >
-                  {currentIdx >= roundQuestions.length - 1 && hasMoreRounds
-                    ? 'Save & End Round'
-                    : 'Save & Next'}
-                </button>
+                {isLastQuestionOfExam ? (
+                  <button
+                    type="button"
+                    onClick={handleSubmitWithConfirmation}
+                    disabled={submitting}
+                    className="rounded bg-[#2563EB] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    {submitting ? 'Submitting…' : 'Submit Test'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNextQuestion}
+                    className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
+                  >
+                    {isLastQuestionInRound && hasMoreRounds
+                      ? 'Save & End Round'
+                      : 'Save & Next'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -757,7 +833,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200">
                 <User className="h-3 w-3 text-gray-500" />
               </div>
-              <span className="text-sm font-normal text-gray-700">Candidate</span>
+              <span className="text-sm font-normal text-gray-700">{candidateName}</span>
             </div>
           </div>
 

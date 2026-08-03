@@ -333,14 +333,13 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
                 min={0}
                 max={100}
                 placeholder="e.g. 60"
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                 onChange={(n) =>
                   handleMetadataChange("passing_criteria", {
                     ...formData.metadata.passing_criteria,
                     overall_percentage: n,
                   })
                 }
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400"
               />
             </div>
           </div>

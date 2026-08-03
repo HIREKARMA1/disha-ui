@@ -47,8 +47,10 @@ interface AssessmentStats {
   completed_attempts: number;
   passed_attempts: number;
   failed_attempts: number;
-  average_score: number;
-  average_percentage: number;
+  average_score?: number | null;
+  average_percentage?: number | null;
+  highest_score?: number | null;
+  lowest_score?: number | null;
 }
 
 const UUID_PATTERN =
@@ -665,10 +667,10 @@ export default function AssessmentDetailPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 {assessment.assessment_name}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 Assessment ID: {assessment.disha_assessment_id}
               </p>
             </div>
@@ -685,8 +687,8 @@ export default function AssessmentDetailPage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
@@ -699,27 +701,27 @@ export default function AssessmentDetailPage() {
 
         {/* Status & Details */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Status</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Status</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {assessment.status}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Mode</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Mode</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {assessment.mode}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Duration</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Duration</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {assessment.total_duration_minutes}m
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-gray-600 text-sm">Rounds</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Rounds</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {assessment.rounds?.length || 0}
             </p>
           </div>
@@ -727,25 +729,29 @@ export default function AssessmentDetailPage() {
 
         {/* Statistics */}
         {stats && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Statistics</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <p className="text-gray-600 text-sm">Total Attempts</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Total Attempts</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                   {stats.total_attempts}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Completed</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Completed</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">
                   {stats.completed_attempts}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Average Score</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">
-                  {stats.average_percentage?.toFixed(1)}%
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Average Score</p>
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                  {typeof stats.average_percentage === "number"
+                    ? `${stats.average_percentage.toFixed(1)}%`
+                    : typeof stats.average_score === "number"
+                    ? `${stats.average_score.toFixed(1)}`
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -754,19 +760,19 @@ export default function AssessmentDetailPage() {
 
         {/* Rounds */}
         {assessment.rounds && assessment.rounds.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-6">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   Questions & Answers
                 </h2>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                   {canManageQuestions
                     ? `${totalLoadedQuestions} of ${totalExpectedQuestions || totalLoadedQuestions} questions loaded. Each round has Replenish AI and Add Manual Question below.`
                     : "Questions will appear here after generation."}
                 </p>
                 {questionPackageId && (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Package ID: {questionPackageId}
                   </p>
                 )}
@@ -837,23 +843,23 @@ export default function AssessmentDetailPage() {
                 return (
                   <div
                     key={round.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800/90 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <span className="inline-block w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
+                          <span className="inline-block w-8 h-8 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-full flex items-center justify-center font-semibold text-sm">
                             {round.round_number}
                           </span>
                           <div>
-                            <h3 className="font-semibold text-gray-900">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
                               {round.round_name}
                             </h3>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                               {round.round_type} • {round.duration_minutes} min
                               • {expectedCount} questions
                               {expectedCount > 0 && (
-                                <span className="text-gray-500">
+                                <span className="text-gray-500 dark:text-gray-400">
                                   {" "}
                                   ({aiTarget} AI / {manualSlots} manual)
                                 </span>
@@ -863,14 +869,14 @@ export default function AssessmentDetailPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           Difficulty:{" "}
-                          <span className="font-semibold">
+                          <span className="font-semibold text-gray-900 dark:text-white">
                             {round.config?.difficulty}
                           </span>
                         </p>
                         {round.passing_percentage && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
                             Pass: {round.passing_percentage}%
                           </p>
                         )}
@@ -879,12 +885,12 @@ export default function AssessmentDetailPage() {
 
                     {/* Questions Management Block — always visible for local assessments */}
                     {canManageQuestions && (
-                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
                         <div className="flex justify-between items-center flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={() => toggleRoundExpanded(roundKey)}
-                            className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                            className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                           >
                             {expandedRounds[roundKey] ? (
                               <>
@@ -901,7 +907,7 @@ export default function AssessmentDetailPage() {
 
                           <div className="flex items-center gap-2 flex-wrap">
                             {isShort && (
-                              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-800">
                                 <AlertCircle size={14} />
                                 {aiMissing > 0 && `${aiMissing} AI missing`}
                                 {aiMissing > 0 && manualMissing > 0 && " · "}
@@ -939,12 +945,12 @@ export default function AssessmentDetailPage() {
                         ) && (
                           <div
                             id={`manual-form-${round.id}`}
-                            className="rounded-lg border-2 border-emerald-200 bg-emerald-50/40 p-4"
+                            className="rounded-lg border-2 border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4"
                           >
-                            <h4 className="text-sm font-semibold text-gray-900">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                               Add Manual Question
                             </h4>
-                            <p className="mt-1 text-xs text-gray-600">
+                            <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
                               Total {expectedCount}: {aiCount} AI + {manualCount}{" "}
                               manual loaded.{" "}
                               {canAddManual
@@ -965,7 +971,7 @@ export default function AssessmentDetailPage() {
                                 disabled={!canAddManual}
                                 rows={2}
                                 placeholder="Question text"
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
                               />
                               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                                 {manualForm.options.map((opt, oIdx) => (
@@ -973,7 +979,7 @@ export default function AssessmentDetailPage() {
                                     key={oIdx}
                                     className="flex items-center gap-2"
                                   >
-                                    <span className="w-6 text-xs font-bold text-gray-500">
+                                    <span className="w-6 text-xs font-bold text-gray-500 dark:text-gray-400">
                                       {String.fromCharCode(65 + oIdx)}
                                     </span>
                                     <input
@@ -990,14 +996,14 @@ export default function AssessmentDetailPage() {
                                         });
                                       }}
                                       placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
-                                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                      className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
                                     />
                                   </div>
                                 ))}
                               </div>
                               <div className="flex flex-wrap items-end gap-3">
                                 <div>
-                                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
                                     Correct answer
                                   </label>
                                   <select
@@ -1008,7 +1014,7 @@ export default function AssessmentDetailPage() {
                                         correct_answer: e.target.value,
                                       })
                                     }
-                                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                    className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
                                   >
                                     {["A", "B", "C", "D"].map((l) => (
                                       <option key={l} value={l}>
@@ -1018,7 +1024,7 @@ export default function AssessmentDetailPage() {
                                   </select>
                                 </div>
                                 <div className="min-w-[200px] flex-1">
-                                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
                                     Explanation (optional)
                                   </label>
                                   <input
@@ -1030,7 +1036,7 @@ export default function AssessmentDetailPage() {
                                         explanation: e.target.value,
                                       })
                                     }
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm disabled:bg-gray-50"
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
                                   />
                                 </div>
                                 <button
@@ -1065,10 +1071,10 @@ export default function AssessmentDetailPage() {
                             ) : (
                               <>
                                 {questions.length === 0 && (
-                                  <div className="text-center py-6 text-sm text-gray-500 border border-dashed rounded-lg bg-gray-50 flex flex-col items-center gap-2">
+                                  <div className="text-center py-6 text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-900/40 flex flex-col items-center gap-2">
                                     <HelpCircle
                                       size={24}
-                                      className="text-gray-400"
+                                      className="text-gray-400 dark:text-gray-500"
                                     />
                                     <span>
                                       No questions yet. Use Replenish AI and/or
@@ -1106,7 +1112,7 @@ export default function AssessmentDetailPage() {
                                         return (
                                           <div
                                             key={qid || `q-${qIdx}`}
-                                            className="bg-gray-50 border border-gray-200 rounded-lg p-4 relative group hover:border-gray-300 transition-all"
+                                            className="bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative group hover:border-gray-300 dark:hover:border-gray-600 transition-all"
                                           >
                                             <button
                                               type="button"
@@ -1117,7 +1123,7 @@ export default function AssessmentDetailPage() {
                                                 !qid ||
                                                 deletingQuestionId === qid
                                               }
-                                              className="absolute top-4 right-4 z-10 rounded-lg border border-red-200 bg-white p-2 text-red-600 shadow-sm hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                              className="absolute top-4 right-4 z-10 rounded-lg border border-red-200 dark:border-red-800 bg-white dark:bg-gray-800 p-2 text-red-600 dark:text-red-400 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/30 disabled:cursor-not-allowed disabled:opacity-50"
                                               title={
                                                 qid
                                                   ? "Delete Question"
@@ -1135,7 +1141,7 @@ export default function AssessmentDetailPage() {
                                             </button>
 
                                             <div className="flex items-start gap-2 pr-10">
-                                              <span className="font-bold text-gray-400 min-w-[20px]">
+                                              <span className="font-bold text-gray-400 dark:text-gray-500 min-w-[20px]">
                                                 {qIdx + 1}.
                                               </span>
                                               <div className="flex-1">
@@ -1143,19 +1149,19 @@ export default function AssessmentDetailPage() {
                                                   <span
                                                     className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                                                       isAi
-                                                        ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                                                        : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800"
+                                                        : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800"
                                                     }`}
                                                   >
                                                     {isAi ? "AI" : "Manual"}
                                                   </span>
                                                   {!qid && (
-                                                    <span className="text-[10px] text-red-600">
+                                                    <span className="text-[10px] text-red-600 dark:text-red-400">
                                                       Missing id — cannot delete
                                                     </span>
                                                   )}
                                                 </div>
-                                                <p className="font-medium text-gray-900 leading-relaxed">
+                                                <p className="font-medium text-gray-900 dark:text-white leading-relaxed">
                                                   {question.question_text}
                                                 </p>
 
@@ -1179,17 +1185,17 @@ export default function AssessmentDetailPage() {
                                                               key={oIdx}
                                                               className={`flex items-center gap-2 px-3 py-2 rounded border text-sm transition-all ${
                                                                 isCorrect
-                                                                  ? "bg-green-50 border-green-200 text-green-800 font-medium"
-                                                                  : "bg-white border-gray-200 text-gray-700"
+                                                                  ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 font-medium"
+                                                                  : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
                                                               }`}
                                                             >
                                                               {isCorrect ? (
                                                                 <CheckCircle2
                                                                   size={16}
-                                                                  className="text-green-600 flex-shrink-0"
+                                                                  className="text-green-600 dark:text-green-400 flex-shrink-0"
                                                                 />
                                                               ) : (
-                                                                <span className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] text-gray-400 font-bold flex-shrink-0">
+                                                                <span className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-400 dark:text-gray-400 font-bold flex-shrink-0">
                                                                   {String.fromCharCode(
                                                                     65 + oIdx,
                                                                   )}
@@ -1207,24 +1213,24 @@ export default function AssessmentDetailPage() {
 
                                                 {question.question_type !==
                                                   "mcq" && (
-                                                  <div className="mt-3 p-3 bg-white rounded border border-gray-200">
-                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                  <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                                       Correct Answer
                                                     </p>
-                                                    <p className="text-sm font-medium text-gray-800 mt-1">
+                                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mt-1">
                                                       {question.correct_answer}
                                                     </p>
                                                   </div>
                                                 )}
 
                                                 {question.explanation && (
-                                                  <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-gray-100 flex items-start gap-2">
+                                                  <div className="mt-3 text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded border border-gray-100 dark:border-gray-700 flex items-start gap-2">
                                                     <HelpCircle
                                                       size={14}
-                                                      className="text-blue-500 flex-shrink-0 mt-0.5"
+                                                      className="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
                                                     />
                                                     <div>
-                                                      <span className="font-semibold text-gray-700">
+                                                      <span className="font-semibold text-gray-700 dark:text-gray-200">
                                                         Explanation:{" "}
                                                       </span>
                                                       {question.explanation}

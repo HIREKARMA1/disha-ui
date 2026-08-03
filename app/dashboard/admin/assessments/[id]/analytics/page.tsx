@@ -25,6 +25,7 @@ import {
     getPassFailLabel,
     getTotalQuestionsFromAssessment,
     isAttemptEvaluated,
+    normalizeAttemptRounds,
 } from '@/lib/assessmentAnalytics'
 import {
     buildProctoringSlots,
@@ -102,23 +103,15 @@ export default function AssessmentAnalyticsPage() {
             }
         }
 
-        const total = attempts.length
-        if (total === 0) return { passRate: 0, avgScore: 0 }
+        const evaluated = attempts.filter(a => isAttemptEvaluated(a))
+        if (evaluated.length === 0) return { passRate: '0.0', avgScore: '0.0' }
 
-        const passed = attempts.filter(a => a.status === 'PASSED').length
-        const totalScore = attempts.reduce((acc, curr) => acc + (curr.percentage || 0), 0)
-        const avgPct = (totalScore / total).toFixed(1)
-
-        // If 'passed' count is 0 but we have valid attempts, the user might want to see the Average Performance 
-        // in the "Pass Rate" slot if they are confusing terms, OR we can stick to strict "Pass Rate".
-        // Given the request "passing rate should show the 35 percent" (which is the avg score),
-        // we will ensure the Average Score card shows it clearly, but for Pass Rate, 
-        // if the status is strictly relied upon, 0 is correct for FAIL. 
-        // However, to be helpful, if N=1, Pass Rate = 0 is discouraging/confusing if they just want "Score".
-        // Let's keep Pass Rate strict but ensure Average Score is highlighted.
+        const passedCount = evaluated.filter(a => getPassFailLabel(a, assessmentDetails) === 'PASS').length
+        const totalScorePct = evaluated.reduce((acc, curr) => acc + (curr.percentage || 0), 0)
+        const avgPct = (totalScorePct / evaluated.length).toFixed(1)
 
         return {
-            passRate: ((passed / total) * 100).toFixed(1),
+            passRate: ((passedCount / evaluated.length) * 100).toFixed(1),
             avgScore: avgPct
         }
     }
@@ -522,7 +515,7 @@ export default function AssessmentAnalyticsPage() {
 
                     {/* Footer */}
                     {!loading && !error && attempts.length > 0 && (
-                        <div className="p-4 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex justify-between">
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 text-sm text-gray-500 dark:text-gray-400 flex justify-between">
                             <span>Showing {filteredAttempts.length} of {attempts.length} attempts</span>
                         </div>
                     )}
@@ -591,7 +584,7 @@ function AttemptDetailsModal({
     const evaluated = isAttemptEvaluated(attempt)
     const totalMaxScore = getAttemptMaxScore(attempt, assessment)
     const passFail = getPassFailLabel(attempt, assessment)
-    const rounds = attempt.result_data?.rounds || []
+    const rounds = normalizeAttemptRounds(attempt)
 
     const photoSlots = buildProctoringSlots(
         proctoring?.proctoring_snapshots?.length
@@ -672,7 +665,11 @@ function AttemptDetailsModal({
                             Photos captured during assessment
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                            Identity verification snapshots from Solviq (up to 4, spread across the exam).
+                            Identity verification snapshots — 4 photos per round
+                            {assessment?.rounds?.length
+                                ? ` (up to ${(assessment.rounds.length || 1) * 4} for this assessment)`
+                                : ''}
+                            . Remaining shots for a round are captured when that round is submitted.
                         </p>
                         {!loadingProctoring && photoSlots.every((s) => !s.url) && evaluated && (
                             <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
@@ -690,7 +687,7 @@ function AttemptDetailsModal({
                                 {photoSlots.map((slot) =>
                                     slot.url ? (
                                         <a
-                                            key={slot.index}
+                                            key={`${slot.round_number || 0}-${slot.index}-${slot.displayIndex}`}
                                             href={slot.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -698,25 +695,28 @@ function AttemptDetailsModal({
                                         >
                                             <img
                                                 src={slot.url}
-                                                alt={`Photo ${slot.index}`}
+                                                alt={`Photo ${slot.displayIndex}`}
                                                 className="w-full aspect-[4/3] object-cover"
                                             />
                                             <div className="p-2 text-xs text-gray-600 dark:text-gray-400">
-                                                <p className="font-semibold">Photo {slot.index}</p>
+                                                <p className="font-semibold">
+                                                    {slot.round_number
+                                                        ? `Round ${slot.round_number} · Shot ${slot.index}`
+                                                        : `Photo ${slot.displayIndex}`}
+                                                </p>
                                                 {slot.captured_at && (
                                                     <p>{new Date(slot.captured_at).toLocaleString()}</p>
-                                                )}
-                                                {slot.round_number != null && (
-                                                    <p>Round {slot.round_number}</p>
                                                 )}
                                             </div>
                                         </a>
                                     ) : (
                                         <div
-                                            key={slot.index}
+                                            key={`empty-${slot.displayIndex}`}
                                             className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center aspect-[4/3] p-3 text-center bg-gray-50 dark:bg-gray-900/40"
                                         >
-                                            <p className="text-sm font-medium text-gray-500">Photo {slot.index}</p>
+                                            <p className="text-sm font-medium text-gray-500">
+                                                Photo {slot.displayIndex}
+                                            </p>
                                             <p className="text-xs text-gray-400 mt-1">Not captured</p>
                                         </div>
                                     )
@@ -738,10 +738,16 @@ function AttemptDetailsModal({
                                     </h4>
                                     <div className="text-right">
                                         <div className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {round.score?.toFixed(1) ?? '-'} / {round.total_score ?? userEstimateRoundTotal(round)}
+                                            {typeof round.score === 'number' ? round.score.toFixed(1) : '—'}
+                                            {' / '}
+                                            {typeof round.total_score === 'number'
+                                                ? round.total_score.toFixed(1)
+                                                : userEstimateRoundTotal(round)}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            {round.percentage?.toFixed(1)}%
+                                            {typeof round.percentage === 'number'
+                                                ? `${round.percentage.toFixed(1)}%`
+                                                : '—'}
                                         </div>
                                     </div>
                                 </div>
@@ -821,10 +827,12 @@ function AttemptDetailsModal({
 }
 
 function userEstimateRoundTotal(round: any) {
-    if (round.questions && Array.isArray(round.questions)) {
+    if (typeof round.total_score === 'number') return round.total_score.toFixed(1)
+    if (typeof round.max === 'number') return round.max.toFixed(1)
+    if (round.questions && Array.isArray(round.questions) && round.questions.length > 0) {
         return round.questions.reduce((acc: number, q: any) => acc + (q.max_score || 1), 0)
     }
-    if (round.percentage > 0 && round.score != null) {
+    if (typeof round.percentage === 'number' && round.percentage > 0 && round.score != null) {
         return Math.round(round.score / (round.percentage / 100))
     }
     return '—'
