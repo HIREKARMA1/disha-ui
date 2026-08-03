@@ -185,9 +185,8 @@ export function serializeMultiValueField(values: string[]): string {
 /** Degrees offered by the university from profile.courses_offered (known degrees only). */
 export function getOfferedDegrees(coursesOffered?: string | null): string[] {
     const parsed = parseMultiValueField(coursesOffered)
-    const known = new Set(DEGREE_OPTIONS.map((d) => d.value))
-    const matched = parsed.filter((d) => known.has(d))
-    return matched
+    const known = new Set<string>(DEGREE_OPTIONS.map((d) => d.value))
+    return parsed.filter((d) => known.has(d))
 }
 
 /** Branches offered by the university from profile.branch. */
