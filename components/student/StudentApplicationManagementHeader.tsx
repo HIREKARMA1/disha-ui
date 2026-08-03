@@ -26,6 +26,8 @@ interface StudentApplicationManagementHeaderProps {
     selectedJobId?: string
     onJobChange?: (jobId: string) => void
     onExport?: () => void
+    title?: string
+    subtitle?: string
 }
 
 export function StudentApplicationManagementHeader({
@@ -47,6 +49,8 @@ export function StudentApplicationManagementHeader({
     selectedJobId,
     onJobChange,
     onExport,
+    title = 'My Applications',
+    subtitle = 'Track your job applications and download offer letters ✨',
 }: StudentApplicationManagementHeaderProps) {
     const dateLabel = new Date().toLocaleDateString('en-US', {
         weekday: 'long',
@@ -83,11 +87,11 @@ export function StudentApplicationManagementHeader({
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                         <h1 className="text-base sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                            My Applications
+                            {title}
                             <Briefcase className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-blue-500" />
                         </h1>
                         <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
-                            Track your job applications and download offer letters ✨
+                            {subtitle}
                         </p>
                         <div className="mt-1.5 sm:mt-2.5 flex flex-wrap gap-1 sm:gap-1.5">
                             <StudentChip icon={Calendar} label={dateShort} tone="blue" className="sm:hidden scale-90 origin-left" />
