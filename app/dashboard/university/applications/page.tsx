@@ -4,36 +4,17 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
 import { StudentApplicationManagementHeader } from '@/components/student/StudentApplicationManagementHeader'
-import { StudentApplicationTable } from '@/components/student/StudentApplicationTable'
 import { OfferLetterViewerModal } from '@/components/student/OfferLetterViewerModal'
 import { UniversityStatusUpdateModal } from '@/components/university/UniversityStatusUpdateModal'
 import { ViewApplicationDetailsModal } from '@/components/university/ViewApplicationDetailsModal'
+import {
+    UniversityApplicationTable,
+    UniversityApplicationRow,
+} from '@/components/university/UniversityApplicationTable'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
-interface ApplicationData {
-    id: string
-    job_id: string
-    student_id: string
-    university_id?: string
-    status: string
-    applied_at: string
-    updated_at?: string
-    cover_letter?: string
-    expected_salary?: number
-    availability_date?: string
-    corporate_notes?: string
-    interview_date?: string
-    interview_location?: string
-    offer_letter_url?: string
-    offer_letter_uploaded_at?: string
-    job_title?: string
-    student_name?: string
-    corporate_name?: string
-    creator_type?: string  // Explicit creator type ("University" or "Company")
-    is_university_created?: boolean  // Whether created by ANY university
-    can_update_status?: boolean  // Whether THIS university can update the status
-}
+type ApplicationData = UniversityApplicationRow
 
 export default function UniversityApplicationsPage() {
     const [applications, setApplications] = useState<ApplicationData[]>([])
@@ -81,10 +62,11 @@ export default function UniversityApplicationsPage() {
                 total_pages: response.total_pages || 0
             }))
 
-            // Build/merge unique list of companies/universities that created jobs
+            // Build/merge unique list of company names
             setCompanyOptions(prev => {
                 const companySet = new Set(prev)
-                for (const name of apps.map(app => app.corporate_name)) {
+                for (const app of apps) {
+                    const name = app.company_name || app.corporate_name
                     if (name) {
                         companySet.add(name)
                     }
@@ -245,6 +227,8 @@ export default function UniversityApplicationsPage() {
             <div className="space-y-6 main-content">
                 {/* Application Management Header */}
                 <StudentApplicationManagementHeader
+                    title="Applications"
+                    subtitle="Track student job applications across campus jobs"
                     totalApplications={totalApplications}
                     appliedApplications={appliedCount}
                     shortlistedApplications={shortlistedCount}
@@ -265,14 +249,12 @@ export default function UniversityApplicationsPage() {
                 />
 
                 {/* Applications Table */}
-                <StudentApplicationTable
+                <UniversityApplicationTable
                     applications={applications}
                     loading={loading}
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    onViewOfferLetter={handleViewOfferLetter}
-                    onDownloadOfferLetter={handleDownloadOfferLetter}
                     onStatusUpdate={handleStatusUpdate}
                     pagination={pagination}
                     onPageChange={handlePageChange}

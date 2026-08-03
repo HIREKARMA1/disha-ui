@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { getDegreeLabel } from '@/lib/academicHierarchy'
 
 interface StudentManagementHeaderProps {
     totalStudents: number
@@ -153,7 +154,7 @@ export function StudentManagementHeader({
                                     >
                                         <option value="all">All Degrees</option>
                                         {degrees.map(degree => (
-                                            <option key={degree} value={degree}>{degree}</option>
+                                            <option key={degree} value={degree}>{getDegreeLabel(degree)}</option>
                                         ))}
                                     </select>
                                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">

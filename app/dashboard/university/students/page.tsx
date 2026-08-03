@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
 import { StudentManagementHeader } from '@/components/dashboard/StudentManagementHeader'
 import { StudentTable } from '@/components/dashboard/StudentTable'
 import { CreateStudentModal, degreeOptions } from '@/components/dashboard/CreateStudentModal'
-import { useBranches } from '@/hooks/useLookup'
 import { BulkUploadModal } from '@/components/dashboard/BulkUploadModal'
 import { apiClient } from '@/lib/api'
 import { StudentListResponse, StudentListItem } from '@/types/university'
@@ -14,9 +13,12 @@ import { getErrorMessage } from '@/lib/error-handler'
 import { motion } from 'framer-motion'
 import { UserPlus, Upload, Users, GraduationCap, TrendingUp, Download } from 'lucide-react'
 import { exportStudentsToCSV } from '@/utils/exportToExcel'
+import {
+    getOfferedDegrees,
+    getFilterBranches,
+} from '@/lib/academicHierarchy'
 
 export default function UniversityStudents() {
-    const { data: branchLookup } = useBranches({ limit: 1000 })
     const [students, setStudents] = useState<StudentListItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -26,8 +28,10 @@ export default function UniversityStudents() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
     const [selectedBranch, setSelectedBranch] = useState('all')
-    const [selectedYear, setSelectedYear] = useState('all')
+    const [selectedYear, setSelectedYear] = useState('2027')
     const [selectedDegree, setSelectedDegree] = useState('all')
+    const [coursesOffered, setCoursesOffered] = useState<string | null>(null)
+    const [profileBranches, setProfileBranches] = useState<string | null>(null)
 
     const [showFilters, setShowFilters] = useState(false)
 
@@ -50,13 +54,59 @@ export default function UniversityStudents() {
         fetchStudents()
     }, [includeArchived])
 
-    // Use predefined options for branches and degrees
-    const branches = branchLookup.map((option) => option.name)
-    const degrees = degreeOptions.map(option => option.value)
+    useEffect(() => {
+        const loadProfileAcademicFilters = async () => {
+            try {
+                const profile = await apiClient.getUniversityProfile()
+                setCoursesOffered(profile?.courses_offered ?? null)
+                setProfileBranches(profile?.branch ?? null)
+            } catch (err) {
+                console.error('Failed to load university profile for filters:', err)
+            }
+        }
+        loadProfileAcademicFilters()
+    }, [])
 
-    // Generate year options: previous 10 years + current year + next 10 years
+    // Degrees: only profile-offered degrees when configured; otherwise full list
+    const offeredDegrees = useMemo(() => getOfferedDegrees(coursesOffered), [coursesOffered])
+    const degrees = useMemo(() => {
+        if (offeredDegrees.length > 0) return offeredDegrees
+        return degreeOptions.map((option) => option.value)
+    }, [offeredDegrees])
+
+    // Branches: only profile branches when configured; otherwise full degree-related list
+    const branches = useMemo(
+        () =>
+            getFilterBranches({
+                profileBranch: profileBranches,
+                selectedDegree,
+                availableDegrees: degrees,
+            }),
+        [profileBranches, selectedDegree, degrees]
+    )
+
+    // Year options: previous 10 years through 2030 (inclusive)
     const currentYear = new Date().getFullYear()
-    const years = Array.from({ length: 21 }, (_, i) => String(currentYear - 10 + i)).sort((a, b) => Number(b) - Number(a))
+    const years = Array.from(
+        { length: 2030 - (currentYear - 10) + 1 },
+        (_, i) => String(currentYear - 10 + i)
+    )
+        .filter((year) => Number(year) <= 2030)
+        .sort((a, b) => Number(b) - Number(a))
+
+    // Keep branch selection valid when degree changes
+    useEffect(() => {
+        if (selectedBranch !== 'all' && !branches.includes(selectedBranch)) {
+            setSelectedBranch('all')
+        }
+    }, [branches, selectedBranch])
+
+    // Keep degree selection valid when profile degrees load
+    useEffect(() => {
+        if (selectedDegree !== 'all' && !degrees.includes(selectedDegree)) {
+            setSelectedDegree('all')
+        }
+    }, [degrees, selectedDegree])
 
     const filteredStudents = students.filter(student => {
         const matchesSearch = searchTerm === '' ||
@@ -84,9 +134,14 @@ export default function UniversityStudents() {
         setSearchTerm('')
         setFilterStatus('all')
         setSelectedBranch('all')
-        setSelectedYear('all')
+        setSelectedYear('2027')
         setSelectedDegree('all')
         setIncludeArchived(false)
+    }
+
+    const handleDegreeChange = (value: string) => {
+        setSelectedDegree(value)
+        setSelectedBranch('all')
     }
 
     const handleCreateStudent = async (studentData: any) => {
@@ -263,7 +318,7 @@ export default function UniversityStudents() {
                     onYearChange={setSelectedYear}
                     degrees={degrees}
                     selectedDegree={selectedDegree}
-                    onDegreeChange={setSelectedDegree}
+                    onDegreeChange={handleDegreeChange}
                     showFilters={showFilters}
                     setShowFilters={setShowFilters}
                     onClearFilters={clearFilters}
