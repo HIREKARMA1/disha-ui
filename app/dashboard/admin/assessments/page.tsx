@@ -22,6 +22,7 @@ interface Assessment {
   solviq_assessment_id?: string
   is_published_to_solviq?: boolean
   created_at: string
+  description?: string
   instructions?: string
 }
 
