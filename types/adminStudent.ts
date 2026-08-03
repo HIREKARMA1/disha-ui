@@ -28,8 +28,11 @@ export interface AdminStudentListResponse {
   students: AdminStudentListItem[]
   total_students: number
   active_students: number
+  inactive_students?: number
   verified_students: number
   registered_today: number
+  logged_in_today?: number
+  never_logged_in?: number
 }
 
 export interface CreateAdminStudentRequest {
@@ -90,3 +93,15 @@ export interface ResetPasswordResponse {
   temporary_password: string
   name?: string
 }
+
+export interface AdminStudentBulkActionResponse {
+  message: string
+  updated_count: number
+  failed_count: number
+  action: string
+  affected_student_ids?: string[]
+  admin_id?: string
+  timestamp?: string
+}
+
+export type AdminStudentBulkAction = 'activate' | 'deactivate' | 'verify' | 'unverify' | 'delete'
