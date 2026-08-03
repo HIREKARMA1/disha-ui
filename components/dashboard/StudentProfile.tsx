@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -321,8 +322,8 @@ export function StudentProfile() {
             <div className="pt-16 lg:pl-64">
                 <main className="flex-1 p-3 sm:p-4 lg:p-6">
                     <div className="w-full max-w-[1400px] mx-auto">
-                        {/* Hero */}
-                        <div className="relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
+                        {/* Hero Banner Card - Visible on laptop/desktop only */}
+                        <div className="hidden lg:block relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
                             <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
                             <div className="relative flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                                 <div className="flex-1 min-w-0">
@@ -360,12 +361,17 @@ export function StudentProfile() {
                             <ProfileSummaryCard
                                 profile={profile}
                                 onEditProfile={() => {
-                                    setActiveTab('basic')
-                                    setEditing('basic')
+                                    setEditing(activeTab)
+                                    setTimeout(() => {
+                                        basicFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                    }, 100)
                                 }}
                                 onChangePhoto={() => {
                                     setActiveTab('social')
                                     setEditing('social')
+                                    setTimeout(() => {
+                                        basicFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                    }, 100)
                                 }}
                             />
 
@@ -388,7 +394,12 @@ export function StudentProfile() {
                                                     <button
                                                         key={tab.id}
                                                         type="button"
-                                                        onClick={() => setActiveTab(tab.id)}
+                                                        onClick={() => {
+                                                            setActiveTab(tab.id)
+                                                            if (editing) {
+                                                                setEditing(tab.id)
+                                                            }
+                                                        }}
                                                         className={cn(
                                                             'flex items-center gap-1.5 py-2.5 px-1 sm:px-2 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0 relative',
                                                             activeTab === tab.id
@@ -421,15 +432,6 @@ export function StudentProfile() {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Personal details and contact information</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="default"
-                                                        onClick={() => setEditing('basic')}
-                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/80 dark:text-blue-400 dark:hover:bg-blue-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
-                                                        Edit
-                                                    </Button>
                                                 </div>
 
                                                 {editing === 'basic' ? (
@@ -543,15 +545,6 @@ export function StudentProfile() {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Educational background and achievements</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="default"
-                                                        onClick={() => setEditing('academic')}
-                                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/80 dark:text-emerald-400 dark:hover:bg-emerald-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
-                                                        Edit
-                                                    </Button>
                                                 </div>
 
                                                 {editing === 'academic' ? (
@@ -652,15 +645,6 @@ export function StudentProfile() {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Technical skills, soft skills, and career preferences</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="default"
-                                                        onClick={() => setEditing('skills')}
-                                                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50/80 dark:text-amber-400 dark:hover:bg-amber-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
-                                                        Edit
-                                                    </Button>
                                                 </div>
 
                                                 {editing === 'skills' ? (
@@ -766,15 +750,6 @@ export function StudentProfile() {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="default"
-                                                        onClick={() => setEditing('experience')}
-                                                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-400 dark:hover:bg-purple-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
-                                                        Edit
-                                                    </Button>
                                                 </div>
 
                                                 {editing === 'experience' ? (
@@ -883,15 +858,6 @@ export function StudentProfile() {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Resume, certificates, and important documents</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="default"
-                                                        onClick={() => setEditing('documents')}
-                                                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:bg-slate-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
-                                                        Edit
-                                                    </Button>
                                                 </div>
 
                                                 {editing === 'documents' ? (
@@ -1050,15 +1016,6 @@ export function StudentProfile() {
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">Profile picture, LinkedIn, GitHub, and personal website</p>
                                                         </div>
                                                     </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="default"
-                                                        onClick={() => setEditing('social')}
-                                                        className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50/80 dark:text-cyan-400 dark:hover:bg-cyan-900/20 text-sm h-10 px-4 py-2 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-6 h-6 mr-1.5" />
-                                                        Edit
-                                                    </Button>
                                                 </div>
 
                                                 {editing === 'social' ? (
@@ -2274,25 +2231,29 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 </div>
             )}
 
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
+            {/* Fixed Floating Action Bar centered at screen bottom */}
+            {typeof document !== 'undefined' && createPortal(
+                <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center gap-3 p-2 bg-[#1a2030]/95 text-white backdrop-blur-lg border border-white/15 shadow-2xl rounded-2xl ring-1 ring-black/20 animate-in fade-in slide-in-from-bottom-3 duration-200">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onCancel}
-                        className="w-full sm:w-auto h-11 sm:h-10 px-6 text-sm font-medium"
+                        size="sm"
+                        className="h-8 sm:h-9 px-3 text-xs font-semibold rounded-xl border-gray-600 bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white"
                     >
                         Cancel
                     </Button>
                     <Button
                         type="submit"
                         disabled={saving || hasFieldErrors}
-                        className="w-full sm:w-auto h-11 sm:h-10 px-6 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
+                        size="sm"
+                        className="h-8 sm:h-9 px-3.5 sm:px-4 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
                     >
                         {saving ? 'Saving...' : 'Save Changes'}
                     </Button>
-                </div>
-            </div>
+                </div>,
+                document.body
+            )}
         </form>
     )
 }
