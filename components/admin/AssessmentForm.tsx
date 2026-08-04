@@ -9,6 +9,7 @@ import {
   mapAssessmentFormErrors,
 } from "@/lib/validations/assessment";
 import { IntegerTextField } from "@/components/ui/integer-text-field";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -189,8 +190,8 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   return (
     <form onSubmit={handleSubmit} className="space-y-8 w-full">
       {/* 1. Basic Details Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <FileText size={18} />
@@ -292,12 +293,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Start Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="datetime-local"
+              <DateTimePicker
                 value={formData.time_window.start_time}
-                onChange={(e) => handleTimeChange("start_time", e.target.value)}
-                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white ${errors.start_time ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  }`}
+                onChange={(value) => handleTimeChange("start_time", value)}
+                placeholder="Select start date and time"
+                showTime={true}
+                className={errors.start_time ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : ""}
               />
             </div>
 
@@ -305,12 +306,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 End Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="datetime-local"
+              <DateTimePicker
                 value={formData.time_window.end_time}
-                onChange={(e) => handleTimeChange("end_time", e.target.value)}
-                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white ${errors.end_time ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  }`}
+                onChange={(value) => handleTimeChange("end_time", value)}
+                placeholder="Select end date and time"
+                showTime={true}
+                className={errors.end_time ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : ""}
               />
             </div>
 
