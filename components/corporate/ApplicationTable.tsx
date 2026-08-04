@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import {
     User,
     Calendar,
-    IndianRupee,
+    Banknote,
     FileText,
     Eye,
     ChevronUp,
@@ -338,7 +338,7 @@ export function ApplicationTable({
                                         </td>
                                         <td className="px-5 py-4">
                                             <div className="flex items-center text-sm text-gray-900 dark:text-white">
-                                                <IndianRupee className="w-4 h-4 mr-1.5 text-gray-400" />
+                                                <Banknote className="w-4 h-4 mr-1.5 text-gray-400" />
                                                 {application.expected_salary
                                                     ? formatAmountINR(application.expected_salary)
                                                     : 'Not specified'}
@@ -457,7 +457,7 @@ export function ApplicationTable({
                                             value: `${date} • ${time}`,
                                         },
                                         {
-                                            icon: IndianRupee,
+                                            icon: Banknote,
                                             label: 'Expected Salary',
                                             value: application.expected_salary
                                                 ? formatAmountINR(application.expected_salary)

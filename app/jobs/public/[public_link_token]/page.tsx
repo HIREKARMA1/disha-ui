@@ -1,25 +1,30 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { Navbar } from '@/components/ui/navbar'
-import { getErrorMessage } from '@/lib/error-handler'
-import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
-import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
-import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
-import { profileService } from '@/services/profileService'
 import { formatSalaryRange } from '@/lib/currency'
+import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
+import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import {
+    APPLY_SUCCESS_MESSAGE,
+    PREMIUM_REQUIRED_MESSAGE,
+    clearAutoApplyQueryParams,
+    resumePendingJobApplication,
+    shouldAutoApplyForJob,
+    toastApplyError,
+} from '@/lib/jobApplicationMessages'
 import {
     Loader2,
     AlertCircle,
     MapPin,
     Briefcase,
     Clock,
-    IndianRupee,
+    Banknote,
     Calendar,
     Building2,
     Users,
@@ -85,7 +90,7 @@ interface Job {
 export default function PublicJobPage() {
     const params = useParams()
     const router = useRouter()
-    const { isAuthenticated, user } = useAuth()
+    const { isAuthenticated, user, isLoading: authLoading } = useAuth()
     const publicLinkToken = params?.public_link_token as string
 
     const [job, setJob] = useState<Job | null>(null)
@@ -98,6 +103,7 @@ export default function PublicJobPage() {
     const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
     const [showShareDropdown, setShowShareDropdown] = useState(false)
     const [showPremiumModal, setShowPremiumModal] = useState(false)
+    const autoApplyAttempted = useRef(false)
 
     useEffect(() => {
         if (publicLinkToken) {
@@ -119,6 +125,34 @@ export default function PublicJobPage() {
             }
         }
     }, [isAuthenticated, user, publicLinkToken, job?.id])
+
+    // After login: auto-submit pending application for this public job
+    useEffect(() => {
+        if (!job || authLoading || autoApplyAttempted.current) return
+        if (!shouldAutoApplyForJob(job.id)) return
+
+        if (!isAuthenticated) {
+            autoApplyAttempted.current = true
+            redirectGuestToLoginForApply(router, job.id, `/jobs/public/${publicLinkToken}`)
+            return
+        }
+        if (user?.user_type !== 'student') {
+            clearAutoApplyQueryParams()
+            autoApplyAttempted.current = true
+            return
+        }
+
+        autoApplyAttempted.current = true
+        clearAutoApplyQueryParams()
+        setIsApplying(true)
+        void (async () => {
+            const result = await resumePendingJobApplication(job.id)
+            if (result === 'success' || result === 'already_applied') {
+                setHasApplied(true)
+            }
+            setIsApplying(false)
+        })()
+    }, [job, authLoading, isAuthenticated, user, router, publicLinkToken])
 
     useEffect(() => {
         if (job?.corporate_id) {
@@ -244,7 +278,7 @@ export default function PublicJobPage() {
         if (!studentUniversityId) {
             return {
                 canApply: false,
-                reason: 'This job is not available for your college.'
+                reason: PREMIUM_REQUIRED_MESSAGE,
             }
         }
 
@@ -252,7 +286,7 @@ export default function PublicJobPage() {
         if (!job.assigned_university_ids.includes(studentUniversityId)) {
             return {
                 canApply: false,
-                reason: 'This job is not available for your college.'
+                reason: PREMIUM_REQUIRED_MESSAGE,
             }
         }
 
@@ -262,9 +296,8 @@ export default function PublicJobPage() {
     const handleApplyClick = () => {
         if (!isAuthenticated) {
             if (job) {
-                localStorage.setItem('redirect_after_login', `/jobs/public/${publicLinkToken}`)
+                redirectGuestToLoginForApply(router, job.id, `/jobs/public/${publicLinkToken}`)
             }
-            router.push(`/auth/login?redirect=/jobs/public/${publicLinkToken}&type=student`)
             return
         }
 
@@ -276,7 +309,7 @@ export default function PublicJobPage() {
         // Check university assignment before applying
         const eligibility = canStudentApply()
         if (!eligibility.canApply) {
-            if (eligibility.reason === 'This job is not available for applications.') {
+            if (eligibility.reason === PREMIUM_REQUIRED_MESSAGE || eligibility.reason === 'This job is not available for applications.') {
                 setShowPremiumModal(true)
                 return
             }
@@ -300,38 +333,10 @@ export default function PublicJobPage() {
             })
 
             setHasApplied(true)
-            toast.success('Successfully applied for this job!')
-        } catch (error: any) {
+            toast.success(APPLY_SUCCESS_MESSAGE)
+        } catch (error: unknown) {
             console.error('Error applying for job:', error)
-            const detail = extractErrorDetail(error)
-            if (isProfileCompletionError(detail)) {
-                showProfileCompletionToast()
-                return
-            }
-
-            let errorMessage = detail
-            if (!errorMessage && error?.response?.status === 400 && isAuthenticated && user?.user_type === 'student') {
-                try {
-                    const [profile, completionData] = await Promise.all([
-                        apiClient.getStudentProfile(),
-                        profileService.getProfileCompletion().catch(() => null),
-                    ])
-                    if (completionData && !canApplyForJobs(completionData)) {
-                        showProfileCompletionToast()
-                        return
-                    }
-                    if (!profile?.resume) {
-                        errorMessage = 'Please upload your resume in your profile before applying for a job.'
-                    }
-                } catch (profileError) {
-                    console.warn('Unable to fetch profile context for apply error:', profileError)
-                }
-            }
-
-            if (!errorMessage) {
-                errorMessage = getErrorMessage(error, 'Failed to submit application')
-            }
-            toast.error(errorMessage)
+            toastApplyError(error)
         } finally {
             setIsApplying(false)
         }
@@ -526,7 +531,7 @@ export default function PublicJobPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                                         <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                                             <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
-                                                <IndianRupee className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                                <Banknote className="w-5 h-5 text-green-600 dark:text-green-400" />
                                             </div>
                                             <div>
                                                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Salary</p>

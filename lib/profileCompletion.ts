@@ -30,13 +30,35 @@ export function isProfileCompletionError(message: string | null | undefined): bo
 
 export function extractErrorDetail(error: unknown): string | null {
     const err = error as {
-        response?: { data?: { detail?: unknown; message?: string; error?: string } }
+        response?: {
+            data?: {
+                detail?: unknown
+                message?: string
+                error?: unknown
+                error_code?: string
+            }
+        }
     }
-    const detail = err?.response?.data?.detail
+    const data = err?.response?.data
+    const detail = data?.detail
 
     if (typeof detail === 'string') return detail
-    if (typeof err?.response?.data?.message === 'string') return err.response.data.message
-    if (typeof err?.response?.data?.error === 'string') return err.response.data.error
+    if (typeof data?.message === 'string') return data.message
+
+    if (typeof data?.error === 'string') return data.error
+    if (data?.error && typeof data.error === 'object' && !Array.isArray(data.error)) {
+        const nested = data.error as { message?: string; detail?: string; msg?: string }
+        if (typeof nested.message === 'string') return nested.message
+        if (typeof nested.detail === 'string') return nested.detail
+        if (typeof nested.msg === 'string') return nested.msg
+    }
+
+    if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
+        const nested = detail as { message?: string; detail?: string; msg?: string }
+        if (typeof nested.message === 'string') return nested.message
+        if (typeof nested.detail === 'string') return nested.detail
+        if (typeof nested.msg === 'string') return nested.msg
+    }
 
     if (Array.isArray(detail)) {
         return detail
