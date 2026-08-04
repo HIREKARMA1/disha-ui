@@ -15,8 +15,6 @@ interface Assessment {
     total_duration_minutes: number;
     round_count: number;
     rounds?: any[];
-    solviq_assessment_id?: string;
-    is_published_to_solviq?: boolean;
     created_at: string;
     instructions?: string;
     start_time?: string;
@@ -126,7 +124,7 @@ export function AssessmentDetailsModal({
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                     <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Publish Status</h4>
                     <div className="flex items-center gap-2">
-                        {assessment.is_published_to_solviq ? (
+                        {assessment.status === 'ACTIVE' ? (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-md border border-green-200 text-sm">
                                 <CheckCircle className="w-4 h-4" />
                                 <span>Published for students</span>
@@ -141,7 +139,7 @@ export function AssessmentDetailsModal({
                     <div className="mt-4">
                         <StudentExamLinkSection
                             assessmentId={assessment.id}
-                            show={Boolean(assessment.is_published_to_solviq && assessment.status === 'ACTIVE')}
+                            show={Boolean(assessment.status === 'ACTIVE')}
                             compact
                         />
                     </div>

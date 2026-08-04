@@ -92,7 +92,7 @@ export default function StudentExamEntryPage() {
         student_id: user.id,
         expires_in_minutes: 120,
       })
-      const examUrl = (res?.exam_url || res?.solviq_url) as string | undefined
+      const examUrl = res?.exam_url as string | undefined
       if (examUrl) {
         // Prefer same-origin take path if API returned absolute frontend URL
         try {

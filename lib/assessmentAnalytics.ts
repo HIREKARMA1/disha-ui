@@ -84,7 +84,7 @@ export function getAttemptMaxScore(attempt: AttemptLike, assessment?: Assessment
   return configured > 0 ? configured : 0
 }
 
-/** Normalize round payloads from local scoring (earned/max) and Solviq (score/total_score). */
+/** Normalize round payloads from local scoring (earned/max and score/total_score shapes). */
 export function normalizeAttemptRounds(attempt: AttemptLike | any): any[] {
   const raw = attempt?.result_data?.rounds
   if (!Array.isArray(raw) || raw.length === 0) return []

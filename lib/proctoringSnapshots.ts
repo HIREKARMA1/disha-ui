@@ -1,11 +1,12 @@
 /**
  * Proctoring snapshot helpers for DISHA admin analytics.
  * Supports 4 snapshots per round (N rounds → up to 4N images).
+ * Snapshot URLs are absolute S3/CDN links or relative to the Disha API.
  */
 
-const SOLVIQ_MEDIA_BASE =
-  (process.env.NEXT_PUBLIC_SOLVIQ_API_URL || process.env.NEXT_PUBLIC_SOLVIQ_BACKEND_URL || '')
-    .replace(/\/+$/, '') || 'http://localhost:8002'
+const DISHA_MEDIA_BASE =
+  (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_DISHA_API_URL || '')
+    .replace(/\/+$/, '') || ''
 
 export type ProctoringSnapshot = {
   index: number
@@ -18,7 +19,8 @@ export type ProctoringSnapshot = {
 export function resolveSnapshotUrl(url: string | undefined | null): string {
   if (!url) return ''
   if (url.startsWith('http://') || url.startsWith('https://')) return url
-  const base = SOLVIQ_MEDIA_BASE
+  const base = DISHA_MEDIA_BASE
+  if (!base) return url
   return url.startsWith('/') ? `${base}${url}` : `${base}/${url}`
 }
 

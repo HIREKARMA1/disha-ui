@@ -6,8 +6,6 @@ import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
-  Copy,
-  CheckCircle,
   AlertCircle,
   Loader2,
   ChevronDown,
@@ -35,11 +33,6 @@ interface Assessment {
   total_duration_minutes: number;
   rounds: any[];
   passing_criteria?: any;
-  solviq_assessment_id?: string;
-  package_id?: string;
-  assessment_package_id?: string;
-  questions_package_id?: string;
-  is_published_to_solviq?: boolean;
 }
 
 interface AssessmentStats {
@@ -53,36 +46,16 @@ interface AssessmentStats {
   lowest_score?: number | null;
 }
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const getQuestionsPackageId = (source?: any): string => {
-  const candidates = [
-    source?.package_id,
-    source?.assessment_package_id,
-    source?.questions_package_id,
-    source?.solviq_assessment_id,
-  ];
-
-  return (
-    candidates
-      .map((candidate) =>
-        typeof candidate === "string" ? candidate.trim() : "",
-      )
-      .find((candidate) => UUID_PATTERN.test(candidate)) || ""
-  );
-};
-
 const getErrorMessage = (error: any, fallback: string) => {
   return error?.response?.data?.detail || error?.message || fallback;
 };
 
-const getExpectedQuestionCount = (round: any, solviqRound?: any) => {
+const getExpectedQuestionCount = (round: any, questionRound?: any) => {
   return (
     round?.config?.num_questions ||
     round?.questions_count ||
-    solviqRound?.expected_questions ||
-    solviqRound?.questions_count ||
+    questionRound?.expected_questions ||
+    questionRound?.questions_count ||
     0
   );
 };
@@ -196,11 +169,6 @@ export default function AssessmentDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
-  const [studentEmail, setStudentEmail] = useState("");
-  const [generatedToken, setGeneratedToken] = useState<any>(null);
-  const [copiedToken, setCopiedToken] = useState(false);
-  const [copiedSolviq, setCopiedSolviq] = useState(false);
   const [showCreatedBanner, setShowCreatedBanner] = useState(false);
   const [questionsData, setQuestionsData] = useState<any>(null);
   const [questionPackageId, setQuestionPackageId] = useState("");
@@ -226,6 +194,7 @@ export default function AssessmentDetailPage() {
     Record<
       string,
       {
+        question_type: string;
         question_text: string;
         options: [string, string, string, string];
         correct_answer: string;
@@ -423,6 +392,7 @@ export default function AssessmentDetailPage() {
 
   const getManualForm = (roundId: string) =>
     manualFormByRound[roundId] || {
+      question_type: "mcq",
       question_text: "",
       options: ["", "", "", ""] as [string, string, string, string],
       correct_answer: "A",
@@ -447,33 +417,86 @@ export default function AssessmentDetailPage() {
     }
     const form = getManualForm(roundId);
     const text = form.question_text.trim();
-    const options = form.options.map((o) => o.trim());
-    if (!text) {
+    const qtype = (form.question_type || "mcq").toLowerCase();
+    const isSoftRound =
+      String(round.round_type || "").toLowerCase() === "soft_skills";
+    if (!text && qtype !== "dictation") {
       setQuestionsError("Question text is required.");
       return;
     }
-    if (options.some((o) => !o)) {
-      setQuestionsError("All four options are required.");
+
+    let payload: Record<string, any> = {
+      round_id: roundId,
+      question_text: text,
+      question_type: qtype,
+      explanation: form.explanation.trim() || null,
+    };
+
+    if (qtype === "mcq") {
+      const options = form.options.map((o) => o.trim());
+      if (!text) {
+        setQuestionsError("Question text is required.");
+        return;
+      }
+      if (options.some((o) => !o)) {
+        setQuestionsError("All four options are required for MCQ.");
+        return;
+      }
+      payload = {
+        ...payload,
+        options,
+        correct_answer: form.correct_answer || "A",
+      };
+    } else if (qtype === "dictation" || qtype === "listening") {
+      const expected = (form.correct_answer || "").trim();
+      if (!expected) {
+        setQuestionsError(
+          "Expected sentence (correct answer) is required for listening questions.",
+        );
+        return;
+      }
+      const promptText =
+        text && text.toLowerCase().includes("listen")
+          ? text
+          : `Listen and write down the following sentence: '${expected}'`;
+      payload = {
+        ...payload,
+        question_type: "dictation",
+        question_text: promptText,
+        options: null,
+        correct_answer: expected,
+      };
+    } else if (qtype === "voice_speaking" || qtype === "speaking") {
+      payload = {
+        ...payload,
+        question_type: "voice_speaking",
+        options: null,
+        correct_answer: null,
+      };
+    } else if (qtype === "text" || qtype === "writing") {
+      payload = {
+        ...payload,
+        question_type: "text",
+        options: null,
+        correct_answer: null,
+      };
+    } else if (!isSoftRound) {
+      setQuestionsError("Unsupported question type for this round.");
       return;
     }
+
     try {
       setAddingManualRoundId(roundId);
       setQuestionsError(null);
       setQuestionActionMessage(null);
-      await apiClient.post(`/admin/assessments/${assessmentId}/questions`, {
-        round_id: roundId,
-        question_text: text,
-        question_type: "mcq",
-        options,
-        correct_answer: form.correct_answer || "A",
-        explanation: form.explanation.trim() || null,
-      });
+      await apiClient.post(`/admin/assessments/${assessmentId}/questions`, payload);
       setManualFormByRound((prev) => ({
         ...prev,
         [roundId]: {
+          question_type: isSoftRound ? form.question_type : "mcq",
           question_text: "",
           options: ["", "", "", ""],
-          correct_answer: "A",
+          correct_answer: form.question_type === "dictation" ? "" : "A",
           explanation: "",
         },
       }));
@@ -544,42 +567,6 @@ export default function AssessmentDetailPage() {
       setError(err.message || "Failed to publish assessment");
     } finally {
       setIsPublishing(false);
-    }
-  };
-
-  // Generate student token
-  const handleGenerateToken = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!studentEmail) return;
-
-    try {
-      setIsGeneratingToken(true);
-      const response = await apiClient.generateAssessmentToken(assessmentId, {
-        student_id: studentEmail,
-        expires_in_minutes: 30,
-      });
-      setGeneratedToken(response);
-    } catch (err: any) {
-      setError(err.message || "Failed to generate token");
-    } finally {
-      setIsGeneratingToken(false);
-    }
-  };
-
-  // Copy token to clipboard
-  const copyToClipboard = () => {
-    if (generatedToken?.token) {
-      navigator.clipboard.writeText(generatedToken.token);
-      setCopiedToken(true);
-      setTimeout(() => setCopiedToken(false), 2000);
-    }
-  };
-
-  const copySolviqUrl = () => {
-    if (generatedToken?.exam_url || generatedToken?.solviq_url) {
-      navigator.clipboard.writeText(generatedToken.exam_url || generatedToken.solviq_url);
-      setCopiedSolviq(true);
-      setTimeout(() => setCopiedSolviq(false), 2000);
     }
   };
 
@@ -675,7 +662,7 @@ export default function AssessmentDetailPage() {
               </p>
             </div>
           </div>
-          {(!assessment.is_published_to_solviq || !questionPackageId) && (
+          {(assessment.status !== "ACTIVE" || !questionPackageId) && (
             <Button
               onClick={handlePublish}
               disabled={isPublishing}
@@ -695,7 +682,7 @@ export default function AssessmentDetailPage() {
         <StudentExamLinkSection
           assessmentId={assessment.id}
           show={Boolean(
-            assessment.is_published_to_solviq && assessment.status === "ACTIVE",
+            assessment.status === "ACTIVE",
           )}
         />
 
@@ -768,7 +755,7 @@ export default function AssessmentDetailPage() {
                 </h2>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                   {canManageQuestions
-                    ? `${totalLoadedQuestions} of ${totalExpectedQuestions || totalLoadedQuestions} questions loaded. Each round has Replenish AI and Add Manual Question below.`
+                    ? `${totalLoadedQuestions} of ${totalExpectedQuestions || totalLoadedQuestions} questions loaded. Use Replenish AI Questions Only above for AI gaps; add manual questions per round below.`
                     : "Questions will appear here after generation."}
                 </p>
                 {questionPackageId && (
@@ -814,15 +801,15 @@ export default function AssessmentDetailPage() {
 
             <div className="space-y-4">
               {assessment.rounds.map((round: any) => {
-                const solviqRound = findQuestionRound(questionsData, round);
+                const questionRound = findQuestionRound(questionsData, round);
                 const expectedCount = getExpectedQuestionCount(
                   round,
-                  solviqRound,
+                  questionRound,
                 );
-                const questions = solviqRound?.questions || [];
+                const questions = questionRound?.questions || [];
                 const currentCount =
                   questions.length ||
-                  solviqRound?.questions_count ||
+                  questionRound?.questions_count ||
                   0;
                 const aiTarget = getAiQuestionTarget(round);
                 const manualSlots = Math.max(0, expectedCount - aiTarget);
@@ -918,24 +905,6 @@ export default function AssessmentDetailPage() {
                                   `${expectedCount - currentCount} missing`}
                               </span>
                             )}
-                            {aiMissing > 0 && (
-                              <button
-                                type="button"
-                                onClick={handleReplenishQuestions}
-                                disabled={replenishing}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 disabled:opacity-50"
-                              >
-                                {replenishing ? (
-                                  <RefreshCw
-                                    size={12}
-                                    className="animate-spin"
-                                  />
-                                ) : (
-                                  <Sparkles size={12} />
-                                )}
-                                Replenish AI
-                              </button>
-                            )}
                           </div>
                         </div>
 
@@ -961,6 +930,35 @@ export default function AssessmentDetailPage() {
                                   : "Set total questions on the round to enable manual entry."}
                             </p>
                             <div className="mt-3 space-y-3">
+                              {String(round.round_type || "").toLowerCase() ===
+                                "soft_skills" && (
+                                <div>
+                                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    Question type
+                                  </label>
+                                  <select
+                                    value={manualForm.question_type || "mcq"}
+                                    disabled={!canAddManual}
+                                    onChange={(e) =>
+                                      updateManualForm(round.id, {
+                                        question_type: e.target.value,
+                                        correct_answer:
+                                          e.target.value === "mcq"
+                                            ? "A"
+                                            : e.target.value === "dictation"
+                                              ? ""
+                                              : "",
+                                      })
+                                    }
+                                    className="min-w-[10rem] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white pl-3 pr-10 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
+                                  >
+                                    <option value="mcq">MCQ</option>
+                                    <option value="dictation">Listening</option>
+                                    <option value="voice_speaking">Speaking</option>
+                                    <option value="text">Writing</option>
+                                  </select>
+                                </div>
+                              )}
                               <textarea
                                 value={manualForm.question_text}
                                 onChange={(e) =>
@@ -970,9 +968,14 @@ export default function AssessmentDetailPage() {
                                 }
                                 disabled={!canAddManual}
                                 rows={2}
-                                placeholder="Question text"
+                                placeholder={
+                                  manualForm.question_type === "dictation"
+                                    ? "Optional prompt (or leave blank and set expected sentence below)"
+                                    : "Question text / prompt"
+                                }
                                 className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
                               />
+                              {(manualForm.question_type || "mcq") === "mcq" && (
                               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                                 {manualForm.options.map((opt, oIdx) => (
                                   <div
@@ -1001,7 +1004,28 @@ export default function AssessmentDetailPage() {
                                   </div>
                                 ))}
                               </div>
+                              )}
+                              {manualForm.question_type === "dictation" && (
+                                <div>
+                                  <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    Expected sentence (spoken + graded)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={manualForm.correct_answer}
+                                    disabled={!canAddManual}
+                                    onChange={(e) =>
+                                      updateManualForm(round.id, {
+                                        correct_answer: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Exact sentence the candidate must type"
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
+                                  />
+                                </div>
+                              )}
                               <div className="flex flex-wrap items-end gap-3">
+                                {(manualForm.question_type || "mcq") === "mcq" && (
                                 <div>
                                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
                                     Correct answer
@@ -1014,7 +1038,7 @@ export default function AssessmentDetailPage() {
                                         correct_answer: e.target.value,
                                       })
                                     }
-                                    className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
+                                    className="w-20 min-w-[4.5rem] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white pl-3 pr-10 py-2 text-sm disabled:bg-gray-50 dark:disabled:bg-gray-900"
                                   >
                                     {["A", "B", "C", "D"].map((l) => (
                                       <option key={l} value={l}>
@@ -1023,6 +1047,7 @@ export default function AssessmentDetailPage() {
                                     ))}
                                   </select>
                                 </div>
+                                )}
                                 <div className="min-w-[200px] flex-1">
                                   <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">
                                     Explanation (optional)
@@ -1258,82 +1283,6 @@ export default function AssessmentDetailPage() {
           </div>
         )}
 
-        {/* Generate Token */}
-        {/* {assessment.is_published_to_solviq && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Generate Student Token</h2>
-          <form onSubmit={handleGenerateToken} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Student Email or ID
-              </label>
-              <input
-                type="text"
-                value={studentEmail}
-                onChange={(e) => setStudentEmail(e.target.value)}
-                placeholder="Enter student email or ID"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                disabled={isGeneratingToken}
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={isGeneratingToken || !studentEmail}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              {isGeneratingToken ? 'Generating...' : 'Generate Token'}
-            </Button>
-          </form>
-
-          {generatedToken && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle className="text-green-600" size={20} />
-                <p className="font-medium text-gray-900">Token Generated Successfully</p>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm text-gray-600">Exam URL:</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copySolviqUrl}
-                      className="flex items-center gap-2"
-                    >
-                      <Copy size={16} />
-                      {copiedSolviq ? 'Copied!' : 'Copy'}
-                    </Button>
-                  </div>
-                  <p className="text-sm font-mono bg-white p-2 rounded border border-gray-300 break-all">
-                    {generatedToken.exam_url || generatedToken.solviq_url}
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm text-gray-600">JWT Token:</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copyToClipboard}
-                      className="flex items-center gap-2"
-                    >
-                      <Copy size={16} />
-                      {copiedToken ? 'Copied!' : 'Copy'}
-                    </Button>
-                  </div>
-                  <p className="text-xs font-mono bg-white p-2 rounded border border-gray-300 break-all max-h-20 overflow-y-auto">
-                    {generatedToken.token}
-                  </p>
-                </div>
-                <p className="text-xs text-gray-600">
-                  Token expires at: {new Date(generatedToken.expires_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )} */}
       </div>
 
       <ConfirmationModal

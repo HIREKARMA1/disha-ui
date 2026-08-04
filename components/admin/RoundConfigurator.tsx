@@ -38,10 +38,65 @@ const ROUND_TYPES = [
 const MAX_QUESTIONS = 100;
 const MAX_DURATION = 600;
 const MAX_GD_ROUNDS = 50;
+const SOFT_SKILLS_TOTAL_CAP = 35;
+const SOFT_SKILLS_LISTENING_CAP = 5;
+const SOFT_SKILLS_SPEAKING_CAP = 5;
+const SOFT_SKILLS_WRITING_CAP = 5;
 
 const getRoundTypeLabel = (type: string) => {
   return ROUND_TYPES.find((t) => t.value === type)?.label || type;
 };
+
+/** Soft-skills subtype caps / auto-fill for listening, speaking, writing. */
+function normalizeSoftSkillsBreakdown(config: Record<string, any>) {
+  const requestedTotal = Math.min(
+    Math.max(0, Number(config.num_questions) || SOFT_SKILLS_TOTAL_CAP),
+    SOFT_SKILLS_TOTAL_CAP,
+  );
+  let mcq =
+    config.mcq_questions != null && config.mcq_questions !== ""
+      ? Number(config.mcq_questions)
+      : requestedTotal;
+  let listening = Math.min(
+    Math.max(0, Number(config.listening_questions) || 0),
+    SOFT_SKILLS_LISTENING_CAP,
+  );
+  let speaking = Math.min(
+    Math.max(0, Number(config.speaking_questions) || 0),
+    SOFT_SKILLS_SPEAKING_CAP,
+  );
+  let writing = Math.min(
+    Math.max(0, Number(config.writing_questions) || 0),
+    SOFT_SKILLS_WRITING_CAP,
+  );
+  mcq = Math.min(Math.max(0, mcq), requestedTotal);
+
+  let current = mcq + listening + speaking + writing;
+  if (current > requestedTotal) {
+    mcq = Math.max(0, mcq - (current - requestedTotal));
+    current = mcq + listening + speaking + writing;
+  }
+
+  let remaining = Math.max(0, requestedTotal - current);
+  const fill = (val: number, cap: number) => {
+    const add = Math.min(cap - val, remaining);
+    remaining -= add;
+    return val + add;
+  };
+  if (remaining > 0) listening = fill(listening, SOFT_SKILLS_LISTENING_CAP);
+  if (remaining > 0) speaking = fill(speaking, SOFT_SKILLS_SPEAKING_CAP);
+  if (remaining > 0) writing = fill(writing, SOFT_SKILLS_WRITING_CAP);
+  if (remaining > 0) mcq = fill(mcq, requestedTotal);
+
+  const total = mcq + listening + speaking + writing;
+  return {
+    num_questions: total,
+    mcq_questions: mcq,
+    listening_questions: listening,
+    speaking_questions: speaking,
+    writing_questions: writing,
+  };
+}
 
 const inputClassName =
   "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none";
@@ -141,9 +196,11 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
               {getRoundTypeLabel(round.round_type)} • {round.duration_minutes} min
               {round.round_type !== "group_discussion" &&
                 ` • ${round.config.num_questions || 0} questions` +
-                  (round.config.ai_question_count != null
-                    ? ` (${round.config.ai_question_count} AI / ${Math.max(0, (round.config.num_questions || 0) - (round.config.ai_question_count || 0))} manual)`
-                    : "")}
+                  (round.round_type === "soft_skills"
+                    ? ` (MCQ ${round.config.mcq_questions ?? "—"} / Listen ${round.config.listening_questions ?? 0} / Speak ${round.config.speaking_questions ?? 0} / Write ${round.config.writing_questions ?? 0})`
+                    : round.config.ai_question_count != null
+                      ? ` (${round.config.ai_question_count} AI / ${Math.max(0, (round.config.num_questions || 0) - (round.config.ai_question_count || 0))} manual)`
+                      : "")}
             </p>
           </div>
         </div>
@@ -207,12 +264,34 @@ function RoundEditor({
         },
       });
       if (configField === "topic") setTopicError("");
+    } else if (field === "round_type") {
+      const nextType = String(value);
+      const nextConfig = { ...formData.config };
+      if (nextType === "soft_skills") {
+        const total = Math.min(
+          Number(nextConfig.num_questions) || 20,
+          SOFT_SKILLS_TOTAL_CAP,
+        );
+        Object.assign(nextConfig, {
+          num_questions: total,
+          mcq_questions: nextConfig.mcq_questions ?? Math.max(0, total - 6),
+          listening_questions: nextConfig.listening_questions ?? 2,
+          speaking_questions: nextConfig.speaking_questions ?? 2,
+          writing_questions: nextConfig.writing_questions ?? 2,
+        });
+        Object.assign(nextConfig, normalizeSoftSkillsBreakdown(nextConfig));
+      }
+      setFormData({
+        ...formData,
+        round_type: nextType,
+        config: nextConfig,
+      });
+      setTopicError("");
     } else {
       setFormData({
         ...formData,
         [field]: value,
       });
-      if (field === "round_type") setTopicError("");
     }
   };
 
@@ -260,13 +339,17 @@ function RoundEditor({
         errors.number_of_rounds = `Number of rounds must be a whole number from 1 to ${MAX_GD_ROUNDS}`;
       }
     } else {
+      const maxQ =
+        formData.round_type === "soft_skills"
+          ? SOFT_SKILLS_TOTAL_CAP
+          : MAX_QUESTIONS;
       numQuestions = parseIntegerField(formData.config.num_questions, {
         min: MIN_QUESTIONS_PER_ROUND,
-        max: MAX_QUESTIONS,
+        max: maxQ,
       });
       if (numQuestions === null) {
-        errors.num_questions = `Total questions must be a whole number from ${MIN_QUESTIONS_PER_ROUND} to ${MAX_QUESTIONS}`;
-      } else {
+        errors.num_questions = `Total questions must be a whole number from ${MIN_QUESTIONS_PER_ROUND} to ${maxQ}`;
+      } else if (formData.round_type !== "soft_skills") {
         const aiRaw = formData.config.ai_question_count;
         if (aiRaw === null || aiRaw === undefined || aiRaw === "") {
           aiCount = numQuestions;
@@ -279,25 +362,54 @@ function RoundEditor({
       }
     }
 
+    if (formData.round_type === "soft_skills" && !errors.num_questions) {
+      for (const [key, cap, label] of [
+        ["listening_questions", SOFT_SKILLS_LISTENING_CAP, "Listening"],
+        ["speaking_questions", SOFT_SKILLS_SPEAKING_CAP, "Speaking"],
+        ["writing_questions", SOFT_SKILLS_WRITING_CAP, "Writing"],
+      ] as const) {
+        const raw = formData.config[key];
+        if (raw === null || raw === undefined || raw === "") continue;
+        const parsed = parseIntegerField(raw, { min: 0, max: cap });
+        if (parsed === null) {
+          errors[key] = `${label} questions must be 0–${cap}`;
+        }
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
     }
 
     setFieldErrors({});
+    const baseConfig = {
+      ...formData.config,
+      topic,
+    };
+    let savedConfig: Record<string, any>;
+    if (formData.round_type === "group_discussion") {
+      savedConfig = { ...baseConfig, number_of_rounds: numberOfRounds };
+    } else if (formData.round_type === "soft_skills") {
+      savedConfig = {
+        ...baseConfig,
+        ...normalizeSoftSkillsBreakdown({
+          ...baseConfig,
+          num_questions: numQuestions,
+        }),
+        ai_question_count: numQuestions,
+      };
+    } else {
+      savedConfig = {
+        ...baseConfig,
+        num_questions: numQuestions,
+        ai_question_count: aiCount,
+      };
+    }
     onSave({
       ...formData,
       duration_minutes: duration!,
-      config: {
-        ...formData.config,
-        topic,
-        ...(formData.round_type === "group_discussion"
-          ? { number_of_rounds: numberOfRounds }
-          : {
-              num_questions: numQuestions,
-              ai_question_count: aiCount,
-            }),
-      },
+      config: savedConfig,
     });
   };
 
@@ -354,7 +466,11 @@ function RoundEditor({
           <>
             <div>
               <label className={labelClassName}>
-                Total Questions (min {MIN_QUESTIONS_PER_ROUND})
+                Total Questions (min {MIN_QUESTIONS_PER_ROUND}
+                {formData.round_type === "soft_skills"
+                  ? `, max ${SOFT_SKILLS_TOTAL_CAP}`
+                  : ""}
+                )
               </label>
               <IntegerTextField
                 value={
@@ -363,7 +479,11 @@ function RoundEditor({
                     : null
                 }
                 min={MIN_QUESTIONS_PER_ROUND}
-                max={MAX_QUESTIONS}
+                max={
+                  formData.round_type === "soft_skills"
+                    ? SOFT_SKILLS_TOTAL_CAP
+                    : MAX_QUESTIONS
+                }
                 placeholder={`e.g. ${MIN_QUESTIONS_PER_ROUND}`}
                 className={inputClass}
                 error={fieldErrors.num_questions}
@@ -397,40 +517,141 @@ function RoundEditor({
                 }}
               />
             </div>
-            <div>
-              <label className={labelClassName}>
-                AI-generated Questions
-              </label>
-              <IntegerTextField
-                value={
-                  formData.config.ai_question_count === null ||
-                  formData.config.ai_question_count === undefined ||
-                  formData.config.ai_question_count === ""
-                    ? null
-                    : Number(formData.config.ai_question_count)
-                }
-                min={0}
-                max={aiMax}
-                placeholder="e.g. 5"
-                className={inputClass}
-                error={fieldErrors.ai_question_count}
-                onErrorChange={(msg) => setFieldError("ai_question_count", msg)}
-                onChange={(n) => handleChange("config.ai_question_count", n)}
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Manual slots:{" "}
-                {Math.max(
-                  0,
-                  (Number(formData.config.num_questions) || 0) -
-                    (formData.config.ai_question_count === null ||
+            {formData.round_type === "soft_skills" ? (
+              <>
+                <div>
+                  <label className={labelClassName}>MCQ Questions</label>
+                  <IntegerTextField
+                    value={
+                      formData.config.mcq_questions == null ||
+                      formData.config.mcq_questions === ""
+                        ? null
+                        : Number(formData.config.mcq_questions)
+                    }
+                    min={0}
+                    max={SOFT_SKILLS_TOTAL_CAP}
+                    placeholder="e.g. 14"
+                    className={inputClass}
+                    error={fieldErrors.mcq_questions}
+                    onErrorChange={(msg) => setFieldError("mcq_questions", msg)}
+                    onChange={(n) => handleChange("config.mcq_questions", n)}
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName}>
+                    Listening (max {SOFT_SKILLS_LISTENING_CAP})
+                  </label>
+                  <IntegerTextField
+                    value={
+                      formData.config.listening_questions == null ||
+                      formData.config.listening_questions === ""
+                        ? null
+                        : Number(formData.config.listening_questions)
+                    }
+                    min={0}
+                    max={SOFT_SKILLS_LISTENING_CAP}
+                    placeholder="e.g. 2"
+                    className={inputClass}
+                    error={fieldErrors.listening_questions}
+                    onErrorChange={(msg) =>
+                      setFieldError("listening_questions", msg)
+                    }
+                    onChange={(n) =>
+                      handleChange("config.listening_questions", n)
+                    }
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName}>
+                    Speaking (max {SOFT_SKILLS_SPEAKING_CAP})
+                  </label>
+                  <IntegerTextField
+                    value={
+                      formData.config.speaking_questions == null ||
+                      formData.config.speaking_questions === ""
+                        ? null
+                        : Number(formData.config.speaking_questions)
+                    }
+                    min={0}
+                    max={SOFT_SKILLS_SPEAKING_CAP}
+                    placeholder="e.g. 2"
+                    className={inputClass}
+                    error={fieldErrors.speaking_questions}
+                    onErrorChange={(msg) =>
+                      setFieldError("speaking_questions", msg)
+                    }
+                    onChange={(n) =>
+                      handleChange("config.speaking_questions", n)
+                    }
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName}>
+                    Writing (max {SOFT_SKILLS_WRITING_CAP})
+                  </label>
+                  <IntegerTextField
+                    value={
+                      formData.config.writing_questions == null ||
+                      formData.config.writing_questions === ""
+                        ? null
+                        : Number(formData.config.writing_questions)
+                    }
+                    min={0}
+                    max={SOFT_SKILLS_WRITING_CAP}
+                    placeholder="e.g. 2"
+                    className={inputClass}
+                    error={fieldErrors.writing_questions}
+                    onErrorChange={(msg) =>
+                      setFieldError("writing_questions", msg)
+                    }
+                    onChange={(n) =>
+                      handleChange("config.writing_questions", n)
+                    }
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Soft skills mix: MCQ + listening (audio dictation) + speaking
+                    (mic) + writing. Caps: listen/speak/write ≤ 5 each.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className={labelClassName}>
+                  AI-generated Questions
+                </label>
+                <IntegerTextField
+                  value={
+                    formData.config.ai_question_count === null ||
                     formData.config.ai_question_count === undefined ||
                     formData.config.ai_question_count === ""
-                      ? Number(formData.config.num_questions) || 0
-                      : Number(formData.config.ai_question_count) || 0),
-                )}{" "}
-                — add after create.
-              </p>
-            </div>
+                      ? null
+                      : Number(formData.config.ai_question_count)
+                  }
+                  min={0}
+                  max={aiMax}
+                  placeholder="e.g. 5"
+                  className={inputClass}
+                  error={fieldErrors.ai_question_count}
+                  onErrorChange={(msg) =>
+                    setFieldError("ai_question_count", msg)
+                  }
+                  onChange={(n) => handleChange("config.ai_question_count", n)}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Manual slots:{" "}
+                  {Math.max(
+                    0,
+                    (Number(formData.config.num_questions) || 0) -
+                      (formData.config.ai_question_count === null ||
+                      formData.config.ai_question_count === undefined ||
+                      formData.config.ai_question_count === ""
+                        ? Number(formData.config.num_questions) || 0
+                        : Number(formData.config.ai_question_count) || 0),
+                  )}{" "}
+                  — add after create.
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <div>

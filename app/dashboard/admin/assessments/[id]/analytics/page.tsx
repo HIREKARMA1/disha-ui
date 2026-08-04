@@ -186,28 +186,6 @@ export default function AssessmentAnalyticsPage() {
 
     const hasAwaitingResults = attempts.some((a) => !isAttemptEvaluated(a))
 
-    const handlePullSolviqResults = async () => {
-        try {
-            setPullingResults(true)
-            setPullMessage(null)
-            const result = await apiClient.post(
-                `/admin/assessments/${assessmentId}/pull-solviq-results`
-            )
-            const pushed = result?.pushed?.length ?? 0
-            const reevaluated = result?.reevaluated?.length ?? 0
-            const failed = result?.failed?.length ?? 0
-            setPullMessage(
-                `Solviq reported ${pushed} result(s) sent, ${reevaluated} re-evaluated` +
-                    (failed ? `, ${failed} could not be sent.` : '. Refreshing…')
-            )
-            await fetchData()
-        } catch (err: any) {
-            setPullMessage(err.message || 'Could not pull results from Solviq')
-        } finally {
-            setPullingResults(false)
-        }
-    }
-
     return (
         <AdminDashboardLayout>
             <div className="space-y-6 pb-10">
@@ -617,8 +595,8 @@ function AttemptDetailsModal({
                         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-4 text-sm text-amber-900 dark:text-amber-100">
                             <p className="font-semibold">Evaluation pending</p>
                             <p className="mt-1">
-                                Solviq has not sent results to DISHA for this attempt yet (status: {attempt.status}).
-                                Scores here are placeholders until the callback is received.
+                                Results for this attempt are not available yet (status: {attempt.status}).
+                                Scores appear here after the student submits on Disha.
                             </p>
                         </div>
                     )}
@@ -659,7 +637,7 @@ function AttemptDetailsModal({
                         </div>
                     </div>
 
-                    {/* Proctoring photos from Solviq */}
+                    {/* Proctoring photos */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
                             Photos captured during assessment
@@ -810,7 +788,7 @@ function AttemptDetailsModal({
                                 <p className="text-gray-500">
                                     {evaluated
                                         ? 'No detailed round data available for this attempt.'
-                                        : 'Round-wise breakdown will appear after Solviq sends evaluation results to DISHA.'}
+                                        : 'Round-wise breakdown will appear after the student submits the exam.'}
                                 </p>
                             </div>
                         )}

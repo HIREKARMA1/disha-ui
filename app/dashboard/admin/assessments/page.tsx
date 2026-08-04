@@ -19,8 +19,6 @@ interface Assessment {
   total_duration_minutes: number
   round_count: number
   rounds?: any[]
-  solviq_assessment_id?: string
-  is_published_to_solviq?: boolean
   created_at: string
   description?: string
   instructions?: string
@@ -144,10 +142,11 @@ export default function AssessmentsPage() {
               onChange={(e) => setFilters({ ...filters, mode: e.target.value })}
               className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white"
             >
-              <option value="all">All Modes</option>
+              <option value="all">All purposes</option>
               <option value="HIRING">Hiring</option>
               <option value="UNIVERSITY">University</option>
               <option value="CORPORATE">Corporate</option>
+              <option value="ADMIN">Admin</option>
             </select>
           </div>
         </div>

@@ -38,9 +38,7 @@ export function AssessmentCard({
     const [linkCopied, setLinkCopied] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    const canShareExamLink =
-        assessment.status === 'ACTIVE' &&
-        (assessment.is_published_to_solviq === true || assessment.is_published_to_solviq === undefined)
+    const canShareExamLink = assessment.status === 'ACTIVE'
 
     const copyExamLink = async () => {
         try {

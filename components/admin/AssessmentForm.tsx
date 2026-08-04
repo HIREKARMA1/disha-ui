@@ -119,6 +119,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   const validateForm = () => {
     const result = assessmentFormSchema.safeParse({
       assessment_name: formData.assessment_name,
+      mode: formData.mode,
       time_window: formData.time_window,
       rounds: formData.rounds,
     });
@@ -244,12 +245,14 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               )}
             </div>
 
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mode <span className="text-red-500">*</span></label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                What is this assessment for? <span className="text-red-500">*</span>
+              </label>
               <select
                 value={formData.mode}
                 onChange={(e) => handleChange("mode", e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer"
+                className="w-full px-4 py-2.5 pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white"
               >
                 {MODES.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -257,7 +260,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
                   </option>
                 ))}
               </select>
-            </div> */}
+              {errors.mode && (
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                  {errors.mode}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Description */}

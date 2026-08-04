@@ -7,7 +7,7 @@ import { Copy, Check, Link2 } from 'lucide-react'
 
 interface StudentExamLinkSectionProps {
   assessmentId: string
-  /** When false, hide the block (e.g. assessment not synced). */
+  /** When false, hide the block (e.g. assessment not published). */
   show: boolean
   compact?: boolean
 }

@@ -16,6 +16,8 @@ import {
   User,
   Video,
   VideoOff,
+  Volume2,
+  Mic,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -81,6 +83,96 @@ function sortQuestions(qs: ExamQuestion[]): ExamQuestion[] {
   });
 }
 
+function resolveQuestionType(q: ExamQuestion | undefined): string {
+  return (q?.question_type || 'mcq').toLowerCase().replace(/-/g, '_');
+}
+
+function playQuestionAudio(text: string) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    toast.error('Audio not supported in this browser');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
+  const preferred =
+    voices.find((v) => v.lang.startsWith('en') && v.name.includes('Google')) ||
+    voices.find((v) => v.lang.startsWith('en'));
+  if (preferred) utterance.voice = preferred;
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+}
+
+function extractSentenceFromListeningQuestion(questionText: string): string {
+  const singleQuoteMatch = questionText.match(/'([^']+)'/);
+  const doubleQuoteMatch = questionText.match(/"([^"]+)"/);
+  const colonMatch = questionText.match(/:\s*(.+?)(?:\.|$)/);
+  if (singleQuoteMatch) return singleQuoteMatch[1].trim();
+  if (doubleQuoteMatch) return doubleQuoteMatch[1].trim();
+  if (colonMatch) return colonMatch[1].trim();
+  return questionText;
+}
+
+function hideSentenceFromDisplay(questionText: string): string {
+  let displayText = questionText.replace(/'[^']+'/g, '');
+  displayText = displayText.replace(/"[^"]+"/g, '');
+  displayText = displayText.replace(/:\s*\.+$/, ':');
+  displayText = displayText.replace(/:\s+$/, ':');
+  displayText = displayText.replace(/\s+/g, ' ').trim();
+  if (!displayText.endsWith(':') && !displayText.endsWith('.')) {
+    displayText += ':';
+  }
+  if (!displayText || displayText.length < 10 || displayText === ':') {
+    return 'Listen and write down the sentence you hear:';
+  }
+  return displayText;
+}
+
+function isListeningType(q: ExamQuestion | undefined): boolean {
+  const qt = resolveQuestionType(q);
+  const text = (q?.question_text || '').toLowerCase();
+  return (
+    qt === 'dictation' ||
+    qt === 'listening' ||
+    qt === 'listening_question' ||
+    text.includes('listen and write')
+  );
+}
+
+function isSpeakingType(q: ExamQuestion | undefined): boolean {
+  const qt = resolveQuestionType(q);
+  const text = (q?.question_text || '').toLowerCase();
+  const opts = q?.options || [];
+  const hasNoOptions = !opts || opts.length === 0;
+  if (qt === 'voice_speaking' || qt === 'voice_reading' || qt === 'voice') return true;
+  if (isListeningType(q)) return false;
+  if (/\b(write|type)\b/i.test(text) && !text.includes('listen and write')) return false;
+  const hasSpeakingKeywords =
+    text.includes('speak') ||
+    text.includes('read aloud') ||
+    /read[\s\S]*?aloud/i.test(text) ||
+    text.includes('tell us') ||
+    text.includes('describe') ||
+    text.includes('explain verbally');
+  return (
+    hasSpeakingKeywords &&
+    (qt === 'soft_skills' || hasNoOptions)
+  );
+}
+
+function isWritingType(q: ExamQuestion | undefined): boolean {
+  const qt = resolveQuestionType(q);
+  if (qt === 'text' || qt === 'writing' || qt === 'written' || qt === 'scenario') return true;
+  return false;
+}
+
+function isMcqType(q: ExamQuestion | undefined): boolean {
+  if (!q) return false;
+  if (isListeningType(q) || isSpeakingType(q) || isWritingType(q)) return false;
+  const opts = q.options || [];
+  return opts.length > 0 || resolveQuestionType(q) === 'mcq';
+}
+
 export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('camera');
@@ -98,13 +190,21 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const [fullscreenWarningShown, setFullscreenWarningShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState<ConfirmModal>(null);
+  const [audioPlayed, setAudioPlayed] = useState(false);
+  const [isLiveTranscribing, setIsLiveTranscribing] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const recognitionRef = useRef<any>(null);
+  const isLiveTranscribingRef = useRef(false);
   const endingRef = useRef(false);
   const answersRef = useRef(answers);
   const wasFullscreenRef = useRef(false);
   const flushSnapshotsRef = useRef<() => Promise<void>>(async () => {});
+  const timeWarn5ShownRef = useRef(false);
+  const timeWarn1ShownRef = useRef(false);
   answersRef.current = answers;
 
-  const { videoRef, getVideoElement, startCamera, stopCamera, isCameraActive, status: cameraStatus } =
+  const { videoRef, getVideoElement, startCamera, stopCamera, isCameraActive, status: cameraStatus, micReady } =
     useExamCamera();
   const examActive = phase === 'exam' || phase === 'warning' || phase === 'round_break';
   const { isFullscreen, enterFullscreen } = useExamFullscreen({
@@ -116,6 +216,31 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     if (!session?.ends_at) return null;
     return new Date(session.ends_at).getTime();
   }, [session]);
+
+  /** Soft-skills listening/speaking need mic primed before fullscreen. */
+  const needsMicrophone = useMemo(() => {
+    const rounds = session?.rounds || [];
+    if (
+      rounds.some(
+        (r: any) => String(r.round_type || '').toLowerCase() === 'soft_skills',
+      )
+    ) {
+      return true;
+    }
+    return allQuestions.some((q) => {
+      const qt = resolveQuestionType(q);
+      return (
+        qt === 'dictation' ||
+        qt === 'listening' ||
+        qt === 'listening_question' ||
+        qt === 'voice_speaking' ||
+        qt === 'voice_reading' ||
+        qt === 'voice' ||
+        isSpeakingType(q) ||
+        isListeningType(q)
+      );
+    });
+  }, [session, allQuestions]);
 
   const roundNumbers = useMemo(() => {
     const nums = Array.from(new Set(allQuestions.map((q) => q.round_number))).sort(
@@ -235,6 +360,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         if (cancelled) return;
         setSession(start);
         const ends = new Date(start.ends_at).getTime();
+        timeWarn5ShownRef.current = false;
+        timeWarn1ShownRef.current = false;
         setSecondsLeft(Math.max(0, Math.floor((ends - Date.now()) / 1000)));
         const qs = await apiClient.getAssessmentExamQuestions(assessmentId, attemptId);
         if (cancelled) return;
@@ -270,6 +397,23 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   }, [phase, finishAndGoHome]);
 
   useEffect(() => {
+    if (phase !== 'exam') return;
+    if (secondsLeft <= 0) return;
+
+    if (secondsLeft <= 300 && !timeWarn5ShownRef.current) {
+      timeWarn5ShownRef.current = true;
+      toast('5 min to end the exam.', { duration: 5000 });
+    }
+    if (secondsLeft <= 60 && !timeWarn1ShownRef.current) {
+      timeWarn1ShownRef.current = true;
+      toast.error(
+        'Submit your exam now — otherwise it will automatically submit.',
+        { duration: 5000 },
+      );
+    }
+  }, [phase, secondsLeft]);
+
+  useEffect(() => {
     if (phase !== 'exam' && phase !== 'warning' && phase !== 'round_break') return;
     if (isFullscreen) {
       wasFullscreenRef.current = true;
@@ -297,7 +441,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   }, [phase, finishAndGoHome]);
 
   const beginExam = async () => {
-    const ok = await startCamera();
+    const ok = await startCamera({ audio: needsMicrophone });
     if (!ok) return;
     await enterFullscreen();
     setPhase('exam');
@@ -411,11 +555,115 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       delete next[current.id];
       return next;
     });
+    setLiveTranscript('');
+    setInterimTranscript('');
   };
 
-  const handleAnswerChange = (questionId: string, letter: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: letter }));
+  const handleAnswerChange = (questionId: string, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
+
+  const stopLiveTranscription = useCallback(() => {
+    isLiveTranscribingRef.current = false;
+    try {
+      recognitionRef.current?.stop?.();
+    } catch {
+      /* ignore */
+    }
+    setIsLiveTranscribing(false);
+    if (current && (liveTranscript || interimTranscript)) {
+      const finalText = `${liveTranscript}${interimTranscript}`.trim();
+      if (finalText) {
+        setAnswers((prev) => ({
+          ...prev,
+          [current.id]: (prev[current.id] ? `${prev[current.id]} ` : '') + finalText,
+        }));
+      }
+    }
+    setInterimTranscript('');
+  }, [current, liveTranscript, interimTranscript]);
+
+  const startLiveTranscription = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition is not supported in this browser');
+      return;
+    }
+    try {
+      if (!recognitionRef.current) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event: any) => {
+          let interim = '';
+          let finalChunk = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) finalChunk += `${transcript} `;
+            else interim += transcript;
+          }
+          if (finalChunk) {
+            setLiveTranscript((prev) => `${prev}${finalChunk}`);
+            setInterimTranscript('');
+          } else {
+            setInterimTranscript(interim);
+          }
+        };
+        recognition.onerror = (event: any) => {
+          if (event.error === 'not-allowed') {
+            toast.error('Microphone access denied');
+            isLiveTranscribingRef.current = false;
+            setIsLiveTranscribing(false);
+          }
+        };
+        recognition.onend = () => {
+          if (isLiveTranscribingRef.current) {
+            try {
+              recognition.start();
+            } catch {
+              /* ignore */
+            }
+          } else {
+            setIsLiveTranscribing(false);
+          }
+        };
+        recognitionRef.current = recognition;
+      }
+      setLiveTranscript('');
+      setInterimTranscript('');
+      recognitionRef.current.start();
+      isLiveTranscribingRef.current = true;
+      setIsLiveTranscribing(true);
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not start microphone');
+    }
+  }, []);
+
+  useEffect(() => {
+    setAudioPlayed(false);
+    if (isLiveTranscribingRef.current) {
+      stopLiveTranscription();
+    }
+    setLiveTranscript('');
+    setInterimTranscript('');
+  }, [current?.id]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.stop?.();
+      } catch {
+        /* ignore */
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const handleSubmitRound = () => {
     const unanswered = counts.notVisited + counts.notAnswered + counts.marked;
@@ -483,11 +731,13 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               <Video className="w-5 h-5 text-amber-700" />
             </div>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg mb-1">Camera required</h1>
+              <h1 className="font-bold text-gray-900 text-lg mb-1">
+                {needsMicrophone ? 'Camera and microphone required' : 'Camera required'}
+              </h1>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Your webcam must stay on for the entire assessment. Enable the camera before you
-                begin; it will remain active through every round. Snapshots are taken silently
-                during the exam.
+                {needsMicrophone
+                  ? 'Your webcam must stay on for the entire assessment, and microphone access is needed for soft-skills speaking questions. Enable both before you begin so permission prompts do not interrupt fullscreen. Snapshots are taken silently during the exam.'
+                  : 'Your webcam must stay on for the entire assessment. Enable the camera before you begin; it will remain active through every round. Snapshots are taken silently during the exam.'}
               </p>
             </div>
           </div>
@@ -503,11 +753,16 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             <p className="text-xs text-gray-600">
               Status:{' '}
               <span className="font-semibold text-gray-900">{cameraStatusLabel(cameraStatus)}</span>
+              {needsMicrophone && isCameraActive && (
+                <span className="ml-2 font-semibold text-gray-900">
+                  · Mic: {micReady ? 'ready' : 'needed'}
+                </span>
+              )}
             </p>
-            {!isCameraActive && (
+            {(!isCameraActive || (needsMicrophone && !micReady)) && (
               <button
                 type="button"
-                onClick={() => void startCamera()}
+                onClick={() => void startCamera({ audio: needsMicrophone })}
                 disabled={cameraStatus === 'requesting'}
                 className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 shadow-sm"
               >
@@ -519,7 +774,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                 ) : (
                   <>
                     <Video className="w-4 h-4" />
-                    Enable camera
+                    {needsMicrophone ? 'Enable camera & mic' : 'Enable camera'}
                   </>
                 )}
               </button>
@@ -531,14 +786,16 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             cameraStatus === 'lost') && (
             <p className="text-sm text-red-600 flex items-start gap-2 pt-2 border-t border-red-100">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              Check site permissions and ensure no other app is using the camera.
+              {needsMicrophone
+                ? 'Check site permissions for camera and microphone, and ensure no other app is using them.'
+                : 'Check site permissions and ensure no other app is using the camera.'}
             </p>
           )}
 
           <button
             type="button"
             onClick={() => void beginExam()}
-            disabled={!isCameraActive}
+            disabled={!isCameraActive || (needsMicrophone && !micReady)}
             className="w-full inline-flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
             Start exam in fullscreen
@@ -695,44 +952,208 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-gray-300 bg-white shadow-sm">
               <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                 <div className="flex-1 overflow-y-auto border-b border-gray-300 bg-white p-6 md:border-b-0 md:border-r">
-                  <p className="select-none text-lg font-medium leading-relaxed text-gray-800">
-                    {current.question_text}
-                  </p>
+                  {resolveQuestionType(current) === 'dictation' ? (
+                    <div className="space-y-4">
+                      <p className="text-lg font-bold text-blue-600">Listening Exercise</p>
+                      <p className="text-gray-700">
+                        Click the button below to hear a sentence. Listen carefully and type
+                        exactly what you hear in the box.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => playQuestionAudio(current.question_text || '')}
+                        className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700"
+                      >
+                        <Volume2 className="h-5 w-5" />
+                        <span>Play Audio</span>
+                      </button>
+                    </div>
+                  ) : isListeningType(current) ? (
+                    <div className="space-y-4">
+                      <p className="select-none text-lg font-medium leading-relaxed text-gray-800">
+                        {hideSentenceFromDisplay(current.question_text)}
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!audioPlayed) {
+                              setAudioPlayed(true);
+                              playQuestionAudio(
+                                extractSentenceFromListeningQuestion(current.question_text),
+                              );
+                            }
+                          }}
+                          disabled={audioPlayed}
+                          className={`flex items-center gap-2 rounded-lg px-6 py-3 font-medium shadow-md transition-all ${
+                            audioPlayed
+                              ? 'cursor-not-allowed bg-gray-400 text-gray-600'
+                              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
+                          }`}
+                        >
+                          <Volume2 className="h-5 w-5" />
+                          <span>{audioPlayed ? 'Audio Played' : 'Play Audio'}</span>
+                        </button>
+                        {audioPlayed && (
+                          <span className="text-sm italic text-gray-500">
+                            Audio has been played. Type your answer in the box below.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="select-none text-lg font-medium leading-relaxed text-gray-800">
+                      {current.question_text}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto bg-gray-50/50 p-6">
-                  <div className="space-y-4">
-                    {(current.options || []).map((optionText, index) => {
-                      const optionLetter = String.fromCharCode(65 + index);
-                      const isSelected =
-                        answers[current.id] === optionLetter ||
-                        answers[current.id] === optionText;
-                      return (
-                        <label
-                          key={`${current.id}-${index}`}
-                          className={`flex cursor-pointer items-start space-x-3 rounded-lg border p-4 transition-all ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-50 shadow-sm'
-                              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-100'
-                          }`}
-                        >
-                          <div className="relative mt-0.5 flex shrink-0 items-center justify-center">
-                            <input
-                              type="radio"
-                              name={`question-${current.id}`}
-                              checked={isSelected}
-                              onChange={() => handleAnswerChange(current.id, optionLetter)}
-                              className="peer h-5 w-5 appearance-none rounded-full border-2 border-gray-400 bg-white transition-all checked:border-[6px] checked:border-blue-600"
-                            />
+                  {isListeningType(current) || resolveQuestionType(current) === 'dictation' ? (
+                    <div className="flex h-full flex-col">
+                      <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                        <p className="text-sm text-gray-700">
+                          <strong>Instructions:</strong> Listen to the audio and type exactly what
+                          you hear in the box below.
+                        </p>
+                      </div>
+                      <label className="mb-2 text-sm font-semibold text-gray-600">
+                        Type what you heard:
+                      </label>
+                      <textarea
+                        className="w-full flex-1 resize-none rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        placeholder="Type sentence here..."
+                        value={answers[current.id] || ''}
+                        onChange={(e) => handleAnswerChange(current.id, e.target.value)}
+                      />
+                      <div className="mt-2 text-right text-xs text-gray-500">
+                        {(answers[current.id] || '').length} characters
+                      </div>
+                    </div>
+                  ) : isWritingType(current) ? (
+                    <div className="flex h-full flex-col">
+                      <label className="mb-2 text-sm font-semibold text-gray-600">Your Answer:</label>
+                      <textarea
+                        className="w-full flex-1 resize-none rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        placeholder="Type your answer here..."
+                        value={answers[current.id] || ''}
+                        onChange={(e) => handleAnswerChange(current.id, e.target.value)}
+                      />
+                    </div>
+                  ) : isSpeakingType(current) ||
+                    resolveQuestionType(current) === 'voice_speaking' ||
+                    resolveQuestionType(current) === 'voice_reading' ? (
+                    <div className="flex h-full flex-col space-y-4">
+                      <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                        <p className="mb-2 text-sm text-gray-700">
+                          <strong>Instructions:</strong> Click &quot;Start Speaking&quot; when ready.
+                          Speak clearly and organize your thoughts.
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Tip: Organize your thoughts, speak clearly, and use relevant examples.
+                        </p>
+                      </div>
+                      <div className="flex justify-center">
+                        {!isLiveTranscribing ? (
+                          <button
+                            type="button"
+                            onClick={startLiveTranscription}
+                            className="flex items-center gap-3 rounded-lg bg-[#EF4444] px-8 py-4 font-bold text-white shadow-lg transition-all hover:bg-red-600 hover:shadow-xl"
+                          >
+                            <Mic className="h-5 w-5" />
+                            <span>Start Speaking</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={stopLiveTranscription}
+                            className="flex animate-pulse items-center gap-3 rounded-lg bg-[#EF4444] px-8 py-4 font-bold text-white shadow-lg transition-all hover:bg-red-700"
+                          >
+                            <div className="h-4 w-4 animate-pulse rounded-full bg-white" />
+                            <span>Stop & Save</span>
+                          </button>
+                        )}
+                      </div>
+                      {(isLiveTranscribing || liveTranscript) && (
+                        <div className="flex min-h-[200px] flex-1 flex-col rounded-lg border border-green-200 bg-[#ECFDF5] p-4">
+                          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#10B981]">
+                            Speaking... (Live transcription):
+                          </h3>
+                          <div className="flex-1 overflow-y-auto rounded border border-green-100 bg-white p-4">
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                              {liveTranscript ||
+                                (interimTranscript ? (
+                                  <span className="italic text-gray-500">{interimTranscript}</span>
+                                ) : (
+                                  'Listening...'
+                                ))}
+                            </p>
                           </div>
-                          <div className="flex-1">
-                            <span className="mr-2 font-bold text-gray-700">{optionLetter})</span>
-                            <span className="text-base text-gray-800">{optionText}</span>
+                        </div>
+                      )}
+                      {!isLiveTranscribing &&
+                        (liveTranscript || answers[current.id]) && (
+                          <div className="flex flex-1 flex-col rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <label className="mb-2 text-sm font-semibold text-gray-700">
+                              Your Response:
+                            </label>
+                            <div className="min-h-[200px] flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-700">
+                              {answers[current.id] || liveTranscript || ''}
+                            </div>
+                            <div className="mt-2 text-right text-xs text-gray-500">
+                              {(answers[current.id] || liveTranscript || '').length} characters
+                            </div>
                           </div>
-                        </label>
-                      );
-                    })}
-                  </div>
+                        )}
+                    </div>
+                  ) : isMcqType(current) ? (
+                    <div className="space-y-4">
+                      {(current.options || []).map((optionText, index) => {
+                        const optionLetter = String.fromCharCode(65 + index);
+                        const isSelected =
+                          answers[current.id] === optionLetter ||
+                          answers[current.id] === optionText;
+                        return (
+                          <label
+                            key={`${current.id}-${index}`}
+                            className={`flex cursor-pointer items-start space-x-3 rounded-lg border p-4 transition-all ${
+                              isSelected
+                                ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-100'
+                            }`}
+                          >
+                            <div className="relative mt-0.5 flex shrink-0 items-center justify-center">
+                              <input
+                                type="radio"
+                                name={`question-${current.id}`}
+                                checked={isSelected}
+                                onChange={() =>
+                                  handleAnswerChange(current.id, optionLetter)
+                                }
+                                className="peer h-5 w-5 appearance-none rounded-full border-2 border-gray-400 bg-white transition-all checked:border-[6px] checked:border-blue-600"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <span className="mr-2 font-bold text-gray-700">
+                                {optionLetter})
+                              </span>
+                              <span className="text-base text-gray-800">{optionText}</span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex h-full flex-col">
+                      <label className="mb-2 text-sm font-semibold text-gray-600">Your Answer:</label>
+                      <textarea
+                        className="w-full flex-1 resize-none rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        placeholder="Type your answer here..."
+                        value={answers[current.id] || ''}
+                        onChange={(e) => handleAnswerChange(current.id, e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

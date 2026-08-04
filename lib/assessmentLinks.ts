@@ -1,7 +1,7 @@
 import { config } from '@/lib/config'
 
 /**
- * Absolute URL students open to sign in (if needed) and start the exam on Solviq.
+ * Absolute URL students open to sign in (if needed) and start the exam on Disha.
  */
 export function buildStudentExamTakeUrl(assessmentId: string): string {
   const origin =
