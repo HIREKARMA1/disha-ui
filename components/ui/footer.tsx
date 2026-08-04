@@ -82,7 +82,7 @@ export function Footer() {
                                 </a>
                             </li>
                             <li>
-                                <a href="https://hirekarma.in/contact" target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                <a href="/contact" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
                                     Get in Touch
                                 </a>
                             </li>
