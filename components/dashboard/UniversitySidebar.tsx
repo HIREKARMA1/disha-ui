@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
+import { MobileBottomNav, MobileBottomNavAction } from '@/components/ui/MobileBottomNav'
 
 interface NavItem {
     label: string
@@ -101,6 +102,7 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
     const [imageError, setImageError] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
+    const { startLoading } = useLoading()
     const desktopNavRef = useRef<HTMLDivElement>(null)
 
     // Fetch profile data when component mounts
@@ -283,34 +285,17 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 shadow-lg pb-safe" style={{ touchAction: 'none' }}>
-                <div className="flex justify-around items-center py-1.5 px-1 w-full">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href
-                        const { startLoading } = useLoading()
-
-                        const handleClick = () => {
-                            if (!isActive) {
-                                startLoading()
-                            }
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={handleClick}
-                                className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 w-full max-w-[25%] ${isActive
-                                    ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <item.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </Link>
-                        )
-                    })}
-                </div>
-            </div>
+            <MobileBottomNav
+                aria-label="University mobile navigation"
+                items={navItems.map((item) => ({
+                    href: item.href,
+                    label: item.label,
+                    shortLabel: item.label.split(' ')[0],
+                    icon: item.icon,
+                    active: pathname === item.href,
+                    onNavigate: startLoading,
+                }))}
+            />
 
             {/* Mobile Menu Overlay */}
             <AnimatePresence>
