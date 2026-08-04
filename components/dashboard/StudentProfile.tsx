@@ -19,6 +19,7 @@ import {
     Calendar,
     TrendingUp,
     Sparkles,
+    Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StudentSidebar } from './StudentSidebar'
@@ -67,7 +68,7 @@ export function StudentProfile() {
         imageUrl: '',
         altText: ''
     })
-    const basicFormRef = useRef<HTMLDivElement>(null)
+    const formRef = useRef<HTMLDivElement>(null)
     const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
     // Mobile: keep the active profile tab fully visible / centered in the horizontal nav
@@ -357,20 +358,34 @@ export function StudentProfile() {
                             </div>
                         </div>
 
-                        <div className="space-y-3 sm:space-y-4">
+                        <div className="space-y-3 sm:space-y-4 relative">
+                            {/* Sticky Edit Profile Button */}
+                            <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
+                                <div className="sticky top-[80px] pointer-events-auto">
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditing(activeTab)
+                                            setTimeout(() => {
+                                                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                            }, 100)
+                                        }}
+                                        size="sm"
+                                        className="h-8 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-md text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all hover:scale-105"
+                                    >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                        <span>Edit Profile</span>
+                                    </Button>
+                                </div>
+                            </div>
+
                             <ProfileSummaryCard
                                 profile={profile}
-                                onEditProfile={() => {
-                                    setEditing(activeTab)
-                                    setTimeout(() => {
-                                        basicFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                    }, 100)
-                                }}
                                 onChangePhoto={() => {
                                     setActiveTab('social')
                                     setEditing('social')
                                     setTimeout(() => {
-                                        basicFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                     }, 100)
                                 }}
                             />
@@ -419,9 +434,9 @@ export function StudentProfile() {
                                     </div>
 
                                     {/* Tab Content */}
-                                    <div className="min-h-0 lg:min-h-[480px]">
+                                    <div ref={formRef} className="min-h-0 lg:min-h-[480px] scroll-mt-20">
                                         {activeTab === 'basic' && (
-                                            <div ref={basicFormRef} className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
+                                            <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
                                                         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
@@ -2231,7 +2246,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 </div>
             )}
 
-            {/* Fixed Floating Action Bar centered at screen bottom */}
+            {/* Sticky/Fixed Action Bar (Card wrapper) centered at screen bottom */}
             {typeof document !== 'undefined' && createPortal(
                 <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center gap-3 p-2 bg-[#1a2030]/95 text-white backdrop-blur-lg border border-white/15 shadow-2xl rounded-2xl ring-1 ring-black/20 animate-in fade-in slide-in-from-bottom-3 duration-200">
                     <Button
@@ -2239,7 +2254,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                         variant="outline"
                         onClick={onCancel}
                         size="sm"
-                        className="h-8 sm:h-9 px-3 text-xs font-semibold rounded-xl border-gray-600 bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white"
+                        className="h-9 px-4 text-xs font-semibold rounded-lg border-gray-600 bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white"
                     >
                         Cancel
                     </Button>
@@ -2247,7 +2262,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                         type="submit"
                         disabled={saving || hasFieldErrors}
                         size="sm"
-                        className="h-8 sm:h-9 px-3.5 sm:px-4 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
+                        className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
                     >
                         {saving ? 'Saving...' : 'Save Changes'}
                     </Button>

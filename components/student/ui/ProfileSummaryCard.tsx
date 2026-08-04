@@ -1,13 +1,12 @@
 'use client'
 
-import { Mail, Phone, MapPin, Calendar, BadgeCheck, Pencil, Camera, GraduationCap, Building2, User } from 'lucide-react'
+import { Mail, Phone, MapPin, Calendar, BadgeCheck, Camera, GraduationCap, Building2, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
 import type { StudentProfile } from '@/services/profileService'
 
 interface ProfileSummaryCardProps {
   profile: StudentProfile
-  onEditProfile: () => void
   onChangePhoto: () => void
 }
 
@@ -20,7 +19,7 @@ function formatGender(gender?: string) {
   return gender.charAt(0).toUpperCase() + gender.slice(1)
 }
 
-export function ProfileSummaryCard({ profile, onEditProfile, onChangePhoto }: ProfileSummaryCardProps) {
+export function ProfileSummaryCard({ profile, onChangePhoto }: ProfileSummaryCardProps) {
   const location = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || 'Location not set'
   const memberSince = profile.created_at
     ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -31,19 +30,6 @@ export function ProfileSummaryCard({ profile, onEditProfile, onChangePhoto }: Pr
 
   return (
     <div className="relative rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 shadow-sm p-4 sm:p-5 lg:p-6">
-      {/* Top Right Edit Profile Button */}
-      <div className="absolute top-4 right-4 z-20">
-        <Button
-          type="button"
-          onClick={onEditProfile}
-          size="sm"
-          className="h-8 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-md text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all hover:scale-105"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          <span>Edit Profile</span>
-        </Button>
-      </div>
-
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 pt-1 lg:pt-0 items-center lg:items-start">
         <div className="flex flex-col items-center shrink-0">
           <div className="relative">
