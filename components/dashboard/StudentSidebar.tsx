@@ -362,7 +362,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                     <item.icon className="w-5 h-5" />
                                 </div>
                                 <span className="text-[10px] font-medium truncate max-w-full px-0.5">
-                                    {item.label === 'Applications' ? 'Apps' : item.label.split(' ')[0]}
+                                    {item.label === 'Applications' ? 'Apps' : item.label === 'Live Jobs' ? 'Jobs' : item.label.split(' ')[0]}
                                 </span>
                             </Link>
                         )
