@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, CheckCircle, Calendar, X, Bookmark } from 'lucide-react'
+import { MapPin, Briefcase, Clock, Banknote, Users, Building, Eye, CheckCircle, Calendar, X, Bookmark } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -322,7 +322,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                             </span>
                         </span>
                         <span className="inline-flex items-center gap-1">
-                            <IndianRupee className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                            <Banknote className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
                             {formatSalaryRange(job.salary_min, job.salary_max)}
                         </span>
                     </div>

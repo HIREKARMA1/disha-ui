@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, IndianRupee, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
+import { MapPin, Briefcase, Clock, Banknote, Users, Building, Eye, FileText, CheckCircle, Calendar, GraduationCap, MapPin as VenueIcon, XCircle, MoreVertical, Edit, Trash2, UserCheck, Send } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -372,7 +372,7 @@ export function UniversityJobCard({
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <IndianRupee className="w-4 h-4" />
+                        <Banknote className="w-4 h-4" />
                         <span className="truncate">{formatSalaryRange(job.salary_min, job.salary_max)}</span>
                     </div>
 

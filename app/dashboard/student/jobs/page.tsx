@@ -14,7 +14,13 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { canApplyForJobs } from '@/lib/profileCompletion'
+import {
+  APPLY_SUCCESS_MESSAGE,
+  ALREADY_APPLIED_MESSAGE,
+  JOB_CLOSED_MESSAGE,
+  toastApplyError,
+} from '@/lib/jobApplicationMessages'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
 interface Job {
@@ -782,13 +788,13 @@ function JobOpportunitiesPageContent() {
     // Handle job application initiation
     const handleApplyClick = (job: Job) => {
         if (!job.can_apply) {
-            toast.error('Applications are not currently open for this position')
+            toast.error(JOB_CLOSED_MESSAGE)
             return
         }
 
         // Check if already applied
         if (applicationStatus.get(job.id) === 'applied') {
-            toast('You have already applied for this position')
+            toast(ALREADY_APPLIED_MESSAGE)
             return
         }
 
@@ -828,7 +834,7 @@ function JobOpportunitiesPageContent() {
                 return newStatus
             })
 
-            toast.success('Application submitted successfully!')
+            toast.success(APPLY_SUCCESS_MESSAGE)
 
             // Close modal
             setShowApplicationModal(false)
@@ -838,89 +844,7 @@ function JobOpportunitiesPageContent() {
             fetchJobs(pagination.page, buildSearchParams())
         } catch (error: any) {
             console.error('Error applying for job:', error)
-
-            // Handle validation errors from backend
-            let message = 'Failed to apply for job'
-
-            if (error.response?.status === 422) {
-                console.error('422 Validation Error Response:', error.response.data)
-
-                // Check if response contains validation error objects
-                const hasValidationErrors = (obj: any): boolean => {
-                    if (!obj || typeof obj !== 'object') return false
-                    if (Array.isArray(obj)) {
-                        return obj.some(hasValidationErrors)
-                    }
-
-                    // Check if this is a validation error object
-                    if ('type' in obj && 'loc' in obj && 'msg' in obj) {
-                        console.error('CRITICAL: Validation error object in application response:', obj)
-                        return true
-                    }
-
-                    // Recursively check all properties
-                    for (const [key, value] of Object.entries(obj)) {
-                        if (hasValidationErrors(value)) {
-                            return true
-                        }
-                    }
-                    return false
-                }
-
-                if (hasValidationErrors(error.response.data)) {
-                    console.error('CRITICAL: Application response contains validation errors. Blocking processing.')
-                    message = 'Server returned invalid data. Please try again or contact support.'
-
-                    // Don't process any data that contains validation errors
-                    setApplyingJobs(prev => {
-                        const newSet = new Set(prev)
-                        newSet.delete(jobId)
-                        return newSet
-                    })
-                    toast.error(message)
-                    return
-                }
-
-                // Extract user-friendly error message
-                if (error.response.data?.detail) {
-                    if (Array.isArray(error.response.data.detail)) {
-                        // Create more specific error messages for common validation errors
-                        const errorMessages = error.response.data.detail.map((err: any) => {
-                            if (err.type === 'missing') {
-                                const field = err.loc[err.loc.length - 1] // Get the field name
-                                return `Missing required field: ${field}`
-                            } else if (err.type === 'value_error') {
-                                return `Invalid value for ${err.loc[err.loc.length - 1]}: ${err.msg}`
-                            } else {
-                                return err.msg || 'Validation error'
-                            }
-                        })
-                        message = errorMessages.join(', ')
-                    } else {
-                        message = error.response.data.detail
-                    }
-                } else if (error.response.data?.message) {
-                    message = error.response.data.message
-                }
-            } else {
-                const data = error.response?.data
-                if (data) {
-                    if (typeof data.error === 'string') {
-                        // Our backend wraps user-facing message in `error`
-                        message = data.error
-                    } else if (typeof data.detail === 'string') {
-                        message = data.detail
-                    } else if (typeof data.message === 'string') {
-                        message = data.message
-                    }
-                }
-            }
-
-            if (isProfileCompletionError(message)) {
-                showProfileCompletionToast()
-            } else {
-                toast.error(message)
-            }
+            toastApplyError(error)
         } finally {
             setApplyingJobs(prev => {
                 const newSet = new Set(prev)

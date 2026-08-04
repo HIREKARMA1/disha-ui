@@ -13,6 +13,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
+import {
+  APPLY_SUCCESS_MESSAGE,
+  toastApplyError,
+} from '@/lib/jobApplicationMessages'
 
 interface Job {
     id: string
@@ -184,17 +188,12 @@ function CareerAlignPageContent() {
                 return newStatus
             })
 
-            toast.success('Application submitted successfully!')
+            toast.success(APPLY_SUCCESS_MESSAGE)
             setShowApplicationModal(false)
             setCurrentApplicationJob(null)
         } catch (error: any) {
             console.error('Application error:', error)
-            const data = error.response?.data
-            const message =
-                (data && typeof data.error === 'string' && data.error) ||
-                (data && typeof data.detail === 'string' && data.detail) ||
-                'Failed to submit application'
-            toast.error(message)
+            toastApplyError(error)
         } finally {
             setApplyingJobs(prev => {
                 const newSet = new Set(prev)

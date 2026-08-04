@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, MapPin, Briefcase, Clock, IndianRupee, Users, Building, Calendar, Globe, Car, GraduationCap, Award, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
+import { X, MapPin, Briefcase, Clock, Banknote, Users, Building, Calendar, Globe, Car, GraduationCap, Award, CheckCircle, ExternalLink, Shield, Download } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -379,7 +379,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-                                        <IndianRupee className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                        <Banknote className="w-5 h-5 text-green-600 dark:text-green-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">Salary Range</p>
@@ -835,7 +835,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         {(job.ctc_with_probation || job.ctc_after_probation) && (
                             <div className="mb-6">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <IndianRupee className="w-5 h-5 text-primary-500" />
+                                    <Banknote className="w-5 h-5 text-primary-500" />
                                     CTC Details
                                 </h3>
                                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
