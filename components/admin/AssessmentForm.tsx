@@ -154,15 +154,30 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
       ...(formData.job_id ? { job_id: formData.job_id } : {}),
     };
 
-    // Edit API expects top-level fields; create uses nested metadata
+    // Edit API expects top-level fields; create uses nested metadata.
+    // Always include round `id` when present so the backend can upsert in place
+    // and preserve manual questions attached to those rounds.
     if (mode === "edit") {
+      const roundsPayload = (formData.rounds || []).map((round: any) => ({
+        ...(round.id ? { id: round.id } : {}),
+        round_number: round.round_number,
+        round_type: round.round_type,
+        round_name: round.round_name,
+        duration_minutes: round.duration_minutes,
+        config: round.config || {},
+        is_mandatory: round.is_mandatory !== false,
+        ...(round.passing_percentage != null
+          ? { passing_percentage: round.passing_percentage }
+          : {}),
+      }));
+
       onSubmit({
         assessment_name: formData.assessment_name,
         mode: formData.mode,
         time_window: normalizeAssessmentTimeWindow(formData.time_window),
         total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
         auto_submit_on_timeout: formData.auto_submit_on_timeout,
-        rounds: formData.rounds,
+        rounds: roundsPayload,
         description: formData.metadata.description ?? "",
         instructions: formData.metadata.instructions ?? "",
         passing_criteria: passingCriteria,

@@ -9,6 +9,7 @@ import {
 import { MIN_QUESTIONS_PER_ROUND } from "@/lib/validations/assessment";
 
 interface Round {
+  id?: string;
   round_number: number;
   round_type: string;
   round_name: string;
@@ -98,7 +99,7 @@ export function RoundConfigurator({ rounds, onRoundsChange }: RoundConfiguratorP
 
       <div className="space-y-3">
         {rounds.map((round, index) => (
-          <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+          <div key={round.id || `round-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
             {editingRound === index ? (
               <RoundEditor
                 round={round}

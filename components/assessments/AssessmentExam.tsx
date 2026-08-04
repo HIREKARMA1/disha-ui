@@ -668,12 +668,17 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           <button
             type="button"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`absolute top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-300 bg-white shadow-md transition-transform duration-300 hover:bg-gray-50 ${
-              isSidebarOpen ? 'right-0 translate-x-1/2' : '-translate-x-2'
+            aria-label={isSidebarOpen ? 'Collapse palette' : 'Expand palette'}
+            className={`absolute top-1/2 z-[60] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-400 bg-white text-gray-800 shadow-lg transition-transform duration-300 hover:bg-gray-100 ${
+              isSidebarOpen ? 'right-0 translate-x-1/2' : 'right-3 translate-x-0'
             }`}
             title={isSidebarOpen ? 'Collapse palette' : 'Expand palette'}
           >
-            {isSidebarOpen ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+            {isSidebarOpen ? (
+              <ChevronsRight className="h-5 w-5 shrink-0 text-gray-800" strokeWidth={2.5} />
+            ) : (
+              <ChevronsLeft className="h-5 w-5 shrink-0 text-gray-800" strokeWidth={2.5} />
+            )}
           </button>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-6">
