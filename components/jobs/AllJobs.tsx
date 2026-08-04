@@ -27,8 +27,14 @@ import { getJobDetailPath } from '@/lib/jobSlug'
 import { toast } from 'react-hot-toast'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { canApplyForJobs } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
+import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import {
+  APPLY_SUCCESS_MESSAGE,
+  JOB_CLOSED_MESSAGE,
+  toastApplyError,
+} from '@/lib/jobApplicationMessages'
 
 export interface Job {
     id: string
@@ -601,8 +607,7 @@ export function AllJobs() {
 
     const handleApplyClick = (job: Job) => {
         if (!isLoggedIn) {
-            const returnUrl = encodeURIComponent('/jobs')
-            router.push(`/auth/login?redirect=${returnUrl}`)
+            redirectGuestToLoginForApply(router, job.id, getJobDetailPath(job))
             return
         }
 
@@ -612,7 +617,7 @@ export function AllJobs() {
         }
 
         if (!job.can_apply) {
-            toast.error('Applications are closed for this job.')
+            toast.error(JOB_CLOSED_MESSAGE)
             return
         }
 
@@ -638,7 +643,7 @@ export function AllJobs() {
                 availability_date: data.availability_date,
             })
 
-            toast.success('Application submitted successfully!')
+            toast.success(APPLY_SUCCESS_MESSAGE)
             setShowApplicationModal(false)
 
             setJobs((prevJobs) =>
@@ -652,21 +657,7 @@ export function AllJobs() {
             void fetchJobs(pagination.page)
         } catch (error: unknown) {
             console.error('Application error:', error)
-            const detail = extractErrorDetail(error)
-            if (isProfileCompletionError(detail)) {
-                showProfileCompletionToast()
-                return
-            }
-
-            let errorMessage = detail || 'Failed to submit application'
-            const err = error as { response?: { data?: { detail?: unknown } } }
-            const rawDetail = err.response?.data?.detail
-            if (!detail && typeof rawDetail === 'object' && rawDetail !== null && !Array.isArray(rawDetail)) {
-                errorMessage =
-                    (rawDetail as { msg?: string }).msg || JSON.stringify(rawDetail)
-            }
-
-            toast.error(errorMessage)
+            toastApplyError(error)
         } finally {
             setIsApplying(false)
             setApplyingJobId(null)

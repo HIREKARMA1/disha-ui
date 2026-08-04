@@ -26,7 +26,7 @@ export function formatSalaryRange(
 
     const formatNum = (n: number) => n.toLocaleString('en-IN')
 
-    if (hasMin && hasMax) return `₹${formatNum(minNum!)} - ₹${formatNum(maxNum!)}`
+    if (hasMin && hasMax) return `₹${formatNum(minNum!)} – ₹${formatNum(maxNum!)}`
     if (hasMin) return `₹${formatNum(minNum!)}+`
     if (hasMax) return `Up to ₹${formatNum(maxNum!)}`
     return emptyLabel

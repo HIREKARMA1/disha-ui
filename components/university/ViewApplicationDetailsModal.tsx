@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar, MapPin, FileText, User, Briefcase, IndianRupee, Clock, Mail } from 'lucide-react'
+import { X, Calendar, MapPin, FileText, User, Briefcase, Banknote, Clock, Mail } from 'lucide-react'
 import { formatAmountINR } from '@/lib/currency'
 
 interface ApplicationData {
@@ -177,7 +177,7 @@ export function ViewApplicationDetailsModal({
                                         </div>
 
                                         <div className="flex items-center gap-3">
-                                            <IndianRupee className="w-5 h-5 text-gray-400" />
+                                            <Banknote className="w-5 h-5 text-gray-400" />
                                             <div>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">Expected Salary</p>
                                                 <p className="text-base text-gray-900 dark:text-white">

@@ -1,10 +1,11 @@
 "use client"
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
+  Banknote,
   Briefcase,
   Building2,
   Calendar,
@@ -12,7 +13,6 @@ import {
   Download,
   ExternalLink,
   Globe,
-  IndianRupee,
   Loader2,
   MapPin,
   Share2,
@@ -30,9 +30,17 @@ import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
 import { useAuth } from '@/hooks/useAuth'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { canApplyForJobs, extractErrorDetail, isProfileCompletionError } from '@/lib/profileCompletion'
+import { canApplyForJobs } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
-import { cn } from '@/lib/utils'
+import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import {
+  APPLY_SUCCESS_MESSAGE,
+  JOB_CLOSED_MESSAGE,
+  clearAutoApplyQueryParams,
+  resumePendingJobApplication,
+  shouldAutoApplyForJob,
+  toastApplyError,
+} from '@/lib/jobApplicationMessages'
 import type { Job } from '@/components/jobs/AllJobs'
 
 interface JobDetailViewProps {
@@ -44,10 +52,12 @@ interface JobDetailViewProps {
 
 export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetailViewProps) {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const [job, setJob] = useState<Job | null>(null)
   const [related, setRelated] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAutoApplying, setIsAutoApplying] = useState(false)
+  const autoApplyAttempted = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [showApplicationModal, setShowApplicationModal] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
@@ -124,10 +134,41 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   const companyName = job?.company_name || job?.corporate_name || 'Company'
 
+  // After login: auto-submit pending application for this job
+  useEffect(() => {
+    if (!job || authLoading || autoApplyAttempted.current) return
+    if (!shouldAutoApplyForJob(job.id)) return
+
+    const token = apiClient.getAccessToken()
+    if (!token) {
+      autoApplyAttempted.current = true
+      redirectGuestToLoginForApply(router, job.id, getJobDetailPath(job))
+      return
+    }
+    if (user && user.user_type !== 'student') {
+      clearAutoApplyQueryParams()
+      autoApplyAttempted.current = true
+      return
+    }
+
+    autoApplyAttempted.current = true
+    clearAutoApplyQueryParams()
+    setIsAutoApplying(true)
+    void (async () => {
+      const result = await resumePendingJobApplication(job.id)
+      if (result === 'success' || result === 'already_applied') {
+        setJob((prev) =>
+          prev ? { ...prev, application_status: 'applied', can_apply: false } : prev
+        )
+      }
+      setIsAutoApplying(false)
+    })()
+  }, [job, authLoading, user, router])
+
   const handleApply = () => {
     if (!job) return
     if (!apiClient.getAccessToken()) {
-      router.push(`/auth/login?redirect=${encodeURIComponent(getJobDetailPath(job))}`)
+      redirectGuestToLoginForApply(router, job.id, getJobDetailPath(job))
       return
     }
     if (profileCompletion && !canApplyForJobs(profileCompletion)) {
@@ -135,7 +176,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       return
     }
     if (!job.can_apply) {
-      toast.error('Applications are closed for this job.')
+      toast.error(JOB_CLOSED_MESSAGE)
       return
     }
     setShowApplicationModal(true)
@@ -155,16 +196,11 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         expected_salary: data.expected_salary ? Number(data.expected_salary) : null,
         availability_date: data.availability_date,
       })
-      toast.success('Application submitted successfully!')
+      toast.success(APPLY_SUCCESS_MESSAGE)
       setShowApplicationModal(false)
       setJob({ ...job, application_status: 'applied', can_apply: false })
     } catch (error: unknown) {
-      const detail = extractErrorDetail(error)
-      if (isProfileCompletionError(detail)) {
-        showProfileCompletionToast()
-        return
-      }
-      toast.error(detail || 'Failed to submit application')
+      toastApplyError(error)
     } finally {
       setIsApplying(false)
     }
@@ -280,7 +316,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           </div>
 
           <div className="grid gap-3 border-b border-gray-100 p-5 dark:border-white/10 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
-            <Meta icon={IndianRupee} label="Salary" value={formatSalaryRange(job.salary_min, job.salary_max)} />
+            <Meta icon={Banknote} label="Salary" value={formatSalaryRange(job.salary_min, job.salary_max)} />
             <Meta
               icon={Briefcase}
               label="Experience"
@@ -295,9 +331,22 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           </div>
 
           <div className="flex flex-wrap gap-2 p-5 sm:p-6">
-            <Button onClick={handleApply} disabled={!job.can_apply || job.application_status === 'applied'} className="bg-primary-500 hover:bg-primary-600">
-              <CheckCircle className="mr-2 h-4 w-4" />
-              {job.application_status === 'applied' ? 'Already Applied' : 'Apply Now'}
+            <Button
+              onClick={handleApply}
+              disabled={!job.can_apply || job.application_status === 'applied' || isAutoApplying}
+              className="bg-primary-500 hover:bg-primary-600"
+            >
+              {isAutoApplying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying…
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  {job.application_status === 'applied' ? 'Already Applied' : 'Apply Now'}
+                </>
+              )}
             </Button>
             {canDownloadPdf && (
               <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloadingPDF}>
