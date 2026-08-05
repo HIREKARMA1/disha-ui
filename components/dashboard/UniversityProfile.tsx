@@ -36,8 +36,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { z } from "zod";
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
+<<<<<<< Updated upstream
 import { useInstituteTypes, useBranches } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
+=======
+import { useInstituteTypes } from '@/hooks/useLookup'
+import { LookupSelect } from '@/components/ui/lookup-select'
+import {
+    DEGREE_OPTIONS,
+    parseMultiValueField,
+    serializeMultiValueField,
+    getBranchesForDegrees,
+    formatMultiValueDisplay,
+} from '@/lib/academicHierarchy'
+>>>>>>> Stashed changes
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -908,10 +920,21 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         enabled: section.id === 'institution',
         limit: 1000,
     })
+<<<<<<< Updated upstream
     const { data: branches, loading: loadingBranches, error: branchesError } = useBranches({
         enabled: section.id === 'academic',
         limit: 1000,
     })
+=======
+
+    const selectedDegrees = parseMultiValueField(formData.courses_offered as string | undefined)
+    const selectedBranches = parseMultiValueField(formData.branch as string | undefined)
+    const availableBranchOptions = getBranchesForDegrees(selectedDegrees).map((name) => ({
+        value: name,
+        label: name,
+    }))
+    const degreeSelectOptions = DEGREE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))
+>>>>>>> Stashed changes
 
     useEffect(() => {
         if (profile && section) {
@@ -924,6 +947,33 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         }
     }, [profile, section])
 
+<<<<<<< Updated upstream
+=======
+    const handleDegreesChange = (degrees: string[]) => {
+        const nextBranches = selectedBranches.filter((branch) =>
+            getBranchesForDegrees(degrees).includes(branch)
+        )
+        setFormData({
+            ...formData,
+            courses_offered: serializeMultiValueField(degrees),
+            branch: serializeMultiValueField(nextBranches),
+        })
+        if (fieldErrors.courses_offered || fieldErrors.branch) {
+            setFieldErrors({ ...fieldErrors, courses_offered: '', branch: '' })
+        }
+    }
+
+    const handleBranchesChange = (branches: string[]) => {
+        setFormData({
+            ...formData,
+            branch: serializeMultiValueField(branches),
+        })
+        if (fieldErrors.branch) {
+            setFieldErrors({ ...fieldErrors, branch: '' })
+        }
+    }
+
+>>>>>>> Stashed changes
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -1161,6 +1211,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
+<<<<<<< Updated upstream
+=======
+        if (field === 'courses_offered') {
+            return (
+                <div>
+                    <MultiSearchableSelect
+                        options={degreeSelectOptions}
+                        values={selectedDegrees}
+                        onChange={handleDegreesChange}
+                        placeholder="Select degrees offered..."
+                        searchPlaceholder="Search degrees..."
+                    />
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
+            )
+        }
+
+>>>>>>> Stashed changes
         // Handle number fields
         if (field.includes('year') || field.includes('students') || field.includes('faculty') || field.includes('rate') || field.includes('package')) {
             return (
@@ -1206,6 +1276,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
         if (field === 'branch') {
             return (
+<<<<<<< Updated upstream
                 <LookupSelect
                     value={(value as string) || ''}
                     onChange={(val) => setFormData({ ...formData, [field]: val })}
@@ -1215,6 +1286,30 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                     error={branchesError || undefined}
                     required
                 />
+=======
+                <div>
+                    <MultiSearchableSelect
+                        options={availableBranchOptions}
+                        values={selectedBranches}
+                        onChange={handleBranchesChange}
+                        placeholder={
+                            selectedDegrees.length
+                                ? 'Select related branches...'
+                                : 'Select a degree first...'
+                        }
+                        searchPlaceholder="Search branches..."
+                        disabled={selectedDegrees.length === 0}
+                    />
+                    {selectedDegrees.length === 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Choose one or more degrees to see related branches.
+                        </p>
+                    )}
+                    {fieldErrors[field] && (
+                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
+                    )}
+                </div>
+>>>>>>> Stashed changes
             )
         }
 

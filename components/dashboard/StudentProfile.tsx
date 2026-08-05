@@ -1,6 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+<<<<<<< Updated upstream
+=======
+import { createPortal } from 'react-dom'
+>>>>>>> Stashed changes
 import { motion } from 'framer-motion'
 import {
     User,
