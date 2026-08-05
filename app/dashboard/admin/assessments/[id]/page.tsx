@@ -531,15 +531,18 @@ export default function AssessmentDetailPage() {
       const stillMissingManual = res.still_missing_manual ?? 0;
       const serverMessage =
         res.message || `AI questions replenished. Added: ${added}.`;
+      const displayMessage = res.cohere_error
+        ? `${serverMessage} (${res.cohere_error})`
+        : serverMessage;
 
       if (stillMissingAi > 0 && added === 0) {
-        setQuestionsError(serverMessage);
+        setQuestionsError(displayMessage);
         setQuestionActionMessage(null);
       } else if (stillMissingAi > 0 || stillMissingManual > 0) {
-        setQuestionActionMessage(serverMessage);
+        setQuestionActionMessage(displayMessage);
         setQuestionsError(null);
       } else {
-        setQuestionActionMessage(serverMessage);
+        setQuestionActionMessage(displayMessage);
         setQuestionsError(null);
       }
       fetchQuestions(assessmentId, assessment?.rounds || []);
