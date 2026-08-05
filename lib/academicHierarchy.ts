@@ -146,6 +146,90 @@ export const DEGREE_BRANCH_MAP: Record<string, string[]> = {
     Other: ['Other'],
 }
 
+function normalizeDegreeToken(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/&/g, ' and ')
+        .replace(/[.()/,_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+}
+
+/** Common aliases / abbreviations → canonical DEGREE_OPTIONS value */
+const DEGREE_ALIAS_TO_CANONICAL: Record<string, string> = {
+    'bachelor of technology': 'Bachelor of Technology',
+    'b tech': 'Bachelor of Technology',
+    'btech': 'Bachelor of Technology',
+    'bachelor of technology b tech': 'Bachelor of Technology',
+    'bachelor of engineering': 'Bachelor of Engineering',
+    'b e': 'Bachelor of Engineering',
+    'be': 'Bachelor of Engineering',
+    'bachelor of science': 'Bachelor of Science',
+    'b sc': 'Bachelor of Science',
+    'bsc': 'Bachelor of Science',
+    'bachelor of computer applications': 'Bachelor of Computer Applications',
+    bca: 'Bachelor of Computer Applications',
+    'bachelor of business administration': 'Bachelor of Business Administration',
+    bba: 'Bachelor of Business Administration',
+    'bachelor of commerce': 'Bachelor of Commerce',
+    'b com': 'Bachelor of Commerce',
+    bcom: 'Bachelor of Commerce',
+    'bachelor of arts': 'Bachelor of Arts',
+    'b a': 'Bachelor of Arts',
+    ba: 'Bachelor of Arts',
+    'master of technology': 'Master of Technology',
+    'm tech': 'Master of Technology',
+    mtech: 'Master of Technology',
+    'master of engineering': 'Master of Engineering',
+    'm e': 'Master of Engineering',
+    me: 'Master of Engineering',
+    'master of science': 'Master of Science',
+    'm sc': 'Master of Science',
+    msc: 'Master of Science',
+    'master of computer applications': 'Master of Computer Applications',
+    mca: 'Master of Computer Applications',
+    'master of business administration': 'Master of Business Administration',
+    mba: 'Master of Business Administration',
+    'master of commerce': 'Master of Commerce',
+    'm com': 'Master of Commerce',
+    mcom: 'Master of Commerce',
+    'master of arts': 'Master of Arts',
+    'm a': 'Master of Arts',
+    ma: 'Master of Arts',
+    diploma: 'Diploma',
+    'diploma in engineering': 'Diploma',
+    'post graduate diploma': 'Post Graduate Diploma',
+    pgd: 'Post Graduate Diploma',
+    'doctor of philosophy': 'Doctor of Philosophy',
+    'ph d': 'Doctor of Philosophy',
+    phd: 'Doctor of Philosophy',
+    other: 'Other',
+}
+
+/** Resolve any degree label/alias to a canonical DEGREE_BRANCH_MAP key. */
+export function resolveCanonicalDegree(input?: string | null): string | null {
+    if (!input?.trim()) return null
+    const raw = input.trim()
+    if (DEGREE_BRANCH_MAP[raw]) return raw
+
+    const token = normalizeDegreeToken(raw)
+    if (DEGREE_ALIAS_TO_CANONICAL[token]) return DEGREE_ALIAS_TO_CANONICAL[token]
+
+    for (const opt of DEGREE_OPTIONS) {
+        const valueToken = normalizeDegreeToken(opt.value)
+        const labelToken = normalizeDegreeToken(opt.label)
+        if (token === valueToken || token === labelToken) return opt.value
+        if (token.includes(valueToken) || labelToken.includes(token)) return opt.value
+    }
+
+    // Alias substring match (e.g. "Bachelor of Technology (B.Tech)")
+    for (const [alias, canonical] of Object.entries(DEGREE_ALIAS_TO_CANONICAL)) {
+        if (token.includes(alias)) return canonical
+    }
+
+    return null
+}
+
 const MULTI_VALUE_SEPARATOR = ' || '
 
 /** Parse stored multi-select field (JSON array, delimiter, or legacy free text). */
@@ -186,7 +270,16 @@ export function serializeMultiValueField(values: string[]): string {
 export function getOfferedDegrees(coursesOffered?: string | null): string[] {
     const parsed = parseMultiValueField(coursesOffered)
     const known = new Set<string>(DEGREE_OPTIONS.map((d) => d.value))
-    return parsed.filter((d) => known.has(d))
+    const matched: string[] = []
+    for (const item of parsed) {
+        const canonical = resolveCanonicalDegree(item)
+        if (canonical && known.has(canonical) && !matched.includes(canonical)) {
+            matched.push(canonical)
+        } else if (known.has(item) && !matched.includes(item)) {
+            matched.push(item)
+        }
+    }
+    return matched
 }
 
 /** Branches offered by the university from profile.branch. */
@@ -194,16 +287,36 @@ export function getOfferedBranches(profileBranch?: string | null): string[] {
     return parseMultiValueField(profileBranch)
 }
 
-/** Unique branches for one or more selected degrees. */
+/** Unique branches for one or more selected degrees (supports B.Tech / B.Sc aliases). */
 export function getBranchesForDegrees(degrees: string[]): string[] {
     const branchSet = new Set<string>()
     for (const degree of degrees) {
-        const branches = DEGREE_BRANCH_MAP[degree]
+        const key = resolveCanonicalDegree(degree)
+        const branches = key ? DEGREE_BRANCH_MAP[key] : undefined
         if (branches) {
             branches.forEach((b) => branchSet.add(b))
         }
     }
     return Array.from(branchSet).sort((a, b) => a.localeCompare(b))
+}
+
+/**
+ * Filter a flat branch name list to those related to the selected degree.
+ * If the degree is unknown / unmapped, returns all branches (safe fallback).
+ */
+export function filterBranchNamesForDegree(
+    allBranchNames: string[],
+    degree?: string | null
+): string[] {
+    if (!degree?.trim()) return [...allBranchNames]
+    const allowed = getBranchesForDegrees([degree])
+    if (!allowed.length) return [...allBranchNames]
+
+    const allowedNorm = allowed.map((n) => n.toLowerCase())
+    return allBranchNames.filter((name) => {
+        const n = name.toLowerCase()
+        return allowedNorm.some((a) => n === a || n.includes(a) || a.includes(n))
+    })
 }
 
 /**
@@ -227,9 +340,12 @@ export function getFilterBranches(options: {
     if (offeredBranches.length > 0) {
         // Profile branches only; still respect degree cascade when a degree is chosen
         if (selectedDegree !== 'all') {
-            const degreeSet = new Set(degreeScope)
+            const degreeSet = new Set(degreeScope.map((b) => b.toLowerCase()))
             return offeredBranches
-                .filter((b) => degreeSet.has(b))
+                .filter((b) => {
+                    const n = b.toLowerCase()
+                    return [...degreeSet].some((a) => n === a || n.includes(a) || a.includes(n))
+                })
                 .sort((a, b) => a.localeCompare(b))
         }
         return [...offeredBranches].sort((a, b) => a.localeCompare(b))
