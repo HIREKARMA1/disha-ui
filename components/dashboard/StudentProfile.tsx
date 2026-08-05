@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -20,7 +19,6 @@ import {
     Calendar,
     TrendingUp,
     Sparkles,
-    Pencil,
     Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -326,8 +324,8 @@ export function StudentProfile() {
             <div className="pt-16 lg:pl-64">
                 <main className="flex-1 p-3 sm:p-4 lg:p-6">
                     <div className="w-full max-w-[1400px] mx-auto">
-                        {/* Hero Banner Card - Visible on laptop/desktop only Banner Card - Visible on laptop/desktop only */}
-                        <div className="hidden lg:block hidden lg:block relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
+                        {/* Hero Banner Card - Visible on laptop/desktop only */}
+                        <div className="hidden lg:block relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
                             <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
                             <div className="relative flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                                 <div className="flex-1 min-w-0">
@@ -361,27 +359,7 @@ export function StudentProfile() {
                             </div>
                         </div>
 
-                        <div className="space-y-3 sm:space-y-4 relative relative">
-                            {/* Sticky Edit Profile Button */}
-                            <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
-                                <div className="sticky top-[80px] pointer-events-auto">
-                                    <Button
-                                        type="button"
-                                        onClick={() => {
-                                            setEditing(activeTab)
-                                            setTimeout(() => {
-                                                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                            }, 100)
-                                        }}
-                                        size="sm"
-                                        className="h-8 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-md text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all hover:scale-105"
-                                    >
-                                        <Pencil className="w-3.5 h-3.5" />
-                                        <span>Edit Profile</span>
-                                    </Button>
-                                </div>
-                            </div>
-
+                        <div className="space-y-3 sm:space-y-4 relative">
                             {/* Sticky Edit Profile Button */}
                             <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
                                 <div className="sticky top-[80px] pointer-events-auto">
@@ -404,18 +382,9 @@ export function StudentProfile() {
 
                             <ProfileSummaryCard
                                 profile={profile}
-                                onEditProfile={() => {
-                                    setEditing(activeTab)
-                                    setTimeout(() => {
-                                        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                    }, 100)
-                                }}
                                 onChangePhoto={() => {
                                     setActiveTab('social')
                                     setEditing('social')
-                                    setTimeout(() => {
-                                        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                    }, 100)
                                     setTimeout(() => {
                                         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                     }, 100)
@@ -447,12 +416,6 @@ export function StudentProfile() {
                                                                 setEditing(tab.id)
                                                             }
                                                         }}
-                                                        onClick={() => {
-                                                            setActiveTab(tab.id)
-                                                            if (editing) {
-                                                                setEditing(tab.id)
-                                                            }
-                                                        }}
                                                         className={cn(
                                                             'flex items-center gap-1.5 py-2.5 px-1 sm:px-2 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0 relative',
                                                             activeTab === tab.id
@@ -472,9 +435,8 @@ export function StudentProfile() {
                                     </div>
 
                                     {/* Tab Content */}
-                                    <div ref={formRef} ref={formRef} className="min-h-0 lg:min-h-[480px] scroll-mt-20 scroll-mt-20">
+                                    <div ref={formRef} className="min-h-0 lg:min-h-[480px] scroll-mt-20">
                                         {activeTab === 'basic' && (
-                                            <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                             <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">

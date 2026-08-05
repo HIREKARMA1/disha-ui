@@ -34,7 +34,6 @@ import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
-import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { z } from "zod";
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
@@ -44,13 +43,6 @@ import {
     parseMultiValueField,
     serializeMultiValueField,
     filterBranchNamesForDegree,
-    formatMultiValueDisplay,
-} from '@/lib/academicHierarchy'
-import {
-    DEGREE_OPTIONS,
-    parseMultiValueField,
-    serializeMultiValueField,
-    getBranchesForDegrees,
     formatMultiValueDisplay,
 } from '@/lib/academicHierarchy'
 
@@ -880,9 +872,6 @@ export function UniversityProfile() {
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
                                         {formatMultiValueDisplay(profile?.courses_offered)}
-                                <div className="min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
-                                        {formatMultiValueDisplay(profile?.courses_offered)}
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400">Degree Offered</p>
                                 </div>
@@ -999,30 +988,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         }
     }
 
-    const handleDegreesChange = (degrees: string[]) => {
-        const nextBranches = selectedBranches.filter((branch) =>
-            getBranchesForDegrees(degrees).includes(branch)
-        )
-        setFormData({
-            ...formData,
-            courses_offered: serializeMultiValueField(degrees),
-            branch: serializeMultiValueField(nextBranches),
-        })
-        if (fieldErrors.courses_offered || fieldErrors.branch) {
-            setFieldErrors({ ...fieldErrors, courses_offered: '', branch: '' })
-        }
-    }
-
-    const handleBranchesChange = (branches: string[]) => {
-        setFormData({
-            ...formData,
-            branch: serializeMultiValueField(branches),
-        })
-        if (fieldErrors.branch) {
-            setFieldErrors({ ...fieldErrors, branch: '' })
-        }
-    }
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -1103,16 +1068,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
             if (degrees.length === 0) {
                 errors.courses_offered = 'Please select at least one degree offered'
-            const degrees = parseMultiValueField(formData.courses_offered as string | undefined)
-            const branchesSelected = parseMultiValueField(formData.branch as string | undefined)
-
-            if (degrees.length === 0) {
-                errors.courses_offered = 'Please select at least one degree offered'
                 hasValidationErrors = true
             }
 
-            if (branchesSelected.length === 0) {
-                errors.branch = 'Please select at least one branch'
             if (branchesSelected.length === 0) {
                 errors.branch = 'Please select at least one branch'
                 hasValidationErrors = true
@@ -1246,8 +1204,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
         // Handle textarea fields (bio only — courses_offered is multi-select)
         if (field.includes('bio')) {
-        // Handle textarea fields (bio only — courses_offered is multi-select)
-        if (field.includes('bio')) {
             return (
                 <div>
                     <Textarea
@@ -1285,23 +1241,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                     {degreesError && (
                         <p className="text-red-500 text-xs mt-1">{degreesError}</p>
                     )}
-                    {fieldErrors[field] && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
-                    )}
-                </div>
-            )
-        }
-
-        if (field === 'courses_offered') {
-            return (
-                <div>
-                    <MultiSearchableSelect
-                        options={degreeSelectOptions}
-                        values={selectedDegrees}
-                        onChange={handleDegreesChange}
-                        placeholder="Select degrees offered..."
-                        searchPlaceholder="Search degrees..."
-                    />
                     {fieldErrors[field] && (
                         <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
                     )}
