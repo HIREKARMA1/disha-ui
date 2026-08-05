@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -33,23 +33,18 @@ import { FileUpload } from '../ui/file-upload'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { z } from "zod";
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
-<<<<<<< Updated upstream
-import { useInstituteTypes, useBranches } from '@/hooks/useLookup'
-import { LookupSelect } from '@/components/ui/lookup-select'
-=======
-import { useInstituteTypes } from '@/hooks/useLookup'
+import { useInstituteTypes, useDegrees, useBranches } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import {
-    DEGREE_OPTIONS,
     parseMultiValueField,
     serializeMultiValueField,
-    getBranchesForDegrees,
+    filterBranchNamesForDegree,
     formatMultiValueDisplay,
 } from '@/lib/academicHierarchy'
->>>>>>> Stashed changes
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -870,28 +865,26 @@ export function UniversityProfile() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                     <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {profile?.courses_offered || 'Not specified'}
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
+                                        {formatMultiValueDisplay(profile?.courses_offered)}
                                     </p>
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">Courses Offered</p>
+                                    <p className="text-xs text-blue-600 dark:text-blue-400">Degree Offered</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            {profile?.branch && (
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Branch</h4>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        {profile.branch}
-                                    </p>
-                                </div>
-                            )}
+                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Branch</h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 break-words">
+                                    {parseMultiValueField(profile?.branch).join(', ') || 'Not specified'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -920,21 +913,42 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         enabled: section.id === 'institution',
         limit: 1000,
     })
-<<<<<<< Updated upstream
-    const { data: branches, loading: loadingBranches, error: branchesError } = useBranches({
+    const { data: lookupDegrees, loading: loadingDegrees, error: degreesError } = useDegrees({
         enabled: section.id === 'academic',
         limit: 1000,
     })
-=======
+    const { data: lookupBranches, loading: loadingBranches, error: branchesError } = useBranches({
+        enabled: section.id === 'academic',
+        limit: 1000,
+    })
 
     const selectedDegrees = parseMultiValueField(formData.courses_offered as string | undefined)
     const selectedBranches = parseMultiValueField(formData.branch as string | undefined)
-    const availableBranchOptions = getBranchesForDegrees(selectedDegrees).map((name) => ({
-        value: name,
-        label: name,
-    }))
-    const degreeSelectOptions = DEGREE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))
->>>>>>> Stashed changes
+
+    const degreeSelectOptions = useMemo(() => {
+        const seen = new Set<string>()
+        return lookupDegrees
+            .filter((d) => {
+                const name = d.name?.trim()
+                if (!name || seen.has(name)) return false
+                seen.add(name)
+                return true
+            })
+            .map((d) => ({ value: d.name, label: d.name }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+    }, [lookupDegrees])
+
+    const availableBranchOptions = useMemo(() => {
+        if (!selectedDegrees.length) return []
+        const allNames = lookupBranches.map((b) => b.name)
+        const allowed = new Set<string>()
+        for (const degree of selectedDegrees) {
+            filterBranchNamesForDegree(allNames, degree).forEach((name) => allowed.add(name))
+        }
+        return Array.from(allowed)
+            .sort((a, b) => a.localeCompare(b))
+            .map((name) => ({ value: name, label: name }))
+    }, [lookupBranches, selectedDegrees])
 
     useEffect(() => {
         if (profile && section) {
@@ -947,12 +961,13 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         }
     }, [profile, section])
 
-<<<<<<< Updated upstream
-=======
     const handleDegreesChange = (degrees: string[]) => {
-        const nextBranches = selectedBranches.filter((branch) =>
-            getBranchesForDegrees(degrees).includes(branch)
-        )
+        const allNames = lookupBranches.map((b) => b.name)
+        const allowed = new Set<string>()
+        for (const degree of degrees) {
+            filterBranchNamesForDegree(allNames, degree).forEach((name) => allowed.add(name))
+        }
+        const nextBranches = selectedBranches.filter((branch) => allowed.has(branch))
         setFormData({
             ...formData,
             courses_offered: serializeMultiValueField(degrees),
@@ -973,7 +988,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         }
     }
 
->>>>>>> Stashed changes
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -1049,15 +1063,16 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
         // Academic Information validation
         if (section.id === 'academic') {
-            // Courses offered validation
-            if (formData.courses_offered && formData.courses_offered.trim().length < 5) {
-                errors.courses_offered = 'Courses offered must be at least 5 characters long'
+            const degrees = parseMultiValueField(formData.courses_offered as string | undefined)
+            const branchesSelected = parseMultiValueField(formData.branch as string | undefined)
+
+            if (degrees.length === 0) {
+                errors.courses_offered = 'Please select at least one degree offered'
                 hasValidationErrors = true
             }
 
-            // Branch validation
-            if (formData.branch && formData.branch.trim().length < 2) {
-                errors.branch = 'Branch must be at least 2 characters long'
+            if (branchesSelected.length === 0) {
+                errors.branch = 'Please select at least one branch'
                 hasValidationErrors = true
             }
         }
@@ -1187,8 +1202,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-        // Handle textarea fields
-        if (field.includes('bio') || field.includes('courses_offered')) {
+        // Handle textarea fields (bio only — courses_offered is multi-select)
+        if (field.includes('bio')) {
             return (
                 <div>
                     <Textarea
@@ -1211,8 +1226,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-<<<<<<< Updated upstream
-=======
         if (field === 'courses_offered') {
             return (
                 <div>
@@ -1220,9 +1233,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                         options={degreeSelectOptions}
                         values={selectedDegrees}
                         onChange={handleDegreesChange}
-                        placeholder="Select degrees offered..."
+                        placeholder={loadingDegrees ? 'Loading degrees...' : 'Select degrees offered...'}
                         searchPlaceholder="Search degrees..."
+                        disabled={loadingDegrees}
+                        isLoading={loadingDegrees}
                     />
+                    {degreesError && (
+                        <p className="text-red-500 text-xs mt-1">{degreesError}</p>
+                    )}
                     {fieldErrors[field] && (
                         <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
                     )}
@@ -1230,7 +1248,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
->>>>>>> Stashed changes
         // Handle number fields
         if (field.includes('year') || field.includes('students') || field.includes('faculty') || field.includes('rate') || field.includes('package')) {
             return (
@@ -1276,30 +1293,25 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
 
         if (field === 'branch') {
             return (
-<<<<<<< Updated upstream
-                <LookupSelect
-                    value={(value as string) || ''}
-                    onChange={(val) => setFormData({ ...formData, [field]: val })}
-                    data={branches}
-                    loading={loadingBranches}
-                    placeholder="Select branch"
-                    error={branchesError || undefined}
-                    required
-                />
-=======
                 <div>
                     <MultiSearchableSelect
                         options={availableBranchOptions}
                         values={selectedBranches}
                         onChange={handleBranchesChange}
                         placeholder={
-                            selectedDegrees.length
-                                ? 'Select related branches...'
-                                : 'Select a degree first...'
+                            loadingBranches
+                                ? 'Loading branches...'
+                                : selectedDegrees.length
+                                    ? 'Select related branches...'
+                                    : 'Select a degree first...'
                         }
                         searchPlaceholder="Search branches..."
-                        disabled={selectedDegrees.length === 0}
+                        disabled={selectedDegrees.length === 0 || loadingBranches}
+                        isLoading={loadingBranches}
                     />
+                    {branchesError && (
+                        <p className="text-red-500 text-xs mt-1">{branchesError}</p>
+                    )}
                     {selectedDegrees.length === 0 && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Choose one or more degrees to see related branches.
@@ -1309,7 +1321,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                         <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
                     )}
                 </div>
->>>>>>> Stashed changes
             )
         }
 
@@ -1414,9 +1425,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {section.fields.map((field) => (
-                    <div key={field} className={field.includes('bio') || field.includes('address') || field.includes('courses_offered') ? 'md:col-span-2' : ''}>
+                    <div key={field} className={field.includes('bio') || field.includes('address') || field.includes('courses_offered') || field === 'branch' ? 'md:col-span-2' : ''}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 capitalize">
-                            {field.replace(/_/g, ' ')}
+                            {field === 'courses_offered' ? 'Degree Offered' : field.replace(/_/g, ' ')}
                         </label>
                         {renderField(field)}
                     </div>
