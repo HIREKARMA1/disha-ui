@@ -1,13 +1,12 @@
 'use client'
 
-import { Mail, Phone, MapPin, Calendar, BadgeCheck, Pencil, Camera, GraduationCap, Building2, User } from 'lucide-react'
+import { Mail, Phone, MapPin, Calendar, BadgeCheck, Camera, GraduationCap, Building2, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
 import type { StudentProfile } from '@/services/profileService'
 
 interface ProfileSummaryCardProps {
   profile: StudentProfile
-  onEditProfile: () => void
   onChangePhoto: () => void
 }
 
@@ -20,7 +19,7 @@ function formatGender(gender?: string) {
   return gender.charAt(0).toUpperCase() + gender.slice(1)
 }
 
-export function ProfileSummaryCard({ profile, onEditProfile, onChangePhoto }: ProfileSummaryCardProps) {
+export function ProfileSummaryCard({ profile, onChangePhoto }: ProfileSummaryCardProps) {
   const location = [profile.city, profile.state, profile.country].filter(Boolean).join(', ') || 'Location not set'
   const memberSince = profile.created_at
     ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -30,9 +29,9 @@ export function ProfileSummaryCard({ profile, onEditProfile, onChangePhoto }: Pr
     : '—'
 
   return (
-    <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 shadow-sm p-4 sm:p-5 lg:p-6">
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-        <div className="flex flex-col items-center lg:items-start shrink-0">
+    <div className="relative rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 shadow-sm p-4 sm:p-5 lg:p-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 pt-1 lg:pt-0 items-center lg:items-start">
+        <div className="flex flex-col items-center shrink-0">
           <div className="relative">
             <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-md overflow-hidden ring-4 ring-white dark:ring-[#0a0c14]">
               {profile.profile_picture ? (
@@ -45,7 +44,7 @@ export function ProfileSummaryCard({ profile, onEditProfile, onChangePhoto }: Pr
             <button
               type="button"
               onClick={onChangePhoto}
-              className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-white dark:bg-[#1a2030] border border-gray-200 dark:border-white/10 shadow-sm flex items-center justify-center text-blue-500"
+              className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-white dark:bg-[#1a2030] border border-gray-200 dark:border-white/10 shadow-sm flex items-center justify-center text-blue-500 hover:scale-110 transition-transform"
               title="Change photo"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -53,34 +52,23 @@ export function ProfileSummaryCard({ profile, onEditProfile, onChangePhoto }: Pr
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 text-center lg:text-left">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                {profile.name || 'Student'}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 flex items-center justify-center lg:justify-start gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                {[profile.degree, profile.branch].filter(Boolean).join(' · ') || 'Degree not set'}
-              </p>
-              <p className="text-sm font-medium text-blue-500 mt-0.5 flex items-center justify-center lg:justify-start gap-1.5">
-                <Building2 className="w-3.5 h-3.5 shrink-0" />
-                {profile.institution || 'University not set'}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5 flex items-center justify-center lg:justify-start gap-1">
-                <MapPin className="w-3 h-3" />
-                {location}
-              </p>
-            </div>
-
-            <Button
-              type="button"
-              onClick={onEditProfile}
-              className="w-full lg:w-auto h-10 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-sm shrink-0"
-            >
-              <Pencil className="w-3.5 h-3.5 mr-1.5" />
-              Edit Profile
-            </Button>
+        <div className="flex-1 min-w-0 w-full text-center lg:text-left">
+          <div className="w-full flex flex-col items-center lg:items-start text-center lg:text-left">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate max-w-full">
+              {profile.name || 'Student'}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 flex items-center justify-center lg:justify-start gap-1.5">
+              <GraduationCap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span>{[profile.degree, profile.branch].filter(Boolean).join(' · ') || 'Degree not set'}</span>
+            </p>
+            <p className="text-sm font-medium text-blue-500 mt-0.5 flex items-center justify-center lg:justify-start gap-1.5">
+              <Building2 className="w-3.5 h-3.5 shrink-0" />
+              <span>{profile.institution || 'University not set'}</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5 flex items-center justify-center lg:justify-start gap-1">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span>{location}</span>
+            </p>
           </div>
 
           {/* Two-column personal info grid (mobile + desktop) */}

@@ -9,29 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import apiClient from '@/lib/api'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { useBranches } from '@/hooks/useLookup'
+import {
+    DEGREE_OPTIONS,
+    getBranchesForDegrees,
+} from '@/lib/academicHierarchy'
 
-// Degree options (Full list for fallback)
-export const degreeOptions = [
-    { value: 'Bachelor of Technology', label: 'Bachelor of Technology (B.Tech)' },
-    { value: 'Bachelor of Engineering', label: 'Bachelor of Engineering (B.E.)' },
-    { value: 'Bachelor of Science', label: 'Bachelor of Science (B.Sc)' },
-    { value: 'Bachelor of Computer Applications', label: 'Bachelor of Computer Applications (BCA)' },
-    { value: 'Bachelor of Business Administration', label: 'Bachelor of Business Administration (BBA)' },
-    { value: 'Bachelor of Commerce', label: 'Bachelor of Commerce (B.Com)' },
-    { value: 'Bachelor of Arts', label: 'Bachelor of Arts (B.A.)' },
-    { value: 'Master of Technology', label: 'Master of Technology (M.Tech)' },
-    { value: 'Master of Engineering', label: 'Master of Engineering (M.E.)' },
-    { value: 'Master of Science', label: 'Master of Science (M.Sc)' },
-    { value: 'Master of Computer Applications', label: 'Master of Computer Applications (MCA)' },
-    { value: 'Master of Business Administration', label: 'Master of Business Administration (MBA)' },
-    { value: 'Master of Commerce', label: 'Master of Commerce (M.Com)' },
-    { value: 'Master of Arts', label: 'Master of Arts (M.A.)' },
-    { value: 'Diploma', label: 'Diploma' },
-    { value: 'Post Graduate Diploma', label: 'Post Graduate Diploma (PGD)' },
-    { value: 'Doctor of Philosophy', label: 'Doctor of Philosophy (Ph.D)' },
-    { value: 'Other', label: 'Other' }
-]
+// Re-export for existing imports (student filters, licenses, etc.)
+export const degreeOptions = DEGREE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))
 
 interface LocalLicense {
     id: string
@@ -53,8 +37,6 @@ export function CreateStudentModal({
     onClose,
     onSubmit
 }: CreateStudentModalProps) {
-    const { data: branches } = useBranches({ limit: 1000 })
-    const branchOptions = branches.map((branch) => ({ value: branch.name, label: branch.name }))
     const [formData, setFormData] = useState<CreateStudentRequest>({
         name: '',
         email: '',
@@ -72,6 +54,14 @@ export function CreateStudentModal({
     const [licenses, setLicenses] = useState<LocalLicense[]>([])
     const [isLoadingLicenses, setIsLoadingLicenses] = useState(false)
     const [fetchError, setFetchError] = useState<string | null>(null)
+
+    const branchOptions = useMemo(() => {
+        if (!formData.degree) return []
+        return getBranchesForDegrees([formData.degree]).map((name) => ({
+            value: name,
+            label: name,
+        }))
+    }, [formData.degree])
 
     useEffect(() => {
         if (isOpen) {
@@ -431,7 +421,7 @@ export function CreateStudentModal({
                                             </div>
                                         </div>
 
-                                        {/* Degree - Independent Select */}
+                                        {/* Degree */}
                                         <div>
                                             <label htmlFor="degree" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Degree *
@@ -440,7 +430,14 @@ export function CreateStudentModal({
                                                 <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                                                 <Select
                                                     value={formData.degree || ''}
-                                                    onValueChange={(value) => handleInputChange('degree', value)}
+                                                    onValueChange={(value) => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            degree: value,
+                                                            branch: undefined,
+                                                        }))
+                                                        if (error) setError(null)
+                                                    }}
                                                     disabled={!hasActiveLicenses}
                                                 >
                                                     <SelectTrigger className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
@@ -457,7 +454,7 @@ export function CreateStudentModal({
                                             </div>
                                         </div>
 
-                                        {/* Branch - Independent Select */}
+                                        {/* Branch — filtered by selected degree */}
                                         <div>
                                             <label htmlFor="branch" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 Branch *
@@ -467,10 +464,10 @@ export function CreateStudentModal({
                                                 <Select
                                                     value={formData.branch || ''}
                                                     onValueChange={(value) => handleInputChange('branch', value)}
-                                                    disabled={!hasActiveLicenses}
+                                                    disabled={!hasActiveLicenses || !formData.degree}
                                                 >
                                                     <SelectTrigger className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50">
-                                                        <SelectValue placeholder="Select Branch" />
+                                                        <SelectValue placeholder={formData.degree ? 'Select Branch' : 'Select degree first'} />
                                                     </SelectTrigger>
                                                     <SelectContent className="max-h-48 sm:max-h-60">
                                                         {branchOptions.map((option) => (

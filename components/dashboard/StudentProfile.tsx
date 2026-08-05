@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -19,6 +20,7 @@ import {
     Calendar,
     TrendingUp,
     Sparkles,
+    Pencil,
     Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -324,8 +326,8 @@ export function StudentProfile() {
             <div className="pt-16 lg:pl-64">
                 <main className="flex-1 p-3 sm:p-4 lg:p-6">
                     <div className="w-full max-w-[1400px] mx-auto">
-                        {/* Hero Banner Card - Visible on laptop/desktop only */}
-                        <div className="hidden lg:block relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
+                        {/* Hero Banner Card - Visible on laptop/desktop only Banner Card - Visible on laptop/desktop only */}
+                        <div className="hidden lg:block hidden lg:block relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
                             <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
                             <div className="relative flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                                 <div className="flex-1 min-w-0">
@@ -359,7 +361,27 @@ export function StudentProfile() {
                             </div>
                         </div>
 
-                        <div className="space-y-3 sm:space-y-4 relative">
+                        <div className="space-y-3 sm:space-y-4 relative relative">
+                            {/* Sticky Edit Profile Button */}
+                            <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
+                                <div className="sticky top-[80px] pointer-events-auto">
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditing(activeTab)
+                                            setTimeout(() => {
+                                                formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                            }, 100)
+                                        }}
+                                        size="sm"
+                                        className="h-8 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-md text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all hover:scale-105"
+                                    >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                        <span>Edit Profile</span>
+                                    </Button>
+                                </div>
+                            </div>
+
                             {/* Sticky Edit Profile Button */}
                             <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
                                 <div className="sticky top-[80px] pointer-events-auto">
@@ -394,6 +416,9 @@ export function StudentProfile() {
                                     setTimeout(() => {
                                         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                     }, 100)
+                                    setTimeout(() => {
+                                        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                    }, 100)
                                 }}
                             />
 
@@ -422,6 +447,12 @@ export function StudentProfile() {
                                                                 setEditing(tab.id)
                                                             }
                                                         }}
+                                                        onClick={() => {
+                                                            setActiveTab(tab.id)
+                                                            if (editing) {
+                                                                setEditing(tab.id)
+                                                            }
+                                                        }}
                                                         className={cn(
                                                             'flex items-center gap-1.5 py-2.5 px-1 sm:px-2 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0 relative',
                                                             activeTab === tab.id
@@ -441,8 +472,9 @@ export function StudentProfile() {
                                     </div>
 
                                     {/* Tab Content */}
-                                    <div ref={formRef} className="min-h-0 lg:min-h-[480px] scroll-mt-20">
+                                    <div ref={formRef} ref={formRef} className="min-h-0 lg:min-h-[480px] scroll-mt-20 scroll-mt-20">
                                         {activeTab === 'basic' && (
+                                            <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                             <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
@@ -2287,6 +2319,55 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 </div>
             )}
 
+            {/* Action buttons (Statically placed on desktop/laptop, sticky portal bar on mobile) */}
+            {mounted && (
+                isMobile ? (
+                    typeof document !== 'undefined' && createPortal(
+                        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center gap-3 p-2 bg-[#1a2030]/95 text-white backdrop-blur-lg border border-white/15 shadow-2xl rounded-2xl ring-1 ring-black/20 animate-in fade-in slide-in-from-bottom-3 duration-200">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onCancel}
+                                size="sm"
+                                className="h-9 px-4 text-xs font-semibold rounded-lg border-gray-600 bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                form="profile-section-form"
+                                disabled={saving || hasFieldErrors}
+                                size="sm"
+                                className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </Button>
+                        </div>,
+                        document.body
+                    )
+                ) : (
+                    <div className="flex items-center justify-start gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700/50">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onCancel}
+                            size="sm"
+                            className="h-9 px-4 text-xs font-semibold rounded-lg border-gray-300 dark:border-gray-600 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-all"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="profile-section-form"
+                            disabled={saving || hasFieldErrors}
+                            size="sm"
+                            className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                )
+            )}
             {/* Action buttons (Statically placed on desktop/laptop, sticky portal bar on mobile) */}
             {mounted && (
                 isMobile ? (
