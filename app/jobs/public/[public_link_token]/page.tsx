@@ -277,7 +277,7 @@ export default function PublicJobPage() {
         if (!studentUniversityId) {
             return {
                 canApply: false,
-                reason: 'This job is not available for your university.',
+                reason: 'This job is not available for your university',
             }
         }
 
@@ -285,7 +285,7 @@ export default function PublicJobPage() {
         if (!job.assigned_university_ids.includes(studentUniversityId)) {
             return {
                 canApply: false,
-                reason: 'This job is not available for your university.',
+                reason: 'This job is not available for your university',
             }
         }
 
