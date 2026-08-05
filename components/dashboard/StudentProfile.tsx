@@ -521,10 +521,10 @@ export function StudentProfile() {
                                                             </p>
                                                             <FileUpload
                                                                 type="document"
-                                                                maxSize={1}
+                                                                maxSize={5}
                                                                 onFileSelect={handleResumeUpload}
                                                                 currentFile={profile.resume}
-                                                                placeholder="Upload your resume (PDF only, max 1 MB)"
+                                                                placeholder="Upload your resume (PDF only, max 5 MB)"
                                                                 disabled={uploadingResume}
                                                             />
                                                             {uploadingResume && (
@@ -1667,11 +1667,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 <div className="space-y-3">
                     <FileUpload
                         type="document"
-                        maxSize={1}
+                        maxSize={5}
                         onFileSelect={(file) => handleFileUpload(field, file)}
                         onFileRemove={() => handleFileRemove(field)}
                         currentFile={value}
-                        placeholder="Upload your resume (PDF only, max 1 MB)"
+                        placeholder="Upload your resume (PDF only, max 5 MB)"
                         disabled={uploading === field}
                     />
                     {uploading === field && (

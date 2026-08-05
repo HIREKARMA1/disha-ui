@@ -80,9 +80,12 @@ export function FileUpload({
     }
 
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            handleFile(e.target.files[0])
+        const file = e.target.files?.[0]
+        if (file) {
+            handleFile(file)
         }
+        // Clear so the same or another file can be selected again (esp. after rejection on iOS)
+        e.target.value = ''
     }
 
     const handleFile = (file: File) => {
