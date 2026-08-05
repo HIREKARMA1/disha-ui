@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
     User,
@@ -37,13 +37,12 @@ import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { z } from "zod";
 import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
-import { useInstituteTypes } from '@/hooks/useLookup'
+import { useInstituteTypes, useDegrees, useBranches } from '@/hooks/useLookup'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import {
-    DEGREE_OPTIONS,
     parseMultiValueField,
     serializeMultiValueField,
-    getBranchesForDegrees,
+    filterBranchNamesForDegree,
     formatMultiValueDisplay,
 } from '@/lib/academicHierarchy'
 
@@ -914,14 +913,42 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
         enabled: section.id === 'institution',
         limit: 1000,
     })
+    const { data: lookupDegrees, loading: loadingDegrees, error: degreesError } = useDegrees({
+        enabled: section.id === 'academic',
+        limit: 1000,
+    })
+    const { data: lookupBranches, loading: loadingBranches, error: branchesError } = useBranches({
+        enabled: section.id === 'academic',
+        limit: 1000,
+    })
 
     const selectedDegrees = parseMultiValueField(formData.courses_offered as string | undefined)
     const selectedBranches = parseMultiValueField(formData.branch as string | undefined)
-    const availableBranchOptions = getBranchesForDegrees(selectedDegrees).map((name) => ({
-        value: name,
-        label: name,
-    }))
-    const degreeSelectOptions = DEGREE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))
+
+    const degreeSelectOptions = useMemo(() => {
+        const seen = new Set<string>()
+        return lookupDegrees
+            .filter((d) => {
+                const name = d.name?.trim()
+                if (!name || seen.has(name)) return false
+                seen.add(name)
+                return true
+            })
+            .map((d) => ({ value: d.name, label: d.name }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+    }, [lookupDegrees])
+
+    const availableBranchOptions = useMemo(() => {
+        if (!selectedDegrees.length) return []
+        const allNames = lookupBranches.map((b) => b.name)
+        const allowed = new Set<string>()
+        for (const degree of selectedDegrees) {
+            filterBranchNamesForDegree(allNames, degree).forEach((name) => allowed.add(name))
+        }
+        return Array.from(allowed)
+            .sort((a, b) => a.localeCompare(b))
+            .map((name) => ({ value: name, label: name }))
+    }, [lookupBranches, selectedDegrees])
 
     useEffect(() => {
         if (profile && section) {
@@ -935,9 +962,12 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
     }, [profile, section])
 
     const handleDegreesChange = (degrees: string[]) => {
-        const nextBranches = selectedBranches.filter((branch) =>
-            getBranchesForDegrees(degrees).includes(branch)
-        )
+        const allNames = lookupBranches.map((b) => b.name)
+        const allowed = new Set<string>()
+        for (const degree of degrees) {
+            filterBranchNamesForDegree(allNames, degree).forEach((name) => allowed.add(name))
+        }
+        const nextBranches = selectedBranches.filter((branch) => allowed.has(branch))
         setFormData({
             ...formData,
             courses_offered: serializeMultiValueField(degrees),
@@ -1203,9 +1233,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                         options={degreeSelectOptions}
                         values={selectedDegrees}
                         onChange={handleDegreesChange}
-                        placeholder="Select degrees offered..."
+                        placeholder={loadingDegrees ? 'Loading degrees...' : 'Select degrees offered...'}
                         searchPlaceholder="Search degrees..."
+                        disabled={loadingDegrees}
+                        isLoading={loadingDegrees}
                     />
+                    {degreesError && (
+                        <p className="text-red-500 text-xs mt-1">{degreesError}</p>
+                    )}
                     {fieldErrors[field] && (
                         <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
                     )}
@@ -1264,13 +1299,19 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                         values={selectedBranches}
                         onChange={handleBranchesChange}
                         placeholder={
-                            selectedDegrees.length
-                                ? 'Select related branches...'
-                                : 'Select a degree first...'
+                            loadingBranches
+                                ? 'Loading branches...'
+                                : selectedDegrees.length
+                                    ? 'Select related branches...'
+                                    : 'Select a degree first...'
                         }
                         searchPlaceholder="Search branches..."
-                        disabled={selectedDegrees.length === 0}
+                        disabled={selectedDegrees.length === 0 || loadingBranches}
+                        isLoading={loadingBranches}
                     />
+                    {branchesError && (
+                        <p className="text-red-500 text-xs mt-1">{branchesError}</p>
+                    )}
                     {selectedDegrees.length === 0 && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Choose one or more degrees to see related branches.

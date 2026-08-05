@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { degreeOptions } from '@/components/dashboard/CreateStudentModal'
+import { filterBranchNamesForDegree, getBranchesForDegrees } from '@/lib/academicHierarchy'
 import { useBranches } from '@/hooks/useLookup'
 
 interface LicenseRequestModalProps {
@@ -18,7 +19,6 @@ interface LicenseRequestModalProps {
 
 export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseRequestModalProps) {
     const { data: branches } = useBranches({ limit: 1000 })
-    const branchOptions = branches.map((branch) => ({ value: branch.name, label: branch.name }))
     const [formData, setFormData] = useState({
         requested_total: '',
         batch: '',
@@ -29,6 +29,18 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
         message: ''
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const branchOptions = useMemo(() => {
+        if (!formData.degree) return []
+        const fromLookup = filterBranchNamesForDegree(
+            branches.map((b) => b.name),
+            formData.degree
+        )
+        const names = fromLookup.length
+            ? fromLookup
+            : getBranchesForDegrees([formData.degree])
+        return names.map((name) => ({ value: name, label: name }))
+    }, [branches, formData.degree])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -141,7 +153,9 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
                         </label>
                         <Select
                             value={formData.degree}
-                            onValueChange={(value) => handleChange('degree', value)}
+                            onValueChange={(value) => {
+                                setFormData((prev) => ({ ...prev, degree: value, branches: '' }))
+                            }}
                             disabled={isSubmitting}
                         >
                             <SelectTrigger id="degree" className="w-full">
@@ -163,10 +177,10 @@ export function LicenseRequestModal({ isOpen, onClose, onSuccess }: LicenseReque
                         <Select
                             value={formData.branches}
                             onValueChange={(value) => handleChange('branches', value)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !formData.degree}
                         >
                             <SelectTrigger id="branches" className="w-full">
-                                <SelectValue placeholder="Select branches" />
+                                <SelectValue placeholder={formData.degree ? 'Select branch' : 'Select degree first'} />
                             </SelectTrigger>
                             <SelectContent>
                                 {branchOptions.map((option) => (

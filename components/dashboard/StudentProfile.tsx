@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
@@ -38,6 +38,7 @@ import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { buildLocationLabel } from '@/lib/googlePlacesUtils'
 import { useBranches, useDegrees, useUniversities, useIndustries } from '@/hooks/useLookup'
+import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
@@ -1227,12 +1228,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         loading: loadingBranches,
         error: branchesError
     } = useBranches({
-        enabled: section.id === 'academic'
+        enabled: section.id === 'academic',
+        limit: 1000,
     })
-
-    console.log('branches', branches)
-    console.log('loadingBranches', loadingBranches)
-    console.log('branchesError', branchesError)
 
     // Use professional lookup hook for degrees
     const {
@@ -1240,8 +1238,32 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         loading: loadingDegrees,
         error: degreesError
     } = useDegrees({
-        enabled: section.id === 'academic'
+        enabled: section.id === 'academic',
+        limit: 1000,
     })
+
+    const degreeOptions = useMemo(() => {
+        const seen = new Set<string>()
+        return degrees
+            .filter((d) => {
+                const name = d.name?.trim()
+                if (!name || seen.has(name)) return false
+                seen.add(name)
+                return true
+            })
+            .sort((a, b) => a.name.localeCompare(b.name))
+    }, [degrees])
+
+    // Degree → related branches only (B.Tech → engineering, B.Sc → science, etc.)
+    const filteredBranches = useMemo(() => {
+        const selectedDegree = String(formData.degree || '')
+        if (!selectedDegree) return []
+        const allowedNames = filterBranchNamesForDegree(
+            branches.map((b) => b.name),
+            selectedDegree
+        )
+        return branches.filter((b) => allowedNames.includes(b.name))
+    }, [branches, formData.degree])
 
     // Use professional lookup hook for universities
     const {
@@ -1926,28 +1948,31 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             )
         }
 
-        // Handle branch field with professional lookup component
+        // Handle branch field — options depend on selected degree
         if (field === 'branch') {
             return (
                 <LookupSelect
                     value={value}
                     onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
-                    data={branches}
+                    data={filteredBranches}
                     loading={loadingBranches}
-                    placeholder="Select your branch"
+                    placeholder={formData.degree ? 'Select your branch' : 'Select degree first'}
                     error={branchesError || undefined}
                     required
+                    disabled={!formData.degree}
                 />
             )
         }
 
-        // Handle degree field with professional lookup component
+        // Handle degree field — clearing degree resets branch
         if (field === 'degree') {
             return (
                 <LookupSelect
                     value={value}
-                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
-                    data={degrees}
+                    onChange={(newValue) =>
+                        setFormData({ ...formData, degree: newValue, branch: '' })
+                    }
+                    data={degreeOptions}
                     loading={loadingDegrees}
                     placeholder="Select your degree"
                     error={degreesError || undefined}
@@ -2256,6 +2281,55 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 </div>
             )}
 
+            {/* Action buttons (Statically placed on desktop/laptop, sticky portal bar on mobile) */}
+            {mounted && (
+                isMobile ? (
+                    typeof document !== 'undefined' && createPortal(
+                        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center gap-3 p-2 bg-[#1a2030]/95 text-white backdrop-blur-lg border border-white/15 shadow-2xl rounded-2xl ring-1 ring-black/20 animate-in fade-in slide-in-from-bottom-3 duration-200">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onCancel}
+                                size="sm"
+                                className="h-9 px-4 text-xs font-semibold rounded-lg border-gray-600 bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                form="profile-section-form"
+                                disabled={saving || hasFieldErrors}
+                                size="sm"
+                                className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </Button>
+                        </div>,
+                        document.body
+                    )
+                ) : (
+                    <div className="flex items-center justify-start gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700/50">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onCancel}
+                            size="sm"
+                            className="h-9 px-4 text-xs font-semibold rounded-lg border-gray-300 dark:border-gray-600 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 transition-all"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="profile-section-form"
+                            disabled={saving || hasFieldErrors}
+                            size="sm"
+                            className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                )
+            )}
             {/* Action buttons (Statically placed on desktop/laptop, sticky portal bar on mobile) */}
             {mounted && (
                 isMobile ? (
