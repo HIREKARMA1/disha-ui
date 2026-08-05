@@ -616,6 +616,7 @@ export default function AdminJobsPage() {
                                 Manage Public Access
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+                                Recommended: make the job public so students can see and apply.
                                 Choose who can apply through the public job link.
                             </p>
 
@@ -633,7 +634,7 @@ export default function AdminJobsPage() {
                                     onClick={() => executePublicAccessChange(jobForPublicAction, 'all')}
                                     disabled={isTogglingPublic}
                                 >
-                                    Make Public for All Students
+                                    Make Public for All Students (Recommended)
                                 </Button>
 
                                 {jobForPublicAction.is_public && (

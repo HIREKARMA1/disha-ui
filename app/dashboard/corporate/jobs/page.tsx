@@ -316,6 +316,7 @@ export default function CorporateJobsPage() {
                                         </SelectTrigger>
                                         <SelectContent sideOffset={4} className="z-[60]">
                                             <SelectItem value="all">All Status</SelectItem>
+                                            <SelectItem value="draft">Draft</SelectItem>
                                             <SelectItem value="active">Active</SelectItem>
                                             <SelectItem value="inactive">Inactive</SelectItem>
                                             <SelectItem value="closed">Closed</SelectItem>
