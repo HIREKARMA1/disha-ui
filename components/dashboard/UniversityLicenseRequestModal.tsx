@@ -14,7 +14,6 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { degreeOptions } from '@/components/dashboard/CreateStudentModal'
 import { useBranches } from '@/hooks/useLookup'
-import { filterBranchNamesForDegree, getBranchesForDegrees } from '@/lib/academicHierarchy'
 
 interface UniversityLicenseRequestModalProps {
     isOpen: boolean
@@ -48,23 +47,12 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
         message: ''
     })
 
-    const branchDropdownOptions = useMemo(() => {
-        const allNames = branches.map((branch) => branch.name)
-        const selectedDegrees = formData.degree
-        if (!selectedDegrees.length) {
-            return []
-        }
-        // Union of branches related to any selected degree
-        const allowed = new Set<string>()
-        for (const degree of selectedDegrees) {
-            const filtered = filterBranchNamesForDegree(allNames, degree)
-            const names = filtered.length ? filtered : getBranchesForDegrees([degree])
-            names.forEach((n) => allowed.add(n))
-        }
-        return Array.from(allowed)
-            .sort((a, b) => a.localeCompare(b))
-            .map((name) => ({ value: name, label: name }))
-    }, [branches, formData.degree])
+    const branchDropdownOptions = useMemo(() => (
+        branches.map((branch) => ({
+            value: branch.name,
+            label: branch.name
+        }))
+    ), [branches])
 
     // Reset state when modal opens
     useEffect(() => {
@@ -170,17 +158,9 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
     }
 
     const handleDegreeChange = (selectedDegrees: string[]) => {
-        const allNames = branches.map((branch) => branch.name)
-        const allowed = new Set<string>()
-        for (const degree of selectedDegrees) {
-            const filtered = filterBranchNamesForDegree(allNames, degree)
-            const names = filtered.length ? filtered : getBranchesForDegrees([degree])
-            names.forEach((n) => allowed.add(n))
-        }
-        const nextBranches = formData.branches.filter((b) => allowed.has(b))
-        setFormData((prev) => ({ ...prev, degree: selectedDegrees, branches: nextBranches }))
+        setFormData(prev => ({ ...prev, degree: selectedDegrees }))
         if (formData.batch && formData.batch.length >= 4) {
-            checkEligibility(formData.batch, selectedDegrees, nextBranches)
+            checkEligibility(formData.batch, selectedDegrees, formData.branches)
         }
     }
 
@@ -430,13 +410,8 @@ export function UniversityLicenseRequestModal({ isOpen, onClose, onSuccess, init
                                             options={branchDropdownOptions}
                                             values={formData.branches}
                                             onChange={handleBranchesChange}
-                                            placeholder={
-                                                formData.degree.length
-                                                    ? 'Select related branches'
-                                                    : 'Select a degree first'
-                                            }
+                                            placeholder="Select branches"
                                             searchPlaceholder="Search branches..."
-                                            disabled={!formData.degree.length}
                                         />
 
                                         {eligibility?.request_type !== 'RENEWAL' && !isRenewalFlow && (

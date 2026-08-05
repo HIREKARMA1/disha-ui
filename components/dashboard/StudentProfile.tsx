@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
@@ -38,7 +38,6 @@ import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { buildLocationLabel } from '@/lib/googlePlacesUtils'
 import { useBranches, useDegrees, useUniversities, useIndustries } from '@/hooks/useLookup'
-import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
@@ -1228,9 +1227,12 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         loading: loadingBranches,
         error: branchesError
     } = useBranches({
-        enabled: section.id === 'academic',
-        limit: 1000,
+        enabled: section.id === 'academic'
     })
+
+    console.log('branches', branches)
+    console.log('loadingBranches', loadingBranches)
+    console.log('branchesError', branchesError)
 
     // Use professional lookup hook for degrees
     const {
@@ -1238,32 +1240,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         loading: loadingDegrees,
         error: degreesError
     } = useDegrees({
-        enabled: section.id === 'academic',
-        limit: 1000,
+        enabled: section.id === 'academic'
     })
-
-    const degreeOptions = useMemo(() => {
-        const seen = new Set<string>()
-        return degrees
-            .filter((d) => {
-                const name = d.name?.trim()
-                if (!name || seen.has(name)) return false
-                seen.add(name)
-                return true
-            })
-            .sort((a, b) => a.name.localeCompare(b.name))
-    }, [degrees])
-
-    // Degree → related branches only (B.Tech → engineering, B.Sc → science, etc.)
-    const filteredBranches = useMemo(() => {
-        const selectedDegree = String(formData.degree || '')
-        if (!selectedDegree) return []
-        const allowedNames = filterBranchNamesForDegree(
-            branches.map((b) => b.name),
-            selectedDegree
-        )
-        return branches.filter((b) => allowedNames.includes(b.name))
-    }, [branches, formData.degree])
 
     // Use professional lookup hook for universities
     const {
@@ -1948,31 +1926,28 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             )
         }
 
-        // Handle branch field — options depend on selected degree
+        // Handle branch field with professional lookup component
         if (field === 'branch') {
             return (
                 <LookupSelect
                     value={value}
                     onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
-                    data={filteredBranches}
+                    data={branches}
                     loading={loadingBranches}
-                    placeholder={formData.degree ? 'Select your branch' : 'Select degree first'}
+                    placeholder="Select your branch"
                     error={branchesError || undefined}
                     required
-                    disabled={!formData.degree}
                 />
             )
         }
 
-        // Handle degree field — clearing degree resets branch
+        // Handle degree field with professional lookup component
         if (field === 'degree') {
             return (
                 <LookupSelect
                     value={value}
-                    onChange={(newValue) =>
-                        setFormData({ ...formData, degree: newValue, branch: '' })
-                    }
-                    data={degreeOptions}
+                    onChange={(newValue) => setFormData({ ...formData, [field]: newValue })}
+                    data={degrees}
                     loading={loadingDegrees}
                     placeholder="Select your degree"
                     error={degreesError || undefined}

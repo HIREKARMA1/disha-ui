@@ -80,10 +80,7 @@ class LookupService {
         '/admin/lookups/branches',
         options
       )
-      return (response.branches || []).map((item) => ({
-        ...item,
-        id: String(item.id),
-      }))
+      return response.branches || []
     } catch (error) {
       console.error('Failed to fetch branches:', error)
       return []
@@ -99,10 +96,7 @@ class LookupService {
         '/admin/lookups/degrees',
         options
       )
-      return (response.degrees || []).map((item) => ({
-        ...item,
-        id: String(item.id),
-      }))
+      return response.degrees || []
     } catch (error) {
       console.error('Failed to fetch degrees:', error)
       return []

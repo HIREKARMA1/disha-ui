@@ -123,14 +123,6 @@ export async function uploadSkillsCsv(
 ): Promise<BulkUploadApiResponse> {
     ensureAuth()
     const tableType = kind === 'technical' ? 'skills' : 'soft_skills'
-    return uploadLookupCsv(tableType, file)
-}
-
-export async function uploadLookupCsv(
-    tableType: string,
-    file: File
-): Promise<BulkUploadApiResponse> {
-    ensureAuth()
     const formData = new FormData()
     formData.append('file', file)
     const response = await apiClient.client.post<BulkUploadApiResponse>(
@@ -139,21 +131,6 @@ export async function uploadLookupCsv(
         { headers: { 'Content-Type': 'multipart/form-data' } }
     )
     return response.data
-}
-
-export async function uploadNameLookupCsv(
-    kind: NameLookupKind,
-    file: File
-): Promise<BulkUploadApiResponse> {
-    const tableType =
-        kind === 'education-branches'
-            ? 'branches'
-            : kind === 'degrees'
-              ? 'degrees'
-              : kind === 'industry'
-                ? 'industries'
-                : 'institute_types'
-    return uploadLookupCsv(tableType, file)
 }
 
 // —— Generic name-only lookups ——
@@ -167,10 +144,7 @@ async function listNameLookup(
 ): Promise<NameLookupListApiResponse> {
     ensureAuth()
     const res = (await apiClient.get(endpoint, { params })) as Record<string, unknown>
-    const rows = ((res[responseKey] as NameLookupRow[] | undefined) ?? []).map((row) => ({
-        ...row,
-        id: String(row.id),
-    }))
+    const rows = (res[responseKey] as NameLookupRow[] | undefined) ?? []
     return {
         items: rows,
         total: (res.total as number) ?? rows.length,
@@ -185,10 +159,6 @@ export function listIndustries(params: ListParams) {
 
 export function listEducationBranches(params: ListParams) {
     return listNameLookup('/admin/lookups/branches', 'branches', params)
-}
-
-export function listDegrees(params: ListParams) {
-    return listNameLookup('/admin/lookups/degrees', 'degrees', params)
 }
 
 export function listInstituteTypes(params: ListParams) {
@@ -225,23 +195,6 @@ export async function deleteEducationBranch(id: string): Promise<void> {
     await apiClient.client.delete(`/admin/lookups/branches/${id}`)
 }
 
-export async function createDegree(data: { name: string }): Promise<NameLookupRow> {
-    ensureAuth()
-    const row = await apiClient.post<NameLookupRow>('/admin/lookups/degrees', data)
-    return { ...row, id: String(row.id) }
-}
-
-export async function updateDegree(id: string, data: { name?: string }): Promise<NameLookupRow> {
-    ensureAuth()
-    const row = await apiClient.put<NameLookupRow>(`/admin/lookups/degrees/${id}`, data)
-    return { ...row, id: String(row.id) }
-}
-
-export async function deleteDegree(id: string): Promise<void> {
-    ensureAuth()
-    await apiClient.client.delete(`/admin/lookups/degrees/${id}`)
-}
-
 export async function createInstituteType(data: { name: string }): Promise<NameLookupRow> {
     ensureAuth()
     return apiClient.post('/admin/lookups/institute-types', data)
@@ -264,7 +217,6 @@ const NAME_LOOKUP_API: Record<
         create: (data: { name: string }) => Promise<NameLookupRow>
         update: (id: string, data: { name?: string }) => Promise<NameLookupRow>
         delete: (id: string) => Promise<void>
-        csvTableType?: string
     }
 > = {
     industry: {
@@ -278,14 +230,6 @@ const NAME_LOOKUP_API: Record<
         create: createEducationBranch,
         update: updateEducationBranch,
         delete: deleteEducationBranch,
-        csvTableType: 'branches',
-    },
-    degrees: {
-        list: listDegrees,
-        create: createDegree,
-        update: updateDegree,
-        delete: deleteDegree,
-        csvTableType: 'degrees',
     },
     'institute-type': {
         list: listInstituteTypes,

@@ -34,12 +34,6 @@ const LOOKUP_TABS: LookupTypeTabItem[] = [
         enabled: true,
     },
     {
-        id: 'degrees',
-        label: 'Degrees',
-        description: 'Degrees for student profiles, university settings, and filters',
-        enabled: true,
-    },
-    {
         id: 'education-branches',
         label: 'Education Branches',
         description: 'Branches for student profiles, jobs, and university modules',
@@ -55,7 +49,7 @@ export default function AdminLookupsPage() {
             <div className="space-y-6">
                 <LookupsAdminHero
                     title="Lookup tables"
-                    description="Maintain reference data used across the platform: colleges, skills, industries, degrees, and branches."
+                    description="Maintain reference data used across the platform: colleges, skills, industries, and branches."
                 />
 
                 <LookupTypeTabs items={LOOKUP_TABS} activeId={activeTab} onChange={setActiveTab} />
@@ -64,7 +58,6 @@ export default function AdminLookupsPage() {
                 {activeTab === 'technical-skills' && <SkillLookupSection kind="technical" />}
                 {activeTab === 'soft-skills' && <SkillLookupSection kind="soft" />}
                 {activeTab === 'industry' && <NameLookupSection kind="industry" />}
-                {activeTab === 'degrees' && <NameLookupSection kind="degrees" />}
                 {activeTab === 'education-branches' && <NameLookupSection kind="education-branches" />}
             </div>
         </AdminDashboardLayout>

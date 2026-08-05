@@ -4,13 +4,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { getErrorMessage, type ApiError } from '@/lib/error-handler'
 import type { NameLookupKind, NameLookupRow } from '@/types/lookup'
-import { getNameLookupApi, uploadNameLookupCsv } from '@/services/lookupAdminService'
+import { getNameLookupApi } from '@/services/lookupAdminService'
 import { lookupService } from '@/services/lookupService'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { SkillLookupToolbar } from './SkillLookupToolbar'
 import { SkillLookupTable } from './SkillLookupTable'
 import { LookupFormModal, type LookupFormCopy, type LookupFormMode } from './LookupFormModal'
-import { NameLookupCsvUploadModal } from './NameLookupCsvUploadModal'
 
 const PAGE_SIZE = 25
 
@@ -33,8 +32,6 @@ const CONFIG: Record<
         deleteTitle: string
         deleteMessage: string
         formCopy: LookupFormCopy
-        csvEnabled: boolean
-        cachePath?: string
     }
 > = {
     industry: {
@@ -50,24 +47,6 @@ const CONFIG: Record<
             fieldLabel: 'Industry Type *',
             placeholder: 'e.g. Information Technology',
         },
-        csvEnabled: false,
-        cachePath: '/admin/lookups/industries',
-    },
-    degrees: {
-        label: 'degrees',
-        searchPlaceholder: 'Search degrees by name...',
-        addLabel: 'Add degree',
-        emptyHint: 'Add degrees for student profiles, university academic settings, and filters.',
-        deleteTitle: 'Delete degree',
-        deleteMessage: 'It will no longer appear in degree selection dropdowns.',
-        formCopy: {
-            createTitle: 'Add Degree',
-            editTitle: 'Edit Degree',
-            fieldLabel: 'Degree Name *',
-            placeholder: 'e.g. Bachelor of Technology',
-        },
-        csvEnabled: true,
-        cachePath: '/admin/lookups/degrees',
     },
     'education-branches': {
         label: 'education branches',
@@ -82,8 +61,6 @@ const CONFIG: Record<
             fieldLabel: 'Branch Name *',
             placeholder: 'e.g. Computer Science Engineering',
         },
-        csvEnabled: true,
-        cachePath: '/admin/lookups/branches',
     },
     'institute-type': {
         label: 'institute types',
@@ -98,8 +75,6 @@ const CONFIG: Record<
             fieldLabel: 'Institute Type *',
             placeholder: 'e.g. University',
         },
-        csvEnabled: false,
-        cachePath: '/admin/lookups/institute-types',
     },
 }
 
@@ -123,15 +98,10 @@ export function NameLookupSection({ kind }: NameLookupSectionProps) {
     const [editing, setEditing] = useState<NameLookupRow | null>(null)
     const [deleteTarget, setDeleteTarget] = useState<NameLookupRow | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
-    const [csvOpen, setCsvOpen] = useState(false)
 
     useEffect(() => {
         setSkip(0)
     }, [debouncedSearch, kind])
-
-    const clearCache = () => {
-        if (cfg.cachePath) lookupService.clearCache(cfg.cachePath)
-    }
 
     const fetchRows = useCallback(async () => {
         setIsLoading(true)
@@ -164,7 +134,13 @@ export function NameLookupSection({ kind }: NameLookupSectionProps) {
                 await api.update(editing.id, payload)
             }
             toast.success(formMode === 'create' ? 'Option created.' : 'Option updated.')
-            clearCache()
+            if (kind === 'industry') {
+                lookupService.clearCache('/admin/lookups/industries')
+            } else if (kind === 'education-branches') {
+                lookupService.clearCache('/admin/lookups/branches')
+            } else if (kind === 'institute-type') {
+                lookupService.clearCache('/admin/lookups/institute-types')
+            }
             await fetchRows()
         } catch (err) {
             toast.error(getErrorMessage(err as ApiError))
@@ -178,26 +154,19 @@ export function NameLookupSection({ kind }: NameLookupSectionProps) {
         try {
             await api.delete(deleteTarget.id)
             toast.success('Option deleted.')
-            clearCache()
+            if (kind === 'industry') {
+                lookupService.clearCache('/admin/lookups/industries')
+            } else if (kind === 'education-branches') {
+                lookupService.clearCache('/admin/lookups/branches')
+            } else if (kind === 'institute-type') {
+                lookupService.clearCache('/admin/lookups/institute-types')
+            }
             setDeleteTarget(null)
             await fetchRows()
         } catch (err) {
             toast.error(getErrorMessage(err as ApiError))
         } finally {
             setDeleteLoading(false)
-        }
-    }
-
-    const handleCsvUpload = async (file: File) => {
-        try {
-            const res = await uploadNameLookupCsv(kind, file)
-            toast.success(res.message || 'CSV uploaded.')
-            clearCache()
-            await fetchRows()
-            return res
-        } catch (err) {
-            toast.error(getErrorMessage(err as ApiError))
-            throw err
         }
     }
 
@@ -213,11 +182,7 @@ export function NameLookupSection({ kind }: NameLookupSectionProps) {
                     setEditing(null)
                     setFormOpen(true)
                 }}
-                onUploadCsv={
-                    cfg.csvEnabled
-                        ? () => setCsvOpen(true)
-                        : () => toast('CSV upload is not available for this lookup type.')
-                }
+                onUploadCsv={() => toast('CSV upload is not available for this lookup type.')}
             />
             <SkillLookupTable
                 kind="soft"
@@ -250,14 +215,6 @@ export function NameLookupSection({ kind }: NameLookupSectionProps) {
                 }}
                 onSubmit={handleFormSubmit}
             />
-            {cfg.csvEnabled && (
-                <NameLookupCsvUploadModal
-                    isOpen={csvOpen}
-                    kind={kind}
-                    onClose={() => setCsvOpen(false)}
-                    onUpload={handleCsvUpload}
-                />
-            )}
             <ConfirmationModal
                 isOpen={!!deleteTarget}
                 onClose={() => !deleteLoading && setDeleteTarget(null)}

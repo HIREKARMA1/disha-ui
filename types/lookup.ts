@@ -65,5 +65,4 @@ export interface NameLookupListApiResponse {
 export type NameLookupKind =
     | 'industry'
     | 'education-branches'
-    | 'degrees'
     | 'institute-type'
