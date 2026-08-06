@@ -20,6 +20,7 @@ import {
   Mic,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CodingWorkspace } from '@/components/assessments/CodingWorkspace';
 
 type Phase = 'camera' | 'exam' | 'round_break' | 'warning' | 'ending';
 
@@ -33,6 +34,9 @@ type ExamQuestion = {
   options?: string[];
   question_order: number;
   points: number;
+  question_metadata?: any;
+  coding_submitted?: boolean;
+  coding_submission?: any;
 };
 
 type Props = {
@@ -42,7 +46,7 @@ type Props = {
 
 type ConfirmModal =
   | null
-  | { kind: 'submit'; unanswered: number }
+  | { kind: 'submit'; unanswered: number; codingUnsubmitted?: number }
   | { kind: 'round'; unanswered: number };
 
 function cameraStatusLabel(status: string): string {
@@ -85,6 +89,21 @@ function sortQuestions(qs: ExamQuestion[]): ExamQuestion[] {
 
 function resolveQuestionType(q: ExamQuestion | undefined): string {
   return (q?.question_type || 'mcq').toLowerCase().replace(/-/g, '_');
+}
+
+function isCodingType(q: ExamQuestion | undefined): boolean {
+  if (!q) return false;
+  return (
+    resolveQuestionType(q) === 'coding' ||
+    String(q.round_type || '').toLowerCase() === 'coding'
+  );
+}
+
+/** Safe string for controlled inputs / React text children. */
+function answerAsText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  return '';
 }
 
 function playQuestionAudio(text: string) {
@@ -181,7 +200,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const [allQuestions, setAllQuestions] = useState<ExamQuestion[]>([]);
   const [roundIdx, setRoundIdx] = useState(0);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   /** Marked / visited keyed by question id (stable across rounds). */
   const [markedIds, setMarkedIds] = useState<Set<string>>(new Set());
   const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
@@ -194,9 +213,11 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const [isLiveTranscribing, setIsLiveTranscribing] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [codingBusy, setCodingBusy] = useState(false);
   const recognitionRef = useRef<any>(null);
   const isLiveTranscribingRef = useRef(false);
   const endingRef = useRef(false);
+  const codingBusyRef = useRef(false);
   const answersRef = useRef(answers);
   const wasFullscreenRef = useRef(false);
   const flushSnapshotsRef = useRef<() => Promise<void>>(async () => {});
@@ -280,18 +301,39 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   }, [session, currentRoundNumber, examEndMs, totalRounds, roundIdx]);
 
   const buildAnswerPayload = useCallback(() => {
+    const codingIds = new Set(
+      allQuestions.filter(isCodingType).map((q) => q.id)
+    );
     return Object.entries(answersRef.current)
-      .filter(([, answer]) => answer != null && String(answer).length > 0)
+      .filter(([qid, answer]) => {
+        if (codingIds.has(qid)) return false;
+        return answer != null && String(answer).length > 0;
+      })
       .map(([question_id, answer]) => ({
         question_id,
         answer,
         time_spent: 0,
       }));
-  }, []);
+  }, [allQuestions]);
 
   const finishAndGoHome = useCallback(
     async (mode: 'submit' | 'auto' | 'disqualify', reason?: string) => {
       if (endingRef.current) return;
+
+      if (codingBusyRef.current) {
+        if (mode === 'submit') {
+          toast.error(
+            'Wait for coding Run/Submit to finish before submitting the exam.'
+          );
+          return;
+        }
+        // Auto / disqualify: wait briefly for in-flight coding job
+        const waitUntil = Date.now() + 90_000;
+        while (codingBusyRef.current && Date.now() < waitUntil) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
+
       endingRef.current = true;
       setSubmitting(true);
       setPhase('ending');
@@ -318,7 +360,10 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         }
       } catch (e: any) {
         toast.error(e?.response?.data?.detail || e?.message || 'Failed to submit exam');
+        endingRef.current = false;
+        setPhase('exam');
       } finally {
+        setSubmitting(false);
         stopCamera();
         await exitExamFullscreen();
         router.replace('/dashboard/student');
@@ -367,6 +412,17 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         if (cancelled) return;
         const sorted = sortQuestions(Array.isArray(qs) ? qs : []);
         setAllQuestions(sorted);
+        const initialAnswers: Record<string, any> = {};
+        sorted.forEach((q: ExamQuestion) => {
+          if (q.coding_submitted) {
+            // Never store the coding payload object in answers — it breaks
+            // React when non-coding UI tries to render answers[id] as text.
+            initialAnswers[q.id] = 'submitted';
+          }
+        });
+        if (Object.keys(initialAnswers).length) {
+          setAnswers(initialAnswers);
+        }
         if (sorted[0]) {
           setVisitedIds(new Set([sorted[0].id]));
         }
@@ -473,7 +529,10 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         return;
       }
       const unanswered = allQuestions.filter((q) => !answersRef.current[q.id]).length;
-      setConfirmModal({ kind: 'submit', unanswered });
+      const codingUnsubmitted = allQuestions.filter(
+        (q) => isCodingType(q) && !q.coding_submitted
+      ).length;
+      setConfirmModal({ kind: 'submit', unanswered, codingUnsubmitted });
     })();
   };
 
@@ -675,8 +734,20 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   };
 
   const handleSubmitWithConfirmation = () => {
-    const unanswered = allQuestions.filter((q) => !answers[q.id]).length;
-    setConfirmModal({ kind: 'submit', unanswered });
+    if (codingBusy) {
+      toast.error(
+        'Wait for coding Run/Submit to finish before submitting the exam.'
+      );
+      return;
+    }
+    const unanswered = allQuestions.filter((q) => {
+      if (isCodingType(q)) return !q.coding_submitted && !answers[q.id];
+      return !answers[q.id];
+    }).length;
+    const codingUnsubmitted = allQuestions.filter(
+      (q) => isCodingType(q) && !q.coding_submitted
+    ).length;
+    setConfirmModal({ kind: 'submit', unanswered, codingUnsubmitted });
   };
 
   const closeConfirmModal = () => setConfirmModal(null);
@@ -938,7 +1009,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             )}
           </button>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-6">
+          <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isCodingType(current) ? "p-2 sm:p-3" : "p-6"}`}>
+            {!isCodingType(current) && (
             <div className="mb-4 shrink-0">
               <h2 className="text-lg font-bold text-gray-800">
                 Question {currentIdx + 1} of {roundQuestions.length}
@@ -948,8 +1020,48 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               </h2>
               <div className="mt-2 h-px w-full bg-gray-200" />
             </div>
+            )}
 
             <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-gray-300 bg-white shadow-sm">
+              {isCodingType(current) ? (
+                <CodingWorkspace
+                  assessmentId={assessmentId}
+                  attemptId={attemptId}
+                  question={current as any}
+                  allCodingQuestions={roundQuestions.filter(isCodingType) as any}
+                  onSelectQuestion={(qid) => {
+                    const idx = roundQuestions.findIndex((q) => q.id === qid);
+                    if (idx >= 0) navigateToQuestion(idx);
+                  }}
+                  onBusyChange={(b) => {
+                    codingBusyRef.current = b;
+                    setCodingBusy(b);
+                  }}
+                  onSubmitted={(qid, result) => {
+                    setAnswers((prev) => ({
+                      ...prev,
+                      [qid]: 'submitted',
+                    }));
+                    setAllQuestions((prev) =>
+                      prev.map((q) =>
+                        q.id === qid
+                          ? {
+                              ...q,
+                              coding_submitted: true,
+                              coding_submission: {
+                                language: result?.language,
+                                points_earned: result?.points_earned,
+                                max_points: result?.max_points,
+                                passed: result?.passed,
+                                total: result?.total,
+                              },
+                            }
+                          : q
+                      )
+                    );
+                  }}
+                />
+              ) : (
               <div className="flex min-h-0 flex-1 flex-col md:flex-row">
                 <div className="flex-1 overflow-y-auto border-b border-gray-300 bg-white p-6 md:border-b-0 md:border-r">
                   {resolveQuestionType(current) === 'dictation' ? (
@@ -1023,11 +1135,11 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                       <textarea
                         className="w-full flex-1 resize-none rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                         placeholder="Type sentence here..."
-                        value={answers[current.id] || ''}
+                        value={answerAsText(answers[current.id])}
                         onChange={(e) => handleAnswerChange(current.id, e.target.value)}
                       />
                       <div className="mt-2 text-right text-xs text-gray-500">
-                        {(answers[current.id] || '').length} characters
+                        {answerAsText(answers[current.id]).length} characters
                       </div>
                     </div>
                   ) : isWritingType(current) ? (
@@ -1036,7 +1148,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                       <textarea
                         className="w-full flex-1 resize-none rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                         placeholder="Type your answer here..."
-                        value={answers[current.id] || ''}
+                        value={answerAsText(answers[current.id])}
                         onChange={(e) => handleAnswerChange(current.id, e.target.value)}
                       />
                     </div>
@@ -1092,16 +1204,17 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                         </div>
                       )}
                       {!isLiveTranscribing &&
-                        (liveTranscript || answers[current.id]) && (
+                        (liveTranscript || answerAsText(answers[current.id])) && (
                           <div className="flex flex-1 flex-col rounded-lg border border-gray-200 bg-gray-50 p-4">
                             <label className="mb-2 text-sm font-semibold text-gray-700">
                               Your Response:
                             </label>
                             <div className="min-h-[200px] flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-700">
-                              {answers[current.id] || liveTranscript || ''}
+                              {answerAsText(answers[current.id]) || liveTranscript || ''}
                             </div>
                             <div className="mt-2 text-right text-xs text-gray-500">
-                              {(answers[current.id] || liveTranscript || '').length} characters
+                              {(answerAsText(answers[current.id]) || liveTranscript || '').length}{' '}
+                              characters
                             </div>
                           </div>
                         )}
@@ -1149,13 +1262,14 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                       <textarea
                         className="w-full flex-1 resize-none rounded-lg border border-gray-300 bg-white p-4 text-base text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                         placeholder="Type your answer here..."
-                        value={answers[current.id] || ''}
+                        value={answerAsText(answers[current.id])}
                         onChange={(e) => handleAnswerChange(current.id, e.target.value)}
                       />
                     </div>
                   )}
                 </div>
               </div>
+              )}
 
               <div className="z-20 flex h-16 shrink-0 items-center justify-between border-t border-gray-300 bg-white px-6">
                 <div className="flex items-center gap-3">
@@ -1185,22 +1299,77 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                       Mark for review
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={handleClearResponse}
-                    className="rounded border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-                  >
-                    Clear Response
-                  </button>
+                  {!isCodingType(current) && (
+                    <button
+                      type="button"
+                      onClick={handleClearResponse}
+                      className="rounded border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                    >
+                      Clear Response
+                    </button>
+                  )}
                 </div>
-                {isLastQuestionOfExam ? (
+                {isCodingType(current) ? (
+                  currentIdx < roundQuestions.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!current?.coding_submitted) {
+                          toast.error(
+                            'Save your answer first using Save Answer in the editor.'
+                          );
+                          return;
+                        }
+                        handleNextQuestion();
+                      }}
+                      disabled={codingBusy}
+                      className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
+                    >
+                      Submit & Next
+                    </button>
+                  ) : hasMoreRounds ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!current?.coding_submitted) {
+                          toast.error(
+                            'Save your answer first using Save Answer in the editor.'
+                          );
+                          return;
+                        }
+                        handleNextQuestion();
+                      }}
+                      disabled={codingBusy}
+                      className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
+                    >
+                      Save & End Round
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSubmitWithConfirmation}
+                      disabled={submitting || codingBusy}
+                      className="rounded bg-[#2563EB] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
+                    >
+                      {codingBusy
+                        ? 'Coding job running…'
+                        : submitting
+                          ? 'Submitting…'
+                          : 'Submit'}
+                    </button>
+                  )
+                ) : isLastQuestionOfExam ? (
                   <button
                     type="button"
                     onClick={handleSubmitWithConfirmation}
-                    disabled={submitting}
+                    disabled={submitting || codingBusy}
                     className="rounded bg-[#2563EB] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
                   >
-                    {submitting ? 'Submitting…' : 'Submit Test'}
+                    {codingBusy
+                      ? 'Coding job running…'
+                      : submitting
+                        ? 'Submitting…'
+                        : 'Submit Test'}
                   </button>
                 ) : (
                   <button
@@ -1348,10 +1517,12 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               <button
                 type="button"
                 onClick={handleSubmitWithConfirmation}
-                disabled={submitting}
+                disabled={submitting || codingBusy}
                 className="w-full rounded bg-[#2563EB] py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-blue-700 disabled:opacity-60"
               >
-                {submitting ? (
+                {codingBusy ? (
+                  'Coding job running…'
+                ) : submitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Submitting…
@@ -1378,33 +1549,54 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                 ? 'Continue to the next round?'
                 : 'Submit the exam now?'}
             </h2>
-            <p className="text-sm text-gray-700 leading-relaxed">
+            <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
               {confirmModal.kind === 'round' ? (
                 confirmModal.unanswered > 0 ? (
-                  <>
+                  <p>
                     This round has{' '}
                     <strong>
                       {confirmModal.unanswered} unanswered question
                       {confirmModal.unanswered > 1 ? 's' : ''}
                     </strong>
                     . Continue to the next round anyway?
-                  </>
+                  </p>
                 ) : (
-                  <>You are about to leave this round and start the next one.</>
+                  <p>You are about to leave this round and start the next one.</p>
                 )
-              ) : confirmModal.unanswered > 0 ? (
-                <>
-                  You have{' '}
-                  <strong>
-                    {confirmModal.unanswered} unanswered question
-                    {confirmModal.unanswered > 1 ? 's' : ''}
-                  </strong>
-                  . Unanswered questions will be scored as 0.
-                </>
               ) : (
-                <>You are about to submit before the timer ends. This cannot be undone.</>
+                <>
+                  {(confirmModal.codingUnsubmitted ?? 0) > 0 && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-900">
+                      <p className="font-semibold text-amber-950">
+                        {confirmModal.codingUnsubmitted} coding question
+                        {(confirmModal.codingUnsubmitted ?? 0) > 1 ? 's' : ''} not
+                        saved in the editor
+                      </p>
+                      <p className="mt-1">
+                        Use <strong>Save Answer</strong> in the coding editor to
+                        grade your solution. <strong>Run</strong> is not graded.
+                        Submit the exam anyway?
+                      </p>
+                    </div>
+                  )}
+                  {confirmModal.unanswered > 0 ? (
+                    <p>
+                      You have{' '}
+                      <strong>
+                        {confirmModal.unanswered} unanswered question
+                        {confirmModal.unanswered > 1 ? 's' : ''}
+                      </strong>
+                      . Unanswered questions will be scored as 0.
+                    </p>
+                  ) : (confirmModal.codingUnsubmitted ?? 0) === 0 ? (
+                    <p>
+                      You are about to submit before the timer ends. This cannot be
+                      undone.
+                    </p>
+                  ) : null}
+                </>
               )}
-            </p>
+            </div>
             <div className="flex gap-3 pt-1">
               <button
                 type="button"

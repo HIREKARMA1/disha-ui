@@ -890,6 +890,121 @@ class ApiClient {
     return response.data;
   }
 
+  // Coding question bank
+  async listCodingQuestions(params: Record<string, any> = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/coding-questions', { params });
+    return response.data;
+  }
+
+  async getCodingQuestion(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/coding-questions/${id}`);
+    return response.data;
+  }
+
+  async createCodingQuestion(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/coding-questions', data);
+    return response.data;
+  }
+
+  async updateCodingQuestion(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/coding-questions/${id}`, data);
+    return response.data;
+  }
+
+  async deleteCodingQuestion(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/coding-questions/${id}`);
+    return response.data;
+  }
+
+  async addCodingTestCase(questionId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/coding-questions/${questionId}/test-cases`,
+      data
+    );
+    return response.data;
+  }
+
+  async updateCodingTestCase(testCaseId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(
+      `/admin/coding-questions/test-cases/${testCaseId}`,
+      data
+    );
+    return response.data;
+  }
+
+  async verifyCodingTestCases(
+    questionId: string,
+    body: {
+      language?: string;
+      solution_code?: string;
+      fix_expected?: boolean;
+    } = {}
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/coding-questions/${questionId}/verify-test-cases`,
+      body
+    );
+    return response.data;
+  }
+
+  async deleteCodingTestCase(testCaseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/coding-questions/test-cases/${testCaseId}`
+    );
+    return response.data;
+  }
+
+  async assignCodingQuestions(
+    assessmentId: string,
+    body: {
+      round_id: string;
+      question_ids: string[];
+      points?: Record<string, number>;
+      replace_existing?: boolean;
+    }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/coding/assign`,
+      body
+    );
+    return response.data;
+  }
+
+  async codingRun(
+    assessmentId: string,
+    attemptId: string,
+    body: { question_id: string; language: string; source_code: string; stdin?: string | null }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/coding/run`,
+      body
+    );
+    return response.data;
+  }
+
+  async codingSubmit(
+    assessmentId: string,
+    attemptId: string,
+    body: { question_id: string; language: string; source_code: string }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/coding/submit`,
+      body
+    );
+    return response.data;
+  }
+
+  async codingJobStatus(
+    assessmentId: string,
+    attemptId: string,
+    jobId: string
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/attempts/${attemptId}/coding/jobs/${jobId}`
+    );
+    return response.data;
+  }
+
   // License endpoints
   async createLicenseRequest(data: {
     requested_total: number;

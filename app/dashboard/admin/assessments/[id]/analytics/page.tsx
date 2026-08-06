@@ -761,8 +761,8 @@ function AttemptDetailsModal({
                                                 {/* Student Answer */}
                                                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
                                                     <p className="text-xs text-gray-500 font-semibold mb-2">Student Answer:</p>
-                                                    <p className="text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap">
-                                                        {q.student_answer || '-'}
+                                                    <p className="text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap font-mono text-sm">
+                                                        {formatStudentAnswerDisplay(q.student_answer, q.question_type)}
                                                     </p>
                                                 </div>
 
@@ -802,6 +802,34 @@ function AttemptDetailsModal({
             </div>
         </div>
     )
+}
+
+function formatStudentAnswerDisplay(answer: unknown, questionType?: string): string {
+    if (answer == null || answer === '') return '-'
+    if (typeof answer === 'string' || typeof answer === 'number' || typeof answer === 'boolean') {
+        return String(answer)
+    }
+    if (typeof answer === 'object') {
+        const obj = answer as Record<string, unknown>
+        const isCoding =
+            String(questionType || '').toLowerCase() === 'coding' ||
+            'source_code' in obj ||
+            ('language' in obj && 'source_code' in obj)
+        if (isCoding) {
+            const lang = obj.language != null ? String(obj.language) : 'unknown'
+            const code = obj.source_code != null ? String(obj.source_code) : ''
+            if (!code.trim()) return `Language: ${lang}\n(no source code saved)`
+            const preview =
+                code.length > 2000 ? `${code.slice(0, 2000)}\n… (truncated)` : code
+            return `Language: ${lang}\n\n${preview}`
+        }
+        try {
+            return JSON.stringify(answer, null, 2)
+        } catch {
+            return '-'
+        }
+    }
+    return '-'
 }
 
 function userEstimateRoundTotal(round: any) {

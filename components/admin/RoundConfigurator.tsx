@@ -29,13 +29,26 @@ const ROUND_TYPES = [
   { value: "mcq", label: "MCQ based Question" },
   { value: "soft_skills", label: "Soft Skills" },
   { value: "technical_mcq", label: "Technical MCQ" },
-  // { value: "coding", label: "Coding Challenge" },
+  { value: "coding", label: "Coding Challenge" },
   // { value: "group_discussion", label: "Group Discussion" },
   // { value: "technical_interview", label: "Technical Interview" },
   // { value: "hr_interview", label: "HR Interview" },
 ];
 
+const CODING_LANGUAGES = [
+  { value: "python", label: "Python" },
+  { value: "java", label: "Java" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
+  { value: "c", label: "C" },
+  { value: "cpp", label: "C++" },
+  { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
+];
+
 const MAX_QUESTIONS = 100;
+const MIN_CODING_QUESTIONS = 1;
+const MAX_CODING_QUESTIONS = 10;
 const MAX_DURATION = 600;
 const MAX_GD_ROUNDS = 50;
 const SOFT_SKILLS_TOTAL_CAP = 35;
@@ -196,7 +209,9 @@ function RoundPreview({ round, onEdit, onRemove }: any) {
               {getRoundTypeLabel(round.round_type)} • {round.duration_minutes} min
               {round.round_type !== "group_discussion" &&
                 ` • ${round.config.num_questions || 0} questions` +
-                  (round.round_type === "soft_skills"
+                  (round.round_type === "coding"
+                    ? ` · ${(round.config.ai_question_count ?? round.config.num_questions) || 0} AI / ${Math.max(0, (round.config.num_questions || 0) - (Number(round.config.ai_question_count ?? round.config.num_questions) || 0))} bank · langs: ${(round.config.languages || []).join(", ") || "—"}`
+                    : round.round_type === "soft_skills"
                     ? ` (MCQ ${round.config.mcq_questions ?? "—"} / Listen ${round.config.listening_questions ?? 0} / Speak ${round.config.speaking_questions ?? 0} / Write ${round.config.writing_questions ?? 0})`
                     : round.config.ai_question_count != null
                       ? ` (${round.config.ai_question_count} AI / ${Math.max(0, (round.config.num_questions || 0) - (round.config.ai_question_count || 0))} manual)`
@@ -280,6 +295,23 @@ function RoundEditor({
           writing_questions: nextConfig.writing_questions ?? 2,
         });
         Object.assign(nextConfig, normalizeSoftSkillsBreakdown(nextConfig));
+      } else if (nextType === "coding") {
+        const codingTotal = Math.min(
+          Number(nextConfig.num_questions) || 2,
+          MAX_CODING_QUESTIONS,
+        );
+        Object.assign(nextConfig, {
+          num_questions: codingTotal,
+          languages: nextConfig.languages?.length
+            ? nextConfig.languages
+            : ["python"],
+          ai_question_count:
+            nextConfig.ai_question_count != null &&
+            nextConfig.ai_question_count !== ""
+              ? Math.min(Number(nextConfig.ai_question_count) || 0, codingTotal)
+              : codingTotal,
+          points_per_question: nextConfig.points_per_question ?? 100,
+        });
       }
       setFormData({
         ...formData,
@@ -339,16 +371,35 @@ function RoundEditor({
         errors.number_of_rounds = `Number of rounds must be a whole number from 1 to ${MAX_GD_ROUNDS}`;
       }
     } else {
-      const maxQ =
-        formData.round_type === "soft_skills"
+      const isCoding = formData.round_type === "coding";
+      const maxQ = isCoding
+        ? MAX_CODING_QUESTIONS
+        : formData.round_type === "soft_skills"
           ? SOFT_SKILLS_TOTAL_CAP
           : MAX_QUESTIONS;
+      const minQ = isCoding ? MIN_CODING_QUESTIONS : MIN_QUESTIONS_PER_ROUND;
       numQuestions = parseIntegerField(formData.config.num_questions, {
-        min: MIN_QUESTIONS_PER_ROUND,
+        min: minQ,
         max: maxQ,
       });
       if (numQuestions === null) {
-        errors.num_questions = `Total questions must be a whole number from ${MIN_QUESTIONS_PER_ROUND} to ${maxQ}`;
+        errors.num_questions = `Total questions must be a whole number from ${minQ} to ${maxQ}`;
+      } else if (isCoding) {
+        const langs = Array.isArray(formData.config.languages)
+          ? formData.config.languages
+          : [];
+        if (langs.length === 0) {
+          errors.languages = "Select at least one allowed language";
+        }
+        const aiRaw = formData.config.ai_question_count;
+        if (aiRaw === null || aiRaw === undefined || aiRaw === "") {
+          aiCount = numQuestions;
+        } else {
+          aiCount = parseIntegerField(aiRaw, { min: 0, max: numQuestions });
+          if (aiCount === null) {
+            errors.ai_question_count = `AI questions must be a whole number from 0 to ${numQuestions}`;
+          }
+        }
       } else if (formData.round_type !== "soft_skills") {
         const aiRaw = formData.config.ai_question_count;
         if (aiRaw === null || aiRaw === undefined || aiRaw === "") {
@@ -398,6 +449,16 @@ function RoundEditor({
           num_questions: numQuestions,
         }),
         ai_question_count: numQuestions,
+      };
+    } else if (formData.round_type === "coding") {
+      savedConfig = {
+        ...baseConfig,
+        num_questions: numQuestions,
+        ai_question_count: aiCount ?? numQuestions,
+        languages: Array.isArray(formData.config.languages)
+          ? formData.config.languages
+          : ["python"],
+        points_per_question: Number(formData.config.points_per_question) || 100,
       };
     } else {
       savedConfig = {
@@ -466,10 +527,15 @@ function RoundEditor({
           <>
             <div>
               <label className={labelClassName}>
-                Total Questions (min {MIN_QUESTIONS_PER_ROUND}
+                Total Questions (min{" "}
+                {formData.round_type === "coding"
+                  ? MIN_CODING_QUESTIONS
+                  : MIN_QUESTIONS_PER_ROUND}
                 {formData.round_type === "soft_skills"
                   ? `, max ${SOFT_SKILLS_TOTAL_CAP}`
-                  : ""}
+                  : formData.round_type === "coding"
+                    ? `, max ${MAX_CODING_QUESTIONS}`
+                    : ""}
                 )
               </label>
               <IntegerTextField
@@ -478,13 +544,23 @@ function RoundEditor({
                     ? (numQuestionsValue as number)
                     : null
                 }
-                min={MIN_QUESTIONS_PER_ROUND}
+                min={
+                  formData.round_type === "coding"
+                    ? MIN_CODING_QUESTIONS
+                    : MIN_QUESTIONS_PER_ROUND
+                }
                 max={
                   formData.round_type === "soft_skills"
                     ? SOFT_SKILLS_TOTAL_CAP
-                    : MAX_QUESTIONS
+                    : formData.round_type === "coding"
+                      ? MAX_CODING_QUESTIONS
+                      : MAX_QUESTIONS
                 }
-                placeholder={`e.g. ${MIN_QUESTIONS_PER_ROUND}`}
+                placeholder={`e.g. ${
+                  formData.round_type === "coding"
+                    ? MIN_CODING_QUESTIONS
+                    : MIN_QUESTIONS_PER_ROUND
+                }`}
                 className={inputClass}
                 error={fieldErrors.num_questions}
                 onErrorChange={(msg) => setFieldError("num_questions", msg)}
@@ -500,10 +576,7 @@ function RoundEditor({
                             prevAi === undefined ||
                             prevAi === ""
                           ? n
-                          : Math.min(
-                              Number(prevAi) || 0,
-                              n,
-                            );
+                          : Math.min(Number(prevAi) || 0, n);
                   }
                   setFormData({
                     ...formData,
@@ -517,6 +590,87 @@ function RoundEditor({
                 }}
               />
             </div>
+            {formData.round_type === "coding" ? (
+              <>
+                <div className="col-span-2">
+                  <label className={labelClassName}>Allowed Languages</label>
+                  <div className="flex flex-wrap gap-3 mt-1">
+                    {CODING_LANGUAGES.map((lang) => {
+                      const selected = Array.isArray(formData.config.languages)
+                        ? formData.config.languages.includes(lang.value)
+                        : false;
+                      return (
+                        <label
+                          key={lang.value}
+                          className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(e) => {
+                              const prev = Array.isArray(formData.config.languages)
+                                ? [...formData.config.languages]
+                                : [];
+                              const next = e.target.checked
+                                ? [...prev, lang.value]
+                                : prev.filter((v) => v !== lang.value);
+                              handleChange("config.languages", next);
+                              setFieldError("languages", "");
+                            }}
+                          />
+                          {lang.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {fieldErrors.languages ? (
+                    <p className="text-sm text-red-600 mt-1">{fieldErrors.languages}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">
+                      AI generates problems for these languages; remaining slots can come from the bank.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className={labelClassName}>AI-generated Questions</label>
+                  <IntegerTextField
+                    value={
+                      formData.config.ai_question_count === null ||
+                      formData.config.ai_question_count === undefined ||
+                      formData.config.ai_question_count === ""
+                        ? null
+                        : Number(formData.config.ai_question_count)
+                    }
+                    min={0}
+                    max={
+                      Number.isFinite(numQuestionsValue as number)
+                        ? (numQuestionsValue as number)
+                        : MAX_CODING_QUESTIONS
+                    }
+                    placeholder="e.g. 2"
+                    className={inputClass}
+                    error={fieldErrors.ai_question_count}
+                    onErrorChange={(msg) =>
+                      setFieldError("ai_question_count", msg)
+                    }
+                    onChange={(n) => handleChange("config.ai_question_count", n)}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    From bank:{" "}
+                    {Math.max(
+                      0,
+                      (Number(formData.config.num_questions) || 0) -
+                        (formData.config.ai_question_count === null ||
+                        formData.config.ai_question_count === undefined ||
+                        formData.config.ai_question_count === ""
+                          ? Number(formData.config.num_questions) || 0
+                          : Number(formData.config.ai_question_count) || 0),
+                    )}{" "}
+                    — auto-picked from published questions; assign more on the assessment page if needed.
+                  </p>
+                </div>
+              </>
+            ) : null}
             {formData.round_type === "soft_skills" ? (
               <>
                 <div>
@@ -614,7 +768,7 @@ function RoundEditor({
                   </p>
                 </div>
               </>
-            ) : (
+            ) : formData.round_type === "coding" ? null : (
               <div>
                 <label className={labelClassName}>
                   AI-generated Questions

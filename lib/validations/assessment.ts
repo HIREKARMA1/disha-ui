@@ -2,6 +2,8 @@ import { z } from "zod";
 
 const MIN_ROUNDS = 1;
 const MIN_QUESTIONS_PER_ROUND = 10;
+const MIN_CODING_QUESTIONS = 1;
+const MAX_CODING_QUESTIONS = 10;
 
 const roundSchema = z
   .object({
@@ -15,18 +17,53 @@ const roundSchema = z
   })
   .superRefine((round, ctx) => {
     if (round.round_type === "group_discussion") return;
+
+    const isCoding = round.round_type === "coding";
+    const minQ = isCoding ? MIN_CODING_QUESTIONS : MIN_QUESTIONS_PER_ROUND;
+    const maxQ = isCoding ? MAX_CODING_QUESTIONS : 100;
     const num = Number(round.config?.num_questions);
     if (
       !Number.isFinite(num) ||
       !Number.isInteger(num) ||
-      num < MIN_QUESTIONS_PER_ROUND
+      num < minQ ||
+      num > maxQ
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Round "${round.round_name || round.round_number}" must have a whole number of at least ${MIN_QUESTIONS_PER_ROUND} questions`,
+        message: `Round "${round.round_name || round.round_number}" must have a whole number of ${minQ}–${maxQ} questions`,
         path: ["config", "num_questions"],
       });
     }
+
+    if (isCoding) {
+      const langs = round.config?.languages;
+      if (!Array.isArray(langs) || langs.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Round "${round.round_name || round.round_number}" requires at least one allowed language`,
+          path: ["config", "languages"],
+        });
+      }
+      const aiRaw = round.config?.ai_question_count;
+      if (aiRaw !== undefined && aiRaw !== null && aiRaw !== "") {
+        const ai = Number(aiRaw);
+        if (!Number.isFinite(ai) || !Number.isInteger(ai) || ai < 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Round "${round.round_name || round.round_number}" AI question count must be a whole number of 0 or greater`,
+            path: ["config", "ai_question_count"],
+          });
+        } else if (Number.isFinite(num) && ai > num) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Round "${round.round_name || round.round_number}" AI question count cannot exceed total questions`,
+            path: ["config", "ai_question_count"],
+          });
+        }
+      }
+      return;
+    }
+
     const aiRaw = round.config?.ai_question_count;
     if (aiRaw !== undefined && aiRaw !== null && aiRaw !== "") {
       const ai = Number(aiRaw);
@@ -81,13 +118,14 @@ export const assessmentFormSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "End time must be after start time",
-          path: ["time_window"],
+          path: ["time_window", "end_time"],
         });
       }
     }
   });
 
-export type AssessmentFormSchemaInput = z.infer<typeof assessmentFormSchema>;
+export type AssessmentFormValues = z.infer<typeof assessmentFormSchema>;
+export type AssessmentFormSchemaInput = AssessmentFormValues;
 
 /**
  * Map Zod issues into a flat Record used by AssessmentForm error UI.
@@ -102,6 +140,8 @@ export function mapAssessmentFormErrors(
     const key = issue.path[0];
     if (key === "assessment_name" && !errors.assessment_name) {
       errors.assessment_name = issue.message;
+    } else if (key === "mode" && !errors.mode) {
+      errors.mode = issue.message;
     } else if (key === "time_window") {
       const sub = issue.path[1];
       if (sub === "start_time" && !errors.start_time) {
@@ -118,4 +158,4 @@ export function mapAssessmentFormErrors(
   return errors;
 }
 
-export { MIN_ROUNDS, MIN_QUESTIONS_PER_ROUND };
+export { MIN_QUESTIONS_PER_ROUND, MIN_CODING_QUESTIONS, MAX_CODING_QUESTIONS, MIN_ROUNDS };

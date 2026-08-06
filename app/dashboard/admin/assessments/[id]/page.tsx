@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { AdminDashboardLayout } from "@/components/dashboard/AdminDashboardLayout";
 import { StudentExamLinkSection } from "@/components/admin/assessments/StudentExamLinkSection";
+import { CodingQuestionAssignPanel } from "@/components/admin/assessments/CodingQuestionAssignPanel";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 
 interface Assessment {
@@ -873,8 +874,40 @@ export default function AssessmentDetailPage() {
                       </div>
                     </div>
 
+                    {String(round.round_type || "").toLowerCase() === "coding" && (
+                      <>
+                        <CodingQuestionAssignPanel
+                          assessmentId={assessmentId}
+                          roundId={round.id}
+                          roundName={round.round_name}
+                          expectedCount={expectedCount}
+                          onAssigned={() =>
+                            fetchQuestions(assessmentId, assessment?.rounds || [])
+                          }
+                        />
+                        {questions.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                              Assigned ({questions.length})
+                            </p>
+                            {questions.map((q: any, idx: number) => (
+                              <div
+                                key={q.id}
+                                className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                              >
+                                {idx + 1}. {q.question_text}{" "}
+                                <span className="text-gray-500">
+                                  ({q.points ?? 100} pts · {q.difficulty || "—"})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+
                     {/* Questions Management Block — always visible for local assessments */}
-                    {canManageQuestions && (
+                    {canManageQuestions && String(round.round_type || "").toLowerCase() !== "coding" && (
                       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-4">
                         <div className="flex justify-between items-center flex-wrap gap-2">
                           <button
