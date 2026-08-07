@@ -177,6 +177,15 @@ body.hide-sidebar .main-navbar {
   @apply bg-gray-400 dark:bg-gray-500;
 }
 
+/* Hide scrollbar utility class */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
 /* Smooth transitions */
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;

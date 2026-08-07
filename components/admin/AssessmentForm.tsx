@@ -4,6 +4,12 @@ import React, { useState, useEffect } from "react";
 import { RoundConfigurator } from "./RoundConfigurator";
 import { FileText, Settings, Layers, Briefcase } from "lucide-react";
 import { normalizeAssessmentTimeWindow } from "@/lib/datetime";
+import {
+  assessmentFormSchema,
+  mapAssessmentFormErrors,
+} from "@/lib/validations/assessment";
+import { IntegerTextField } from "@/components/ui/integer-text-field";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -111,21 +117,13 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.assessment_name) newErrors.assessment_name = "Assessment name is required";
-    if (!formData.time_window.start_time) newErrors.start_time = "Start time is required";
-    if (!formData.time_window.end_time) newErrors.end_time = "End time is required";
-    if (formData.rounds.length === 0) newErrors.rounds = "At least one round is required";
-
-    if (formData.time_window.start_time && formData.time_window.end_time) {
-      const start = new Date(formData.time_window.start_time);
-      const end = new Date(formData.time_window.end_time);
-      if (start >= end) {
-        newErrors.timeWindow = "End time must be after start time";
-      }
-    }
-
+    const result = assessmentFormSchema.safeParse({
+      assessment_name: formData.assessment_name,
+      mode: formData.mode,
+      time_window: formData.time_window,
+      rounds: formData.rounds,
+    });
+    const newErrors = mapAssessmentFormErrors(result);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -148,18 +146,39 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
 
     const passingCriteria = {
       ...formData.metadata.passing_criteria,
+      overall_percentage:
+        formData.metadata?.passing_criteria?.overall_percentage === null ||
+        formData.metadata?.passing_criteria?.overall_percentage === undefined ||
+        formData.metadata?.passing_criteria?.overall_percentage === ""
+          ? 60
+          : Number(formData.metadata.passing_criteria.overall_percentage),
       ...(formData.job_id ? { job_id: formData.job_id } : {}),
     };
 
-    // Edit API expects top-level fields; create uses nested metadata
+    // Edit API expects top-level fields; create uses nested metadata.
+    // Always include round `id` when present so the backend can upsert in place
+    // and preserve manual questions attached to those rounds.
     if (mode === "edit") {
+      const roundsPayload = (formData.rounds || []).map((round: any) => ({
+        ...(round.id ? { id: round.id } : {}),
+        round_number: round.round_number,
+        round_type: round.round_type,
+        round_name: round.round_name,
+        duration_minutes: round.duration_minutes,
+        config: round.config || {},
+        is_mandatory: round.is_mandatory !== false,
+        ...(round.passing_percentage != null
+          ? { passing_percentage: round.passing_percentage }
+          : {}),
+      }));
+
       onSubmit({
         assessment_name: formData.assessment_name,
         mode: formData.mode,
         time_window: normalizeAssessmentTimeWindow(formData.time_window),
         total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
         auto_submit_on_timeout: formData.auto_submit_on_timeout,
-        rounds: formData.rounds,
+        rounds: roundsPayload,
         description: formData.metadata.description ?? "",
         instructions: formData.metadata.instructions ?? "",
         passing_criteria: passingCriteria,
@@ -187,8 +206,8 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   return (
     <form onSubmit={handleSubmit} className="space-y-8 w-full">
       {/* 1. Basic Details Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <FileText size={18} />
@@ -226,12 +245,14 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               )}
             </div>
 
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mode <span className="text-red-500">*</span></label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                What is this assessment for? <span className="text-red-500">*</span>
+              </label>
               <select
                 value={formData.mode}
                 onChange={(e) => handleChange("mode", e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer"
+                className="w-full px-4 py-2.5 pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white"
               >
                 {MODES.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -239,7 +260,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
                   </option>
                 ))}
               </select>
-            </div> */}
+              {errors.mode && (
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                  {errors.mode}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Description */}
@@ -290,12 +316,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Start Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="datetime-local"
+              <DateTimePicker
                 value={formData.time_window.start_time}
-                onChange={(e) => handleTimeChange("start_time", e.target.value)}
-                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white ${errors.start_time ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  }`}
+                onChange={(value) => handleTimeChange("start_time", value)}
+                placeholder="Select start date and time"
+                showTime={true}
+                className={errors.start_time ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : ""}
               />
             </div>
 
@@ -303,12 +329,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 End Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="datetime-local"
+              <DateTimePicker
                 value={formData.time_window.end_time}
-                onChange={(e) => handleTimeChange("end_time", e.target.value)}
-                className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white ${errors.end_time ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  }`}
+                onChange={(value) => handleTimeChange("end_time", value)}
+                placeholder="Select end date and time"
+                showTime={true}
+                className={errors.end_time ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : ""}
               />
             </div>
 
@@ -316,18 +342,28 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Passing Percentage (%)
               </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.metadata.passing_criteria.overall_percentage}
-                onChange={(e) =>
+              <IntegerTextField
+                value={
+                  formData.metadata?.passing_criteria?.overall_percentage ===
+                    null ||
+                  formData.metadata?.passing_criteria?.overall_percentage ===
+                    undefined ||
+                  formData.metadata?.passing_criteria?.overall_percentage === ""
+                    ? null
+                    : Number(
+                        formData.metadata.passing_criteria.overall_percentage,
+                      )
+                }
+                min={0}
+                max={100}
+                placeholder="e.g. 60"
+                onChange={(n) =>
                   handleMetadataChange("passing_criteria", {
                     ...formData.metadata.passing_criteria,
-                    overall_percentage: parseInt(e.target.value),
+                    overall_percentage: n,
                   })
                 }
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400"
               />
             </div>
           </div>

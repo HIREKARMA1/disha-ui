@@ -334,16 +334,26 @@ export interface AnalyticsExport {
 }
 
 function formatAnalyticsResultCsvRow(item: AnalyticsExport): string[] {
-    const displayStatus = ['PASSED', 'FAILED', 'COMPLETED'].includes(item.status)
-        ? 'EVALUATED'
+    const statusUpper = (item.status || '').toUpperCase()
+    const displayStatus = ['PASSED', 'FAILED', 'COMPLETED', 'DISQUALIFIED', 'AUTO_SUBMITTED'].includes(statusUpper)
+        ? statusUpper === 'DISQUALIFIED'
+            ? 'Disqualified'
+            : 'EVALUATED'
         : item.status;
+
+    const passFailDisplay =
+        item.pass_fail === 'MALPRACTICE' ||
+        item.pass_fail === 'Malpractice' ||
+        item.pass_fail === 'Disqualified'
+            ? 'Disqualified'
+            : item.pass_fail;
 
     return [
         displayStatus,
         item.total_score != null ? String(item.total_score) : '—',
         String(item.max_score ?? '—'),
         item.percentage != null ? item.percentage.toFixed(1) : '—',
-        item.pass_fail,
+        passFailDisplay,
         String(item.rounds_completed || 0),
         item.snapshot_1_url || '',
         item.snapshot_2_url || '',
@@ -368,6 +378,60 @@ export const exportAnalyticsToCSV = (
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `${assessmentName.replace(/[^a-zA-Z0-9]/g, '_')}_Analytics_${timestamp}.csv`;
     downloadCsvBlob(buildCsvContent(headers, csvData), filename);
+};
+
+/** Landscape PDF table of assessment analytics results (jsPDF + autotable). */
+export const exportAnalyticsToPDF = async (
+    data: AnalyticsExport[],
+    assessmentName: string
+) => {
+    const { default: jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const title = assessmentName || 'Assessment Results';
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    doc.setFontSize(14);
+    doc.text(title, 40, 36);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Exported ${timestamp} · ${data.length} result(s)`, 40, 52);
+    doc.setTextColor(0);
+
+    const body = data.map((item) => {
+        const statusUpper = (item.status || '').toUpperCase();
+        const statusLabel =
+            statusUpper === 'DISQUALIFIED'
+                ? 'Disqualified'
+                : item.pass_fail === 'MALPRACTICE' ||
+                    item.pass_fail === 'Malpractice' ||
+                    item.pass_fail === 'Disqualified'
+                  ? 'Disqualified'
+                  : item.pass_fail || statusUpper || '—';
+        return [
+            item.student_name || 'Unknown',
+            item.email || '—',
+            statusLabel,
+            item.total_score != null ? String(item.total_score) : '—',
+            item.max_score != null ? String(item.max_score) : '—',
+            item.percentage != null ? `${item.percentage.toFixed(1)}%` : '—',
+            String(item.rounds_completed || 0),
+        ];
+    });
+
+    autoTable(doc, {
+        startY: 64,
+        head: [['Student', 'Email', 'Pass/Fail', 'Score', 'Max', '%', 'Rounds']],
+        body,
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 40, right: 40 },
+    });
+
+    const filename = `${title.replace(/[^a-zA-Z0-9]/g, '_')}_Analytics_${timestamp}.pdf`;
+    doc.save(filename);
 };
 
 /** Build lookup maps for merging applied-student profiles into assessment exports */

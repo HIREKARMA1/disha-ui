@@ -8,18 +8,24 @@ import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import {
     exportAnalyticsToCSV,
+    exportAnalyticsToPDF,
     buildAppliedStudentLookups,
     resolveAppliedStudentProfile,
     mapAttemptStudentProfileToExport,
     type AppliedStudentExport,
+    type AnalyticsExport,
 } from '@/utils/exportToExcel'
 import {
     formatAttemptPercentage,
     formatAttemptScore,
+    formatDisqualificationReason,
+    formatPassFailDisplay,
     getAttemptMaxScore,
+    getDisqualificationReason,
     getPassFailLabel,
     getTotalQuestionsFromAssessment,
     isAttemptEvaluated,
+    normalizeAttemptRounds,
 } from '@/lib/assessmentAnalytics'
 import {
     buildProctoringSlots,
@@ -83,6 +89,7 @@ export default function AssessmentAnalyticsPage() {
             case 'PASSED': return 'bg-green-100 text-green-800 border-green-200'
             case 'FAILED': return 'bg-red-100 text-red-800 border-red-200'
             case 'COMPLETED': return 'bg-blue-100 text-blue-800 border-blue-200'
+            case 'DISQUALIFIED': return 'bg-amber-100 text-amber-800 border-amber-200'
             default: return 'bg-gray-100 text-gray-800 border-gray-200'
         }
     }
@@ -96,23 +103,15 @@ export default function AssessmentAnalyticsPage() {
             }
         }
 
-        const total = attempts.length
-        if (total === 0) return { passRate: 0, avgScore: 0 }
+        const evaluated = attempts.filter(a => isAttemptEvaluated(a))
+        if (evaluated.length === 0) return { passRate: '0.0', avgScore: '0.0' }
 
-        const passed = attempts.filter(a => a.status === 'PASSED').length
-        const totalScore = attempts.reduce((acc, curr) => acc + (curr.percentage || 0), 0)
-        const avgPct = (totalScore / total).toFixed(1)
-
-        // If 'passed' count is 0 but we have valid attempts, the user might want to see the Average Performance 
-        // in the "Pass Rate" slot if they are confusing terms, OR we can stick to strict "Pass Rate".
-        // Given the request "passing rate should show the 35 percent" (which is the avg score),
-        // we will ensure the Average Score card shows it clearly, but for Pass Rate, 
-        // if the status is strictly relied upon, 0 is correct for FAIL. 
-        // However, to be helpful, if N=1, Pass Rate = 0 is discouraging/confusing if they just want "Score".
-        // Let's keep Pass Rate strict but ensure Average Score is highlighted.
+        const passedCount = evaluated.filter(a => getPassFailLabel(a, assessmentDetails) === 'PASS').length
+        const totalScorePct = evaluated.reduce((acc, curr) => acc + (curr.percentage || 0), 0)
+        const avgPct = (totalScorePct / evaluated.length).toFixed(1)
 
         return {
-            passRate: ((passed / total) * 100).toFixed(1),
+            passRate: ((passedCount / evaluated.length) * 100).toFixed(1),
             avgScore: avgPct
         }
     }
@@ -123,82 +122,69 @@ export default function AssessmentAnalyticsPage() {
         (attempts[0]?.total_questions as number | undefined) ||
         0
 
-    const handleExport = async () => {
+    const buildExportData = async (): Promise<AnalyticsExport[] | null> => {
+        if (!assessmentDetails || !filteredAttempts.length) return null
+
+        const jobId =
+            assessmentDetails.passing_criteria?.job_id ||
+            assessmentDetails.job_id ||
+            null
+
+        let appliedLookups = buildAppliedStudentLookups([])
+
+        if (jobId) {
+            try {
+                const appliedStudents: AppliedStudentExport[] =
+                    await apiClient.getAppliedStudentsAdmin(jobId)
+                appliedLookups = buildAppliedStudentLookups(appliedStudents)
+            } catch (err) {
+                console.warn('Could not load job application extras for export:', err)
+            }
+        }
+
+        return filteredAttempts.map((attempt) => {
+            const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
+            const passFail = getPassFailLabel(attempt, assessmentDetails)
+            const jobApplication = resolveAppliedStudentProfile(attempt, appliedLookups)
+            const profile = mapAttemptStudentProfileToExport(attempt, jobApplication)
+
+            return {
+                email: attempt.email || attempt.student_email || '-',
+                student_name: attempt.student_name || 'Unknown',
+                status: attempt.status,
+                total_score: attempt.total_score,
+                max_score: maxScore,
+                percentage: attempt.percentage,
+                pass_fail: formatPassFailDisplay(passFail),
+                rounds_completed: attempt.result_data?.rounds?.length || 0,
+                snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
+                snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
+                snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
+                snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
+                profile,
+            }
+        })
+    }
+
+    const handleExport = async (format: 'csv' | 'pdf' = 'csv') => {
         if (!assessmentDetails || !filteredAttempts.length) return
 
         try {
             setExporting(true)
-
-            const jobId =
-                assessmentDetails.passing_criteria?.job_id ||
-                assessmentDetails.job_id ||
-                null
-
-            let appliedLookups = buildAppliedStudentLookups([])
-
-            // Optional: job application adds applied date / expected salary only
-            if (jobId) {
-                try {
-                    const appliedStudents: AppliedStudentExport[] =
-                        await apiClient.getAppliedStudentsAdmin(jobId)
-                    appliedLookups = buildAppliedStudentLookups(appliedStudents)
-                } catch (err) {
-                    console.warn('Could not load job application extras for export:', err)
-                }
+            const exportData = await buildExportData()
+            if (!exportData) return
+            const name = assessmentDetails.assessment_name || 'Assessment'
+            if (format === 'pdf') {
+                await exportAnalyticsToPDF(exportData, name)
+            } else {
+                exportAnalyticsToCSV(exportData, name)
             }
-
-            const exportData = filteredAttempts.map((attempt) => {
-                const maxScore = getAttemptMaxScore(attempt, assessmentDetails)
-                const passFail = getPassFailLabel(attempt, assessmentDetails)
-                const jobApplication = resolveAppliedStudentProfile(attempt, appliedLookups)
-                const profile = mapAttemptStudentProfileToExport(attempt, jobApplication)
-
-                return {
-                    email: attempt.email || attempt.student_email || '-',
-                    student_name: attempt.student_name || 'Unknown',
-                    status: attempt.status,
-                    total_score: attempt.total_score,
-                    max_score: maxScore,
-                    percentage: attempt.percentage,
-                    pass_fail: passFail,
-                    rounds_completed: attempt.result_data?.rounds?.length || 0,
-                    snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
-                    snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
-                    snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
-                    snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
-                    profile,
-                }
-            })
-
-            exportAnalyticsToCSV(exportData, assessmentDetails.assessment_name || 'Assessment')
         } finally {
             setExporting(false)
         }
     }
 
     const hasAwaitingResults = attempts.some((a) => !isAttemptEvaluated(a))
-
-    const handlePullSolviqResults = async () => {
-        try {
-            setPullingResults(true)
-            setPullMessage(null)
-            const result = await apiClient.post(
-                `/admin/assessments/${assessmentId}/pull-solviq-results`
-            )
-            const pushed = result?.pushed?.length ?? 0
-            const reevaluated = result?.reevaluated?.length ?? 0
-            const failed = result?.failed?.length ?? 0
-            setPullMessage(
-                `Solviq reported ${pushed} result(s) sent, ${reevaluated} re-evaluated` +
-                    (failed ? `, ${failed} could not be sent.` : '. Refreshing…')
-            )
-            await fetchData()
-        } catch (err: any) {
-            setPullMessage(err.message || 'Could not pull results from Solviq')
-        } finally {
-            setPullingResults(false)
-        }
-    }
 
     return (
         <AdminDashboardLayout>
@@ -237,10 +223,10 @@ export default function AssessmentAnalyticsPage() {
                     <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 p-4 text-sm text-amber-900 dark:text-amber-100">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1">
-                                <p className="font-semibold">Results not received from Solviq yet</p>
+                                <p className="font-semibold">Some attempts are still in progress</p>
                                 <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
-                                    Students may have finished on Solviq, but the callback did not reach DISHA.
-                                    Use the button to ask Solviq to send scores again.
+                                    Results appear here automatically when students submit, are auto-submitted,
+                                    or are disqualified. Refresh to load the latest data.
                                 </p>
                                 {pullMessage && (
                                     <p className="mt-2 text-amber-900 dark:text-amber-100">{pullMessage}</p>
@@ -249,7 +235,18 @@ export default function AssessmentAnalyticsPage() {
                             <Button
                                 variant="outline"
                                 className="shrink-0 border-amber-300 bg-white hover:bg-amber-50 dark:bg-gray-900"
-                                onClick={handlePullSolviqResults}
+                                onClick={async () => {
+                                    setPullingResults(true)
+                                    setPullMessage(null)
+                                    try {
+                                        await fetchData()
+                                        setPullMessage('Refreshed latest attempt results.')
+                                    } catch (err: any) {
+                                        setPullMessage(err.message || 'Could not refresh results')
+                                    } finally {
+                                        setPullingResults(false)
+                                    }
+                                }}
                                 disabled={pullingResults}
                             >
                                 {pullingResults ? (
@@ -257,7 +254,7 @@ export default function AssessmentAnalyticsPage() {
                                 ) : (
                                     <RefreshCw className="h-4 w-4 mr-2" />
                                 )}
-                                Pull results from Solviq
+                                Refresh results
                             </Button>
                         </div>
                     </div>
@@ -337,13 +334,14 @@ export default function AssessmentAnalyticsPage() {
                                 <option value="ALL">All Status</option>
                                 <option value="PASSED">Passed</option>
                                 <option value="FAILED">Failed</option>
+                                <option value="DISQUALIFIED">Disqualified</option>
                                 <option value="COMPLETED">Completed</option>
                             </select>
                         </div>
                         <Button
                             variant="outline"
                             className="gap-2"
-                            onClick={handleExport}
+                            onClick={() => void handleExport('csv')}
                             disabled={filteredAttempts.length === 0 || exporting}
                         >
                             {exporting ? (
@@ -352,6 +350,19 @@ export default function AssessmentAnalyticsPage() {
                                 <Download size={16} />
                             )}
                             Export CSV
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => void handleExport('pdf')}
+                            disabled={filteredAttempts.length === 0 || exporting}
+                        >
+                            {exporting ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Download size={16} />
+                            )}
+                            Export PDF
                         </Button>
                     </div>
 
@@ -439,9 +450,10 @@ export default function AssessmentAnalyticsPage() {
                                                     return (
                                                         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${label === 'PASS' ? 'bg-blue-600 text-white' :
                                                                 label === 'FAIL' ? 'bg-red-500 text-white' :
+                                                                    label === 'MALPRACTICE' ? 'bg-amber-500 text-white' :
                                                                     'bg-gray-200 text-gray-700'
                                                             }`}>
-                                                            {label}
+                                                            {formatPassFailDisplay(label)}
                                                         </span>
                                                     )
                                                 })()}
@@ -481,7 +493,7 @@ export default function AssessmentAnalyticsPage() {
 
                     {/* Footer */}
                     {!loading && !error && attempts.length > 0 && (
-                        <div className="p-4 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex justify-between">
+                        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 text-sm text-gray-500 dark:text-gray-400 flex justify-between">
                             <span>Showing {filteredAttempts.length} of {attempts.length} attempts</span>
                         </div>
                     )}
@@ -550,7 +562,7 @@ function AttemptDetailsModal({
     const evaluated = isAttemptEvaluated(attempt)
     const totalMaxScore = getAttemptMaxScore(attempt, assessment)
     const passFail = getPassFailLabel(attempt, assessment)
-    const rounds = attempt.result_data?.rounds || []
+    const rounds = normalizeAttemptRounds(attempt)
 
     const photoSlots = buildProctoringSlots(
         proctoring?.proctoring_snapshots?.length
@@ -583,8 +595,8 @@ function AttemptDetailsModal({
                         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-4 text-sm text-amber-900 dark:text-amber-100">
                             <p className="font-semibold">Evaluation pending</p>
                             <p className="mt-1">
-                                Solviq has not sent results to DISHA for this attempt yet (status: {attempt.status}).
-                                Scores here are placeholders until the callback is received.
+                                Results for this attempt are not available yet (status: {attempt.status}).
+                                Scores appear here after the student submits on Disha.
                             </p>
                         </div>
                     )}
@@ -612,20 +624,30 @@ function AttemptDetailsModal({
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Status</p>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${passFail === 'PASS' ? 'bg-blue-600 text-white' :
                                     passFail === 'FAIL' ? 'bg-red-500 text-white' :
+                                    passFail === 'MALPRACTICE' ? 'bg-amber-500 text-white' :
                                         'bg-gray-200 text-gray-700'
                                 }`}>
-                                {passFail}
+                                {formatPassFailDisplay(passFail)}
                             </span>
+                            {passFail === 'MALPRACTICE' && formatDisqualificationReason(getDisqualificationReason(attempt)) && (
+                                <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">
+                                    Reason: {formatDisqualificationReason(getDisqualificationReason(attempt))}
+                                </p>
+                            )}
                         </div>
                     </div>
 
-                    {/* Proctoring photos from Solviq */}
+                    {/* Proctoring photos */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
                             Photos captured during assessment
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                            Identity verification snapshots from Solviq (up to 4, spread across the exam).
+                            Identity verification snapshots — 4 photos per round
+                            {assessment?.rounds?.length
+                                ? ` (up to ${(assessment.rounds.length || 1) * 4} for this assessment)`
+                                : ''}
+                            . Remaining shots for a round are captured when that round is submitted.
                         </p>
                         {!loadingProctoring && photoSlots.every((s) => !s.url) && evaluated && (
                             <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
@@ -643,7 +665,7 @@ function AttemptDetailsModal({
                                 {photoSlots.map((slot) =>
                                     slot.url ? (
                                         <a
-                                            key={slot.index}
+                                            key={`${slot.round_number || 0}-${slot.index}-${slot.displayIndex}`}
                                             href={slot.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -651,25 +673,28 @@ function AttemptDetailsModal({
                                         >
                                             <img
                                                 src={slot.url}
-                                                alt={`Photo ${slot.index}`}
+                                                alt={`Photo ${slot.displayIndex}`}
                                                 className="w-full aspect-[4/3] object-cover"
                                             />
                                             <div className="p-2 text-xs text-gray-600 dark:text-gray-400">
-                                                <p className="font-semibold">Photo {slot.index}</p>
+                                                <p className="font-semibold">
+                                                    {slot.round_number
+                                                        ? `Round ${slot.round_number} · Shot ${slot.index}`
+                                                        : `Photo ${slot.displayIndex}`}
+                                                </p>
                                                 {slot.captured_at && (
                                                     <p>{new Date(slot.captured_at).toLocaleString()}</p>
-                                                )}
-                                                {slot.round_number != null && (
-                                                    <p>Round {slot.round_number}</p>
                                                 )}
                                             </div>
                                         </a>
                                     ) : (
                                         <div
-                                            key={slot.index}
+                                            key={`empty-${slot.displayIndex}`}
                                             className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center aspect-[4/3] p-3 text-center bg-gray-50 dark:bg-gray-900/40"
                                         >
-                                            <p className="text-sm font-medium text-gray-500">Photo {slot.index}</p>
+                                            <p className="text-sm font-medium text-gray-500">
+                                                Photo {slot.displayIndex}
+                                            </p>
                                             <p className="text-xs text-gray-400 mt-1">Not captured</p>
                                         </div>
                                     )
@@ -691,10 +716,16 @@ function AttemptDetailsModal({
                                     </h4>
                                     <div className="text-right">
                                         <div className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {round.score?.toFixed(1) ?? '-'} / {round.total_score ?? userEstimateRoundTotal(round)}
+                                            {typeof round.score === 'number' ? round.score.toFixed(1) : '—'}
+                                            {' / '}
+                                            {typeof round.total_score === 'number'
+                                                ? round.total_score.toFixed(1)
+                                                : userEstimateRoundTotal(round)}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            {round.percentage?.toFixed(1)}%
+                                            {typeof round.percentage === 'number'
+                                                ? `${round.percentage.toFixed(1)}%`
+                                                : '—'}
                                         </div>
                                     </div>
                                 </div>
@@ -730,8 +761,8 @@ function AttemptDetailsModal({
                                                 {/* Student Answer */}
                                                 <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
                                                     <p className="text-xs text-gray-500 font-semibold mb-2">Student Answer:</p>
-                                                    <p className="text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap">
-                                                        {q.student_answer || '-'}
+                                                    <p className="text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap font-mono text-sm">
+                                                        {formatStudentAnswerDisplay(q.student_answer, q.question_type)}
                                                     </p>
                                                 </div>
 
@@ -757,7 +788,7 @@ function AttemptDetailsModal({
                                 <p className="text-gray-500">
                                     {evaluated
                                         ? 'No detailed round data available for this attempt.'
-                                        : 'Round-wise breakdown will appear after Solviq sends evaluation results to DISHA.'}
+                                        : 'Round-wise breakdown will appear after the student submits the exam.'}
                                 </p>
                             </div>
                         )}
@@ -773,11 +804,41 @@ function AttemptDetailsModal({
     )
 }
 
+function formatStudentAnswerDisplay(answer: unknown, questionType?: string): string {
+    if (answer == null || answer === '') return '-'
+    if (typeof answer === 'string' || typeof answer === 'number' || typeof answer === 'boolean') {
+        return String(answer)
+    }
+    if (typeof answer === 'object') {
+        const obj = answer as Record<string, unknown>
+        const isCoding =
+            String(questionType || '').toLowerCase() === 'coding' ||
+            'source_code' in obj ||
+            ('language' in obj && 'source_code' in obj)
+        if (isCoding) {
+            const lang = obj.language != null ? String(obj.language) : 'unknown'
+            const code = obj.source_code != null ? String(obj.source_code) : ''
+            if (!code.trim()) return `Language: ${lang}\n(no source code saved)`
+            const preview =
+                code.length > 2000 ? `${code.slice(0, 2000)}\n… (truncated)` : code
+            return `Language: ${lang}\n\n${preview}`
+        }
+        try {
+            return JSON.stringify(answer, null, 2)
+        } catch {
+            return '-'
+        }
+    }
+    return '-'
+}
+
 function userEstimateRoundTotal(round: any) {
-    if (round.questions && Array.isArray(round.questions)) {
+    if (typeof round.total_score === 'number') return round.total_score.toFixed(1)
+    if (typeof round.max === 'number') return round.max.toFixed(1)
+    if (round.questions && Array.isArray(round.questions) && round.questions.length > 0) {
         return round.questions.reduce((acc: number, q: any) => acc + (q.max_score || 1), 0)
     }
-    if (round.percentage > 0 && round.score != null) {
+    if (typeof round.percentage === 'number' && round.percentage > 0 && round.score != null) {
         return Math.round(round.score / (round.percentage / 100))
     }
     return '—'
