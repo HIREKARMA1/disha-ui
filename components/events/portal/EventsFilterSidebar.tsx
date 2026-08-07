@@ -38,9 +38,10 @@ function EventsFilterSidebarComponent({
   return (
     <aside
       className={cn(
-                'rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm',
+        'rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm',
         'dark:border-gray-700/80 dark:bg-gray-900/80',
-        // Not sticky — stays in document flow so it never overlays the tabs below
+        // Sticky when parent provides sticky wrapper; self-sticky as fallback on desktop
+        'lg:sticky lg:top-20 lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain',
         className
       )}
     >

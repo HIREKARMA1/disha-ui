@@ -6,6 +6,8 @@ import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
+import { Tooltip } from '@/components/ui/tooltip'
+import type { ReactElement, ReactNode } from 'react'
 
 interface Job {
     id: string
@@ -172,45 +174,60 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
     }
 
     const getApplicationStatusDisplay = (status: string) => {
+        const tipByStatus: Record<string, string> = {
+            applied: 'You have applied to this job',
+            shortlisted: 'Your application was shortlisted for the next round',
+            selected: 'You were selected for this role',
+            rejected: 'This application was not selected',
+            pending: 'Your application is under review',
+        }
+        const tip = tipByStatus[status]
+        let badge: ReactNode = null
         switch (status) {
             case 'applied':
-                return (
+                badge = (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white border border-blue-500">
                         <CheckCircle className="w-3 h-3" />
                         Applied
                     </span>
                 )
+                break
             case 'shortlisted':
-                return (
+                badge = (
                     <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium flex items-center justify-center gap-1">
                         <Users className="w-3 h-3" />
                         Shortlisted
                     </span>
                 )
+                break
             case 'selected':
-                return (
+                badge = (
                     <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         Selected! 🎉
                     </span>
                 )
+                break
             case 'rejected':
-                return (
+                badge = (
                     <span className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center justify-center gap-1">
                         <X className="w-3 h-3" />
                         Not Selected
                     </span>
                 )
+                break
             case 'pending':
-                return (
+                badge = (
                     <span className="text-xs text-purple-600 dark:text-purple-400 font-medium flex items-center justify-center gap-1">
                         <Clock className="w-3 h-3" />
                         Under Review
                     </span>
                 )
+                break
             default:
                 return null
         }
+        return tip ? <Tooltip content={tip}>{badge as ReactElement}</Tooltip> : badge
     }
 
     const getWorkModeBadge = () => {

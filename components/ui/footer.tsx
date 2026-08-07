@@ -19,17 +19,17 @@ export function Footer() {
                         <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                             Support available for students, universities, and recruiters across India.
                         </p>
-                        <div className="flex space-x-4 pt-2 justify-center md:justify-start">
-                            <a href="https://twitter.com/hirekarma" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="Twitter">
+                        <div className="flex space-x-2 pt-2 justify-center md:justify-start">
+                            <a href="https://twitter.com/hirekarma" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="Twitter">
                                 <Twitter className="w-5 h-5" />
                             </a>
-                            <a href="https://www.linkedin.com/company/hirekarma-pvt-ltd" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="LinkedIn">
+                            <a href="https://www.linkedin.com/company/hirekarma-pvt-ltd" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="LinkedIn">
                                 <Linkedin className="w-5 h-5" />
                             </a>
-                            <a href="https://facebook.com/hirekarma" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="Facebook">
+                            <a href="https://facebook.com/hirekarma" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="Facebook">
                                 <Facebook className="w-5 h-5" />
                             </a>
-                            <a href="https://instagram.com/hirekarma" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-500 transition-colors" aria-label="Instagram">
+                            <a href="https://instagram.com/hirekarma" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="Instagram">
                                 <Instagram className="w-5 h-5" />
                             </a>
                         </div>
