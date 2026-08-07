@@ -564,27 +564,30 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         )}
       </div>
 
-      {/* ========== DESKTOP / TABLET HERO (md+) — unchanged ========== */}
-      <div className="relative hidden pt-16 md:block">
-        <div className="relative flex w-full items-center justify-center overflow-hidden bg-gray-100 dark:bg-gray-800">
-          {event.banner_url ? (
-            <img
-              src={event.banner_url}
-              alt={event.title ? `${event.title} banner` : 'Event banner'}
-              className="mx-auto block h-auto max-h-[420px] w-auto max-w-full object-contain object-center"
-            />
-          ) : (
-            <div
-              className="w-full aspect-[21/7] max-h-[420px] bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
-              aria-hidden
-            />
-          )}
-        </div>
+      {/* ========== DESKTOP / TABLET HERO (md+) ========== */}
+      <div className="relative hidden pt-20 md:block lg:pt-24">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative -mt-20 rounded-2xl border border-gray-200/80 bg-white p-8 shadow-xl shadow-gray-200/50 dark:border-gray-700/80 dark:bg-gray-800 dark:shadow-none">
+          {/* Full-width 16:9 banner — matches uploaded artwork, no cropping */}
+          <div className="relative w-full aspect-[16/9] rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
+            {event.banner_url ? (
+              <img
+                src={event.banner_url}
+                alt={event.title ? `${event.title} banner` : 'Event banner'}
+                className="absolute inset-0 h-full w-full rounded-2xl object-contain object-center"
+              />
+            ) : (
+              <div
+                className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
+                aria-hidden
+              />
+            )}
+          </div>
+
+          {/* Info card sits below the banner — no negative-margin overlap */}
+          <div className="relative mt-6 rounded-2xl border border-gray-200/80 bg-white p-8 shadow-xl shadow-gray-200/50 dark:border-gray-700/80 dark:bg-gray-800 dark:shadow-none">
             <div className="flex flex-col gap-6 md:flex-row md:items-start">
               {event.organizer_logo_url && (
-                <div className="flex h-24 w-24 flex-shrink-0 -mt-14 rounded-2xl border-2 border-gray-100 bg-white p-2.5 shadow-md ring-4 ring-white dark:border-gray-700 dark:bg-gray-900 dark:ring-gray-800">
+                <div className="flex h-24 w-24 flex-shrink-0 rounded-2xl border-2 border-gray-100 bg-white p-2.5 shadow-md dark:border-gray-700 dark:bg-gray-900">
                   <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
                 </div>
               )}
