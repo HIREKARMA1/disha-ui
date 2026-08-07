@@ -177,6 +177,7 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
             active: 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400',
             inactive: 'bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
             closed: 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400',
+            draft: 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400',
             paused: 'bg-gray-50 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
         }
         return colors[status as keyof typeof colors] || colors.inactive
@@ -187,6 +188,7 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
             active: 'Active',
             inactive: 'Inactive',
             closed: 'Closed',
+            draft: 'Draft',
             paused: 'Paused'
         }
         return labels[status as keyof typeof labels] || status

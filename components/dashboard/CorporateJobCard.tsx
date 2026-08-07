@@ -191,6 +191,7 @@ export function CorporateJobCard({
             active: 'Active',
             inactive: 'Inactive',
             closed: 'Closed',
+            draft: 'Draft',
             paused: 'Paused',
         }
         return labels[status] || status
@@ -342,7 +343,9 @@ export function CorporateJobCard({
                                     ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                                     : job.status === 'closed'
                                       ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'
-                                      : 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300'
+                                      : job.status === 'draft'
+                                        ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                        : 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300'
                             )}
                         >
                             {getStatusLabel(job.status)}

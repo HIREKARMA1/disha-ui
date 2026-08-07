@@ -417,10 +417,13 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
             const successMessages = {
                 active: 'Job posted successfully!',
-                inactive: 'Job created and set to inactive!'
+                inactive: 'Job created and set to inactive!',
+                draft: 'Job submitted as draft. It will be visible to students after admin approval.'
             }
 
-            const message = successMessages[formData.status as keyof typeof successMessages] || 'Job created successfully!'
+            const message = userType === 'corporate'
+                ? successMessages.draft
+                : (successMessages[formData.status as keyof typeof successMessages] || 'Job created successfully!')
             toast.success(message)
             onJobCreated()
             onClose()
@@ -616,26 +619,35 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     </div>
                                 </div>
 
-                                {/* Status Selection */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Job Status *
-                                        </label>
-                                        <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select job status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="active">Active - Job is live and accepting applications</SelectItem>
-                                                <SelectItem value="inactive">Inactive - Hidden from public view</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            Choose how you want to publish this job posting
+                                {/* Status: corporate jobs await admin release; university can choose */}
+                                {userType === 'university' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Job Status *
+                                            </label>
+                                            <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select job status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="active">Active - Job is live and accepting applications</SelectItem>
+                                                    <SelectItem value="inactive">Inactive - Hidden from public view</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                Choose how you want to publish this job posting
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
+                                        <p className="text-sm text-amber-800 dark:text-amber-300">
+                                            New jobs are submitted as <span className="font-semibold">Draft</span> and
+                                            become visible to students only after admin approval (Make Public or Assign to University).
                                         </p>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* Company Information Section - Only for University */}
