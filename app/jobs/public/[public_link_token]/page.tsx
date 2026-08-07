@@ -12,7 +12,6 @@ import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
     APPLY_SUCCESS_MESSAGE,
-    PREMIUM_REQUIRED_MESSAGE,
     clearAutoApplyQueryParams,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
@@ -278,7 +277,7 @@ export default function PublicJobPage() {
         if (!studentUniversityId) {
             return {
                 canApply: false,
-                reason: PREMIUM_REQUIRED_MESSAGE,
+                reason: 'This job is not available for your university',
             }
         }
 
@@ -286,10 +285,11 @@ export default function PublicJobPage() {
         if (!job.assigned_university_ids.includes(studentUniversityId)) {
             return {
                 canApply: false,
-                reason: PREMIUM_REQUIRED_MESSAGE,
+                reason: 'This job is not available for your university',
             }
         }
 
+        // Matching assignment: allow click; backend enforces university approval
         return { canApply: true, reason: null }
     }
 
@@ -309,10 +309,6 @@ export default function PublicJobPage() {
         // Check university assignment before applying
         const eligibility = canStudentApply()
         if (!eligibility.canApply) {
-            if (eligibility.reason === PREMIUM_REQUIRED_MESSAGE || eligibility.reason === 'This job is not available for applications.') {
-                setShowPremiumModal(true)
-                return
-            }
             toast.error(eligibility.reason || 'You are not eligible to apply for this job')
             return
         }
