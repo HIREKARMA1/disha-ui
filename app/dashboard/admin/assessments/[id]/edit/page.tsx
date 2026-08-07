@@ -109,12 +109,12 @@ export default function EditAssessmentPage() {
                 {/* Header Section */}
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-10">
                     <div>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                            <Link href="/dashboard/admin/assessments" className="hover:text-blue-600 transition-colors">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            <Link href="/dashboard/admin/assessments" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                                 Assessments
                             </Link>
                             <span>/</span>
-                            <span className="text-gray-900 font-medium">Edit Configuration</span>
+                            <span className="text-gray-900 dark:text-white font-medium">Edit Configuration</span>
                         </div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                             {initialData?.assessment_name || 'Edit Assessment'}

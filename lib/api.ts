@@ -763,7 +763,7 @@ class ApiClient {
     return response.data;
   }
 
-  // Assessment Management (DISHA-SOLVIQ)
+  // Assessment Management (local Disha exam runtime)
   async getAdminAssessments(params: {
     skip?: number;
     limit?: number;
@@ -824,12 +824,184 @@ class ApiClient {
     };
   }
 
-  /** Student or admin: issue Solviq token; `assessment_id` is taken from the URL path. */
+  /** Student or admin: create local exam session; returns exam_url on Disha. */
   async generateAssessmentToken(
     assessmentId: string,
     body: { student_id: string; expires_in_minutes?: number; university_id?: string; corporate_id?: string }
   ): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/assessments/${assessmentId}/token`, body);
+    return response.data;
+  }
+
+  async startAssessmentExam(assessmentId: string, attemptId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/start`
+    );
+    return response.data;
+  }
+
+  async getAssessmentExamQuestions(assessmentId: string, attemptId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/attempts/${attemptId}/questions`
+    );
+    return response.data;
+  }
+
+  async submitAssessmentExam(
+    assessmentId: string,
+    attemptId: string,
+    body: { answers: Array<{ question_id: string; answer?: any; time_spent?: number }>; auto_submit?: boolean }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/submit`,
+      body
+    );
+    return response.data;
+  }
+
+  async disqualifyAssessmentExam(
+    assessmentId: string,
+    attemptId: string,
+    body: { reason: string; answers?: Array<{ question_id: string; answer?: any; time_spent?: number }> }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/disqualify`,
+      body
+    );
+    return response.data;
+  }
+
+  async uploadAssessmentProctoringSnapshot(
+    assessmentId: string,
+    attemptId: string,
+    snapshotIndex: number,
+    blob: Blob,
+    roundNumber?: number
+  ): Promise<any> {
+    const form = new FormData();
+    form.append('snapshot_index', String(snapshotIndex));
+    if (roundNumber != null) form.append('round_number', String(roundNumber));
+    form.append('file', blob, `snapshot_${snapshotIndex}.jpg`);
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/proctoring/snapshots`,
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+  }
+
+  // Coding question bank
+  async listCodingQuestions(params: Record<string, any> = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/coding-questions', { params });
+    return response.data;
+  }
+
+  async getCodingQuestion(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/admin/coding-questions/${id}`);
+    return response.data;
+  }
+
+  async createCodingQuestion(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/admin/coding-questions', data);
+    return response.data;
+  }
+
+  async updateCodingQuestion(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/admin/coding-questions/${id}`, data);
+    return response.data;
+  }
+
+  async deleteCodingQuestion(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/admin/coding-questions/${id}`);
+    return response.data;
+  }
+
+  async addCodingTestCase(questionId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/coding-questions/${questionId}/test-cases`,
+      data
+    );
+    return response.data;
+  }
+
+  async updateCodingTestCase(testCaseId: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(
+      `/admin/coding-questions/test-cases/${testCaseId}`,
+      data
+    );
+    return response.data;
+  }
+
+  async verifyCodingTestCases(
+    questionId: string,
+    body: {
+      language?: string;
+      solution_code?: string;
+      fix_expected?: boolean;
+    } = {}
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/coding-questions/${questionId}/verify-test-cases`,
+      body
+    );
+    return response.data;
+  }
+
+  async deleteCodingTestCase(testCaseId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/coding-questions/test-cases/${testCaseId}`
+    );
+    return response.data;
+  }
+
+  async assignCodingQuestions(
+    assessmentId: string,
+    body: {
+      round_id: string;
+      question_ids: string[];
+      points?: Record<string, number>;
+      replace_existing?: boolean;
+    }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/coding/assign`,
+      body
+    );
+    return response.data;
+  }
+
+  async codingRun(
+    assessmentId: string,
+    attemptId: string,
+    body: { question_id: string; language: string; source_code: string; stdin?: string | null }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/coding/run`,
+      body
+    );
+    return response.data;
+  }
+
+  async codingSubmit(
+    assessmentId: string,
+    attemptId: string,
+    body: { question_id: string; language: string; source_code: string }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/coding/submit`,
+      body
+    );
+    return response.data;
+  }
+
+  async codingJobStatus(
+    assessmentId: string,
+    attemptId: string,
+    jobId: string
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/assessments/${assessmentId}/attempts/${attemptId}/coding/jobs/${jobId}`
+    );
     return response.data;
   }
 

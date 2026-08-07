@@ -10,9 +10,9 @@ const buttonVariants = cva(
             variant: {
                 default: "bg-primary-500 text-white hover:bg-primary-600 focus-visible:ring-primary-500",
                 destructive: "bg-error text-white hover:bg-accent-red-600 focus-visible:ring-error",
-                outline: "border border-gray-300 bg-transparent hover:bg-gray-50 hover:text-gray-900 dark:border-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-50",
+                outline: "border border-gray-300 bg-transparent text-gray-900 hover:bg-gray-50 hover:text-gray-900 dark:border-gray-600 dark:text-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-50",
                 secondary: "bg-secondary-100 text-gray-900 hover:bg-secondary-200 dark:bg-secondary-800 dark:text-gray-50 dark:hover:bg-secondary-700",
-                ghost: "hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-50",
+                ghost: "text-gray-900 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-50",
                 link: "text-primary-500 underline-offset-4 hover:underline",
                 gradient: "bg-gradient-to-r from-primary-500 to-secondary-500 text-white hover:from-primary-600 hover:to-secondary-600",
                 success: "bg-success text-white hover:bg-accent-green-600 focus-visible:ring-success",

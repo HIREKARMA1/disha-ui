@@ -190,11 +190,10 @@ export function PracticeDashboard() {
                 student_id: profile.id,
                 assessment_id: assessment.id
             })
-            if (res.data.solviq_url) {
+            if (res.data.exam_url) {
                 toast.success("Assessment created successfully! Redirecting to exam...", { id: toastId, duration: 2000 })
-                // Redirect to Solviq (same tab)
                 setTimeout(() => {
-                    window.location.href = res.data.solviq_url
+                    window.location.href = res.data.exam_url
                 }, 1000)
             } else {
                 toast.error("Failed to generate assessment config", { id: toastId })

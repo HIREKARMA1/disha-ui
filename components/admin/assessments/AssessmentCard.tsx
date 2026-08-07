@@ -38,9 +38,7 @@ export function AssessmentCard({
     const [linkCopied, setLinkCopied] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    const canShareExamLink =
-        assessment.status === 'ACTIVE' &&
-        (assessment.is_published_to_solviq === true || assessment.is_published_to_solviq === undefined)
+    const canShareExamLink = assessment.status === 'ACTIVE'
 
     const copyExamLink = async () => {
         try {
@@ -126,45 +124,29 @@ export function AssessmentCard({
         >
             {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1 min-w-0 pr-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 break-words">
                             {assessment.assessment_name}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-300 font-mono mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-300 font-mono mt-1 truncate">
                             {assessment.disha_assessment_id}
                         </p>
                     </div>
 
-                    <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                            <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                getModeColor(assessment.mode)
-                            )}>
-                                {assessment.mode}
-                            </span>
-                            <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                getStatusColor(assessment.status)
-                            )}>
-                                {assessment.status}
-                            </span>
-                        </div>
+                    {/* 3-dots dropdown menu */}
+                    <div className="relative flex-shrink-0" ref={dropdownRef}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowDropdown(!showDropdown)}
+                            className="h-8 w-8 p-0 hover:bg-gray-200/60 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-300 rounded-lg"
+                        >
+                            <MoreVertical className="w-4 h-4" />
+                        </Button>
 
-                        {/* 3-dots dropdown menu */}
-                        <div className="relative" ref={dropdownRef}>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowDropdown(!showDropdown)}
-                                className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                                <MoreVertical className="w-4 h-4" />
-                            </Button>
-
-                            {showDropdown && (
-                                <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                        {showDropdown && (
+                            <div className="absolute right-0 top-9 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1">
                                     <div className="py-1">
                                         <button
                                             onClick={() => {
@@ -227,6 +209,21 @@ export function AssessmentCard({
                             )}
                         </div>
                     </div>
+
+                {/* Mode & Status Badges */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className={cn(
+                        "px-2 py-0.5 text-xs font-medium rounded-full",
+                        getModeColor(assessment.mode)
+                    )}>
+                        {assessment.mode}
+                    </span>
+                    <span className={cn(
+                        "px-2 py-0.5 text-xs font-medium rounded-full",
+                        getStatusColor(assessment.status)
+                    )}>
+                        {assessment.status}
+                    </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm mt-4">

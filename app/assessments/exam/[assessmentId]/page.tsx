@@ -92,8 +92,23 @@ export default function StudentExamEntryPage() {
         student_id: user.id,
         expires_in_minutes: 120,
       })
-      if (res?.solviq_url) {
-        window.location.href = res.solviq_url as string
+      const examUrl = res?.exam_url as string | undefined
+      if (examUrl) {
+        // Prefer same-origin take path if API returned absolute frontend URL
+        try {
+          const u = new URL(examUrl, window.location.origin)
+          if (u.pathname.includes('/assessments/exam/')) {
+            window.location.href = u.pathname + u.search
+            return
+          }
+        } catch {
+          /* fall through */
+        }
+        window.location.href = examUrl
+        return
+      }
+      if (res?.attempt_id) {
+        window.location.href = `/assessments/exam/${assessmentId}/take?attempt=${res.attempt_id}`
         return
       }
       setStartError('Could not start the exam. Please try again.')

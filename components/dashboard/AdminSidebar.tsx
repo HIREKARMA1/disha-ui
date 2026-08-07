@@ -116,6 +116,13 @@ const navItems: NavItem[] = [
         color: 'from-amber-500 to-orange-600'
     },
     {
+        label: 'Coding Questions',
+        href: '/dashboard/admin/coding-questions',
+        icon: Brain,
+        description: 'Coding question bank',
+        color: 'from-cyan-500 to-teal-600'
+    },
+    {
         label: 'Analytics',
         href: '/dashboard/admin/analytics',
         icon: BarChart3,

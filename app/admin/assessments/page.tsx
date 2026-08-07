@@ -81,7 +81,7 @@ export default function AssessmentsPage() {
       if (response.ok) {
         const updated = await response.json();
         setAssessments(assessments.map((a) => (a.id === id ? updated : a)));
-        alert("Assessment published to SOLVIQ successfully!");
+        alert("Assessment published successfully!");
       }
     } catch (error) {
       console.error("Error publishing assessment:", error);
@@ -96,7 +96,7 @@ export default function AssessmentsPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-4xl font-bold text-gray-900">Assessment Management</h1>
-              <p className="text-gray-600 mt-2">Create and manage assessments for SOLVIQ</p>
+              <p className="text-gray-600 mt-2">Create and manage assessments on Disha</p>
             </div>
             <button
               onClick={handleCreate}
