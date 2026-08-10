@@ -50,6 +50,11 @@ export function Footer() {
                                 </Link>
                             </li>
                             <li>
+                                <Link href="/events" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
+                                    Upcoming Events
+                                </Link>
+                            </li>
+                            <li>
                                 <Link href="/auth/login" className="text-gray-600 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm transition-colors">
                                     Sign In
                                 </Link>
