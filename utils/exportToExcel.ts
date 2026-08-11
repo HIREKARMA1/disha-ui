@@ -380,6 +380,12 @@ export const exportAnalyticsToCSV = (
     downloadCsvBlob(buildCsvContent(headers, csvData), filename);
 };
 
+function snapshotLinkLabel(url?: string): string {
+    if (!url || !String(url).trim()) return '—';
+    const trimmed = String(url).trim();
+    return trimmed.length > 48 ? `${trimmed.slice(0, 45)}…` : trimmed;
+}
+
 /** Landscape PDF table of assessment analytics results (jsPDF + autotable). */
 export const exportAnalyticsToPDF = async (
     data: AnalyticsExport[],
@@ -428,6 +434,52 @@ export const exportAnalyticsToPDF = async (
         headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 247, 250] },
         margin: { left: 40, right: 40 },
+    });
+
+    // Second page: proctoring photo links (clickable)
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('Proctoring photo links', 40, 36);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Click a link to open the snapshot in a browser', 40, 52);
+    doc.setTextColor(0);
+
+    const linkBody = data.map((item) => [
+        item.student_name || 'Unknown',
+        item.email || '—',
+        snapshotLinkLabel(item.snapshot_1_url),
+        snapshotLinkLabel(item.snapshot_2_url),
+        snapshotLinkLabel(item.snapshot_3_url),
+        snapshotLinkLabel(item.snapshot_4_url),
+    ]);
+
+    autoTable(doc, {
+        startY: 64,
+        head: [['Student', 'Email', 'Snapshot 1', 'Snapshot 2', 'Snapshot 3', 'Snapshot 4']],
+        body: linkBody,
+        styles: { fontSize: 7, cellPadding: 3, overflow: 'linebreak' },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+            2: { cellWidth: 110, textColor: [37, 99, 235] },
+            3: { cellWidth: 110, textColor: [37, 99, 235] },
+            4: { cellWidth: 110, textColor: [37, 99, 235] },
+            5: { cellWidth: 110, textColor: [37, 99, 235] },
+        },
+        didDrawCell: (hookData) => {
+            if (hookData.section !== 'body' || hookData.column.index < 2) return;
+            const rowIndex = hookData.row.index;
+            const snapKey = (
+                ['snapshot_1_url', 'snapshot_2_url', 'snapshot_3_url', 'snapshot_4_url'] as const
+            )[hookData.column.index - 2];
+            const url = data[rowIndex]?.[snapKey];
+            if (!url || !String(url).trim()) return;
+            const { x, y, width, height } = hookData.cell;
+            doc.link(x, y, width, height, { url: String(url).trim() });
+        },
     });
 
     const filename = `${title.replace(/[^a-zA-Z0-9]/g, '_')}_Analytics_${timestamp}.pdf`;

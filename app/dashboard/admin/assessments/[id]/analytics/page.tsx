@@ -466,7 +466,14 @@ export default function AssessmentAnalyticsPage() {
 
                                             {/* Proctoring photos */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                                {countCapturedSnapshots(attempt)} / 4
+                                                <div className="flex flex-col gap-1">
+                                                    <span>{countCapturedSnapshots(attempt)} / 4</span>
+                                                    {attempt.has_detailed_report && (
+                                                        <span className="inline-flex w-fit px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                                            Report ready
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
 
                                             {/* Actions */}
@@ -506,6 +513,36 @@ export default function AssessmentAnalyticsPage() {
                     attempt={selectedAttempt}
                     assessment={assessmentDetails}
                     assessmentId={assessmentId}
+                    onReportUpdated={(attemptId, meta) => {
+                        setAttempts((prev) =>
+                            prev.map((a) =>
+                                a.id === attemptId
+                                    ? {
+                                          ...a,
+                                          has_detailed_report: meta.has_detailed_report,
+                                          detailed_report_generated_at: meta.generated_at,
+                                          result_data: {
+                                              ...(a.result_data || {}),
+                                              detailed_report: meta.report,
+                                          },
+                                      }
+                                    : a
+                            )
+                        )
+                        setSelectedAttempt((prev: any) =>
+                            prev?.id === attemptId
+                                ? {
+                                      ...prev,
+                                      has_detailed_report: meta.has_detailed_report,
+                                      detailed_report_generated_at: meta.generated_at,
+                                      result_data: {
+                                          ...(prev.result_data || {}),
+                                          detailed_report: meta.report,
+                                      },
+                                  }
+                                : prev
+                        )
+                    }}
                 />
             </div>
         </AdminDashboardLayout>
@@ -518,20 +555,56 @@ function AttemptDetailsModal({
     attempt,
     assessment,
     assessmentId,
+    onReportUpdated,
 }: {
     isOpen: boolean
     onClose: () => void
     attempt: any
     assessment: any
     assessmentId: string
+    onReportUpdated?: (
+        attemptId: string,
+        meta: {
+            has_detailed_report: boolean
+            generated_at?: string | null
+            report?: {
+                generated_at?: string | null
+                model?: string | null
+                summary?: string | null
+                strengths?: string[]
+                weaknesses?: string[]
+                enhancement_areas?: string[]
+            }
+        }
+    ) => void
 }) {
     const [proctoring, setProctoring] = useState<any>(null)
     const [loadingProctoring, setLoadingProctoring] = useState(false)
+    const [reportPreview, setReportPreview] = useState<{
+        generated_at?: string | null
+        model?: string | null
+        summary?: string | null
+        strengths?: string[]
+        weaknesses?: string[]
+        enhancement_areas?: string[]
+    } | null>(null)
+    const [generatingReport, setGeneratingReport] = useState(false)
+    const [downloadingReport, setDownloadingReport] = useState(false)
+    const [reportError, setReportError] = useState<string | null>(null)
 
     useEffect(() => {
         if (!isOpen || !attempt?.id) {
             setProctoring(null)
+            setReportPreview(null)
+            setReportError(null)
             return
+        }
+
+        const stored = attempt.result_data?.detailed_report
+        if (attempt.has_detailed_report || stored?.summary) {
+            setReportPreview(stored || null)
+        } else {
+            setReportPreview(null)
         }
 
         const load = async () => {
@@ -555,7 +628,93 @@ function AttemptDetailsModal({
         }
 
         void load()
+
+        // Hydrate stored report preview if flag is set but result_data may omit nested brief
+        if (attempt.has_detailed_report && !stored?.summary) {
+            void (async () => {
+                try {
+                    const data = await apiClient.getAssessmentDetailedReport(assessmentId, attempt.id)
+                    setReportPreview({
+                        generated_at: data.generated_at,
+                        model: data.model,
+                        summary: data.summary,
+                        strengths: data.strengths,
+                        weaknesses: data.weaknesses,
+                        enhancement_areas: data.enhancement_areas,
+                    })
+                } catch {
+                    /* ignore — generate still available */
+                }
+            })()
+        }
     }, [isOpen, attempt?.id, assessmentId])
+
+    const handleGenerateReport = async () => {
+        if (!attempt?.id) return
+        setGeneratingReport(true)
+        setReportError(null)
+        try {
+            const data = await apiClient.generateAssessmentDetailedReport(assessmentId, attempt.id)
+            const report = {
+                generated_at: data.generated_at,
+                model: data.model,
+                summary: data.summary,
+                strengths: data.strengths || [],
+                weaknesses: data.weaknesses || [],
+                enhancement_areas: data.enhancement_areas || [],
+            }
+            setReportPreview(report)
+            onReportUpdated?.(attempt.id, {
+                has_detailed_report: true,
+                generated_at: data.generated_at,
+                report,
+            })
+        } catch (err: any) {
+            const detail =
+                err?.response?.data?.detail ||
+                err?.message ||
+                'Failed to generate detailed report'
+            setReportError(typeof detail === 'string' ? detail : 'Failed to generate detailed report')
+        } finally {
+            setGeneratingReport(false)
+        }
+    }
+
+    const handleDownloadReport = async () => {
+        if (!attempt?.id) return
+        setDownloadingReport(true)
+        setReportError(null)
+        try {
+            const blob = await apiClient.downloadAssessmentDetailedReportPdf(assessmentId, attempt.id)
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            const safeName = (attempt.student_name || 'student').replace(/[^a-zA-Z0-9]/g, '_')
+            link.href = url
+            link.download = `${safeName}_detailed_report.pdf`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+        } catch (err: any) {
+            let message = 'Generate the detailed report first'
+            if (err?.response?.data instanceof Blob) {
+                try {
+                    const text = await err.response.data.text()
+                    const parsed = JSON.parse(text)
+                    if (parsed?.detail) message = parsed.detail
+                } catch {
+                    /* keep default */
+                }
+            } else if (err?.response?.data?.detail) {
+                message = err.response.data.detail
+            } else if (err?.message) {
+                message = err.message
+            }
+            setReportError(message)
+        } finally {
+            setDownloadingReport(false)
+        }
+    }
 
     if (!attempt) return null
 
@@ -563,6 +722,7 @@ function AttemptDetailsModal({
     const totalMaxScore = getAttemptMaxScore(attempt, assessment)
     const passFail = getPassFailLabel(attempt, assessment)
     const rounds = normalizeAttemptRounds(attempt)
+    const hasReport = Boolean(reportPreview?.summary || attempt.has_detailed_report)
 
     const photoSlots = buildProctoringSlots(
         proctoring?.proctoring_snapshots?.length
@@ -793,11 +953,116 @@ function AttemptDetailsModal({
                             </div>
                         )}
                     </div>
+
+                    {/* AI detailed report preview (after Generate) */}
+                    {evaluated && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Brain className="h-5 w-5 text-blue-600" />
+                                        Detailed analysis report
+                                    </h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        Generate a Cohere brief (strengths, weaknesses, enhancement areas), then download the PDF.
+                                    </p>
+                                </div>
+                                {hasReport && (
+                                    <span className="shrink-0 px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        Ready
+                                    </span>
+                                )}
+                            </div>
+
+                            {reportError && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-800 dark:text-red-200">
+                                    {reportError}
+                                </div>
+                            )}
+
+                            {reportPreview?.summary ? (
+                                <div className="space-y-3 text-sm">
+                                    {reportPreview.generated_at && (
+                                        <p className="text-xs text-gray-500">
+                                            Generated {new Date(reportPreview.generated_at).toLocaleString()}
+                                            {reportPreview.model ? ` · ${reportPreview.model}` : ''}
+                                        </p>
+                                    )}
+                                    <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
+                                        {reportPreview.summary}
+                                    </p>
+                                    {!!reportPreview.strengths?.length && (
+                                        <div>
+                                            <p className="font-semibold text-gray-900 dark:text-white mb-1">Strengths</p>
+                                            <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300 space-y-1">
+                                                {reportPreview.strengths.map((s, i) => (
+                                                    <li key={`s-${i}`}>{s}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {!!reportPreview.weaknesses?.length && (
+                                        <div>
+                                            <p className="font-semibold text-gray-900 dark:text-white mb-1">Weaknesses</p>
+                                            <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300 space-y-1">
+                                                {reportPreview.weaknesses.map((s, i) => (
+                                                    <li key={`w-${i}`}>{s}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {!!reportPreview.enhancement_areas?.length && (
+                                        <div>
+                                            <p className="font-semibold text-gray-900 dark:text-white mb-1">Where to enhance</p>
+                                            <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300 space-y-1">
+                                                {reportPreview.enhancement_areas.map((s, i) => (
+                                                    <li key={`e-${i}`}>{s}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500">
+                                    No detailed report yet. Click Generate Detailed Report to create one.
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {/* Footer to Close */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-end">
-                    <Button onClick={onClose}>Close Report</Button>
+                {/* Footer */}
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-wrap items-center justify-end gap-2">
+                    {evaluated && (
+                        <>
+                            <Button
+                                variant="outline"
+                                onClick={() => void handleGenerateReport()}
+                                disabled={generatingReport || downloadingReport}
+                                className="gap-2"
+                            >
+                                {generatingReport ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Brain className="h-4 w-4" />
+                                )}
+                                {hasReport ? 'Regenerate Report' : 'Generate Detailed Report'}
+                            </Button>
+                            <Button
+                                onClick={() => void handleDownloadReport()}
+                                disabled={!hasReport || generatingReport || downloadingReport}
+                                className="gap-2"
+                            >
+                                {downloadingReport ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Download className="h-4 w-4" />
+                                )}
+                                Download Detailed PDF
+                            </Button>
+                        </>
+                    )}
+                    <Button variant="outline" onClick={onClose}>Close Report</Button>
                 </div>
             </div>
         </div>

@@ -797,6 +797,55 @@ class ApiClient {
     return response.data;
   }
 
+  async generateAssessmentDetailedReport(
+    assessmentId: string,
+    attemptId: string
+  ): Promise<{
+    attempt_id: string;
+    has_detailed_report: boolean;
+    generated_at?: string | null;
+    model?: string | null;
+    summary?: string | null;
+    strengths?: string[];
+    weaknesses?: string[];
+    enhancement_areas?: string[];
+  }> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/attempts/${attemptId}/detailed-report`
+    );
+    return response.data;
+  }
+
+  async getAssessmentDetailedReport(
+    assessmentId: string,
+    attemptId: string
+  ): Promise<{
+    attempt_id: string;
+    has_detailed_report: boolean;
+    generated_at?: string | null;
+    model?: string | null;
+    summary?: string | null;
+    strengths?: string[];
+    weaknesses?: string[];
+    enhancement_areas?: string[];
+  }> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/attempts/${attemptId}/detailed-report`
+    );
+    return response.data;
+  }
+
+  async downloadAssessmentDetailedReportPdf(
+    assessmentId: string,
+    attemptId: string
+  ): Promise<Blob> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/attempts/${attemptId}/detailed-report/pdf`,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
   async deleteAssessment(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admin/assessments/${id}`);
     return response.data;
