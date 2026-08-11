@@ -1,3 +1,6 @@
+'use client'
+
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Search,
@@ -6,13 +9,13 @@ import {
     Calendar,
     UserPlus,
     Upload,
-    X,
     Trash2,
-    GraduationCap
+    GraduationCap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getDegreeLabel } from '@/lib/academicHierarchy'
+import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
 
 interface StudentManagementHeaderProps {
     totalStudents: number
@@ -40,10 +43,10 @@ interface StudentManagementHeaderProps {
     onBulkUpload: () => void
 }
 
+const selectClass =
+    'w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm appearance-none'
+
 export function StudentManagementHeader({
-    totalStudents,
-    activeStudents,
-    archivedStudents,
     searchTerm,
     onSearchChange,
     filterStatus,
@@ -63,70 +66,111 @@ export function StudentManagementHeader({
     setShowFilters,
     onClearFilters,
     onAddStudent,
-    onBulkUpload
+    onBulkUpload,
 }: StudentManagementHeaderProps) {
+    const [sheetOpen, setSheetOpen] = useState(false)
+    const [draftStatus, setDraftStatus] = useState(filterStatus)
+    const [draftDegree, setDraftDegree] = useState(selectedDegree)
+    const [draftBranch, setDraftBranch] = useState(selectedBranch)
+    const [draftYear, setDraftYear] = useState(selectedYear)
+    const [draftArchived, setDraftArchived] = useState(includeArchived)
+
+    const activeCount = useMemo(() => {
+        let n = 0
+        if (filterStatus !== 'all') n += 1
+        if (selectedDegree !== 'all') n += 1
+        if (selectedBranch !== 'all') n += 1
+        if (selectedYear !== 'all') n += 1
+        if (includeArchived) n += 1
+        return n
+    }, [filterStatus, selectedDegree, selectedBranch, selectedYear, includeArchived])
+
+    const openSheet = () => {
+        setDraftStatus(filterStatus)
+        setDraftDegree(selectedDegree)
+        setDraftBranch(selectedBranch)
+        setDraftYear(selectedYear)
+        setDraftArchived(includeArchived)
+        setSheetOpen(true)
+    }
+
+    const applySheet = () => {
+        onFilterChange(draftStatus)
+        onDegreeChange(draftDegree)
+        onBranchChange(draftBranch)
+        onYearChange(draftYear)
+        onIncludeArchivedChange(draftArchived)
+        setShowFilters(true)
+    }
+
+    const clearSheet = () => {
+        setDraftStatus('all')
+        setDraftDegree('all')
+        setDraftBranch('all')
+        setDraftYear('all')
+        setDraftArchived(false)
+        onClearFilters()
+    }
+
     return (
         <div className="space-y-6">
-            {/* Search and Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                {/* Top Row: Search and Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <Input
                             type="text"
                             placeholder="Search students by name, email, or phone..."
                             value={searchTerm}
                             onChange={(e) => onSearchChange(e.target.value)}
-                            className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20"
+                            className="border-gray-200 pl-10 focus:border-primary-500 focus:ring-primary-500/20 dark:border-gray-700"
                         />
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Button
                             onClick={onAddStudent}
-                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
+                            className="bg-blue-600 text-white shadow-sm transition-all duration-200 hover:bg-blue-700"
                         >
-                            <UserPlus className="w-4 h-4 mr-2" />
+                            <UserPlus className="mr-2 h-4 w-4" />
                             Add Student
                         </Button>
                         <Button
                             onClick={onBulkUpload}
-                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm transition-all duration-200"
+                            className="bg-green-600 text-white shadow-sm transition-all duration-200 hover:bg-green-700"
                         >
-                            <Upload className="w-4 h-4 mr-2" />
+                            <Upload className="mr-2 h-4 w-4" />
                             Bulk Upload
                         </Button>
                         <Button
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
-                            className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md"
+                            className="hidden items-center gap-2 border-gray-200 transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:hover:border-gray-600 lg:flex"
                         >
-                            <Filter className="w-4 h-4" />
+                            <Filter className="h-4 w-4" />
                             {showFilters ? 'Hide' : 'Show'} Filters
                         </Button>
-                    </div>
-                </div>
-
-                {/* Collapsible Filters Row */}
-                <AnimatePresence>
-                    {showFilters && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 overflow-hidden"
+                        <MobileFilterBottomSheet
+                            open={sheetOpen}
+                            onOpenChange={(open) => {
+                                if (open) openSheet()
+                                else setSheetOpen(false)
+                            }}
+                            activeCount={activeCount}
+                            onApply={applySheet}
+                            onClear={clearSheet}
+                            clearLabel="Reset"
+                            applyLabel="Apply"
                         >
-                            {/* Status Filter */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Status
-                                </label>
-                                <div className="relative">
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Status
+                                    </label>
                                     <select
-                                        value={filterStatus}
-                                        onChange={(e) => onFilterChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 text-gray-900 dark:text-white rounded-lg bg-white dark:bg-gray-800 appearance-none"
+                                        value={draftStatus}
+                                        onChange={(e) => setDraftStatus(e.target.value)}
+                                        className={selectClass}
                                     >
                                         <option value="all">All Statuses</option>
                                         <option value="placed">Placed</option>
@@ -134,110 +178,192 @@ export function StudentManagementHeader({
                                         <option value="inactive">Inactive</option>
                                         <option value="pending">Pending</option>
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Degree Filter */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Degree
-                                </label>
-                                <div className="relative">
-                                    <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Degree
+                                    </label>
                                     <select
-                                        value={selectedDegree}
-                                        onChange={(e) => onDegreeChange(e.target.value)}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
+                                        value={draftDegree}
+                                        onChange={(e) => setDraftDegree(e.target.value)}
+                                        className={selectClass}
                                     >
                                         <option value="all">All Degrees</option>
-                                        {degrees.map(degree => (
-                                            <option key={degree} value={degree}>{getDegreeLabel(degree)}</option>
+                                        {degrees.map((degree) => (
+                                            <option key={degree} value={degree}>
+                                                {getDegreeLabel(degree)}
+                                            </option>
                                         ))}
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Branch Filter */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Branch
-                                </label>
-                                <div className="relative">
-                                    <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Branch
+                                    </label>
                                     <select
-                                        value={selectedBranch}
-                                        onChange={(e) => onBranchChange(e.target.value)}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
+                                        value={draftBranch}
+                                        onChange={(e) => setDraftBranch(e.target.value)}
+                                        className={selectClass}
                                     >
                                         <option value="all">All Branches</option>
-                                        {branches.map(branch => (
-                                            <option key={branch} value={branch}>{branch}</option>
+                                        {branches.map((branch) => (
+                                            <option key={branch} value={branch}>
+                                                {branch}
+                                            </option>
                                         ))}
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Year Filter */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Year
-                                </label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Year
+                                    </label>
                                     <select
-                                        value={selectedYear}
-                                        onChange={(e) => onYearChange(e.target.value)}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
+                                        value={draftYear}
+                                        onChange={(e) => setDraftYear(e.target.value)}
+                                        className={selectClass}
                                     >
                                         <option value="all">All Years</option>
-                                        {years.map(year => (
-                                            <option key={year} value={year}>{year}</option>
+                                        {years.map((year) => (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
                                         ))}
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Archive Filter */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    View
-                                </label>
-                                <div className="relative">
-                                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        View
+                                    </label>
                                     <select
-                                        value={includeArchived ? 'archived' : 'active'}
-                                        onChange={(e) => onIncludeArchivedChange(e.target.value === 'archived')}
-                                        className="w-full pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none"
+                                        value={draftArchived ? 'archived' : 'active'}
+                                        onChange={(e) =>
+                                            setDraftArchived(e.target.value === 'archived')
+                                        }
+                                        className={selectClass}
                                     >
                                         <option value="active">Active Students</option>
                                         <option value="archived">Archived Students</option>
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                                    </div>
+                                </div>
+                            </div>
+                        </MobileFilterBottomSheet>
+                    </div>
+                </div>
+
+                <AnimatePresence>
+                    {showFilters && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="hidden overflow-hidden border-t border-gray-200 pt-4 dark:border-gray-700 lg:grid lg:grid-cols-5 lg:gap-4"
+                        >
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Status
+                                </label>
+                                <select
+                                    value={filterStatus}
+                                    onChange={(e) => onFilterChange(e.target.value)}
+                                    className={selectClass}
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="placed">Placed</option>
+                                    <option value="unplaced">Unplaced</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="pending">Pending</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Degree
+                                </label>
+                                <div className="relative">
+                                    <GraduationCap className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <select
+                                        value={selectedDegree}
+                                        onChange={(e) => onDegreeChange(e.target.value)}
+                                        className={`${selectClass} pl-10`}
+                                    >
+                                        <option value="all">All Degrees</option>
+                                        {degrees.map((degree) => (
+                                            <option key={degree} value={degree}>
+                                                {getDegreeLabel(degree)}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
-                            {/* Clear Filters Button */}
-                            <div className="sm:col-span-2 lg:col-span-5 flex justify-end mt-2">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Branch
+                                </label>
+                                <div className="relative">
+                                    <BookOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <select
+                                        value={selectedBranch}
+                                        onChange={(e) => onBranchChange(e.target.value)}
+                                        className={`${selectClass} pl-10`}
+                                    >
+                                        <option value="all">All Branches</option>
+                                        {branches.map((branch) => (
+                                            <option key={branch} value={branch}>
+                                                {branch}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Year
+                                </label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <select
+                                        value={selectedYear}
+                                        onChange={(e) => onYearChange(e.target.value)}
+                                        className={`${selectClass} pl-10`}
+                                    >
+                                        <option value="all">All Years</option>
+                                        {years.map((year) => (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    View
+                                </label>
+                                <div className="relative">
+                                    <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <select
+                                        value={includeArchived ? 'archived' : 'active'}
+                                        onChange={(e) =>
+                                            onIncludeArchivedChange(e.target.value === 'archived')
+                                        }
+                                        className={`${selectClass} pl-10`}
+                                    >
+                                        <option value="active">Active Students</option>
+                                        <option value="archived">Archived Students</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="mt-2 flex justify-end lg:col-span-5">
                                 <Button
                                     variant="outline"
                                     onClick={onClearFilters}
-                                    className="border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md px-6"
+                                    className="border-gray-200 px-6 transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:hover:border-gray-600"
                                 >
-                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    <Trash2 className="mr-2 h-4 w-4" />
                                     Clear All
                                 </Button>
                             </div>

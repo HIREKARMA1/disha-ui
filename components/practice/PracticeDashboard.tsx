@@ -10,7 +10,8 @@ import { toast } from 'react-hot-toast'
 import { PracticeExam } from './PracticeExam'
 import { AssessmentDetailsModal } from './AssessmentDetailsModal'
 import { ResultReport } from './ResultReport'
-import { PracticeFilter, PracticeCategory } from './PracticeFilter'
+import { PracticeFilter, PracticeFilterSidebar, PracticeCategory } from './PracticeFilter'
+import { Tooltip } from '@/components/ui/tooltip'
 import { usePracticeModules, useJobAssessments } from '@/hooks/usePractice'
 import { useStudentProfile } from '@/hooks/useStudentProfile'
 import { PracticeModule, SubmitAttemptResponse, JobAssessment } from '@/types/practice'
@@ -314,186 +315,198 @@ export function PracticeDashboard() {
                 </div>
             </div>
 
-            {/* Filter Section - Updated with better styling */}
-            <PracticeFilter
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                selectedUniversities={selectedUniversities}
-                onUniversitiesChange={setSelectedUniversities}
-                selectedBranches={selectedBranches}
-                onBranchesChange={setSelectedBranches}
-                onSearch={handleSearch}
-                onClearFilters={handleClearFilters}
-            />
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-4">
+                <div className="min-w-0 space-y-6">
+                    <PracticeFilter
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        selectedCategory={selectedCategory}
+                        onCategoryChange={setSelectedCategory}
+                        selectedUniversities={selectedUniversities}
+                        onUniversitiesChange={setSelectedUniversities}
+                        selectedBranches={selectedBranches}
+                        onBranchesChange={setSelectedBranches}
+                        onSearch={handleSearch}
+                        onClearFilters={handleClearFilters}
+                    />
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* ... stats ... */}
-                {[
-                    {
-                        label: 'Available Tests',
-                        value: filteredModules.length.toString(),
-                        icon: Brain,
-                        color: 'text-blue-600',
-                        bgColor: 'bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20',
-                        borderColor: 'border-blue-200/50 dark:border-blue-700/50'
-                    },
-                    {
-                        label: 'Total Questions',
-                        value: filteredModules.reduce((sum, module) => sum + module.questions_count, 0).toString(),
-                        icon: Clock,
-                        color: 'text-green-600',
-                        bgColor: 'bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20',
-                        borderColor: 'border-green-200/50 dark:border-green-700/50'
-                    },
-                    {
-                        label: 'Practice Areas',
-                        value: new Set(filteredModules.map(m => m.role)).size.toString(),
-                        icon: Trophy,
-                        color: 'text-purple-600',
-                        bgColor: 'bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20',
-                        borderColor: 'border-purple-200/50 dark:border-purple-700/50'
-                    }
-                ].map((stat, index) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="w-full"
-                    >
-                        <div className="block group w-full">
-                            <div className={`p-4 rounded-xl border backdrop-blur-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 w-full ${stat.bgColor} ${stat.borderColor}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                            {stat.label}
-                                        </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                            {isLoading ? (
-                                                <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
-                                            ) : (
-                                                stat.value
-                                            )}
-                                        </p>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        {[
+                            {
+                                label: 'Available Tests',
+                                value: filteredModules.length.toString(),
+                                icon: Brain,
+                                tooltip: 'Number of practice modules matching your current filters',
+                                color: 'text-blue-600',
+                                bgColor: 'bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20',
+                                borderColor: 'border-blue-200/50 dark:border-blue-700/50'
+                            },
+                            {
+                                label: 'Total Questions',
+                                value: filteredModules.reduce((sum, module) => sum + module.questions_count, 0).toString(),
+                                icon: Clock,
+                                tooltip: 'Sum of questions across filtered practice modules',
+                                color: 'text-green-600',
+                                bgColor: 'bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20',
+                                borderColor: 'border-green-200/50 dark:border-green-700/50'
+                            },
+                            {
+                                label: 'Practice Areas',
+                                value: new Set(filteredModules.map(m => m.role)).size.toString(),
+                                icon: Trophy,
+                                tooltip: 'Distinct roles or focus areas in the filtered set',
+                                color: 'text-purple-600',
+                                bgColor: 'bg-gradient-to-r from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20',
+                                borderColor: 'border-purple-200/50 dark:border-purple-700/50'
+                            }
+                        ].map((stat, index) => (
+                            <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: index * 0.1 }}
+                                className="w-full"
+                            >
+                                <Tooltip content={stat.tooltip}>
+                                    <div className={`group w-full cursor-default rounded-xl border p-4 backdrop-blur-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md ${stat.bgColor} ${stat.borderColor}`}>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <p className="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                    {stat.label}
+                                                </p>
+                                                <p className="text-2xl font-bold text-gray-900 transition-transform duration-200 group-hover:scale-105 dark:text-white">
+                                                    {isLoading ? (
+                                                        <span className="inline-block h-8 w-16 animate-pulse rounded bg-gray-300 dark:bg-gray-600" />
+                                                    ) : (
+                                                        stat.value
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-lg bg-white/60 p-3 shadow-sm backdrop-blur-sm transition-transform duration-200 group-hover:scale-110 dark:bg-gray-800/60">
+                                                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="p-3 rounded-lg bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm shadow-sm group-hover:scale-110 transition-transform duration-200">
-                                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                                </Tooltip>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {jobAssessments && jobAssessments.length > 0 && (
+                        <div className="rounded-xl border border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md dark:border-gray-700/50 dark:bg-gray-800/80">
+                            <div className="flex items-center gap-2 border-b border-gray-200/50 p-6 dark:border-gray-700/50">
+                                <Briefcase className="h-5 w-5 text-primary-600" />
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                    Hiring Assessments
+                                </h2>
+                            </div>
+                            <div className="p-6">
+                                {jobAssessmentsLoading ? (
+                                    <CardSkeleton count={3} />
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                                        {jobAssessments.map((assessment, index) => (
+                                            <motion.div
+                                                key={assessment.id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.1 }}
+                                            >
+                                                <JobAssessmentCard
+                                                    assessment={assessment}
+                                                    cardIndex={index}
+                                                    onViewDetails={() => handleViewJobAssessmentDetails(assessment)}
+                                                    onStart={() => handleStartJobAssessment(assessment)}
+                                                />
+                                            </motion.div>
+                                        ))}
                                     </div>
-                                </div>
+                                )}
                             </div>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
-
-            {/* Job Assessments Section */}
-            {jobAssessments && jobAssessments.length > 0 && (
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center gap-2">
-                        <Briefcase className="w-5 h-5 text-primary-600" />
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                            Hiring Assessments
-                        </h2>
-                    </div>
-                    <div className="p-6">
-                        {jobAssessmentsLoading ? (
-                            <CardSkeleton count={3} />
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {jobAssessments.map((assessment, index) => (
-                                    <motion.div
-                                        key={assessment.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                    >
-                                        <JobAssessmentCard
-                                            assessment={assessment}
-                                            cardIndex={index}
-                                            onViewDetails={() => handleViewJobAssessmentDetails(assessment)}
-                                            onStart={() => handleStartJobAssessment(assessment)}
-                                        />
-                                    </motion.div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Practice Modules Grid */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        Available Practice Tests
-                    </h2>
-                </div>
-                <div className="p-6">
-                    {isLoading ? (
-                        <CardSkeleton count={6} />
-                    ) : error ? (
-                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
-                            <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
-                                Error Loading Practice Modules
-                            </h3>
-                            <p className="text-red-700 dark:text-red-300">
-                                {error instanceof Error ? error.message : 'Failed to load practice modules'}
-                            </p>
-                        </div>
-                    ) : filteredModules.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredModules.map((module, index) => (
-                                <motion.div
-                                    key={module.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                >
-                                    <PracticeCard
-                                        module={module}
-                                        onStart={() => handleStartExam(module)}
-                                        onViewResults={() => {
-                                            const result = moduleResults.get(module.id)
-                                            if (result) {
-                                                handleViewResults(module, result)
-                                            }
-                                        }}
-                                        isSubmitted={submittedModules.has(module.id)}
-                                        result={moduleResults.get(module.id)}
-                                    />
-                                </motion.div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-12 text-center">
-                            <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                {searchTerm || selectedCategory !== 'all'
-                                    ? 'No Practice Modules Found'
-                                    : 'No Practice Modules Available'
-                                }
-                            </h3>
-                            <p className="text-gray-600 dark:text-gray-400">
-                                {searchTerm || selectedCategory !== 'all'
-                                    ? 'Try adjusting your search terms or filters to find more practice tests.'
-                                    : 'Check back later for new practice tests and assessments.'
-                                }
-                            </p>
-                            {(searchTerm || selectedCategory !== 'all') && (
-                                <Button
-                                    onClick={handleClearFilters}
-                                    variant="outline"
-                                    className="mt-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
-                                >
-                                    Clear Filters
-                                </Button>
-                            )}
                         </div>
                     )}
+
+                    <div className="rounded-xl border border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md dark:border-gray-700/50 dark:bg-gray-800/80">
+                        <div className="border-b border-gray-200/50 p-6 dark:border-gray-700/50">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                Available Practice Tests
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            {isLoading ? (
+                                <CardSkeleton count={6} />
+                            ) : error ? (
+                                <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-700 dark:bg-red-900/20">
+                                    <h3 className="mb-2 text-lg font-medium text-red-900 dark:text-red-100">
+                                        Error Loading Practice Modules
+                                    </h3>
+                                    <p className="text-red-700 dark:text-red-300">
+                                        {error instanceof Error ? error.message : 'Failed to load practice modules'}
+                                    </p>
+                                </div>
+                            ) : filteredModules.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                                    {filteredModules.map((module, index) => (
+                                        <motion.div
+                                            key={module.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                        >
+                                            <PracticeCard
+                                                module={module}
+                                                onStart={() => handleStartExam(module)}
+                                                onViewResults={() => {
+                                                    const result = moduleResults.get(module.id)
+                                                    if (result) {
+                                                        handleViewResults(module, result)
+                                                    }
+                                                }}
+                                                isSubmitted={submittedModules.has(module.id)}
+                                                result={moduleResults.get(module.id)}
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-gray-200/50 bg-gray-50/50 p-12 text-center backdrop-blur-sm dark:border-gray-700/50 dark:bg-gray-800/50">
+                                    <Brain className="mx-auto mb-4 h-16 w-16 text-gray-400" />
+                                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                        {searchTerm || selectedCategory !== 'all'
+                                            ? 'No Practice Modules Found'
+                                            : 'No Practice Modules Available'
+                                        }
+                                    </h3>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        {searchTerm || selectedCategory !== 'all'
+                                            ? 'Try adjusting your search terms or filters to find more practice tests.'
+                                            : 'Check back later for new practice tests and assessments.'
+                                        }
+                                    </p>
+                                    {(searchTerm || selectedCategory !== 'all') && (
+                                        <Button
+                                            onClick={handleClearFilters}
+                                            variant="outline"
+                                            className="mt-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            Clear Filters
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
+                <PracticeFilterSidebar
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    selectedUniversities={selectedUniversities}
+                    onUniversitiesChange={setSelectedUniversities}
+                    selectedBranches={selectedBranches}
+                    onBranchesChange={setSelectedBranches}
+                    onClearFilters={handleClearFilters}
+                />
             </div>
             <AssessmentDetailsModal
                 isOpen={showDetailsModal}

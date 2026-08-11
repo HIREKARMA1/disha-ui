@@ -25,6 +25,7 @@ import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
 import SSOService from '@/services/ssoService'
 import { cn } from '@/lib/utils'
+import { MobileBottomNav, MobileBottomNavAction } from '@/components/ui/MobileBottomNav'
 
 interface NavItem {
     label: string
@@ -335,49 +336,29 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
             </aside>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="student-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#0f1219]/95 backdrop-blur-md border-t border-gray-200 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.25)] pb-safe">
-                <div className="flex items-stretch justify-around px-1 py-1">
-                    {mobilePrimaryItems.map((item) => {
-                        const active = isItemActive(item.href)
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => {
-                                    if (!active) startLoading()
-                                }}
-                                className={cn(
-                                    'flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl transition-colors min-w-0',
-                                    active
-                                        ? 'text-blue-500'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                )}
-                            >
-                                <div
-                                    className={cn(
-                                        'p-1.5 rounded-xl transition-colors',
-                                        active && 'bg-blue-500/15'
-                                    )}
-                                >
-                                    <item.icon className="w-5 h-5" />
-                                </div>
-                                <span className="text-[10px] font-medium truncate max-w-full px-0.5">
-                                    {item.label === 'Applications' ? 'Apps' : item.label === 'Live Jobs' ? 'Jobs' : item.label.split(' ')[0]}
-                                </span>
-                            </Link>
-                        )
-                    })}
-                    <button
+            <MobileBottomNav
+                aria-label="Student mobile navigation"
+                items={mobilePrimaryItems.map((item) => ({
+                    href: item.href,
+                    label: item.label,
+                    shortLabel:
+                        item.label === 'Applications'
+                            ? 'Apps'
+                            : item.label === 'Live Jobs'
+                              ? 'Jobs'
+                              : item.label.split(' ')[0],
+                    icon: item.icon,
+                    active: isItemActive(item.href),
+                    onNavigate: startLoading,
+                }))}
+                trailing={
+                    <MobileBottomNavAction
+                        label="More"
+                        icon={MoreHorizontal}
                         onClick={() => setIsMobileMenuOpen(true)}
-                        className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl text-gray-500 dark:text-gray-400 min-w-0"
-                    >
-                        <div className="p-1.5 rounded-xl">
-                            <MoreHorizontal className="w-5 h-5" />
-                        </div>
-                        <span className="text-[10px] font-medium">More</span>
-                    </button>
-                </div>
-            </nav>
+                    />
+                }
+            />
 
             {/* Mobile More Drawer */}
             <AnimatePresence>

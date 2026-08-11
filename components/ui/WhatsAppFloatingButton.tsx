@@ -57,7 +57,7 @@ export function WhatsAppFloatingButton() {
                 // Desktop: 24px from bottom. Mobile/tablet with bottom nav: clear nav + safe-area.
                 // Bottom sheet uses z-[100], so FAB stays under sheets when open.
                 hasMobileBottomNav
-                    ? 'bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
+                    ? 'bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
                     : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
             )}
         >
