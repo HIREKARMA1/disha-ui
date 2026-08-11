@@ -237,7 +237,8 @@ html, body {
 /* Ensure bottom navbar is always visible */
 @media (max-width: 1023px) {
   body {
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    /* Clear fixed mobile bottom nav (min 44px targets) + safe area */
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
   }
 }
 

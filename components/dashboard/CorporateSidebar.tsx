@@ -315,20 +315,20 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                                 if (!active) startLoading()
                                             }}
                                             className={cn(
-                                                'relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-xl transition-colors',
+                                                'relative flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
                                                 active ? 'text-blue-400' : 'text-gray-400'
                                             )}
                                         >
                                             <span
                                                 className={cn(
-                                                    'flex items-center justify-center w-9 h-9 rounded-xl transition-all',
+                                                    'flex h-9 w-9 items-center justify-center rounded-xl transition-all',
                                                     active &&
                                                         'bg-gradient-to-br from-blue-500 to-violet-600 text-white shadow-md shadow-blue-500/35'
                                                 )}
                                             >
-                                                <item.icon className="w-[18px] h-[18px]" />
+                                                <item.icon className="h-[18px] w-[18px]" />
                                             </span>
-                                            <span className="text-[9px] font-medium truncate max-w-full leading-tight">
+                                            <span className="max-w-full truncate text-[10px] font-medium leading-tight">
                                                 {item.label}
                                             </span>
                                             {active && (
@@ -340,12 +340,12 @@ export function CorporateSidebar({ className = '' }: CorporateSidebarProps) {
                                 <button
                                     type="button"
                                     onClick={() => setIsMobileMenuOpen(true)}
-                                    className="relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 rounded-xl text-gray-400"
+                                    className="relative flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-gray-400"
                                 >
-                                    <span className="flex items-center justify-center w-9 h-9 rounded-xl">
-                                        <MoreHorizontal className="w-[18px] h-[18px]" />
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl">
+                                        <MoreHorizontal className="h-[18px] w-[18px]" />
                                     </span>
-                                    <span className="text-[9px] font-medium leading-tight">More</span>
+                                    <span className="text-[10px] font-medium leading-tight">More</span>
                                 </button>
                             </div>
                         </div>

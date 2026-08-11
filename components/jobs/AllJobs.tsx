@@ -12,12 +12,12 @@ import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
+import { StickyFilterPanel } from '@/components/ui/StickyFilterPanel'
 import { JobCard } from '@/components/dashboard/JobCard'
 import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
 import {
   JobsFilterFields,
   EMPTY_JOB_FILTERS,
-  INDUSTRY_OPTIONS,
   toApiDatePosted,
   type JobsFilterValues,
   type DatePostedFilter,
@@ -710,6 +710,7 @@ export function AllJobs() {
                                     onFilterChange={handleDraftFilterChange}
                                     onDatePostedChange={setDraftDatePosted}
                                     dense
+                                    namePrefix="jobs-sheet"
                                 />
                             </MobileFilterBottomSheet>
                             <Button
@@ -908,121 +909,25 @@ export function AllJobs() {
                     )}
                 </div>
 
-                {/* Desktop filter sidebar — sticky, independently scrollable */}
-                <aside className="sticky top-20 hidden max-h-[calc(100vh-5.5rem)] self-start overflow-y-auto overscroll-contain lg:block">
-                    <div className="rounded-2xl border border-gray-200/70 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#151b2b]/90">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-                                Filter Jobs
-                            </h2>
-                            <button
-                                type="button"
-                                onClick={clearFilters}
-                                className="text-xs font-semibold text-blue-500 hover:text-blue-400"
-                            >
-                                Clear All
-                            </button>
-                        </div>
-
-                        <div className="space-y-4 text-sm">
-                            <div>
-                                <p className="mb-2 font-medium text-gray-700 dark:text-gray-200">Job Type</p>
-                                <div className="space-y-1.5">
-                                    {[
-                                        { value: '', label: 'All Types' },
-                                        { value: 'full_time', label: 'Full Time' },
-                                        { value: 'part_time', label: 'Part Time' },
-                                        { value: 'internship', label: 'Internship' },
-                                        { value: 'contract', label: 'Contract' },
-                                    ].map((opt) => (
-                                        <label
-                                            key={opt.value || 'all'}
-                                            className="flex cursor-pointer items-center gap-2 text-gray-600 dark:text-gray-300"
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="job_type_sidebar"
-                                                checked={filters.job_type === opt.value}
-                                                onChange={() => handleFilterChange('job_type', opt.value)}
-                                                className="accent-blue-500"
-                                            />
-                                            {opt.label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-                                    Location
-                                </label>
-                                <Input
-                                    placeholder="City, State"
-                                    value={filters.location}
-                                    onChange={(e) => handleFilterChange('location', e.target.value)}
-                                    className="h-9 border-gray-200 bg-white text-sm dark:border-white/10 dark:bg-[#0f1219]"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-                                    Industry
-                                </label>
-                                <select
-                                    value={filters.industry}
-                                    onChange={(e) => handleFilterChange('industry', e.target.value)}
-                                    className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm text-gray-900 dark:border-white/10 dark:bg-[#0f1219] dark:text-white"
-                                >
-                                    {INDUSTRY_OPTIONS.filter((o) =>
-                                        ['', 'Technology', 'Finance', 'Healthcare', 'Education', 'Manufacturing'].includes(
-                                            o.value
-                                        )
-                                    ).map((opt) => (
-                                        <option key={opt.value || 'all'} value={opt.value}>
-                                            {opt.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <p className="mb-2 font-medium text-gray-700 dark:text-gray-200">Date Posted</p>
-                                <div className="space-y-1.5">
-                                    {[
-                                        { value: 'all', label: 'Anytime' },
-                                        { value: '24h', label: 'Last 24 hours' },
-                                        { value: '7d', label: 'Last 7 days' },
-                                        { value: '30d', label: 'Last 30 days' },
-                                    ].map((opt) => (
-                                        <label
-                                            key={opt.value}
-                                            className="flex cursor-pointer items-center gap-2 text-gray-600 dark:text-gray-300"
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="date_posted_sidebar"
-                                                checked={datePostedFilter === opt.value}
-                                                onChange={() =>
-                                                    handleDesktopDateChange(opt.value as DatePostedFilter)
-                                                }
-                                                className="accent-blue-500"
-                                            />
-                                            {opt.label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <Button
-                                type="button"
-                                onClick={handleDesktopShowResults}
-                                className="h-10 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500"
-                            >
-                                Show Results
-                            </Button>
-                        </div>
+                <StickyFilterPanel title="Filter Jobs" onClear={clearFilters}>
+                    <div className="space-y-4 text-sm">
+                        <JobsFilterFields
+                            filters={filters}
+                            datePosted={datePostedFilter}
+                            onFilterChange={handleFilterChange}
+                            onDatePostedChange={handleDesktopDateChange}
+                            dense
+                            namePrefix="jobs-sidebar"
+                        />
+                        <Button
+                            type="button"
+                            onClick={handleDesktopShowResults}
+                            className="h-10 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500"
+                        >
+                            Show Results
+                        </Button>
                     </div>
-                </aside>
+                </StickyFilterPanel>
             </div>
 
             {showApplicationModal && selectedJob && (

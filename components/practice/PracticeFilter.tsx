@@ -1,267 +1,451 @@
 "use client"
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Search, Filter, X, Brain, MessageCircle, Code, Trophy, GraduationCap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useStudentProfile } from '@/hooks/useStudentProfile'
-import { useUniversities } from '@/hooks/useUniversities'
-import { useBranches } from '@/hooks/useLookup'
-import { MultiSelectDropdown, MultiSelectOption } from '@/components/ui/MultiSelectDropdown'
+import { useMemo, useState } from "react"
+import {
+  Search,
+  Brain,
+  MessageCircle,
+  Code,
+  Trophy,
+  GraduationCap,
+  X,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { StickyFilterPanel } from "@/components/ui/StickyFilterPanel"
+import { MobileFilterBottomSheet } from "@/components/ui/MobileFilterBottomSheet"
+import { useStudentProfile } from "@/hooks/useStudentProfile"
+import { useUniversities } from "@/hooks/useUniversities"
+import { useBranches } from "@/hooks/useLookup"
+import {
+  MultiSelectDropdown,
+  MultiSelectOption,
+} from "@/components/ui/MultiSelectDropdown"
+import { cn } from "@/lib/utils"
 
-export type PracticeCategory = 'all' | 'ai-mock-tests' | 'ai-mock-interviews' | 'coding-practice' | 'challenges-engagement'
+export type PracticeCategory =
+  | "all"
+  | "ai-mock-tests"
+  | "ai-mock-interviews"
+  | "coding-practice"
+  | "challenges-engagement"
 
-interface PracticeFilterProps {
-    searchTerm: string
-    onSearchChange: (value: string) => void
-    selectedCategory: PracticeCategory
-    onCategoryChange: (category: PracticeCategory) => void
-    selectedUniversities: string[]
-    onUniversitiesChange: (universities: string[]) => void
-    selectedBranches: string[]
-    onBranchesChange: (branches: string[]) => void
-    onSearch: () => void
-    onClearFilters: () => void
+export interface PracticeFilterProps {
+  searchTerm: string
+  onSearchChange: (value: string) => void
+  selectedCategory: PracticeCategory
+  onCategoryChange: (category: PracticeCategory) => void
+  selectedUniversities: string[]
+  onUniversitiesChange: (universities: string[]) => void
+  selectedBranches: string[]
+  onBranchesChange: (branches: string[]) => void
+  onSearch: () => void
+  onClearFilters: () => void
 }
 
-const categories = [
-    {
-        id: 'all' as PracticeCategory,
-        label: 'All Practice',
-        icon: Brain,
-        description: 'View all practice materials',
-        color: 'from-blue-500 to-purple-600'
-    },
-    {
-        id: 'ai-mock-tests' as PracticeCategory,
-        label: 'AI-Powered Mock Tests',
-        icon: Brain,
-        description: 'Comprehensive mock tests with AI evaluation',
-        color: 'from-rose-500 to-pink-600'
-    },
-    {
-        id: 'ai-mock-interviews' as PracticeCategory,
-        label: 'AI-Powered Mock Interviews',
-        icon: MessageCircle,
-        description: 'Practice interviews with AI feedback',
-        color: 'from-green-500 to-teal-600'
-    },
-    {
-        id: 'coding-practice' as PracticeCategory,
-        label: 'Coding Practice',
-        icon: Code,
-        description: 'Programming challenges and coding exercises',
-        color: 'from-orange-500 to-red-600'
-    },
-    {
-        id: 'challenges-engagement' as PracticeCategory,
-        label: 'Challenges & Engagement',
-        icon: Trophy,
-        description: 'Interactive challenges and engagement activities',
-        color: 'from-purple-500 to-indigo-600'
-    }
+const categories: {
+  id: PracticeCategory
+  label: string
+  shortLabel: string
+  icon: typeof Brain
+  description: string
+}[] = [
+  {
+    id: "all",
+    label: "All Practice",
+    shortLabel: "All",
+    icon: Brain,
+    description: "View all practice materials",
+  },
+  {
+    id: "ai-mock-tests",
+    label: "AI Mock Tests",
+    shortLabel: "Tests",
+    icon: Brain,
+    description: "Mock tests with AI evaluation",
+  },
+  {
+    id: "ai-mock-interviews",
+    label: "AI Interviews",
+    shortLabel: "Interviews",
+    icon: MessageCircle,
+    description: "Practice interviews with feedback",
+  },
+  {
+    id: "coding-practice",
+    label: "Coding Practice",
+    shortLabel: "Coding",
+    icon: Code,
+    description: "Programming challenges",
+  },
+  {
+    id: "challenges-engagement",
+    label: "Challenges",
+    shortLabel: "Challenges",
+    icon: Trophy,
+    description: "Engagement activities",
+  },
 ]
 
+interface FilterFieldsProps {
+  category: PracticeCategory
+  onCategoryChange: (c: PracticeCategory) => void
+  universities: string[]
+  onUniversitiesChange: (v: string[]) => void
+  branches: string[]
+  onBranchesChange: (v: string[]) => void
+  universityOptions: MultiSelectOption[]
+  branchOptions: MultiSelectOption[]
+  universitiesLoading: boolean
+  profileInstitution?: string
+  profileBranch?: string
+  dense?: boolean
+}
 
-export function PracticeFilter({
-    searchTerm,
-    onSearchChange,
-    selectedCategory,
-    onCategoryChange,
-    selectedUniversities,
-    onUniversitiesChange,
-    selectedBranches,
-    onBranchesChange,
-    onSearch,
-    onClearFilters
-}: PracticeFilterProps) {
-    const [showFilters, setShowFilters] = useState(false)
-    const { profile } = useStudentProfile()
-    const { data: universities, isLoading: universitiesLoading } = useUniversities()
-    const { data: branches, loading: branchesLoading } = useBranches({ limit: 1000 })
-    
-    const branchMultiSelectOptions: MultiSelectOption[] = branches.map((branch) => ({
+function PracticeFilterFields({
+  category,
+  onCategoryChange,
+  universities,
+  onUniversitiesChange,
+  branches,
+  onBranchesChange,
+  universityOptions,
+  branchOptions,
+  universitiesLoading,
+  profileInstitution,
+  profileBranch,
+  dense = false,
+}: FilterFieldsProps) {
+  return (
+    <div className={cn("space-y-5", dense && "space-y-4")}>
+      <section>
+        <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Category
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => {
+            const Icon = cat.icon
+            const selected = category === cat.id
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => onCategoryChange(cat.id)}
+                title={cat.description}
+                className={cn(
+                  "inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-all",
+                  selected
+                    ? "border-blue-500/40 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                    : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>{dense ? cat.shortLabel : cat.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="space-y-3 border-t border-gray-200/70 pt-4 dark:border-white/10">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Audience
+        </h3>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              University
+            </label>
+            <MultiSelectDropdown
+              options={universityOptions}
+              selectedValues={universities}
+              onSelectionChange={onUniversitiesChange}
+              placeholder="Select universities..."
+              disabled={universitiesLoading}
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Branch
+            </label>
+            <MultiSelectDropdown
+              options={branchOptions}
+              selectedValues={branches}
+              onSelectionChange={onBranchesChange}
+              placeholder="Select branches..."
+              className="w-full"
+            />
+          </div>
+        </div>
+      </section>
+
+      <div className="rounded-xl border border-blue-200/60 bg-blue-50/80 p-3 dark:border-blue-700/40 dark:bg-blue-900/20">
+        <div className="mb-1 flex items-center gap-2">
+          <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-xs font-semibold text-blue-900 dark:text-blue-100">
+            Smart filtering
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-blue-700 dark:text-blue-300">
+          Results also respect your profile
+          {profileInstitution || profileBranch
+            ? ` (${[profileInstitution, profileBranch].filter(Boolean).join(" · ")})`
+            : ""}
+          . Manual filters narrow further.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function usePracticeFilterOptions() {
+  const { profile } = useStudentProfile()
+  const { data: universities, isLoading: universitiesLoading } = useUniversities()
+  const { data: branches } = useBranches({ limit: 1000 })
+
+  const universityOptions: MultiSelectOption[] = useMemo(
+    () =>
+      universities.map((uni) => ({
+        id: uni.id,
+        label: uni.university_name,
+        value: uni.id,
+      })),
+    [universities]
+  )
+
+  const branchOptions: MultiSelectOption[] = useMemo(
+    () =>
+      branches.map((branch) => ({
         id: branch.id,
         label: branch.name,
         value: branch.name,
-    }))
-    // Convert universities to MultiSelectOption format
-    const universityOptions: MultiSelectOption[] = universities.map(uni => ({
-        id: uni.id,
-        label: uni.university_name,
-        value: uni.id
-    }))
+      })),
+    [branches]
+  )
 
-    return (
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-300 p-6">
-            {/* Search Bar */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                        type="text"
-                        placeholder="Search practice tests by title, role, or skills..."
-                        value={searchTerm}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && onSearch()}
-                        className="pl-10 border-gray-200 dark:border-gray-700 focus:border-primary-500 focus:ring-primary-500/20 bg-white dark:bg-gray-700"
-                    />
-                </div>
-                <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full sm:w-auto hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                    <Filter className="w-4 h-4" />
-                    {showFilters ? 'Hide' : 'Show'} Filters
-                </Button>
-                <Button
-                    onClick={onSearch}
-                    className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold px-6 h-10 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
-                >
-                    Search
-                </Button>
-            </div>
+  return {
+    profile,
+    universityOptions,
+    branchOptions,
+    universitiesLoading,
+  }
+}
 
-            {/* Category Filters */}
-            {showFilters && (
-                <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50"
-                >
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Practice Categories
-                            </h3>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onClearFilters}
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
-                            >
-                                <X className="w-4 h-4 mr-1" />
-                                Clear All
-                            </Button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                            {categories.map((category) => {
-                                const Icon = category.icon
-                                const isSelected = selectedCategory === category.id
-                                
-                                return (
-                                    <motion.button
-                                        key={category.id}
-                                        onClick={() => onCategoryChange(category.id)}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        className={`p-4 rounded-xl border-2 transition-all duration-200 text-left hover:-translate-y-1 ${
-                                            isSelected
-                                                ? `bg-gradient-to-r ${category.color} text-white border-transparent shadow-lg`
-                                                : 'bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm border-gray-200/50 dark:border-gray-600/50 hover:border-gray-300 dark:hover:border-gray-500 text-gray-900 dark:text-white hover:shadow-md'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className={`p-2 rounded-lg ${
-                                                isSelected 
-                                                    ? 'bg-white/20' 
-                                                    : 'bg-gray-100 dark:bg-gray-600'
-                                            }`}>
-                                                <Icon className={`w-5 h-5 ${
-                                                    isSelected 
-                                                        ? 'text-white' 
-                                                        : 'text-gray-600 dark:text-gray-300'
-                                                }`} />
-                                            </div>
-                                            <span className="font-medium text-sm">
-                                                {category.label}
-                                            </span>
-                                        </div>
-                                        <p className={`text-xs ${
-                                            isSelected 
-                                                ? 'text-white/90' 
-                                                : 'text-gray-500 dark:text-gray-400'
-                                        }`}>
-                                            {category.description}
-                                        </p>
-                                    </motion.button>
-                                )
-                            })}
-                        </div>
-                        
-                        {/* University and Branch Filters */}
-                        <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                Additional Filters
-                            </h3>
-                            
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* University Filter */}
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Filter by University
-                                    </label>
-                                    <MultiSelectDropdown
-                                        options={universityOptions}
-                                        selectedValues={selectedUniversities}
-                                        onSelectionChange={onUniversitiesChange}
-                                        placeholder="Select universities..."
-                                        disabled={universitiesLoading}
-                                        className="w-full"
-                                    />
-                                    {universitiesLoading && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Loading universities...
-                                        </p>
-                                    )}
-                                </div>
-                                
-                                {/* Branch Filter */}
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Filter by Branch
-                                    </label>
-                                    <MultiSelectDropdown
-                                        options={branchMultiSelectOptions}
-                                        selectedValues={selectedBranches}
-                                        onSelectionChange={onBranchesChange}
-                                        placeholder="Select branches..."
-                                        className="w-full"
-                                    />
-                                </div>
-                            </div>
-                            
-                            {/* Filter Info */}
-                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    <strong>Note:</strong> These filters work in addition to the automatic filtering based on your profile. 
-                                    You can manually select specific universities and branches to see tests targeted to them.
-                                </p>
-                            </div>
-                        </div>
-                        
-                        {/* Automatic Filtering Info */}
-                        <div className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                    <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                        Smart Filtering
-                                    </h4>
-                                </div>
-                                <p className="text-sm text-blue-700 dark:text-blue-300">
-                                    Tests are automatically filtered based on your university ({profile?.institution || 'Not set'}) and branch ({profile?.branch || 'Not set'}). 
-                                    You'll only see tests that are relevant to your academic profile.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
+/** Search bar + chips + mobile bottom sheet. Pair with PracticeFilterSidebar on desktop. */
+export function PracticeFilter({
+  searchTerm,
+  onSearchChange,
+  selectedCategory,
+  onCategoryChange,
+  selectedUniversities,
+  onUniversitiesChange,
+  selectedBranches,
+  onBranchesChange,
+  onSearch,
+  onClearFilters,
+}: PracticeFilterProps) {
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [draftCategory, setDraftCategory] = useState(selectedCategory)
+  const [draftUniversities, setDraftUniversities] = useState(selectedUniversities)
+  const [draftBranches, setDraftBranches] = useState(selectedBranches)
+
+  const { profile, universityOptions, branchOptions, universitiesLoading } =
+    usePracticeFilterOptions()
+
+  const activeCount = useMemo(() => {
+    let n = 0
+    if (selectedCategory !== "all") n += 1
+    if (selectedUniversities.length) n += 1
+    if (selectedBranches.length) n += 1
+    return n
+  }, [selectedCategory, selectedUniversities, selectedBranches])
+
+  const openSheet = () => {
+    setDraftCategory(selectedCategory)
+    setDraftUniversities(selectedUniversities)
+    setDraftBranches(selectedBranches)
+    setSheetOpen(true)
+  }
+
+  const applySheet = () => {
+    onCategoryChange(draftCategory)
+    onUniversitiesChange(draftUniversities)
+    onBranchesChange(draftBranches)
+  }
+
+  const clearSheet = () => {
+    setDraftCategory("all")
+    setDraftUniversities([])
+    setDraftBranches([])
+    onClearFilters()
+  }
+
+  const activeChips = categories.filter(
+    (c) => c.id === selectedCategory && c.id !== "all"
+  )
+
+  return (
+    <div className="rounded-2xl border border-gray-200/70 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-[#151b2b]/90 sm:p-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          onSearch()
+        }}
+        className="flex gap-2"
+      >
+        <div className="relative min-w-0 flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search by title, role, or skills..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="h-10 rounded-xl border-gray-200 bg-white pl-9 text-sm dark:border-white/10 dark:bg-[#0f1219]"
+          />
         </div>
-    )
+        <MobileFilterBottomSheet
+          open={sheetOpen}
+          onOpenChange={(open) => {
+            if (open) openSheet()
+            else setSheetOpen(false)
+          }}
+          activeCount={activeCount}
+          onApply={applySheet}
+          onClear={clearSheet}
+          clearLabel="Reset"
+          applyLabel="Apply"
+        >
+          <PracticeFilterFields
+            category={draftCategory}
+            onCategoryChange={setDraftCategory}
+            universities={draftUniversities}
+            onUniversitiesChange={setDraftUniversities}
+            branches={draftBranches}
+            onBranchesChange={setDraftBranches}
+            universityOptions={universityOptions}
+            branchOptions={branchOptions}
+            universitiesLoading={universitiesLoading}
+            profileInstitution={profile?.institution}
+            profileBranch={profile?.branch}
+            dense
+          />
+        </MobileFilterBottomSheet>
+        <Button
+          type="submit"
+          className="hidden h-10 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white sm:inline-flex"
+        >
+          Search
+        </Button>
+      </form>
+
+      {(activeCount > 0 || searchTerm) && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          {searchTerm ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-white/10 dark:text-gray-200">
+              “{searchTerm}”
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => onSearchChange("")}
+                className="rounded-full p-0.5 hover:bg-gray-200 dark:hover:bg-white/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ) : null}
+          {activeChips.map((c) => (
+            <span
+              key={c.id}
+              className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300"
+            >
+              {c.shortLabel}
+              <button
+                type="button"
+                aria-label={`Remove ${c.label}`}
+                onClick={() => onCategoryChange("all")}
+                className="rounded-full p-0.5 hover:bg-blue-500/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {selectedUniversities.length > 0 ? (
+            <span className="rounded-full bg-violet-500/15 px-2.5 py-1 text-xs font-medium text-violet-700 dark:text-violet-300">
+              {selectedUniversities.length} universit
+              {selectedUniversities.length > 1 ? "ies" : "y"}
+            </span>
+          ) : null}
+          {selectedBranches.length > 0 ? (
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              {selectedBranches.length} branch
+              {selectedBranches.length > 1 ? "es" : ""}
+            </span>
+          ) : null}
+          {activeCount > 0 ? (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400"
+            >
+              Clear all
+            </button>
+          ) : null}
+        </div>
+      )}
+
+      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 lg:hidden">
+        {categories.map((cat) => {
+          const selected = selectedCategory === cat.id
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => onCategoryChange(cat.id)}
+              className={cn(
+                "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
+                selected
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+              )}
+            >
+              {cat.shortLabel}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** Desktop sticky filter sidebar for dual-column PracticeDashboard layout. */
+export function PracticeFilterSidebar({
+  selectedCategory,
+  onCategoryChange,
+  selectedUniversities,
+  onUniversitiesChange,
+  selectedBranches,
+  onBranchesChange,
+  onClearFilters,
+}: Omit<PracticeFilterProps, "searchTerm" | "onSearchChange" | "onSearch">) {
+  const { profile, universityOptions, branchOptions, universitiesLoading } =
+    usePracticeFilterOptions()
+
+  return (
+    <StickyFilterPanel title="Filters" onClear={onClearFilters}>
+      <PracticeFilterFields
+        category={selectedCategory}
+        onCategoryChange={onCategoryChange}
+        universities={selectedUniversities}
+        onUniversitiesChange={onUniversitiesChange}
+        branches={selectedBranches}
+        onBranchesChange={onBranchesChange}
+        universityOptions={universityOptions}
+        branchOptions={branchOptions}
+        universitiesLoading={universitiesLoading}
+        profileInstitution={profile?.institution}
+        profileBranch={profile?.branch}
+      />
+    </StickyFilterPanel>
+  )
 }
