@@ -846,6 +846,42 @@ class ApiClient {
     return response.data;
   }
 
+  async generateAllAssessmentDetailedReports(assessmentId: string): Promise<{
+    job_id: string;
+    assessment_id: string;
+    status: string;
+    total: number;
+    queued: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    errors?: Array<{ attempt_id?: string; student_id?: string; error?: string }>;
+    message?: string | null;
+  }> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/detailed-reports/generate-all`
+    );
+    return response.data;
+  }
+
+  async getGenerateAllAssessmentDetailedReportsStatus(assessmentId: string): Promise<{
+    job_id: string;
+    assessment_id: string;
+    status: string;
+    total: number;
+    queued: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    errors?: Array<{ attempt_id?: string; student_id?: string; error?: string }>;
+    message?: string | null;
+  }> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/detailed-reports/generate-all/status`
+    );
+    return response.data;
+  }
+
   async deleteAssessment(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admin/assessments/${id}`);
     return response.data;

@@ -314,6 +314,7 @@ const ANALYTICS_RESULT_CSV_HEADERS = [
     'Snapshot 2 URL',
     'Snapshot 3 URL',
     'Snapshot 4 URL',
+    'Detailed Report PDF URL',
 ] as const;
 
 export interface AnalyticsExport {
@@ -329,6 +330,7 @@ export interface AnalyticsExport {
     snapshot_2_url?: string;
     snapshot_3_url?: string;
     snapshot_4_url?: string;
+    detailed_report_pdf_url?: string;
     /** Full profile from Job Management applied students (when linked job is available) */
     profile?: AppliedStudentExport | null;
 }
@@ -359,6 +361,7 @@ function formatAnalyticsResultCsvRow(item: AnalyticsExport): string[] {
         item.snapshot_2_url || '',
         item.snapshot_3_url || '',
         item.snapshot_4_url || '',
+        item.detailed_report_pdf_url || '',
     ];
 }
 
@@ -476,6 +479,42 @@ export const exportAnalyticsToPDF = async (
                 ['snapshot_1_url', 'snapshot_2_url', 'snapshot_3_url', 'snapshot_4_url'] as const
             )[hookData.column.index - 2];
             const url = data[rowIndex]?.[snapKey];
+            if (!url || !String(url).trim()) return;
+            const { x, y, width, height } = hookData.cell;
+            doc.link(x, y, width, height, { url: String(url).trim() });
+        },
+    });
+
+    // Third page: detailed report PDF links
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('Detailed report PDF links', 40, 36);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Empty when a detailed report has not been generated yet', 40, 52);
+    doc.setTextColor(0);
+
+    const reportBody = data.map((item) => [
+        item.student_name || 'Unknown',
+        item.email || '—',
+        snapshotLinkLabel(item.detailed_report_pdf_url),
+    ]);
+
+    autoTable(doc, {
+        startY: 64,
+        head: [['Student', 'Email', 'Detailed Report PDF']],
+        body: reportBody,
+        styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+            2: { cellWidth: 320, textColor: [37, 99, 235] },
+        },
+        didDrawCell: (hookData) => {
+            if (hookData.section !== 'body' || hookData.column.index !== 2) return;
+            const url = data[hookData.row.index]?.detailed_report_pdf_url;
             if (!url || !String(url).trim()) return;
             const { x, y, width, height } = hookData.cell;
             doc.link(x, y, width, height, { url: String(url).trim() });

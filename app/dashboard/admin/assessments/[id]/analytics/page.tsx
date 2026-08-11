@@ -49,6 +49,9 @@ export default function AssessmentAnalyticsPage() {
     const [pullingResults, setPullingResults] = useState(false)
     const [pullMessage, setPullMessage] = useState<string | null>(null)
     const [exporting, setExporting] = useState(false)
+    const [generatingAll, setGeneratingAll] = useState(false)
+    const [generateAllProgress, setGenerateAllProgress] = useState<string | null>(null)
+    const [generateAllError, setGenerateAllError] = useState<string | null>(null)
 
     useEffect(() => {
         if (assessmentId) {
@@ -161,6 +164,10 @@ export default function AssessmentAnalyticsPage() {
                 snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
                 snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
                 snapshot_4_url: resolveSnapshotUrl(attempt.proctoring_snapshot_4_url),
+                detailed_report_pdf_url:
+                    attempt.detailed_report_pdf_url ||
+                    attempt.result_data?.detailed_report?.pdf_url ||
+                    '',
                 profile,
             }
         })
@@ -181,6 +188,58 @@ export default function AssessmentAnalyticsPage() {
             }
         } finally {
             setExporting(false)
+        }
+    }
+
+    const handleGenerateAllReports = async () => {
+        if (!assessmentId || generatingAll) return
+        setGeneratingAll(true)
+        setGenerateAllError(null)
+        setGenerateAllProgress('Starting…')
+        try {
+            const started = await apiClient.generateAllAssessmentDetailedReports(assessmentId)
+            setGenerateAllProgress(
+                `Generating reports… ${started.completed || 0}/${started.queued || started.total || 0}`
+            )
+
+            if (started.status === 'completed') {
+                setGenerateAllProgress(
+                    started.queued === 0
+                        ? 'All reports already generated'
+                        : `Done · ${started.completed} created, ${started.skipped} skipped, ${started.failed} failed`
+                )
+                await fetchData()
+                return
+            }
+
+            // Poll until finished
+            for (let i = 0; i < 180; i++) {
+                await new Promise((r) => setTimeout(r, 2000))
+                const status = await apiClient.getGenerateAllAssessmentDetailedReportsStatus(assessmentId)
+                const done = (status.completed || 0) + (status.failed || 0)
+                const target = status.queued || Math.max(0, (status.total || 0) - (status.skipped || 0))
+                setGenerateAllProgress(
+                    status.status === 'running' || status.status === 'queued'
+                        ? `Generating reports… ${done}/${target || status.total || 0}`
+                        : `Done · ${status.completed} created, ${status.skipped} skipped, ${status.failed} failed`
+                )
+                if (status.status === 'completed' || status.status === 'failed') {
+                    if (status.status === 'failed') {
+                        setGenerateAllError(status.message || 'Generate-all failed')
+                    }
+                    await fetchData()
+                    break
+                }
+            }
+        } catch (err: any) {
+            const detail =
+                err?.response?.data?.detail ||
+                err?.message ||
+                'Failed to generate all reports'
+            setGenerateAllError(typeof detail === 'string' ? detail : 'Failed to generate all reports')
+            setGenerateAllProgress(null)
+        } finally {
+            setGeneratingAll(false)
         }
     }
 
@@ -342,7 +401,7 @@ export default function AssessmentAnalyticsPage() {
                             variant="outline"
                             className="gap-2"
                             onClick={() => void handleExport('csv')}
-                            disabled={filteredAttempts.length === 0 || exporting}
+                            disabled={filteredAttempts.length === 0 || exporting || generatingAll}
                         >
                             {exporting ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -355,7 +414,7 @@ export default function AssessmentAnalyticsPage() {
                             variant="outline"
                             className="gap-2"
                             onClick={() => void handleExport('pdf')}
-                            disabled={filteredAttempts.length === 0 || exporting}
+                            disabled={filteredAttempts.length === 0 || exporting || generatingAll}
                         >
                             {exporting ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -364,7 +423,30 @@ export default function AssessmentAnalyticsPage() {
                             )}
                             Export PDF
                         </Button>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => void handleGenerateAllReports()}
+                            disabled={attempts.length === 0 || generatingAll || exporting}
+                        >
+                            {generatingAll ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Brain size={16} />
+                            )}
+                            Generate All Reports
+                        </Button>
                     </div>
+                    {(generateAllProgress || generateAllError) && (
+                        <div className="px-4 pb-3 text-sm flex flex-col gap-1">
+                            {generateAllProgress && (
+                                <p className="text-blue-700 dark:text-blue-300">{generateAllProgress}</p>
+                            )}
+                            {generateAllError && (
+                                <p className="text-red-600 dark:text-red-400">{generateAllError}</p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Table */}
                     <div className="overflow-x-auto min-h-[400px]">
