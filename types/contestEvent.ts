@@ -21,6 +21,15 @@ export type EventMode = 'online' | 'offline' | 'hybrid'
 export type PublicationStatus = 'draft' | 'published' | 'closed' | 'archived'
 export type PrizeType = 'free' | 'paid'
 export type ContestStatus = 'upcoming' | 'live' | 'closed' | 'archived' | 'cancelled' | 'postponed' | 'draft'
+/** Computed registration UI state from publish + registration window (not a DB enum). */
+export type RegistrationUiState =
+  | 'not_published'
+  | 'cancelled'
+  | 'registration_not_started'
+  | 'registration_open'
+  | 'registration_closed'
+  | 'event_started'
+  | 'event_completed'
 export type RegistrationStatus =
   | 'registered'
   | 'selected'
@@ -98,10 +107,14 @@ export interface ContestEventListItem {
   category?: EventCategory
   mode?: EventMode
   venue?: string
+  /** Optional Google Meet / Teams / Zoom (or other) join link for online events */
+  event_link?: string
   prize_pool?: string
   prize_type?: PrizeType
   publication_status?: PublicationStatus
   registration_is_open?: boolean
+  /** Computed: not_published | registration_not_started | registration_open | … */
+  registration_state?: RegistrationUiState
   /** Raw admin toggle (DB flag). Prefer this when editing — not the computed open state. */
   registration_enabled?: boolean
   registration_end_date?: string
@@ -194,6 +207,8 @@ export interface ContestEventCreatePayload {
   visibility?: VisibilitySettings
   registration_button_text?: string
   registration_external_url?: string
+  /** Optional meeting/join URL for online events */
+  event_link?: string
   publication_status?: PublicationStatus
   registration_is_open?: boolean
   faqs?: FAQItem[]
@@ -205,10 +220,11 @@ export interface ContestEventCreatePayload {
 }
 
 export type ContestEventUpdatePayload = Partial<
-  Omit<ContestEventCreatePayload, 'banner_url' | 'organizer_logo_url'>
+  Omit<ContestEventCreatePayload, 'banner_url' | 'organizer_logo_url' | 'event_link'>
 > & {
   banner_url?: string | null
   organizer_logo_url?: string | null
+  event_link?: string | null
 }
 
 export interface ContestEventAnalytics {

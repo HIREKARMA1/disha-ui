@@ -12,7 +12,7 @@ import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
   Mail, Phone, Globe, MapPin, ChevronDown, ChevronUp, CheckCircle,
-  Share2, Briefcase, Target, type LucideIcon,
+  Share2, Briefcase, Target, Video, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
@@ -50,6 +50,28 @@ function formatEventTime(value?: string | null) {
   if (Number.isNaN(date.getTime())) return null
   if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0) return null
   return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+}
+
+/** Full date+time for registration-opens messaging (browser-local / en-IN). */
+function formatRegistrationOpensAt(value?: string | null) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const datePart = date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const timePart = date.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  return `${datePart} at ${timePart}`
+}
+
+function isOnlineEventMode(mode?: string | null) {
+  const m = (mode || '').toLowerCase()
+  return m === 'online' || m === 'hybrid'
 }
 
 interface EventDetailPageProps {
@@ -368,8 +390,25 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
   const isCancelled = event.is_cancelled || event.contest_status === 'cancelled'
   const isPostponed = event.is_postponed || event.contest_status === 'postponed'
-  const showRegister = !isCancelled && event.registration_is_open
+  const registrationState =
+    event.registration_state ||
+    (event.registration_is_open
+      ? 'registration_open'
+      : event.publication_status === 'published' &&
+          event.registration_start_date &&
+          new Date(event.registration_start_date).getTime() > Date.now()
+        ? 'registration_not_started'
+        : event.contest_status === 'closed'
+          ? 'event_completed'
+          : 'registration_closed')
+  const isRegistrationNotStarted = registrationState === 'registration_not_started'
+  const showRegister = !isCancelled && event.registration_is_open && !isRegistrationNotStarted
   const showStickyRegister = showRegister && !event.is_registered
+  const registrationOpensLabel = formatRegistrationOpensAt(event.registration_start_date)
+  const canJoinOnline =
+    Boolean(event.event_link) &&
+    isOnlineEventMode(event.mode) &&
+    (event.is_registered || event.contest_status === 'live')
 
   const eventDateLabel = (() => {
     const start = formatEventDate(event.event_start_date)
@@ -386,9 +425,16 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     : null
 
   const highlightItems: { icon: LucideIcon; label: string; value: string; tone: string }[] = [
-    event.venue
+    event.mode === 'online'
+      ? { icon: Video, label: 'Mode', value: 'Online Event', tone: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' }
+      : event.mode
+        ? { icon: Briefcase, label: 'Mode', value: event.mode.replace(/_/g, ' '), tone: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' }
+        : null,
+    event.mode !== 'online' && event.venue
       ? { icon: MapPin, label: 'Venue', value: event.venue, tone: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' }
-      : null,
+      : event.mode === 'online' && !event.event_link && event.venue
+        ? { icon: MapPin, label: 'Venue', value: event.venue, tone: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' }
+        : null,
     eventDateLabel
       ? { icon: Calendar, label: 'Date', value: eventDateLabel, tone: 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300' }
       : null,
@@ -397,9 +443,6 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       : null,
     rewardsHighlight
       ? { icon: Trophy, label: 'Rewards', value: rewardsHighlight, tone: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300' }
-      : null,
-    event.mode
-      ? { icon: Briefcase, label: 'Mode', value: event.mode.replace(/_/g, ' '), tone: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' }
       : null,
     eligibilityHighlight
       ? { icon: Target, label: 'Eligibility', value: eligibilityHighlight, tone: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' }
@@ -423,6 +466,11 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       {showRegister && (
         <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Registration Open</Badge>
       )}
+      {isRegistrationNotStarted && !event.is_registered && (
+        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+          Registration Opens Soon
+        </Badge>
+      )}
     </>
   )
 
@@ -437,19 +485,56 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         </div>
       )
     }
+
+    if (isRegistrationNotStarted && !event.is_registered) {
+      return (
+        <div
+          className={cn(
+            'w-full rounded-xl border border-amber-200 bg-amber-50 p-4 text-center dark:border-amber-800 dark:bg-amber-900/20',
+            className
+          )}
+        >
+          <p className="font-semibold text-amber-900 dark:text-amber-200">
+            Registration Not Yet Open
+          </p>
+          <p className="mt-2 text-sm text-amber-800 dark:text-amber-300">
+            {registrationOpensLabel
+              ? <>Registration will open on <span className="font-semibold">{registrationOpensLabel}</span>.</>
+              : 'Registration has not opened yet.'}
+          </p>
+          <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400">
+            Please check back at that time.
+          </p>
+        </div>
+      )
+    }
+
     return (
-      <Button
-        className={cn('w-full', className)}
-        onClick={handleRegister}
-        disabled={registering || event.is_registered || !showRegister}
-      >
-        {registering ? (
-          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-        ) : event.is_registered ? (
-          <CheckCircle className="w-4 h-4 mr-2" />
+      <div className={cn('space-y-3', className)}>
+        <Button
+          className="w-full"
+          onClick={handleRegister}
+          disabled={registering || event.is_registered || !showRegister}
+        >
+          {registering ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : event.is_registered ? (
+            <CheckCircle className="w-4 h-4 mr-2" />
+          ) : null}
+          {event.is_registered ? 'Registered' : event.registration_button_text || 'Register Now'}
+        </Button>
+        {canJoinOnline && event.event_link ? (
+          <Button asChild variant="outline" className="w-full">
+            <a href={event.event_link} target="_blank" rel="noopener noreferrer">
+              <Video className="mr-2 h-4 w-4" />
+              Join Event
+            </a>
+          </Button>
         ) : null}
-        {event.is_registered ? 'Registered' : event.registration_button_text || 'Register Now'}
-      </Button>
+        {event.mode === 'online' && !event.event_link ? (
+          <p className="text-center text-xs text-muted-foreground">Online Event</p>
+        ) : null}
+      </div>
     )
   }
 
@@ -856,14 +941,27 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                   {event.mode && (
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">Mode</span>
-                      <span className="font-medium capitalize text-gray-900 dark:text-white">{event.mode}</span>
+                      <span className="font-medium capitalize text-gray-900 dark:text-white">
+                        {event.mode === 'online' ? 'Online Event' : event.mode}
+                      </span>
                     </div>
                   )}
-                  {event.venue && (
+                  {event.mode !== 'online' && event.venue && (
                     <div className="flex items-start justify-between gap-2">
                       <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400"><MapPin className="h-3.5 w-3.5" /> Venue</span>
                       <span className="text-right font-medium text-gray-900 dark:text-white">{event.venue}</span>
                     </div>
+                  )}
+                  {canJoinOnline && event.event_link && (
+                    <a
+                      href={event.event_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-300"
+                    >
+                      <Video className="h-4 w-4" />
+                      Join Event
+                    </a>
                   )}
                 </div>
                 <div id="event-register-cta">
@@ -893,7 +991,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           <div
             className={cn(
               'flex items-center gap-3',
-              !showStickyRegister && !event.is_registered && 'justify-end'
+              !showStickyRegister && !event.is_registered && !isRegistrationNotStarted && 'justify-end'
             )}
           >
             {showStickyRegister ? (
@@ -907,6 +1005,17 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 ) : null}
                 {event.registration_button_text || 'Register Now'}
               </Button>
+            ) : isRegistrationNotStarted && !event.is_registered ? (
+              <div className="flex h-12 flex-1 flex-col items-center justify-center rounded-md bg-amber-50 px-2 text-center dark:bg-amber-900/20">
+                <span className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                  Registration Not Yet Open
+                </span>
+                {registrationOpensLabel ? (
+                  <span className="truncate text-[10px] text-amber-700 dark:text-amber-300">
+                    Opens {registrationOpensLabel}
+                  </span>
+                ) : null}
+              </div>
             ) : event.is_registered ? (
               <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-green-50 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
                 <CheckCircle className="h-4 w-4" />
