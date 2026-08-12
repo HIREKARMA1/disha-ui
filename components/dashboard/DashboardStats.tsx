@@ -59,6 +59,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       value: stats.totalJobs,
       icon: Briefcase,
       subtitle: 'Open opportunities',
+      tooltip: 'Total open job opportunities currently available to you',
       colorClass: 'text-blue-500',
       iconBgClass: 'bg-blue-500/15',
     },
@@ -67,6 +68,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       value: stats.appliedJobs,
       icon: FileText,
       subtitle: 'Submitted',
+      tooltip: 'Number of job applications you have submitted',
       colorClass: 'text-emerald-500',
       iconBgClass: 'bg-emerald-500/15',
     },
@@ -75,6 +77,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       value: stats.selected,
       icon: Trophy,
       subtitle: stats.selected > 0 ? 'Congratulations!' : 'Keep going',
+      tooltip: 'Applications where you were selected by the employer',
       colorClass: 'text-violet-500',
       iconBgClass: 'bg-violet-500/15',
     },
@@ -83,6 +86,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       value: stats.rejected,
       icon: XCircle,
       subtitle: 'Keep Trying!',
+      tooltip: 'Applications that were not selected — keep applying',
       colorClass: 'text-red-500',
       iconBgClass: 'bg-red-500/15',
     },
@@ -126,6 +130,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
           value={stat.value}
           icon={stat.icon}
           subtitle={stat.subtitle}
+          tooltip={stat.tooltip}
           colorClass={stat.colorClass}
           iconBgClass={stat.iconBgClass}
           index={index}

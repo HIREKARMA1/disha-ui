@@ -83,6 +83,8 @@ interface JobsFilterFieldsProps {
   className?: string
   /** Compact spacing for bottom sheet / sidebar. */
   dense?: boolean
+  /** Prefix radio input names so sheet + sidebar can coexist. */
+  namePrefix?: string
 }
 
 function selectClassName(dense?: boolean) {
@@ -101,6 +103,7 @@ function JobsFilterFieldsComponent({
   onDatePostedChange,
   className,
   dense,
+  namePrefix = "jobs",
 }: JobsFilterFieldsProps) {
   return (
     <div className={cn("space-y-4", className)}>
@@ -114,7 +117,7 @@ function JobsFilterFieldsComponent({
             >
               <input
                 type="radio"
-                name="job_type_sheet"
+                name={`${namePrefix}_job_type`}
                 checked={filters.job_type === opt.value}
                 onChange={() => onFilterChange("job_type", opt.value)}
                 className="accent-blue-500"
@@ -252,7 +255,7 @@ function JobsFilterFieldsComponent({
             >
               <input
                 type="radio"
-                name="date_posted_sheet"
+                name={`${namePrefix}_date_posted`}
                 checked={datePosted === opt.value}
                 onChange={() => onDatePostedChange(opt.value)}
                 className="accent-blue-500"

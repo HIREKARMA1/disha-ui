@@ -22,6 +22,8 @@ import {
   validateEventAd,
   type EventAdFormState,
 } from '@/components/admin/EventAdvertisementSection'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
+import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
 import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
@@ -53,6 +55,8 @@ const defaultForm: ContestEventCreatePayload = {
   support_phone: '',
   support_content: '',
   registration_button_text: 'Register Now',
+  registration_external_url: '',
+  event_link: '',
   publication_status: 'draft',
   registration_is_open: true,
   visibility: { student: true, corporate: false, university: false, public: true },
@@ -110,6 +114,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             support_content: event.support_content,
             registration_button_text: event.registration_button_text,
             registration_external_url: event.registration_external_url,
+            event_link: event.event_link || '',
             publication_status: event.publication_status,
             // Use raw DB flag — computed registration_is_open is false when full/deadline passed
             // and must not be saved back (that permanently closes registration).
@@ -165,10 +170,12 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     const emptyToUndef = (v: string | undefined) => (v === '' || v === undefined ? undefined : v)
     return {
       ...form,
+      long_description: normalizeRichTextHtml(form.long_description) || undefined,
       organizer_email: emptyToUndef(form.organizer_email),
       support_email: emptyToUndef(form.support_email),
       slug: emptyToUndef(form.slug),
       registration_external_url: emptyToUndef(form.registration_external_url),
+      event_link: emptyToUndef(form.event_link),
       banner_url: emptyToUndef(form.banner_url),
       organizer_logo_url: emptyToUndef(form.organizer_logo_url),
       event_start_date: new Date(form.event_start_date).toISOString(),
@@ -182,6 +189,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     ...buildPayload(),
     banner_url: form.banner_url || null,
     organizer_logo_url: form.organizer_logo_url || null,
+    event_link: form.event_link || null,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -314,8 +322,15 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             <Textarea value={form.short_description || ''} onChange={(e) => update('short_description', e.target.value)} rows={2} />
           </div>
           <div>
-            <label className="text-sm font-medium">Long Description</label>
-            <Textarea value={form.long_description || ''} onChange={(e) => update('long_description', e.target.value)} rows={5} />
+            <label className="text-sm font-medium">Description</label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Format with bold, lists, links, and more. Formatting is saved and shown on the event page.
+            </p>
+            <RichTextEditor
+              value={form.long_description || ''}
+              onChange={(html) => update('long_description', html)}
+              placeholder="Write the full event description…"
+            />
           </div>
         </CardContent>
       </Card>
@@ -338,6 +353,19 @@ export function EventCreateForm({ eventId }: EventFormProps) {
                 <SelectItem value="hybrid">Hybrid</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium">Event Link</label>
+            <Input
+              type="url"
+              value={form.event_link || ''}
+              onChange={(e) => update('event_link', e.target.value)}
+              placeholder="https://meet.google.com/..."
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              For online events, add the Google Meet, Microsoft Teams, Zoom, or other meeting link.
+              The meeting link must be created before creating the event. Optional for offline events.
+            </p>
           </div>
         </CardContent>
       </Card>

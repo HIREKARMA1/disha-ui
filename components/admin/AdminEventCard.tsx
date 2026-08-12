@@ -52,28 +52,37 @@ export function AdminEventCard({
   const loading = (action: string) => actionLoading === `${event.id}-${action}`
 
   return (
-    <article className="group overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-700/80 dark:bg-gray-800/90">
-      <div className="flex flex-col md:flex-row">
-        {/* Banner */}
-        <div className="relative h-44 w-full shrink-0 overflow-hidden bg-gradient-to-br from-primary-600 to-secondary-500 md:h-auto md:w-56 lg:w-64">
+    <article className="group h-auto overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-700/80 dark:bg-gray-800/90">
+      {/* Mobile: image first → data. Desktop: ~42% image | ~58% data */}
+      <div className="grid h-auto grid-cols-1 lg:grid-cols-[42%_58%]">
+        {/* LEFT — complete 16:9 event image (no overlays) */}
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-gray-900/60">
           {event.banner_url ? (
-            <img src={event.banner_url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img
+              src={event.banner_url}
+              alt=""
+              loading="lazy"
+              className="h-full w-full object-contain object-center"
+            />
           ) : (
-            <div className="flex h-full min-h-[11rem] items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600 to-secondary-500">
               <Calendar className="h-10 w-10 text-white/40" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          {event.organizer_logo_url && (
-            <div className="absolute bottom-3 left-3 h-11 w-11 rounded-lg border-2 border-white/30 bg-white p-1 shadow-md dark:bg-gray-900">
-              <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex min-w-0 flex-1 flex-col p-4 md:p-5">
+        {/* RIGHT — all event information + actions */}
+        <div className="flex min-w-0 flex-col p-4 md:p-5">
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            {event.organizer_logo_url && (
+              <div className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-600 dark:bg-gray-900">
+                <img
+                  src={event.organizer_logo_url}
+                  alt=""
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            )}
             {event.category && (
               <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
                 {CATEGORY_LABELS[event.category] || event.category}
