@@ -170,7 +170,25 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     const emptyToUndef = (v: string | undefined) => (v === '' || v === undefined ? undefined : v)
     return {
       ...form,
+      short_description: normalizeRichTextHtml(form.short_description) || undefined,
       long_description: normalizeRichTextHtml(form.long_description) || undefined,
+      eligibility: normalizeRichTextHtml(form.eligibility) || undefined,
+      about_organizer: normalizeRichTextHtml(form.about_organizer) || undefined,
+      faqs: (form.faqs || []).map((faq, i) => ({
+        ...faq,
+        answer: normalizeRichTextHtml(faq.answer),
+        sort_order: faq.sort_order ?? i,
+      })),
+      rounds: (form.rounds || []).map((round, i) => ({
+        ...round,
+        description: normalizeRichTextHtml(round.description) || undefined,
+        sort_order: round.sort_order ?? i,
+      })),
+      rewards: (form.rewards || []).map((reward, i) => ({
+        ...reward,
+        description: normalizeRichTextHtml(reward.description) || undefined,
+        sort_order: reward.sort_order ?? i,
+      })),
       organizer_email: emptyToUndef(form.organizer_email),
       support_email: emptyToUndef(form.support_email),
       slug: emptyToUndef(form.slug),
@@ -319,7 +337,12 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           </div>
           <div>
             <label className="text-sm font-medium">Short Description</label>
-            <Textarea value={form.short_description || ''} onChange={(e) => update('short_description', e.target.value)} rows={2} />
+            <RichTextEditor
+              value={form.short_description || ''}
+              onChange={(html) => update('short_description', html)}
+              placeholder="Brief summary shown on cards and listings…"
+              minHeightClassName="min-h-[120px]"
+            />
           </div>
           <div>
             <label className="text-sm font-medium">Description</label>
@@ -448,8 +471,24 @@ export function EventCreateForm({ eventId }: EventFormProps) {
               </label>
             ))}
           </div>
-          <div><label className="text-sm font-medium">Eligibility</label><Textarea value={form.eligibility || ''} onChange={(e) => update('eligibility', e.target.value)} rows={3} /></div>
-          <div><label className="text-sm font-medium">About Organizer</label><Textarea value={form.about_organizer || ''} onChange={(e) => update('about_organizer', e.target.value)} rows={3} /></div>
+          <div>
+            <label className="text-sm font-medium">Eligibility</label>
+            <RichTextEditor
+              value={form.eligibility || ''}
+              onChange={(html) => update('eligibility', html)}
+              placeholder="Who can participate…"
+              minHeightClassName="min-h-[140px]"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">About Organizer</label>
+            <RichTextEditor
+              value={form.about_organizer || ''}
+              onChange={(html) => update('about_organizer', html)}
+              placeholder="About the organizing team…"
+              minHeightClassName="min-h-[140px]"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="text-sm font-medium">Support Email</label><Input value={form.support_email || ''} onChange={(e) => update('support_email', e.target.value)} /></div>
             <div><label className="text-sm font-medium">Support Phone</label><Input value={form.support_phone || ''} onChange={(e) => update('support_phone', e.target.value)} /></div>
@@ -470,9 +509,16 @@ export function EventCreateForm({ eventId }: EventFormProps) {
               <Input placeholder="Question" value={faq.question} onChange={(e) => {
                 const faqs = [...(form.faqs || [])]; faqs[i] = { ...faq, question: e.target.value }; update('faqs', faqs)
               }} />
-              <Textarea placeholder="Answer" value={faq.answer} rows={2} onChange={(e) => {
-                const faqs = [...(form.faqs || [])]; faqs[i] = { ...faq, answer: e.target.value }; update('faqs', faqs)
-              }} />
+              <RichTextEditor
+                value={faq.answer || ''}
+                onChange={(html) => {
+                  const faqs = [...(form.faqs || [])]
+                  faqs[i] = { ...faq, answer: html }
+                  update('faqs', faqs)
+                }}
+                placeholder="Answer"
+                minHeightClassName="min-h-[120px]"
+              />
               <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('faqs', (form.faqs || []).filter((_, j) => j !== i))}>
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -493,9 +539,16 @@ export function EventCreateForm({ eventId }: EventFormProps) {
               <Input placeholder="Round Title" value={round.title} onChange={(e) => {
                 const rounds = [...(form.rounds || [])]; rounds[i] = { ...round, title: e.target.value }; update('rounds', rounds)
               }} />
-              <Textarea placeholder="Description" value={round.description || ''} rows={2} onChange={(e) => {
-                const rounds = [...(form.rounds || [])]; rounds[i] = { ...round, description: e.target.value }; update('rounds', rounds)
-              }} />
+              <RichTextEditor
+                value={round.description || ''}
+                onChange={(html) => {
+                  const rounds = [...(form.rounds || [])]
+                  rounds[i] = { ...round, description: html }
+                  update('rounds', rounds)
+                }}
+                placeholder="Description"
+                minHeightClassName="min-h-[120px]"
+              />
               <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('rounds', (form.rounds || []).filter((_, j) => j !== i))}>
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -521,9 +574,16 @@ export function EventCreateForm({ eventId }: EventFormProps) {
                   const rewards = [...(form.rewards || [])]; rewards[i] = { ...reward, value: e.target.value }; update('rewards', rewards)
                 }} />
               </div>
-              <Textarea placeholder="Description" value={reward.description || ''} rows={2} onChange={(e) => {
-                const rewards = [...(form.rewards || [])]; rewards[i] = { ...reward, description: e.target.value }; update('rewards', rewards)
-              }} />
+              <RichTextEditor
+                value={reward.description || ''}
+                onChange={(html) => {
+                  const rewards = [...(form.rewards || [])]
+                  rewards[i] = { ...reward, description: html }
+                  update('rewards', rewards)
+                }}
+                placeholder="Description"
+                minHeightClassName="min-h-[120px]"
+              />
               <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('rewards', (form.rewards || []).filter((_, j) => j !== i))}>
                 <Trash2 className="w-4 h-4" />
               </Button>
