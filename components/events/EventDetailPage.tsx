@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
-import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
+import { sanitizeEventDescriptionHtml, stripHtmlToPlainText } from '@/lib/sanitizeHtml'
 import {
   buildEventRegisterRedirect,
   clearPendingEventRegistration,
@@ -79,7 +79,16 @@ function formatMeetingOpensAt(value?: string | null) {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+  const datePart = date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+  const timePart = date.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  return `${datePart} ${timePart}`
 }
 
 interface EventDetailPageProps {
@@ -383,7 +392,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     const url = typeof window !== 'undefined' ? window.location.href : ''
     const shareData = {
       title: event.title,
-      text: event.short_description || event.subtitle || event.title,
+      text: stripHtmlToPlainText(event.short_description) || event.subtitle || event.title,
       url,
     }
     try {
@@ -472,8 +481,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const rewardsHighlight =
     event.prize_pool ||
     (event.rewards.length > 0 ? event.rewards.map((r) => r.title).filter(Boolean).slice(0, 2).join(', ') : null)
-  const eligibilityHighlight = event.eligibility
-    ? event.eligibility.replace(/\s+/g, ' ').trim().slice(0, 80) + (event.eligibility.trim().length > 80 ? '…' : '')
+  const eligibilityPlain = stripHtmlToPlainText(event.eligibility)
+  const eligibilityHighlight = eligibilityPlain
+    ? eligibilityPlain.slice(0, 80) + (eligibilityPlain.length > 80 ? '…' : '')
     : null
 
   const highlightItems: { icon: LucideIcon; label: string; value: string; tone: string }[] = [
@@ -634,9 +644,18 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
             {/* Row 3: Short description */}
             {(event.short_description || event.subtitle) && (
-              <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400 line-clamp-3">
-                {event.short_description || event.subtitle}
-              </p>
+              event.short_description ? (
+                <div
+                  className="event-description-html mt-3 line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeEventDescriptionHtml(event.short_description, ''),
+                  }}
+                />
+              ) : (
+                <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400 line-clamp-3">
+                  {event.subtitle}
+                </p>
+              )
             )}
 
             {/* Row 4: Participants / Deadline */}
@@ -803,11 +822,15 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
             {/* Eligibility */}
             <section id="eligibility" ref={(el) => { sectionRefs.current['eligibility'] = el }} className="scroll-mt-36">
               <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">Eligibility</h2>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 md:rounded-xl md:p-5">
-                <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                  {event.eligibility || 'Open to all eligible participants.'}
-                </p>
-              </div>
+              <div
+                className="event-description-html prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-gray-200 bg-white p-4 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 md:rounded-xl md:p-5"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeEventDescriptionHtml(
+                    event.eligibility,
+                    'Open to all eligible participants.'
+                  ),
+                }}
+              />
             </section>
 
             {/* Rounds */}
@@ -823,7 +846,14 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900 dark:text-white">{round.title}</h3>
-                          {round.description && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{round.description}</p>}
+                          {round.description ? (
+                            <div
+                              className="event-description-html prose prose-sm dark:prose-invert mt-1 max-w-none text-sm text-gray-600 dark:text-gray-400"
+                              dangerouslySetInnerHTML={{
+                                __html: sanitizeEventDescriptionHtml(round.description, ''),
+                              }}
+                            />
+                          ) : null}
                           {(round.start_date || round.end_date) && (
                             <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
                               <Calendar className="h-3.5 w-3.5" />
@@ -851,7 +881,14 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                       <Trophy className="mb-2 h-5 w-5 text-accent-yellow-500" />
                       <h3 className="font-semibold text-gray-900 dark:text-white">{reward.title}</h3>
                       {reward.value && <p className="mt-1 font-medium text-primary-600 dark:text-primary-400">{reward.value}</p>}
-                      {reward.description && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{reward.description}</p>}
+                      {reward.description ? (
+                        <div
+                          className="event-description-html prose prose-sm dark:prose-invert mt-1 max-w-none text-sm text-gray-600 dark:text-gray-400"
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeEventDescriptionHtml(reward.description, ''),
+                          }}
+                        />
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -878,9 +915,15 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                     )}
                   </div>
                 </div>
-                <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                  {event.about_organizer || 'Organizer information will be updated soon.'}
-                </p>
+                <div
+                  className="event-description-html prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeEventDescriptionHtml(
+                      event.about_organizer,
+                      'Organizer information will be updated soon.'
+                    ),
+                  }}
+                />
               </div>
             </section>
 
@@ -899,9 +942,12 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                         {expandedFaq === i ? <ChevronUp className="h-4 w-4 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 flex-shrink-0" />}
                       </button>
                       {expandedFaq === i && (
-                        <div className="border-t border-gray-100 px-4 pb-4 pt-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                          {faq.answer}
-                        </div>
+                        <div
+                          className="event-description-html prose prose-sm dark:prose-invert border-t border-gray-100 px-4 pb-4 pt-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400"
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeEventDescriptionHtml(faq.answer, ''),
+                          }}
+                        />
                       )}
                     </div>
                   ))}

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import { cn } from '@/lib/utils'
+import { stripHtmlToPlainText } from '@/lib/sanitizeHtml'
 
 interface ContestCardProps {
   event: ContestEventListItem
@@ -64,7 +65,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
   ].filter(Boolean) as string[]
 
   const descriptionText =
-    event.short_description ||
+    stripHtmlToPlainText(event.short_description) ||
     (event.prize_pool ? event.prize_pool : null)
 
   return (
