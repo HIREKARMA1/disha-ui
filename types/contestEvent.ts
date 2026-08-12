@@ -109,6 +109,10 @@ export interface ContestEventListItem {
   venue?: string
   /** Optional Google Meet / Teams / Zoom (or other) join link for online events */
   event_link?: string
+  /** True when current time >= event start − 5 minutes (online + link). */
+  meeting_link_available?: boolean
+  /** ISO datetime when Join Meeting unlocks. */
+  meeting_link_opens_at?: string
   prize_pool?: string
   prize_type?: PrizeType
   publication_status?: PublicationStatus
@@ -312,6 +316,45 @@ export interface EventRegistrationItem {
   location?: string
   status: string
   registration_date: string
+}
+
+export interface JoinMeetingResponse {
+  event_id: string
+  event_slug?: string
+  event_link: string
+  meeting_link_opens_at?: string
+  meeting_link_available: boolean
+  join_status: string
+  clicked_at: string
+  message: string
+}
+
+export interface EventAttendanceItem {
+  id: string
+  event_id: string
+  user_id: string
+  registration_id?: string
+  user_type?: string
+  full_name?: string
+  email?: string
+  phone?: string
+  registered_at?: string
+  joined_at: string
+  left_at?: string
+  duration_minutes?: number
+  /** join_link_opened — click evidence only, not provider-verified attendance */
+  status: string
+}
+
+export interface EventAttendanceListResponse {
+  items: EventAttendanceItem[]
+  total: number
+  page: number
+  limit: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+  note?: string
 }
 
 export const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [

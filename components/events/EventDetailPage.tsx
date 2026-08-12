@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
+import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 import {
   buildEventRegisterRedirect,
   clearPendingEventRegistration,
@@ -74,6 +75,13 @@ function isOnlineEventMode(mode?: string | null) {
   return m === 'online' || m === 'hybrid'
 }
 
+function formatMeetingOpensAt(value?: string | null) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+}
+
 interface EventDetailPageProps {
   slug: string
 }
@@ -85,6 +93,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const [event, setEvent] = useState<ContestEventDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const [activeSection, setActiveSection] = useState('description')
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
@@ -136,6 +146,15 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       cancelled = true
     }
   }, [slug, authLoading, isAdmin])
+
+  // Re-evaluate meeting unlock every 30s so Join enables at T−5 without a full refresh
+  useEffect(() => {
+    if (!event?.meeting_link_opens_at) return
+    const opensAt = new Date(event.meeting_link_opens_at).getTime()
+    if (Number.isNaN(opensAt) || Date.now() >= opensAt) return
+    const id = window.setInterval(() => setNowTick(Date.now()), 30_000)
+    return () => window.clearInterval(id)
+  }, [event?.meeting_link_opens_at, event?.meeting_link_available])
 
   // Register Now from listing → land on details with register CTA in view
   useEffect(() => {
@@ -334,6 +353,31 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     }
   }, [])
 
+  // Must stay above early returns — hook order must be stable across loading → loaded.
+  const handleJoinMeeting = useCallback(async () => {
+    if (!event || joining) return
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      storePendingEventRegistration(slug, event.id)
+      router.push(buildEventRegisterRedirect(slug))
+      return
+    }
+    setJoining(true)
+    try {
+      const result = await contestEventService.joinMeeting(slug)
+      if (result.event_link) {
+        window.open(result.event_link, '_blank', 'noopener,noreferrer')
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Unable to open meeting link'
+      toast.error(typeof msg === 'string' ? msg : 'Unable to open meeting link')
+    } finally {
+      setJoining(false)
+    }
+  }, [event, joining, slug, router])
+
   const handleShare = async () => {
     if (!event) return
     const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -405,10 +449,18 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const showRegister = !isCancelled && event.registration_is_open && !isRegistrationNotStarted
   const showStickyRegister = showRegister && !event.is_registered
   const registrationOpensLabel = formatRegistrationOpensAt(event.registration_start_date)
-  const canJoinOnline =
-    Boolean(event.event_link) &&
+  const hasOnlineMeeting =
     isOnlineEventMode(event.mode) &&
-    (event.is_registered || event.contest_status === 'live')
+    Boolean(event.meeting_link_opens_at || event.event_link || event.meeting_link_available)
+  const meetingUnlocked =
+    Boolean(event.meeting_link_available) ||
+    (event.meeting_link_opens_at != null &&
+      new Date(event.meeting_link_opens_at).getTime() <= nowTick)
+  const showJoinMeeting =
+    hasOnlineMeeting && (event.is_registered || isAdmin)
+  const meetingOpensLabel = formatMeetingOpensAt(event.meeting_link_opens_at)
+  // keep nowTick referenced for unlock recompute
+  void nowTick
 
   const eventDateLabel = (() => {
     const start = formatEventDate(event.event_start_date)
@@ -523,15 +575,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           ) : null}
           {event.is_registered ? 'Registered' : event.registration_button_text || 'Register Now'}
         </Button>
-        {canJoinOnline && event.event_link ? (
-          <Button asChild variant="outline" className="w-full">
-            <a href={event.event_link} target="_blank" rel="noopener noreferrer">
-              <Video className="mr-2 h-4 w-4" />
-              Join Event
-            </a>
-          </Button>
-        ) : null}
-        {event.mode === 'online' && !event.event_link ? (
+        {event.mode === 'online' && !hasOnlineMeeting ? (
           <p className="text-center text-xs text-muted-foreground">Online Event</p>
         ) : null}
       </div>
@@ -710,11 +754,6 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                   )}
                 </div>
               </div>
-              <div className="hidden w-52 flex-shrink-0 md:block">
-                <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-900/50">
-                  <RegisterButton />
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -752,8 +791,12 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
             <section id="description" ref={(el) => { sectionRefs.current['description'] = el }} className="scroll-mt-36">
               <h2 className="mb-3 text-lg font-bold text-gray-900 dark:text-white md:mb-4 md:text-xl">Description</h2>
               <div
-                className="prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-gray-200 bg-white p-4 text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 md:p-6"
-                dangerouslySetInnerHTML={{ __html: event.long_description || event.short_description || 'No description available.' }}
+                className="event-description-html prose prose-sm dark:prose-invert max-w-none rounded-2xl border border-gray-200 bg-white p-4 text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 md:p-6"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeEventDescriptionHtml(
+                    event.long_description || event.short_description
+                  ),
+                }}
               />
             </section>
 
@@ -952,16 +995,30 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                       <span className="text-right font-medium text-gray-900 dark:text-white">{event.venue}</span>
                     </div>
                   )}
-                  {canJoinOnline && event.event_link && (
-                    <a
-                      href={event.event_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-300"
-                    >
-                      <Video className="h-4 w-4" />
-                      Join Event
-                    </a>
+                  {showJoinMeeting && (
+                    <div className="space-y-2">
+                      <Button
+                        type="button"
+                        variant={meetingUnlocked ? 'default' : 'outline'}
+                        className="w-full"
+                        disabled={!meetingUnlocked || joining}
+                        onClick={() => void handleJoinMeeting()}
+                      >
+                        {joining ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Video className="mr-2 h-4 w-4" />
+                        )}
+                        Join Meeting
+                      </Button>
+                      {!meetingUnlocked ? (
+                        <p className="text-center text-xs text-amber-700 dark:text-amber-300">
+                          {meetingOpensLabel
+                            ? `Meeting link will open at ${meetingOpensLabel}.`
+                            : 'Meeting link will open 5 minutes before the event starts.'}
+                        </p>
+                      ) : null}
+                    </div>
                   )}
                 </div>
                 <div id="event-register-cta">

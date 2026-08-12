@@ -55,7 +55,7 @@ function EventsPortalAdCardComponent({
         )}
       >
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <div className="relative min-h-[160px] overflow-hidden md:min-h-[200px]">
+          <div className="relative aspect-[16/9] w-full overflow-hidden">
             <img
               src={ad.image_url}
               alt=""
@@ -90,7 +90,7 @@ function EventsPortalAdCardComponent({
     return (
       <article
         className={cn(
-          'flex h-[560px] w-full flex-col overflow-hidden rounded-[22px]',
+          'flex w-full flex-col overflow-hidden rounded-[22px]',
           'border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]',
           'transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)]',
           'dark:border-gray-700/80 dark:bg-gray-900/95',
@@ -112,7 +112,7 @@ function EventsPortalAdCardComponent({
             </span>
           )}
         </div>
-        <div className="relative mt-auto min-h-[240px] flex-1 overflow-hidden">
+        <div className="relative aspect-[16/9] w-full overflow-hidden">
           <img
             src={ad.image_url}
             alt=""
@@ -129,14 +129,14 @@ function EventsPortalAdCardComponent({
     return (
       <article
         className={cn(
-          'flex h-[560px] w-full flex-col overflow-hidden rounded-[22px]',
+          'flex w-full flex-col overflow-hidden rounded-[22px]',
           'border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]',
           'transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)]',
           'dark:border-gray-700/80 dark:bg-gray-900/95',
           className
         )}
       >
-        <div className="relative h-[220px] shrink-0 overflow-hidden">
+        <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden">
           <img
             src={ad.image_url}
             alt=""
@@ -179,8 +179,13 @@ function EventsPortalAdCardComponent({
         className
       )}
     >
-      <div className="relative h-36 overflow-hidden">
-        <img src={ad.image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+      <div className="relative aspect-[16/9] w-full overflow-hidden">
+        <img
+          src={ad.image_url}
+          alt=""
+          className="h-full w-full object-cover object-center"
+          loading="lazy"
+        />
         <div className="absolute inset-0 bg-black/20" />
         <h3 className="absolute bottom-4 left-4 right-4 text-base font-bold leading-tight text-white">
           {ad.title}

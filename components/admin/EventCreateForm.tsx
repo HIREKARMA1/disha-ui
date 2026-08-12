@@ -22,6 +22,8 @@ import {
   validateEventAd,
   type EventAdFormState,
 } from '@/components/admin/EventAdvertisementSection'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
+import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
 import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
@@ -168,6 +170,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     const emptyToUndef = (v: string | undefined) => (v === '' || v === undefined ? undefined : v)
     return {
       ...form,
+      long_description: normalizeRichTextHtml(form.long_description) || undefined,
       organizer_email: emptyToUndef(form.organizer_email),
       support_email: emptyToUndef(form.support_email),
       slug: emptyToUndef(form.slug),
@@ -319,8 +322,15 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             <Textarea value={form.short_description || ''} onChange={(e) => update('short_description', e.target.value)} rows={2} />
           </div>
           <div>
-            <label className="text-sm font-medium">Long Description</label>
-            <Textarea value={form.long_description || ''} onChange={(e) => update('long_description', e.target.value)} rows={5} />
+            <label className="text-sm font-medium">Description</label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Format with bold, lists, links, and more. Formatting is saved and shown on the event page.
+            </p>
+            <RichTextEditor
+              value={form.long_description || ''}
+              onChange={(html) => update('long_description', html)}
+              placeholder="Write the full event description…"
+            />
           </div>
         </CardContent>
       </Card>

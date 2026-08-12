@@ -7,7 +7,9 @@ import type {
   ContestEventListResponse,
   EventAnalyticsUsersParams,
   EventAnalyticsUsersResponse,
+  EventAttendanceListResponse,
   EventRegistrationItem,
+  JoinMeetingResponse,
 } from '@/types/contestEvent'
 
 export class ContestEventService {
@@ -39,6 +41,12 @@ export class ContestEventService {
 
   async registerForEvent(slug: string): Promise<{ id: string; status: string; event_slug?: string }> {
     const response = await apiClient.client.post(`/events/public/${slug}/register`)
+    return response.data
+  }
+
+  /** Authenticated join — backend enforces 5-minute unlock and records join_link_opened. */
+  async joinMeeting(slug: string): Promise<JoinMeetingResponse> {
+    const response = await apiClient.client.post(`/events/public/${slug}/join`)
     return response.data
   }
 
@@ -124,6 +132,16 @@ export class ContestEventService {
   async getRegistrations(eventId: string, search?: string): Promise<EventRegistrationItem[]> {
     const response = await apiClient.client.get(`/events/contests/${eventId}/registrations`, {
       params: search ? { search } : undefined,
+    })
+    return response.data
+  }
+
+  async getAttendance(
+    eventId: string,
+    params?: { search?: string; page?: number; limit?: number }
+  ): Promise<EventAttendanceListResponse> {
+    const response = await apiClient.client.get(`/events/contests/${eventId}/attendance`, {
+      params,
     })
     return response.data
   }
