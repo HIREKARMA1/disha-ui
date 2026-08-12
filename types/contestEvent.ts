@@ -21,6 +21,15 @@ export type EventMode = 'online' | 'offline' | 'hybrid'
 export type PublicationStatus = 'draft' | 'published' | 'closed' | 'archived'
 export type PrizeType = 'free' | 'paid'
 export type ContestStatus = 'upcoming' | 'live' | 'closed' | 'archived' | 'cancelled' | 'postponed' | 'draft'
+/** Computed registration UI state from publish + registration window (not a DB enum). */
+export type RegistrationUiState =
+  | 'not_published'
+  | 'cancelled'
+  | 'registration_not_started'
+  | 'registration_open'
+  | 'registration_closed'
+  | 'event_started'
+  | 'event_completed'
 export type RegistrationStatus =
   | 'registered'
   | 'selected'
@@ -98,10 +107,18 @@ export interface ContestEventListItem {
   category?: EventCategory
   mode?: EventMode
   venue?: string
+  /** Optional Google Meet / Teams / Zoom (or other) join link for online events */
+  event_link?: string
+  /** True when current time >= event start − 5 minutes (online + link). */
+  meeting_link_available?: boolean
+  /** ISO datetime when Join Meeting unlocks. */
+  meeting_link_opens_at?: string
   prize_pool?: string
   prize_type?: PrizeType
   publication_status?: PublicationStatus
   registration_is_open?: boolean
+  /** Computed: not_published | registration_not_started | registration_open | … */
+  registration_state?: RegistrationUiState
   /** Raw admin toggle (DB flag). Prefer this when editing — not the computed open state. */
   registration_enabled?: boolean
   registration_end_date?: string
@@ -194,6 +211,8 @@ export interface ContestEventCreatePayload {
   visibility?: VisibilitySettings
   registration_button_text?: string
   registration_external_url?: string
+  /** Optional meeting/join URL for online events */
+  event_link?: string
   publication_status?: PublicationStatus
   registration_is_open?: boolean
   faqs?: FAQItem[]
@@ -205,10 +224,11 @@ export interface ContestEventCreatePayload {
 }
 
 export type ContestEventUpdatePayload = Partial<
-  Omit<ContestEventCreatePayload, 'banner_url' | 'organizer_logo_url'>
+  Omit<ContestEventCreatePayload, 'banner_url' | 'organizer_logo_url' | 'event_link'>
 > & {
   banner_url?: string | null
   organizer_logo_url?: string | null
+  event_link?: string | null
 }
 
 export interface ContestEventAnalytics {
@@ -296,6 +316,45 @@ export interface EventRegistrationItem {
   location?: string
   status: string
   registration_date: string
+}
+
+export interface JoinMeetingResponse {
+  event_id: string
+  event_slug?: string
+  event_link: string
+  meeting_link_opens_at?: string
+  meeting_link_available: boolean
+  join_status: string
+  clicked_at: string
+  message: string
+}
+
+export interface EventAttendanceItem {
+  id: string
+  event_id: string
+  user_id: string
+  registration_id?: string
+  user_type?: string
+  full_name?: string
+  email?: string
+  phone?: string
+  registered_at?: string
+  joined_at: string
+  left_at?: string
+  duration_minutes?: number
+  /** join_link_opened — click evidence only, not provider-verified attendance */
+  status: string
+}
+
+export interface EventAttendanceListResponse {
+  items: EventAttendanceItem[]
+  total: number
+  page: number
+  limit: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+  note?: string
 }
 
 export const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [

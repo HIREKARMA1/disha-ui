@@ -187,7 +187,7 @@ function EventsPageContent() {
           <aside className="sticky top-20 hidden w-full self-start md:block">
             <div className="flex flex-col gap-6">
               {leftAd ? (
-                <EventsPortalAdCard ad={leftAd} variant="left" className="xl:h-auto md:h-[480px] xl:min-h-0" />
+                <EventsPortalAdCard ad={leftAd} variant="left" className="w-full" />
               ) : null}
               {/* Right ad stacks under left on tablet only */}
               {rightAd && rightAd.id !== leftAd?.id ? (
@@ -335,10 +335,10 @@ function EventsPageContent() {
             {/* Mobile ads below content */}
             <div className="flex flex-col gap-6 md:hidden">
               {leftAd ? (
-                <EventsPortalAdCard ad={leftAd} variant="left" className="h-auto min-h-[420px]" />
+                <EventsPortalAdCard ad={leftAd} variant="left" className="w-full" />
               ) : null}
               {rightAd && rightAd.id !== leftAd?.id ? (
-                <EventsPortalAdCard ad={rightAd} variant="right" className="h-auto min-h-[420px]" />
+                <EventsPortalAdCard ad={rightAd} variant="right" className="w-full" />
               ) : null}
             </div>
           </main>
