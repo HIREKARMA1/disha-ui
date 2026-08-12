@@ -24,8 +24,9 @@ import {
   UserPlus,
   Info,
   CheckCircle2,
+  Monitor,
 } from 'lucide-react'
-
+import { detectExamDevice, isHandheldExamDevice } from '@/lib/examDevice'
 export interface StudentExamEligibility {
   can_start: boolean
   has_completed_attempt: boolean
@@ -203,6 +204,7 @@ export function StudentExamInstructions({
   onScheduleReached,
 }: StudentExamInstructionsProps) {
   const [declared, setDeclared] = useState(false)
+  const [showDeviceWarning, setShowDeviceWarning] = useState(false)
 
   const scheduleLabel = useMemo(
     () => formatAssessmentSchedule(exam.start_time, exam.end_time),
@@ -224,6 +226,19 @@ export function StudentExamInstructions({
   const handleScheduleReached = useCallback(() => {
     onScheduleReached?.()
   }, [onScheduleReached])
+
+  const handleReadyClick = useCallback(() => {
+    if (isHandheldExamDevice(detectExamDevice())) {
+      setShowDeviceWarning(true)
+      return
+    }
+    onStart()
+  }, [onStart])
+
+  const handleContinueOnMobile = useCallback(() => {
+    setShowDeviceWarning(false)
+    onStart()
+  }, [onStart])
 
   return (
     <motion.div className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -514,7 +529,7 @@ export function StudentExamInstructions({
                   type="button"
                   size="lg"
                   disabled={!declared || !canBegin || starting || eligibilityLoading}
-                  onClick={onStart}
+                  onClick={handleReadyClick}
                   className="w-full sm:w-auto min-w-[240px] h-12 text-base bg-primary-600 hover:bg-primary-700 disabled:opacity-50"
                 >
                   <span className="inline-flex items-center justify-center">
@@ -547,6 +562,60 @@ export function StudentExamInstructions({
           )}
         </section>
       </div>
+
+      {showDeviceWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowDeviceWarning(false)}
+          />
+          <div className="relative w-full max-w-md rounded-xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950/50">
+                <Monitor className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Use a laptop or PC
+                </h2>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                  This assessment works best on a laptop or desktop with a webcam for proctoring.
+                  Mobile and tablet screens can make questions harder to read and may affect camera
+                  tracking.
+                </p>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  If you still want to continue on this device, press Continue to exam.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeviceWarning(false)}
+                disabled={starting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleContinueOnMobile}
+                disabled={starting}
+                className="bg-primary-600 hover:bg-primary-700"
+              >
+                {starting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Launching…
+                  </>
+                ) : (
+                  'Continue to exam'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }

@@ -918,9 +918,14 @@ class ApiClient {
     return response.data;
   }
 
-  async startAssessmentExam(assessmentId: string, attemptId: string): Promise<any> {
+  async startAssessmentExam(
+    assessmentId: string,
+    attemptId: string,
+    body?: { attempted_device?: 'mobile' | 'tablet' | 'laptop' }
+  ): Promise<any> {
     const response: AxiosResponse = await this.client.post(
-      `/assessments/${assessmentId}/attempts/${attemptId}/start`
+      `/assessments/${assessmentId}/attempts/${attemptId}/start`,
+      body || {}
     );
     return response.data;
   }
@@ -935,7 +940,11 @@ class ApiClient {
   async submitAssessmentExam(
     assessmentId: string,
     attemptId: string,
-    body: { answers: Array<{ question_id: string; answer?: any; time_spent?: number }>; auto_submit?: boolean }
+    body: {
+      answers: Array<{ question_id: string; answer?: any; time_spent?: number }>;
+      auto_submit?: boolean;
+      attempted_device?: 'mobile' | 'tablet' | 'laptop';
+    }
   ): Promise<any> {
     const response: AxiosResponse = await this.client.post(
       `/assessments/${assessmentId}/attempts/${attemptId}/submit`,

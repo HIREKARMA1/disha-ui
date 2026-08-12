@@ -310,6 +310,7 @@ const ANALYTICS_RESULT_CSV_HEADERS = [
     'Percentage',
     'Pass/Fail',
     'Rounds Completed',
+    'Attempted Device',
     'Snapshot 1 URL',
     'Snapshot 2 URL',
     'Snapshot 3 URL',
@@ -326,6 +327,7 @@ export interface AnalyticsExport {
     percentage: number | null | undefined;
     pass_fail: string;
     rounds_completed: number;
+    attempted_device?: string;
     snapshot_1_url?: string;
     snapshot_2_url?: string;
     snapshot_3_url?: string;
@@ -357,6 +359,7 @@ function formatAnalyticsResultCsvRow(item: AnalyticsExport): string[] {
         item.percentage != null ? item.percentage.toFixed(1) : '—',
         passFailDisplay,
         String(item.rounds_completed || 0),
+        item.attempted_device || '',
         item.snapshot_1_url || '',
         item.snapshot_2_url || '',
         item.snapshot_3_url || '',

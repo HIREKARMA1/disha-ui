@@ -32,6 +32,7 @@ import {
     countCapturedSnapshots,
     resolveSnapshotUrl,
 } from '@/lib/proctoringSnapshots'
+import { formatExamDeviceLabel } from '@/lib/examDevice'
 
 export default function AssessmentAnalyticsPage() {
     const params = useParams()
@@ -160,6 +161,7 @@ export default function AssessmentAnalyticsPage() {
                 percentage: attempt.percentage,
                 pass_fail: formatPassFailDisplay(passFail),
                 rounds_completed: attempt.result_data?.rounds?.length || 0,
+                attempted_device: attempt.attempted_device || '',
                 snapshot_1_url: resolveSnapshotUrl(attempt.proctoring_snapshot_1_url),
                 snapshot_2_url: resolveSnapshotUrl(attempt.proctoring_snapshot_2_url),
                 snapshot_3_url: resolveSnapshotUrl(attempt.proctoring_snapshot_3_url),
@@ -481,6 +483,7 @@ export default function AssessmentAnalyticsPage() {
                                 <thead className="bg-gray-50/50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-400 font-medium text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                                     <tr>
                                         <th className="px-6 py-4">Student Name</th>
+                                        <th className="px-6 py-4">Device</th>
                                         <th className="px-6 py-4">Status</th>
                                         <th className="px-6 py-4">Score</th>
                                         <th className="px-6 py-4">Percentage</th>
@@ -501,6 +504,10 @@ export default function AssessmentAnalyticsPage() {
                                                     </div>
                                                     <span>{attempt.student_name || "Unknown Student"}</span>
                                                 </div>
+                                            </td>
+
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                                {formatExamDeviceLabel(attempt.attempted_device)}
                                             </td>
 
                                             {/* Status */}
@@ -844,7 +851,7 @@ function AttemptDetailsModal({
                     )}
 
                     {/* Summary Card */}
-                    <div className="grid grid-cols-3 gap-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Overall Score</p>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -876,6 +883,12 @@ function AttemptDetailsModal({
                                     Reason: {formatDisqualificationReason(getDisqualificationReason(attempt))}
                                 </p>
                             )}
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Attempted device</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {formatExamDeviceLabel(attempt.attempted_device)}
+                            </p>
                         </div>
                     </div>
 
