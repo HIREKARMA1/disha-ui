@@ -79,7 +79,16 @@ function formatMeetingOpensAt(value?: string | null) {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
-  return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+  const datePart = date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+  const timePart = date.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  return `${datePart} ${timePart}`
 }
 
 interface EventDetailPageProps {
