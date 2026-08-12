@@ -91,3 +91,22 @@ export function normalizeRichTextHtml(html?: string | null): string {
   if (!value || value === '<p><br></p>' || value === '<p></p>') return ''
   return value
 }
+
+/** Plain-text preview for cards/highlights (strips tags; safe for React text nodes). */
+export function stripHtmlToPlainText(raw?: string | null): string {
+  const value = (raw || '').trim()
+  if (!value) return ''
+  if (!looksLikeHtml(value)) return value.replace(/\s+/g, ' ').trim()
+  return value
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6])>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
