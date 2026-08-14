@@ -19,10 +19,14 @@ import {
     X,
     Save,
     XCircle,
-    Briefcase
+    Briefcase,
+    Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { UniversityPageHero } from '@/components/university/ui/UniversityPageHero'
+import { UniversityStatCard } from '@/components/university/ui/UniversityStatCard'
+import { uniCard, uniInput } from '@/components/university/ui/university-theme'
+import { cn } from '@/lib/utils'
 import { AdminQuestionEditor } from '../admin/AdminQuestionEditor'
 import { UniversityBulkUploader } from './UniversityBulkUploader'
 import { UniversityAttemptViewer } from './UniversityAttemptViewer'
@@ -567,126 +571,81 @@ export function UniversityPracticeManager() {
     // The attempts are now shown in a modal popup via UniversityAttemptViewerModal
 
     return (
-        <div className="space-y-6 main-content">
-            {/* Header - Only show on main modules view */}
+        <div className="space-y-4 md:space-y-6 main-content max-w-[1600px] mx-auto">
             {currentView === 'modules' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Practice Module Management 🧠
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage practice tests, questions, and view student attempts ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🧠 {currentDate}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📚 Question Management
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🎯 Student Analytics
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+                <UniversityPageHero
+                    title="Practice Test Management 🧠"
+                    subtitle="Create, manage, and evaluate practice tests & questions."
+                    chips={[
+                        {
+                            label: currentDate || new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+                            tone: 'blue',
+                            icon: <Calendar className="w-3.5 h-3.5" />,
+                        },
+                        { label: 'University', tone: 'teal', icon: <Brain className="w-3.5 h-3.5" /> },
+                        { label: 'Assessment Hub', tone: 'orange', icon: <Target className="w-3.5 h-3.5" /> },
+                    ]}
+                />
             )}
 
-            {/* Stats Cards - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                    {
-                        label: 'Total Modules',
-                        value: statistics?.total_modules?.toString() || filteredModules.length.toString(),
-                        icon: Brain,
-                        color: 'text-blue-600',
-                        bgColor: 'bg-blue-50 dark:bg-blue-900/20'
-                    },
-                    {
-                        label: 'Total Questions',
-                        value: statistics?.total_questions?.toString() || filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
-                        icon: Target,
-                        color: 'text-green-600',
-                        bgColor: 'bg-green-50 dark:bg-green-900/20'
-                    },
-                    {
-                        label: 'Active Modules',
-                        value: statistics?.active_modules?.toString() || filteredModules.length.toString(),
-                        icon: Users,
-                        color: 'text-purple-600',
-                        bgColor: 'bg-purple-50 dark:bg-purple-900/20'
-                    },
-                    {
-                        label: 'Total Attempts',
-                        value: statistics?.total_attempts?.toString() || '0',
-                        icon: Clock,
-                        color: 'text-orange-600',
-                        bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-                    }
-                ].map((stat, index) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="w-full"
-                    >
-                        <div className="block group w-full">
-                            <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                            {stat.label}
-                                        </p>
-                                        <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                            {(modulesLoading || statisticsLoading) ? (
-                                                <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
-                                            ) : (
-                                                stat.value
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <UniversityStatCard
+                        label="Total Modules"
+                        value={statistics?.total_modules?.toString() || filteredModules.length.toString()}
+                        icon={Brain}
+                        accent="blue"
+                        index={0}
+                        isLoading={modulesLoading || statisticsLoading}
+                    />
+                    <UniversityStatCard
+                        label="Total Questions"
+                        value={statistics?.total_questions?.toString() || filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString()}
+                        icon={Target}
+                        accent="green"
+                        index={1}
+                        isLoading={modulesLoading || statisticsLoading}
+                    />
+                    <UniversityStatCard
+                        label="Active Modules"
+                        value={statistics?.active_modules?.toString() || filteredModules.length.toString()}
+                        icon={Users}
+                        accent="purple"
+                        index={2}
+                        isLoading={modulesLoading || statisticsLoading}
+                    />
+                    <UniversityStatCard
+                        label="Total Attempts"
+                        value={statistics?.total_attempts?.toString() || '0'}
+                        icon={Clock}
+                        accent="orange"
+                        index={3}
+                        isLoading={modulesLoading || statisticsLoading}
+                    />
                 </div>
             )}
 
             {/* Search and Filters - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div className={cn(uniCard, 'p-4 md:p-5')}>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
                                 type="text"
-                                placeholder="Search practice modules by title, role, or tags..."
+                                placeholder="Search modules by title, role, or tags..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
+                                className={cn(uniInput, 'pl-10 h-11')}
                             />
                         </div>
                         <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Filter className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value as PracticeCategory | 'all')}
-                                className="pl-10 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 appearance-none min-w-[200px]"
+                                className={cn(uniInput, 'pl-10 pr-8 h-11 appearance-none min-w-[200px]')}
                             >
                                 {categories.map((category) => (
                                     <option key={category.id} value={category.id}>
@@ -719,7 +678,7 @@ export function UniversityPracticeManager() {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleCreateModule}
-                        className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2"
+                        className="rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 text-white shadow-lg shadow-blue-500/20 px-6 py-2 h-11"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Create New Module
@@ -731,7 +690,7 @@ export function UniversityPracticeManager() {
             {currentView === 'modules' && modulesLoading && (
                 <div className="space-y-6">
                     <StatsSkeleton count={4} />
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] p-6">
                         <div className="mb-4">
                             <LoadingSkeleton height="h-6" width="w-48" />
                         </div>
@@ -770,9 +729,33 @@ export function UniversityPracticeManager() {
 
             {/* Modules Table - Only show on main modules view */}
             {currentView === 'modules' && !modulesLoading && !modulesError && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    {/* Table Header */}
-                    <div className="overflow-x-auto">
+                <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] overflow-hidden">
+                    <div className="md:hidden divide-y divide-gray-100 dark:divide-white/[0.06]">
+                        {filteredModules.map((module) => (
+                            <article key={`m-${module.id}`} className="p-4 space-y-3">
+                                <button type="button" className="text-left w-full" onClick={() => handleViewModule(module)}>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{module.title}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{module.description}</p>
+                                </button>
+                                <div className="flex flex-wrap gap-1.5">
+                                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-500/15 text-violet-600 dark:text-violet-300">
+                                        {module.category ? module.category.replace('-', ' ') : 'General'}
+                                    </span>
+                                    <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-300">
+                                        {module.role}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500">{module.questions_count} Q · {Math.floor(module.duration_seconds / 60)}m</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button onClick={() => handleViewModule(module)} variant="outline" size="sm"><Eye className="w-4 h-4" /></Button>
+                                    <Button onClick={() => handleViewAttempts(module)} variant="outline" size="sm"><Users className="w-4 h-4" /></Button>
+                                    <Button onClick={() => handleEditModule(module)} variant="outline" size="sm"><Edit className="w-4 h-4" /></Button>
+                                    <Button onClick={() => handleDeleteModule(module)} variant="outline" size="sm" className="text-red-600"><Trash2 className="w-4 h-4" /></Button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
                                 <tr>
@@ -806,11 +789,11 @@ export function UniversityPracticeManager() {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
                                 {filteredModules.map((module, index) => (
                                     <motion.tr
                                         key={module.id}
-                                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer"
+                                        className="hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors duration-200 cursor-pointer"
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.2, delay: index * 0.05 }}
@@ -1062,7 +1045,7 @@ function ModuleDetailView({ module, onBack, onCreateQuestion, onBulkUpload, onEd
             </motion.div>
 
             {/* Questions List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628]">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                             Questions ({filteredQuestions?.length || 0})
@@ -1351,7 +1334,7 @@ function CreateModuleForm({ module, onSave, onCancel, jobContext }: CreateModule
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2 space-y-4">
                     {/* Basic Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] p-4">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Basic Information
                         </h3>
@@ -1384,7 +1367,7 @@ function CreateModuleForm({ module, onSave, onCancel, jobContext }: CreateModule
                     </div>
 
                     {/* Tags */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] p-4">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Tags
                         </h3>
@@ -1427,7 +1410,7 @@ function CreateModuleForm({ module, onSave, onCancel, jobContext }: CreateModule
                 {/* Sidebar */}
                 <div className="space-y-4">
                     {/* Module Properties */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] p-4">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                             Module Properties
                         </h3>
@@ -1532,7 +1515,7 @@ function CreateModuleForm({ module, onSave, onCancel, jobContext }: CreateModule
                     />
 
                     {/* Actions */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] p-4">
                         <div className="space-y-2">
                             <Button
                                 onClick={handleSave}

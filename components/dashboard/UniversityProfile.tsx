@@ -20,10 +20,19 @@ import {
     Edit,
     Save,
     X,
-    Briefcase
+    Briefcase,
+    Pencil
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UniversityDashboardLayout } from './UniversityDashboardLayout'
+import { UniversityPageHero } from '@/components/university/ui/UniversityPageHero'
+import { UniversityGlassCard } from '@/components/university/ui/UniversityGlassCard'
+import { uniCard } from '@/components/university/ui/university-theme'
+import {
+    UniversitySocialLinksDisplay,
+    UniversitySocialLinksEditor,
+} from '@/components/university/UniversitySocialLinksEditor'
+import { mergeCorpExtMeta, parseCorpExtMeta } from '@/lib/corporateProfileMeta'
 import { cn, getInitials } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
@@ -45,6 +54,15 @@ import {
     filterBranchNamesForDegree,
     formatMultiValueDisplay,
 } from '@/lib/academicHierarchy'
+
+function getUniversityDisplayBio(bio?: string | null): string {
+    if (!bio) return ''
+    const meta = parseCorpExtMeta(bio)
+    if (meta.plain_bio) return meta.plain_bio
+    const trimmed = bio.trim()
+    if (trimmed.startsWith('{')) return ''
+    return bio
+}
 
 // Use the imported UniversityProfile type instead of defining a new interface
 
@@ -214,9 +232,13 @@ export function UniversityProfile() {
         try {
             setSaving(true);
             setError(null);
+            const payload = { ...formData }
+            if (sectionId === 'basic' && payload.bio !== undefined && profile) {
+                payload.bio = mergeCorpExtMeta(profile.bio, { plain_bio: payload.bio })
+            }
             // 🔹 Try to save via API
             try {
-                const updatedProfile = await universityProfileService.updateProfile(formData);
+                const updatedProfile = await universityProfileService.updateProfile(payload);
                 setProfile(updatedProfile);
                 console.log("Profile saved successfully");
 
@@ -227,7 +249,7 @@ export function UniversityProfile() {
             } catch (apiError) {
                 console.log("API not available, simulating save");
                 if (profile) {
-                    setProfile({ ...profile, ...formData });
+                    setProfile({ ...profile, ...payload });
                 }
 
                 // Show success toast even for simulated save
@@ -313,7 +335,7 @@ export function UniversityProfile() {
                 case 'basic':
                     initialData.name = profile.name
                     initialData.phone = profile.phone
-                    initialData.bio = profile.bio
+                    initialData.bio = getUniversityDisplayBio(profile.bio)
                     initialData.website_url = profile.website_url
                     break
                 case 'institution':
@@ -385,19 +407,11 @@ export function UniversityProfile() {
     if (loading) {
         return (
             <UniversityDashboardLayout>
-                <div className="space-y-6">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                            <div className="xl:col-span-1">
-                                <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                            </div>
-                            <div className="xl:col-span-3 space-y-6">
-                                {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                                ))}
-                            </div>
-                        </div>
+                <div className="w-full max-w-[1400px] mx-auto space-y-4 animate-pulse">
+                    <div className="h-32 bg-gray-200 dark:bg-white/10 rounded-2xl" />
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <div className="h-64 bg-gray-200 dark:bg-white/10 rounded-2xl" />
+                        <div className="h-64 bg-gray-200 dark:bg-white/10 rounded-2xl xl:col-span-2" />
                     </div>
                 </div>
             </UniversityDashboardLayout>
@@ -407,20 +421,16 @@ export function UniversityProfile() {
     if (error && !profile) {
         return (
             <UniversityDashboardLayout>
-                <div className="space-y-6">
-                    <div className="text-center">
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 max-w-md mx-auto">
-                            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                Unable to Load Profile
-                            </h2>
-                            <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                {error}
-                            </p>
-                            <Button onClick={loadProfile} variant="default">
-                                Try Again
-                            </Button>
-                        </div>
+                <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6 max-w-md mx-auto">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+                        Unable to Load Profile
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">{error}</p>
+                    <div className="flex justify-center">
+                        <Button onClick={loadProfile} variant="default">
+                            Try Again
+                        </Button>
                     </div>
                 </div>
             </UniversityDashboardLayout>
@@ -430,18 +440,12 @@ export function UniversityProfile() {
     if (!profile) {
         return (
             <UniversityDashboardLayout>
-                <div className="space-y-6">
-                    <div className="text-center">
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 max-w-md mx-auto">
-                            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                Profile Not Found
-                            </h2>
-                            <p className="text-gray-600 dark:text-gray-400">
-                                Unable to load your profile. Please try again later.
-                            </p>
-                        </div>
-                    </div>
+                <div className={cn(uniCard, 'p-8 max-w-md mx-auto text-center')}>
+                    <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Profile Not Found</h2>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Unable to load your profile. Please try again later.
+                    </p>
                 </div>
             </UniversityDashboardLayout>
         )
@@ -449,37 +453,36 @@ export function UniversityProfile() {
 
     return (
         <UniversityDashboardLayout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                University Profile 🏛️
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage your university information and institutional details ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📈 Institutional Growth
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🚀 Excellence in Education
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="w-full max-w-[1400px] mx-auto space-y-4 md:space-y-6">
+                <UniversityPageHero
+                    title="University Profile 🏛️"
+                    subtitle="Manage your university information and institutional details ✨"
+                    chips={[
+                        {
+                            label: new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric',
+                            }),
+                            tone: 'blue',
+                            icon: <Calendar className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Institutional Growth',
+                            tone: 'green',
+                            icon: <Trophy className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Excellence in Education',
+                            tone: 'purple',
+                            icon: <GraduationCap className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
 
-                {/* Profile Content */}
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                    {/* Left Column - Profile Overview */}
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-6">
                     <div className="xl:col-span-1">
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div className={cn(uniCard, 'p-6')}>
                             <div className="text-center mb-6">
                                 <div className="w-24 h-24 mx-auto mb-4 relative">
                                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg overflow-hidden">
@@ -519,37 +522,30 @@ export function UniversityProfile() {
                                 </p>
                             </div>
 
-                            {/* Quick Stats */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/50 dark:border-green-700/50">
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">Email</span>
-                                    <div className="p-1.5 bg-green-500 rounded-full">
-                                        <CheckCircle className="w-4 h-4 text-white" />
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">Phone</span>
-                                    <div className="p-1.5 bg-green-500 rounded-full">
-                                        <CheckCircle className="w-4 h-4 text-white" />
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50/80 to-pink-50/80 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200/50 dark:border-purple-700/50">
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
                                     <span className="text-sm text-gray-700 dark:text-gray-300">Total Students</span>
-                                    <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                                    <span className="text-sm font-semibold text-violet-600 dark:text-violet-300">
                                         {profile?.total_students?.toLocaleString() || 'N/A'}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg border border-indigo-200/50 dark:border-indigo-700/50">
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                                     <span className="text-sm text-gray-700 dark:text-gray-300">Total Jobs</span>
-                                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">
                                         {profile?.total_jobs?.toLocaleString() || 'N/A'}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50/80 to-red-50/80 dark:from-orange-900/20 dark:to-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                                     <span className="text-sm text-gray-700 dark:text-gray-300">Jobs Approved</span>
-                                    <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                                    <span className="text-sm font-semibold text-orange-600 dark:text-orange-300">
                                         {profile?.total_jobs_approved?.toLocaleString() || 'N/A'}
                                     </span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">Email</span>
+                                    <div className="p-1.5 bg-emerald-500 rounded-full">
+                                        <CheckCircle className="w-4 h-4 text-white" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -558,33 +554,23 @@ export function UniversityProfile() {
                     {/* Right Column - Profile Details */}
                     <div className="xl:col-span-3">
                         {/* Tabs */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-                            <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700">
+                        <div className={cn(uniCard, 'overflow-hidden')}>
+                            <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-white/[0.06]">
                                 {tabs.map((tab) => {
                                     const Icon = tab.icon
-                                    const colors = getTabColors(tab.id)
                                     return (
-                                        <motion.button
+                                        <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 relative ${activeTab === tab.id
-                                                ? colors.active
-                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                                                }`}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
+                                            className={`flex items-center gap-2 px-5 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-all duration-200 ${
+                                                activeTab === tab.id
+                                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                            }`}
                                         >
-                                            <Icon className={`w-4 h-4 ${activeTab === tab.id ? colors.icon : ''}`} />
+                                            <Icon className="w-4 h-4" />
                                             {tab.label}
-                                            {activeTab === tab.id && (
-                                                <motion.div
-                                                    className={`absolute bottom-0 left-0 right-0 h-0.5 ${colors.indicator}`}
-                                                    layoutId="activeTab"
-                                                    initial={false}
-                                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                />
-                                            )}
-                                        </motion.button>
+                                        </button>
                                     )
                                 })}
                             </div>
@@ -605,6 +591,47 @@ export function UniversityProfile() {
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                    <UniversityGlassCard
+                        title="Social Links"
+                        action={
+                            editing === 'social' ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setEditing(null)}
+                                    className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                                >
+                                    Close
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setEditing('social')}
+                                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                                >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                    Edit
+                                </button>
+                            )
+                        }
+                    >
+                        {editing === 'social' ? (
+                            <UniversitySocialLinksEditor
+                                profile={profile}
+                                onSaved={(updated) => {
+                                    setProfile(updated)
+                                    setEditing(null)
+                                }}
+                                onCancel={() => setEditing(null)}
+                            />
+                        ) : (
+                            <UniversitySocialLinksDisplay
+                                links={parseCorpExtMeta(profile.bio).social_links}
+                                websiteUrl={profile.website_url}
+                            />
+                        )}
+                    </UniversityGlassCard>
+                </div>
 
             </div>
         </UniversityDashboardLayout>
@@ -695,11 +722,11 @@ export function UniversityProfile() {
                         </div>
 
                         <div className="space-y-4">
-                            {profile?.bio && (
+                            {getUniversityDisplayBio(profile?.bio) && (
                                 <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                     <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Description</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        {profile.bio}
+                                        {getUniversityDisplayBio(profile?.bio)}
                                     </p>
                                 </div>
                             )}
@@ -955,6 +982,10 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             // Initialize form data with current profile values
             const initialData: UniversityProfileUpdateData = {}
             section.fields.forEach(field => {
+                if (field === 'bio') {
+                    initialData.bio = getUniversityDisplayBio(profile.bio)
+                    return
+                }
                 initialData[field as keyof UniversityProfileUpdateData] = (profile[field as keyof UniversityProfile] || '') as any
             })
             setFormData(initialData)

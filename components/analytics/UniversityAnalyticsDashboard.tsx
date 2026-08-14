@@ -32,6 +32,7 @@ interface UniversityAnalyticsDashboardProps {
   isLoading?: boolean
   className?: string
   showKpis?: boolean
+  showHeader?: boolean
 }
 
 const BRAND = {
@@ -46,6 +47,7 @@ export function UniversityAnalyticsDashboard({
   isLoading = false,
   className = '',
   showKpis = true,
+  showHeader = true,
 }: UniversityAnalyticsDashboardProps) {
   const branchData = useMemo(() => {
     return (data?.branch_wise_placement ?? []).slice(0, 10)
@@ -63,12 +65,14 @@ export function UniversityAnalyticsDashboard({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {showHeader && (
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Placement Analytics</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Placements, employability, company engagement, and assessment performance
         </p>
       </div>
+      )}
 
       {showKpis && (
         <AnalyticsKpiCards

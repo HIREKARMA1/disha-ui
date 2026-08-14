@@ -33,7 +33,7 @@ export function UniversityAnalyticsChart({ className = '' }: UniversityAnalytics
 
   if (error && !isLoading) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-2xl p-6">
+      <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
         <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
       </div>
     )
@@ -45,6 +45,7 @@ export function UniversityAnalyticsChart({ className = '' }: UniversityAnalytics
       isLoading={isLoading}
       className={className}
       showKpis={false}
+      showHeader={false}
     />
   )
 }

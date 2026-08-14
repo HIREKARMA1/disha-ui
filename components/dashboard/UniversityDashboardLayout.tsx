@@ -9,12 +9,14 @@ import { UniversityDashboardStats } from './UniversityDashboardStats'
 import { UniversityAnalyticsChart } from './UniversityAnalyticsChart'
 import { AdvertisementBanner } from './AdvertisementBanner'
 import { UniversityRecentActivities } from './UniversityRecentActivities'
+import { UniversityQuickActions } from './UniversityQuickActions'
 import { UniversityLockScreen } from './UniversityLockScreen'
 import { EventPopup } from '@/components/events/EventPopup'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
 import { UniversityDashboardData } from '@/types/university'
+import { uniPageBg } from '@/components/university/ui/university-theme'
 
 interface UniversityDashboardLayoutProps {
     children?: React.ReactNode
@@ -30,7 +32,6 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
     const { user } = useAuth()
     const pathname = usePathname()
 
-    // Fetch university profile to check status
     useEffect(() => {
         const fetchUniversityProfile = async () => {
             if (user?.user_type === 'university') {
@@ -41,7 +42,6 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                     setUniversityEmail(profile.email || '')
                 } catch (error) {
                     console.error('Failed to fetch university profile:', error)
-                    // Default to active if we can't fetch profile
                     setUniversityStatus('active')
                 }
             }
@@ -50,20 +50,17 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
         fetchUniversityProfile()
     }, [user?.user_type])
 
-    // Fetch university dashboard data
     useEffect(() => {
         const fetchDashboardData = async () => {
             if (user?.user_type === 'university') {
                 try {
                     setIsLoading(true)
                     const data = await apiClient.getUniversityDashboard()
-                    console.log('🎯 University Dashboard Data:', data)
                     setDashboardData(data)
                     setError(null)
                 } catch (error) {
                     console.error('Failed to fetch university dashboard data:', error)
                     setError('Failed to load dashboard data')
-                    // Don't set fallback data - only show real data from backend
                     setDashboardData(null)
                 } finally {
                     setIsLoading(false)
@@ -75,26 +72,24 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
     }, [user?.id, user?.user_type, user?.name])
 
     const isLocked = universityStatus === 'inactive' || universityStatus === 'pending'
-    const isAllowedPage = pathname === '/dashboard/university/profile' || pathname === '/dashboard/university/licenses'
+    const isAllowedPage =
+        pathname === '/dashboard/university/profile' ||
+        pathname === '/dashboard/university/licenses' ||
+        pathname === '/dashboard/university/settings'
     const shouldLock = isLocked && !isAllowedPage
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Navbar is now fixed positioned */}
+        <div className={uniPageBg}>
             <Navbar />
-
-            {/* UniversitySidebar is now fixed positioned */}
             <UniversitySidebar />
 
-            {/* Main Content with proper spacing */}
             <div className="pt-16 lg:pl-64">
-                <main className={`p-6 pb-safe lg:pb-6 min-h-screen relative ${shouldLock ? 'pointer-events-none' : ''}`}>
+                <main
+                    className={`p-4 md:p-6 lg:p-8 pb-28 lg:pb-8 min-h-screen relative overflow-x-hidden ${shouldLock ? 'pointer-events-none' : ''}`}
+                >
                     {children ? (
                         <>
-                            <div className={shouldLock ? 'opacity-40' : ''}>
-                                {children}
-                            </div>
-                            {/* Lock Screen - positioned within main content */}
+                            <div className={shouldLock ? 'opacity-40' : ''}>{children}</div>
                             {shouldLock && (
                                 <UniversityLockScreen
                                     isOpen={shouldLock}
@@ -106,17 +101,15 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                     ) : (
                         <>
                             <EventPopup />
-                            <div className={`space-y-6 ${shouldLock ? 'opacity-40' : ''}`}>
-                                {/* Loading State */}
+                            <div className={`space-y-4 md:space-y-6 max-w-[1600px] mx-auto ${shouldLock ? 'opacity-40' : ''}`}>
                                 {isLoading && (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                                    <div className="flex items-center justify-center py-16">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
                                     </div>
                                 )}
 
-                                {/* Error State */}
                                 {error && !isLoading && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+                                    <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
                                         <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
                                             Error Loading Dashboard
                                         </h3>
@@ -124,12 +117,9 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                                     </div>
                                 )}
 
-                                {/* Dashboard Content */}
                                 {dashboardData && !isLoading && (
                                     <>
-                                        <UniversityWelcomeMessage
-                                            universityInfo={dashboardData.university_info}
-                                        />
+                                        <UniversityWelcomeMessage universityInfo={dashboardData.university_info} />
 
                                         <UniversityDashboardStats
                                             studentStats={dashboardData.student_statistics}
@@ -137,21 +127,21 @@ function UniversityDashboardContent({ children }: UniversityDashboardLayoutProps
                                             isLoading={isLoading}
                                         />
 
-                                        <div className="xl:grid-cols-10 grid grid-cols-1 gap-6">
-                                            <div className="xl:col-span-7 space-y-6">
+                                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 items-start">
+                                            <div className="xl:col-span-8 space-y-4 md:space-y-6 min-w-0">
                                                 <UniversityAnalyticsChart />
                                                 <UniversityRecentActivities
                                                     activities={dashboardData.recent_activity}
                                                 />
                                             </div>
-                                            <div className="xl:col-span-3 space-y-6">
+                                            <div className="xl:col-span-4 space-y-4 md:space-y-6 min-w-0">
                                                 <AdvertisementBanner />
+                                                <UniversityQuickActions />
                                             </div>
                                         </div>
                                     </>
                                 )}
                             </div>
-                            {/* Lock Screen - positioned within main content */}
                             {shouldLock && (
                                 <UniversityLockScreen
                                     isOpen={shouldLock}
