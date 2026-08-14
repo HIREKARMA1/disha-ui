@@ -3,7 +3,7 @@
 import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDashboardLayout'
 import { UniversityPageHero } from '@/components/university/ui/UniversityPageHero'
 import { UniversityGlassCard } from '@/components/university/ui/UniversityGlassCard'
-import { UniversityLicensesManager } from '../licenses/page'
+import { UniversityLicensesManager } from '@/components/university/UniversityLicensesManager'
 import { Calendar, Settings } from 'lucide-react'
 
 export default function UniversitySettingsPage() {
