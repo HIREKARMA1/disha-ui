@@ -310,10 +310,12 @@ const ANALYTICS_RESULT_CSV_HEADERS = [
     'Percentage',
     'Pass/Fail',
     'Rounds Completed',
+    'Attempted Device',
     'Snapshot 1 URL',
     'Snapshot 2 URL',
     'Snapshot 3 URL',
     'Snapshot 4 URL',
+    'Detailed Report PDF URL',
 ] as const;
 
 export interface AnalyticsExport {
@@ -325,10 +327,12 @@ export interface AnalyticsExport {
     percentage: number | null | undefined;
     pass_fail: string;
     rounds_completed: number;
+    attempted_device?: string;
     snapshot_1_url?: string;
     snapshot_2_url?: string;
     snapshot_3_url?: string;
     snapshot_4_url?: string;
+    detailed_report_pdf_url?: string;
     /** Full profile from Job Management applied students (when linked job is available) */
     profile?: AppliedStudentExport | null;
 }
@@ -355,10 +359,12 @@ function formatAnalyticsResultCsvRow(item: AnalyticsExport): string[] {
         item.percentage != null ? item.percentage.toFixed(1) : '—',
         passFailDisplay,
         String(item.rounds_completed || 0),
+        item.attempted_device || '',
         item.snapshot_1_url || '',
         item.snapshot_2_url || '',
         item.snapshot_3_url || '',
         item.snapshot_4_url || '',
+        item.detailed_report_pdf_url || '',
     ];
 }
 
@@ -379,6 +385,12 @@ export const exportAnalyticsToCSV = (
     const filename = `${assessmentName.replace(/[^a-zA-Z0-9]/g, '_')}_Analytics_${timestamp}.csv`;
     downloadCsvBlob(buildCsvContent(headers, csvData), filename);
 };
+
+function snapshotLinkLabel(url?: string): string {
+    if (!url || !String(url).trim()) return '—';
+    const trimmed = String(url).trim();
+    return trimmed.length > 48 ? `${trimmed.slice(0, 45)}…` : trimmed;
+}
 
 /** Landscape PDF table of assessment analytics results (jsPDF + autotable). */
 export const exportAnalyticsToPDF = async (
@@ -428,6 +440,88 @@ export const exportAnalyticsToPDF = async (
         headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 247, 250] },
         margin: { left: 40, right: 40 },
+    });
+
+    // Second page: proctoring photo links (clickable)
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('Proctoring photo links', 40, 36);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Click a link to open the snapshot in a browser', 40, 52);
+    doc.setTextColor(0);
+
+    const linkBody = data.map((item) => [
+        item.student_name || 'Unknown',
+        item.email || '—',
+        snapshotLinkLabel(item.snapshot_1_url),
+        snapshotLinkLabel(item.snapshot_2_url),
+        snapshotLinkLabel(item.snapshot_3_url),
+        snapshotLinkLabel(item.snapshot_4_url),
+    ]);
+
+    autoTable(doc, {
+        startY: 64,
+        head: [['Student', 'Email', 'Snapshot 1', 'Snapshot 2', 'Snapshot 3', 'Snapshot 4']],
+        body: linkBody,
+        styles: { fontSize: 7, cellPadding: 3, overflow: 'linebreak' },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+            2: { cellWidth: 110, textColor: [37, 99, 235] },
+            3: { cellWidth: 110, textColor: [37, 99, 235] },
+            4: { cellWidth: 110, textColor: [37, 99, 235] },
+            5: { cellWidth: 110, textColor: [37, 99, 235] },
+        },
+        didDrawCell: (hookData) => {
+            if (hookData.section !== 'body' || hookData.column.index < 2) return;
+            const rowIndex = hookData.row.index;
+            const snapKey = (
+                ['snapshot_1_url', 'snapshot_2_url', 'snapshot_3_url', 'snapshot_4_url'] as const
+            )[hookData.column.index - 2];
+            const url = data[rowIndex]?.[snapKey];
+            if (!url || !String(url).trim()) return;
+            const { x, y, width, height } = hookData.cell;
+            doc.link(x, y, width, height, { url: String(url).trim() });
+        },
+    });
+
+    // Third page: detailed report PDF links
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('Detailed report PDF links', 40, 36);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Empty when a detailed report has not been generated yet', 40, 52);
+    doc.setTextColor(0);
+
+    const reportBody = data.map((item) => [
+        item.student_name || 'Unknown',
+        item.email || '—',
+        snapshotLinkLabel(item.detailed_report_pdf_url),
+    ]);
+
+    autoTable(doc, {
+        startY: 64,
+        head: [['Student', 'Email', 'Detailed Report PDF']],
+        body: reportBody,
+        styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+            2: { cellWidth: 320, textColor: [37, 99, 235] },
+        },
+        didDrawCell: (hookData) => {
+            if (hookData.section !== 'body' || hookData.column.index !== 2) return;
+            const url = data[hookData.row.index]?.detailed_report_pdf_url;
+            if (!url || !String(url).trim()) return;
+            const { x, y, width, height } = hookData.cell;
+            doc.link(x, y, width, height, { url: String(url).trim() });
+        },
     });
 
     const filename = `${title.replace(/[^a-zA-Z0-9]/g, '_')}_Analytics_${timestamp}.pdf`;

@@ -13,14 +13,18 @@ import {
   AlertCircle,
   ChevronsLeft,
   ChevronsRight,
+  ChevronLeft,
   User,
   Video,
   VideoOff,
   Volume2,
   Mic,
+  List,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CodingWorkspace } from '@/components/assessments/CodingWorkspace';
+import { detectExamDevice } from '@/lib/examDevice';
 
 type Phase = 'camera' | 'exam' | 'round_break' | 'warning' | 'ending';
 
@@ -205,6 +209,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const [markedIds, setMarkedIds] = useState<Set<string>>(new Set());
   const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isLgUp, setIsLgUp] = useState(true);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
   const [fullscreenWarningShown, setFullscreenWarningShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -224,6 +230,20 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const timeWarn5ShownRef = useRef(false);
   const timeWarn1ShownRef = useRef(false);
   answersRef.current = answers;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = () => {
+      const matches = mq.matches;
+      setIsLgUp(matches);
+      setIsSidebarOpen(matches);
+      if (matches) setMobileDrawerOpen(false);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   const { videoRef, getVideoElement, startCamera, stopCamera, isCameraActive, status: cameraStatus, micReady } =
     useExamCamera();
@@ -355,6 +375,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           await apiClient.submitAssessmentExam(assessmentId, attemptId, {
             answers: payload,
             auto_submit: mode === 'auto',
+            attempted_device: detectExamDevice(),
           });
           toast.success(mode === 'auto' ? 'Time is up — exam auto-submitted.' : 'Exam submitted.');
         }
@@ -401,7 +422,9 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     (async () => {
       try {
         setLoading(true);
-        const start = await apiClient.startAssessmentExam(assessmentId, attemptId);
+        const start = await apiClient.startAssessmentExam(assessmentId, attemptId, {
+          attempted_device: detectExamDevice(),
+        });
         if (cancelled) return;
         setSession(start);
         const ends = new Date(start.ends_at).getTime();
@@ -606,6 +629,11 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
 
   const handleNextQuestion = () => advanceWithinOrEndRound({ clearMark: true });
   const handleMarkForReview = () => advanceWithinOrEndRound({ toggleMark: true });
+
+  const handlePreviousQuestion = () => {
+    if (currentIdx <= 0) return;
+    navigateToQuestion(currentIdx - 1);
+  };
 
   const handleClearResponse = () => {
     if (!current) return;
@@ -954,6 +982,18 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
 
   const t = splitTime(secondsLeft);
 
+  const openPalette = () => {
+    if (isLgUp) setIsSidebarOpen(true);
+    else setMobileDrawerOpen(true);
+  };
+
+  const closeMobileDrawer = () => setMobileDrawerOpen(false);
+
+  const navigateToQuestionFromPalette = (index: number) => {
+    navigateToQuestion(index);
+    if (!isLgUp) setMobileDrawerOpen(false);
+  };
+
   return (
     <div
       className="flex h-screen min-h-0 flex-col overflow-hidden bg-gray-100 font-sans select-none"
@@ -962,12 +1002,12 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       onCut={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      <div className="relative z-20 flex h-16 shrink-0 items-center justify-between bg-[#2563EB] px-6 text-white shadow-md">
+      <div className="relative z-20 flex h-14 sm:h-16 shrink-0 items-center justify-between bg-[#2563EB] px-3 sm:px-6 text-white shadow-md">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-bold">
+          <h1 className="truncate text-base sm:text-xl font-bold">
             {session?.assessment_name || 'Assessment'}
           </h1>
-          <p className="truncate text-sm text-blue-100">
+          <p className="truncate text-xs sm:text-sm text-blue-100">
             Round {roundIdx + 1} of {totalRounds}
             {current.round_type ? `: ${current.round_type}` : ''}
           </p>
@@ -991,30 +1031,66 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="relative z-40 flex min-h-0 flex-1 flex-col bg-white transition-all duration-300">
+      {!isLgUp && (
+        <div className="z-30 flex shrink-0 items-center gap-3 border-b border-blue-100 bg-[#E6F3FF] px-3 py-2">
+          <div className="flex h-14 w-14 shrink-0 items-end justify-center overflow-hidden rounded-lg bg-black shadow-sm">
+            {isCameraActive ? (
+              <video
+                ref={videoRef}
+                className="h-full w-full object-cover -scale-x-100"
+                playsInline
+                muted
+              />
+            ) : (
+              <User className="mb-[-2px] h-10 w-10 fill-current text-gray-400" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
+              Time left
+            </div>
+            <div className="font-mono text-base font-bold leading-tight text-gray-900">
+              {t.hours}:{t.minutes}:{t.seconds}
+            </div>
+            <div className="truncate text-xs text-gray-600">{candidateName}</div>
+          </div>
           <button
             type="button"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            aria-label={isSidebarOpen ? 'Collapse palette' : 'Expand palette'}
-            className={`absolute top-1/2 z-[60] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-400 bg-white text-gray-800 shadow-lg transition-transform duration-300 hover:bg-gray-100 ${
-              isSidebarOpen ? 'right-0 translate-x-1/2' : 'right-3 translate-x-0'
-            }`}
-            title={isSidebarOpen ? 'Collapse palette' : 'Expand palette'}
+            onClick={openPalette}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2563EB] px-3 py-2 text-sm font-semibold text-white shadow-sm"
           >
-            {isSidebarOpen ? (
-              <ChevronsRight className="h-5 w-5 shrink-0 text-gray-800" strokeWidth={2.5} />
-            ) : (
-              <ChevronsLeft className="h-5 w-5 shrink-0 text-gray-800" strokeWidth={2.5} />
-            )}
+            <List className="h-4 w-4" />
+            Questions
           </button>
+        </div>
+      )}
 
-          <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isCodingType(current) ? "p-2 sm:p-3" : "p-6"}`}>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative z-40 flex min-h-0 flex-1 flex-col bg-white transition-all duration-300">
+          {isLgUp && (
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label={isSidebarOpen ? 'Collapse palette' : 'Expand palette'}
+              className={`absolute top-1/2 z-[60] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-400 bg-white text-gray-800 shadow-lg transition-transform duration-300 hover:bg-gray-100 ${
+                isSidebarOpen ? 'right-0 translate-x-1/2' : 'right-3 translate-x-0'
+              }`}
+              title={isSidebarOpen ? 'Collapse palette' : 'Expand palette'}
+            >
+              {isSidebarOpen ? (
+                <ChevronsRight className="h-5 w-5 shrink-0 text-gray-800" strokeWidth={2.5} />
+              ) : (
+                <ChevronsLeft className="h-5 w-5 shrink-0 text-gray-800" strokeWidth={2.5} />
+              )}
+            </button>
+          )}
+
+          <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isCodingType(current) ? "p-2 sm:p-3" : "p-3 sm:p-6"}`}>
             {!isCodingType(current) && (
-            <div className="mb-4 shrink-0">
-              <h2 className="text-lg font-bold text-gray-800">
+            <div className="mb-3 sm:mb-4 shrink-0">
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">
                 Question {currentIdx + 1} of {roundQuestions.length}
-                <span className="ml-2 text-sm font-medium text-gray-500">
+                <span className="ml-2 text-xs sm:text-sm font-medium text-gray-500">
                   (this round)
                 </span>
               </h2>
@@ -1063,7 +1139,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                 />
               ) : (
               <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-                <div className="flex-1 overflow-y-auto border-b border-gray-300 bg-white p-6 md:border-b-0 md:border-r">
+                <div className="flex-1 overflow-y-auto border-b border-gray-300 bg-white p-4 sm:p-6 md:border-b-0 md:border-r">
                   {resolveQuestionType(current) === 'dictation' ? (
                     <div className="space-y-4">
                       <p className="text-lg font-bold text-blue-600">Listening Exercise</p>
@@ -1114,13 +1190,13 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                       </div>
                     </div>
                   ) : (
-                    <p className="select-none text-lg font-medium leading-relaxed text-gray-800">
+                    <p className="select-none text-base sm:text-lg font-medium leading-relaxed text-gray-800">
                       {current.question_text}
                     </p>
                   )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto bg-gray-50/50 p-6">
+                <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 sm:p-6">
                   {isListeningType(current) || resolveQuestionType(current) === 'dictation' ? (
                     <div className="flex h-full flex-col">
                       <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -1220,7 +1296,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                         )}
                     </div>
                   ) : isMcqType(current) ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {(current.options || []).map((optionText, index) => {
                         const optionLetter = String.fromCharCode(65 + index);
                         const isSelected =
@@ -1229,7 +1305,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                         return (
                           <label
                             key={`${current.id}-${index}`}
-                            className={`flex cursor-pointer items-start space-x-3 rounded-lg border p-4 transition-all ${
+                            className={`flex min-h-11 cursor-pointer items-start space-x-3 rounded-lg border p-3 sm:p-4 transition-all ${
                               isSelected
                                 ? 'border-blue-500 bg-blue-50 shadow-sm'
                                 : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-100'
@@ -1246,11 +1322,13 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                                 className="peer h-5 w-5 appearance-none rounded-full border-2 border-gray-400 bg-white transition-all checked:border-[6px] checked:border-blue-600"
                               />
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <span className="mr-2 font-bold text-gray-700">
                                 {optionLetter})
                               </span>
-                              <span className="text-base text-gray-800">{optionText}</span>
+                              <span className="text-sm sm:text-base text-gray-800 break-words">
+                                {optionText}
+                              </span>
                             </div>
                           </label>
                         );
@@ -1271,15 +1349,27 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               </div>
               )}
 
-              <div className="z-20 flex h-16 shrink-0 items-center justify-between border-t border-gray-300 bg-white px-6">
-                <div className="flex items-center gap-3">
+              <div className="z-20 flex min-h-14 sm:h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-gray-300 bg-white px-2 sm:px-6 py-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={handlePreviousQuestion}
+                    disabled={currentIdx <= 0}
+                    aria-label="Previous question"
+                    className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-3 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+                    <span className="sm:hidden">Back</span>
+                    <span className="hidden sm:inline">Previous</span>
+                  </button>
                   {!isLastQuestionOfExam && (
                     <button
                       type="button"
                       onClick={handleMarkForReview}
-                      className="rounded bg-[#DC2626] px-6 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                      className="rounded bg-[#DC2626] px-3 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
                     >
-                      Mark for review & Next
+                      <span className="sm:hidden">Mark</span>
+                      <span className="hidden sm:inline">Mark for review & Next</span>
                     </button>
                   )}
                   {isLastQuestionOfExam && (
@@ -1294,18 +1384,20 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                           return next;
                         });
                       }}
-                      className="rounded bg-[#DC2626] px-6 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
+                      className="rounded bg-[#DC2626] px-3 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
                     >
-                      Mark for review
+                      <span className="sm:hidden">Mark</span>
+                      <span className="hidden sm:inline">Mark for review</span>
                     </button>
                   )}
                   {!isCodingType(current) && (
                     <button
                       type="button"
                       onClick={handleClearResponse}
-                      className="rounded border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                      className="rounded border border-gray-300 bg-white px-3 sm:px-6 py-2 text-xs sm:text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
                     >
-                      Clear Response
+                      <span className="sm:hidden">Clear</span>
+                      <span className="hidden sm:inline">Clear Response</span>
                     </button>
                   )}
                 </div>
@@ -1323,9 +1415,10 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                         handleNextQuestion();
                       }}
                       disabled={codingBusy}
-                      className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
+                      className="rounded bg-[#16A34A] px-4 sm:px-8 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
                     >
-                      Submit & Next
+                      <span className="sm:hidden">Next</span>
+                      <span className="hidden sm:inline">Submit & Next</span>
                     </button>
                   ) : hasMoreRounds ? (
                     <button
@@ -1340,16 +1433,17 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                         handleNextQuestion();
                       }}
                       disabled={codingBusy}
-                      className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
+                      className="rounded bg-[#16A34A] px-4 sm:px-8 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
                     >
-                      Save & End Round
+                      <span className="sm:hidden">End round</span>
+                      <span className="hidden sm:inline">Save & End Round</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={handleSubmitWithConfirmation}
                       disabled={submitting || codingBusy}
-                      className="rounded bg-[#2563EB] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
+                      className="rounded bg-[#2563EB] px-4 sm:px-8 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
                     >
                       {codingBusy
                         ? 'Coding job running…'
@@ -1363,23 +1457,36 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                     type="button"
                     onClick={handleSubmitWithConfirmation}
                     disabled={submitting || codingBusy}
-                    className="rounded bg-[#2563EB] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
+                    className="rounded bg-[#2563EB] px-4 sm:px-8 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
                   >
                     {codingBusy
                       ? 'Coding job running…'
                       : submitting
                         ? 'Submitting…'
-                        : 'Submit Test'}
+                        : (
+                          <>
+                            <span className="sm:hidden">Submit</span>
+                            <span className="hidden sm:inline">Submit Test</span>
+                          </>
+                        )}
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleNextQuestion}
-                    className="rounded bg-[#16A34A] px-8 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
+                    className="rounded bg-[#16A34A] px-4 sm:px-8 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
                   >
-                    {isLastQuestionInRound && hasMoreRounds
-                      ? 'Save & End Round'
-                      : 'Save & Next'}
+                    {isLastQuestionInRound && hasMoreRounds ? (
+                      <>
+                        <span className="sm:hidden">End round</span>
+                        <span className="hidden sm:inline">Save & End Round</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="sm:hidden">Next</span>
+                        <span className="hidden sm:inline">Save & Next</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>
@@ -1389,15 +1496,15 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
 
         <div
           className={`${
-            isSidebarOpen ? 'w-80 border-l' : 'w-0 border-l-0'
-          } flex h-full shrink-0 flex-col overflow-hidden border-gray-200 bg-[#E6F3FF] font-sans transition-all duration-300`}
+            isLgUp && isSidebarOpen ? 'w-80 border-l' : 'hidden w-0 border-l-0'
+          } ${isLgUp ? 'flex' : 'hidden'} h-full shrink-0 flex-col overflow-hidden border-gray-200 bg-[#E6F3FF] font-sans transition-all duration-300`}
         >
           <div className="relative m-2 rounded-lg border border-dashed border-blue-300 p-4">
             <div className="flex items-start gap-4">
               <div className="flex h-32 w-32 shrink-0 items-end justify-center overflow-hidden rounded-xl bg-black shadow-sm">
                 {isCameraActive ? (
                   <video
-                    ref={videoRef}
+                    ref={isLgUp ? videoRef : undefined}
                     className="h-full w-full object-cover -scale-x-100"
                     playsInline
                     muted
@@ -1535,6 +1642,113 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           </div>
         </div>
       </div>
+
+      {!isLgUp && mobileDrawerOpen && (
+        <div className="fixed inset-0 z-[80] flex justify-end lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={closeMobileDrawer} />
+          <div className="relative flex h-full w-full max-w-sm flex-col overflow-hidden bg-[#E6F3FF] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-blue-200 px-4 py-3">
+              <h3 className="text-base font-bold text-gray-900">Questions</h3>
+              <button
+                type="button"
+                onClick={closeMobileDrawer}
+                className="rounded-lg p-2 text-gray-600 hover:bg-white/60"
+                aria-label="Close questions"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mx-4 mt-3 mb-2 text-xs font-semibold text-gray-700">
+              Round {roundIdx + 1}/{totalRounds} palette
+            </div>
+            <div className="mx-4 mb-4 grid grid-cols-2 gap-y-3 gap-x-3 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#16A34A] text-sm font-bold text-white">
+                  {counts.answered}
+                </div>
+                <span className="font-medium text-black">Answered</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex h-8 w-8 items-center justify-center bg-[#DC2626] text-sm font-bold text-white"
+                  style={{ clipPath: 'polygon(0% 0%, 100% 0%, 100% 75%, 50% 100%, 0% 75%)' }}
+                >
+                  <span className="-mt-1">{counts.notAnswered}</span>
+                </div>
+                <span className="font-medium text-black">Not Answered</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9333EA] text-sm font-bold text-white">
+                  {counts.marked}
+                </div>
+                <span className="font-medium text-black">Marked</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-200 text-sm font-bold text-gray-600">
+                  {counts.notVisited}
+                </div>
+                <span className="font-medium text-black">Not Visited</span>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6">
+              <h3 className="mb-4 text-base font-bold text-black">Question Palette:</h3>
+              <div className="grid grid-cols-5 gap-3 pb-4">
+                {roundQuestions.map((q, index) => {
+                  const status = getQuestionStatus(q);
+                  const isCurrent = index === currentIdx;
+                  let baseClasses =
+                    'flex h-9 w-9 items-center justify-center text-sm font-bold shadow-sm transition-all';
+                  let style: CSSProperties = {};
+                  if (status === 'answered') baseClasses += ' rounded-md bg-[#16A34A] text-white';
+                  else if (status === 'notAnswered') {
+                    baseClasses += ' bg-[#DC2626] text-white';
+                    style = { clipPath: 'polygon(0% 0%, 100% 0%, 100% 75%, 50% 100%, 0% 75%)' };
+                  } else if (status === 'marked') baseClasses += ' rounded-full bg-[#9333EA] text-white';
+                  else baseClasses += ' rounded-md bg-gray-200 text-gray-700';
+                  if (isCurrent) baseClasses += ' z-10 scale-105 ring-2 ring-blue-600 ring-offset-1';
+                  return (
+                    <button
+                      key={`m-${q.id}`}
+                      type="button"
+                      onClick={() => navigateToQuestionFromPalette(index)}
+                      className={baseClasses}
+                      style={style}
+                    >
+                      <span className={status === 'notAnswered' ? '-mt-1' : ''}>{index + 1}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="border-t border-blue-100 p-4 space-y-2">
+              {hasMoreRounds ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileDrawer();
+                    handleSubmitRound();
+                  }}
+                  className="w-full rounded bg-[#16A34A] py-3 text-base font-bold text-white shadow-md"
+                >
+                  Submit Round & Continue
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileDrawer();
+                    handleSubmitWithConfirmation();
+                  }}
+                  disabled={submitting || codingBusy}
+                  className="w-full rounded bg-[#2563EB] py-3 text-base font-bold text-white shadow-md disabled:opacity-60"
+                >
+                  {submitting ? 'Submitting…' : 'Submit Test'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">

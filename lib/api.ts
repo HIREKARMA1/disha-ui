@@ -797,6 +797,91 @@ class ApiClient {
     return response.data;
   }
 
+  async generateAssessmentDetailedReport(
+    assessmentId: string,
+    attemptId: string
+  ): Promise<{
+    attempt_id: string;
+    has_detailed_report: boolean;
+    generated_at?: string | null;
+    model?: string | null;
+    summary?: string | null;
+    strengths?: string[];
+    weaknesses?: string[];
+    enhancement_areas?: string[];
+  }> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/attempts/${attemptId}/detailed-report`
+    );
+    return response.data;
+  }
+
+  async getAssessmentDetailedReport(
+    assessmentId: string,
+    attemptId: string
+  ): Promise<{
+    attempt_id: string;
+    has_detailed_report: boolean;
+    generated_at?: string | null;
+    model?: string | null;
+    summary?: string | null;
+    strengths?: string[];
+    weaknesses?: string[];
+    enhancement_areas?: string[];
+  }> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/attempts/${attemptId}/detailed-report`
+    );
+    return response.data;
+  }
+
+  async downloadAssessmentDetailedReportPdf(
+    assessmentId: string,
+    attemptId: string
+  ): Promise<Blob> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/attempts/${attemptId}/detailed-report/pdf`,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  }
+
+  async generateAllAssessmentDetailedReports(assessmentId: string): Promise<{
+    job_id: string;
+    assessment_id: string;
+    status: string;
+    total: number;
+    queued: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    errors?: Array<{ attempt_id?: string; student_id?: string; error?: string }>;
+    message?: string | null;
+  }> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/detailed-reports/generate-all`
+    );
+    return response.data;
+  }
+
+  async getGenerateAllAssessmentDetailedReportsStatus(assessmentId: string): Promise<{
+    job_id: string;
+    assessment_id: string;
+    status: string;
+    total: number;
+    queued: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    errors?: Array<{ attempt_id?: string; student_id?: string; error?: string }>;
+    message?: string | null;
+  }> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/detailed-reports/generate-all/status`
+    );
+    return response.data;
+  }
+
   async deleteAssessment(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admin/assessments/${id}`);
     return response.data;
@@ -833,9 +918,14 @@ class ApiClient {
     return response.data;
   }
 
-  async startAssessmentExam(assessmentId: string, attemptId: string): Promise<any> {
+  async startAssessmentExam(
+    assessmentId: string,
+    attemptId: string,
+    body?: { attempted_device?: 'mobile' | 'tablet' | 'laptop' }
+  ): Promise<any> {
     const response: AxiosResponse = await this.client.post(
-      `/assessments/${assessmentId}/attempts/${attemptId}/start`
+      `/assessments/${assessmentId}/attempts/${attemptId}/start`,
+      body || {}
     );
     return response.data;
   }
@@ -850,7 +940,11 @@ class ApiClient {
   async submitAssessmentExam(
     assessmentId: string,
     attemptId: string,
-    body: { answers: Array<{ question_id: string; answer?: any; time_spent?: number }>; auto_submit?: boolean }
+    body: {
+      answers: Array<{ question_id: string; answer?: any; time_spent?: number }>;
+      auto_submit?: boolean;
+      attempted_device?: 'mobile' | 'tablet' | 'laptop';
+    }
   ): Promise<any> {
     const response: AxiosResponse = await this.client.post(
       `/assessments/${assessmentId}/attempts/${attemptId}/submit`,
