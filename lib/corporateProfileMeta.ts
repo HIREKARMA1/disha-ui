@@ -9,6 +9,7 @@ export const CORP_EXT_MARKER = '__hk_corp_ext_v1' as const
 export interface CorporateSocialLinks {
   linkedin?: string
   threads?: string
+  x?: string
   facebook?: string
   instagram?: string
   youtube?: string

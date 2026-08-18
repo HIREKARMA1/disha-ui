@@ -224,7 +224,7 @@ export default function UniversityApplicationsPage() {
 
     return (
         <UniversityDashboardLayout>
-            <div className="space-y-6 main-content">
+            <div className="space-y-4 md:space-y-6 main-content max-w-[1600px] mx-auto">
                 {/* Application Management Header */}
                 <StudentApplicationManagementHeader
                     title="Applications"

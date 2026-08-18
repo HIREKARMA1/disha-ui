@@ -23,6 +23,9 @@ import {
 import { StudentListItem } from '@/types/university'
 import { ArchiveConfirmationModal } from './ArchiveConfirmationModal'
 import StudentProfileModal from './StudentProfileModal'
+import { UniversityPagination } from '@/components/university/ui/UniversityPagination'
+import { uniCard } from '@/components/university/ui/university-theme'
+import { cn } from '@/lib/utils'
 
 interface StudentTableProps {
     students: StudentListItem[]
@@ -296,9 +299,9 @@ export function StudentTable({
 
     if (isLoading) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className={cn(uniCard, 'p-6')}>
                 <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
             </div>
         )
@@ -306,12 +309,12 @@ export function StudentTable({
 
     if (error) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className={cn(uniCard, 'p-6')}>
                 <div className="text-center py-12">
                     <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
                     <button
                         onClick={onRetry}
-                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
                     >
                         Retry
                     </button>
@@ -322,7 +325,7 @@ export function StudentTable({
 
     if (students.length === 0) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className={cn(uniCard, 'p-6')}>
                 <div className="text-center py-12">
                     <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -336,11 +339,81 @@ export function StudentTable({
         )
     }
 
+    const studentCard = (student: StudentListItem) => (
+        <article
+            key={student.id}
+            onClick={() => handleRowClick(student)}
+            className="p-4 space-y-3 cursor-pointer"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shrink-0">
+                        <span className="text-white text-sm font-semibold">
+                            {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                        </span>
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{student.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{student.email}</p>
+                    </div>
+                </div>
+                <span className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full shrink-0 ${getStatusColor(student.placement_status)}`}>
+                    {student.placement_status}
+                </span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                <p className="flex items-center gap-1 truncate">
+                    <Phone className="w-3 h-3 text-gray-400 shrink-0" />
+                    {student.phone || 'N/A'}
+                </p>
+                <p className="flex items-center gap-1 truncate">
+                    <GraduationCap className="w-3 h-3 text-gray-400 shrink-0" />
+                    {student.degree || 'N/A'} {student.branch ? `(${student.branch})` : ''}
+                </p>
+                <p className="flex items-center gap-1">
+                    <Briefcase className="w-3 h-3 text-gray-400 shrink-0" />
+                    {student.total_applications} apps
+                </p>
+                <p className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-gray-400 shrink-0" />
+                    {student.created_at ? formatDate(student.created_at) : 'N/A'}
+                </p>
+            </div>
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                    onClick={() => handleArchiveClick(student)}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                        student.is_archived
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                            : 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300'
+                    }`}
+                >
+                    {student.is_archived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                    {student.is_archived ? 'Unarchive' : 'Archive'}
+                </button>
+                <button
+                    onClick={() => {
+                        setStudentToDelete({ id: student.id, name: student.name })
+                        setShowDeleteModal(true)
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+                >
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                </button>
+            </div>
+        </article>
+    )
+
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
+        <div className={cn(uniCard, 'overflow-hidden')}>
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/[0.06]">
+                {paginatedStudents.map(studentCard)}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                    <thead className="bg-gray-50 dark:bg-white/[0.04]">
                         <tr>
                             <th
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
@@ -410,7 +483,7 @@ export function StudentTable({
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
                         {paginatedStudents.map((student, index) => (
                             <motion.tr
                                 key={student.id}
@@ -424,8 +497,10 @@ export function StudentTable({
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-10 w-10">
-                                            <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
-                                                <User className="w-5 h-5 text-primary-600" />
+                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                                                <span className="text-white text-sm font-semibold">
+                                                    {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="ml-4">
@@ -590,99 +665,17 @@ export function StudentTable({
                 </table>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                    <div className="flex-1 flex justify-between sm:hidden">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                    </div>
-                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                                Showing{' '}
-                                <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
-                                {' '}to{' '}
-                                <span className="font-medium">
-                                    {Math.min(currentPage * itemsPerPage, sortedStudents.length)}
-                                </span>
-                                {' '}of{' '}
-                                <span className="font-medium">{sortedStudents.length}</span>
-                                {' '}results
-                            </p>
-                        </div>
-                        <div>
-                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <span className="sr-only">Previous</span>
-                                    <ChevronDown className="h-5 w-5 rotate-90" aria-hidden="true" />
-                                </button>
-
-                                {/* Page numbers */}
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                                    // Show first page, last page, current page, and pages around current page
-                                    if (
-                                        page === 1 ||
-                                        page === totalPages ||
-                                        (page >= currentPage - 1 && page <= currentPage + 1)
-                                    ) {
-                                        return (
-                                            <button
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
-                                                    ? 'z-10 bg-primary-50 dark:bg-primary-900/20 border-primary-500 dark:border-primary-400 text-primary-600 dark:text-primary-300'
-                                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
-                                                    }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        )
-                                    } else if (
-                                        page === currentPage - 2 ||
-                                        page === currentPage + 2
-                                    ) {
-                                        return (
-                                            <span
-                                                key={page}
-                                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300"
-                                            >
-                                                ...
-                                            </span>
-                                        )
-                                    }
-                                    return null
-                                })}
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <span className="sr-only">Next</span>
-                                    <ChevronDown className="h-5 w-5 -rotate-90" aria-hidden="true" />
-                                </button>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-white/[0.06]">
+                <UniversityPagination
+                    page={currentPage}
+                    totalPages={Math.max(totalPages, 1)}
+                    total={sortedStudents.length}
+                    limit={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    itemLabel="students"
+                    className="border-0 shadow-none bg-transparent dark:bg-transparent p-0"
+                />
+            </div>
 
             {/* Archive Confirmation Modal */}
             <ArchiveConfirmationModal

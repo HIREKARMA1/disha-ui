@@ -11,6 +11,9 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/student/ui/StatusBadge'
+import { UniversityPagination } from '@/components/university/ui/UniversityPagination'
+import { uniCard } from '@/components/university/ui/university-theme'
+import { cn } from '@/lib/utils'
 
 export interface UniversityApplicationRow {
     id: string
@@ -125,7 +128,7 @@ export function UniversityApplicationTable({
 
     if (loading) {
         return (
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <div className={cn(uniCard, 'p-4')}>
                 <div className="animate-pulse space-y-2">
                     {[...Array(6)].map((_, i) => (
                         <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
@@ -137,7 +140,7 @@ export function UniversityApplicationTable({
 
     if (applications.length === 0) {
         return (
-            <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-gray-800/50 p-10 text-center">
+            <div className={cn(uniCard, 'p-10 text-center border-dashed')}>
                 <FileText className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
                     No applications found
@@ -150,7 +153,7 @@ export function UniversityApplicationTable({
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-visible md:overflow-hidden h-auto min-h-fit">
+        <div className={cn(uniCard, 'overflow-visible md:overflow-hidden h-auto min-h-fit')}>
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-200 dark:divide-white/10 overflow-visible">
                 {applications.map((application) => (
@@ -202,7 +205,7 @@ export function UniversityApplicationTable({
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full min-w-[980px]">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                    <thead className="bg-gray-50 dark:bg-white/[0.04]">
                         <tr>
                             <th className="px-4 py-3 text-left">
                                 <SortButton field="job_title">Job Title</SortButton>
@@ -241,11 +244,11 @@ export function UniversityApplicationTable({
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
                         {applications.map((application) => (
                             <tr
                                 key={application.id}
-                                className="hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                                className="hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
                             >
                                 <td className="px-4 py-3">
                                     <p className="font-medium text-sm text-gray-900 dark:text-white">
@@ -297,38 +300,17 @@ export function UniversityApplicationTable({
                 </table>
             </div>
 
-            {pagination.total_pages > 1 && (
-                <div className="px-2.5 md:px-6 py-2 md:py-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3">
-                        <div className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300">
-                            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                            {pagination.total} applications
-                        </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onPageChange(pagination.page - 1)}
-                                disabled={pagination.page <= 1}
-                                className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-sm"
-                            >
-                                Previous
-                            </Button>
-                            <span className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300">
-                                Page {pagination.page} of {pagination.total_pages}
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onPageChange(pagination.page + 1)}
-                                disabled={pagination.page >= pagination.total_pages}
-                                className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-sm"
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    </div>
+            {pagination.total_pages > 0 && (
+                <div className="px-3 md:px-4 py-3 border-t border-gray-200 dark:border-white/[0.06]">
+                    <UniversityPagination
+                        page={pagination.page}
+                        totalPages={Math.max(pagination.total_pages, 1)}
+                        total={pagination.total}
+                        limit={pagination.limit}
+                        onPageChange={onPageChange}
+                        itemLabel="applications"
+                        className="border-0 shadow-none bg-transparent dark:bg-transparent p-0"
+                    />
                 </div>
             )}
         </div>
