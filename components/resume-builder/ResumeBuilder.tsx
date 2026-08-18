@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { motion } from 'framer-motion'
 import { Save, Download, UserPlus, FileText, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ if (typeof window !== 'undefined') {
     html2pdf = require('html2pdf.js')
 }
 import toast from 'react-hot-toast'
+import { imageUrlToDataUrl, inlineImagesForPdf } from '@/lib/resumePdfImages'
 
 interface ResumeBuilderProps {
     templateId: string | null
@@ -155,6 +157,28 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
             // Initialize resume data with profile information
             const defaultData = createDefaultResumeData(profile)
             setResumeData(defaultData)
+
+            const photoUrl = profile.profile_picture
+            if (photoUrl && !photoUrl.startsWith('data:')) {
+                imageUrlToDataUrl(photoUrl)
+                    .then((dataUrl) => {
+                        if (!dataUrl.startsWith('data:')) return
+                        setResumeData((prev) => {
+                            if (!prev) return prev
+                            const current = prev.header.profilePhoto || ''
+                            // Keep a photo the student already uploaded in this session.
+                            if (current.startsWith('data:') && current !== dataUrl) return prev
+                            if (current && current !== photoUrl) return prev
+                            return {
+                                ...prev,
+                                header: { ...prev.header, profilePhoto: dataUrl },
+                            }
+                        })
+                    })
+                    .catch(() => {
+                        // Preview can still show the remote URL; PDF capture inlines it later.
+                    })
+            }
         }
     }, [profile])
 
@@ -184,6 +208,22 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
             const settings = resume.settings || {}
             setResumeSettings(settings)
             setSelectedTemplateSlug(resolveTemplateSlug(resume.template_id, settings))
+
+            const savedPhoto = resume.content?.header?.profilePhoto
+            if (savedPhoto && !savedPhoto.startsWith('data:') && !savedPhoto.startsWith('blob:')) {
+                try {
+                    const dataUrl = await imageUrlToDataUrl(savedPhoto)
+                    if (dataUrl.startsWith('data:')) {
+                        setResumeData((prev) =>
+                            prev
+                                ? { ...prev, header: { ...prev.header, profilePhoto: dataUrl } }
+                                : prev
+                        )
+                    }
+                } catch {
+                    // PDF download still inlines remote images as a fallback.
+                }
+            }
         } catch (error) {
             console.error('Error loading resume:', error)
             toast.error('Failed to load resume data')
@@ -270,10 +310,33 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                 }
             }
 
-            // Generate and download PDF
             if (!html2pdf) {
                 throw new Error('PDF generator not available in this environment')
             }
+
+            const photo = resumeData?.header?.profilePhoto || ''
+            if (photo && !photo.startsWith('data:') && !photo.startsWith('blob:')) {
+                try {
+                    const dataUrl = await imageUrlToDataUrl(photo)
+                    if (dataUrl.startsWith('data:')) {
+                        flushSync(() => {
+                            setResumeData((prev) =>
+                                prev
+                                    ? { ...prev, header: { ...prev.header, profilePhoto: dataUrl } }
+                                    : prev
+                            )
+                        })
+                    }
+                } catch {
+                    // DOM inlining below still tries to embed the remote image.
+                }
+            }
+
+            if (previewRef.current) {
+                await inlineImagesForPdf(previewRef.current)
+            }
+            await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
             await html2pdf()
                 .from(previewRef.current)
                 .set(options)

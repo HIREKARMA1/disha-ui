@@ -68,7 +68,7 @@ export function Modal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[999] flex items-center justify-center pointer-events-none">
+                <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center pointer-events-none overflow-y-auto py-6 sm:py-8">
                     {showBackdrop && (
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -86,13 +86,13 @@ export function Modal({
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                            "relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full mx-4 pointer-events-auto",
+                            "relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full mx-4 pointer-events-auto my-auto max-h-[90vh] flex flex-col",
                             maxWidthClasses[maxWidth],
                             className
                         )}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                                 {title}
                             </h2>
@@ -108,7 +108,7 @@ export function Modal({
                         </div>
 
                         {/* Content */}
-                        <div className="p-6">
+                        <div className="p-6 overflow-y-auto min-h-0">
                             {children}
                         </div>
                     </motion.div>

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { Twitter, Linkedin, Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
+import { Linkedin, Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { config } from '@/lib/config'
 
@@ -20,8 +20,10 @@ export function Footer() {
                             Support available for students, universities, and recruiters across India.
                         </p>
                         <div className="flex space-x-2 pt-2 justify-center md:justify-start">
-                            <a href="https://twitter.com/hirekarma" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="Twitter">
-                                <Twitter className="w-5 h-5" />
+                            <a href="https://x.com/hirekarma" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="X">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+                                </svg>
                             </a>
                             <a href="https://www.linkedin.com/company/hirekarma-pvt-ltd" target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-500 dark:hover:bg-white/10" aria-label="LinkedIn">
                                 <Linkedin className="w-5 h-5" />
@@ -98,17 +100,34 @@ export function Footer() {
                     <div className="text-center md:text-left flex flex-col items-center md:items-start">
                         <h3 className="text-gray-900 dark:text-white font-semibold mb-5 text-lg">Contact Us</h3>
                         <ul className="space-y-4 flex flex-col items-center md:items-start">
-                            <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
-                                <Mail className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>info@hirekarma.in</span>
+                            <li>
+                                <a
+                                    href="mailto:info@hirekarma.in"
+                                    className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
+                                >
+                                    <Mail className="w-5 h-5 text-primary-500 shrink-0" />
+                                    <span>info@hirekarma.in</span>
+                                </a>
                             </li>
-                            <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
-                                <Phone className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span>{config.support.phoneDisplay}</span>
+                            <li>
+                                <a
+                                    href={`tel:+${config.whatsapp.number}`}
+                                    className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
+                                >
+                                    <Phone className="w-5 h-5 text-primary-500 shrink-0" />
+                                    <span>{config.support.phoneDisplay}</span>
+                                </a>
                             </li>
-                            <li className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm">
-                                <MapPin className="w-5 h-5 text-primary-500 shrink-0" />
-                                <span className="text-center md:text-left">2nd Floor, SS Niwas, Hirekarma Private Limited, Raghunathpur, Bhubaneswar, Odisha 751024</span>
+                            <li>
+                                <a
+                                    href="https://www.google.com/maps/search/?api=1&query=2nd+Floor%2C+SS+Niwas%2C+Hirekarma+Private+Limited%2C+Raghunathpur%2C+Bhubaneswar%2C+Odisha+751024"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center md:justify-start space-x-3 text-gray-600 dark:text-gray-400 text-sm hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
+                                >
+                                    <MapPin className="w-5 h-5 text-primary-500 shrink-0" />
+                                    <span className="text-center md:text-left">2nd Floor, SS Niwas, Hirekarma Private Limited, Raghunathpur, Bhubaneswar, Odisha 751024</span>
+                                </a>
                             </li>
                         </ul>
                     </div>

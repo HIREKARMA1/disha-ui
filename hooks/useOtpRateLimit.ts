@@ -205,12 +205,7 @@ export function useOtpRateLimit({
     formattedTimeRemaining,
     canShowResendButton,
     isResendDisabled,
-    resendButtonLabel:
-      isLockedOut
-        ? 'Resend OTP'
-        : isCooldownActive && countdown > 0
-          ? `Resend OTP (${formatOtpCountdown(countdown)})`
-          : 'Resend OTP',
+    resendButtonLabel: 'Resend OTP',
     lockoutMessage: isLockedOut ? OTP_LOCKOUT_MESSAGE : null,
     applyStatus,
     refreshStatus,

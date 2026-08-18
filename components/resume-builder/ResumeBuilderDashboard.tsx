@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { resumeService, type ResumeData } from '@/services/resumeService'
 import toast from 'react-hot-toast'
 import { ResumePreview } from './ResumePreview'
+import { imageUrlToDataUrl, inlineImagesForPdf } from '@/lib/resumePdfImages'
 
 // Defer importing html2pdf to client runtime to avoid SSR issues
 let html2pdf: any
@@ -125,7 +126,28 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                     toast.error('Resume not found for download')
                     return
                 }
-                setDownloadingResume(resume)
+                void (async () => {
+                    const content = resume.content
+                    const photo = content?.header?.profilePhoto || ''
+                    if (photo && !photo.startsWith('data:') && !photo.startsWith('blob:')) {
+                        try {
+                            const dataUrl = await imageUrlToDataUrl(photo)
+                            if (dataUrl.startsWith('data:')) {
+                                setDownloadingResume({
+                                    ...resume,
+                                    content: {
+                                        ...content,
+                                        header: { ...content.header, profilePhoto: dataUrl },
+                                    },
+                                })
+                                return
+                            }
+                        } catch {
+                            // Fall through and capture with the original URL.
+                        }
+                    }
+                    setDownloadingResume(resume)
+                })()
                 break
             }
             case 'delete':
@@ -168,6 +190,9 @@ export function ResumeBuilderDashboard({ onNewResume, onEditResume }: ResumeBuil
                     compress: true,
                 },
             }
+
+            await inlineImagesForPdf(downloadPreviewRef.current)
+            await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
             await html2pdf().from(downloadPreviewRef.current).set(options).save()
             toast.success('Resume downloaded successfully!')

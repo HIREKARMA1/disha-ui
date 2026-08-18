@@ -138,13 +138,18 @@ export class CorporateProfileService {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await apiClient.client.post('/corporates/upload/certificate', formData, {
+      const response = await apiClient.client.post('/corporates/upload-mca-gst-certificate', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
 
-      return response.data
+      const fileUrl = response.data?.file_url || response.data?.certificate_url || ''
+      return {
+        success: true,
+        file_url: fileUrl,
+        message: response.data?.message || 'Certificate uploaded successfully',
+      }
     } catch (error: any) {
       console.error('Error uploading certificate:', error)
       

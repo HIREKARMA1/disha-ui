@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { CorporateDashboardLayout } from './CorporateDashboardLayout'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
+import { Modal } from '@/components/ui/modal'
 import { cn, getInitials } from '@/lib/utils'
 import { corporateProfileService } from '@/services/corporateProfileService'
 import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
@@ -332,54 +333,47 @@ export function CorporateProfile() {
                     </div>
                 </motion.div>
 
-                {editing && (
-                    <CorporateGlassCard
-                        title={editTitle[editing] || 'Edit'}
-                        action={
-                            <button
-                                type="button"
-                                onClick={() => setEditing(null)}
-                                className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white"
-                            >
-                                Close
-                            </button>
-                        }
-                    >
-                        {editing === 'about' && (
-                            <AboutCompanyEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
-                        )}
-                        {editing === 'contact' && (
-                            <ContactInfoEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
-                        )}
-                        {editing === 'business' && (
-                            <BusinessDetailsEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
-                        )}
-                        {editing === 'social' && (
-                            <SocialLinksEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
-                        )}
-                        {editing === 'documents' && (
-                            <DocumentsEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
-                        )}
-                        {(editing === 'basic' || editing === 'company') && (
-                            <ProfileSectionForm
-                                section={{
-                                    id: editing,
-                                    title: editing === 'basic' ? 'Basic Information' : 'Company Information',
-                                    icon: Building2,
-                                    fields:
-                                        editing === 'basic'
-                                            ? ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'company_logo']
-                                            : ['company_name', 'website_url', 'industry', 'company_size', 'founded_year', 'company_type', 'description'],
-                                    completed: false,
-                                }}
-                                profile={profile}
-                                onSave={(formData) => handleSave(editing, formData)}
-                                saving={saving}
-                                onCancel={() => setEditing(null)}
-                            />
-                        )}
-                    </CorporateGlassCard>
-                )}
+                <Modal
+                    isOpen={!!editing}
+                    onClose={() => setEditing(null)}
+                    title={editTitle[editing || ''] || 'Edit'}
+                    maxWidth="2xl"
+                    className="dark:bg-[#111827]"
+                >
+                    {editing === 'about' && (
+                        <AboutCompanyEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                    )}
+                    {editing === 'contact' && (
+                        <ContactInfoEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                    )}
+                    {editing === 'business' && (
+                        <BusinessDetailsEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                    )}
+                    {editing === 'social' && (
+                        <SocialLinksEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                    )}
+                    {editing === 'documents' && (
+                        <DocumentsEditor profile={profile} onSaved={handleSectionSaved} onCancel={() => setEditing(null)} />
+                    )}
+                    {(editing === 'basic' || editing === 'company') && (
+                        <ProfileSectionForm
+                            section={{
+                                id: editing,
+                                title: editing === 'basic' ? 'Basic Information' : 'Company Information',
+                                icon: Building2,
+                                fields:
+                                    editing === 'basic'
+                                        ? ['name', 'email', 'phone', 'contact_person', 'contact_designation', 'address', 'company_logo']
+                                        : ['company_name', 'website_url', 'industry', 'company_size', 'founded_year', 'company_type', 'description'],
+                                completed: false,
+                            }}
+                            profile={profile}
+                            onSave={(formData) => handleSave(editing, formData)}
+                            saving={saving}
+                            onCancel={() => setEditing(null)}
+                        />
+                    )}
+                </Modal>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                     <CorporateGlassCard className="lg:col-span-1" delay={0.05}>

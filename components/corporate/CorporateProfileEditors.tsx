@@ -46,6 +46,7 @@ interface SectionEditorProps {
 export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditorProps) {
   const { data: industries, loading: loadingIndustries, error: industriesError } = useIndustries({ limit: 1000 })
   const [saving, setSaving] = useState(false)
+  const [foundedYearError, setFoundedYearError] = useState<string | null>(null)
   const [form, setForm] = useState({
     description: profile.description || '',
     industry: profile.industry || '',
@@ -54,7 +55,37 @@ export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditor
     company_type: profile.company_type || '',
   })
 
+  const currentYear = new Date().getFullYear()
+
+  const validateFoundedYear = (value: string): string | null => {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    const year = Number(trimmed)
+    if (!Number.isInteger(year)) {
+      return 'Please enter a valid year'
+    }
+    if (year > currentYear) {
+      return `Founded year cannot be in the future. Use ${currentYear} or earlier.`
+    }
+    if (year < 1800) {
+      return 'Founded year must be 1800 or later.'
+    }
+    return null
+  }
+
+  const handleFoundedYearChange = (value: string) => {
+    setForm((f) => ({ ...f, founded_year: value }))
+    setFoundedYearError(validateFoundedYear(value))
+  }
+
   const handleSave = async () => {
+    const yearError = validateFoundedYear(form.founded_year)
+    if (yearError) {
+      setFoundedYearError(yearError)
+      toast.error(yearError)
+      return
+    }
+
     try {
       setSaving(true)
       const updated = await corporateProfileService.updateProfile({
@@ -118,12 +149,20 @@ export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditor
           <input
             type="number"
             min={1800}
-            max={new Date().getFullYear()}
+            max={currentYear}
             value={form.founded_year}
-            onChange={(e) => setForm((f) => ({ ...f, founded_year: e.target.value }))}
-            className={inputClass}
+            onChange={(e) => handleFoundedYearChange(e.target.value)}
+            onBlur={() => setFoundedYearError(validateFoundedYear(form.founded_year))}
+            className={cn(
+              inputClass,
+              foundedYearError && 'border-red-500 dark:border-red-500 focus:ring-red-500/40'
+            )}
             placeholder="e.g. 2010"
+            aria-invalid={!!foundedYearError}
           />
+          {foundedYearError && (
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{foundedYearError}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Company Type</label>
@@ -143,7 +182,7 @@ export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditor
           </select>
         </div>
       </div>
-      <EditorActions saving={saving} onCancel={onCancel} onSave={handleSave} />
+      <EditorActions saving={saving} saveDisabled={!!foundedYearError} onCancel={onCancel} onSave={handleSave} />
     </div>
   )
 }
@@ -700,10 +739,12 @@ function buildDocumentList(
 
 function EditorActions({
   saving,
+  saveDisabled,
   onCancel,
   onSave,
 }: {
   saving: boolean
+  saveDisabled?: boolean
   onCancel: () => void
   onSave: () => void
 }) {
@@ -715,7 +756,7 @@ function EditorActions({
       <Button
         type="button"
         onClick={onSave}
-        disabled={saving}
+        disabled={saving || saveDisabled}
         className="rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 text-white"
       >
         {saving ? 'Saving...' : 'Save Changes'}
