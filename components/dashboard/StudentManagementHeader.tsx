@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getDegreeLabel } from '@/lib/academicHierarchy'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
+import { uniCard, uniInput } from '@/components/university/ui/university-theme'
+import { cn } from '@/lib/utils'
 
 interface StudentManagementHeaderProps {
     totalStudents: number
@@ -44,7 +46,7 @@ interface StudentManagementHeaderProps {
 }
 
 const selectClass =
-    'w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm appearance-none'
+    'w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f1520] text-gray-900 dark:text-white text-sm appearance-none'
 
 export function StudentManagementHeader({
     searchTerm,
@@ -113,31 +115,31 @@ export function StudentManagementHeader({
     }
 
     return (
-        <div className="space-y-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+        <div className="space-y-4">
+            <div className={cn(uniCard, 'p-4 sm:p-5')}>
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <Input
                             type="text"
                             placeholder="Search students by name, email, or phone..."
                             value={searchTerm}
                             onChange={(e) => onSearchChange(e.target.value)}
-                            className="border-gray-200 pl-10 focus:border-primary-500 focus:ring-primary-500/20 dark:border-gray-700"
+                            className={cn(uniInput, 'pl-10 h-11')}
                         />
                     </div>
 
                     <div className="flex flex-wrap gap-2">
                         <Button
                             onClick={onAddStudent}
-                            className="bg-blue-600 text-white shadow-sm transition-all duration-200 hover:bg-blue-700"
+                            className="h-11 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
                         >
                             <UserPlus className="mr-2 h-4 w-4" />
                             Add Student
                         </Button>
                         <Button
                             onClick={onBulkUpload}
-                            className="bg-green-600 text-white shadow-sm transition-all duration-200 hover:bg-green-700"
+                            className="h-11 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-700"
                         >
                             <Upload className="mr-2 h-4 w-4" />
                             Bulk Upload
@@ -145,7 +147,7 @@ export function StudentManagementHeader({
                         <Button
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
-                            className="hidden items-center gap-2 border-gray-200 transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:hover:border-gray-600 lg:flex"
+                            className="hidden h-11 items-center gap-2 rounded-xl border-gray-200 dark:border-white/10 lg:flex"
                         >
                             <Filter className="h-4 w-4" />
                             {showFilters ? 'Hide' : 'Show'} Filters
@@ -256,7 +258,7 @@ export function StudentManagementHeader({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="hidden overflow-hidden border-t border-gray-200 pt-4 dark:border-gray-700 lg:grid lg:grid-cols-5 lg:gap-4"
+                            className="hidden overflow-hidden border-t border-gray-200 pt-4 dark:border-white/[0.06] lg:grid lg:grid-cols-5 lg:gap-4"
                         >
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">

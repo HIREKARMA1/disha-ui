@@ -5,6 +5,8 @@ import { UniversityDashboardLayout } from '@/components/dashboard/UniversityDash
 import { UniversityAnalyticsDashboard } from '@/components/analytics/UniversityAnalyticsDashboard'
 import { UniversityAnalyticsDashboardData } from '@/types/universityAnalytics'
 import { apiClient } from '@/lib/api'
+import { UniversityPageHero } from '@/components/university/ui/UniversityPageHero'
+import { Calendar, BarChart3 } from 'lucide-react'
 
 export default function UniversityAnalyticsPage() {
   const [data, setData] = useState<UniversityAnalyticsDashboardData | null>(null)
@@ -30,13 +32,33 @@ export default function UniversityAnalyticsPage() {
 
   return (
     <UniversityDashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+        <UniversityPageHero
+          title="Placement Analytics 📊"
+          subtitle="Placements, employability, company engagement, and assessment performance"
+          chips={[
+            {
+              label: new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              }),
+              tone: 'blue',
+              icon: <Calendar className="w-3.5 h-3.5" />,
+            },
+            {
+              label: 'Insights',
+              tone: 'purple',
+              icon: <BarChart3 className="w-3.5 h-3.5" />,
+            },
+          ]}
+        />
         {error && !isLoading && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+          <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
             <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
-        <UniversityAnalyticsDashboard data={data} isLoading={isLoading} />
+        <UniversityAnalyticsDashboard data={data} isLoading={isLoading} showHeader={false} />
       </div>
     </UniversityDashboardLayout>
   )
