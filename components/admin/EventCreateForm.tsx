@@ -121,7 +121,11 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             registration_is_open: event.registration_enabled ?? event.registration_is_open,
             visibility: event.visibility,
             faqs: event.faqs,
-            rounds: event.rounds,
+            rounds: (event.rounds || []).map((round) => ({
+              ...round,
+              start_date: round.start_date?.slice(0, 16),
+              end_date: round.end_date?.slice(0, 16),
+            })),
             rewards: event.rewards,
           })
 
@@ -182,6 +186,8 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       rounds: (form.rounds || []).map((round, i) => ({
         ...round,
         description: normalizeRichTextHtml(round.description) || undefined,
+        start_date: round.start_date ? new Date(round.start_date).toISOString() : undefined,
+        end_date: round.end_date ? new Date(round.end_date).toISOString() : undefined,
         sort_order: round.sort_order ?? i,
       })),
       rewards: (form.rewards || []).map((reward, i) => ({
@@ -268,7 +274,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
   }
 
   const addFaq = () => update('faqs', [...(form.faqs || []), { question: '', answer: '', sort_order: (form.faqs?.length || 0) }])
-  const addRound = () => update('rounds', [...(form.rounds || []), { title: '', description: '', sort_order: (form.rounds?.length || 0) }])
+  const addRound = () => update('rounds', [...(form.rounds || []), { title: '', description: '', start_date: '', end_date: '', sort_order: (form.rounds?.length || 0) }])
   const addReward = () => update('rewards', [...(form.rewards || []), { title: '', description: '', value: '', sort_order: (form.rewards?.length || 0) }])
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
@@ -290,7 +296,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
         <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <EventImageUpload
             label="Background Banner Image"
-            hint="Used on event details hero. Recommended ratio 16:9."
+            hint="Desktop banner is 1920 × 480 px (4:1). JPG, PNG, or WEBP, max 5MB. Keep important content in the center."
             value={form.banner_url}
             onChange={(url) => update('banner_url', url)}
             onUpload={async (file) => handleUpload(file, 'banner', 'banner_url')}
@@ -530,13 +536,18 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       {/* Rounds */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Rounds</CardTitle>
-          <Button type="button" variant="outline" size="sm" onClick={addRound}><Plus className="w-4 h-4 mr-1" /> Add Round</Button>
+          <div>
+            <CardTitle>Rounds</CardTitle>
+            <p className="mt-1 text-sm font-normal text-gray-500 dark:text-gray-400">
+              These stages appear as the timeline on the event page. Status (Upcoming, Live, Completed) is based on the dates.
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={addRound}><Plus className="w-4 h-4 mr-1" /> Add Round</Button>
         </CardHeader>
         <CardContent className="space-y-3">
           {(form.rounds || []).map((round, i) => (
             <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
-              <Input placeholder="Round Title" value={round.title} onChange={(e) => {
+              <Input placeholder="Round / Stage Title" value={round.title} onChange={(e) => {
                 const rounds = [...(form.rounds || [])]; rounds[i] = { ...round, title: e.target.value }; update('rounds', rounds)
               }} />
               <RichTextEditor
@@ -549,6 +560,32 @@ export function EventCreateForm({ eventId }: EventFormProps) {
                 placeholder="Description"
                 minHeightClassName="min-h-[120px]"
               />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium">Start date & time</label>
+                  <Input
+                    type="datetime-local"
+                    value={round.start_date || ''}
+                    onChange={(e) => {
+                      const rounds = [...(form.rounds || [])]
+                      rounds[i] = { ...round, start_date: e.target.value }
+                      update('rounds', rounds)
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">End date & time</label>
+                  <Input
+                    type="datetime-local"
+                    value={round.end_date || ''}
+                    onChange={(e) => {
+                      const rounds = [...(form.rounds || [])]
+                      rounds[i] = { ...round, end_date: e.target.value }
+                      update('rounds', rounds)
+                    }}
+                  />
+                </div>
+              </div>
               <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => update('rounds', (form.rounds || []).filter((_, j) => j !== i))}>
                 <Trash2 className="w-4 h-4" />
               </Button>

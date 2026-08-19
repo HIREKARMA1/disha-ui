@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { RegisteredUsersAnalytics } from '@/components/admin/RegisteredUsersAnalytics'
 import { EventAttendance } from '@/components/admin/EventAttendance'
+import { EventFeedbackAnalyticsSection } from '@/components/admin/EventFeedbackAnalytics'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventAnalytics } from '@/types/contestEvent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -116,6 +117,9 @@ export default function EventAnalyticsPage({ params }: PageProps) {
 
             {/* Join-link opens (not provider-verified attendance) */}
             <EventAttendance eventId={params.id} />
+
+            {/* Post-event feedback — additive; does not change existing analytics KPIs */}
+            <EventFeedbackAnalyticsSection eventId={params.id} />
           </>
         )}
       </div>

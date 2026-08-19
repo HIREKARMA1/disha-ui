@@ -61,6 +61,13 @@ export interface RoundItem {
   sort_order?: number
 }
 
+export interface EventFeedbackItem {
+  id: string
+  rating: number
+  feedback?: string | null
+  created_at: string
+}
+
 export interface RewardItem {
   id?: string
   title: string
@@ -168,6 +175,8 @@ export interface ContestEventDetail extends ContestEventListItem {
   postponed_reason?: string
   cancelled_at?: string
   postponed_at?: string
+  my_feedback?: EventFeedbackItem | null
+  feedback_can_submit?: boolean
 }
 
 export interface ContestEventListResponse {
@@ -242,6 +251,21 @@ export interface ContestEventAnalytics {
   top_universities: { name: string; count: number }[]
   top_branches: { name: string; count: number }[]
   top_locations: { name: string; count: number }[]
+}
+
+export interface EventFeedbackAnalytics {
+  average_rating: number
+  total_ratings: number
+  feedback_count: number
+  rating_distribution: Record<string, number>
+  entries: {
+    id: string
+    user_id?: string
+    user_name?: string
+    rating: number
+    feedback?: string | null
+    submitted_at: string
+  }[]
 }
 
 export interface EventRegisteredUserItem {
