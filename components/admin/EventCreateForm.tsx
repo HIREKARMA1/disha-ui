@@ -148,7 +148,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
 
   const update = (key: string, value: unknown) =>
     setForm((f) => {
-      if ((f as Record<string, unknown>)[key] === value) return f
+      if ((f as unknown as Record<string, unknown>)[key] === value) return f
       return { ...f, [key]: value }
     })
 
