@@ -33,7 +33,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 const userTypeOptions = [
     { value: 'student', label: 'Student' },
     { value: 'corporate', label: 'Corporate' },
-    // { value: 'university', label: 'University' },
+    { value: 'university', label: 'University' },
     // { value: 'admin', label: 'Admin' }
 ]
 
@@ -261,7 +261,7 @@ function LoginPageContent() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2.5">
                             I am a
                         </label>
-                        <div className="grid grid-cols-2 gap-3 w-full">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full">
                             {userTypeOptions.map((option) => {
                                 const Icon = userTypeIcons[option.value as UserType]
                                 const isSelected = selectedUserType === option.value
@@ -271,13 +271,13 @@ function LoginPageContent() {
                                         key={option.value}
                                         type="button"
                                         onClick={() => handleUserTypeChange(option.value)}
-                                        className={`p-3.5 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${isSelected
+                                        className={`min-w-0 p-2.5 sm:p-3.5 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-1.5 sm:gap-2 ${isSelected
                                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 shadow-sm shadow-primary-500/10'
                                             : 'border-gray-200/80 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-300'
                                             }`}
                                     >
                                         <Icon className={`w-5 h-5 ${isSelected ? 'text-primary-600 dark:text-primary-300' : ''}`} />
-                                        <span className="text-sm font-semibold">{option.label}</span>
+                                        <span className="text-xs sm:text-sm font-semibold text-center leading-tight">{option.label}</span>
                                     </button>
                                 )
                             })}
@@ -378,7 +378,7 @@ function LoginPageContent() {
                             </Button>
                         </form>
 
-                        {selectedUserType !== 'admin' && (
+                        {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
                             <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
                                 <p className="text-sm text-gray-600 dark:text-gray-300">
                                     Don&apos;t have an account?{' '}
