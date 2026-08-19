@@ -1125,6 +1125,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             top_recruiters,
             total_jobs,
             total_jobs_approved,
+            university_name: _lockedUniversityName,
             ...saveableData
         } = formData
         onSave(saveableData)
@@ -1180,6 +1181,24 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                         Email cannot be changed for security reasons
+                    </p>
+                </div>
+            )
+        }
+
+        // University name is fixed at registration — read-only like email
+        if (field === 'university_name') {
+            return (
+                <div className="space-y-2">
+                    <Input
+                        value={value as string}
+                        readOnly
+                        disabled
+                        className="w-full bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="University name cannot be edited"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        University name is set during registration and cannot be changed
                     </p>
                 </div>
             )
