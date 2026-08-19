@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { sanitizeEventDescriptionHtml, stripHtmlToPlainText } from '@/lib/sanitizeHtml'
-import { EventStagesTimeline } from '@/components/events/EventStagesTimeline'
+import { EventStagesTimeline, formatRangeDateTime } from '@/components/events/EventStagesTimeline'
 import { EventFeedbackSection } from '@/components/events/EventFeedbackSection'
 import {
   buildEventRegisterRedirect,
@@ -595,9 +595,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       <Navbar variant="transparent" />
 
       {/* ========== MOBILE HERO (< md) ========== */}
-      <div className="bg-[#0B111B] pt-16 md:hidden">
+      <div className="bg-gray-50 pt-16 dark:bg-[#0B111B] md:hidden">
         <div className="px-3">
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-[#1C222D] shadow-sm">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-[#1C222D]">
             {event.banner_url ? (
               <img
                 src={event.banner_url}
@@ -614,34 +614,34 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         </div>
 
         <div className="mt-3 px-3 pb-3">
-          <div className="rounded-2xl border border-white/5 bg-[#1C222D] p-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/5 dark:bg-[#1C222D]">
             <div className="flex items-start gap-3">
-              <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5">
+              <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-white">
                 {event.organizer_logo_url ? (
-                  <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
+                  <img src={event.organizer_logo_url} alt="" className="h-full w-full object-cover object-center" />
                 ) : (
                   <span className="text-lg font-bold text-primary-600">
                     {(event.title || 'E').charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
-              <h1 className="min-w-0 flex-1 text-[22px] font-bold leading-snug tracking-tight text-white line-clamp-2">
+              <h1 className="min-w-0 flex-1 text-[22px] font-bold leading-snug tracking-tight text-gray-900 line-clamp-2 dark:text-white">
                 {event.title}
               </h1>
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {event.category && (
-                <span className="inline-flex items-center rounded-full border border-white/15 bg-[#252B36] px-3 py-1 text-xs font-medium text-gray-200">
+                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 dark:border-white/15 dark:bg-[#252B36] dark:text-gray-200">
                   {CATEGORY_LABELS[event.category] || event.category}
                 </span>
               )}
               {isCancelled ? (
-                <span className="text-sm font-medium text-red-400">CANCELLED</span>
+                <span className="text-sm font-medium text-red-600 dark:text-red-400">CANCELLED</span>
               ) : isPostponed ? (
-                <span className="text-sm font-medium text-amber-400">POSTPONED</span>
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-400">POSTPONED</span>
               ) : (
-                <span className="text-sm font-medium text-blue-400">
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                   {CONTEST_STATUS_LABELS[event.contest_status]}
                 </span>
               )}
@@ -653,24 +653,37 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
               </span>
             )}
             {isRegistrationNotStarted && !event.is_registered && (
-              <span className="mt-2 inline-flex items-center rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
+              <span className="mt-2 inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
                 Registration Opens Soon
               </span>
             )}
 
             {isPostponed && event.postponed_reason && (
-              <div className="mt-3 rounded-lg border border-amber-800 bg-amber-900/20 p-3 text-sm text-amber-200">
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
                 <strong>Postponement notice:</strong> {event.postponed_reason}
               </div>
             )}
 
             {mobileDescription ? (
-              <p className="mt-3 text-sm leading-relaxed text-gray-400 line-clamp-2">
+              <p className="mt-3 text-sm leading-relaxed text-gray-600 line-clamp-2 dark:text-gray-400">
                 {mobileDescription}
               </p>
             ) : null}
 
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-400">
+            {(event.eligibility_tags || []).length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(event.eligibility_tags || []).map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 dark:border-white/10 dark:bg-[#252B36] dark:text-gray-200"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
                 <Users className="h-4 w-4 shrink-0 text-[#3B82F6]" />
                 {event.participant_count} participants
@@ -706,11 +719,11 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           </div>
 
           {/* Info card sits below the banner — no negative-margin overlap */}
-          <div className="relative mt-6 rounded-2xl border border-gray-200/80 bg-white p-8 shadow-xl shadow-gray-200/50 dark:border-gray-700/80 dark:bg-gray-800 dark:shadow-none">
+          <div className="relative mt-6 rounded-2xl border border-gray-200/80 bg-white p-8 shadow-sm dark:border-gray-700/80 dark:bg-gray-800 dark:shadow-none">
             <div className="flex flex-col gap-6 md:flex-row md:items-start">
               {event.organizer_logo_url && (
-                <div className="flex h-24 w-24 flex-shrink-0 rounded-2xl border-2 border-gray-100 bg-white p-2.5 shadow-md dark:border-gray-700 dark:bg-gray-900">
-                  <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
+                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+                  <img src={event.organizer_logo_url} alt="" className="h-full w-full object-cover object-center" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
@@ -725,6 +738,18 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 <h1 className="text-4xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{event.title}</h1>
                 {event.subtitle && (
                   <p className="mt-1 text-gray-600 dark:text-gray-400">{event.subtitle}</p>
+                )}
+                {(event.eligibility_tags || []).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(event.eligibility_tags || []).map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
                 <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
                   {event.prize_pool && (
@@ -838,10 +863,12 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                             />
                           ) : null}
                           {(round.start_date || round.end_date) && (
-                            <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                            <div className="mt-2 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                               <Calendar className="h-3.5 w-3.5" />
-                              {round.start_date && new Date(round.start_date).toLocaleDateString('en-IN')}
-                              {round.end_date && ` - ${new Date(round.end_date).toLocaleDateString('en-IN')}`}
+                              {formatRangeDateTime(round.start_date) || 'TBA'}
+                              {formatRangeDateTime(round.end_date)
+                                ? ` → ${formatRangeDateTime(round.end_date)}`
+                                : ''}
                             </div>
                           )}
                         </div>
@@ -886,7 +913,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
               <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 md:rounded-xl md:p-5">
                 <div className="mb-3 flex items-center gap-3">
                   {event.organizer_logo_url && (
-                    <img src={event.organizer_logo_url} alt="" className="h-12 w-12 rounded-lg object-contain" />
+                    <img src={event.organizer_logo_url} alt="" className="h-12 w-12 overflow-hidden rounded-lg object-cover object-center" />
                   )}
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{event.organizer_name}</h3>
@@ -1100,7 +1127,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
       {/* 6. Mobile sticky bottom CTA */}
       {!isCancelled && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/5 bg-[#0B111B] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-white/5 dark:bg-[#0B111B] md:hidden">
           <div
             className={cn(
               'flex items-center gap-3',
@@ -1119,25 +1146,25 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 {event.registration_button_text || 'Register Now'}
               </Button>
             ) : isRegistrationNotStarted && !event.is_registered ? (
-              <div className="flex h-12 flex-1 flex-col items-center justify-center rounded-xl bg-amber-900/20 px-2 text-center">
-                <span className="text-xs font-semibold text-amber-200">
+              <div className="flex h-12 flex-1 flex-col items-center justify-center rounded-xl bg-amber-50 px-2 text-center dark:bg-amber-900/20">
+                <span className="text-xs font-semibold text-amber-800 dark:text-amber-200">
                   Registration Not Yet Open
                 </span>
                 {registrationOpensLabel ? (
-                  <span className="truncate text-[10px] text-amber-300">
+                  <span className="truncate text-[10px] text-amber-700 dark:text-amber-300">
                     Opens {registrationOpensLabel}
                   </span>
                 ) : null}
               </div>
             ) : event.is_registered ? (
-              <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-green-900/20 text-sm font-semibold text-green-300">
+              <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-green-50 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
                 <CheckCircle className="h-4 w-4" />
                 Registered
               </div>
             ) : null}
             <button
               type="button"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1C222D] text-white"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700 dark:border-transparent dark:bg-[#1C222D] dark:text-white"
               onClick={handleShare}
               aria-label="Share event"
             >

@@ -152,6 +152,7 @@ export interface ContestEventDetail extends ContestEventListItem {
   organizer_phone?: string
   venue?: string
   eligibility?: string
+  eligibility_tags?: string[]
   about_organizer?: string
   support_email?: string
   support_phone?: string
@@ -213,6 +214,7 @@ export interface ContestEventCreatePayload {
   prize_pool?: string
   prize_type?: PrizeType
   eligibility?: string
+  eligibility_tags?: string[]
   about_organizer?: string
   support_email?: string
   support_phone?: string

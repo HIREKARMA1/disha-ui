@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Save, Loader2, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { contestEventService } from '@/services/contestEventService'
 import { advertisementService } from '@/services/advertisementService'
 import type { ContestEventCreatePayload, ContestEventUpdatePayload } from '@/types/contestEvent'
@@ -24,6 +25,7 @@ import {
 } from '@/components/admin/EventAdvertisementSection'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
+import { fromDatetimeLocalValue, toDatetimeLocalValue } from '@/lib/datetimeLocal'
 import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
@@ -46,6 +48,7 @@ const defaultForm: ContestEventCreatePayload = {
   prize_pool: '',
   prize_type: 'free',
   eligibility: '',
+  eligibility_tags: [],
   about_organizer: '',
   organizer_name: '',
   organizer_email: '',
@@ -73,6 +76,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
   const [loading, setLoading] = useState(!!eventId)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
+  const [tagDraft, setTagDraft] = useState('')
 
   useEffect(() => {
     if (eventId) {
@@ -108,6 +112,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             prize_pool: event.prize_pool,
             prize_type: event.prize_type,
             eligibility: event.eligibility,
+            eligibility_tags: event.eligibility_tags || [],
             about_organizer: event.about_organizer,
             support_email: event.support_email,
             support_phone: event.support_phone,
@@ -123,8 +128,8 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             faqs: event.faqs,
             rounds: (event.rounds || []).map((round) => ({
               ...round,
-              start_date: round.start_date?.slice(0, 16),
-              end_date: round.end_date?.slice(0, 16),
+              start_date: toDatetimeLocalValue(round.start_date),
+              end_date: toDatetimeLocalValue(round.end_date),
             })),
             rewards: event.rewards,
           })
@@ -181,6 +186,10 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       short_description: normalizeRichTextHtml(form.short_description) || undefined,
       long_description: normalizeRichTextHtml(form.long_description) || undefined,
       eligibility: normalizeRichTextHtml(form.eligibility) || undefined,
+      eligibility_tags: (form.eligibility_tags || [])
+        .map((tag) => tag.trim().slice(0, 40))
+        .filter((tag, i, all) => tag && all.findIndex((t) => t.toLowerCase() === tag.toLowerCase()) === i)
+        .slice(0, 8),
       about_organizer: normalizeRichTextHtml(form.about_organizer) || undefined,
       faqs: (form.faqs || []).map((faq, i) => ({
         ...faq,
@@ -190,8 +199,8 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       rounds: (form.rounds || []).map((round, i) => ({
         ...round,
         description: normalizeRichTextHtml(round.description) || undefined,
-        start_date: round.start_date ? new Date(round.start_date).toISOString() : undefined,
-        end_date: round.end_date ? new Date(round.end_date).toISOString() : undefined,
+        start_date: fromDatetimeLocalValue(round.start_date),
+        end_date: fromDatetimeLocalValue(round.end_date),
         sort_order: round.sort_order ?? i,
       })),
       rewards: (form.rewards || []).map((reward, i) => ({
@@ -280,6 +289,21 @@ export function EventCreateForm({ eventId }: EventFormProps) {
   const addFaq = () => update('faqs', [...(form.faqs || []), { question: '', answer: '', sort_order: (form.faqs?.length || 0) }])
   const addRound = () => update('rounds', [...(form.rounds || []), { title: '', description: '', start_date: '', end_date: '', sort_order: (form.rounds?.length || 0) }])
   const addReward = () => update('rewards', [...(form.rewards || []), { title: '', description: '', value: '', sort_order: (form.rewards?.length || 0) }])
+  const addEligibilityTag = () => {
+    const label = tagDraft.trim().slice(0, 40)
+    if (!label) return
+    const current = form.eligibility_tags || []
+    if (current.length >= 8) {
+      toast.error('You can add up to 8 tags')
+      return
+    }
+    if (current.some((tag) => tag.toLowerCase() === label.toLowerCase())) {
+      setTagDraft('')
+      return
+    }
+    update('eligibility_tags', [...current, label])
+    setTagDraft('')
+  }
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
 
@@ -309,7 +333,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           />
           <EventImageUpload
             label="Event Profile / Logo Image"
-            hint="Shown in listings, dashboards, and event details."
+            hint="Square image that fills the frame. JPG, PNG, or WEBP, max 5MB."
             value={form.organizer_logo_url}
             onChange={(url) => update('organizer_logo_url', url)}
             onUpload={async (file) => handleUpload(file, 'logo', 'organizer_logo_url')}
@@ -482,6 +506,52 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             ))}
           </div>
           <div>
+            <label className="text-sm font-medium">Who can join (title card)</label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Short labels shown as rounded cards on the event title. Up to 8.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {(form.eligibility_tags || []).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="rounded-full p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    onClick={() =>
+                      update(
+                        'eligibility_tags',
+                        (form.eligibility_tags || []).filter((item) => item !== tag)
+                      )
+                    }
+                    aria-label={`Remove ${tag}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={tagDraft}
+                onChange={(e) => setTagDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addEligibilityTag()
+                  }
+                }}
+                placeholder="e.g. Students, Final year"
+                maxLength={40}
+              />
+              <Button type="button" variant="outline" onClick={addEligibilityTag}>
+                Add
+              </Button>
+            </div>
+          </div>
+          <div>
             <label className="text-sm font-medium">Eligibility</label>
             <RichTextEditor
               value={form.eligibility || ''}
@@ -567,26 +637,28 @@ export function EventCreateForm({ eventId }: EventFormProps) {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium">Start date & time</label>
-                  <Input
-                    type="datetime-local"
+                  <DateTimePicker
                     value={round.start_date || ''}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       const rounds = [...(form.rounds || [])]
-                      rounds[i] = { ...round, start_date: e.target.value }
+                      rounds[i] = { ...round, start_date: value }
                       update('rounds', rounds)
                     }}
+                    placeholder="Select start date & time"
+                    showTime
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium">End date & time</label>
-                  <Input
-                    type="datetime-local"
+                  <DateTimePicker
                     value={round.end_date || ''}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       const rounds = [...(form.rounds || [])]
-                      rounds[i] = { ...round, end_date: e.target.value }
+                      rounds[i] = { ...round, end_date: value }
                       update('rounds', rounds)
                     }}
+                    placeholder="Select end date & time"
+                    showTime
                   />
                 </div>
               </div>

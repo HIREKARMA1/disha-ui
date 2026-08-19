@@ -18,7 +18,7 @@ function formatBadgeDate(value?: string | null) {
   })
 }
 
-function formatRangeDateTime(value?: string | null) {
+export function formatRangeDateTime(value?: string | null) {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
