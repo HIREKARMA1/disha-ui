@@ -93,7 +93,11 @@ export default function RichTextEditorInner({
         ref={quillRef}
         theme="snow"
         value={value || ''}
-        onChange={onChange}
+        onChange={(html, _delta, source) => {
+          if (source !== 'user') return
+          if (html === (value || '')) return
+          onChange(html)
+        }}
         modules={modules}
         formats={formats}
         placeholder={placeholder}
