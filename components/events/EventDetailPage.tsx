@@ -223,7 +223,11 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         url.searchParams.delete('register')
         url.searchParams.delete('action')
         url.searchParams.delete('eventId')
-        window.history.replaceState({}, '', url.pathname + (url.hash || ''))
+        window.history.replaceState(
+          window.history.state,
+          '',
+          url.pathname + url.search + (url.hash || '')
+        )
       }
       try {
         const updated = isAdmin
@@ -301,14 +305,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
     if (!wantsRegister) return
 
-    // Guest with register intent → login, then return here to auto-register
-    if (!token) {
-      const redirectPath = buildEventRegisterRedirect(slug, event.id)
-      storePendingEventRegistration(slug, event.id)
-      localStorage.setItem('redirect_after_login', redirectPath)
-      router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
-      return
-    }
+    // Guest with leftover pending intent (e.g. browser Back from login): stay on
+    // the event page. Login is only via explicit Register click in handleRegister.
+    if (!token) return
 
     if (event.is_registered) {
       clearPendingEventRegistration()
@@ -321,7 +320,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
     autoRegisterAttempted.current = true
     void handleRegister()
-  }, [event, authLoading, registering, slug, handleRegister, router])
+  }, [event, authLoading, registering, slug, handleRegister])
 
   // Hash navigation on load
   useEffect(() => {
@@ -338,9 +337,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const id = entry.target.id
-            setActiveSection(id)
-            window.history.replaceState(null, '', `#${id}`)
+            setActiveSection(entry.target.id)
           }
         })
       },
@@ -357,7 +354,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     const el = sectionRefs.current[id]
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      window.history.replaceState(null, '', `#${id}`)
+      const nextUrl = `${window.location.pathname}${window.location.search}#${id}`
+      window.history.replaceState(window.history.state, '', nextUrl)
       setActiveSection(id)
     }
   }, [])

@@ -146,7 +146,11 @@ export function EventCreateForm({ eventId }: EventFormProps) {
     }
   }, [eventId])
 
-  const update = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }))
+  const update = (key: string, value: unknown) =>
+    setForm((f) => {
+      if ((f as Record<string, unknown>)[key] === value) return f
+      return { ...f, [key]: value }
+    })
 
   const handleUpload = async (file: File, type: 'banner' | 'logo' | 'document', field: string) => {
     const maxSize = type === 'document' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
