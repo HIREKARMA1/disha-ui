@@ -7,17 +7,19 @@ import { Footer } from '@/components/ui/footer'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { contestEventService } from '@/services/contestEventService'
-import type { ContestEventDetail } from '@/types/contestEvent'
+import type { ContestEventDetail, EventFeedbackItem } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
   Mail, Phone, Globe, MapPin, ChevronDown, ChevronUp, CheckCircle,
-  Share2, Briefcase, Target, Video, type LucideIcon,
+  Share2, Video,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { sanitizeEventDescriptionHtml, stripHtmlToPlainText } from '@/lib/sanitizeHtml'
+import { EventStagesTimeline } from '@/components/events/EventStagesTimeline'
+import { EventFeedbackSection } from '@/components/events/EventFeedbackSection'
 import {
   buildEventRegisterRedirect,
   clearPendingEventRegistration,
@@ -25,9 +27,10 @@ import {
   storePendingEventRegistration,
 } from '@/lib/pendingEventRegistration'
 
-const SECTIONS = [
+const BASE_SECTIONS = [
   { id: 'description', label: 'Description', shortLabel: 'Description' },
   { id: 'eligibility', label: 'Eligibility', shortLabel: 'Eligibility' },
+  { id: 'stages', label: 'Stages & Timelines', shortLabel: 'Stages' },
   { id: 'rounds', label: 'Rounds', shortLabel: 'Rounds' },
   { id: 'rewards', label: 'Rewards', shortLabel: 'Rewards' },
   { id: 'about-organizer', label: 'About Organizer', shortLabel: 'Organizer' },
@@ -35,6 +38,18 @@ const SECTIONS = [
   { id: 'results', label: 'Results', shortLabel: 'Results' },
   { id: 'support', label: 'Support', shortLabel: 'Support' },
 ]
+
+function isEventClosedForFeedback(event: ContestEventDetail | null) {
+  if (!event) return false
+  return event.contest_status === 'closed' || event.contest_status === 'archived'
+}
+
+function getEventDetailSections(event: ContestEventDetail | null) {
+  const showFeedback =
+    isEventClosedForFeedback(event) && Boolean(event?.is_registered || event?.my_feedback)
+  if (!showFeedback) return BASE_SECTIONS
+  return [...BASE_SECTIONS, { id: 'feedback', label: 'Feedback', shortLabel: 'Feedback' }]
+}
 
 function formatEventDate(value?: string | null) {
   if (!value) return null
@@ -45,12 +60,13 @@ function formatEventDate(value?: string | null) {
   })
 }
 
-function formatEventTime(value?: string | null) {
+function formatEventDateLong(value?: string | null) {
   if (!value) return null
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return null
-  if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0) return null
-  return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 /** Full date+time for registration-opens messaging (browser-local / en-IN). */
@@ -108,6 +124,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const autoRegisterAttempted = useRef(false)
+  const scrollingToRef = useRef<string | null>(null)
 
   useEffect(() => {
     // Wait for auth so admins load via unrestricted admin API (draft/closed/cancelled/reg-closed).
@@ -320,45 +337,57 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
     autoRegisterAttempted.current = true
     void handleRegister()
-  }, [event, authLoading, registering, slug, handleRegister])
+  }, [event, authLoading, registering, slug, handleRegister, router])
+
+  const scrollToSection = useCallback((id: string) => {
+    const el = sectionRefs.current[id] || document.getElementById(id)
+    if (!el) return
+    scrollingToRef.current = id
+    setActiveSection(id)
+    window.history.replaceState(null, '', `#${id}`)
+    const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+    if (isDesktop) {
+      const headerOffset = 144
+      const top = el.getBoundingClientRect().top + window.scrollY - headerOffset
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    window.setTimeout(() => {
+      if (scrollingToRef.current === id) scrollingToRef.current = null
+    }, 900)
+  }, [])
 
   // Hash navigation on load
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
-    if (hash && SECTIONS.find(s => s.id === hash)) {
+    if (hash && getEventDetailSections(event).find(s => s.id === hash)) {
       setTimeout(() => scrollToSection(hash), 500)
     }
-  }, [event])
+  }, [event, scrollToSection])
 
   // Intersection observer for active section
   useEffect(() => {
     if (!event) return
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id)
-          }
-        })
+        if (scrollingToRef.current) return
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+        if (!visible.length) return
+        const id = visible[0].target.id
+        setActiveSection(id)
+        window.history.replaceState(null, '', `#${id}`)
       },
-      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+      { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5] }
     )
-    SECTIONS.forEach(({ id }) => {
-      const el = sectionRefs.current[id]
+    getEventDetailSections(event).forEach(({ id }) => {
+      const el = sectionRefs.current[id] || document.getElementById(id)
       if (el) observer.observe(el)
     })
     return () => observer.disconnect()
   }, [event])
-
-  const scrollToSection = useCallback((id: string) => {
-    const el = sectionRefs.current[id]
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      const nextUrl = `${window.location.pathname}${window.location.search}#${id}`
-      window.history.replaceState(window.history.state, '', nextUrl)
-      setActiveSection(id)
-    }
-  }, [])
 
   // Must stay above early returns — hook order must be stable across loading → loaded.
   const handleJoinMeeting = useCallback(async () => {
@@ -475,39 +504,10 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     if (start && end && start !== end) return `${start} – ${end}`
     return start
   })()
-  const eventTimeLabel = formatEventTime(event.event_start_date)
-  const rewardsHighlight =
-    event.prize_pool ||
-    (event.rewards.length > 0 ? event.rewards.map((r) => r.title).filter(Boolean).slice(0, 2).join(', ') : null)
-  const eligibilityPlain = stripHtmlToPlainText(event.eligibility)
-  const eligibilityHighlight = eligibilityPlain
-    ? eligibilityPlain.slice(0, 80) + (eligibilityPlain.length > 80 ? '…' : '')
-    : null
-
-  const highlightItems: { icon: LucideIcon; label: string; value: string; tone: string }[] = [
-    event.mode === 'online'
-      ? { icon: Video, label: 'Mode', value: 'Online Event', tone: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' }
-      : event.mode
-        ? { icon: Briefcase, label: 'Mode', value: event.mode.replace(/_/g, ' '), tone: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-300' }
-        : null,
-    event.mode !== 'online' && event.venue
-      ? { icon: MapPin, label: 'Venue', value: event.venue, tone: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' }
-      : event.mode === 'online' && !event.event_link && event.venue
-        ? { icon: MapPin, label: 'Venue', value: event.venue, tone: 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-300' }
-        : null,
-    eventDateLabel
-      ? { icon: Calendar, label: 'Date', value: eventDateLabel, tone: 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300' }
-      : null,
-    eventTimeLabel
-      ? { icon: Clock, label: 'Time', value: eventTimeLabel, tone: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300' }
-      : null,
-    rewardsHighlight
-      ? { icon: Trophy, label: 'Rewards', value: rewardsHighlight, tone: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300' }
-      : null,
-    eligibilityHighlight
-      ? { icon: Target, label: 'Eligibility', value: eligibilityHighlight, tone: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300' }
-      : null,
-  ].filter(Boolean) as { icon: LucideIcon; label: string; value: string; tone: string }[]
+  const mobileDateLabel =
+    formatEventDateLong(event.event_start_date) || deadline
+  const mobileDescription =
+    stripHtmlToPlainText(event.short_description) || event.subtitle || ''
 
   const StatusBadges = () => (
     <>
@@ -591,139 +591,115 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-[#0B111B] md:dark:bg-gray-900">
       <Navbar variant="transparent" />
 
       {/* ========== MOBILE HERO (< md) ========== */}
-      <div className="md:hidden pt-16">
-        {/* 1. Full-width banner */}
+      <div className="bg-[#0B111B] pt-16 md:hidden">
         <div className="px-3">
-          <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-[#1C222D] shadow-sm">
             {event.banner_url ? (
               <img
                 src={event.banner_url}
                 alt={event.title ? `${event.title} banner` : 'Event banner'}
-                className="mx-auto block h-auto max-h-[210px] w-full object-contain object-center"
+                className="absolute inset-0 h-full w-full object-cover object-center"
               />
             ) : (
               <div
-                className="w-full aspect-[16/9] max-h-[210px] bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
+                className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
                 aria-hidden
               />
             )}
           </div>
         </div>
 
-        {/* 2. Event information card */}
-        <div className="px-3 mt-3">
-          <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-800">
-            {/* Row 1: Logo + Title */}
+        <div className="mt-3 px-3 pb-3">
+          <div className="rounded-2xl border border-white/5 bg-[#1C222D] p-4">
             <div className="flex items-start gap-3">
-              {event.organizer_logo_url ? (
-                <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm dark:border-gray-600 dark:bg-gray-900">
+              <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5">
+                {event.organizer_logo_url ? (
                   <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain" />
-                </div>
-              ) : null}
-              <h1 className="min-w-0 flex-1 text-[1.35rem] font-bold leading-snug tracking-tight text-gray-900 line-clamp-2 dark:text-white">
+                ) : (
+                  <span className="text-lg font-bold text-primary-600">
+                    {(event.title || 'E').charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <h1 className="min-w-0 flex-1 text-[22px] font-bold leading-snug tracking-tight text-white line-clamp-2">
                 {event.title}
               </h1>
             </div>
 
-            {/* Row 2: Badges */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadges />
-            </div>
-
-            {isPostponed && event.postponed_reason && (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                <strong>Postponement notice:</strong> {event.postponed_reason}
-              </div>
-            )}
-
-            {/* Row 3: Short description */}
-            {(event.short_description || event.subtitle) && (
-              event.short_description ? (
-                <div
-                  className="event-description-html mt-3 line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400"
-                  dangerouslySetInnerHTML={{
-                    __html: sanitizeEventDescriptionHtml(event.short_description, ''),
-                  }}
-                />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {event.category && (
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-[#252B36] px-3 py-1 text-xs font-medium text-gray-200">
+                  {CATEGORY_LABELS[event.category] || event.category}
+                </span>
+              )}
+              {isCancelled ? (
+                <span className="text-sm font-medium text-red-400">CANCELLED</span>
+              ) : isPostponed ? (
+                <span className="text-sm font-medium text-amber-400">POSTPONED</span>
               ) : (
-                <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400 line-clamp-3">
-                  {event.subtitle}
-                </p>
-              )
-            )}
-
-            {/* Row 4: Participants / Deadline */}
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="h-4 w-4 shrink-0 text-primary-500" />
-                {event.participant_count} participants
-              </span>
-              {deadline && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 shrink-0 text-primary-500" />
-                  {deadline}
+                <span className="text-sm font-medium text-blue-400">
+                  {CONTEST_STATUS_LABELS[event.contest_status]}
                 </span>
               )}
             </div>
 
-            {/* Row 5: Organizer */}
-            {event.organizer_name && (
-              <div className="mt-3 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
-                <Building2 className="h-4 w-4 shrink-0 text-primary-500" />
-                <span className="font-medium">{event.organizer_name}</span>
+            {showRegister && (
+              <span className="mt-2 inline-flex items-center rounded-full bg-[#16A34A] px-3 py-1 text-xs font-semibold text-white">
+                Registration Open
+              </span>
+            )}
+            {isRegistrationNotStarted && !event.is_registered && (
+              <span className="mt-2 inline-flex items-center rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
+                Registration Opens Soon
+              </span>
+            )}
+
+            {isPostponed && event.postponed_reason && (
+              <div className="mt-3 rounded-lg border border-amber-800 bg-amber-900/20 p-3 text-sm text-amber-200">
+                <strong>Postponement notice:</strong> {event.postponed_reason}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* 3. Event highlights */}
-        {highlightItems.length > 0 && (
-          <div className="px-3 mt-3">
-            <div className="rounded-2xl border border-gray-200/80 bg-white p-3 shadow-sm dark:border-gray-700/80 dark:bg-gray-800">
-              <div className="grid grid-cols-2 gap-2.5">
-                {highlightItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <div
-                      key={item.label}
-                      className="rounded-xl border border-gray-100 bg-gray-50/80 p-3 dark:border-gray-700 dark:bg-gray-900/40"
-                    >
-                      <div className={cn('mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg', item.tone)}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        {item.label}
-                      </p>
-                      <p className="mt-0.5 text-sm font-semibold leading-snug text-gray-900 capitalize line-clamp-2 dark:text-white">
-                        {item.value}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
+            {mobileDescription ? (
+              <p className="mt-3 text-sm leading-relaxed text-gray-400 line-clamp-2">
+                {mobileDescription}
+              </p>
+            ) : null}
+
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-400">
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="h-4 w-4 shrink-0 text-[#3B82F6]" />
+                {event.participant_count} participants
+              </span>
+              {mobileDateLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-4 w-4 shrink-0 text-[#3B82F6]" />
+                  {mobileDateLabel}
+                </span>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ========== DESKTOP / TABLET HERO (md+) ========== */}
       <div className="relative hidden pt-20 md:block lg:pt-24">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Full-width 16:9 banner — matches uploaded artwork, no cropping */}
-          <div className="relative w-full aspect-[16/9] rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
+          {/* Compact horizontal banner — Unstop-style, well under half the viewport */}
+          <div className="relative h-[200px] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800 lg:h-[240px]">
             {event.banner_url ? (
               <img
                 src={event.banner_url}
                 alt={event.title ? `${event.title} banner` : 'Event banner'}
-                className="absolute inset-0 h-full w-full rounded-2xl object-contain object-center"
+                className="absolute inset-0 h-full w-full object-cover object-center"
               />
             ) : (
               <div
-                className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
+                className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
                 aria-hidden
               />
             )}
@@ -777,10 +753,10 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       </div>
 
       {/* Sticky Navigation / Tabs */}
-      <div className="sticky top-16 z-30 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
+      <div className="sticky top-16 z-30 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-white/5 dark:bg-[#0B111B]/95 md:dark:border-gray-700 md:dark:bg-gray-900/95">
         <div className="container mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="scrollbar-hide flex gap-1 overflow-x-auto py-2">
-            {SECTIONS.map(({ id, label, shortLabel }) => (
+            {getEventDetailSections(event).map(({ id, label, shortLabel }) => (
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
@@ -829,6 +805,15 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                   ),
                 }}
               />
+            </section>
+
+            {/* Stages & Timelines */}
+            <section id="stages" ref={(el) => { sectionRefs.current['stages'] = el }} className="scroll-mt-36">
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">
+                <span className="h-5 w-1 shrink-0 rounded-full bg-primary-500" aria-hidden />
+                Stages and Timelines
+              </h2>
+              <EventStagesTimeline rounds={event.rounds || []} />
             </section>
 
             {/* Rounds */}
@@ -997,6 +982,33 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 )}
               </div>
             </section>
+
+            {/* Feedback — registered users only, after event close */}
+            {isEventClosedForFeedback(event) && (event.is_registered || event.my_feedback) && (
+              <section id="feedback" ref={(el) => { sectionRefs.current['feedback'] = el }} className="scroll-mt-36">
+                <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">
+                  Feedback
+                </h2>
+                <EventFeedbackSection
+                  slug={slug}
+                  isClosed={isEventClosedForFeedback(event)}
+                  isRegistered={Boolean(event.is_registered)}
+                  canSubmit={Boolean(event.feedback_can_submit)}
+                  submitted={event.my_feedback || null}
+                  onSubmitted={(feedback: EventFeedbackItem) => {
+                    setEvent((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            my_feedback: feedback,
+                            feedback_can_submit: false,
+                          }
+                        : prev
+                    )
+                  }}
+                />
+              </section>
+            )}
           </div>
 
           {/* Right Sidebar — hidden on mobile redesign only; tablet/desktop unchanged */}
@@ -1088,7 +1100,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
       {/* 6. Mobile sticky bottom CTA */}
       {!isCancelled && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 md:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/5 bg-[#0B111B] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
           <div
             className={cn(
               'flex items-center gap-3',
@@ -1097,7 +1109,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           >
             {showStickyRegister ? (
               <Button
-                className="h-12 flex-1 text-base font-semibold shadow-sm"
+                className="h-12 flex-[1_1_80%] rounded-xl bg-[#1D4ED8] text-base font-semibold text-white shadow-none hover:bg-[#1E40AF]"
                 onClick={handleRegister}
                 disabled={registering || event.is_registered}
               >
@@ -1107,32 +1119,30 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 {event.registration_button_text || 'Register Now'}
               </Button>
             ) : isRegistrationNotStarted && !event.is_registered ? (
-              <div className="flex h-12 flex-1 flex-col items-center justify-center rounded-md bg-amber-50 px-2 text-center dark:bg-amber-900/20">
-                <span className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+              <div className="flex h-12 flex-1 flex-col items-center justify-center rounded-xl bg-amber-900/20 px-2 text-center">
+                <span className="text-xs font-semibold text-amber-200">
                   Registration Not Yet Open
                 </span>
                 {registrationOpensLabel ? (
-                  <span className="truncate text-[10px] text-amber-700 dark:text-amber-300">
+                  <span className="truncate text-[10px] text-amber-300">
                     Opens {registrationOpensLabel}
                   </span>
                 ) : null}
               </div>
             ) : event.is_registered ? (
-              <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-green-50 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
+              <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-green-900/20 text-sm font-semibold text-green-300">
                 <CheckCircle className="h-4 w-4" />
                 Registered
               </div>
             ) : null}
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="icon"
-              className="h-12 w-12 shrink-0 rounded-xl"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1C222D] text-white"
               onClick={handleShare}
               aria-label="Share event"
             >
               <Share2 className="h-5 w-5" />
-            </Button>
+            </button>
           </div>
         </div>
       )}

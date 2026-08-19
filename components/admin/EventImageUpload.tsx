@@ -53,7 +53,7 @@ export function EventImageUpload({
         <div className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <div className={cn(
             'relative w-full overflow-hidden',
-            aspect === 'banner' ? 'aspect-video' : 'aspect-square max-w-[140px]'
+            aspect === 'banner' ? 'aspect-[4/1]' : 'aspect-square max-w-[140px]'
           )}>
             <img src={value} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -75,7 +75,7 @@ export function EventImageUpload({
             'w-full rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600',
             'hover:border-primary-400 dark:hover:border-primary-500 transition-colors',
             'flex flex-col items-center justify-center gap-2 text-gray-500 dark:text-gray-400',
-            aspect === 'banner' ? 'aspect-video' : 'aspect-square max-w-[140px] h-[140px]'
+            aspect === 'banner' ? 'aspect-[4/1]' : 'aspect-square max-w-[140px] h-[140px]'
           )}
         >
           {uploading ? (
