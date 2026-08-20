@@ -1126,6 +1126,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             total_jobs,
             total_jobs_approved,
             university_name: _lockedUniversityName,
+            name: _lockedName,
             ...saveableData
         } = formData
         onSave(saveableData)
@@ -1398,32 +1399,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
             )
         }
 
-        // Handle readonly fields (university name after account creation)
+        // Name is fixed at registration — read-only like email
         if (field === 'name') {
             return (
                 <div className="space-y-2">
                     <Input
                         value={value as string}
-                        onChange={(e) => {
-                            let inputValue = e.target.value
-                            const sanitizedValue = inputValue.replace(/[^a-zA-Z\s.-]/g, '')
-                            if (sanitizedValue !== inputValue) {
-                                toast.error('Only letters, spaces, periods, and hyphens are allowed')
-                            }
-                            inputValue = sanitizedValue
-
-                            setFormData({ ...formData, [field]: inputValue })
-                            if (fieldErrors[field]) {
-                                setFieldErrors({ ...fieldErrors, [field]: '' })
-                            }
-                        }}
-                        className={`w-full ${fieldErrors[field] ? 'border-red-500 focus:border-red-500' : ''}`}
-                        placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                        maxLength={50}
+                        readOnly
+                        disabled
+                        className="w-full bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="Name cannot be edited"
                     />
-                    {fieldErrors[field] && (
-                        <p className="text-red-500 text-xs mt-1">{fieldErrors[field]}</p>
-                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Name is set during registration and cannot be changed
+                    </p>
                 </div>
             )
         }
