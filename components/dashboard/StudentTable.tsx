@@ -34,6 +34,8 @@ interface StudentTableProps {
     onArchiveStudent: (studentId: string, archive: boolean) => void
     onDeleteStudent: (studentId: string) => void
     onRetry: () => void
+    hasUnfilteredStudents?: boolean
+    onClearFilters?: () => void
 }
 
 type SortField = 'name' | 'email' | 'phone' | 'degree' | 'branch' | 'placement_status' | 'total_applications' | 'interviews_attended' | 'offers_received' | 'profile_completion_percentage' | 'created_at'
@@ -45,7 +47,9 @@ export function StudentTable({
     error,
     onArchiveStudent,
     onDeleteStudent,
-    onRetry
+    onRetry,
+    hasUnfilteredStudents = false,
+    onClearFilters,
 }: StudentTableProps) {
     const [sortField, setSortField] = useState<SortField | null>('created_at')
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -329,11 +333,21 @@ export function StudentTable({
                 <div className="text-center py-12">
                     <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        No students found
+                        {hasUnfilteredStudents ? 'No students match the current filters' : 'No students found'}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                        Start by adding students to your university.
+                        {hasUnfilteredStudents
+                            ? 'Try All Years, All Degrees, and All Branches to see every student.'
+                            : 'Start by adding students to your university.'}
                     </p>
+                    {hasUnfilteredStudents && onClearFilters && (
+                        <button
+                            onClick={onClearFilters}
+                            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
+                        >
+                            Clear filters
+                        </button>
+                    )}
                 </div>
             </div>
         )
@@ -369,6 +383,7 @@ export function StudentTable({
                 <p className="flex items-center gap-1 truncate">
                     <GraduationCap className="w-3 h-3 text-gray-400 shrink-0" />
                     {student.degree || 'N/A'} {student.branch ? `(${student.branch})` : ''}
+                    {student.graduation_year ? ` · ${student.graduation_year}` : ''}
                 </p>
                 <p className="flex items-center gap-1">
                     <Briefcase className="w-3 h-3 text-gray-400 shrink-0" />
@@ -533,6 +548,7 @@ export function StudentTable({
                                         </div>
                                         <div className="text-sm text-gray-500 dark:text-gray-400">
                                             {student.branch || 'N/A'}
+                                            {student.graduation_year ? ` · ${student.graduation_year}` : ''}
                                         </div>
                                         {student.btech_cgpa && (
                                             <div className="flex items-center gap-1 mt-1">

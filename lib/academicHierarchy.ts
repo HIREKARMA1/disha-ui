@@ -155,6 +155,124 @@ function normalizeDegreeToken(value: string): string {
         .trim()
 }
 
+/** Tokens from a degree/branch label, including parenthetical abbreviations (CSE, IT, B.Tech). */
+function academicNameTokens(value: string): Set<string> {
+    const tokens = new Set<string>()
+    const parenParts: string[] = []
+    const parenRe = /\(([^)]*)\)/g
+    let match: RegExpExecArray | null = parenRe.exec(value)
+    while (match) {
+        parenParts.push(match[1])
+        match = parenRe.exec(value)
+    }
+    const base = value.replace(/\([^)]*\)/g, ' ')
+    const parts = [base].concat(parenParts)
+    for (let i = 0; i < parts.length; i++) {
+        const normalized = normalizeDegreeToken(parts[i])
+        if (!normalized) continue
+        tokens.add(normalized)
+        const compacted = normalized.replace(/\s+/g, '')
+        if (compacted) tokens.add(compacted)
+    }
+    return tokens
+}
+
+function toScopeList(value: unknown): string[] {
+    if (value == null) return []
+    if (Array.isArray(value)) {
+        return value.map((item) => String(item).trim()).filter(Boolean)
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim()
+        return trimmed ? [trimmed] : []
+    }
+    return []
+}
+
+/**
+ * Match degree/branch labels that refer to the same program, e.g.
+ * "B.Tech" ↔ "Bachelor of Technology" and "CSE" ↔ "Computer Science Engineering (CSE)".
+ */
+export function academicNamesMatch(left?: string | null, right?: string | null): boolean {
+    if (!left?.trim() || !right?.trim()) return false
+    const a = left.trim()
+    const b = right.trim()
+    if (a.toLowerCase() === b.toLowerCase()) return true
+
+    const leftCanonical = resolveCanonicalDegree(a)
+    const rightCanonical = resolveCanonicalDegree(b)
+    if (leftCanonical && rightCanonical && leftCanonical === rightCanonical) return true
+
+    const leftTokens = academicNameTokens(a)
+    const rightTokens = academicNameTokens(b)
+    let tokenMatched = false
+    leftTokens.forEach((token) => {
+        if (rightTokens.has(token)) tokenMatched = true
+    })
+    return tokenMatched
+}
+
+/** True when the license has no degree restriction, or covers the selected degree. */
+export function licenseScopeAllowsDegree(licenseDegree: unknown, selectedDegree: string): boolean {
+    const degrees = toScopeList(licenseDegree)
+    if (degrees.length === 0) return true
+    return degrees.some((degree) => academicNamesMatch(degree, selectedDegree))
+}
+
+/** True when the license has no branch restriction, or covers the selected branch. */
+export function licenseScopeAllowsBranch(licenseBranches: unknown, selectedBranch: string): boolean {
+    const branches = toScopeList(licenseBranches)
+    if (branches.length === 0) return true
+    return branches.some((branch) => academicNamesMatch(branch, selectedBranch))
+}
+
+function parseGraduationYear(value: string): number | null {
+    const text = value.trim()
+    if (!/^\d{4}$/.test(text)) return null
+    const year = Number(text)
+    if (year < 1950 || year > 2100) return null
+    return year
+}
+
+function parseLicenseYearRange(value: string): [number, number] | null {
+    const text = value.trim().replace(/[–—]/g, '-').replace(/\s+/g, '')
+    const full = text.match(/^(\d{4})-(\d{4})$/)
+    if (full) {
+        let start = Number(full[1])
+        let end = Number(full[2])
+        if (start > end) {
+            const swap = start
+            start = end
+            end = swap
+        }
+        return [start, end]
+    }
+    const short = text.match(/^(\d{4})-(\d{2})$/)
+    if (short) {
+        const start = Number(short[1])
+        let end = Math.floor(start / 100) * 100 + Number(short[2])
+        if (end < start) end += 100
+        return [start, end]
+    }
+    return null
+}
+
+/** True when license.batch equals the selected year, or a range such as 2026-2030 contains it. */
+export function licenseBatchCovers(licenseBatch: unknown, selectedBatch: string): boolean {
+    const licenseValue = String(licenseBatch ?? '').trim()
+    const selected = selectedBatch.trim()
+    if (!licenseValue || !selected) return false
+    if (licenseValue === selected) return true
+
+    const selectedYear = parseGraduationYear(selected)
+    if (selectedYear == null) return false
+    if (parseGraduationYear(licenseValue) === selectedYear) return true
+
+    const range = parseLicenseYearRange(licenseValue)
+    if (!range) return false
+    return selectedYear >= range[0] && selectedYear <= range[1]
+}
+
 /** Common aliases / abbreviations → canonical DEGREE_OPTIONS value */
 const DEGREE_ALIAS_TO_CANONICAL: Record<string, string> = {
     'bachelor of technology': 'Bachelor of Technology',

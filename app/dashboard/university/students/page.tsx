@@ -31,7 +31,7 @@ export default function UniversityStudents() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
     const [selectedBranch, setSelectedBranch] = useState('all')
-    const [selectedYear, setSelectedYear] = useState('2027')
+    const [selectedYear, setSelectedYear] = useState('all')
     const [selectedDegree, setSelectedDegree] = useState('all')
     const [coursesOffered, setCoursesOffered] = useState<string | null>(null)
     const [profileBranches, setProfileBranches] = useState<string | null>(null)
@@ -43,7 +43,12 @@ export default function UniversityStudents() {
         setError(null)
         try {
             const response = await apiClient.getUniversityStudents(includeArchived)
-            setStudents(response.students)
+            const list = Array.isArray(response?.students)
+                ? response.students
+                : Array.isArray(response)
+                    ? response
+                    : []
+            setStudents(list)
         } catch (err) {
             console.error('Failed to fetch students:', err)
             setError('Failed to load students. Please try again.')
@@ -137,7 +142,7 @@ export default function UniversityStudents() {
         setSearchTerm('')
         setFilterStatus('all')
         setSelectedBranch('all')
-        setSelectedYear('2027')
+        setSelectedYear('all')
         setSelectedDegree('all')
         setIncludeArchived(false)
     }
@@ -368,6 +373,8 @@ export default function UniversityStudents() {
                     onArchiveStudent={handleArchiveStudent}
                     onDeleteStudent={handleDeleteStudent}
                     onRetry={fetchStudents}
+                    hasUnfilteredStudents={students.length > 0}
+                    onClearFilters={clearFilters}
                 />
 
                 {/* Modals */}

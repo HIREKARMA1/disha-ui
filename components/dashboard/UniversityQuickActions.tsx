@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Briefcase, Users, Brain, BarChart3, UserPlus, Settings } from 'lucide-react'
+import { Briefcase, Users, Brain, BarChart3, UserPlus, Award } from 'lucide-react'
 import { UniversityGlassCard } from '@/components/university/ui/UniversityGlassCard'
 import { cn } from '@/lib/utils'
 
@@ -37,10 +37,10 @@ const actions = [
         color: 'bg-teal-500/15 text-teal-500',
     },
     {
-        label: 'Settings',
-        href: '/dashboard/university/settings',
-        icon: Settings,
-        color: 'bg-gray-500/15 text-gray-400',
+        label: 'Licenses',
+        href: '/dashboard/university/licenses',
+        icon: Award,
+        color: 'bg-amber-500/15 text-amber-500',
     },
 ]
 
