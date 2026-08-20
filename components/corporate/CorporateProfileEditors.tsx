@@ -11,7 +11,7 @@ import {
   Trash2,
   Eye,
 } from 'lucide-react'
-import { SiThreads } from 'react-icons/si'
+import { SiX } from 'react-icons/si'
 import { Button } from '@/components/ui/button'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { FileUpload } from '@/components/ui/file-upload'
@@ -30,8 +30,8 @@ import {
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
-function ThreadsIcon({ className }: { className?: string }) {
-  return <SiThreads className={className} aria-hidden />
+function XIcon({ className }: { className?: string }) {
+  return <SiX className={className} aria-hidden />
 }
 
 const inputClass =
@@ -46,6 +46,7 @@ interface SectionEditorProps {
 export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditorProps) {
   const { data: industries, loading: loadingIndustries, error: industriesError } = useIndustries({ limit: 1000 })
   const [saving, setSaving] = useState(false)
+  const [foundedYearError, setFoundedYearError] = useState<string | null>(null)
   const [form, setForm] = useState({
     description: profile.description || '',
     industry: profile.industry || '',
@@ -54,7 +55,37 @@ export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditor
     company_type: profile.company_type || '',
   })
 
+  const currentYear = new Date().getFullYear()
+
+  const validateFoundedYear = (value: string): string | null => {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    const year = Number(trimmed)
+    if (!Number.isInteger(year)) {
+      return 'Please enter a valid year'
+    }
+    if (year > currentYear) {
+      return `Founded year cannot be in the future. Use ${currentYear} or earlier.`
+    }
+    if (year < 1800) {
+      return 'Founded year must be 1800 or later.'
+    }
+    return null
+  }
+
+  const handleFoundedYearChange = (value: string) => {
+    setForm((f) => ({ ...f, founded_year: value }))
+    setFoundedYearError(validateFoundedYear(value))
+  }
+
   const handleSave = async () => {
+    const yearError = validateFoundedYear(form.founded_year)
+    if (yearError) {
+      setFoundedYearError(yearError)
+      toast.error(yearError)
+      return
+    }
+
     try {
       setSaving(true)
       const updated = await corporateProfileService.updateProfile({
@@ -118,12 +149,20 @@ export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditor
           <input
             type="number"
             min={1800}
-            max={new Date().getFullYear()}
+            max={currentYear}
             value={form.founded_year}
-            onChange={(e) => setForm((f) => ({ ...f, founded_year: e.target.value }))}
-            className={inputClass}
+            onChange={(e) => handleFoundedYearChange(e.target.value)}
+            onBlur={() => setFoundedYearError(validateFoundedYear(form.founded_year))}
+            className={cn(
+              inputClass,
+              foundedYearError && 'border-red-500 dark:border-red-500 focus:ring-red-500/40'
+            )}
             placeholder="e.g. 2010"
+            aria-invalid={!!foundedYearError}
           />
+          {foundedYearError && (
+            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{foundedYearError}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Company Type</label>
@@ -143,7 +182,7 @@ export function AboutCompanyEditor({ profile, onSaved, onCancel }: SectionEditor
           </select>
         </div>
       </div>
-      <EditorActions saving={saving} onCancel={onCancel} onSave={handleSave} />
+      <EditorActions saving={saving} saveDisabled={!!foundedYearError} onCancel={onCancel} onSave={handleSave} />
     </div>
   )
 }
@@ -391,7 +430,7 @@ export function SocialLinksEditor({ profile, onSaved, onCancel }: SectionEditorP
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<CorporateSocialLinks>({
     linkedin: meta.social_links?.linkedin || '',
-    threads: meta.social_links?.threads || '',
+    x: meta.social_links?.x || meta.social_links?.threads || '',
     facebook: meta.social_links?.facebook || '',
     instagram: meta.social_links?.instagram || '',
     youtube: meta.social_links?.youtube || '',
@@ -400,7 +439,7 @@ export function SocialLinksEditor({ profile, onSaved, onCancel }: SectionEditorP
   const handleSave = async () => {
     const fields: (keyof CorporateSocialLinks)[] = [
       'linkedin',
-      'threads',
+      'x',
       'facebook',
       'instagram',
       'youtube',
@@ -436,7 +475,7 @@ export function SocialLinksEditor({ profile, onSaved, onCancel }: SectionEditorP
 
   const fields: { key: keyof CorporateSocialLinks; label: string }[] = [
     { key: 'linkedin', label: 'LinkedIn URL' },
-    { key: 'threads', label: 'Threads URL' },
+    { key: 'x', label: 'X URL' },
     { key: 'facebook', label: 'Facebook URL' },
     { key: 'instagram', label: 'Instagram URL' },
     { key: 'youtube', label: 'YouTube URL' },
@@ -577,7 +616,7 @@ export function SocialLinksDisplay({
 }) {
   const items = [
     { key: 'linkedin', href: links?.linkedin, icon: Linkedin, color: 'bg-[#0A66C2] text-white', label: 'LinkedIn' },
-    { key: 'threads', href: links?.threads, icon: ThreadsIcon, color: 'bg-gray-900 dark:bg-white text-white dark:text-gray-900', label: 'Threads' },
+    { key: 'x', href: links?.x || links?.threads, icon: XIcon, color: 'bg-black text-white', label: 'X' },
     { key: 'facebook', href: links?.facebook, icon: Facebook, color: 'bg-[#1877F2] text-white', label: 'Facebook' },
     { key: 'instagram', href: links?.instagram, icon: Instagram, color: 'bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white', label: 'Instagram' },
     { key: 'youtube', href: links?.youtube, icon: Youtube, color: 'bg-[#FF0000] text-white', label: 'YouTube' },
@@ -700,10 +739,12 @@ function buildDocumentList(
 
 function EditorActions({
   saving,
+  saveDisabled,
   onCancel,
   onSave,
 }: {
   saving: boolean
+  saveDisabled?: boolean
   onCancel: () => void
   onSave: () => void
 }) {
@@ -715,7 +756,7 @@ function EditorActions({
       <Button
         type="button"
         onClick={onSave}
-        disabled={saving}
+        disabled={saving || saveDisabled}
         className="rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 text-white"
       >
         {saving ? 'Saving...' : 'Save Changes'}
@@ -724,4 +765,4 @@ function EditorActions({
   )
 }
 
-export { ThreadsIcon, buildDocumentList }
+export { XIcon, buildDocumentList }

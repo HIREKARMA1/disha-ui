@@ -1,6 +1,5 @@
 'use client'
 
-import { RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface OtpStatusSectionProps {
@@ -60,8 +59,7 @@ export function OtpStatusSection({
           disabled={isResendDisabled}
           className="w-full h-10 sm:h-11 text-sm font-medium"
         >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          {resendButtonLabel}
+          Resend OTP
         </Button>
       )}
     </div>

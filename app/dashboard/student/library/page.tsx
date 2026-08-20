@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -60,41 +60,47 @@ export default function LibraryPage() {
     const [totalPages, setTotalPages] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(20)
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
+    const categoryDropdownRef = useRef<HTMLDivElement>(null)
 
-    const searchTopics = async (query: string = '', categoryId: number | null = null) => {
-        console.log('searchTopics called with query:', query, 'categoryId:', categoryId, 'page:', currentPage, 'limit:', itemsPerPage)
+    const searchTopics = async (
+        query: string = '',
+        categoryId: number | null = null,
+        page: number = currentPage
+    ) => {
         setLoading(true)
         try {
-            // Check if user is authenticated
-            if (!apiClient.isAuthenticated()) {
-                console.error('User not authenticated. Please log in.')
-                // Could redirect to login here
-                return
+            const searchData = await apiClient.searchLibraryTopics(page, itemsPerPage, query, categoryId)
+            const topicsList = Array.isArray(searchData?.topics)
+                ? searchData.topics
+                : Array.isArray(searchData?.items)
+                    ? searchData.items
+                    : []
+            const categoriesFromSearch = Array.isArray(searchData?.categories)
+                ? searchData.categories
+                : []
+
+            setTopics(topicsList)
+            setTotalCount(searchData?.total_count || topicsList.length || 0)
+            setTotalPages(searchData?.total_pages || 1)
+
+            if (categoriesFromSearch.length > 0) {
+                setCategories(categoriesFromSearch)
+            } else {
+                try {
+                    const categoriesData = await apiClient.getLibraryCategories()
+                    setCategories(Array.isArray(categoriesData) ? categoriesData : [])
+                } catch {
+                    setCategories([])
+                }
             }
-
-            // Fetch topics and categories using apiClient
-            const [searchData, categoriesData] = await Promise.all([
-                apiClient.searchLibraryTopics(currentPage, itemsPerPage, query, categoryId),
-                apiClient.getLibraryCategories()
-            ])
-
-            console.log('Search response:', searchData)
-            setTopics(searchData.topics || [])
-            setCategories(categoriesData || [])
-            setTotalCount(searchData.total_count || 0)
-            setTotalPages(searchData.total_pages || 1)
-
         } catch (error: any) {
             console.error('Failed to fetch library data:', error)
+            setTopics([])
+            setTotalCount(0)
+            setTotalPages(1)
 
             if (error.response?.status === 401) {
-                console.error('Authentication failed - please log in again')
-                // Could redirect to login page here
                 window.location.href = '/auth/login'
-            } else if (error.response?.status === 403) {
-                console.error('Access denied - insufficient permissions')
-            } else {
-                console.error('Failed to fetch library data:', error.response?.data?.detail || error.message)
             }
         } finally {
             setLoading(false)
@@ -102,19 +108,40 @@ export default function LibraryPage() {
     }
 
     const handleSearch = async () => {
-        console.log('Searching for:', searchQuery, 'category:', selectedCategory)
-        setCurrentPage(1) // Reset to first page when searching
-        await searchTopics(searchQuery, selectedCategory?.id || null)
+        setCurrentPage(1)
+        await searchTopics(searchQuery, selectedCategory?.id || null, 1)
     }
 
     const handleCategoryChange = (category: LibraryCategory | null) => {
         setSelectedCategory(category)
         setIsCategoryDropdownOpen(false)
+        setCurrentPage(1)
+        void searchTopics(searchQuery, category?.id || null, 1)
     }
 
     useEffect(() => {
-        searchTopics()
+        searchTopics(searchQuery, selectedCategory?.id || null, currentPage)
+        // Initial load and page changes. Search text / category are applied via handlers.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage, itemsPerPage])
+
+    useEffect(() => {
+        if (!isCategoryDropdownOpen) return
+
+        const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+            const root = categoryDropdownRef.current
+            if (root && !root.contains(event.target as Node)) {
+                setIsCategoryDropdownOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handlePointerDown)
+        document.addEventListener('touchstart', handlePointerDown)
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown)
+            document.removeEventListener('touchstart', handlePointerDown)
+        }
+    }, [isCategoryDropdownOpen])
 
 
 
@@ -168,7 +195,7 @@ export default function LibraryPage() {
                         </div>
 
                         {/* Category Filter */}
-                        <div className="relative">
+                        <div className="relative" ref={categoryDropdownRef}>
                             <button
                                 type="button"
                                 onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
@@ -190,7 +217,7 @@ export default function LibraryPage() {
                                     >
                                         All Categories
                                     </button>
-                                    {categories.map((category) => (
+                                    {(Array.isArray(categories) ? categories : []).map((category) => (
                                         <button
                                             key={category.id}
                                             onClick={() => handleCategoryChange(category)}
@@ -221,7 +248,8 @@ export default function LibraryPage() {
                                 onClick={() => {
                                     setSearchQuery('')
                                     setSelectedCategory(null)
-                                    searchTopics('', null)
+                                    setCurrentPage(1)
+                                    searchTopics('', null, 1)
                                 }}
                                 variant="outline"
                                 className="px-4 h-10 transition-all duration-200 hover:shadow-md w-full sm:w-auto"
@@ -348,7 +376,8 @@ export default function LibraryPage() {
                                 onClick={() => {
                                     setSearchQuery('')
                                     setSelectedCategory(null)
-                                    searchTopics('', null)
+                                    setCurrentPage(1)
+                                    searchTopics('', null, 1)
                                 }}
                                 variant="outline"
                                 className="mt-4"
