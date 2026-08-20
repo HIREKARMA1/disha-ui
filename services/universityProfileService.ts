@@ -155,11 +155,7 @@ export class UniversityProfileService {
             const formData = new FormData()
             formData.append('file', file)
 
-            const response = await apiClient.client.post('/universities/upload-profile-picture', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            })
+            const response = await apiClient.client.post('/universities/upload-profile-picture', formData)
 
             return response.data
         } catch (error: any) {

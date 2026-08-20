@@ -37,6 +37,7 @@ import { cn, getInitials } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { universityProfileService, type UniversityProfile, type UniversityProfileUpdateData } from '@/services/universityProfileService'
+import { prepareProfileImageForUpload } from '@/lib/compressImageForUpload'
 import { type UniversityProfile as UniversityProfileType } from '@/types/university'
 import { FileUpload } from '../ui/file-upload'
 import { Input } from '../ui/input'
@@ -295,7 +296,8 @@ export function UniversityProfile() {
                 return
             }
 
-            const result = await universityProfileService.uploadProfilePicture(file)
+            const uploadFile = await prepareProfileImageForUpload(file)
+            const result = await universityProfileService.uploadProfilePicture(uploadFile)
 
             // Update profile with new image URL
             if (profile) {
@@ -1133,7 +1135,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, editin
     const handleImageUpload = async (file: File) => {
         try {
             setUploadingImage(true)
-            const result = await universityProfileService.uploadProfilePicture(file)
+            const uploadFile = await prepareProfileImageForUpload(file)
+            const result = await universityProfileService.uploadProfilePicture(uploadFile)
             setFormData({ ...formData, profile_picture: result.file_url })
         } catch (error: any) {
             console.error('Image upload error:', error)
