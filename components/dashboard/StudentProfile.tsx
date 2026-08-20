@@ -29,7 +29,6 @@ import { FileUpload } from '../ui/file-upload'
 import { ProfilePictureUpload } from '../profile/ProfilePictureUpload'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
-import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { cn, truncateText, getInitials } from '@/lib/utils'
 import { profileService, type StudentProfile, type ProfileUpdateData, type ProfileCompletionResponse } from '@/services/profileService'
 import { useAuth } from '@/hooks/useAuth'
@@ -40,6 +39,7 @@ import { buildLocationLabel } from '@/lib/googlePlacesUtils'
 import { useBranches, useDegrees, useUniversities, useIndustries } from '@/hooks/useLookup'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { LookupSelect } from '@/components/ui/lookup-select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
@@ -1336,9 +1336,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             }
         })
 
-        // Check if there are any actual changes
+        // Institution locked after registration — exclude from change detection
         const hasChanges = Object.keys(cleanedFormData).some(key => {
             if (key === 'email') return false // Skip email field
+            if (
+                section.id === 'academic' &&
+                (key === 'institution' || key === 'college_id' || key === 'university_id')
+            ) {
+                return false
+            }
             const currentValue = cleanedFormData[key]
             const originalValue = profile[key as keyof StudentProfile]
             return currentValue !== originalValue
@@ -1396,17 +1402,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             }
 
             // Resume Validation
-            if (!cleanedFormData.resume) {
-                validationErrors.push('Resume is required')
-                hasValidationErrors = true
-            }
-
-            // Phone validation
-            if (cleanedFormData.phone && cleanedFormData.phone.length < 10) {
-                validationErrors.push('Phone number must be 10 digits')
-                hasValidationErrors = true
-            }
-
             if (!cleanedFormData.resume) {
                 validationErrors.push('Resume is required. Upload it in the Resume section below.')
                 hasValidationErrors = true
@@ -1562,6 +1557,12 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 toast.error('Please fix the validation errors before saving')
             }
             return
+        }
+
+        if (section.id === 'academic') {
+            delete cleanedFormData.institution
+            delete cleanedFormData.college_id
+            delete cleanedFormData.university_id
         }
 
 
@@ -1853,6 +1854,32 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             )
         }
 
+        if (field === 'graduation_year') {
+            const currentYear = new Date().getFullYear()
+            const yearOptions = Array.from({ length: 21 }, (_, i) => currentYear + 10 - i)
+            const selectedYear = value != null && value !== '' ? String(value) : undefined
+
+            return (
+                <Select
+                    value={selectedYear}
+                    onValueChange={(year) =>
+                        setFormData({ ...formData, graduation_year: Number(year) })
+                    }
+                >
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select graduation year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {yearOptions.map((year) => (
+                            <SelectItem key={year} value={String(year)}>
+                                {year}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )
+        }
+
         if (field.includes('year')) {
             return (
                 <input
@@ -2009,39 +2036,22 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             )
         }
 
-        // Use the same searchable college dropdown pattern as signup.
         if (field === 'institution') {
+            const institutionName = (formData.institution || profile?.institution || '') as string
             return (
-                <AsyncSearchableSelect
-                    placeholder="Search for your college..."
-                    fetchOptions={async (query): Promise<AsyncSelectOption[]> => {
-                        try {
-                            const response = await apiClient.get('/admin/lookups/colleges', {
-                                params: {
-                                    search: query,
-                                    limit: 100
-                                }
-                            })
-                            const colleges = response.colleges || []
-                            return colleges.map((c: any) => ({
-                                value: c.id,
-                                label: c.name ? c.name.replace(/['"]+/g, '').trim() : 'Unknown College'
-                            }))
-                        } catch (error) {
-                            console.error('Failed to fetch colleges', error)
-                            return []
-                        }
-                    }}
-                    onChange={(selectedCollegeId, option) => {
-                        setFormData({
-                            ...formData,
-                            college_id: selectedCollegeId || null,
-                            institution: option?.label || ''
-                        })
-                    }}
-                    value={formData.college_id || ''}
-                    helperText={formData.institution ? `Selected: ${formData.institution}` : undefined}
-                />
+                <div className="space-y-2">
+                    <input
+                        type="text"
+                        value={institutionName}
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        placeholder="Institution not set"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Institution is set during registration and cannot be changed
+                    </p>
+                </div>
             )
         }
 
@@ -2128,17 +2138,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                                 <div key={field} className={field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities') ? 'md:col-span-2' : ''}>
                                     <label className="block text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2 capitalize">
                                         {field.replace(/_/g, ' ')}
-                                        {[
-                                            'name',
-                                            'phone',
-                                            'dob',
-                                            'gender',
-                                            'country',
-                                            'state',
-                                            'city',
-                                            'bio',
-                                            'resume'
-                                        ].includes(field) && (
+                                        {['institution', 'degree', 'branch', 'graduation_year'].includes(field) && (
                                                 <span className="text-red-500 ml-1">*</span>
                                             )}
                                     </label>
@@ -2171,7 +2171,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                             <div>
                                 <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
                                     Twelfth Grade Percentage
-                                    <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <input
                                     type="number"
@@ -2202,7 +2201,6 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                             <div>
                                 <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-2">
                                     Tenth Grade Percentage
-                                    <span className="text-red-500 ml-1">*</span>
                                 </label>
                                 <input
                                     type="number"
