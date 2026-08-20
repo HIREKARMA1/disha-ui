@@ -35,6 +35,7 @@ import {
   JOB_CLOSED_MESSAGE,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
 
 export interface Job {
     id: string
@@ -104,8 +105,16 @@ interface JobSearchResponse {
     has_prev: boolean
 }
 
-type CategoryChip = 'recommended' | 'all' | 'open' | 'closed'
+type CategoryChip = 'recommended' | 'all' | 'open' | 'closed' | 'saved'
 type JobStatusFilter = 'all' | 'open' | 'closed'
+
+const CATEGORY_CHIPS: readonly { value: CategoryChip; label: string }[] = [
+    { value: 'recommended', label: 'Recommended' },
+    { value: 'all', label: 'All Jobs' },
+    { value: 'open', label: 'Open' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'saved', label: 'Saved' },
+]
 
 function parseFiltersFromParams(params: URLSearchParams): {
     searchTerm: string
@@ -127,7 +136,11 @@ function parseFiltersFromParams(params: URLSearchParams): {
 
     const categoryRaw = params.get('category') || 'recommended'
     const categoryChip: CategoryChip =
-        categoryRaw === 'all' || categoryRaw === 'open' || categoryRaw === 'closed' || categoryRaw === 'recommended'
+        categoryRaw === 'all' ||
+        categoryRaw === 'open' ||
+        categoryRaw === 'closed' ||
+        categoryRaw === 'recommended' ||
+        categoryRaw === 'saved'
             ? categoryRaw
             : 'recommended'
 
@@ -181,6 +194,76 @@ function isJobOpen(job: Job): boolean {
         return new Date(job.application_deadline) > new Date()
     }
     return true
+}
+
+function normalizePublicJob(job: Job): Job {
+    return {
+        ...job,
+        title: String(job.title || ''),
+        description: String(job.description || ''),
+        job_type: String(job.job_type || ''),
+        status: String(job.status || ''),
+        location: String(job.location || ''),
+        remote_work: Boolean(job.remote_work),
+        travel_required: Boolean(job.travel_required),
+        salary_currency: String(job.salary_currency || 'INR'),
+        created_at: String(job.created_at || ''),
+        is_active: Boolean(job.is_active),
+        can_apply: Boolean(job.can_apply),
+        salary_min: job.salary_min ? Number(job.salary_min) : undefined,
+        salary_max: job.salary_max ? Number(job.salary_max) : undefined,
+        experience_min: job.experience_min ? Number(job.experience_min) : undefined,
+        experience_max: job.experience_max ? Number(job.experience_max) : undefined,
+        skills_required: Array.isArray(job.skills_required)
+            ? job.skills_required.map(String)
+            : [],
+        application_deadline: job.application_deadline
+            ? String(job.application_deadline)
+            : undefined,
+        max_applications: Number(job.max_applications || 0),
+        current_applications: Number(job.current_applications || 0),
+        industry: job.industry ? String(job.industry) : undefined,
+        corporate_name: job.corporate_name ? String(job.corporate_name) : undefined,
+        company_name: job.company_name ? String(job.company_name) : undefined,
+    }
+}
+
+function applyClientJobFilters(
+    jobs: Job[],
+    activeStatus: JobStatusFilter,
+    activeDate: DatePostedFilter
+): Job[] {
+    let validatedJobs = jobs
+
+    if (activeStatus === 'open') {
+        validatedJobs = validatedJobs.filter(isJobOpen)
+    } else if (activeStatus === 'closed') {
+        validatedJobs = validatedJobs.filter((job) => !isJobOpen(job))
+    }
+
+    if (activeDate !== 'all') {
+        const now = Date.now()
+        const filterHours: Record<string, number> = {
+            '24h': 24,
+            '7d': 24 * 7,
+            '15d': 24 * 15,
+            '30d': 24 * 30,
+        }
+        const hours = filterHours[activeDate] || 0
+        validatedJobs = validatedJobs.filter((job) => {
+            if (!job.created_at) return false
+            const hoursDiff = (now - new Date(job.created_at).getTime()) / (1000 * 60 * 60)
+            return hoursDiff <= hours
+        })
+    }
+
+    validatedJobs.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+        return dateB - dateA
+    })
+
+    return validatedJobs
 }
 
 function deepCleanObject(obj: unknown): unknown {
@@ -286,19 +369,21 @@ export function AllJobs() {
                 filters?: JobsFilterValues
                 datePostedFilter?: DatePostedFilter
                 jobStatusFilter?: JobStatusFilter
+                categoryChip?: CategoryChip
             }
         ) => {
             const activeSearch = override?.searchTerm ?? searchTerm
             const activeFilters = override?.filters ?? filters
             const activeDate = override?.datePostedFilter ?? datePostedFilter
             const activeStatus = override?.jobStatusFilter ?? jobStatusFilter
+            const activeCategory = override?.categoryChip ?? categoryChip
+            const pageSize = pagination.limit
             const requestId = ++fetchIdRef.current
 
-            try {
-                setLoading(true)
+            const buildParams = (pageNum: number, limit: number) => {
                 const params = new URLSearchParams()
-                params.set('page', String(page))
-                params.set('limit', String(pagination.limit))
+                params.set('page', String(pageNum))
+                params.set('limit', String(limit))
                 params.set('sort_by', 'created_at')
                 params.set('sort_order', 'desc')
 
@@ -325,80 +410,88 @@ export function AllJobs() {
                 if (apiDate && activeDate !== '15d') {
                     params.set('date_posted', apiDate)
                 } else if (activeDate === '15d') {
-                    // Request a wider window; refine client-side to 15 days
                     params.set('date_posted', '30_days')
                 }
 
-                const response = await apiClient.client.get(`/public/jobs/?${params}`)
-                if (requestId !== fetchIdRef.current) return
+                return params
+            }
 
-                const data: JobSearchResponse = response.data
-                const cleanedData = deepCleanObject(data) as JobSearchResponse
-                let validatedJobs = (cleanedData.jobs || []).map((job: Job) => ({
-                    ...job,
-                    title: String(job.title || ''),
-                    description: String(job.description || ''),
-                    job_type: String(job.job_type || ''),
-                    status: String(job.status || ''),
-                    location: String(job.location || ''),
-                    remote_work: Boolean(job.remote_work),
-                    travel_required: Boolean(job.travel_required),
-                    salary_currency: String(job.salary_currency || 'INR'),
-                    created_at: String(job.created_at || ''),
-                    is_active: Boolean(job.is_active),
-                    can_apply: Boolean(job.can_apply),
-                    salary_min: job.salary_min ? Number(job.salary_min) : undefined,
-                    salary_max: job.salary_max ? Number(job.salary_max) : undefined,
-                    experience_min: job.experience_min ? Number(job.experience_min) : undefined,
-                    experience_max: job.experience_max ? Number(job.experience_max) : undefined,
-                    skills_required: Array.isArray(job.skills_required)
-                        ? job.skills_required.map(String)
-                        : [],
-                    application_deadline: job.application_deadline
-                        ? String(job.application_deadline)
-                        : undefined,
-                    max_applications: Number(job.max_applications || 0),
-                    current_applications: Number(job.current_applications || 0),
-                    industry: job.industry ? String(job.industry) : undefined,
-                    corporate_name: job.corporate_name ? String(job.corporate_name) : undefined,
-                    company_name: job.company_name ? String(job.company_name) : undefined,
-                }))
-
-                if (activeStatus === 'open') {
-                    validatedJobs = validatedJobs.filter(isJobOpen)
-                } else if (activeStatus === 'closed') {
-                    validatedJobs = validatedJobs.filter((job) => !isJobOpen(job))
-                }
-
-                // Client refine for 15d (no API bucket) and as safety net
-                if (activeDate !== 'all') {
-                    const now = Date.now()
-                    const filterHours: Record<string, number> = {
-                        '24h': 24,
-                        '7d': 24 * 7,
-                        '15d': 24 * 15,
-                        '30d': 24 * 30,
-                    }
-                    const hours = filterHours[activeDate] || 0
-                    validatedJobs = validatedJobs.filter((job) => {
-                        if (!job.created_at) return false
-                        const hoursDiff = (now - new Date(job.created_at).getTime()) / (1000 * 60 * 60)
-                        return hoursDiff <= hours
-                    })
-                }
-
-                validatedJobs.sort((a, b) => {
-                    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
-                    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-                    return dateB - dateA
-                })
-
-                setJobs(validatedJobs)
-                setPagination({
-                    page: data.page || page,
-                    limit: data.limit || 12,
+            const fetchPage = async (pageNum: number, limit: number) => {
+                const response = await apiClient.client.get(`/public/jobs/?${buildParams(pageNum, limit)}`)
+                const data = deepCleanObject(response.data) as JobSearchResponse
+                return {
+                    jobs: (data.jobs || []).map(normalizePublicJob),
+                    page: data.page || pageNum,
+                    limit: data.limit || limit,
                     total: data.total_count || 0,
                     total_pages: data.total_pages || 1,
+                    has_next: Boolean(data.has_next),
+                }
+            }
+
+            try {
+                setLoading(true)
+
+                if (activeCategory === 'saved') {
+                    const savedIds = getSavedJobIds()
+                    if (savedIds.length === 0) {
+                        if (requestId !== fetchIdRef.current) return
+                        setJobs([])
+                        setPagination({
+                            page: 1,
+                            limit: pageSize,
+                            total: 0,
+                            total_pages: 0,
+                        })
+                        return
+                    }
+
+                    const savedSet = new Set(savedIds)
+                    const collected: Job[] = []
+                    let pageNum = 1
+                    let hasNext = true
+                    const maxPages = 10
+
+                    while (hasNext && collected.length < savedSet.size && pageNum <= maxPages) {
+                        const result = await fetchPage(pageNum, 100)
+                        if (requestId !== fetchIdRef.current) return
+                        for (const job of result.jobs) {
+                            if (savedSet.has(job.id) && !collected.some((j) => j.id === job.id)) {
+                                collected.push(job)
+                            }
+                        }
+                        hasNext = result.has_next
+                        pageNum += 1
+                    }
+
+                    const validatedJobs = applyClientJobFilters(collected, activeStatus, activeDate)
+                    validatedJobs.sort(
+                        (a, b) => savedIds.indexOf(b.id) - savedIds.indexOf(a.id)
+                    )
+                    const totalPages = Math.max(1, Math.ceil(validatedJobs.length / pageSize) || 0)
+                    const safePage = Math.min(Math.max(1, page), totalPages || 1)
+                    const start = (safePage - 1) * pageSize
+
+                    setJobs(validatedJobs.slice(start, start + pageSize))
+                    setPagination({
+                        page: validatedJobs.length === 0 ? 1 : safePage,
+                        limit: pageSize,
+                        total: validatedJobs.length,
+                        total_pages: validatedJobs.length === 0 ? 0 : totalPages,
+                    })
+                    return
+                }
+
+                const result = await fetchPage(page, pageSize)
+                if (requestId !== fetchIdRef.current) return
+
+                const validatedJobs = applyClientJobFilters(result.jobs, activeStatus, activeDate)
+                setJobs(validatedJobs)
+                setPagination({
+                    page: result.page,
+                    limit: result.limit,
+                    total: result.total,
+                    total_pages: result.total_pages,
                 })
             } catch (error) {
                 if (requestId !== fetchIdRef.current) return
@@ -409,7 +502,7 @@ export function AllJobs() {
                 if (requestId === fetchIdRef.current) setLoading(false)
             }
         },
-        [searchTerm, filters, datePostedFilter, jobStatusFilter, pagination.limit]
+        [searchTerm, filters, datePostedFilter, jobStatusFilter, categoryChip, pagination.limit]
     )
 
     const applyFiltersAndFetch = useCallback(
@@ -444,6 +537,7 @@ export function AllJobs() {
                 filters: resolved.filters,
                 datePostedFilter: resolved.datePostedFilter,
                 jobStatusFilter: resolved.jobStatusFilter,
+                categoryChip: resolved.categoryChip,
             })
         },
         [
@@ -534,6 +628,7 @@ export function AllJobs() {
                 filters: parsed.filters,
                 datePostedFilter: parsed.datePostedFilter,
                 jobStatusFilter: parsed.jobStatusFilter,
+                categoryChip: parsed.categoryChip,
             })
             return
         }
@@ -543,9 +638,19 @@ export function AllJobs() {
             filters: parsed.filters,
             datePostedFilter: parsed.datePostedFilter,
             jobStatusFilter: parsed.jobStatusFilter,
+            categoryChip: parsed.categoryChip,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams])
+
+    useEffect(() => {
+        const onSavedJobsChanged = () => {
+            if (categoryChip !== 'saved') return
+            void fetchJobs(pagination.page, { categoryChip: 'saved' })
+        }
+        window.addEventListener(SAVED_JOBS_EVENT, onSavedJobsChanged)
+        return () => window.removeEventListener(SAVED_JOBS_EVENT, onSavedJobsChanged)
+    }, [categoryChip, fetchJobs, pagination.page])
 
     // Open dedicated job detail page from deep link (?jobId=)
     useEffect(() => {
@@ -576,7 +681,7 @@ export function AllJobs() {
 
     const handleCategoryChange = (value: CategoryChip) => {
         const nextStatus: JobStatusFilter =
-            value === 'recommended' || value === 'all' ? 'all' : (value as JobStatusFilter)
+            value === 'open' || value === 'closed' ? value : 'all'
         applyFiltersAndFetch({
             categoryChip: value,
             jobStatusFilter: nextStatus,
@@ -724,14 +829,7 @@ export function AllJobs() {
                         {/* Category tabs */}
                         <div className="mt-2 -mx-0.5 overflow-x-auto px-0.5 scrollbar-none sm:mt-3">
                             <div className="flex min-w-max gap-1 sm:gap-1.5">
-                                {(
-                                    [
-                                        { value: 'recommended', label: 'Recommended' },
-                                        { value: 'all', label: 'All Jobs' },
-                                        { value: 'open', label: 'Open' },
-                                        { value: 'closed', label: 'Closed' },
-                                    ] as const
-                                ).map((tab) => {
+                                {CATEGORY_CHIPS.map((tab) => {
                                     const isActive = categoryChip === tab.value
                                     return (
                                         <button
@@ -791,8 +889,11 @@ export function AllJobs() {
                     ) : jobs.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-200 bg-white/50 px-4 py-16 text-center dark:border-gray-700 dark:bg-gray-800/40">
                             <p className="text-base font-medium text-gray-600 dark:text-gray-300 sm:text-lg">
-                                No jobs found matching your criteria.
+                                {categoryChip === 'saved' && getSavedJobIds().length === 0
+                                    ? 'No saved jobs yet. Tap the bookmark icon on a job to save it here.'
+                                    : 'No jobs found matching your criteria.'}
                             </p>
+                            {!(categoryChip === 'saved' && getSavedJobIds().length === 0) && (
                             <Button
                                 variant="link"
                                 onClick={clearFilters}
@@ -800,6 +901,7 @@ export function AllJobs() {
                             >
                                 Clear filters
                             </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-3">
