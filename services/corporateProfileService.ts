@@ -110,7 +110,12 @@ export class CorporateProfileService {
         },
       })
 
-      return response.data
+      const fileUrl = response.data?.file_url || response.data?.company_logo_url || ''
+      return {
+        success: true,
+        file_url: fileUrl,
+        message: response.data?.message || 'Company logo uploaded successfully',
+      }
     } catch (error: any) {
       console.error('Error uploading company logo:', error)
       

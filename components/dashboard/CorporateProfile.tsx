@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
     Building2,
@@ -23,7 +23,7 @@ import { CorporateDashboardLayout } from './CorporateDashboardLayout'
 import { FileUpload } from '../ui/file-upload'
 import { ImageModal } from '../ui/image-modal'
 import { Modal } from '@/components/ui/modal'
-import { cn, getInitials } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
 import { corporateProfileService } from '@/services/corporateProfileService'
 import { type CorporateProfile, type CorporateProfileUpdateData } from '@/types/corporate'
 import { useAuth } from '@/hooks/useAuth'
@@ -33,7 +33,6 @@ import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { CorporatePageHero } from '@/components/corporate/ui/CorporatePageHero'
 import { CorporateGlassCard } from '@/components/corporate/ui/CorporateGlassCard'
-import { corpCard } from '@/components/corporate/ui/corporate-theme'
 import {
     AboutCompanyEditor,
     BusinessDetailsEditor,
@@ -248,11 +247,11 @@ export function CorporateProfile() {
                     ]}
                 />
 
-                {/* Company Hero Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(corpCard, 'p-5 sm:p-6')}
+                {/* Basic Information */}
+                <CorporateGlassCard
+                    title="Basic Information"
+                    action={<EditLink section="basic" />}
+                    delay={0}
                 >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-5">
                         <div className="relative flex-shrink-0 mx-auto sm:mx-0">
@@ -276,14 +275,22 @@ export function CorporateProfile() {
                                     </span>
                                 )}
                             </div>
-                            <button
-                                type="button"
-                                className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center text-blue-600 shadow-md border border-gray-200 dark:border-white/10 hover:scale-110 transition-transform"
-                                onClick={() => setEditing('basic')}
-                                title="Change logo"
-                            >
-                                <Camera className="w-3.5 h-3.5" />
-                            </button>
+                            {profile.company_logo && (
+                                <button
+                                    type="button"
+                                    className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center text-blue-600 shadow-md border border-gray-200 dark:border-white/10 hover:scale-110 transition-transform"
+                                    onClick={() =>
+                                        setImageModal({
+                                            isOpen: true,
+                                            imageUrl: profile.company_logo!,
+                                            altText: profile.company_name,
+                                        })
+                                    }
+                                    title="View logo"
+                                >
+                                    <Camera className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
 
                         <div className="flex-1 min-w-0 text-center sm:text-left">
@@ -321,17 +328,8 @@ export function CorporateProfile() {
                                 </span>
                             </div>
                         </div>
-
-                        <Button
-                            variant="outline"
-                            onClick={() => setEditing('company')}
-                            className="flex-shrink-0 rounded-xl border-gray-200 dark:border-white/10"
-                        >
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit Profile
-                        </Button>
                     </div>
-                </motion.div>
+                </CorporateGlassCard>
 
                 <Modal
                     isOpen={!!editing}
@@ -557,6 +555,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
     const [addressError, setAddressError] = useState<string>('')
+    const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null)
+    const pendingLogoPreviewRef = useRef<string | null>(null)
+
+    const revokePendingLogoPreview = () => {
+        if (pendingLogoPreviewRef.current?.startsWith('blob:')) {
+            URL.revokeObjectURL(pendingLogoPreviewRef.current)
+        }
+        pendingLogoPreviewRef.current = null
+    }
 
     useEffect(() => {
         if (profile && section) {
@@ -565,11 +572,17 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             section.fields.forEach(field => {
                 initialData[field] = profile[field as keyof CorporateProfile] || ''
             })
+            revokePendingLogoPreview()
+            setPendingLogoFile(null)
             setFormData(initialData)
         }
     }, [profile, section])
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        return () => revokePendingLogoPreview()
+    }, [])
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         
         // Validation errors array
@@ -668,6 +681,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
         
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
+            if (key === 'company_logo') {
+                return
+            }
             if (cleanedFormData[key] === '') {
                 cleanedFormData[key] = null
             } else if (key === 'founded_year' && cleanedFormData[key] !== null) {
@@ -675,21 +691,50 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                 cleanedFormData[key] = parseInt(cleanedFormData[key]) || null
             }
         })
-        onSave(cleanedFormData)
+
+        try {
+            if (pendingLogoFile) {
+                setUploading('company_logo')
+                const response = await corporateProfileService.uploadCompanyLogo(pendingLogoFile)
+                const fileUrl = response.file_url || ''
+                if (!fileUrl) {
+                    toast.error('Failed to upload company logo')
+                    return
+                }
+                cleanedFormData.company_logo = fileUrl
+            } else if (
+                typeof cleanedFormData.company_logo === 'string' &&
+                cleanedFormData.company_logo.startsWith('blob:')
+            ) {
+                delete cleanedFormData.company_logo
+            } else if (!cleanedFormData.company_logo) {
+                cleanedFormData.company_logo = ''
+            }
+            onSave(cleanedFormData)
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to upload company logo'
+            toast.error(errorMessage)
+        } finally {
+            setUploading(null)
+        }
     }
 
     const handleFileUpload = async (field: string, file: File) => {
+        if (field === 'company_logo') {
+            revokePendingLogoPreview()
+            const preview = URL.createObjectURL(file)
+            pendingLogoPreviewRef.current = preview
+            setPendingLogoFile(file)
+            setFormData({ ...formData, company_logo: preview })
+            setUploadError(null)
+            return
+        }
+
         setUploading(field)
         setUploadError(null)
         try {
-            console.log('Starting file upload for field:', field)
-            console.log('File details:', { name: file.name, size: file.size, type: file.type })
-
             let response
             switch (field) {
-                case 'company_logo':
-                    response = await corporateProfileService.uploadCompanyLogo(file)
-                    break
                 case 'mca_gst_certificate':
                     response = await corporateProfileService.uploadCertificate(file)
                     break
@@ -721,12 +766,12 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     }
 
     const handleFileRemove = (field: string) => {
+        if (field === 'company_logo') {
+            revokePendingLogoPreview()
+            setPendingLogoFile(null)
+        }
         setFormData({ ...formData, [field]: '' })
         setUploadError(null)
-        
-        // Show info toast
-        const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
-        toast.success(`${fieldName} removed successfully!`)
     }
 
     const renderField = (field: string) => {
@@ -1059,16 +1104,16 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
                     type="button"
                     variant="outline"
                     onClick={onCancel}
-                    disabled={saving}
+                    disabled={saving || !!uploading}
                 >
                     Cancel
                 </Button>
                 <Button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || !!uploading}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                    {saving ? (
+                    {saving || uploading ? (
                         <div className="flex items-center space-x-2">
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                             <span>Saving...</span>

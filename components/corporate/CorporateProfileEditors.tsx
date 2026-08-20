@@ -11,7 +11,7 @@ import {
   Trash2,
   Eye,
 } from 'lucide-react'
-import { SiThreads } from 'react-icons/si'
+import { SiX } from 'react-icons/si'
 import { Button } from '@/components/ui/button'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { FileUpload } from '@/components/ui/file-upload'
@@ -30,8 +30,8 @@ import {
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
-function ThreadsIcon({ className }: { className?: string }) {
-  return <SiThreads className={className} aria-hidden />
+function XIcon({ className }: { className?: string }) {
+  return <SiX className={className} aria-hidden />
 }
 
 const inputClass =
@@ -430,7 +430,7 @@ export function SocialLinksEditor({ profile, onSaved, onCancel }: SectionEditorP
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<CorporateSocialLinks>({
     linkedin: meta.social_links?.linkedin || '',
-    threads: meta.social_links?.threads || '',
+    x: meta.social_links?.x || meta.social_links?.threads || '',
     facebook: meta.social_links?.facebook || '',
     instagram: meta.social_links?.instagram || '',
     youtube: meta.social_links?.youtube || '',
@@ -439,7 +439,7 @@ export function SocialLinksEditor({ profile, onSaved, onCancel }: SectionEditorP
   const handleSave = async () => {
     const fields: (keyof CorporateSocialLinks)[] = [
       'linkedin',
-      'threads',
+      'x',
       'facebook',
       'instagram',
       'youtube',
@@ -475,7 +475,7 @@ export function SocialLinksEditor({ profile, onSaved, onCancel }: SectionEditorP
 
   const fields: { key: keyof CorporateSocialLinks; label: string }[] = [
     { key: 'linkedin', label: 'LinkedIn URL' },
-    { key: 'threads', label: 'Threads URL' },
+    { key: 'x', label: 'X URL' },
     { key: 'facebook', label: 'Facebook URL' },
     { key: 'instagram', label: 'Instagram URL' },
     { key: 'youtube', label: 'YouTube URL' },
@@ -616,7 +616,7 @@ export function SocialLinksDisplay({
 }) {
   const items = [
     { key: 'linkedin', href: links?.linkedin, icon: Linkedin, color: 'bg-[#0A66C2] text-white', label: 'LinkedIn' },
-    { key: 'threads', href: links?.threads, icon: ThreadsIcon, color: 'bg-gray-900 dark:bg-white text-white dark:text-gray-900', label: 'Threads' },
+    { key: 'x', href: links?.x || links?.threads, icon: XIcon, color: 'bg-black text-white', label: 'X' },
     { key: 'facebook', href: links?.facebook, icon: Facebook, color: 'bg-[#1877F2] text-white', label: 'Facebook' },
     { key: 'instagram', href: links?.instagram, icon: Instagram, color: 'bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white', label: 'Instagram' },
     { key: 'youtube', href: links?.youtube, icon: Youtube, color: 'bg-[#FF0000] text-white', label: 'YouTube' },
@@ -765,4 +765,4 @@ function EditorActions({
   )
 }
 
-export { ThreadsIcon, buildDocumentList }
+export { XIcon, buildDocumentList }
