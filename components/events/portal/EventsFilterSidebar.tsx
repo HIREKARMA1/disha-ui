@@ -12,6 +12,7 @@ export interface StatusCounts {
   all: number
   open: number
   live: number
+  completed: number
   closed: number
 }
 
@@ -31,6 +32,7 @@ function EventsFilterSidebarComponent({
   const countForStatus = (value: PortalStatusFilter) => {
     if (value === 'open') return statusCounts.open
     if (value === 'live') return statusCounts.live
+    if (value === 'completed') return statusCounts.completed
     if (value === 'closed') return statusCounts.closed
     return statusCounts.all
   }
