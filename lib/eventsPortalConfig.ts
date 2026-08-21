@@ -43,10 +43,19 @@ export const PORTAL_STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
   { value: 'open', label: 'Open' },
   { value: 'live', label: 'Live' },
+  { value: 'completed', label: 'Completed' },
   { value: 'closed', label: 'Closed' },
 ] as const
 
 export type PortalStatusFilter = (typeof PORTAL_STATUS_OPTIONS)[number]['value']
+
+/** Public listing/detail: lifecycle "closed" is shown as Completed. */
+export function isPortalEventCompleted(event: {
+  contest_status?: string
+  registration_state?: string
+}): boolean {
+  return event.registration_state === 'event_completed' || event.contest_status === 'closed'
+}
 
 export const PORTAL_DATE_OPTIONS = [
   { value: 'all', label: 'All Dates' },

@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
+import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
 import { stripHtmlToPlainText } from '@/lib/sanitizeHtml'
 
@@ -27,6 +28,7 @@ const statusStyles: Record<string, string> = {
   upcoming: 'bg-blue-500/15 text-blue-700 border-blue-200 dark:text-blue-300 dark:border-blue-800',
   live: 'bg-emerald-500 text-white border-emerald-500',
   closed: 'bg-gray-500/15 text-gray-700 border-gray-200 dark:text-gray-300 dark:border-gray-700',
+  completed: 'bg-gray-500/15 text-gray-700 border-gray-200 dark:text-gray-300 dark:border-gray-700',
   postponed: 'bg-amber-500/15 text-amber-700 border-amber-200 dark:text-amber-300',
   cancelled: 'bg-red-500/15 text-red-700 border-red-200 dark:text-red-300',
 }
@@ -59,6 +61,9 @@ function ContestCardComponent({ event }: ContestCardProps) {
   const detailHref = `/events/${slug}`
   const registerHref = `/events/${slug}?register=1&action=register`
   const deadline = formatDate(event.registration_end_date)
+  const isCompleted = isPortalEventCompleted(event)
+  const displayStatus = isCompleted ? 'completed' : event.contest_status
+  const showRegister = !event.is_registered && !isCompleted
   const tags = [
     event.category ? CATEGORY_LABELS[event.category] || event.category : null,
     ...(event.visibility_labels?.slice(0, 2) ?? []),
@@ -118,12 +123,12 @@ function ContestCardComponent({ event }: ContestCardProps) {
           <Badge
             className={cn(
               'border text-[11px] font-semibold',
-              statusStyles[event.contest_status] || statusStyles.upcoming
+              statusStyles[displayStatus] || statusStyles.upcoming
             )}
           >
-            {CONTEST_STATUS_LABELS[event.contest_status] || event.contest_status}
+            {CONTEST_STATUS_LABELS[displayStatus] || displayStatus}
           </Badge>
-          {event.registration_is_open && (
+          {event.registration_is_open && !isCompleted && (
             <Badge className="border border-emerald-500/40 bg-transparent text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
               Registration Open
             </Badge>
@@ -204,13 +209,13 @@ function ContestCardComponent({ event }: ContestCardProps) {
             >
               Registered
             </Button>
-          ) : (
+          ) : showRegister ? (
             <Link href={registerHref} className="sm:flex-1">
               <Button className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
                 Register Now
               </Button>
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </article>

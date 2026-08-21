@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventDetail } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
+import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
   Mail, Phone, Globe, MapPin, ChevronDown, ChevronUp, CheckCircle,
@@ -520,7 +521,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">POSTPONED</Badge>
       ) : (
         <Badge className="bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-          {CONTEST_STATUS_LABELS[event.contest_status]}
+          {isPortalEventCompleted(event)
+            ? CONTEST_STATUS_LABELS.completed
+            : CONTEST_STATUS_LABELS[event.contest_status]}
         </Badge>
       )}
       {showRegister && (
@@ -1007,7 +1010,11 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Status</span>
-                    <Badge className="text-xs">{CONTEST_STATUS_LABELS[event.contest_status]}</Badge>
+                    <Badge className="text-xs">
+                      {isPortalEventCompleted(event)
+                        ? CONTEST_STATUS_LABELS.completed
+                        : CONTEST_STATUS_LABELS[event.contest_status]}
+                    </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Participants</span>
