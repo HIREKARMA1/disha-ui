@@ -20,6 +20,9 @@ export class BulkEmailService {
         category: BulkEmailCategory = 'all',
         status: BulkEmailStatusFilter = 'all'
     ): Promise<BulkEmailRecipientsResponse> {
+        if (category === 'none') {
+            return { count: 0, users: [] }
+        }
         ensureAuth()
         const response = await apiClient.client.get<BulkEmailRecipientsResponse>(
             '/admin/bulk-email/recipients',

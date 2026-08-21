@@ -89,6 +89,7 @@ export function BulkEmailManagement() {
     const [statusFilter, setStatusFilter] = useState<BulkEmailStatusFilter>('all')
     const [recipients, setRecipients] = useState<ManagedRecipient[]>([])
     const [manualEmail, setManualEmail] = useState('')
+    const [manualEmailError, setManualEmailError] = useState<string | null>(null)
     const [importedCount, setImportedCount] = useState(0)
     const [subject, setSubject] = useState('')
     const [body, setBody] = useState('')
@@ -106,7 +107,9 @@ export function BulkEmailManagement() {
     const [isSearching, setIsSearching] = useState(false)
     const [searchError, setSearchError] = useState<string | null>(null)
     const searchRequestRef = useRef(0)
+    const recipientsRequestRef = useRef(0)
     const savedScrollYRef = useRef<number | null>(null)
+    const isNoneCategory = category === 'none'
 
     const filterRecipientCount = useMemo(
         () => recipients.filter((recipient) => recipient.source === 'filter').length,
@@ -160,18 +163,32 @@ export function BulkEmailManagement() {
     }, [])
 
     const fetchRecipients = useCallback(async () => {
+        const requestId = ++recipientsRequestRef.current
+
+        if (category === 'none') {
+            setRecipients((current) =>
+                current.filter((recipient) => recipient.source !== 'filter')
+            )
+            setIsLoadingRecipients(false)
+            return
+        }
+
         setIsLoadingRecipients(true)
         try {
             const result = await bulkEmailService.getRecipients(category, statusFilter)
+            if (requestId !== recipientsRequestRef.current) return
             const mapped: ManagedRecipient[] = result.users.map((user) => ({
                 ...user,
                 source: 'filter' as const,
             }))
             mergeRecipients(mapped, true)
         } catch (error) {
+            if (requestId !== recipientsRequestRef.current) return
             toast.error(getErrorMessage(error))
         } finally {
-            setIsLoadingRecipients(false)
+            if (requestId === recipientsRequestRef.current) {
+                setIsLoadingRecipients(false)
+            }
         }
     }, [category, statusFilter, mergeRecipients])
 
@@ -254,16 +271,22 @@ export function BulkEmailManagement() {
     const handleAddEmail = () => {
         const trimmed = manualEmail.trim()
         if (!trimmed) {
-            toast.error('Please enter an email address')
+            const message = 'Please enter an email address'
+            setManualEmailError(message)
+            toast.error(message)
             return
         }
         if (!isValidEmail(trimmed)) {
-            toast.error('Please enter a valid email address')
+            const message = 'Please enter a valid email address'
+            setManualEmailError(message)
+            toast.error(message)
             return
         }
         const normalized = normalizeEmail(trimmed)
         if (recipients.some((recipient) => normalizeEmail(recipient.email) === normalized)) {
-            toast.error('This email is already in the recipient list')
+            const message = 'This email is already in the recipient list'
+            setManualEmailError(message)
+            toast.error(message)
             return
         }
 
@@ -275,6 +298,7 @@ export function BulkEmailManagement() {
             source: 'manual',
         }], false)
         setManualEmail('')
+        setManualEmailError(null)
         toast.success('Email added')
     }
 
@@ -317,6 +341,10 @@ export function BulkEmailManagement() {
         }
     }
 
+    const emptyRecipientsMessage = isNoneCategory
+        ? 'Please add at least one email address.'
+        : 'At least one recipient is required'
+
     const handleSend = async () => {
         if (!subject.trim()) {
             toast.error('Subject is required')
@@ -327,19 +355,30 @@ export function BulkEmailManagement() {
             return
         }
         if (totalRecipients === 0) {
-            toast.error('At least one recipient is required')
+            toast.error(emptyRecipientsMessage)
+            return
+        }
+
+        const emailsToSend = isNoneCategory
+            ? recipients
+                .filter((recipient) => recipient.source !== 'filter')
+                .map((recipient) => recipient.email)
+            : recipients.map((recipient) => recipient.email)
+
+        if (emailsToSend.length === 0) {
+            toast.error(emptyRecipientsMessage)
             return
         }
 
         setIsSending(true)
-        const toastId = toast.loading(`Sending bulk email to ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}...`)
+        const toastId = toast.loading(`Sending bulk email to ${emailsToSend.length} recipient${emailsToSend.length === 1 ? '' : 's'}...`)
         try {
             const result = await bulkEmailService.sendBulkEmail({
                 category,
-                status: statusFilter,
+                status: isNoneCategory ? 'all' : statusFilter,
                 subject: subject.trim(),
                 body,
-                emails: recipients.map((recipient) => recipient.email),
+                emails: emailsToSend,
             })
 
             if (!result.success) {
@@ -426,7 +465,9 @@ export function BulkEmailManagement() {
                             Recipient Filters
                         </CardTitle>
                         <CardDescription>
-                            Filter platform users by category and status. Results auto-populate the recipient list.
+                            {isNoneCategory
+                                ? 'No users are selected automatically. Add individual email addresses below.'
+                                : 'Filter platform users by category and status. Results auto-populate the recipient list.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -445,6 +486,7 @@ export function BulkEmailManagement() {
                                         <SelectItem value="student">Student</SelectItem>
                                         <SelectItem value="corporate">Corporate</SelectItem>
                                         <SelectItem value="university">University</SelectItem>
+                                        <SelectItem value="none">None</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -453,6 +495,7 @@ export function BulkEmailManagement() {
                                 <Select
                                     value={statusFilter}
                                     onValueChange={(value) => setStatusFilter(value as BulkEmailStatusFilter)}
+                                    disabled={isNoneCategory}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select status" />
@@ -467,6 +510,11 @@ export function BulkEmailManagement() {
                                 </Select>
                             </div>
                         </div>
+                        {isNoneCategory && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Recipient Count: {totalRecipients}. Only manually added emails will receive this message.
+                            </p>
+                        )}
                         {isLoadingRecipients && (
                             <p className="text-sm text-gray-500">Loading matching recipients...</p>
                         )}
@@ -477,19 +525,28 @@ export function BulkEmailManagement() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Mail className="h-5 w-5" />
-                            Add Recipients
+                            {isNoneCategory ? 'Manual Recipients' : 'Add Recipients'}
                         </CardTitle>
                         <CardDescription>
-                            Manually add emails or upload a CSV file with an email column. Works together with search and filters.
+                            {isNoneCategory
+                                ? 'Enter email addresses to send this bulk email. These are the only recipients.'
+                                : 'Manually add emails or upload a CSV file with an email column. Works together with search and filters.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {isNoneCategory && (
+                            <Label htmlFor="bulk-email-manual-address">Enter email address</Label>
+                        )}
                         <div className="flex flex-col sm:flex-row gap-2">
                             <Input
+                                id="bulk-email-manual-address"
                                 type="email"
                                 placeholder="Email address"
                                 value={manualEmail}
-                                onChange={(event) => setManualEmail(event.target.value)}
+                                onChange={(event) => {
+                                    setManualEmail(event.target.value)
+                                    if (manualEmailError) setManualEmailError(null)
+                                }}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Enter') {
                                         event.preventDefault()
@@ -502,6 +559,9 @@ export function BulkEmailManagement() {
                                 Add Email
                             </Button>
                         </div>
+                        {manualEmailError && (
+                            <p className="text-sm text-red-600">{manualEmailError}</p>
+                        )}
                         <div className="flex flex-wrap items-center gap-3">
                             <input
                                 ref={fileInputRef}
@@ -527,6 +587,7 @@ export function BulkEmailManagement() {
                 </Card>
             </div>
 
+            {!isNoneCategory && (
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -644,18 +705,23 @@ export function BulkEmailManagement() {
                     )}
                 </CardContent>
             </Card>
+            )}
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Selected Recipients</CardTitle>
+                    <CardTitle>{isNoneCategory ? `Recipients (${totalRecipients})` : 'Selected Recipients'}</CardTitle>
                     <CardDescription>
-                        {totalRecipients} recipient{totalRecipients === 1 ? '' : 's'} ready to receive this email.
+                        {isNoneCategory
+                            ? `${totalRecipients} manually added recipient${totalRecipients === 1 ? '' : 's'}.`
+                            : `${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'} ready to receive this email.`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {totalRecipients === 0 ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
-                            No recipients selected. Search users, apply filters, or add emails to get started.
+                            {isNoneCategory
+                                ? 'No recipients selected. Add individual email addresses to send this email.'
+                                : 'No recipients selected. Search users, apply filters, or add emails to get started.'}
                         </p>
                     ) : (
                         <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -741,7 +807,7 @@ export function BulkEmailManagement() {
                                     return
                                 }
                                 if (totalRecipients === 0) {
-                                    toast.error('At least one recipient is required')
+                                    toast.error(emptyRecipientsMessage)
                                     return
                                 }
                                 setShowConfirm(true)
