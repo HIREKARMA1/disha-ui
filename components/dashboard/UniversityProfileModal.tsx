@@ -830,9 +830,9 @@ export function UniversityProfileModal({
 
                 {/* Profile Overview */}
                 <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-indigo-900/20 p-3 sm:p-4 lg:p-6 border-b border-blue-200 dark:border-blue-700">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 lg:gap-6">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 lg:gap-6 min-w-0">
                         {/* Profile Avatar & Basic Info */}
-                        <div className="text-center sm:text-left">
+                        <div className="text-center sm:text-left min-w-0 w-full sm:flex-1 sm:max-w-[50%]">
                             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto sm:mx-0 mb-2 sm:mb-3 relative">
                                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg overflow-hidden">
                                     {extendedUniversity.profile_picture ? (
@@ -857,10 +857,13 @@ export function UniversityProfileModal({
                                     )}
                                 </div>
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                            <h3
+                                className="text-lg font-semibold text-gray-900 dark:text-white mb-1 break-words"
+                                title={extendedUniversity.university_name}
+                            >
                                 {extendedUniversity.university_name}
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                            <p className="text-gray-600 dark:text-gray-400 text-sm break-words">
                                 {extendedUniversity.institute_type || 'Educational Institution'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -869,7 +872,7 @@ export function UniversityProfileModal({
                         </div>
 
                         {/* Profile Stats */}
-                        <div className="flex-1 w-full">
+                        <div className="flex-1 min-w-0 w-full sm:max-w-[50%]">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3 lg:mb-4">
                                 {/* Email Card - Blue Theme */}
                                 <div className="flex items-center justify-between p-2 sm:p-3 lg:p-4 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
