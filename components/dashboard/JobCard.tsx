@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 import { Tooltip } from '@/components/ui/tooltip'
 import type { ReactElement, ReactNode } from 'react'
+import toast from 'react-hot-toast'
+import { useSavedJobs } from '@/hooks/useSavedJobs'
 
 interface Job {
     id: string
@@ -71,6 +73,7 @@ interface JobCardProps {
 }
 
 export function JobCard({ job, onViewDescription, onApply, isApplying = false, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
+    const { isSaved, toggle: toggleSaved } = useSavedJobs(job?.id)
     // Safety check - ensure job object is valid
     if (!job || typeof job !== 'object') {
         console.error('Invalid job object:', job)
@@ -322,11 +325,22 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                             )}
                             <button
                                 type="button"
-                                onClick={(e) => e.preventDefault()}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-500/10"
-                                aria-label="Bookmark job"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    const saved = toggleSaved(job.id)
+                                    toast.success(saved ? 'Job saved' : 'Removed from saved jobs')
+                                }}
+                                className={cn(
+                                    'p-1.5 rounded-lg transition-colors',
+                                    isSaved
+                                        ? 'text-blue-500 bg-blue-500/10 hover:text-blue-600 hover:bg-blue-500/15'
+                                        : 'text-gray-400 hover:text-blue-500 hover:bg-blue-500/10'
+                                )}
+                                aria-label={isSaved ? 'Unsave job' : 'Save job'}
+                                aria-pressed={isSaved}
                             >
-                                <Bookmark className="w-4 h-4" />
+                                <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
                             </button>
                         </div>
                     </div>

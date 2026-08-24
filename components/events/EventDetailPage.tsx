@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventDetail } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
+import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
   Mail, Phone, Globe, MapPin, ChevronDown, ChevronUp, CheckCircle,
@@ -223,7 +224,11 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         url.searchParams.delete('register')
         url.searchParams.delete('action')
         url.searchParams.delete('eventId')
-        window.history.replaceState({}, '', url.pathname + (url.hash || ''))
+        window.history.replaceState(
+          window.history.state,
+          '',
+          url.pathname + url.search + (url.hash || '')
+        )
       }
       try {
         const updated = isAdmin
@@ -301,14 +306,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
     if (!wantsRegister) return
 
-    // Guest with register intent → login, then return here to auto-register
-    if (!token) {
-      const redirectPath = buildEventRegisterRedirect(slug, event.id)
-      storePendingEventRegistration(slug, event.id)
-      localStorage.setItem('redirect_after_login', redirectPath)
-      router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
-      return
-    }
+    // Guest with leftover pending intent (e.g. browser Back from login): stay on
+    // the event page. Login is only via explicit Register click in handleRegister.
+    if (!token) return
 
     if (event.is_registered) {
       clearPendingEventRegistration()
@@ -321,7 +321,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
     autoRegisterAttempted.current = true
     void handleRegister()
-  }, [event, authLoading, registering, slug, handleRegister, router])
+  }, [event, authLoading, registering, slug, handleRegister])
 
   // Hash navigation on load
   useEffect(() => {
@@ -338,9 +338,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const id = entry.target.id
-            setActiveSection(id)
-            window.history.replaceState(null, '', `#${id}`)
+            setActiveSection(entry.target.id)
           }
         })
       },
@@ -357,7 +355,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     const el = sectionRefs.current[id]
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      window.history.replaceState(null, '', `#${id}`)
+      const nextUrl = `${window.location.pathname}${window.location.search}#${id}`
+      window.history.replaceState(window.history.state, '', nextUrl)
       setActiveSection(id)
     }
   }, [])
@@ -522,7 +521,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">POSTPONED</Badge>
       ) : (
         <Badge className="bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-          {CONTEST_STATUS_LABELS[event.contest_status]}
+          {isPortalEventCompleted(event)
+            ? CONTEST_STATUS_LABELS.completed
+            : CONTEST_STATUS_LABELS[event.contest_status]}
         </Badge>
       )}
       {showRegister && (
@@ -1009,7 +1010,11 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Status</span>
-                    <Badge className="text-xs">{CONTEST_STATUS_LABELS[event.contest_status]}</Badge>
+                    <Badge className="text-xs">
+                      {isPortalEventCompleted(event)
+                        ? CONTEST_STATUS_LABELS.completed
+                        : CONTEST_STATUS_LABELS[event.contest_status]}
+                    </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Participants</span>

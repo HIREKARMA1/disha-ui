@@ -379,6 +379,7 @@ export const CONTEST_STATUS_LABELS: Record<string, string> = {
   upcoming: 'Upcoming',
   live: 'Live',
   closed: 'Closed',
+  completed: 'Completed',
   archived: 'Archived',
   cancelled: 'Cancelled',
   postponed: 'Postponed',

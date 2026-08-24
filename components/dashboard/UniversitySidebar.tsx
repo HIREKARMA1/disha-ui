@@ -13,6 +13,7 @@ import {
     LogOut,
     Brain,
     BarChart3,
+    Award,
     Settings,
     MoreHorizontal,
 } from 'lucide-react'
@@ -76,10 +77,16 @@ const navItems: NavItem[] = [
         description: 'Placement insights & reports',
     },
     {
+        label: 'Licenses',
+        href: '/dashboard/university/licenses',
+        icon: Award,
+        description: 'View and manage student licenses',
+    },
+    {
         label: 'Settings',
         href: '/dashboard/university/settings',
         icon: Settings,
-        description: 'Account & license settings',
+        description: 'Account settings',
     },
 ]
 
@@ -155,14 +162,6 @@ export function UniversitySidebar({ className = '' }: UniversitySidebarProps) {
 
     const isItemActive = (href: string) => {
         if (href === '/dashboard/university') return pathname === href
-        if (href === '/dashboard/university/settings') {
-            return (
-                pathname === href ||
-                pathname?.startsWith(`${href}/`) ||
-                pathname === '/dashboard/university/licenses' ||
-                pathname?.startsWith('/dashboard/university/licenses/')
-            )
-        }
         return pathname === href || pathname?.startsWith(`${href}/`)
     }
 

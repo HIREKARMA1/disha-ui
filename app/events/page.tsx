@@ -43,7 +43,13 @@ function EventsPageContent() {
     (searchParams.get('status') as PortalStatusFilter) || 'all'
   )
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
-  const [statusCounts, setStatusCounts] = useState<StatusCounts>({ all: 0, open: 0, live: 0, closed: 0 })
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({
+    all: 0,
+    open: 0,
+    live: 0,
+    completed: 0,
+    closed: 0,
+  })
   const [pagination, setPagination] = useState({
     page: 1,
     total_pages: 1,
@@ -61,7 +67,7 @@ function EventsPageContent() {
   const fetchStatusCounts = useCallback(async () => {
     const registeredOnly = activeTab === 'registered'
     try {
-      const [allRes, openRes, liveRes, closedRes] = await Promise.all([
+      const [allRes, openRes, liveRes, completedRes, closedRes] = await Promise.all([
         contestEventService.listPublicEvents({ limit: 1, page: 1, registered_only: registeredOnly }),
         contestEventService.listPublicEvents({
           limit: 1,
@@ -78,6 +84,12 @@ function EventsPageContent() {
         contestEventService.listPublicEvents({
           limit: 1,
           page: 1,
+          status: 'completed',
+          registered_only: registeredOnly,
+        }),
+        contestEventService.listPublicEvents({
+          limit: 1,
+          page: 1,
           status: 'closed',
           registered_only: registeredOnly,
         }),
@@ -86,10 +98,11 @@ function EventsPageContent() {
         all: allRes.total_count,
         open: openRes.total_count,
         live: liveRes.total_count,
+        completed: completedRes.total_count,
         closed: closedRes.total_count,
       })
     } catch {
-      setStatusCounts({ all: 0, open: 0, live: 0, closed: 0 })
+      setStatusCounts({ all: 0, open: 0, live: 0, completed: 0, closed: 0 })
     }
   }, [activeTab])
 
@@ -169,6 +182,7 @@ function EventsPageContent() {
   const countForStatus = (value: PortalStatusFilter) => {
     if (value === 'open') return statusCounts.open
     if (value === 'live') return statusCounts.live
+    if (value === 'completed') return statusCounts.completed
     if (value === 'closed') return statusCounts.closed
     return statusCounts.all
   }

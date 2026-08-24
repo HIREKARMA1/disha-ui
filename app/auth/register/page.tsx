@@ -121,11 +121,9 @@ const studentSchema = z.object({
         .min(1, 'Name is required')
         .regex(/^[A-Za-z\s]+$/, 'Name can only contain letters and spaces'),
     phone: z
-        .string()
-        .refine((val) => val === '' || /^\d{10}$/.test(val), {
-            message: 'Phone number must be exactly 10 digits',
-        })
-        .optional(),
+        .string({ required_error: 'Phone number is required' })
+        .min(1, 'Phone number is required')
+        .regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
     dob: z.string().optional(),
     gender: z.string().optional(),
     graduation_year: z.number().optional(),
@@ -166,11 +164,9 @@ const corporateSchema = z.object({
     contact_designation: z.string().optional(),
     address: z.string().optional(),
     phone: z
-        .string()
-        .refine((val) => val === '' || /^\d{10}$/.test(val), {
-            message: 'Phone number must be exactly 10 digits',
-        })
-        .optional(),
+        .string({ required_error: 'Mobile number is required' })
+        .min(1, 'Mobile number is required')
+        .regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
 
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -460,7 +456,7 @@ function RegisterPageContent() {
 
             <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Number
+                    Phone Number *
                 </label>
                 <Input
                     id="phone"
@@ -470,6 +466,7 @@ function RegisterPageContent() {
                     maxLength={10}
                     placeholder="Enter 10 digit phone number (e.g. 9876543210)"
                     leftIcon={<Phone className="w-4 h-4" />}
+                    error={!!(errors as any).phone}
                     {...register('phone', {
                         onChange: (e) => {
                             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10)
@@ -552,6 +549,32 @@ function RegisterPageContent() {
                 {(errors as any).company_name && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                         {typeof (errors as any).company_name.message === 'string' ? (errors as any).company_name.message : 'Company name is required'}
+                    </p>
+                )}
+            </div>
+
+            <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Mobile Number *
+                </label>
+                <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    maxLength={10}
+                    placeholder="Enter 10 digit phone number (e.g. 9876543210)"
+                    leftIcon={<Phone className="w-4 h-4" />}
+                    error={!!(errors as any).phone}
+                    {...register('phone', {
+                        onChange: (e) => {
+                            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                        }
+                    })}
+                />
+                {(errors as any).phone && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {typeof (errors as any).phone.message === 'string' ? (errors as any).phone.message : 'Invalid phone number'}
                     </p>
                 )}
             </div>

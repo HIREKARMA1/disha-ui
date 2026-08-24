@@ -1,11 +1,19 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Filter, Play, Clock, Eye, Calendar, User, ChevronLeft, ChevronRight, Loader2, TrendingUp, Sparkles, X, ThumbsUp, Share2, Bookmark, MoreVertical, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
+import toast from 'react-hot-toast'
+import {
+    isVideoLiked,
+    isVideoSaved,
+    toggleLikedVideo,
+    toggleSavedVideo,
+    shareVideo,
+} from '@/lib/videoEngagement'
 
 interface Video {
     id: string
@@ -44,7 +52,11 @@ export default function VideoSearchPage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [itemsPerPage, setItemsPerPage] = useState(12)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+    const pageSizeDropdownRef = useRef<HTMLDivElement>(null)
     const [hasSearched, setHasSearched] = useState(false)
+    const [likedVideoIds, setLikedVideoIds] = useState<Set<string>>(new Set())
+    const [savedVideoIds, setSavedVideoIds] = useState<Set<string>>(new Set())
+    const [moreMenuOpen, setMoreMenuOpen] = useState(false)
 
     // Popular search suggestions
     const popularSearches = [
@@ -70,7 +82,7 @@ export default function VideoSearchPage() {
         { name: 'Data Science', query: 'data science tutorial' }
     ]
 
-    const searchVideos = async (query: string, page: number = 1) => {
+    const searchVideos = async (query: string, page: number = 1, pageSize: number = itemsPerPage) => {
         if (!query.trim()) return
 
         setLoading(true)
@@ -78,14 +90,18 @@ export default function VideoSearchPage() {
         setHasSearched(true)
 
         try {
-            const skip = (page - 1) * itemsPerPage
-            const data: VideoSearchResponse = await apiClient.searchVideos(query.trim(), skip, itemsPerPage)
+            const size = Math.max(1, pageSize)
+            const skip = (page - 1) * size
+            const data: VideoSearchResponse = await apiClient.searchVideos(query.trim(), skip, size)
+            const pageVideos = (data.videos || []).slice(0, size)
+            const total = typeof data.total_count === 'number' ? data.total_count : pageVideos.length
+            const pages = Math.max(1, data.total_pages || Math.ceil(total / size) || 1)
 
-            setVideos(data.videos)
-            setTotalCount(data.total_count)
-            setTotalPages(data.total_pages)
-            setHasMore(data.has_more)
-            setCurrentPage(data.current_page)
+            setVideos(pageVideos)
+            setTotalCount(total)
+            setTotalPages(pages)
+            setCurrentPage(data.current_page || page)
+            setHasMore(Boolean(data.has_more) || page < pages)
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Failed to search videos')
             setVideos([])
@@ -100,40 +116,83 @@ export default function VideoSearchPage() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
         if (searchQuery.trim()) {
-            searchVideos(searchQuery, 1)
+            setCurrentPage(1)
+            searchVideos(searchQuery, 1, itemsPerPage)
         }
     }
 
     const handleCategoryClick = (categoryQuery: string) => {
         setSearchQuery(categoryQuery)
-        searchVideos(categoryQuery, 1)
+        setCurrentPage(1)
+        searchVideos(categoryQuery, 1, itemsPerPage)
     }
 
     const handlePageChange = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages || loading) return
         if (searchQuery.trim()) {
-            searchVideos(searchQuery, newPage)
+            searchVideos(searchQuery, newPage, itemsPerPage)
         }
     }
 
     const handleVideoClick = (video: Video) => {
         setSelectedVideo(video)
         setIsModalOpen(true)
+        setMoreMenuOpen(false)
+        setLikedVideoIds(new Set([
+            ...Array.from(likedVideoIds),
+            ...(isVideoLiked(video.id) ? [video.id] : []),
+        ]))
+        setSavedVideoIds(new Set([
+            ...Array.from(savedVideoIds),
+            ...(isVideoSaved(video.id) ? [video.id] : []),
+        ]))
     }
 
     const closeModal = () => {
         setIsModalOpen(false)
         setSelectedVideo(null)
+        setMoreMenuOpen(false)
+    }
+
+    const handleLike = (video: Video) => {
+        const liked = toggleLikedVideo(video.id)
+        setLikedVideoIds((prev) => {
+            const next = new Set(prev)
+            if (liked) next.add(video.id)
+            else next.delete(video.id)
+            return next
+        })
+        toast.success(liked ? 'Video liked' : 'Like removed')
+    }
+
+    const handleSave = (video: Video) => {
+        const saved = toggleSavedVideo(video.id)
+        setSavedVideoIds((prev) => {
+            const next = new Set(prev)
+            if (saved) next.add(video.id)
+            else next.delete(video.id)
+            return next
+        })
+        toast.success(saved ? 'Video saved' : 'Removed from saved videos')
+    }
+
+    const handleShare = async (video: Video) => {
+        try {
+            const result = await shareVideo(video.title, video.url)
+            if (result === 'copied') {
+                toast.success('Video link copied to clipboard')
+            }
+        } catch (error) {
+            if ((error as Error)?.name === 'AbortError') return
+            toast.error('Unable to share this video')
+        }
     }
 
     const handleItemsPerPageChange = (newItemsPerPage: number) => {
         setItemsPerPage(newItemsPerPage)
-        // Automatically search with new items per page if there's a search query OR if there are existing videos
+        setCurrentPage(1)
         if (searchQuery.trim()) {
-            searchVideos(searchQuery.trim(), 1) // Reset to page 1 when changing items per page
-        } else if (videos.length > 0) {
-            // If no search query but there are videos, use the last search query or default
-            const lastQuery = searchQuery || 'c' // Use 'c' as default since that's what's shown in the search box
-            searchVideos(lastQuery, 1)
+            searchVideos(searchQuery.trim(), 1, newItemsPerPage)
         }
     }
 
@@ -158,18 +217,20 @@ export default function VideoSearchPage() {
 
     // Handle click outside dropdown
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (isDropdownOpen && !(event.target as Element).closest('.relative')) {
+        if (!isDropdownOpen) return
+
+        const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+            const root = pageSizeDropdownRef.current
+            if (root && !root.contains(event.target as Node)) {
                 setIsDropdownOpen(false)
             }
         }
 
-        if (isDropdownOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-
+        document.addEventListener('mousedown', handlePointerDown)
+        document.addEventListener('touchstart', handlePointerDown)
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
+            document.removeEventListener('mousedown', handlePointerDown)
+            document.removeEventListener('touchstart', handlePointerDown)
         }
     }, [isDropdownOpen])
 
@@ -251,7 +312,7 @@ export default function VideoSearchPage() {
                             <label className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                 Videos per page:
                             </label>
-                            <div className="relative">
+                            <div className="relative" ref={pageSizeDropdownRef}>
                                 <button
                                     type="button"
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -423,7 +484,7 @@ export default function VideoSearchPage() {
                                                 disabled={currentPage <= 1 || loading}
                                                 className="px-3 py-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                ←
+                                                Previous
                                             </Button>
 
                                             {/* Page Numbers */}
@@ -462,10 +523,10 @@ export default function VideoSearchPage() {
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => handlePageChange(currentPage + 1)}
-                                                disabled={!hasMore || loading}
+                                                disabled={currentPage >= totalPages || loading}
                                                 className="px-3 py-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                →
+                                                Next
                                             </Button>
                                         </div>
                                     </div>
@@ -560,34 +621,39 @@ export default function VideoSearchPage() {
                                     {/* Action Buttons */}
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <Button
+                                            type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="flex items-center gap-2"
+                                            className={`flex items-center gap-2 ${likedVideoIds.has(selectedVideo.id) ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-primary-300 dark:border-primary-700' : ''}`}
+                                            onClick={() => handleLike(selectedVideo)}
+                                            aria-pressed={likedVideoIds.has(selectedVideo.id)}
                                         >
-                                            <ThumbsUp className="w-4 h-4" />
-                                            {formatViews(selectedVideo.likes)} Likes
+                                            <ThumbsUp className="w-4 h-4" fill={likedVideoIds.has(selectedVideo.id) ? 'currentColor' : 'none'} />
+                                            {formatViews(selectedVideo.likes + (likedVideoIds.has(selectedVideo.id) ? 1 : 0))} Likes
                                         </Button>
                                         <Button
+                                            type="button"
                                             variant="outline"
                                             size="sm"
                                             className="flex items-center gap-2"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(selectedVideo.url)
-                                                // You could add a toast notification here
-                                            }}
+                                            onClick={() => handleShare(selectedVideo)}
                                         >
                                             <Share2 className="w-4 h-4" />
                                             Share
                                         </Button>
                                         <Button
+                                            type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="flex items-center gap-2"
+                                            className={`flex items-center gap-2 ${savedVideoIds.has(selectedVideo.id) ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-primary-300 dark:border-primary-700' : ''}`}
+                                            onClick={() => handleSave(selectedVideo)}
+                                            aria-pressed={savedVideoIds.has(selectedVideo.id)}
                                         >
-                                            <Bookmark className="w-4 h-4" />
-                                            Save
+                                            <Bookmark className="w-4 h-4" fill={savedVideoIds.has(selectedVideo.id) ? 'currentColor' : 'none'} />
+                                            {savedVideoIds.has(selectedVideo.id) ? 'Saved' : 'Save'}
                                         </Button>
                                         <Button
+                                            type="button"
                                             variant="outline"
                                             size="sm"
                                             className="flex items-center gap-2"
@@ -596,13 +662,42 @@ export default function VideoSearchPage() {
                                             <Play className="w-4 h-4" />
                                             Watch on YouTube
                                         </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="flex items-center gap-2"
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
-                                        </Button>
+                                        <div className="relative">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="flex items-center gap-2"
+                                                onClick={() => setMoreMenuOpen((open) => !open)}
+                                                aria-label="More actions"
+                                            >
+                                                <MoreVertical className="w-4 h-4" />
+                                            </Button>
+                                            {moreMenuOpen && (
+                                                <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1">
+                                                    <button
+                                                        type="button"
+                                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                        onClick={() => {
+                                                            void handleShare(selectedVideo)
+                                                            setMoreMenuOpen(false)
+                                                        }}
+                                                    >
+                                                        Copy video link
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                        onClick={() => {
+                                                            window.open(selectedVideo.url, '_blank')
+                                                            setMoreMenuOpen(false)
+                                                        }}
+                                                    >
+                                                        Open on YouTube
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Description */}

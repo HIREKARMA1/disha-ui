@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -102,6 +102,27 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
     const [isLoading, setIsLoading] = useState(false)
     const [jobLocationLabel, setJobLocationLabel] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+    const formRef = useRef<HTMLFormElement>(null)
+    const fieldScrollOrder = ['title', 'job_type', 'description', 'company_name', 'company_website', 'location'] as const
+
+    const scrollToFirstError = (errors: Record<string, string>) => {
+        const firstField = fieldScrollOrder.find((field) => errors[field])
+        if (!firstField) return
+
+        requestAnimationFrame(() => {
+            const form = formRef.current
+            const fieldEl = form?.querySelector(`[data-field="${firstField}"]`) as HTMLElement | null
+            if (!form || !fieldEl) return
+
+            const formRect = form.getBoundingClientRect()
+            const fieldRect = fieldEl.getBoundingClientRect()
+            const offset = fieldRect.top - formRect.top - form.clientHeight / 2 + fieldRect.height / 2
+            form.scrollTo({ top: Math.max(0, form.scrollTop + offset), behavior: 'smooth' })
+
+            const focusable = fieldEl.querySelector('input, textarea, button, [tabindex]') as HTMLElement | null
+            focusable?.focus({ preventScroll: true })
+        })
+    }
     const [uploadingLogo, setUploadingLogo] = useState(false)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [formData, setFormData] = useState<JobFormData>({
@@ -332,9 +353,10 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             }
         }
 
-        // If there are validation errors, show them and return
+        // If there are validation errors, show them, scroll to the first one, and return
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors)
+            scrollToFirstError(errors)
             return
         }
 
@@ -530,7 +552,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    <form ref={formRef} onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
                         <div className="space-y-6">
                             {/* Basic Information */}
                             <div className="space-y-4">
@@ -540,7 +562,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
+                                    <div data-field="title">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Job Title *
                                         </label>
@@ -555,7 +577,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         )}
                                     </div>
 
-                                    <div>
+                                    <div data-field="job_type">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Job Type *
                                         </label>
@@ -577,7 +599,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     </div>
                                 </div>
 
-                                <div>
+                                <div data-field="description">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Job Description *
                                     </label>
@@ -659,7 +681,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     </h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
+                                        <div data-field="company_name">
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Company Name *
                                             </label>
@@ -726,7 +748,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div data-field="company_website">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Website
                                         </label>
@@ -841,7 +863,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 </h3>
 
                                 <div className="space-y-4">
-                                    <div>
+                                    <div data-field="location">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Job Location *
                                         </label>

@@ -12,6 +12,9 @@ import Link from 'next/link'
 import {
     DEGREE_OPTIONS,
     getBranchesForDegrees,
+    licenseBatchCovers,
+    licenseScopeAllowsBranch,
+    licenseScopeAllowsDegree,
 } from '@/lib/academicHierarchy'
 
 // Re-export for existing imports (student filters, licenses, etc.)
@@ -20,10 +23,11 @@ export const degreeOptions = DEGREE_OPTIONS.map((d) => ({ value: d.value, label:
 interface LocalLicense {
     id: string
     batch: string
-    degree?: string[]
-    branches?: string[]
+    degree?: string | string[]
+    branches?: string | string[]
     is_active: boolean
     remaining_licenses: number
+    status?: string
 }
 
 interface CreateStudentModalProps {
@@ -134,21 +138,10 @@ export function CreateStudentModal({
         const selectedDegree = formData.degree
         const selectedBranch = formData.branch
 
-        const isLicenseValid = activeLicenses.some(l => {
-            // Must match Batch
-            if (l.batch !== yearStr) return false
-
-            // Must match Degree (or license allows all degrees)
-            const licenseDegrees = (l.degree && Array.isArray(l.degree)) ? l.degree : []
-            const degreeMatch = licenseDegrees.length === 0 || licenseDegrees.includes(selectedDegree)
-            if (!degreeMatch) return false
-
-            // Must match Branch (or license allows all branches)
-            // Note: Some schemas might have branches inside degree, but assuming flattened here or handled by backend logic mirrored here
-            const licenseBranches = (l.branches && Array.isArray(l.branches)) ? l.branches : []
-            const branchMatch = licenseBranches.length === 0 || licenseBranches.includes(selectedBranch)
-            if (!branchMatch) return false
-
+        const isLicenseValid = activeLicenses.some((l) => {
+            if (!licenseBatchCovers(l.batch, yearStr)) return false
+            if (!licenseScopeAllowsDegree(l.degree, selectedDegree)) return false
+            if (!licenseScopeAllowsBranch(l.branches, selectedBranch)) return false
             return true
         })
 
@@ -415,10 +408,13 @@ export function CreateStudentModal({
                                                     disabled={!hasActiveLicenses}
                                                     value={formData.graduation_year || ''}
                                                     onChange={(e) => handleInputChange('graduation_year', e.target.value)}
-                                                    placeholder="e.g. 2025"
+                                                    placeholder="e.g. 2027"
                                                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                             </div>
+                                            <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                                Enter the graduation year. A license batch such as 2026-2030 covers every year in that range.
+                                            </p>
                                         </div>
 
                                         {/* Degree */}
