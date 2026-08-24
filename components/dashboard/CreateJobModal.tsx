@@ -1248,7 +1248,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     <Textarea
                                         value={formData.eligibility_criteria}
                                         onChange={(e) => handleInputChange('eligibility_criteria', e.target.value)}
-                                        placeholder="e.g., B.Tech, MCA"
+                                        placeholder="e.g., Minimum CGPA: 7.0"
                                         rows={2}
                                     />
                                 </div>
