@@ -19,7 +19,6 @@ import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
 import { stripHtmlToPlainText } from '@/lib/sanitizeHtml'
-import { resolveEventMediaUrl } from '@/lib/eventMedia'
 
 interface ContestCardProps {
   event: ContestEventListItem
@@ -65,8 +64,6 @@ function ContestCardComponent({ event }: ContestCardProps) {
   const isCompleted = isPortalEventCompleted(event)
   const displayStatus = isCompleted ? 'completed' : event.contest_status
   const showRegister = !event.is_registered && !isCompleted
-  const bannerSrc = resolveEventMediaUrl(event.banner_url)
-  const logoSrc = resolveEventMediaUrl(event.organizer_logo_url)
   const tags = [
     event.category ? CATEGORY_LABELS[event.category] || event.category : null,
     ...(event.visibility_labels?.slice(0, 2) ?? []),
@@ -86,40 +83,28 @@ function ContestCardComponent({ event }: ContestCardProps) {
     >
       {/* Full-width 16:9 banner — cover + center for desktop alignment */}
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-        {bannerSrc ? (
+        {event.banner_url ? (
           <img
-            src={bannerSrc}
+            src={event.banner_url}
             alt=""
             loading="lazy"
             className="h-full w-full object-cover object-center"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-              e.currentTarget.parentElement
-                ?.querySelector('[data-banner-fallback]')
-                ?.classList.remove('hidden')
-            }}
           />
-        ) : null}
-        <div
-          data-banner-fallback
-          className={cn(
-            'absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500',
-            bannerSrc ? 'hidden' : ''
-          )}
-          aria-hidden
-        >
-          <Trophy className="h-14 w-14 text-white/35" />
-        </div>
+        ) : (
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500">
+            <Trophy className="h-14 w-14 text-white/35" />
+          </div>
+        )}
       </div>
 
       {/* Content stacked below banner */}
       <div className="flex flex-col gap-3 p-4 sm:p-5">
         {/* Logo + title */}
         <div className="flex items-start gap-3">
-          {logoSrc && (
+          {event.organizer_logo_url && (
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-600 dark:bg-white sm:h-12 sm:w-12">
               <img
-                src={logoSrc}
+                src={event.organizer_logo_url}
                 alt=""
                 className="h-full w-full object-contain object-center"
               />

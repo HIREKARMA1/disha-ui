@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { sanitizeEventDescriptionHtml, stripHtmlToPlainText } from '@/lib/sanitizeHtml'
-import { resolveEventMediaUrl } from '@/lib/eventMedia'
 import {
   buildEventRegisterRedirect,
   clearPendingEventRegistration,
@@ -485,8 +484,6 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const eligibilityHighlight = eligibilityPlain
     ? eligibilityPlain.slice(0, 80) + (eligibilityPlain.length > 80 ? '…' : '')
     : null
-  const bannerSrc = resolveEventMediaUrl(event.banner_url)
-  const logoSrc = resolveEventMediaUrl(event.organizer_logo_url)
 
   const highlightItems: { icon: LucideIcon; label: string; value: string; tone: string }[] = [
     event.mode === 'online'
@@ -605,27 +602,18 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         {/* 1. Full-width banner */}
         <div className="px-3">
           <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm aspect-[16/9] max-h-[210px]">
-            {bannerSrc ? (
+            {event.banner_url ? (
               <img
-                src={bannerSrc}
+                src={event.banner_url}
                 alt={event.title ? `${event.title} banner` : 'Event banner'}
                 className="absolute inset-0 h-full w-full object-cover object-center"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                  e.currentTarget.parentElement
-                    ?.querySelector('[data-banner-fallback]')
-                    ?.classList.remove('hidden')
-                }}
               />
-            ) : null}
-            <div
-              data-banner-fallback
-              className={cn(
-                'absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600',
-                bannerSrc ? 'hidden' : ''
-              )}
-              aria-hidden
-            />
+            ) : (
+              <div
+                className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
+                aria-hidden
+              />
+            )}
           </div>
         </div>
 
@@ -634,9 +622,9 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-700/80 dark:bg-gray-800">
             {/* Row 1: Logo + Title */}
             <div className="flex items-start gap-3">
-              {logoSrc ? (
+              {event.organizer_logo_url ? (
                 <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm dark:border-gray-600 dark:bg-gray-900">
-                  <img src={logoSrc} alt="" className="h-full w-full object-contain object-center" />
+                  <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain object-center" />
                 </div>
               ) : null}
               <h1 className="min-w-0 flex-1 text-[1.35rem] font-bold leading-snug tracking-tight text-gray-900 line-clamp-2 dark:text-white">
@@ -730,35 +718,26 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Full-width 16:9 banner — cover + center on desktop */}
           <div className="relative w-full aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
-            {bannerSrc ? (
+            {event.banner_url ? (
               <img
-                src={bannerSrc}
+                src={event.banner_url}
                 alt={event.title ? `${event.title} banner` : 'Event banner'}
                 className="absolute inset-0 h-full w-full rounded-2xl object-cover object-center"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                  e.currentTarget.parentElement
-                    ?.querySelector('[data-banner-fallback]')
-                    ?.classList.remove('hidden')
-                }}
               />
-            ) : null}
-            <div
-              data-banner-fallback
-              className={cn(
-                'absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600',
-                bannerSrc ? 'hidden' : ''
-              )}
-              aria-hidden
-            />
+            ) : (
+              <div
+                className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-700 via-primary-600 to-secondary-600"
+                aria-hidden
+              />
+            )}
           </div>
 
           {/* Info card sits below the banner — no negative-margin overlap */}
           <div className="relative mt-6 rounded-2xl border border-gray-200/80 bg-white p-8 shadow-xl shadow-gray-200/50 dark:border-gray-700/80 dark:bg-gray-800 dark:shadow-none">
             <div className="flex flex-col gap-6 md:flex-row md:items-start">
-              {logoSrc && (
+              {event.organizer_logo_url && (
                 <div className="flex h-24 w-24 flex-shrink-0 rounded-2xl border-2 border-gray-100 bg-white p-2.5 shadow-md dark:border-gray-700 dark:bg-gray-900">
-                  <img src={logoSrc} alt="" className="h-full w-full object-contain object-center" />
+                  <img src={event.organizer_logo_url} alt="" className="h-full w-full object-contain object-center" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
@@ -924,8 +903,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
               <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">About Organizer</h2>
               <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 md:rounded-xl md:p-5">
                 <div className="mb-3 flex items-center gap-3">
-                  {logoSrc && (
-                    <img src={logoSrc} alt="" className="h-12 w-12 rounded-lg object-contain object-center" />
+                  {event.organizer_logo_url && (
+                    <img src={event.organizer_logo_url} alt="" className="h-12 w-12 rounded-lg object-contain object-center" />
                   )}
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{event.organizer_name}</h3>

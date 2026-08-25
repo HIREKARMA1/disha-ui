@@ -6,7 +6,6 @@ import { ArrowRight, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Advertisement } from '@/types/advertisement'
 import { cn } from '@/lib/utils'
-import { resolveEventMediaUrl } from '@/lib/eventMedia'
 
 export type EventsAdVariant = 'left' | 'right' | 'banner' | 'default'
 
@@ -34,7 +33,6 @@ function EventsPortalAdCardComponent({
   const isLeft = variant === 'left'
   const isRight = variant === 'right'
   const isBanner = variant === 'banner'
-  const imageSrc = resolveEventMediaUrl(ad.image_url) || ad.image_url
 
   const linkProps = isExternal
     ? { href, target: '_blank' as const, rel: 'noopener noreferrer' }
@@ -49,9 +47,9 @@ function EventsPortalAdCardComponent({
 
   const adImage = (className?: string) => (
     <div className={cn('relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500', className)}>
-      {imageSrc ? (
+      {ad.image_url ? (
         <img
-          src={imageSrc}
+          src={ad.image_url}
           alt=""
           loading="lazy"
           className="h-full w-full object-cover object-center"
