@@ -6,6 +6,7 @@ import { ArrowRight, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Advertisement } from '@/types/advertisement'
 import { cn } from '@/lib/utils'
+import { resolveEventMediaUrl } from '@/lib/eventMedia'
 
 export type EventsAdVariant = 'left' | 'right' | 'banner' | 'default'
 
@@ -33,6 +34,7 @@ function EventsPortalAdCardComponent({
   const isLeft = variant === 'left'
   const isRight = variant === 'right'
   const isBanner = variant === 'banner'
+  const imageSrc = resolveEventMediaUrl(ad.image_url) || ad.image_url
 
   const linkProps = isExternal
     ? { href, target: '_blank' as const, rel: 'noopener noreferrer' }
@@ -45,6 +47,22 @@ function EventsPortalAdCardComponent({
       </Link>
     ) : null
 
+  const adImage = (className?: string) => (
+    <div className={cn('relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500', className)}>
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover object-center"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none'
+          }}
+        />
+      ) : null}
+    </div>
+  )
+
   if (isBanner) {
     return (
       <article
@@ -55,14 +73,7 @@ function EventsPortalAdCardComponent({
         )}
       >
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <div className="relative aspect-[16/9] w-full overflow-hidden">
-            <img
-              src={ad.image_url}
-              alt=""
-              loading="lazy"
-              className="h-full w-full object-cover object-center"
-            />
-          </div>
+          {adImage()}
           <div className="flex flex-col justify-center gap-3 px-6 py-6">
             <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
               {ad.title}
@@ -112,15 +123,7 @@ function EventsPortalAdCardComponent({
             </span>
           )}
         </div>
-        <div className="relative aspect-[16/9] w-full overflow-hidden">
-          <img
-            src={ad.image_url}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover object-center"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-        </div>
+        {adImage()}
       </article>
     )
   }
@@ -136,14 +139,9 @@ function EventsPortalAdCardComponent({
           className
         )}
       >
-        <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden">
-          <img
-            src={ad.image_url}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
+        <div className="relative shrink-0">
+          {adImage()}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
           <div className="absolute left-6 top-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
             <Megaphone className="h-6 w-6 text-white" />
           </div>
@@ -179,14 +177,9 @@ function EventsPortalAdCardComponent({
         className
       )}
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden">
-        <img
-          src={ad.image_url}
-          alt=""
-          className="h-full w-full object-cover object-center"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-black/20" />
+      <div className="relative">
+        {adImage()}
+        <div className="pointer-events-none absolute inset-0 bg-black/20" />
         <h3 className="absolute bottom-4 left-4 right-4 text-base font-bold leading-tight text-white">
           {ad.title}
         </h3>

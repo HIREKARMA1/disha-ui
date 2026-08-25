@@ -22,12 +22,11 @@ export function OtpStatusSection({
   isLockedOut,
   lockoutMessage,
   canShowResendButton,
+  isResendDisabled,
   onResend,
   isResending = false,
 }: OtpStatusSectionProps) {
-  const isTimerExpired = formattedTimeRemaining === '00:00'
-  const isResendActive =
-    isTimerExpired && !isLockedOut && remainingAttempts > 0 && !isResending
+  const isResendActive = !isResendDisabled && !isResending
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4 space-y-3">

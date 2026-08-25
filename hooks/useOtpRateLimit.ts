@@ -138,10 +138,32 @@ export function useOtpRateLimit({
     (rateLimit?: OtpRateLimitStatus, storageIdentifier?: string | null) => {
       if (rateLimit) {
         skipNextRefreshRef.current = true
+        const derived = deriveCountdownFromStatus(rateLimit)
+        // Successful send must restart the cooldown timer (default 2:00).
+        // If the API payload has a zero countdown (stale/missing timestamps),
+        // synthesize cooldown from cooldown_seconds so Resend restarts correctly.
+        if (derived.countdown <= 0 && !rateLimit.is_locked_out) {
+          const cooldownSeconds = rateLimit.cooldown_seconds || 120
+          const now = Date.now()
+          applyStatus(
+            {
+              ...rateLimit,
+              last_otp_sent_at: rateLimit.last_otp_sent_at || new Date(now).toISOString(),
+              remaining_cooldown_seconds: cooldownSeconds,
+              cooldown_until:
+                rateLimit.cooldown_until ||
+                new Date(now + cooldownSeconds * 1000).toISOString(),
+              can_request: false,
+            },
+            storageIdentifier
+          )
+          return
+        }
         applyStatus(rateLimit, storageIdentifier)
         return
       }
       if (storageIdentifier ?? identifier) {
+        skipNextRefreshRef.current = false
         void refreshStatus()
       }
     },
@@ -189,8 +211,10 @@ export function useOtpRateLimit({
   const { remaining: remainingAttempts, max: maxAttempts } = getRemainingAttempts(status)
   const formattedTimeRemaining = formatOtpCountdown(countdown)
   const isCooldownActive = countdown > 0 && !isLockedOut
-  const hasOtpActivity = status !== null && status.otp_request_count > 0
-  const canShowResendButton = hasOtpActivity && (remainingAttempts > 0 || isLockedOut)
+  // Show Resend whenever the user can still request (or is locked out).
+  // Do not require otp_request_count > 0 — that hid the button when status
+  // was missing/stale after the cooldown hit 00:00 (Forgot Password flow).
+  const canShowResendButton = remainingAttempts > 0 || isLockedOut
   const isResendDisabled =
     isLockedOut || isCooldownActive || isSending || remainingAttempts <= 0
 
