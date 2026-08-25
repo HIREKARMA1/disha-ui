@@ -1720,11 +1720,11 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 <div className="space-y-3">
                     <FileUpload
                         type="document"
-                        maxSize={1}
+                        maxSize={5}
                         onFileSelect={(file) => handleFileUpload(backendFieldName, file)}
                         onFileRemove={() => handleFileRemove(backendFieldName)}
                         currentFile={formData[backendFieldName] || ''}
-                        placeholder={`Upload your ${displayName} (PDF only, max 1 MB)`}
+                        placeholder={`Upload your ${displayName} (PDF only, max 5 MB)`}
                         disabled={uploading === backendFieldName}
                     />
                     {uploading === backendFieldName && (
