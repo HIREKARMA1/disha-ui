@@ -8,6 +8,9 @@ import type {
   EventAnalyticsUsersParams,
   EventAnalyticsUsersResponse,
   EventAttendanceListResponse,
+  EventFeedbackAdminResponse,
+  EventFeedbackMineResponse,
+  EventFeedbackSubmitResponse,
   EventRegistrationItem,
   JoinMeetingResponse,
 } from '@/types/contestEvent'
@@ -47,6 +50,29 @@ export class ContestEventService {
   /** Authenticated join — backend enforces 5-minute unlock and records join_link_opened. */
   async joinMeeting(slug: string): Promise<JoinMeetingResponse> {
     const response = await apiClient.client.post(`/events/public/${slug}/join`)
+    return response.data
+  }
+
+  async getMyFeedback(slug: string): Promise<EventFeedbackMineResponse> {
+    const response = await apiClient.client.get(`/events/public/${slug}/feedback`)
+    return response.data
+  }
+
+  async submitFeedback(
+    slug: string,
+    data: { rating: number; feedback?: string }
+  ): Promise<EventFeedbackSubmitResponse> {
+    const response = await apiClient.client.post(`/events/public/${slug}/feedback`, data)
+    return response.data
+  }
+
+  async getAdminFeedback(
+    eventId: string,
+    params?: { page?: number; limit?: number }
+  ): Promise<EventFeedbackAdminResponse> {
+    const response = await apiClient.client.get(`/events/contests/${eventId}/feedback`, {
+      params,
+    })
     return response.data
   }
 

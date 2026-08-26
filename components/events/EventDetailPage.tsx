@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventDetail } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
-import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
+import { isPortalEventCompleted, isEventEndedForFeedback } from '@/lib/eventsPortalConfig'
+import { EventFeedbackSection } from '@/components/events/EventFeedbackSection'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
   Mail, Phone, Globe, MapPin, ChevronDown, ChevronUp, CheckCircle,
@@ -74,6 +75,21 @@ function formatRegistrationOpensAt(value?: string | null) {
 function isOnlineEventMode(mode?: string | null) {
   const m = (mode || '').toLowerCase()
   return m === 'online' || m === 'hybrid'
+}
+
+const MEETING_LINK_UNLOCK_MINUTES = 5
+
+/** Unlock time from API, or event start − 5 minutes for online/hybrid events. */
+function getMeetingLinkOpensAt(event: {
+  meeting_link_opens_at?: string | null
+  event_start_date?: string | null
+  mode?: string | null
+}): string | null {
+  if (event.meeting_link_opens_at) return event.meeting_link_opens_at
+  if (!isOnlineEventMode(event.mode) || !event.event_start_date) return null
+  const start = new Date(event.event_start_date)
+  if (Number.isNaN(start.getTime())) return null
+  return new Date(start.getTime() - MEETING_LINK_UNLOCK_MINUTES * 60 * 1000).toISOString()
 }
 
 function formatMeetingOpensAt(value?: string | null) {
@@ -159,12 +175,14 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
   // Re-evaluate meeting unlock every 30s so Join enables at T−5 without a full refresh
   useEffect(() => {
-    if (!event?.meeting_link_opens_at) return
-    const opensAt = new Date(event.meeting_link_opens_at).getTime()
+    if (!event) return
+    const opensAtIso = getMeetingLinkOpensAt(event)
+    if (!opensAtIso) return
+    const opensAt = new Date(opensAtIso).getTime()
     if (Number.isNaN(opensAt) || Date.now() >= opensAt) return
     const id = window.setInterval(() => setNowTick(Date.now()), 30_000)
     return () => window.clearInterval(id)
-  }, [event?.meeting_link_opens_at, event?.meeting_link_available])
+  }, [event?.meeting_link_opens_at, event?.event_start_date, event?.mode, event?.meeting_link_available])
 
   // Register Now from listing → land on details with register CTA in view
   useEffect(() => {
@@ -326,8 +344,13 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   // Hash navigation on load
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
-    if (hash && SECTIONS.find(s => s.id === hash)) {
-      setTimeout(() => scrollToSection(hash), 500)
+    if (hash && (hash === 'feedback' || SECTIONS.find(s => s.id === hash))) {
+      setTimeout(() => {
+        const el = sectionRefs.current[hash] || document.getElementById(hash)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 500)
     }
   }, [event])
 
@@ -457,16 +480,18 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const showRegister = !isCancelled && event.registration_is_open && !isRegistrationNotStarted
   const showStickyRegister = showRegister && !event.is_registered
   const registrationOpensLabel = formatRegistrationOpensAt(event.registration_start_date)
-  const hasOnlineMeeting =
-    isOnlineEventMode(event.mode) &&
-    Boolean(event.meeting_link_opens_at || event.event_link || event.meeting_link_available)
+  const meetingOpensAtIso = getMeetingLinkOpensAt(event)
+  const hasOnlineMeeting = isOnlineEventMode(event.mode) && Boolean(meetingOpensAtIso)
+  const meetingTimeReached =
+    meetingOpensAtIso != null && new Date(meetingOpensAtIso).getTime() <= nowTick
+  const meetingLinkConfigured = Boolean(
+    event.meeting_link_opens_at || event.event_link || event.meeting_link_available
+  )
   const meetingUnlocked =
-    Boolean(event.meeting_link_available) ||
-    (event.meeting_link_opens_at != null &&
-      new Date(event.meeting_link_opens_at).getTime() <= nowTick)
+    Boolean(event.meeting_link_available) || (meetingTimeReached && meetingLinkConfigured)
   const showJoinMeeting =
     hasOnlineMeeting && (event.is_registered || isAdmin)
-  const meetingOpensLabel = formatMeetingOpensAt(event.meeting_link_opens_at)
+  const meetingOpensLabel = formatMeetingOpensAt(meetingOpensAtIso)
   // keep nowTick referenced for unlock recompute
   void nowTick
 
@@ -586,7 +611,33 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
           ) : null}
           {event.is_registered ? 'Registered' : event.registration_button_text || 'Register Now'}
         </Button>
-        {event.mode === 'online' && !hasOnlineMeeting ? (
+        {showJoinMeeting ? (
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant={meetingUnlocked ? 'default' : 'outline'}
+              className="w-full"
+              disabled={!meetingUnlocked || joining}
+              onClick={() => void handleJoinMeeting()}
+            >
+              {joining ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Video className="mr-2 h-4 w-4" />
+              )}
+              Join Meeting
+            </Button>
+            {!meetingUnlocked ? (
+              <p className="text-center text-xs text-amber-700 dark:text-amber-300">
+                {meetingTimeReached && !meetingLinkConfigured
+                  ? 'Meeting link has not been added yet.'
+                  : meetingOpensLabel
+                    ? `Meeting link will open at ${meetingOpensLabel}.`
+                    : 'Meeting link will open 5 minutes before the event starts.'}
+              </p>
+            ) : null}
+          </div>
+        ) : event.mode === 'online' && !hasOnlineMeeting ? (
           <p className="text-center text-xs text-muted-foreground">Online Event</p>
         ) : null}
       </div>
@@ -898,6 +949,10 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
               )}
             </section>
 
+            {isEventEndedForFeedback(event) && user ? (
+              <EventFeedbackSection slug={slug} isRegistered={Boolean(event.is_registered)} />
+            ) : null}
+
             {/* About Organizer */}
             <section id="about-organizer" ref={(el) => { sectionRefs.current['about-organizer'] = el }} className="scroll-mt-36">
               <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">About Organizer</h2>
@@ -1046,31 +1101,6 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                       <span className="text-right font-medium text-gray-900 dark:text-white">{event.venue}</span>
                     </div>
                   )}
-                  {showJoinMeeting && (
-                    <div className="space-y-2">
-                      <Button
-                        type="button"
-                        variant={meetingUnlocked ? 'default' : 'outline'}
-                        className="w-full"
-                        disabled={!meetingUnlocked || joining}
-                        onClick={() => void handleJoinMeeting()}
-                      >
-                        {joining ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Video className="mr-2 h-4 w-4" />
-                        )}
-                        Join Meeting
-                      </Button>
-                      {!meetingUnlocked ? (
-                        <p className="text-center text-xs text-amber-700 dark:text-amber-300">
-                          {meetingOpensLabel
-                            ? `Meeting link will open at ${meetingOpensLabel}.`
-                            : 'Meeting link will open 5 minutes before the event starts.'}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
                 </div>
                 <div id="event-register-cta">
                   <RegisterButton />
@@ -1125,10 +1155,38 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 ) : null}
               </div>
             ) : event.is_registered ? (
-              <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-green-50 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                <CheckCircle className="h-4 w-4" />
-                Registered
-              </div>
+              showJoinMeeting ? (
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Button
+                    type="button"
+                    variant={meetingUnlocked ? 'default' : 'outline'}
+                    className="h-12 w-full text-base font-semibold"
+                    disabled={!meetingUnlocked || joining}
+                    onClick={() => void handleJoinMeeting()}
+                  >
+                    {joining ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Video className="mr-2 h-4 w-4" />
+                    )}
+                    Join Meeting
+                  </Button>
+                  {!meetingUnlocked ? (
+                    <p className="text-center text-[10px] leading-tight text-amber-700 dark:text-amber-300">
+                      {meetingTimeReached && !meetingLinkConfigured
+                        ? 'Meeting link has not been added yet.'
+                        : meetingOpensLabel
+                          ? `Meeting link will open at ${meetingOpensLabel}.`
+                          : 'Meeting link will open 5 minutes before the event starts.'}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-green-50 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                  <CheckCircle className="h-4 w-4" />
+                  Registered
+                </div>
+              )
             ) : null}
             <Button
               type="button"
