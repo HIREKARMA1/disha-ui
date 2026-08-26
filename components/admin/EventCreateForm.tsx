@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Save, Loader2, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,6 +28,30 @@ import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
   eventId?: string
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function isValidEmail(email: string) {
+  return EMAIL_REGEX.test(email.trim())
+}
+
+function isNoneVisibility(visibility?: {
+  student?: boolean
+  corporate?: boolean
+  university?: boolean
+  public?: boolean
+} | null) {
+  return (
+    !visibility?.student &&
+    !visibility?.corporate &&
+    !visibility?.university &&
+    !visibility?.public
+  )
 }
 
 const defaultForm: ContestEventCreatePayload = {
@@ -60,6 +84,7 @@ const defaultForm: ContestEventCreatePayload = {
   publication_status: 'draft',
   registration_is_open: true,
   visibility: { student: true, corporate: false, university: false, public: true },
+  manual_recipients: [],
   faqs: [],
   rounds: [],
   rewards: [],
@@ -68,6 +93,7 @@ const defaultForm: ContestEventCreatePayload = {
 export function EventCreateForm({ eventId }: EventFormProps) {
   const router = useRouter()
   const [form, setForm] = useState<ContestEventCreatePayload>(defaultForm)
+  const [manualEmailInput, setManualEmailInput] = useState('')
   const [leftAd, setLeftAd] = useState<EventAdFormState>(defaultEventAdForm({ display_order: 0 }))
   const [rightAd, setRightAd] = useState<EventAdFormState>(defaultEventAdForm({ display_order: 1 }))
   const [loading, setLoading] = useState(!!eventId)
@@ -120,6 +146,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             // and must not be saved back (that permanently closes registration).
             registration_is_open: event.registration_enabled ?? event.registration_is_open,
             visibility: event.visibility,
+            manual_recipients: event.manual_recipients || [],
             faqs: event.faqs,
             rounds: event.rounds,
             rewards: event.rewards,
@@ -172,6 +199,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
 
   const buildPayload = (): ContestEventCreatePayload => {
     const emptyToUndef = (v: string | undefined) => (v === '' || v === undefined ? undefined : v)
+    const noneVisibility = isNoneVisibility(form.visibility)
     return {
       ...form,
       short_description: normalizeRichTextHtml(form.short_description) || undefined,
@@ -200,6 +228,8 @@ export function EventCreateForm({ eventId }: EventFormProps) {
       event_link: emptyToUndef(form.event_link),
       banner_url: emptyToUndef(form.banner_url),
       organizer_logo_url: emptyToUndef(form.organizer_logo_url),
+      // Manual recipients only apply when Visibility = None
+      manual_recipients: noneVisibility ? (form.manual_recipients || []) : [],
       event_start_date: new Date(form.event_start_date).toISOString(),
       event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : undefined,
       registration_start_date: form.registration_start_date ? new Date(form.registration_start_date).toISOString() : undefined,
@@ -274,6 +304,36 @@ export function EventCreateForm({ eventId }: EventFormProps) {
   const addFaq = () => update('faqs', [...(form.faqs || []), { question: '', answer: '', sort_order: (form.faqs?.length || 0) }])
   const addRound = () => update('rounds', [...(form.rounds || []), { title: '', description: '', sort_order: (form.rounds?.length || 0) }])
   const addReward = () => update('rewards', [...(form.rewards || []), { title: '', description: '', value: '', sort_order: (form.rewards?.length || 0) }])
+
+  const noneVisibility = isNoneVisibility(form.visibility)
+  const manualRecipients = form.manual_recipients || []
+
+  const handleAddManualRecipient = () => {
+    const trimmed = manualEmailInput.trim()
+    if (!trimmed) {
+      toast.error('Please enter an email address')
+      return
+    }
+    if (!isValidEmail(trimmed)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+    const key = normalizeEmail(trimmed)
+    if (manualRecipients.some((email) => normalizeEmail(email) === key)) {
+      toast.error('This email is already in the recipient list')
+      return
+    }
+    update('manual_recipients', [...manualRecipients, trimmed])
+    setManualEmailInput('')
+  }
+
+  const handleRemoveManualRecipient = (email: string) => {
+    const key = normalizeEmail(email)
+    update(
+      'manual_recipients',
+      manualRecipients.filter((item) => normalizeEmail(item) !== key)
+    )
+  }
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
 
@@ -474,7 +534,102 @@ export function EventCreateForm({ eventId }: EventFormProps) {
                 {key === 'public' ? 'Everyone (Public)' : key}
               </label>
             ))}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={
+                  !form.visibility?.student &&
+                  !form.visibility?.corporate &&
+                  !form.visibility?.university &&
+                  !form.visibility?.public
+                }
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    update('visibility', {
+                      student: false,
+                      corporate: false,
+                      university: false,
+                      public: false,
+                    })
+                  } else {
+                    update('visibility', {
+                      student: true,
+                      corporate: false,
+                      university: false,
+                      public: true,
+                    })
+                  }
+                }}
+              />
+              None
+            </label>
           </div>
+          {!form.visibility?.student &&
+            !form.visibility?.corporate &&
+            !form.visibility?.university &&
+            !form.visibility?.public && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Admin only. This event will not appear on public listings.
+                Automatic emails go only to Manual Recipients (if any).
+              </p>
+            )}
+          {noneVisibility && (
+            <div className="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+              <div>
+                <label className="text-sm font-medium">Manual Recipients</label>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  These emails receive the event&apos;s automatic emails. They do not need a DISHA account.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={manualEmailInput}
+                  onChange={(e) => setManualEmailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddManualRecipient()
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={handleAddManualRecipient} className="shrink-0">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+              {manualRecipients.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Added Recipients ({manualRecipients.length})
+                  </p>
+                  <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                    {manualRecipients.map((email) => (
+                      <div
+                        key={email}
+                        className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                      >
+                        <span className="truncate">{email}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                          onClick={() => handleRemoveManualRecipient(email)}
+                          aria-label={`Remove ${email}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Recipient Count: {manualRecipients.length}
+              </p>
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium">Eligibility</label>
             <RichTextEditor

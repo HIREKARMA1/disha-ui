@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Eye, Edit, Trash2, Copy, Users, Calendar, Clock, MapPin, Building2,
-  Megaphone, Lock, BarChart3, Pause, XCircle, Loader2, Unlock, Ban,
+  Megaphone, Lock, BarChart3, Pause, XCircle, Loader2, Unlock, Ban, Mail,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -163,6 +163,9 @@ export function AdminEventCard({
             )}
             <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/dashboard/admin/events/${event.id}/analytics`)}>
               <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Analytics
+            </Button>
+            <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/dashboard/admin/events/${event.id}/send-email`)}>
+              <Mail className="mr-1.5 h-3.5 w-3.5" /> Send Email
             </Button>
             {!event.is_cancelled && (
               <>
