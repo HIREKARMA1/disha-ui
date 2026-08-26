@@ -57,6 +57,22 @@ export function isPortalEventCompleted(event: {
   return event.registration_state === 'event_completed' || event.contest_status === 'closed'
 }
 
+/** Feedback opens after the session end time, even if listing status is still Live. */
+export function isEventEndedForFeedback(event: {
+  contest_status?: string
+  registration_state?: string
+  event_end_date?: string | null
+  event_start_date?: string | null
+  is_cancelled?: boolean
+}): boolean {
+  if (event.is_cancelled) return false
+  if (isPortalEventCompleted(event)) return true
+  const end = event.event_end_date || event.event_start_date
+  if (!end) return false
+  const t = new Date(end).getTime()
+  return !Number.isNaN(t) && t <= Date.now()
+}
+
 export const PORTAL_DATE_OPTIONS = [
   { value: 'all', label: 'All Dates' },
   { value: 'upcoming', label: 'Upcoming' },
