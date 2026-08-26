@@ -154,6 +154,8 @@ export interface ContestEventDetail extends ContestEventListItem {
   registration_button_text?: string
   registration_external_url?: string
   visibility: VisibilitySettings
+  /** Admin-only: email recipients when visibility is None. Not public. */
+  manual_recipients?: string[]
   view_count: number
   faqs: FAQItem[]
   rounds: RoundItem[]
@@ -209,6 +211,8 @@ export interface ContestEventCreatePayload {
   support_phone?: string
   support_content?: string
   visibility?: VisibilitySettings
+  /** Used only when all visibility flags are false (None / admin-only). */
+  manual_recipients?: string[]
   registration_button_text?: string
   registration_external_url?: string
   /** Optional meeting/join URL for online events */
@@ -229,6 +233,38 @@ export type ContestEventUpdatePayload = Partial<
   banner_url?: string | null
   organizer_logo_url?: string | null
   event_link?: string | null
+}
+
+export type EventEmailRecipientType =
+  | 'none'
+  | 'all'
+  | 'registered'
+  | 'students'
+  | 'university'
+  | 'corporate'
+
+export interface EventEmailRecipientsResponse {
+  recipient_type: EventEmailRecipientType
+  count: number
+}
+
+export interface EventEmailSendPayload {
+  recipient_type: EventEmailRecipientType
+  manual_emails: string[]
+  subject: string
+  body: string
+}
+
+export interface EventEmailSendResponse {
+  success: boolean
+  message: string
+  log_id?: string | null
+  recipient_count?: number | null
+  success_count?: number | null
+  failure_count?: number | null
+  queued?: boolean
+  recipient_type?: string | null
+  error?: string | null
 }
 
 export interface ContestEventAnalytics {

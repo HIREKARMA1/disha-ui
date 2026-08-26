@@ -8,6 +8,10 @@ import type {
   EventAnalyticsUsersParams,
   EventAnalyticsUsersResponse,
   EventAttendanceListResponse,
+  EventEmailRecipientsResponse,
+  EventEmailRecipientType,
+  EventEmailSendPayload,
+  EventEmailSendResponse,
   EventFeedbackAdminResponse,
   EventFeedbackMineResponse,
   EventFeedbackSubmitResponse,
@@ -227,6 +231,21 @@ export class ContestEventService {
     const response = await apiClient.client.post(`/events/contests/upload?file_type=${fileType}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+    return response.data
+  }
+
+  async getEventEmailRecipients(
+    eventId: string,
+    recipientType: EventEmailRecipientType
+  ): Promise<EventEmailRecipientsResponse> {
+    const response = await apiClient.client.get(`/events/contests/${eventId}/email/recipients`, {
+      params: { recipient_type: recipientType },
+    })
+    return response.data
+  }
+
+  async sendEventEmail(eventId: string, payload: EventEmailSendPayload): Promise<EventEmailSendResponse> {
+    const response = await apiClient.client.post(`/events/contests/${eventId}/email/send`, payload)
     return response.data
   }
 }
