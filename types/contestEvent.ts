@@ -393,6 +393,59 @@ export interface EventAttendanceListResponse {
   note?: string
 }
 
+export const EVENT_FEEDBACK_MAX_LENGTH = 2000
+
+export interface EventFeedbackItem {
+  id: string
+  rating: number
+  feedback?: string | null
+  created_at: string
+  updated_at?: string | null
+}
+
+export interface EventFeedbackMineResponse {
+  event_completed: boolean
+  is_registered: boolean
+  can_submit: boolean
+  feedback?: EventFeedbackItem | null
+  max_length: number
+}
+
+export interface EventFeedbackSubmitResponse {
+  message: string
+  feedback: EventFeedbackItem
+}
+
+export interface EventFeedbackAdminItem {
+  id: string
+  user_id: string
+  user_type?: string | null
+  candidate_name?: string | null
+  email?: string | null
+  rating: number
+  feedback?: string | null
+  submitted_at: string
+}
+
+export interface EventFeedbackAdminResponse {
+  average_rating: number | null
+  total_responses: number
+  rating_distribution: {
+    one: number
+    two: number
+    three: number
+    four: number
+    five: number
+  }
+  items: EventFeedbackAdminItem[]
+  total: number
+  page: number
+  limit: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+}
+
 export const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: 'hackathon', label: 'Hackathon' },
   { value: 'coding_contest', label: 'Coding Contest' },

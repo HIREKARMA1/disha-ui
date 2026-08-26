@@ -54,6 +54,29 @@ export class ContestEventService {
     return response.data
   }
 
+  async getMyFeedback(slug: string): Promise<EventFeedbackMineResponse> {
+    const response = await apiClient.client.get(`/events/public/${slug}/feedback`)
+    return response.data
+  }
+
+  async submitFeedback(
+    slug: string,
+    data: { rating: number; feedback?: string }
+  ): Promise<EventFeedbackSubmitResponse> {
+    const response = await apiClient.client.post(`/events/public/${slug}/feedback`, data)
+    return response.data
+  }
+
+  async getAdminFeedback(
+    eventId: string,
+    params?: { page?: number; limit?: number }
+  ): Promise<EventFeedbackAdminResponse> {
+    const response = await apiClient.client.get(`/events/contests/${eventId}/feedback`, {
+      params,
+    })
+    return response.data
+  }
+
   // Admin endpoints
   async listAdminEvents(params: Record<string, unknown> = {}): Promise<ContestEventListResponse> {
     const response = await apiClient.client.get('/events/contests', { params })
