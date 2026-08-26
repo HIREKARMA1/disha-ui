@@ -12,6 +12,9 @@ import type {
   EventEmailRecipientType,
   EventEmailSendPayload,
   EventEmailSendResponse,
+  EventFeedbackAdminResponse,
+  EventFeedbackMineResponse,
+  EventFeedbackSubmitResponse,
   EventRegistrationItem,
   JoinMeetingResponse,
 } from '@/types/contestEvent'
