@@ -81,14 +81,14 @@ function ContestCardComponent({ event }: ContestCardProps) {
         'dark:border-gray-700/80 dark:bg-gray-900/90'
       )}
     >
-      {/* Full-width 16:9 banner — flush to card edges, no stretch gap */}
+      {/* Full-width 16:9 banner — cover + center for desktop alignment */}
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
         {event.banner_url ? (
           <img
             src={event.banner_url}
             alt=""
             loading="lazy"
-            className="h-full w-full object-contain object-center"
+            className="h-full w-full object-cover object-center"
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500">
@@ -106,7 +106,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
               <img
                 src={event.organizer_logo_url}
                 alt=""
-                className="h-full w-full object-contain"
+                className="h-full w-full object-contain object-center"
               />
             </div>
           )}

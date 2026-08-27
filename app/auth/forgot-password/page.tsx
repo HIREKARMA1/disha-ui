@@ -148,6 +148,10 @@ function ForgotPasswordPageContent() {
 
     // Resend OTP
     const handleResendOtp = async () => {
+        if (!email) {
+            toast.error('Email is missing. Please go back and enter your email.')
+            return
+        }
         if (!otpRateLimit.beginSend()) return
 
         setIsLoading(true)
@@ -158,6 +162,11 @@ function ForgotPasswordPageContent() {
             })
 
             otpRateLimit.handleSendSuccess(response.rate_limit, email)
+            if (!response.rate_limit) {
+                await otpRateLimit.refreshStatus()
+            }
+            otpForm.reset()
+            setOtp('')
             toast.success('OTP resent to your email address')
         } catch (error: unknown) {
             otpRateLimit.handleSendError(error)
@@ -415,7 +424,9 @@ function ForgotPasswordPageContent() {
                                             maxAttempts={otpRateLimit.maxAttempts}
                                             isLockedOut={otpRateLimit.isLockedOut}
                                             lockoutMessage={otpRateLimit.lockoutMessage}
-                                            canShowResendButton={otpRateLimit.canShowResendButton}
+                                            canShowResendButton={
+                                                otpRateLimit.remainingAttempts > 0 || otpRateLimit.isLockedOut
+                                            }
                                             isResendDisabled={otpRateLimit.isResendDisabled}
                                             resendButtonLabel={otpRateLimit.resendButtonLabel}
                                             onResend={handleResendOtp}
