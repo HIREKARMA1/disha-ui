@@ -1507,7 +1507,7 @@ export function StudentProfileModal({
             onClick={handleBackdropClick}
         >
             <motion.div
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-6xl w-full mx-2 sm:mx-4 max-h-[95vh] h-[95vh] overflow-hidden flex flex-col"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full mx-2 sm:mx-4 max-h-[80vh] overflow-hidden flex flex-col"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
