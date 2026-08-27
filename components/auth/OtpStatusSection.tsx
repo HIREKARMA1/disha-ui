@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface OtpStatusSectionProps {
   formattedTimeRemaining: string
@@ -22,11 +22,13 @@ export function OtpStatusSection({
   isLockedOut,
   lockoutMessage,
   canShowResendButton,
-  isResendDisabled,
-  resendButtonLabel,
   onResend,
   isResending = false,
 }: OtpStatusSectionProps) {
+  const isTimerExpired = formattedTimeRemaining === '00:00'
+  const isResendActive =
+    isTimerExpired && !isLockedOut && remainingAttempts > 0 && !isResending
+
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4 space-y-3">
       <div className="space-y-1.5 text-xs sm:text-sm">
@@ -51,16 +53,19 @@ export function OtpStatusSection({
       )}
 
       {canShowResendButton && (
-        <Button
+        <button
           type="button"
-          variant="outline"
           onClick={onResend}
-          loading={isResending}
-          disabled={isResendDisabled}
-          className="w-full h-10 sm:h-11 text-sm font-medium"
+          disabled={!isResendActive}
+          className={cn(
+            'inline-flex w-full h-10 sm:h-11 items-center justify-center rounded-md text-sm font-medium transition-colors',
+            isResendActive
+              ? 'cursor-pointer border border-transparent text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700'
+              : 'cursor-not-allowed border border-gray-300 bg-transparent text-gray-900 opacity-50 dark:border-gray-600 dark:text-gray-50'
+          )}
         >
-          Resend OTP
-        </Button>
+          {isResending ? 'Resend OTP...' : 'Resend OTP'}
+        </button>
       )}
     </div>
   )
