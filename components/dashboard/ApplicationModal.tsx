@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, FileText, Calendar, Banknote, Send, Building, MapPin, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -54,6 +54,15 @@ Best regards,
     })
     
     const [salaryError, setSalaryError] = useState<string>('')
+
+    // Lock background page scroll while the modal is open
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [])
 
     const validateSalary = (salary: string): boolean => {
         if (!salary.trim()) return true // Empty salary is allowed
@@ -110,109 +119,117 @@ Best regards,
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="application-modal-title"
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-4xl max-h-[calc(100vh-2rem)] max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col"
                 >
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-blue-200/20 dark:border-blue-500/20 p-6">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex min-w-0 items-start gap-3">
+                    {/* Header — wraps long titles; close button stays clear */}
+                    <div className="flex-shrink-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-blue-200/20 dark:border-blue-500/20 p-4 sm:p-6">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 flex-1 items-start gap-3 pr-1 max-h-[40vh] max-h-[40dvh] overflow-y-auto overscroll-contain">
                                 <CompanyLogo
                                     logoUrl={job.company_logo}
                                     companyName={job.company_name || job.corporate_name}
                                     size="md"
                                 />
-                                <div className="min-w-0">
-                                <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                                    Apply for {job.title}
-                                </h2>
-                                <div className="flex items-center gap-4 mt-2 text-gray-600 dark:text-gray-300">
-                                    <div className="flex items-center gap-2">
-                                        <Building className="w-4 h-4" />
-                                        <span>{job.company_name || job.corporate_name || 'Company'}</span>
+                                <div className="min-w-0 flex-1">
+                                    <h2
+                                        id="application-modal-title"
+                                        className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white break-words"
+                                    >
+                                        Apply for {job.title}
+                                    </h2>
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-gray-600 dark:text-gray-300">
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <Building className="w-4 h-4 flex-shrink-0" />
+                                            <span className="break-words">{job.company_name || job.corporate_name || 'Company'}</span>
+                                        </div>
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <MapPin className="w-4 h-4 flex-shrink-0" />
+                                            <span className="break-words">{Array.isArray(job.location) ? job.location.join(', ') : job.location}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                            <span className="capitalize">{job.job_type.replace('_', ' ')}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="w-4 h-4" />
-                                        <span>{Array.isArray(job.location) ? job.location.join(', ') : job.location}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Briefcase className="w-4 h-4" />
-                                        <span className="capitalize">{job.job_type.replace('_', ' ')}</span>
-                                    </div>
-                                </div>
                                 </div>
                             </div>
                             <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={onClose}
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                aria-label="Close"
+                                className="flex-shrink-0 self-start text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
                         </div>
                     </div>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-                        {/* Cover Letter */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                                <FileText className="w-4 h-4 inline mr-2" />
-                                Cover Letter *
-                            </label>
-                            <textarea
-                                value={formData.cover_letter}
-                                onChange={(e) => handleInputChange('cover_letter', e.target.value)}
-                                className="w-full h-32 px-3 py-2 bg-white/10 backdrop-blur-sm border border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg resize-none"
-                                placeholder="Write your cover letter..."
-                                required
-                            />
-                        </div>
-
-                        {/* Salary and Availability */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Form: scrollable fields + sticky footer actions */}
+                    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6">
+                            {/* Cover Letter */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    <Banknote className="w-4 h-4 inline mr-2" />
-                                    Expected Salary
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                    <FileText className="w-4 h-4 inline mr-2" />
+                                    Cover Letter *
                                 </label>
-                                <Input
-                                    type="text"
-                                    value={formData.expected_salary}
-                                    onChange={(e) => handleInputChange('expected_salary', e.target.value)}
-                                    placeholder="Enter expected salary (e.g., 30000)"
-                                    className={cn(
-                                        "bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400",
-                                        salaryError 
-                                            ? "border-red-400 focus:border-red-500 focus:ring-red-400/20" 
-                                            : "border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20"
-                                    )}
-                                />
-                                {salaryError && (
-                                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {salaryError}
-                                    </p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    <Calendar className="w-4 h-4 inline mr-2" />
-                                    Available From *
-                                </label>
-                                <Input
-                                    type="date"
-                                    value={formData.availability_date}
-                                    onChange={(e) => handleInputChange('availability_date', e.target.value)}
-                                    className="bg-white/10 backdrop-blur-sm border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20 text-gray-900 dark:text-white"
+                                <textarea
+                                    value={formData.cover_letter}
+                                    onChange={(e) => handleInputChange('cover_letter', e.target.value)}
+                                    className="w-full h-32 px-3 py-2 bg-white/10 backdrop-blur-sm border border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg resize-none"
+                                    placeholder="Write your cover letter..."
                                     required
                                 />
                             </div>
+
+                            {/* Salary and Availability */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <Banknote className="w-4 h-4 inline mr-2" />
+                                        Expected Salary
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={formData.expected_salary}
+                                        onChange={(e) => handleInputChange('expected_salary', e.target.value)}
+                                        placeholder="Enter expected salary (e.g., 30000)"
+                                        className={cn(
+                                            "bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400",
+                                            salaryError 
+                                                ? "border-red-400 focus:border-red-500 focus:ring-red-400/20" 
+                                                : "border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20"
+                                        )}
+                                    />
+                                    {salaryError && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                                            {salaryError}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <Calendar className="w-4 h-4 inline mr-2" />
+                                        Available From *
+                                    </label>
+                                    <Input
+                                        type="date"
+                                        value={formData.availability_date}
+                                        onChange={(e) => handleInputChange('availability_date', e.target.value)}
+                                        className="bg-white/10 backdrop-blur-sm border-blue-200/30 focus:border-blue-400 focus:ring-blue-400/20 text-gray-900 dark:text-white"
+                                        required
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        {/* Sticky action footer — always visible within the modal */}
+                        <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 sm:p-6 pt-4">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -245,4 +262,3 @@ Best regards,
         </AnimatePresence>
     )
 }
-
