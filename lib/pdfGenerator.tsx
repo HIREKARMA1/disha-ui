@@ -5,6 +5,8 @@ import { formatEducationFieldForDisplay, parseEducationField } from './parseEduc
 import { formatSalaryRange } from './currency'
 
 // Unicode font so ₹ renders correctly (Helvetica maps it to ¹).
+// Noto Sans does not include Mathematical Alphanumeric Symbols (e.g. 𝗔);
+// those are rendered via canvas using browser fonts (see needsUnicodeGlyphFallback).
 let pdfFontsRegistered = false
 function ensurePdfFontsRegistered() {
   if (pdfFontsRegistered) return
@@ -18,6 +20,74 @@ function ensurePdfFontsRegistered() {
     ],
   })
   pdfFontsRegistered = true
+}
+
+/**
+ * True when text contains glyphs Noto Sans cannot embed (e.g. Mathematical
+ * Sans-Serif Bold U+1D5D4…), which otherwise corrupt in @react-pdf output.
+ * Does not alter the source string — callers keep the original value.
+ */
+function needsUnicodeGlyphFallback(text: string): boolean {
+  for (const ch of text) {
+    const cp = ch.codePointAt(0)
+    if (cp == null) continue
+    // Mathematical Alphanumeric Symbols
+    if (cp >= 0x1d400 && cp <= 0x1d7ff) return true
+    // Other supplementary-plane characters outside BMP
+    if (cp > 0xffff) return true
+  }
+  return false
+}
+
+/**
+ * Rasterize text with browser fonts so Mathematical Bold / other Unicode
+ * appears exactly as in the UI. Source string is never modified.
+ */
+function renderUnicodeTextToDataUrl(
+  text: string,
+  options: { fontSize?: number; fontWeight?: string | number; color?: string } = {}
+): string {
+  const fontSize = options.fontSize ?? 14
+  const fontWeight = options.fontWeight ?? 'bold'
+  const color = options.color ?? '#2d3748'
+  const scale = 2
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+
+  const fontFamily =
+    '"Segoe UI Symbol", "Segoe UI", "Apple Symbols", "Noto Sans Symbols 2", "DejaVu Sans", Arial, sans-serif'
+  const font = `${fontWeight} ${fontSize * scale}px ${fontFamily}`
+  ctx.font = font
+  const measured = ctx.measureText(text)
+  const width = Math.max(1, Math.ceil(measured.width) + 4 * scale)
+  const height = Math.max(1, Math.ceil(fontSize * scale * 1.35))
+  canvas.width = width
+  canvas.height = height
+  ctx.font = font
+  ctx.fillStyle = color
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 2 * scale, height / 2)
+  return canvas.toDataURL('image/png')
+}
+
+function resolveCompanyName(
+  job: JobData,
+  corporateProfile?: CorporateProfile
+): string | undefined {
+  return (
+    corporateProfile?.company_name ||
+    job.company_name ||
+    job.corporate_name ||
+    undefined
+  )
+}
+
+function resolveCompanyLogo(
+  job: JobData,
+  corporateProfile?: CorporateProfile
+): string | undefined {
+  return corporateProfile?.company_logo || job.company_logo || undefined
 }
 
 interface JobData {
@@ -46,6 +116,8 @@ interface JobData {
   campus_drive_date?: string
   corporate_name?: string
   corporate_id?: string
+  company_name?: string
+  company_logo?: string
   created_at?: string
   number_of_openings?: number
   perks_and_benefits?: string
@@ -177,6 +249,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2d3748',
     marginBottom: 8,
+  },
+  companyNameRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 4,
+  },
+  companyNameLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  companyNameImage: {
+    height: 16,
+    maxWidth: 420,
+    objectFit: 'contain',
   },
   companyDescription: {
     fontSize: 11,
@@ -317,12 +407,14 @@ const JobDescriptionDocument = ({
   job, 
   corporateProfile, 
   logoUrl,
-  hirekarmaLogoUrl 
+  hirekarmaLogoUrl,
+  companyNameImageUrl,
 }: { 
   job: JobData
   corporateProfile?: CorporateProfile
   logoUrl?: string | null
   hirekarmaLogoUrl?: string | null
+  companyNameImageUrl?: string | null
 }) => {
   // Split requirements/responsibilities into lines
   const requirementsList = job.requirements
@@ -348,6 +440,8 @@ const JobDescriptionDocument = ({
   const skillsCount = job.skills_required?.length || 0
   const skillsPerColumn = skillsCount <= 1 ? 1 : skillsCount <= 2 ? 2 : 3
 
+  const resolvedName = resolveCompanyName(job, corporateProfile)
+
   return (
     <Document>
       {/* Single Page component - react-pdf will automatically create new pages when content overflows */}
@@ -356,13 +450,20 @@ const JobDescriptionDocument = ({
         <PDFFooter hirekarmaLogoUrl={hirekarmaLogoUrl} />
         
         {/* About Company Section */}
-        {(corporateProfile?.company_name || corporateProfile?.description) && (
+        {(resolvedName || corporateProfile?.description) && (
           <View style={styles.content}>
             {/* <Text style={styles.sectionTitle}>About Company</Text> */}
-            {corporateProfile?.company_name && (
-              <Text style={styles.companyName}>
-                Company Name: {corporateProfile.company_name}
-              </Text>
+            {resolvedName && (
+              companyNameImageUrl ? (
+                <View style={styles.companyNameRow}>
+                  <Text style={styles.companyNameLabel}>Company Name:</Text>
+                  <Image src={companyNameImageUrl} style={styles.companyNameImage} />
+                </View>
+              ) : (
+                <Text style={styles.companyName}>
+                  Company Name: {resolvedName}
+                </Text>
+              )
             )}
             {corporateProfile?.description && (
               <Text style={styles.companyDescription}>
@@ -671,11 +772,12 @@ export class JobDescriptionPDFGenerator {
     try {
       ensurePdfFontsRegistered()
 
-      // Load company logo if available
+      // Prefer corporate profile logo; fall back to logo already on the job payload
       let logoDataUrl: string | null = null
-      if (corporateProfile?.company_logo) {
+      const logoSource = resolveCompanyLogo(job, corporateProfile)
+      if (logoSource) {
         try {
-          logoDataUrl = await this.loadImageAsDataUrl(corporateProfile.company_logo)
+          logoDataUrl = await this.loadImageAsDataUrl(logoSource)
         } catch (error) {
           console.warn('Could not load company logo:', error)
         }
@@ -692,6 +794,21 @@ export class JobDescriptionPDFGenerator {
         console.warn('Could not load Hirekarma logo:', error)
       }
 
+      // Preserve original company name string; rasterize only when Noto Sans lacks glyphs
+      let companyNameImageUrl: string | null = null
+      const resolvedName = resolveCompanyName(job, corporateProfile)
+      if (resolvedName && needsUnicodeGlyphFallback(resolvedName)) {
+        try {
+          companyNameImageUrl = renderUnicodeTextToDataUrl(resolvedName, {
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: '#2d3748',
+          }) || null
+        } catch (error) {
+          console.warn('Could not rasterize Unicode company name for PDF:', error)
+        }
+      }
+
       // Create the PDF document
       const doc = (
         <JobDescriptionDocument
@@ -699,6 +816,7 @@ export class JobDescriptionPDFGenerator {
           corporateProfile={corporateProfile}
           logoUrl={logoDataUrl}
           hirekarmaLogoUrl={hirekarmaLogoDataUrl}
+          companyNameImageUrl={companyNameImageUrl}
         />
       )
 
@@ -713,126 +831,155 @@ export class JobDescriptionPDFGenerator {
   }
 
   private async loadImageAsDataUrl(imageUrl: string): Promise<string> {
+    console.log('🖼️ Attempting to load image:', imageUrl)
+
+    // Check if it's already a data URL
+    if (imageUrl.startsWith('data:')) {
+      console.log('✅ Image is already a data URL')
+      return this.ensureRasterDataUrl(imageUrl)
+    }
+
+    const fetchImageAsBlob = async (url: string): Promise<string> => {
+      console.log('🌐 Fetching image via fetch API...')
+      let response = await fetch(url, {
+        mode: 'cors',
+        credentials: 'omit',
+      })
+
+      if (!response.ok) {
+        console.log('🔄 Direct fetch failed, trying no-cors mode...')
+        response = await fetch(url, {
+          mode: 'no-cors',
+          credentials: 'omit',
+        })
+      }
+
+      const blob = await response.blob()
+      console.log('✅ Image fetched as blob successfully')
+
+      const dataUrl = await new Promise<string>((resolveBlob, rejectBlob) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          console.log('✅ Image converted to data URL via FileReader')
+          resolveBlob(reader.result as string)
+        }
+        reader.onerror = () => {
+          rejectBlob(new Error('Failed to convert blob to data URL'))
+        }
+        reader.readAsDataURL(blob)
+      })
+      return this.ensureRasterDataUrl(dataUrl)
+    }
+
+    const tryServerProxy = async (): Promise<string> => {
+      console.log('🌐 Trying server-side proxy...')
+      const token =
+        typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+      const response = await fetch(
+        `${config.api.fullUrl}/corporates/proxy-image?url=${encodeURIComponent(imageUrl)}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      )
+
+      console.log('📡 Proxy response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Proxy response error:', errorText)
+        throw new Error(`Proxy request failed: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ Image loaded via server proxy, data URL length:', data.data_url?.length || 0)
+      if (!data?.data_url || typeof data.data_url !== 'string') {
+        throw new Error('Proxy returned no data URL')
+      }
+      return this.ensureRasterDataUrl(data.data_url)
+    }
+
+    try {
+      return await tryServerProxy()
+    } catch {
+      try {
+        return await fetchImageAsBlob(imageUrl)
+      } catch {
+        console.log('🔄 Trying direct image loading as final fallback...')
+        return await new Promise<string>((resolve, reject) => {
+          const img = new window.Image()
+          img.crossOrigin = 'anonymous'
+
+          img.onload = () => {
+            console.log('✅ Image loaded successfully via direct loading')
+            try {
+              const canvas = document.createElement('canvas')
+              const ctx = canvas.getContext('2d')
+
+              if (!ctx) {
+                throw new Error('Could not get canvas context')
+              }
+
+              canvas.width = img.width
+              canvas.height = img.height
+              ctx.drawImage(img, 0, 0)
+
+              const dataUrl = canvas.toDataURL('image/png')
+              console.log('✅ Image converted to data URL successfully')
+              resolve(dataUrl)
+            } catch (error) {
+              console.error('❌ Error converting image to data URL:', error)
+              reject(error)
+            }
+          }
+
+          img.onerror = (error: Event | string) => {
+            console.error('❌ All image loading methods failed:', error)
+            reject(new Error(`Could not load image: ${imageUrl}`))
+          }
+
+          img.src = imageUrl
+        })
+      }
+    }
+  }
+
+  /** Convert SVG (and other non-raster) data URLs to PNG for @react-pdf. */
+  private ensureRasterDataUrl(dataUrl: string): Promise<string> {
+    const isSvg =
+      dataUrl.startsWith('data:image/svg') ||
+      dataUrl.startsWith('data:image/svg+xml') ||
+      /^data:[^;]*svg/i.test(dataUrl)
+
+    const isRaster =
+      dataUrl.startsWith('data:image/png') ||
+      dataUrl.startsWith('data:image/jpeg') ||
+      dataUrl.startsWith('data:image/jpg') ||
+      dataUrl.startsWith('data:image/webp') ||
+      dataUrl.startsWith('data:image/gif')
+
+    if (!isSvg && isRaster) {
+      return Promise.resolve(dataUrl)
+    }
+
     return new Promise((resolve, reject) => {
-      console.log('🖼️ Attempting to load image:', imageUrl)
-
-      // Check if it's already a data URL
-      if (imageUrl.startsWith('data:')) {
-        console.log('✅ Image is already a data URL')
-        resolve(imageUrl)
-        return
-      }
-
-      // Try fetching the image through fetch API to bypass CORS
-      const fetchImageAsBlob = async (url: string): Promise<string> => {
+      const img = new window.Image()
+      img.onload = () => {
         try {
-          console.log('🌐 Fetching image via fetch API...')
-
-          let response = await fetch(url, {
-            mode: 'cors',
-            credentials: 'omit'
-          })
-
-          if (!response.ok) {
-            console.log('🔄 Direct fetch failed, trying no-cors mode...')
-            response = await fetch(url, {
-              mode: 'no-cors',
-              credentials: 'omit'
-            })
-          }
-
-          const blob = await response.blob()
-          console.log('✅ Image fetched as blob successfully')
-
-          return new Promise((resolveBlob, rejectBlob) => {
-            const reader = new FileReader()
-            reader.onload = () => {
-              console.log('✅ Image converted to data URL via FileReader')
-              resolveBlob(reader.result as string)
-            }
-            reader.onerror = () => {
-              rejectBlob(new Error('Failed to convert blob to data URL'))
-            }
-            reader.readAsDataURL(blob)
-          })
+          const canvas = document.createElement('canvas')
+          const width = img.naturalWidth || img.width || 140
+          const height = img.naturalHeight || img.height || 40
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) throw new Error('Could not get canvas context')
+          ctx.drawImage(img, 0, 0)
+          resolve(canvas.toDataURL('image/png'))
         } catch (error) {
-          console.warn('❌ Fetch approach failed:', error)
-          throw error
+          reject(error)
         }
       }
-
-      // Try server-side proxy first, then client-side approaches
-      const tryServerProxy = async (): Promise<string> => {
-        try {
-          console.log('🌐 Trying server-side proxy...')
-          const response = await fetch(`${config.api.baseUrl}/api/v1/corporates/proxy-image?url=${encodeURIComponent(imageUrl)}`)
-
-          console.log('📡 Proxy response status:', response.status)
-
-          if (!response.ok) {
-            const errorText = await response.text()
-            console.error('❌ Proxy response error:', errorText)
-            throw new Error(`Proxy request failed: ${response.status} - ${errorText}`)
-          }
-
-          const data = await response.json()
-          console.log('✅ Image loaded via server proxy, data URL length:', data.data_url?.length || 0)
-          return data.data_url
-        } catch (error) {
-          console.warn('❌ Server proxy failed:', error)
-          throw error
-        }
-      }
-
-      // Try server proxy first, then client-side approaches
-      tryServerProxy()
-        .then(result => {
-          resolve(result)
-        })
-        .catch(() => {
-          // Fallback 1: Try client-side fetch
-          fetchImageAsBlob(imageUrl)
-            .then(result => {
-              resolve(result)
-            })
-            .catch(() => {
-              console.log('🔄 Trying direct image loading as final fallback...')
-
-              // Fallback 2: Try direct image loading
-              const img = new window.Image()
-              img.crossOrigin = 'anonymous'
-
-              img.onload = () => {
-                console.log('✅ Image loaded successfully via direct loading')
-                try {
-                  const canvas = document.createElement('canvas')
-                  const ctx = canvas.getContext('2d')
-
-                  if (!ctx) {
-                    throw new Error('Could not get canvas context')
-                  }
-
-                  canvas.width = img.width
-                  canvas.height = img.height
-                  ctx.drawImage(img, 0, 0)
-
-                  const dataUrl = canvas.toDataURL('image/png')
-                  console.log('✅ Image converted to data URL successfully')
-                  resolve(dataUrl)
-                } catch (error) {
-                  console.error('❌ Error converting image to data URL:', error)
-                  reject(error)
-                }
-              }
-
-              img.onerror = (error: Event | string) => {
-                console.error('❌ All image loading methods failed:', error)
-                reject(new Error(`Could not load image: ${imageUrl}`))
-              }
-
-              img.src = imageUrl
-            })
-        })
+      img.onerror = () => reject(new Error('Failed to rasterize image for PDF'))
+      img.src = dataUrl
     })
   }
 }
