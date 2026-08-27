@@ -227,12 +227,28 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
     setIsDownloadingPDF(true)
     try {
+      // Build profile from job payload so logo/name are available without a separate fetch.
+      // Shared PDF generator also falls back to job.company_logo / job.company_name.
+      const corporateProfileFromJob = {
+        id: job.corporate_id || job.id,
+        company_name: job.company_name || job.corporate_name,
+        company_logo: job.company_logo,
+        website_url: job.company_website,
+        industry: job.industry,
+        company_size: job.company_size,
+        founded_year: job.company_founded,
+        description: job.company_description,
+        company_type: job.company_type,
+        address: job.company_address,
+        contact_person: job.contact_person,
+        contact_designation: job.contact_designation,
+      }
       const ok = await downloadJobDescriptionPDF(
         {
           ...job,
           location: Array.isArray(job.location) ? job.location.join(', ') : job.location,
         } as never,
-        undefined
+        corporateProfileFromJob
       )
       if (ok) toast.success('PDF downloaded')
       else toast.error('Failed to generate PDF')
