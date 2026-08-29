@@ -18,7 +18,8 @@ import {
 import { toast } from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-handler'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Download, Upload, X } from 'lucide-react'
+import { Plus, Download, Upload, X, GraduationCap, CheckCircle, UserX, Shield, Clock } from 'lucide-react'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
 
 function matchesRegistrationFilter(createdAt: string | null | undefined, filter: string): boolean {
   if (filter === 'all') return true
@@ -317,46 +318,26 @@ export default function AdminStudentsPage() {
 
   return (
     <AdminDashboardLayout>
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Student Management 👨‍🎓
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                Manage students, import/export records, and onboard students efficiently.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                  📊 {stats.total_students} Total Students
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                  ✅ {stats.active_students} Active
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
-                  🔴 {stats.inactive_students} Inactive
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                  ✔️ {stats.verified_students} Verified
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-200">
-                  🟢 {stats.logged_in_today} Logged In Today
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                  ⏸ {stats.never_logged_in} Never Logged In
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+        <AdminPageHero
+          title="Student Management"
+          subtitle="Manage students, import/export records, and onboard students efficiently."
+          chips={[
+            { label: `${stats.total_students} Total`, tone: 'blue', icon: <GraduationCap className="w-3.5 h-3.5" /> },
+            { label: `${stats.active_students} Active`, tone: 'green', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+            { label: `${stats.inactive_students} Inactive`, tone: 'orange', icon: <UserX className="w-3.5 h-3.5" /> },
+            { label: `${stats.verified_students} Verified`, tone: 'purple', icon: <Shield className="w-3.5 h-3.5" /> },
+            { label: `${stats.logged_in_today} Today`, tone: 'teal', icon: <Clock className="w-3.5 h-3.5" /> },
+            { label: `${stats.never_logged_in} Never logged in`, tone: 'orange', icon: <UserX className="w-3.5 h-3.5" /> },
+          ]}
+        />
 
         <div className="flex flex-col sm:flex-row gap-3">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium shadow-sm"
+            className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl hover:opacity-95 transition-all duration-200 font-medium shadow-md shadow-blue-500/20"
           >
             <Plus className="w-5 h-5" />
             <span>Add Student</span>
