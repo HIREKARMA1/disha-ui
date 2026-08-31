@@ -236,7 +236,10 @@ export interface StudentExport {
     resume?: string;
 }
 
-export const exportStudentsToCSV = (students: StudentExport[]) => {
+export const exportStudentsToCSV = (
+    students: StudentExport[],
+    options?: { filename?: string }
+) => {
     // Prepare CSV headers
     const headers = [
         'Name',
@@ -293,7 +296,7 @@ export const exportStudentsToCSV = (students: StudentExport[]) => {
     link.setAttribute('href', url);
 
     const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `Students_Export_${timestamp}.csv`;
+    const filename = options?.filename ?? `Students_Export_${timestamp}.csv`;
     link.setAttribute('download', filename);
 
     link.style.visibility = 'hidden';

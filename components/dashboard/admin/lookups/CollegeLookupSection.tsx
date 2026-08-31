@@ -13,18 +13,8 @@ import { CollegeLookupFormModal, type CollegeFormMode } from './CollegeLookupFor
 
 const PAGE_SIZE = 25
 
-function useDebouncedValue<T>(value: T, delay: number): T {
-    const [debounced, setDebounced] = useState(value)
-    useEffect(() => {
-        const t = setTimeout(() => setDebounced(value), delay)
-        return () => clearTimeout(t)
-    }, [value, delay])
-    return debounced
-}
-
 export function CollegeLookupSection() {
-    const [searchInput, setSearchInput] = useState('')
-    const debouncedSearch = useDebouncedValue(searchInput, 400)
+    const [selectedInstituteId, setSelectedInstituteId] = useState<string | undefined>()
     const [skip, setSkip] = useState(0)
 
     const [colleges, setColleges] = useState<CollegeLookupRow[]>([])
@@ -43,7 +33,7 @@ export function CollegeLookupSection() {
 
     useEffect(() => {
         setSkip(0)
-    }, [debouncedSearch])
+    }, [selectedInstituteId])
 
     const loadUniversities = useCallback(async () => {
         try {
@@ -62,13 +52,23 @@ export function CollegeLookupSection() {
         setIsLoading(true)
         setError(null)
         try {
-            const res = await lookupAdminService.listColleges({
-                skip,
-                limit: PAGE_SIZE,
-                search: debouncedSearch.trim() || undefined,
-            })
-            setColleges(res.colleges)
-            setTotal(res.total)
+            if (selectedInstituteId) {
+                const res = await lookupAdminService.listColleges({
+                    college_id: selectedInstituteId,
+                    include_student_counts: true,
+                    limit: 1,
+                })
+                setColleges(res.colleges)
+                setTotal(res.total)
+            } else {
+                const res = await lookupAdminService.listColleges({
+                    skip,
+                    limit: PAGE_SIZE,
+                    include_student_counts: true,
+                })
+                setColleges(res.colleges)
+                setTotal(res.total)
+            }
         } catch (err) {
             console.error(err)
             setError('Failed to load colleges. Please try again.')
@@ -76,7 +76,7 @@ export function CollegeLookupSection() {
         } finally {
             setIsLoading(false)
         }
-    }, [skip, debouncedSearch])
+    }, [skip, selectedInstituteId])
 
     useEffect(() => {
         loadUniversities()
@@ -139,15 +139,21 @@ export function CollegeLookupSection() {
 
     return (
         <div className="space-y-6">
-            <CollegeLookupToolbar searchTerm={searchInput} onSearchChange={setSearchInput} onAdd={openCreate} />
+            <CollegeLookupToolbar
+                selectedInstituteId={selectedInstituteId}
+                onInstituteChange={(collegeId) => setSelectedInstituteId(collegeId)}
+                onClearInstitute={() => setSelectedInstituteId(undefined)}
+                onAdd={openCreate}
+            />
             <CollegeLookupTable
                 colleges={colleges}
                 isLoading={isLoading}
                 error={error}
-                skip={skip}
+                skip={selectedInstituteId ? 0 : skip}
                 limit={PAGE_SIZE}
                 total={total}
                 universityNameById={univMap}
+                hidePagination={!!selectedInstituteId}
                 onRetry={fetchColleges}
                 onEdit={openEdit}
                 onDelete={setDeleteTarget}

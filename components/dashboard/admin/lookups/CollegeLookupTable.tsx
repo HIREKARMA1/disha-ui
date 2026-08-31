@@ -1,6 +1,7 @@
 "use client"
 
-import { GraduationCap, Pencil, Trash2 } from 'lucide-react'
+import { GraduationCap, Pencil, Trash2, Users } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import type { CollegeLookupRow } from '@/types/lookup'
 import { CollegeLookupPagination } from './CollegeLookupPagination'
@@ -13,6 +14,7 @@ interface CollegeLookupTableProps {
     limit: number
     total: number
     universityNameById: Map<string, string>
+    hidePagination?: boolean
     onRetry: () => void
     onEdit: (row: CollegeLookupRow) => void
     onDelete: (row: CollegeLookupRow) => void
@@ -32,12 +34,22 @@ export function CollegeLookupTable({
     limit,
     total,
     universityNameById,
+    hidePagination = false,
     onRetry,
     onEdit,
     onDelete,
     onPrevPage,
     onNextPage,
 }: CollegeLookupTableProps) {
+    const router = useRouter()
+
+    const handleStudentsClick = (row: CollegeLookupRow) => {
+        const count = row.student_count ?? 0
+        if (count > 0) {
+            router.push(`/dashboard/admin/lookups/colleges/${row.id}/students`)
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -101,6 +113,9 @@ export function CollegeLookupTable({
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Linked university
                             </th>
+                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Students
+                            </th>
                             <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Actions
                             </th>
@@ -120,6 +135,25 @@ export function CollegeLookupTable({
                                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                                         {uniName || (
                                             <span className="text-gray-400 dark:text-gray-500 italic">None</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {(row.student_count ?? 0) > 0 ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleStudentsClick(row)}
+                                                className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer group"
+                                            >
+                                                <Users className="h-4 w-4 text-gray-400 mr-2 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                <span className="text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                                    {row.student_count}
+                                                </span>
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                <Users className="h-4 w-4 text-gray-400 mr-2" />
+                                                0
+                                            </div>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -152,13 +186,15 @@ export function CollegeLookupTable({
                     </tbody>
                 </table>
             </div>
-            <CollegeLookupPagination
-                skip={skip}
-                limit={limit}
-                total={total}
-                onPrev={onPrevPage}
-                onNext={onNextPage}
-            />
+            {!hidePagination && (
+                <CollegeLookupPagination
+                    skip={skip}
+                    limit={limit}
+                    total={total}
+                    onPrev={onPrevPage}
+                    onNext={onNextPage}
+                />
+            )}
         </div>
     )
 }
