@@ -36,6 +36,7 @@ interface StudentTableProps {
     onRetry: () => void
     hasUnfilteredStudents?: boolean
     onClearFilters?: () => void
+    readOnly?: boolean
 }
 
 type SortField = 'name' | 'email' | 'phone' | 'degree' | 'branch' | 'placement_status' | 'total_applications' | 'interviews_attended' | 'offers_received' | 'profile_completion_percentage' | 'created_at'
@@ -50,6 +51,7 @@ export function StudentTable({
     onRetry,
     hasUnfilteredStudents = false,
     onClearFilters,
+    readOnly = false,
 }: StudentTableProps) {
     const [sortField, setSortField] = useState<SortField | null>('created_at')
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -395,27 +397,31 @@ export function StudentTable({
                 </p>
             </div>
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <button
-                    onClick={() => handleArchiveClick(student)}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                        student.is_archived
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                            : 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300'
-                    }`}
-                >
-                    {student.is_archived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
-                    {student.is_archived ? 'Unarchive' : 'Archive'}
-                </button>
-                <button
-                    onClick={() => {
-                        setStudentToDelete({ id: student.id, name: student.name })
-                        setShowDeleteModal(true)
-                    }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
-                >
-                    <Trash2 className="w-3 h-3" />
-                    Delete
-                </button>
+                {!readOnly && (
+                    <>
+                        <button
+                            onClick={() => handleArchiveClick(student)}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                                student.is_archived
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                    : 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300'
+                            }`}
+                        >
+                            {student.is_archived ? <Eye className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                            {student.is_archived ? 'Unarchive' : 'Archive'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setStudentToDelete({ id: student.id, name: student.name })
+                                setShowDeleteModal(true)
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+                        >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                        </button>
+                    </>
+                )}
             </div>
         </article>
     )
@@ -493,9 +499,11 @@ export function StudentTable({
                                     {getSortIcon('created_at')}
                                 </div>
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Actions
-                            </th>
+                            {!readOnly && (
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-white/[0.06]">
@@ -637,44 +645,45 @@ export function StudentTable({
                                     </div>
                                 </td>
 
-                                {/* Actions */}
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleArchiveClick(student)
-                                            }}
-                                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${student.is_archived
-                                                ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300'
-                                                : 'bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300'
-                                                }`}
-                                        >
-                                            {student.is_archived ? (
-                                                <>
-                                                    <Eye className="w-3 h-3" />
-                                                    Unarchive
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Archive className="w-3 h-3" />
-                                                    Archive
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                setStudentToDelete({ id: student.id, name: student.name })
-                                                setShowDeleteModal(true)
-                                            }}
-                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-300"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                            Delete
-                                        </button>
-                                    </div>
-                                </td>
+                                {!readOnly && (
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleArchiveClick(student)
+                                                }}
+                                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${student.is_archived
+                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300'
+                                                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/20 dark:text-orange-300'
+                                                    }`}
+                                            >
+                                                {student.is_archived ? (
+                                                    <>
+                                                        <Eye className="w-3 h-3" />
+                                                        Unarchive
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Archive className="w-3 h-3" />
+                                                        Archive
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setStudentToDelete({ id: student.id, name: student.name })
+                                                    setShowDeleteModal(true)
+                                                }}
+                                                className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-300"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                )}
                             </motion.tr>
                         ))}
                     </tbody>

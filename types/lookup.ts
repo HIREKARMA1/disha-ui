@@ -4,6 +4,7 @@ export interface CollegeLookupRow {
     id: string
     name: string
     university_id?: string | null
+    student_count?: number
 }
 
 export interface CollegeListApiResponse {

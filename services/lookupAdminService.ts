@@ -12,6 +12,7 @@ import type {
     TechnicalSkillListApiResponse,
     TechnicalSkillLookupRow,
 } from '@/types/lookup'
+import type { StudentListItem } from '@/types/university'
 
 function ensureAuth() {
     if (!apiClient.isAuthenticated()) {
@@ -25,9 +26,26 @@ export async function listColleges(params: {
     skip?: number
     limit?: number
     search?: string
+    college_id?: string
+    include_student_counts?: boolean
 }): Promise<CollegeListApiResponse> {
     ensureAuth()
     return apiClient.get('/admin/lookups/colleges', { params })
+}
+
+export async function listCollegeStudents(
+    collegeId: string,
+    includeArchived = false
+): Promise<{
+    college_id: string
+    college_name: string
+    students: StudentListItem[]
+    total_students: number
+}> {
+    ensureAuth()
+    return apiClient.get(`/admin/lookups/colleges/${collegeId}/students`, {
+        params: { include_archived: includeArchived },
+    })
 }
 
 export async function getCollege(id: string): Promise<CollegeLookupRow> {
