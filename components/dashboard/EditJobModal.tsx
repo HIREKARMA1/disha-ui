@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building, GraduationCap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +17,7 @@ import { parseEducationField } from '@/lib/parseEducationField'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
+import { getBatchYearOptions, parseEligibleBatchesForForm, serializeEligibleBatchesForApi } from '@/lib/batchYears'
 
 interface Job {
     id: string
@@ -38,6 +39,7 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    eligible_batches?: number[]
     skills_required?: string[]
     application_deadline?: string
     industry?: string
@@ -98,6 +100,7 @@ interface JobFormData {
     education_level: string[]
     education_degree: string[]
     education_branch: string[]
+    eligible_batches: string[]
     skills_required: string[]
     application_deadline: string
     industry: string
@@ -149,6 +152,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         return [...fromLookup, { value: 'Any', label: 'Any' }]
     }, [degreesData])
 
+    const batchOptions = useMemo(() => getBatchYearOptions(), [])
+
     const [isLoading, setIsLoading] = useState(false)
     const [jobLocationLabel, setJobLocationLabel] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -172,6 +177,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         education_level: [],
         education_degree: [],
         education_branch: [],
+        eligible_batches: [],
         skills_required: [],
         application_deadline: '',
         industry: '',
@@ -218,6 +224,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             const educationLevelArray = parseEducationField(job.education_level || [])
             const educationDegreeArray = parseEducationField(job.education_degree || [])
             const educationBranchArray = parseEducationField(job.education_branch || [])
+            const eligibleBatchesArray = parseEligibleBatchesForForm(job.eligible_batches)
 
             console.log('🔍 Education fields after parsing:', {
                 educationLevelArray,
@@ -342,6 +349,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_level: educationLevelArray,
                 education_degree: educationDegreeArray,
                 education_branch: educationBranchArray,
+                eligible_batches: eligibleBatchesArray,
                 skills_required: job.skills_required || [],
                 application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
                 industry: normalizedIndustry || (job.industry || ''),
@@ -622,6 +630,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_level: formData.education_level.length > 0 ? formData.education_level : null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
+                eligible_batches: serializeEligibleBatchesForApi(formData.eligible_batches),
                 skills_required: formData.skills_required.length > 0 ? formData.skills_required : null,
                 application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 industry: formData.industry || null,
@@ -1359,32 +1368,12 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                 </div>
                             </div>
 
-                            {/* Skills */}
+                            {/* Student Eligibility */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Users className="w-5 h-5" />
-                                    Required Skills
+                                    <GraduationCap className="w-5 h-5" />
+                                    Student Eligibility
                                 </h3>
-
-                                
-                                <SkillLookupMultiSelect
-                                    kind="technical"
-                                    selected={formData.skills_required}
-                                    onChange={(names) =>
-                                        setFormData((prev) => ({ ...prev, skills_required: names }))
-                                    }
-                                    placeholder="Select required skills from lookup"
-                                />
-                            </div>
-
-
-                            {/* Additional Job Details */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Users className="w-5 h-5" />
-                                    Additional Job Details
-                                </h3>
-
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -1423,6 +1412,49 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         />
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Batch
+                                    </label>
+                                    <MultiSearchableSelect
+                                        options={batchOptions}
+                                        values={formData.eligible_batches}
+                                        onChange={(batches) => handleInputChange('eligible_batches', batches)}
+                                        placeholder="Select batch(es)"
+                                        searchPlaceholder="Search batches..."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Leave empty to allow all batches. Students are matched by graduation year.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Skills */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Users className="w-5 h-5" />
+                                    Required Skills
+                                </h3>
+
+                                
+                                <SkillLookupMultiSelect
+                                    kind="technical"
+                                    selected={formData.skills_required}
+                                    onChange={(names) =>
+                                        setFormData((prev) => ({ ...prev, skills_required: names }))
+                                    }
+                                    placeholder="Select required skills from lookup"
+                                />
+                            </div>
+
+
+                            {/* Additional Job Details */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Users className="w-5 h-5" />
+                                    Additional Job Details
+                                </h3>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
