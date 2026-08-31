@@ -1,26 +1,61 @@
-import { Search } from 'lucide-react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select'
+import * as lookupAdminService from '@/services/lookupAdminService'
 
 interface CollegeLookupToolbarProps {
-    searchTerm: string
-    onSearchChange: (value: string) => void
+    selectedInstituteId?: string
+    onInstituteChange: (collegeId: string, collegeName?: string) => void
+    onClearInstitute: () => void
     onAdd: () => void
 }
 
-export function CollegeLookupToolbar({ searchTerm, onSearchChange, onAdd }: CollegeLookupToolbarProps) {
+export function CollegeLookupToolbar({
+    selectedInstituteId,
+    onInstituteChange,
+    onClearInstitute,
+    onAdd,
+}: CollegeLookupToolbarProps) {
+    const fetchInstituteOptions = async (searchTerm: string) => {
+        const res = await lookupAdminService.listColleges({
+            search: searchTerm.trim() || undefined,
+            limit: 50,
+        })
+        return res.colleges.map((college) => ({
+            value: college.id,
+            label: college.name.replace(/['"]+/g, '').trim(),
+        }))
+    }
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <div className="flex-1 relative min-w-0">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                        type="text"
-                        placeholder="Search colleges by name..."
-                        value={searchTerm}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
-                    />
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between">
+                <div className="flex-1 min-w-0 space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Filter by institute
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex-1 min-w-0">
+                            <AsyncSearchableSelect
+                                fetchOptions={fetchInstituteOptions}
+                                value={selectedInstituteId}
+                                onChange={(value) => onInstituteChange(value)}
+                                placeholder="Search and select institute..."
+                                searchPlaceholder="Type institute name..."
+                                debounceMs={400}
+                            />
+                        </div>
+                        {selectedInstituteId && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClearInstitute}
+                                className="shrink-0"
+                            >
+                                Clear
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <Button
                     type="button"

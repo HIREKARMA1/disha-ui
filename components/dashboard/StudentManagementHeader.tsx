@@ -41,8 +41,8 @@ interface StudentManagementHeaderProps {
     showFilters: boolean
     setShowFilters: (show: boolean) => void
     onClearFilters: () => void
-    onAddStudent: () => void
-    onBulkUpload: () => void
+    onAddStudent?: () => void
+    onBulkUpload?: () => void
 }
 
 const selectClass =
@@ -130,20 +130,24 @@ export function StudentManagementHeader({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        <Button
-                            onClick={onAddStudent}
-                            className="h-11 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
-                        >
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Add Student
-                        </Button>
-                        <Button
-                            onClick={onBulkUpload}
-                            className="h-11 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-700"
-                        >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Bulk Upload
-                        </Button>
+                        {onAddStudent && (
+                            <Button
+                                onClick={onAddStudent}
+                                className="h-11 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
+                            >
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Add Student
+                            </Button>
+                        )}
+                        {onBulkUpload && (
+                            <Button
+                                onClick={onBulkUpload}
+                                className="h-11 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-700"
+                            >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Bulk Upload
+                            </Button>
+                        )}
                         <Button
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
