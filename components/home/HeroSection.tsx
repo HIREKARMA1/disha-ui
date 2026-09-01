@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState, type ComponentType } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   TrendingUp,
   UserCircle2,
   Video,
+  type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -68,7 +69,7 @@ const CounterStat = ({ value, label, suffix = '+' }: { value: number; label: str
 
 type FloatingCardProps = {
   className?: string
-  icon: ComponentType<{ size?: number; color?: string; className?: string }>
+  icon: LucideIcon
   color: string
   title: string
   subtitle: string

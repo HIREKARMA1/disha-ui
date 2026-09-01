@@ -1,5 +1,5 @@
-"use client"
 // @ts-nocheck — ported from design reference; UI-first integration
+"use client"
 
 import React, { useState, useEffect, useRef, useContext, createContext } from "react";
 import Link from "next/link";
@@ -136,9 +136,9 @@ const useApp = () => useContext(AppCtx);
 /* ================================================================== */
 /*  Scroll reveal                                                      */
 /* ================================================================== */
-function useReveal(options = {}) {
+function useReveal(options: { threshold?: number; immediate?: boolean } = {}) {
   const { threshold = 0.12, immediate = false } = options;
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   const [v, setV] = useState(immediate);
   useEffect(() => {
     if (immediate) {
@@ -159,10 +159,20 @@ function useReveal(options = {}) {
     io.observe(el);
     return () => io.disconnect();
   }, [threshold, immediate]);
-  return [ref, v];
+  return [ref, v] as [typeof ref, boolean];
 }
 
-function Reveal({ children, delay = 0, className = "", immediate = false }) {
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+  immediate = false,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+  immediate?: boolean;
+}) {
   const [ref, v] = useReveal({ immediate });
   const show = immediate || v;
   return (
@@ -183,13 +193,13 @@ function Reveal({ children, delay = 0, className = "", immediate = false }) {
 /* ================================================================== */
 /*  Animated counter                                                   */
 /* ================================================================== */
-function useCountUp(target, { duration = 1400, start = false } = {}) {
+function useCountUp(target: number, { duration = 1400, start = false }: { duration?: number; start?: boolean } = {}) {
   const [val, setVal] = useState(0);
   const ranRef = useRef(false);
   useEffect(() => {
     if (!start || ranRef.current) return;
     ranRef.current = true;
-    let raf;
+    let raf: number;
     const t0 = performance.now();
     const ease = (x) => 1 - Math.pow(1 - x, 3);
     const step = (now) => {
