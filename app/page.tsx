@@ -2,18 +2,8 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/hooks/useAuth'
-import HeroSection from '@/components/home/HeroSection'
-import FeaturesSection from '@/components/home/FeaturesSection'
-import HowItsWork from '@/components/home/HowItsWork'
-import ChallengeSection from '@/components/home/ChallengeSection'
-import PlacedStudentsSection from '@/components/home/PlacedStudentsSection'
-import TestimonialsSection from '@/components/home/TestimonialsSection'
-import PartnersSection from '@/components/home/PartnersSection'
-import FAQSection from '@/components/home/FAQSection'
-import CTASection from '@/components/home/CTASection'
-import { Footer } from '@/components/ui/footer'
+import DishaHomepage from '@/components/home/DishaHomepage'
 
 export default function HomePage() {
     const { user, isAuthenticated, isLoading } = useAuth()
@@ -29,7 +19,6 @@ export default function HomePage() {
     if (!isLoading && isAuthenticated && user) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-                <Navbar variant="transparent" />
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
                         <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -40,19 +29,5 @@ export default function HomePage() {
         )
     }
 
-    return (
-        <main className="min-h-screen bg-white text-gray-900 dark:bg-[#2A2C38] dark:text-white">
-            <Navbar variant="transparent" />
-            <HeroSection />
-            <FeaturesSection />
-            <HowItsWork />
-            <ChallengeSection />
-            <PlacedStudentsSection />
-            {/* <TestimonialsSection /> */}
-            <FAQSection />
-            <CTASection />
-            <PartnersSection />
-            <Footer />
-        </main>
-    )
+    return <DishaHomepage />
 }

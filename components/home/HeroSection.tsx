@@ -1,9 +1,29 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, type ComponentType } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import {
+  ArrowRight,
+  Bell,
+  Briefcase,
+  Sparkles,
+  TrendingUp,
+  UserCircle2,
+  Video,
+} from 'lucide-react'
 import Link from 'next/link'
+
+const HERO_IMAGE_URL =
+  'https://hirekarma.s3.us-east-1.amazonaws.com/disha-ui/disha_hero_img.jpg'
+
+const ACCENT = {
+  sky: '#00a2e5',
+  yellow: '#fec40d',
+  orange: '#f58020',
+  red: '#d64246',
+  green: '#098855',
+  navy: '#1b52a4',
+}
 
 const statsData = [
   { value: 50, label: 'students', suffix: 'k+' },
@@ -46,9 +66,59 @@ const CounterStat = ({ value, label, suffix = '+' }: { value: number; label: str
   )
 }
 
+type FloatingCardProps = {
+  className?: string
+  icon: ComponentType<{ size?: number; color?: string; className?: string }>
+  color: string
+  title: string
+  subtitle: string
+  floatDelay?: number
+}
+
+function FloatingCard({
+  className = '',
+  icon: Icon,
+  color,
+  title,
+  subtitle,
+  floatDelay = 0,
+}: FloatingCardProps) {
+  return (
+    <div
+      className={`absolute z-30 rounded-xl px-3.5 py-2.5 md:px-4 md:py-3 flex items-center gap-2.5 md:gap-3 shadow-2xl hk-float bg-white/95 dark:bg-[#101d38]/96 border border-black/10 dark:border-white/10 backdrop-blur-sm ${className}`}
+      style={{
+        boxShadow: `0 10px 30px -8px ${color}44`,
+        animationDelay: `${floatDelay}ms`,
+      }}
+    >
+      <div
+        className="w-8 h-8 md:w-9 md:h-9 rounded-lg flex items-center justify-center shrink-0"
+        style={{ backgroundColor: `${color}22` }}
+      >
+        <Icon size={15} color={color} />
+      </div>
+      <div>
+        <p className="text-[11px] md:text-xs font-semibold leading-tight text-[#1A1A1A] dark:text-white/95">
+          {title}
+        </p>
+        <p className="text-[10px] md:text-[11px] leading-tight text-[#555] dark:text-white/45">
+          {subtitle}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 const HeroSection = () => {
+  const [heroImgFailed, setHeroImgFailed] = useState(false)
+
   return (
     <section className="relative w-full min-h-[90vh] bg-[#53C9F2] dark:bg-[#2A2C38] overflow-hidden flex items-center pt-20 pb-12 sm:pt-28 sm:pb-16 md:pt-32 md:pb-20 lg:pt-32 lg:pb-24">
+      <style>{`
+        @keyframes hkFloat { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+        .hk-float { animation: hkFloat 4.5s ease-in-out infinite; }
+      `}</style>
+
       {/* Background Elements */}
       <div className="absolute inset-0 bg-[#53C9F2] dark:bg-[#2A2C38]" />
 
@@ -141,18 +211,6 @@ const HeroSection = () => {
               ))}
             </div>
 
-            {/* Social Proof */}
-            {/* <div className="flex items-center gap-3 md:gap-4 justify-start md:justify-center lg:justify-start">
-              <div className="flex -space-x-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full bg-gray-300 border-2 border-[#53C9F2] overflow-hidden">
-                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm font-medium text-white/90">Trusted by 50k+ students, 30+ companies, 20+ universities</p>
-            </div> */}
-
           </motion.div>
 
           {/* Right Image (also shown on mobile below content) */}
@@ -162,19 +220,84 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative flex justify-center items-end h-full pt-10 md:pt-12 lg:pt-10 min-h-[360px] md:min-h-[420px] lg:min-h-[600px]"
           >
-            {/* Arch Shape Container */}
+            {/* Arch Shape Container + floating cards */}
             <div className="relative w-[300px] h-[380px] md:w-[340px] md:h-[430px] lg:w-[445px] lg:h-[565px]">
               {/* White Border Arch (Outer Layer) */}
               <div className="absolute inset-0 border-2 border-white rounded-t-[225px] z-10 pointer-events-none" />
               
               {/* Main Image Container (Inner Layer with gap) */}
               <div className="absolute inset-4 rounded-t-[210px] overflow-hidden bg-white z-20">
-                 <img
-                  src="https://hirekarma.s3.us-east-1.amazonaws.com/disha-ui/disha_hero_img.jpg"
-                  alt="Student with books"
-                  className="w-full h-full object-cover object-top"
-                />
+                {heroImgFailed ? (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(155deg, ${ACCENT.navy}, ${ACCENT.sky}88)`,
+                    }}
+                    aria-hidden
+                  >
+                    <UserCircle2 size={64} color="rgba(255,255,255,0.5)" />
+                  </div>
+                ) : (
+                  <img
+                    src={HERO_IMAGE_URL}
+                    alt="Student with books"
+                    referrerPolicy="no-referrer"
+                    loading="eager"
+                    className="w-full h-full object-cover object-top"
+                    onError={() => setHeroImgFailed(true)}
+                  />
+                )}
               </div>
+
+              {/* Floating cards — reference layout (4 corners + 2 mid lg-only) */}
+              <FloatingCard
+                className="-top-3 -left-3 md:-top-4 md:-left-7"
+                icon={Bell}
+                color={ACCENT.orange}
+                title="New job posted"
+                subtitle="Frontend intern, Bengaluru"
+                floatDelay={0}
+              />
+              <FloatingCard
+                className="-bottom-3 -right-3 md:-bottom-4 md:-right-5"
+                icon={UserCircle2}
+                color={ACCENT.sky}
+                title="Profile 85% complete"
+                subtitle="Add one more skill"
+                floatDelay={700}
+              />
+              <FloatingCard
+                className="top-1/3 -right-3 md:-right-9 hidden sm:flex"
+                icon={Sparkles}
+                color={ACCENT.yellow}
+                title="12,000+ placed"
+                subtitle="Your turn could be next"
+                floatDelay={350}
+              />
+              <FloatingCard
+                className="bottom-1/4 -left-3 md:-left-9 hidden sm:flex"
+                icon={TrendingUp}
+                color={ACCENT.green}
+                title="92% skill match"
+                subtitle="Nice fit for backend roles"
+                floatDelay={1050}
+              />
+              <FloatingCard
+                className="top-1/2 -translate-y-1/2 -left-3 md:-left-11 hidden lg:flex"
+                icon={Video}
+                color={ACCENT.sky}
+                title="Live interviews weekly"
+                subtitle="Practice makes offers"
+                floatDelay={1400}
+              />
+              <FloatingCard
+                className="top-1/2 -translate-y-1/2 -right-3 md:-right-11 hidden lg:flex"
+                icon={Briefcase}
+                color={ACCENT.red}
+                title="3 days left to apply"
+                subtitle="Don't miss this drive"
+                floatDelay={1750}
+              />
             </div>
           </motion.div>
 
