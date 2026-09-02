@@ -485,12 +485,22 @@ function Hero() {
   const { t, persona, mode } = useApp();
   const p = PERSONAS[persona];
   const [spot, setSpot] = useState({ x: 50, y: 50 });
-  const [heroImgFailed, setHeroImgFailed] = useState(false);
+  const [loadedHero, setLoadedHero] = useState({});
+  const [failedHero, setFailedHero] = useState({});
   const [copyReady, setCopyReady] = useState(true);
   const personaMounted = useRef(false);
 
   useEffect(() => {
-    setHeroImgFailed(false);
+    PERSONA_ORDER.forEach((key) => {
+      const img = new Image();
+      img.referrerPolicy = "no-referrer";
+      img.onload = () => setLoadedHero((prev) => ({ ...prev, [key]: true }));
+      img.onerror = () => setFailedHero((prev) => ({ ...prev, [key]: true }));
+      img.src = PERSONAS[key].heroImage;
+    });
+  }, []);
+
+  useEffect(() => {
     if (!personaMounted.current) {
       personaMounted.current = true;
       return;
@@ -499,6 +509,9 @@ function Hero() {
     const id = window.setTimeout(() => setCopyReady(true), 40);
     return () => window.clearTimeout(id);
   }, [persona]);
+
+  const heroActiveFailed = Boolean(failedHero[persona]);
+  const heroActiveLoaded = Boolean(loadedHero[persona]);
 
   return (
     <section
@@ -579,25 +592,46 @@ function Hero() {
 
           <div className="relative mx-auto w-full max-w-[280px] sm:max-w-sm md:max-w-md order-2 mt-2 md:mt-0">
             <div className="rounded-[24px] md:rounded-[28px] overflow-hidden relative" style={{ boxShadow: `0 25px 60px -15px ${p.accent}33` }}>
-              {heroImgFailed ? (
-                <div
-                  className="w-full h-[300px] sm:h-[380px] md:h-[460px] flex items-center justify-center"
-                  style={{ background: `linear-gradient(155deg, ${ACCENT.navy}, ${p.accent}55)` }}
-                >
-                  <UserCircle2 size={64} color="rgba(255,255,255,0.5)" />
-                </div>
-              ) : (
-                <img
-                  key={persona}
-                  src={p.heroImage}
-                  alt={p.heroAlt}
-                  referrerPolicy="no-referrer"
-                  loading="eager"
-                  onError={() => setHeroImgFailed(true)}
-                  className="w-full h-[300px] sm:h-[380px] md:h-[460px] object-cover transition-opacity duration-500"
-                />
-              )}
-              <div className="absolute inset-0" style={{ background: t.heroImgShade }} />
+              <div
+                className="relative w-full h-[300px] sm:h-[380px] md:h-[460px]"
+                style={{ background: `linear-gradient(155deg, ${ACCENT.navy}, ${p.accent}55)` }}
+              >
+                {heroActiveFailed ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <UserCircle2 size={64} color="rgba(255,255,255,0.5)" />
+                  </div>
+                ) : (
+                  PERSONA_ORDER.map((key) => {
+                    const ph = PERSONAS[key];
+                    const isActive = persona === key;
+                    const isLoaded = Boolean(loadedHero[key]);
+                    return (
+                      <img
+                        key={key}
+                        src={ph.heroImage}
+                        alt={isActive ? ph.heroAlt : ""}
+                        referrerPolicy="no-referrer"
+                        loading={key === "student" ? "eager" : "lazy"}
+                        decoding="async"
+                        onLoad={() => setLoadedHero((prev) => ({ ...prev, [key]: true }))}
+                        onError={() => setFailedHero((prev) => ({ ...prev, [key]: true }))}
+                        aria-hidden={!isActive}
+                        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ease-out"
+                        style={{ opacity: isActive && isLoaded ? 1 : 0 }}
+                      />
+                    );
+                  })
+                )}
+                {!heroActiveFailed && !heroActiveLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                      className="h-9 w-9 rounded-full border-2 border-white/25 border-t-white/80 animate-spin"
+                      aria-hidden
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="absolute inset-0 pointer-events-none" style={{ background: t.heroImgShade }} />
             </div>
             {(BUBBLES_BY_PERSONA[persona] || BUBBLES_BY_PERSONA.student).map((b) => (
               <FloatingCard
@@ -786,22 +820,64 @@ function HowItWorks() {
   ];
   const [active, setActive] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
+  const STEP_MS = 3500;
   const mobileTrackRef = useRef(null);
   const n = steps.length;
   const mobileLoop = [...steps, ...steps, ...steps];
   const syncingRef = useRef(false);
-  const mobileReadyRef = useRef(false);
+  const activeRef = useRef(0);
   const resumeTimerRef = useRef(null);
+  activeRef.current = active;
 
   const pauseAutoForUser = () => {
     setAutoPlay(false);
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = setTimeout(() => setAutoPlay(true), 5000);
+    resumeTimerRef.current = setTimeout(() => setAutoPlay(true), STEP_MS);
+  };
+
+  const syncMobileScroll = (smooth) => {
+    const el = mobileTrackRef.current;
+    if (!el || typeof window === "undefined") return false;
+    if (window.matchMedia("(min-width: 768px)").matches) return false;
+    const w = el.clientWidth;
+    if (w <= 0) return false;
+
+    const stepIndex = activeRef.current;
+    const currentIdx = Math.round(el.scrollLeft / w);
+    const currentReal = ((currentIdx % n) + n) % n;
+
+    let target = (n + stepIndex) * w;
+    if (smooth) {
+      if (currentReal === stepIndex) return true;
+      if (stepIndex === 0 && currentReal === n - 1) target = (2 * n) * w;
+      else if (stepIndex === n - 1 && currentReal === 0) target = (n - 1) * w;
+    }
+
+    syncingRef.current = true;
+    if (smooth) {
+      el.scrollTo({ left: target, behavior: "smooth" });
+      window.setTimeout(() => {
+        if (stepIndex === 0 && target >= 2 * n * w - 2) {
+          el.scrollLeft = n * w;
+        } else if (stepIndex === n - 1 && target <= (n - 1) * w + 2) {
+          el.scrollLeft = (2 * n - 1) * w;
+        } else {
+          const idx = Math.round(el.scrollLeft / w);
+          const real = ((idx % n) + n) % n;
+          el.scrollLeft = (n + real) * w;
+        }
+        syncingRef.current = false;
+      }, 650);
+    } else {
+      el.scrollLeft = (n + stepIndex) * w;
+      syncingRef.current = false;
+    }
+    return true;
   };
 
   useEffect(() => {
     if (!autoPlay) return undefined;
-    const id = setInterval(() => setActive((a) => (a + 1) % n), 4200);
+    const id = setInterval(() => setActive((a) => (a + 1) % n), STEP_MS);
     return () => clearInterval(id);
   }, [n, autoPlay]);
 
@@ -809,69 +885,43 @@ function HowItWorks() {
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
   }, []);
 
-  // Start in the middle copy so we can swipe both ways
+  // Wait for carousel width, then snap to the active step (handles late layout on mobile)
   useEffect(() => {
     const el = mobileTrackRef.current;
     if (!el || typeof window === "undefined") return;
-    if (window.matchMedia("(min-width: 768px)").matches) return;
+
     const place = () => {
-      const w = el.clientWidth;
-      if (w <= 0) return;
-      syncingRef.current = true;
-      el.scrollLeft = (n + active) * w;
-      syncingRef.current = false;
-      mobileReadyRef.current = true;
+      if (syncingRef.current) return;
+      syncMobileScroll(false);
     };
+
     place();
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
     window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", place);
+    };
   }, [n]);
 
   // Keep mobile scroll in sync when active changes (auto-cycle / left stepper)
   useEffect(() => {
     const el = mobileTrackRef.current;
-    if (!el || !mobileReadyRef.current || typeof window === "undefined") return;
+    if (!el || typeof window === "undefined") return;
     if (window.matchMedia("(min-width: 768px)").matches) return;
-    const w = el.clientWidth;
-    if (w <= 0) return;
 
-    const currentIdx = Math.round(el.scrollLeft / w);
-    const currentReal = ((currentIdx % n) + n) % n;
-    if (currentReal === active) return;
+    if (syncMobileScroll(true)) return undefined;
 
-    // Always animate within the middle band when possible
-    let target = (n + active) * w;
-    // last → first: move forward into third copy, then snap to middle first
-    if (active === 0 && currentReal === n - 1) {
-      target = (2 * n) * w;
-    }
-    // first → last: move backward into first copy, then snap to middle last
-    if (active === n - 1 && currentReal === 0) {
-      target = (n - 1) * w;
-    }
-
-    syncingRef.current = true;
-    el.scrollTo({ left: target, behavior: "smooth" });
-    const t = window.setTimeout(() => {
-      if (active === 0 && target >= 2 * n * w - 2) {
-        el.scrollLeft = n * w;
-      } else if (active === n - 1 && target <= (n - 1) * w + 2) {
-        el.scrollLeft = (2 * n - 1) * w;
-      } else {
-        // Normalize into middle copy
-        const idx = Math.round(el.scrollLeft / w);
-        const real = ((idx % n) + n) % n;
-        el.scrollLeft = (n + real) * w;
-      }
-      syncingRef.current = false;
-    }, 480);
-    return () => clearTimeout(t);
+    const ro = new ResizeObserver(() => {
+      if (syncMobileScroll(true)) ro.disconnect();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [active, n]);
 
   const onMobileScroll = () => {
     if (syncingRef.current) return;
-    pauseAutoForUser();
     const el = mobileTrackRef.current;
     if (!el) return;
     const w = el.clientWidth;
@@ -974,21 +1024,21 @@ function HowItWorks() {
               return (
               <div
                 key={`${step.title}-${i}`}
-                className="snap-center shrink-0 w-full rounded-3xl p-8 flex flex-col items-center text-center border min-h-[320px]"
+                className="snap-center shrink-0 w-full rounded-3xl p-5 flex flex-col items-center text-center border md:p-8 md:min-h-[320px]"
                 style={{ backgroundColor: t.card, borderColor: t.border, boxShadow: t.cardShadow }}
               >
                 <div
-                  className="relative mb-5 flex h-36 w-36 items-center justify-center rounded-2xl border"
+                  className="relative mb-3 flex h-28 w-28 items-center justify-center rounded-2xl border md:mb-5 md:h-36 md:w-36"
                   style={{ backgroundColor: `${step.color}1a`, borderColor: `${step.color}44` }}
                 >
                   <img
                     src={step.image}
                     alt={step.title}
                     loading="lazy"
-                    className="h-28 w-28 object-contain"
+                    className="h-20 w-20 object-contain md:h-28 md:w-28"
                   />
                 </div>
-                <p className="font-semibold text-lg mb-2" style={{ color: t.text1, fontFamily: "Sora, sans-serif" }}>
+                <p className="font-semibold text-base mb-2 md:text-lg" style={{ color: t.text1, fontFamily: "Sora, sans-serif" }}>
                   {step.title}
                 </p>
                 <p
@@ -997,7 +1047,7 @@ function HowItWorks() {
                 >
                   {step.desc}
                 </p>
-                <div className="flex gap-1.5 mt-6">
+                <div className="flex gap-1.5 mt-4 md:mt-6">
                   {steps.map((dot, di) => (
                     <button
                       key={dot.title}
@@ -1573,9 +1623,9 @@ function FinalCTA() {
     },
   };
   const roles = [
-    { key: "student", label: "For students" },
-    { key: "corporate", label: "For corporates" },
-    { key: "university", label: "For universities" },
+    { key: "student", label: "For students", shortLabel: "Students" },
+    { key: "corporate", label: "For corporates", shortLabel: "Corporates" },
+    { key: "university", label: "For universities", shortLabel: "Universities" },
   ];
   const active = copy[role] || copy.student;
   const accent = PERSONAS[role]?.accent || ACCENT.sky;
@@ -1610,7 +1660,7 @@ function FinalCTA() {
             </p>
           </div>
 
-          <div className="mb-8 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
+          <div className="mb-8 grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:gap-2">
             {roles.map((r) => {
               const isActive = role === r.key;
               const rAccent = PERSONAS[r.key].accent;
@@ -1619,29 +1669,30 @@ function FinalCTA() {
                   key={r.key}
                   type="button"
                   onClick={() => setRole(r.key)}
-                  className="rounded-lg border px-2 py-2.5 text-center text-[11px] font-medium transition-colors sm:px-[18px] sm:text-[13px]"
+                  className="min-w-0 rounded-lg border px-1.5 py-2.5 text-center text-[10px] font-medium leading-tight transition-colors sm:px-[18px] sm:py-2.5 sm:text-[13px]"
                   style={{
                     borderColor: isActive ? rAccent : t.chipBorder,
                     backgroundColor: isActive ? `${rAccent}20` : "transparent",
                     color: isActive ? t.text1 : muted,
                   }}
                 >
-                  {r.label}
+                  <span className="sm:hidden">{r.shortLabel}</span>
+                  <span className="hidden sm:inline">{r.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-[18px]">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-[18px]">
             <Link
               href={`/auth/register?type=${loginType}`}
-              className="group inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-[26px] py-[13px] text-sm font-semibold transition-transform hover:-translate-y-0.5"
+              className="group inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-[26px] py-[13px] text-sm font-semibold transition-transform hover:-translate-y-0.5 sm:w-auto"
               style={{ backgroundColor: accent, color: active.textOn }}
             >
               {active.cta}
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
-            <span className="whitespace-nowrap text-[13px]" style={{ color: mutedSoft }}>
+            <span className="text-[12px] leading-snug sm:whitespace-nowrap sm:text-[13px]" style={{ color: mutedSoft }}>
               Already have an account?{" "}
               <Link href={`/auth/login?type=${loginType}`} className="font-medium" style={{ color: accent }}>
                 Sign in
@@ -1671,18 +1722,18 @@ function FinalCTA() {
                 disha.hirekarma.in/dashboard
               </span>
             </div>
-            <div className="px-6 py-[26px]">
-              <div className="mb-5 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="mb-1 text-[15px] font-semibold truncate" style={{ color: t.text1 }}>
+            <div className="px-4 py-5 sm:px-6 sm:py-[26px]">
+              <div className="mb-5 flex items-start justify-between gap-2 sm:gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="mb-1 text-[14px] font-semibold leading-snug sm:text-[15px] sm:truncate" style={{ color: t.text1 }}>
                     {active.cardTitle}
                   </p>
-                  <p className="text-xs" style={{ color: mutedSoft }}>
+                  <p className="text-[11px] sm:text-xs" style={{ color: mutedSoft }}>
                     {active.cardSub}
                   </p>
                 </div>
                 <span
-                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
+                  className="shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold whitespace-nowrap sm:px-3 sm:py-1.5 sm:text-[11px]"
                   style={{ backgroundColor: `${accent}26`, color: accent }}
                 >
                   {active.badge}
@@ -1704,13 +1755,13 @@ function FinalCTA() {
                 ))}
               </div>
               <div className="mb-4 h-px" style={{ backgroundColor: t.border }} />
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs" style={{ color: mutedSoft }}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-[11px] sm:text-xs" style={{ color: mutedSoft }}>
                   {active.footer}
                 </span>
                 <Link
                   href={`/auth/register?type=${loginType}`}
-                  className="inline-flex items-center gap-1.5 rounded-[7px] px-4 py-2 text-xs font-semibold"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-[7px] px-4 py-2.5 text-xs font-semibold sm:w-auto sm:py-2"
                   style={{ backgroundColor: accent, color: active.textOn }}
                 >
                   {active.cardCta}
