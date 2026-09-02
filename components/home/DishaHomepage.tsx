@@ -101,7 +101,7 @@ const PERSONAS = {
     highlight: "universities",
     accent: ACCENT.orange,
     loginType: "university",
-    heroImage: "/home/hero-university.png?v=3",
+    heroImage: "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/Univer.jpeg",
     heroAlt: "University graduates celebrating campus placement success",
   },
   corporate: {
@@ -114,7 +114,7 @@ const PERSONAS = {
     highlight: "companies",
     accent: ACCENT.green,
     loginType: "corporate",
-    heroImage: "/home/hero-corporate.png?v=3",
+    heroImage: "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/Corporate.jpeg",
     heroAlt: "Corporate team hiring campus talent",
   },
 };
@@ -653,7 +653,7 @@ function Features() {
     },
   ];
   const [expanded, setExpanded] = useState(null);
-  const FEATURES_IMG = "/home/features-section.png?v=2";
+  const FEATURES_IMG = "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/DIscuss.jpeg";
   return (
     <section id="features" className="py-16 md:py-24 transition-colors duration-300 scroll-mt-16" style={{ backgroundColor: t.surface }}>
       <div className="max-w-6xl mx-auto px-5 md:px-8">
@@ -760,28 +760,28 @@ function HowItWorks() {
       title: "Corporates post campus roles on Disha",
       desc: "Create jobs with eligibility, skills, and timelines—shared with partner universities in one flow.",
       color: ACCENT.orange,
-      image: "/home/organization-structure.png",
+      image: "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/Work_Logo/work_1.png",
     },
     {
       icon: Presentation,
       title: "Universities run drives from one dashboard",
       desc: "Coordinate campus drives, approve eligible students, and track participation without spreadsheets.",
       color: ACCENT.sky,
-      image: "/home/teacher.png",
+      image: "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/Work_Logo/work_2.png",
     },
     {
       icon: School,
       title: "Students discover, match, and apply",
       desc: "Browse open roles, check eligibility, use Career Align insights, and apply in minutes.",
       color: ACCENT.yellow,
-      image: "/home/schoolbuilding.png",
+      image: "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/Work_Logo/work_3.png",
     },
     {
       icon: Megaphone,
       title: "Recruiters shortlist and hire on Disha",
       desc: "Review applications and video profiles, shortlist faster, and close offers with clear status tracking.",
       color: ACCENT.green,
-      image: "/home/recruiter-network.png",
+      image: "https://disha-ui.s3.ap-south-1.amazonaws.com/Homepage_UI/Work_Logo/work_4.png",
     },
   ];
   const [active, setActive] = useState(0);
@@ -981,21 +981,11 @@ function HowItWorks() {
                   className="relative mb-5 flex h-36 w-36 items-center justify-center rounded-2xl border"
                   style={{ backgroundColor: `${step.color}1a`, borderColor: `${step.color}44` }}
                 >
-                  <div
-                    role="img"
-                    aria-label={step.title}
-                    className="h-28 w-28"
-                    style={{
-                      backgroundColor: step.color,
-                      WebkitMaskImage: `url(${step.image})`,
-                      maskImage: `url(${step.image})`,
-                      WebkitMaskSize: "contain",
-                      maskSize: "contain",
-                      WebkitMaskRepeat: "no-repeat",
-                      maskRepeat: "no-repeat",
-                      WebkitMaskPosition: "center",
-                      maskPosition: "center",
-                    }}
+                  <img
+                    src={step.image}
+                    alt={step.title}
+                    loading="lazy"
+                    className="h-28 w-28 object-contain"
                   />
                 </div>
                 <p className="font-semibold text-lg mb-2" style={{ color: t.text1, fontFamily: "Sora, sans-serif" }}>
@@ -1046,22 +1036,12 @@ function HowItWorks() {
                 className="relative mb-5 flex h-36 w-36 items-center justify-center rounded-2xl border transition-colors duration-300"
                 style={{ backgroundColor: `${s.color}1a`, borderColor: `${s.color}44` }}
               >
-                <div
+                <img
                   key={s.image}
-                  role="img"
-                  aria-label={s.title}
-                  className="h-28 w-28"
-                  style={{
-                    backgroundColor: s.color,
-                    WebkitMaskImage: `url(${s.image})`,
-                    maskImage: `url(${s.image})`,
-                    WebkitMaskSize: "contain",
-                    maskSize: "contain",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskPosition: "center",
-                    maskPosition: "center",
-                  }}
+                  src={s.image}
+                  alt={s.title}
+                  loading="lazy"
+                  className="h-28 w-28 object-contain"
                 />
               </div>
               <p className="font-semibold text-lg mb-2 transition-colors duration-300" style={{ color: t.text1, fontFamily: "Sora, sans-serif" }}>
