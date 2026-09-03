@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building, GraduationCap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,6 +18,7 @@ import { lookupService } from '@/services/lookupService'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
+import { getBatchYearOptions, serializeEligibleBatchesForApi } from '@/lib/batchYears'
 
 interface CreateJobModalProps {
     isOpen: boolean
@@ -54,6 +55,7 @@ interface JobFormData {
     eligibility_criteria: string
     education_degree: string[]
     education_branch: string[]
+    eligible_batches: string[]
     service_agreement_details: string
     expiration_date: string
     ctc_with_probation: string
@@ -78,6 +80,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
     })
     const { data: degreesData, loading: loadingDegrees } = useDegrees({ limit: 1000, enabled: isOpen })
     const { data: branchesData, loading: loadingBranches } = useBranches({ limit: 1000, enabled: isOpen })
+
+    const batchOptions = useMemo(() => getBatchYearOptions(), [])
 
     const degreeOptions = useMemo(() => {
         const seen = new Set<string>()
@@ -153,6 +157,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         eligibility_criteria: '',
         education_degree: [],
         education_branch: [],
+        eligible_batches: [],
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
@@ -410,6 +415,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: formData.eligibility_criteria || null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
+                eligible_batches: serializeEligibleBatchesForApi(formData.eligible_batches),
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: null,
                 ctc_with_probation: formData.ctc_with_probation || null,
@@ -481,6 +487,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: '',
                 education_degree: [],
                 education_branch: [],
+                eligible_batches: [],
                 service_agreement_details: '',
                 expiration_date: '',
                 ctc_with_probation: '',
@@ -1114,6 +1121,68 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 </div>
                             </div>
 
+                            {/* Student Eligibility */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <GraduationCap className="w-5 h-5" />
+                                    Student Eligibility
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Education Degree
+                                        </label>
+                                        <MultiSearchableSelect
+                                            options={degreeOptions}
+                                            values={formData.education_degree}
+                                            onChange={handleDegreesChange}
+                                            placeholder={loadingDegrees ? 'Loading degrees...' : 'Select degree(s)'}
+                                            searchPlaceholder="Search degrees..."
+                                            disabled={loadingDegrees}
+                                            isLoading={loadingDegrees}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Education Branch
+                                        </label>
+                                        <MultiSearchableSelect
+                                            options={availableBranchOptions}
+                                            values={formData.education_branch}
+                                            onChange={handleBranchesChange}
+                                            placeholder={
+                                                !formData.education_degree.length
+                                                    ? 'Select degree(s) first'
+                                                    : loadingBranches
+                                                        ? 'Loading branches...'
+                                                        : 'Select branch(es)'
+                                            }
+                                            searchPlaceholder="Search branches..."
+                                            disabled={!formData.education_degree.length || loadingBranches}
+                                            isLoading={loadingBranches}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Batch
+                                    </label>
+                                    <MultiSearchableSelect
+                                        options={batchOptions}
+                                        values={formData.eligible_batches}
+                                        onChange={(batches) => handleInputChange('eligible_batches', batches)}
+                                        placeholder="Select batch(es)"
+                                        searchPlaceholder="Search batches..."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Leave empty to allow all batches. Students are matched by graduation year.
+                                    </p>
+                                </div>
+                            </div>
+
                             {/* Skills */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -1201,45 +1270,6 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     <Users className="w-5 h-5" />
                                     Additional Job Details
                                 </h3>
-
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Education Degree
-                                        </label>
-                                        <MultiSearchableSelect
-                                            options={degreeOptions}
-                                            values={formData.education_degree}
-                                            onChange={handleDegreesChange}
-                                            placeholder={loadingDegrees ? 'Loading degrees...' : 'Select degree(s)'}
-                                            searchPlaceholder="Search degrees..."
-                                            disabled={loadingDegrees}
-                                            isLoading={loadingDegrees}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Education Branch
-                                        </label>
-                                        <MultiSearchableSelect
-                                            options={availableBranchOptions}
-                                            values={formData.education_branch}
-                                            onChange={handleBranchesChange}
-                                            placeholder={
-                                                !formData.education_degree.length
-                                                    ? 'Select degree(s) first'
-                                                    : loadingBranches
-                                                        ? 'Loading branches...'
-                                                        : 'Select branch(es)'
-                                            }
-                                            searchPlaceholder="Search branches..."
-                                            disabled={!formData.education_degree.length || loadingBranches}
-                                            isLoading={loadingBranches}
-                                        />
-                                    </div>
-                                </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
