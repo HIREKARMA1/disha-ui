@@ -21,7 +21,6 @@ import {
   ChevronDown,
   Sun,
   Moon,
-  Globe,
   Linkedin,
   Facebook,
   Instagram,
@@ -295,7 +294,11 @@ function NavBar() {
       style={{ backgroundColor: mode === "dark" ? "rgba(10,20,40,0.85)" : "rgba(246,248,252,0.85)", borderColor: t.border }}
     >
       <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-6">
-        <button onClick={() => scrollToId("top")} className="shrink-0 flex items-center" aria-label="HireKarma home">
+        <button
+          onClick={() => scrollToId("top")}
+          className="shrink-0 flex items-center transition-opacity duration-200 hover:opacity-80"
+          aria-label="HireKarma home"
+        >
           <img src={logoSrc} alt="HireKarma" className="h-8 w-auto object-contain" />
         </button>
 
@@ -304,13 +307,17 @@ function NavBar() {
             <button
               key={l.id}
               onClick={() => scrollToId(l.id)}
-              className="relative px-3 py-2 text-sm font-medium transition-colors"
+              className={`group relative px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                active === l.id ? "" : "hover:!text-[#00a2e5]"
+              }`}
               style={{ color: active === l.id ? t.text1 : t.text3 }}
             >
               {l.label}
               <span
-                className="absolute left-3 right-3 -bottom-[1px] h-[2px] rounded-full transition-transform duration-300 origin-left"
-                style={{ backgroundColor: ACCENT.sky, transform: active === l.id ? "scaleX(1)" : "scaleX(0)" }}
+                className={`absolute left-3 right-3 -bottom-[1px] h-[2px] rounded-full origin-left transition-transform duration-300 ${
+                  active === l.id ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                }`}
+                style={{ backgroundColor: ACCENT.sky }}
               />
             </button>
           ))}
@@ -351,7 +358,7 @@ function NavBar() {
                   scrollToId(l.id);
                   setOpen(false);
                 }}
-                className="text-left text-sm font-medium py-2"
+                className="text-left text-sm font-medium py-2 rounded-lg px-2 -mx-2 transition-colors duration-200 hover:bg-white/5 hover:text-[#00a2e5]"
                 style={{ color: active === l.id ? ACCENT.sky : t.text2 }}
               >
                 {l.label}
@@ -972,11 +979,11 @@ function HowItWorks() {
                     pauseAutoForUser();
                     setActive(i);
                   }}
-                  className="w-full flex items-start gap-4 text-left py-3.5 group"
+                  className="w-full flex items-start gap-4 text-left py-3.5 group rounded-xl transition-colors duration-200 hover:bg-white/[0.03]"
                 >
                   <div className="flex flex-col items-center shrink-0">
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center border-2 font-semibold text-xs transition-colors"
+                      className="w-9 h-9 rounded-full flex items-center justify-center border-2 font-semibold text-xs transition-colors group-hover:border-opacity-100"
                       style={{
                         borderColor: isActive ? step.color : t.chipBorder,
                         backgroundColor: isActive ? step.color : "transparent",
@@ -990,7 +997,12 @@ function HowItWorks() {
                     )}
                   </div>
                   <div className="min-w-0 pt-1.5">
-                    <p className="font-semibold text-sm transition-colors" style={{ color: isActive ? t.text1 : t.text3 }}>
+                    <p
+                      className={`font-semibold text-sm transition-colors duration-200 ${
+                        isActive ? "" : "group-hover:!text-[#00a2e5]"
+                      }`}
+                      style={{ color: isActive ? t.text1 : t.text3 }}
+                    >
                       {step.title}
                     </p>
                     <p
@@ -1429,7 +1441,15 @@ function FAQ() {
     { q: "Can universities customize the platform?", a: "Universities can configure eligibility rules, drive timelines, and communication preferences." },
     { q: "How many universities can reach students?", a: "Students can access opportunities across all partnered universities on the platform." },
   ];
-  const [openIdx, setOpenIdx] = useState(1);
+  const [openSet, setOpenSet] = useState(() => new Set([0]));
+  const toggleFaq = (i) => {
+    setOpenSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
   return (
     <section id="faq" className="py-16 md:py-24 transition-colors duration-300 scroll-mt-16" style={{ backgroundColor: t.surface }}>
       <div className="max-w-3xl mx-auto px-5 md:px-8">
@@ -1445,18 +1465,21 @@ function FAQ() {
           </p>
         </Reveal>
         <div className="space-y-2">
-          {faqs.map((f, i) => (
+          {faqs.map((f, i) => {
+            const isOpen = openSet.has(i);
+            return (
             <Reveal key={f.q} delay={i * 60}>
-              <div className="border-b" style={{ borderColor: t.border }}>
-                <button className="w-full flex items-center justify-between py-4 text-left" onClick={() => setOpenIdx(openIdx === i ? -1 : i)}>
-                  <span className="text-sm font-semibold" style={{ color: t.text1 }}>{f.q}</span>
+              <div className="border-b transition-colors duration-200 hover:bg-white/[0.03]" style={{ borderColor: t.border }}>
+                <button className="group w-full flex items-center justify-between py-4 px-2 -mx-2 rounded-lg text-left" onClick={() => toggleFaq(i)}>
+                  <span className="text-sm font-semibold transition-colors duration-200 group-hover:!text-[#00a2e5]" style={{ color: t.text1 }}>{f.q}</span>
                   <ChevronDown
                     size={18}
-                    color={openIdx === i ? ACCENT.orange : t.text4}
-                    style={{ transition: "transform .25s ease", transform: openIdx === i ? "rotate(180deg)" : "rotate(0deg)" }}
+                    color={isOpen ? ACCENT.orange : t.text4}
+                    className="transition-transform duration-200 group-hover:translate-y-0.5"
+                    style={{ transition: "transform .25s ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
                   />
                 </button>
-                <div style={{ maxHeight: openIdx === i ? "120px" : "0px", overflow: "hidden", transition: "max-height .3s ease" }}>
+                <div style={{ maxHeight: isOpen ? "120px" : "0px", overflow: "hidden", transition: "max-height .3s ease" }}>
                   <p
                     className="text-sm leading-relaxed pb-4"
                     style={{ color: t.mode === "dark" ? "rgba(255,255,255,0.72)" : t.text3 }}
@@ -1466,7 +1489,8 @@ function FAQ() {
                 </div>
               </div>
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -1523,18 +1547,27 @@ function LogoImg({ src }) {
     );
   }
   return (
-    <img
-      src={src}
-      alt=""
-      referrerPolicy="no-referrer"
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-8 md:h-9 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-200"
-    />
+    <div
+      className="flex h-11 items-center justify-center rounded-lg px-3 py-1.5 transition-opacity duration-200 hover:opacity-100"
+      style={{
+        backgroundColor: t.mode === "dark" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)",
+        boxShadow: t.mode === "dark" ? "0 1px 2px rgba(0,0,0,0.2)" : "0 1px 2px rgba(10,20,40,0.06)",
+        opacity: 0.92,
+      }}
+    >
+      <img
+        src={src}
+        alt=""
+        referrerPolicy="no-referrer"
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="h-7 md:h-8 w-auto max-w-[110px] object-contain"
+      />
+    </div>
   );
 }
 
-function MarqueeRow({ logos, direction = "left", speed = 34 }) {
+function MarqueeRow({ logos, direction = "left", speed = 68 }) {
   const row = [...logos, ...logos];
   const animName = direction === "left" ? "hkMarqueeL" : "hkMarqueeR";
   return (
@@ -1545,9 +1578,9 @@ function MarqueeRow({ logos, direction = "left", speed = 34 }) {
         .hk-marquee-track { animation: ${animName} ${speed}s linear infinite; }
         .hk-marquee:hover .hk-marquee-track { animation-play-state: paused; }
       `}</style>
-      <div className="hk-marquee-track flex items-center gap-10 w-max">
+      <div className="hk-marquee-track flex items-center gap-6 md:gap-8 w-max">
         {row.map((src, i) => (
-          <div key={i} className="shrink-0 flex items-center justify-center h-10">
+          <div key={i} className="shrink-0 flex items-center justify-center h-12">
             <LogoImg src={src} />
           </div>
         ))}
@@ -1572,7 +1605,7 @@ function LogoMarquee() {
           WebkitMaskImage: "linear-gradient(90deg, transparent, black 8%, black 92%, transparent)",
         }}
       >
-        <MarqueeRow logos={logos} direction="left" speed={42} />
+        <MarqueeRow logos={logos} direction="left" speed={68} />
       </div>
     </section>
   );
@@ -1669,11 +1702,23 @@ function FinalCTA() {
                   key={r.key}
                   type="button"
                   onClick={() => setRole(r.key)}
-                  className="min-w-0 rounded-lg border px-1.5 py-2.5 text-center text-[10px] font-medium leading-tight transition-colors sm:px-[18px] sm:py-2.5 sm:text-[13px]"
+                  className="min-w-0 rounded-lg border px-1.5 py-2.5 text-center text-[10px] font-medium leading-tight transition-all duration-200 hover:opacity-90 sm:px-[18px] sm:py-2.5 sm:text-[13px]"
                   style={{
                     borderColor: isActive ? rAccent : t.chipBorder,
                     backgroundColor: isActive ? `${rAccent}20` : "transparent",
                     color: isActive ? t.text1 : muted,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = rAccent;
+                      e.currentTarget.style.backgroundColor = `${rAccent}12`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.borderColor = t.chipBorder;
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
                   }}
                 >
                   <span className="sm:hidden">{r.shortLabel}</span>
@@ -1694,7 +1739,11 @@ function FinalCTA() {
             </Link>
             <span className="text-[12px] leading-snug sm:whitespace-nowrap sm:text-[13px]" style={{ color: mutedSoft }}>
               Already have an account?{" "}
-              <Link href={`/auth/login?type=${loginType}`} className="font-medium" style={{ color: accent }}>
+              <Link
+                href={`/auth/login?type=${loginType}`}
+                className="font-medium underline-offset-2 transition-opacity duration-200 hover:opacity-80 hover:underline"
+                style={{ color: accent }}
+              >
                 Sign in
               </Link>
             </span>
@@ -1782,18 +1831,29 @@ function FinalCTA() {
 function Footer() {
   const { t, mode } = useApp();
   const logoSrc = mode === "dark" ? "/images/HKlogowhite.png" : "/images/HKlogoblack.png";
+  const XIcon = ({ size = 18 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+    </svg>
+  );
   const socials = [
+    { icon: XIcon, href: "https://x.com/hirekarma", label: "X" },
     { icon: Linkedin, href: "https://www.linkedin.com/company/hirekarma-pvt-ltd", label: "LinkedIn" },
     { icon: Facebook, href: "https://facebook.com/hirekarma", label: "Facebook" },
     { icon: Instagram, href: "https://instagram.com/hirekarma", label: "Instagram" },
-    { icon: Globe, href: "https://www.hirekarma.in/", label: "Website" },
   ];
   return (
     <footer className="pt-14 pb-8 transition-colors duration-300" style={{ backgroundColor: t.surface, borderTop: `1px solid ${t.border}` }}>
       <div className="max-w-6xl mx-auto px-5 md:px-8">
         <div className="grid md:grid-cols-[1.3fr_1fr_1fr_1fr] gap-10 pb-10">
           <div>
-            <a href="https://www.hirekarma.in/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center" aria-label="HireKarma">
+            <a
+              href="https://www.hirekarma.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center transition-opacity duration-200 hover:opacity-80"
+              aria-label="HireKarma"
+            >
               <img src={logoSrc} alt="HireKarma" className="h-8 w-auto object-contain" />
             </a>
             <p className="text-sm mt-3 max-w-xs leading-relaxed" style={{ color: t.text4 }}>
@@ -1818,21 +1878,57 @@ function Footer() {
           <div>
             <p className="text-sm font-semibold mb-4" style={{ color: t.text1 }}>Quick links</p>
             <div className="flex flex-col gap-2.5 text-sm" style={{ color: t.text3 }}>
-              <button type="button" className="text-left" onClick={() => scrollToId("top")}>Home</button>
-              <button type="button" className="text-left" onClick={() => scrollToId("features")}>Features</button>
-              <button type="button" className="text-left" onClick={() => scrollToId("how-it-works")}>How it works</button>
-              <button type="button" className="text-left" onClick={() => scrollToId("placements")}>Placements</button>
-              <Link href="/blogs">Blogs</Link>
-              <button type="button" className="text-left" onClick={() => scrollToId("faq")}>FAQ</button>
+              <button
+                type="button"
+                className="w-fit text-left transition-colors duration-200 hover:text-[#00a2e5]"
+                onClick={() => scrollToId("top")}
+              >
+                Home
+              </button>
+              <Link href="/events" className="w-fit transition-colors duration-200 hover:text-[#00a2e5]">
+                Upcoming Events
+              </Link>
+              <Link href="/jobs" className="w-fit transition-colors duration-200 hover:text-[#00a2e5]">
+                Jobs
+              </Link>
+              <Link href="/auth/login" className="w-fit transition-colors duration-200 hover:text-[#00a2e5]">
+                Sign In
+              </Link>
+              <Link href="/auth/register" className="w-fit transition-colors duration-200 hover:text-[#00a2e5]">
+                Sign Up
+              </Link>
             </div>
           </div>
           <div>
             <p className="text-sm font-semibold mb-4" style={{ color: t.text1 }}>Resources</p>
             <div className="flex flex-col gap-2.5 text-sm" style={{ color: t.text3 }}>
-              <a href="https://hirekarma.in/about-us/our-story" target="_blank" rel="noopener noreferrer">Our story</a>
-              <a href="https://hirekarma.in/about-us/mission-value" target="_blank" rel="noopener noreferrer">Mission and value</a>
-              <a href="https://hirekarma.in/about-us/people" target="_blank" rel="noopener noreferrer">People</a>
-              <a href="mailto:info@hirekarma.in">Get in touch</a>
+              <a
+                href="https://hirekarma.in/about-us/our-story"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit transition-colors duration-200 hover:text-[#00a2e5]"
+              >
+                Our story
+              </a>
+              <a
+                href="https://hirekarma.in/about-us/mission-value"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit transition-colors duration-200 hover:text-[#00a2e5]"
+              >
+                Mission and value
+              </a>
+              <a
+                href="https://hirekarma.in/about-us/people"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit transition-colors duration-200 hover:text-[#00a2e5]"
+              >
+                People
+              </a>
+              <a href="mailto:info@hirekarma.in" className="w-fit transition-colors duration-200 hover:text-[#00a2e5]">
+                Get in touch
+              </a>
             </div>
           </div>
           <div>
