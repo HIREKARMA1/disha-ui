@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Poppins } from 'next/font/google'
+import { Inter, Poppins, Sora } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { LoadingProvider } from '@/contexts/LoadingContext'
@@ -11,6 +11,11 @@ const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   variable: '--font-poppins'
+})
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -34,7 +39,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${inter.variable} ${poppins.variable} font-sans`}>
+            <body className={`${inter.variable} ${poppins.variable} ${sora.variable} font-sans`}>
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"

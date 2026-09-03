@@ -18,6 +18,11 @@ const nextConfig = {
         hostname: "hirekarma.s3.amazonaws.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "disha-ui.s3.ap-south-1.amazonaws.com",
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {
