@@ -33,6 +33,7 @@ export function WhatsAppFloatingButton() {
     const href = buildWhatsAppUrl(number, message)
 
     const isExamPage = pathname?.startsWith('/assessments/exam')
+    const isEventsListPage = pathname === '/events'
     const hasMobileBottomNav = pathHasMobileBottomNav(pathname, {
         isStudent: Boolean(isAuthenticated && user?.user_type === 'student'),
     })
@@ -49,16 +50,20 @@ export function WhatsAppFloatingButton() {
             aria-label="Chat with us on WhatsApp"
             className={cn(
                 'fixed z-[70] flex h-14 w-14 items-center justify-center rounded-full',
-                'right-6', // 24px
                 'bg-[#25D366] text-white shadow-lg',
-                'transition-[bottom,transform] duration-300 ease-out',
+                'transition-[bottom,right,transform] duration-300 ease-out',
                 'hover:scale-105 hover:shadow-xl',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2',
-                // Desktop: 24px from bottom. Mobile/tablet with bottom nav: clear nav + safe-area.
-                // Bottom sheet uses z-[100], so FAB stays under sheets when open.
-                hasMobileBottomNav
-                    ? 'bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
-                    : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
+                // Events list: bottom-right corner under Create Event submit (circled spot).
+                // Elsewhere: clear bottom nav / safe-area. Bottom sheet uses z-[100].
+                isEventsListPage
+                    ? 'bottom-3 right-3'
+                    : cn(
+                          'right-6',
+                          hasMobileBottomNav
+                              ? 'bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
+                              : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
+                      )
             )}
         >
             <FaWhatsapp className="h-7 w-7" aria-hidden="true" />

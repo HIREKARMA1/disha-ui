@@ -45,14 +45,19 @@ function EventsPortalAdCardComponent({
       </Link>
     ) : null
 
-  const adImage = (className?: string) => (
-    <div className={cn('relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500', className)}>
+  const adImage = (opts?: { frameClassName?: string; imgClassName?: string }) => (
+    <div
+      className={cn(
+        'relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-500',
+        opts?.frameClassName
+      )}
+    >
       {ad.image_url ? (
         <img
           src={ad.image_url}
           alt=""
           loading="lazy"
-          className="h-full w-full object-cover object-center"
+          className={cn('h-full w-full object-cover object-center', opts?.imgClassName)}
           onError={(e) => {
             e.currentTarget.style.display = 'none'
           }}
@@ -95,38 +100,9 @@ function EventsPortalAdCardComponent({
     )
   }
 
-  if (isLeft) {
-    return (
-      <article
-        className={cn(
-          'flex w-full flex-col overflow-hidden rounded-[22px]',
-          'border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]',
-          'transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)]',
-          'dark:border-gray-700/80 dark:bg-gray-900/95',
-          className
-        )}
-      >
-        <div className="flex flex-col gap-4 px-7 pb-5 pt-7">
-          <h3 className="text-xl font-bold leading-snug tracking-tight text-gray-900 dark:text-white">
-            {ad.title}
-          </h3>
-          <p className="text-[15px] leading-relaxed text-gray-600 dark:text-gray-400">
-            {ad.description}
-          </p>
-          {ctaLink(
-            'mt-1 inline-flex',
-            <span className="inline-flex items-center text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400">
-              {ctaLabel}
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </span>
-          )}
-        </div>
-        {adImage()}
-      </article>
-    )
-  }
-
-  if (isRight) {
+  // Sidebar ads (left + right): image top, title, body, full-width gradient CTA
+  if (isLeft || isRight) {
+    const isDishaAd = ad.title.toLowerCase().includes('disha')
     return (
       <article
         className={cn(
@@ -138,24 +114,31 @@ function EventsPortalAdCardComponent({
         )}
       >
         <div className="relative shrink-0">
-          {adImage()}
+          {adImage(
+            isDishaAd
+              ? {
+                  frameClassName: 'aspect-[4/3] bg-[#eef1f5]',
+                  imgClassName: 'object-contain object-center',
+                }
+              : undefined
+          )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
-          <div className="absolute left-6 top-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-            <Megaphone className="h-6 w-6 text-white" />
+          <div className="absolute left-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+            <Megaphone className="h-5 w-5 text-white" />
           </div>
         </div>
-        <div className="flex flex-1 flex-col px-7 py-7">
+        <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
           <h3 className="text-xl font-bold leading-snug tracking-tight text-gray-900 dark:text-white">
             {ad.title}
           </h3>
-          <p className="mt-3 text-[15px] leading-relaxed text-gray-600 dark:text-gray-400">
+          <p className="mt-2.5 text-[14px] leading-relaxed text-gray-600 dark:text-gray-400">
             {ad.description}
           </p>
           {ctaLink(
-            'mt-auto block pt-6',
+            'mt-auto block pt-5',
             <Button
               size="lg"
-              className="h-12 w-full rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-base font-semibold hover:from-primary-600 hover:to-secondary-600"
+              className="h-11 w-full rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 text-sm font-semibold hover:from-primary-600 hover:to-secondary-600"
             >
               {ctaLabel}
               <ArrowRight className="ml-2 h-4 w-4" />

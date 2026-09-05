@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Save, Loader2, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { contestEventService } from '@/services/contestEventService'
 import { advertisementService } from '@/services/advertisementService'
+import { eventRequestService } from '@/services/eventRequestService'
 import type { ContestEventCreatePayload, ContestEventUpdatePayload } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
@@ -92,6 +93,8 @@ const defaultForm: ContestEventCreatePayload = {
 
 export function EventCreateForm({ eventId }: EventFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromRequestId = searchParams.get('from_request')
   const [form, setForm] = useState<ContestEventCreatePayload>(defaultForm)
   const [manualEmailInput, setManualEmailInput] = useState('')
   const [leftAd, setLeftAd] = useState<EventAdFormState>(defaultEventAdForm({ display_order: 0 }))
@@ -99,6 +102,24 @@ export function EventCreateForm({ eventId }: EventFormProps) {
   const [loading, setLoading] = useState(!!eventId)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (eventId) return
+    const title = searchParams.get('title')
+    const organizer_name = searchParams.get('organizer_name')
+    const organizer_email = searchParams.get('organizer_email')
+    const organizer_phone = searchParams.get('organizer_phone')
+    const short_description = searchParams.get('short_description')
+    if (!title && !organizer_name && !fromRequestId) return
+    setForm((prev) => ({
+      ...prev,
+      ...(title ? { title } : {}),
+      ...(organizer_name ? { organizer_name } : {}),
+      ...(organizer_email ? { organizer_email } : {}),
+      ...(organizer_phone ? { organizer_phone } : {}),
+      ...(short_description ? { short_description } : {}),
+    }))
+  }, [eventId, fromRequestId, searchParams])
 
   useEffect(() => {
     if (eventId) {
@@ -283,6 +304,14 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           placement: 'right_sidebar',
           eventId: savedEventId,
         })
+      }
+
+      if (!eventId && fromRequestId && savedEventId) {
+        try {
+          await eventRequestService.convert(fromRequestId, savedEventId)
+        } catch {
+          // Event was created; conversion link is best-effort
+        }
       }
 
       const adCount = [leftAd.enabled, rightAd.enabled].filter(Boolean).length
