@@ -14,6 +14,7 @@ import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import { CancelEventDialog } from '@/components/admin/CancelEventDialog'
+import { DeleteEventDialog } from '@/components/admin/DeleteEventDialog'
 import { PostponeEventDialog } from '@/components/admin/PostponeEventDialog'
 import { AdminEventCard } from '@/components/admin/AdminEventCard'
 import { EventManagementHero, EventManagementSubNav } from '@/components/dashboard/admin/events/EventManagementNav'
@@ -96,6 +97,7 @@ export function EventList() {
   const [pagination, setPagination] = useState({ page: 1, total_pages: 1, total_count: 0, has_next: false, has_prev: false })
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [cancelTarget, setCancelTarget] = useState<ContestEventListItem | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ContestEventListItem | null>(null)
   const [postponeTarget, setPostponeTarget] = useState<ContestEventListItem | null>(null)
 
   const fetchStats = useCallback(async () => {
@@ -188,14 +190,11 @@ export function EventList() {
           await contestEventService.closeRegistration(eventId)
           toast.success('Registration closed')
           break
-        case 'delete':
-          if (confirm('Delete this event? Registrations will be preserved.')) {
-            await contestEventService.deleteEvent(eventId)
-            toast.success('Event deleted')
-          } else {
-            return
-          }
-          break
+        case 'delete': {
+          const event = events.find((e) => e.id === eventId)
+          if (event) setDeleteTarget(event)
+          return
+        }
         case 'export': {
           const blob = await contestEventService.exportRegistrations(eventId)
           const url = URL.createObjectURL(blob)
@@ -348,6 +347,18 @@ export function EventList() {
           if (!cancelTarget) return
           await contestEventService.cancelEvent(cancelTarget.id, reason)
           toast.success('Event cancelled')
+          refreshAll()
+        }}
+      />
+
+      <DeleteEventDialog
+        isOpen={!!deleteTarget}
+        eventTitle={deleteTarget?.title || ''}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return
+          await contestEventService.deleteEvent(deleteTarget.id)
+          toast.success('Event deleted')
           refreshAll()
         }}
       />

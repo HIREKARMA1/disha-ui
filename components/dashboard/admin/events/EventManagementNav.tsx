@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Plus, BarChart3, List, Calendar, Megaphone } from 'lucide-react'
+import { Plus, BarChart3, List, Calendar, Megaphone, Inbox } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { navItemIsActive } from '@/lib/adminNav'
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 const SUB_NAV_ITEMS = [
   { label: 'All Events', href: '/dashboard/admin/events', icon: List },
   { label: 'Create Event', href: '/dashboard/admin/events/create', icon: Plus },
+  { label: 'Event Requests', href: '/dashboard/admin/events/requests', icon: Inbox },
   { label: 'Advertisements', href: '/dashboard/admin/events/advertisements', icon: Megaphone },
   { label: 'Statistics', href: '/dashboard/admin/events/statistics', icon: BarChart3 },
 ] as const
@@ -25,6 +26,7 @@ function eventSubNavIsActive(pathname: string, href: string) {
         !pathname.startsWith('/dashboard/admin/events/create') &&
         !pathname.startsWith('/dashboard/admin/events/statistics') &&
         !pathname.startsWith('/dashboard/admin/events/pending') &&
+        !pathname.startsWith('/dashboard/admin/events/requests') &&
         !pathname.startsWith('/dashboard/admin/events/advertisements'))
     )
   }
@@ -57,7 +59,7 @@ export function EventManagementSubNav() {
   const pathname = usePathname()
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {SUB_NAV_ITEMS.map((item) => {
         const isActive = eventSubNavIsActive(pathname, item.href)
         const Icon = item.icon
