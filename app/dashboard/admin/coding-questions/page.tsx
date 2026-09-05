@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Loader2 } from "lucide-react";
+import { Plus, Search, Loader2, Code2 } from "lucide-react";
 import { AdminDashboardLayout } from "@/components/dashboard/AdminDashboardLayout";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api";
+import { AdminPageHero } from "@/components/admin/ui/AdminPageHero";
+import { adminCard, adminInput } from "@/components/admin/ui/admin-theme";
+import { cn } from "@/lib/utils";
 
 interface CodingQuestionItem {
   id: string;
@@ -50,41 +53,45 @@ export default function CodingQuestionsPage() {
 
   return (
     <AdminDashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Coding Question Bank
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Create reusable coding problems for assessment rounds.
-            </p>
-          </div>
-          <Link href="/dashboard/admin/coding-questions/create">
-            <Button className="gap-2">
-              <Plus size={18} />
-              New Question
-            </Button>
-          </Link>
-        </div>
+      <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+        <AdminPageHero
+          title="Coding Question Bank"
+          subtitle="Create reusable coding problems for assessment rounds."
+          chips={[
+            {
+              label: `${items.length} Questions`,
+              tone: 'teal',
+              icon: <Code2 className="w-3.5 h-3.5" />,
+            },
+          ]}
+          actions={
+            <Link href="/dashboard/admin/coding-questions/create">
+              <Button className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-md shadow-blue-500/20">
+                <Plus size={18} />
+                New Question
+              </Button>
+            </Link>
+          }
+        />
 
-        <div className="flex flex-wrap gap-3 items-end bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className={cn(adminCard, "flex flex-wrap gap-3 items-end p-4")}>
           <div className="flex-1 min-w-[180px]">
             <label className="text-xs text-gray-500 mb-1 block">Search</label>
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               <input
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900"
+                className={cn(adminInput, "pl-9 pr-3 py-2 text-sm")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Title or slug"
+                aria-label="Search coding questions"
               />
             </div>
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Status</label>
             <select
-              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900"
+              className={cn(adminInput, "px-3 py-2 text-sm")}
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -96,7 +103,7 @@ export default function CodingQuestionsPage() {
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Difficulty</label>
             <select
-              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900"
+              className={cn(adminInput, "px-3 py-2 text-sm")}
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
             >

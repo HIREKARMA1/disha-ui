@@ -12,8 +12,9 @@ import { UniversityListResponse, UniversityListItem, UniversityProfile, UpdateUn
 import { toast } from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-handler'
 import { motion } from 'framer-motion'
-import { Plus, Download, Upload } from 'lucide-react'
+import { Plus, Download, Upload, Building2, CheckCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
 
 export default function AdminUniversities() {
     const [universities, setUniversities] = useState<UniversityListItem[]>([])
@@ -175,39 +176,35 @@ export default function AdminUniversities() {
 
     return (
         <AdminDashboardLayout>
-            <div className="space-y-6">
-                {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                University Management 🏛️
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage universities, verify institutions, and oversee academic partnerships ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    📊 {universities.length} Total Universities
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    ✅ {universities.filter(u => u.verified).length} Verified
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                                    👥 {universities.reduce((sum, u) => sum + (u.total_students || 0), 0)} Total Students
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+                <AdminPageHero
+                    title="University Management"
+                    subtitle="Manage universities, verify institutions, and oversee academic partnerships."
+                    chips={[
+                        {
+                            label: `${universities.length} Universities`,
+                            tone: 'blue',
+                            icon: <Building2 className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: `${universities.filter((u) => u.verified).length} Verified`,
+                            tone: 'green',
+                            icon: <CheckCircle className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: `${universities.reduce((sum, u) => sum + (u.total_students || 0), 0)} Students`,
+                            tone: 'purple',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
 
-                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium shadow-sm"
+                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl hover:opacity-95 transition-all duration-200 font-medium shadow-md shadow-blue-500/20"
                     >
                         <Plus className="w-5 h-5" />
                         <span>Add University</span>

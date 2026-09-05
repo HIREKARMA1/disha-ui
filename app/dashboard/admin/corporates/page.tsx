@@ -11,8 +11,9 @@ import { CorporateListResponse, CorporateListItem, CorporateProfile, UpdateCorpo
 import { toast } from 'react-hot-toast'
 import { getErrorMessage } from '@/lib/error-handler'
 import { motion } from 'framer-motion'
-import { Plus, Download, Upload } from 'lucide-react'
+import { Plus, Download, Upload, Building2, CheckCircle, Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
 
 export default function AdminCorporates() {
     const [corporates, setCorporates] = useState<CorporateListItem[]>([])
@@ -157,39 +158,35 @@ export default function AdminCorporates() {
 
     return (
         <AdminDashboardLayout>
-            <div className="space-y-6">
-                {/* Header Section */}
-                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-2xl p-6 border border-cyan-200 dark:border-cyan-700">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Corporate Management 🏢
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage corporates, verify companies, and oversee business partnerships ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-200">
-                                    📊 {corporates.length} Total Corporates
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    ✅ {corporates.filter(c => c.verified).length} Verified
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                                    💼 {corporates.reduce((sum, c) => sum + (c.total_jobs || 0), 0)} Total Jobs
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+                <AdminPageHero
+                    title="Corporate Management"
+                    subtitle="Manage corporates, verify companies, and oversee business partnerships."
+                    chips={[
+                        {
+                            label: `${corporates.length} Corporates`,
+                            tone: 'teal',
+                            icon: <Building2 className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: `${corporates.filter((c) => c.verified).length} Verified`,
+                            tone: 'green',
+                            icon: <CheckCircle className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: `${corporates.reduce((sum, c) => sum + (c.total_jobs || 0), 0)} Jobs`,
+                            tone: 'purple',
+                            icon: <Briefcase className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
 
-                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors duration-200 font-medium shadow-sm"
+                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl hover:opacity-95 transition-all duration-200 font-medium shadow-md shadow-blue-500/20"
                     >
                         <Plus className="w-5 h-5" />
                         <span>Add Corporate</span>
