@@ -192,7 +192,7 @@ export function AdminStudentTable({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+      <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm p-8">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
           {[...Array(5)].map((_, i) => (
@@ -205,7 +205,7 @@ export function AdminStudentTable({
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm p-8 text-center">
         <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
         <button onClick={onRetry} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Retry
@@ -216,7 +216,7 @@ export function AdminStudentTable({
 
   if (students.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+      <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm p-12 text-center">
         <User className="w-12 h-12 mx-auto text-gray-300 mb-3" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No students found</h3>
         <p className="text-gray-500 dark:text-gray-400">
@@ -227,7 +227,7 @@ export function AdminStudentTable({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
         <input
           type="checkbox"

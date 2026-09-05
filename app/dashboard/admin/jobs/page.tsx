@@ -66,6 +66,9 @@ interface Job {
 }
 
 import { useRouter } from 'next/navigation'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
+import { adminCard } from '@/components/admin/ui/admin-theme'
+import { cn } from '@/lib/utils'
 
 export default function AdminJobsPage() {
     const router = useRouter()
@@ -278,39 +281,31 @@ export default function AdminJobsPage() {
 
     return (
         <AdminDashboardLayout>
-            <div className="space-y-6 main-content">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Job Management 🎯
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage all job postings and assign them to universities ✨
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🎯 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📈 Platform Management
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🚀 University Assignments
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+            <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto main-content">
+                <AdminPageHero
+                    title="Job Management"
+                    subtitle="Manage all job postings and assign them to universities."
+                    chips={[
+                        {
+                            label: `${jobs.length} Jobs`,
+                            tone: 'blue',
+                            icon: <Briefcase className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Platform Management',
+                            tone: 'green',
+                            icon: <Building className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'University Assignments',
+                            tone: 'purple',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
 
                 {/* Search and Filters */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 relative overflow-visible layout-stable">
+                <div className={cn(adminCard, 'p-4 md:p-6 relative overflow-visible layout-stable')}>
                     {/* Search Bar */}
                     <div className="flex flex-col lg:flex-row gap-4 mb-4">
                         <div className="flex-1">

@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -6,6 +6,9 @@ import { Plus, BarChart3, List, Calendar, Megaphone } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { navItemIsActive } from '@/lib/adminNav'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
+import { adminActiveNav, adminCard } from '@/components/admin/ui/admin-theme'
+import { cn } from '@/lib/utils'
 
 const SUB_NAV_ITEMS = [
   { label: 'All Events', href: '/dashboard/admin/events', icon: List },
@@ -30,29 +33,23 @@ function eventSubNavIsActive(pathname: string, href: string) {
 
 export function EventManagementHero() {
   return (
-    <div className="rounded-2xl border border-primary-200 bg-gradient-to-r from-primary-50 to-secondary-50 p-6 dark:border-primary-700 dark:from-primary-900/20 dark:to-secondary-900/20">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500">
-              <Calendar className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white md:text-3xl">
-              Event Management
-            </h1>
-          </div>
-          <p className="text-base text-gray-600 dark:text-gray-300 md:text-lg">
-            Manage contests separately from sidebar advertisements on the Events portal.
-          </p>
-        </div>
+    <AdminPageHero
+      title="Event Management"
+      subtitle="Manage contests and advertisements on the Events portal."
+      chips={[
+        { label: 'Events', tone: 'blue', icon: <Calendar className="w-3.5 h-3.5" /> },
+        { label: 'Advertisements', tone: 'purple', icon: <Megaphone className="w-3.5 h-3.5" /> },
+        { label: 'Analytics', tone: 'teal', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+      ]}
+      actions={
         <Link href="/dashboard/admin/events/create" className="shrink-0">
-          <Button className="bg-gradient-to-r from-primary-500 to-secondary-500 shadow-md hover:from-primary-600 hover:to-secondary-600 hover:shadow-lg">
+          <Button className="bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-md shadow-blue-500/20 hover:opacity-95">
             <Plus className="mr-2 h-4 w-4" />
             Create Event
           </Button>
         </Link>
-      </div>
-    </div>
+      }
+    />
   )
 }
 
@@ -68,25 +65,28 @@ export function EventManagementSubNav() {
           <motion.div key={item.href} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
             <Link
               href={item.href}
-              className={`flex items-center gap-3 rounded-xl border p-4 transition-all duration-200 ${
+              className={cn(
+                'flex items-center gap-3 rounded-[18px] border p-4 transition-all duration-200',
                 isActive
-                  ? 'border-primary-500 bg-white shadow-md ring-2 ring-primary-500/20 dark:bg-gray-800'
-                  : 'border-gray-200 bg-white hover:border-primary-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-700'
-              }`}
+                  ? cn(adminActiveNav, 'border-transparent')
+                  : cn(adminCard, 'hover:border-blue-300/60 dark:hover:border-blue-500/30')
+              )}
             >
               <div
-                className={`rounded-lg p-2.5 ${
+                className={cn(
+                  'rounded-lg p-2.5',
                   isActive
-                    ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                }`}
+                    ? 'bg-white/20 text-white'
+                    : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'
+                )}
               >
                 <Icon className="h-5 w-5" />
               </div>
               <span
-                className={`text-sm font-semibold ${
-                  isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'
-                }`}
+                className={cn(
+                  'text-sm font-semibold',
+                  isActive ? 'text-white' : 'text-gray-700 dark:text-gray-200'
+                )}
               >
                 {item.label}
               </span>

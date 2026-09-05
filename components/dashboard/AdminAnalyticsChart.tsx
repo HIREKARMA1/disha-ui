@@ -1,8 +1,9 @@
-"use client"
+'use client'
 
-import { motion } from 'framer-motion'
-import { TrendingUp, Users, Briefcase, Activity } from 'lucide-react'
+import { Users, Briefcase, FileText, Building2, GraduationCap } from 'lucide-react'
 import { AdminUserStats, AdminJobStats } from '@/types/admin'
+import { AdminGlassCard } from '@/components/admin/ui/AdminGlassCard'
+import { cn } from '@/lib/utils'
 
 interface AdminAnalyticsChartProps {
     userStats: AdminUserStats
@@ -10,151 +11,121 @@ interface AdminAnalyticsChartProps {
 }
 
 export function AdminAnalyticsChart({ userStats, jobStats }: AdminAnalyticsChartProps) {
-    // Mock data for the chart - in real implementation, this would come from API
-    const chartData = [
-        { month: 'Jan', users: 800, jobs: 120, applications: 450 },
-        { month: 'Feb', users: 950, jobs: 150, applications: 520 },
-        { month: 'Mar', users: 1100, jobs: 180, applications: 680 },
-        { month: 'Apr', users: 1250, jobs: 220, applications: 750 },
-        { month: 'May', users: 1400, jobs: 280, applications: 920 },
-        { month: 'Jun', users: 1600, jobs: 320, applications: 1100 }
+    const distribution = [
+        {
+            label: 'Students',
+            value: userStats.total_students,
+            icon: GraduationCap,
+            color: 'bg-emerald-500',
+            track: 'bg-emerald-100 dark:bg-emerald-500/20',
+        },
+        {
+            label: 'Universities',
+            value: userStats.total_universities,
+            icon: Building2,
+            color: 'bg-violet-500',
+            track: 'bg-violet-100 dark:bg-violet-500/20',
+        },
+        {
+            label: 'Corporates',
+            value: userStats.total_corporates,
+            icon: Briefcase,
+            color: 'bg-orange-500',
+            track: 'bg-orange-100 dark:bg-orange-500/20',
+        },
     ]
 
-    const maxValue = Math.max(
-        ...chartData.map(d => Math.max(d.users, d.jobs, d.applications))
-    )
+    const maxUsers = Math.max(...distribution.map((d) => d.value), 1)
+
+    const jobMetrics = [
+        {
+            label: 'Total Jobs',
+            value: jobStats.total_jobs,
+            icon: Briefcase,
+            accent: 'text-blue-600 dark:text-blue-400',
+            bg: 'bg-blue-50 dark:bg-blue-500/15',
+        },
+        {
+            label: 'Active Jobs',
+            value: jobStats.active_jobs,
+            icon: Briefcase,
+            accent: 'text-emerald-600 dark:text-emerald-400',
+            bg: 'bg-emerald-50 dark:bg-emerald-500/15',
+        },
+        {
+            label: 'Applications',
+            value: jobStats.total_applications,
+            icon: FileText,
+            accent: 'text-violet-600 dark:text-violet-400',
+            bg: 'bg-violet-50 dark:bg-violet-500/15',
+        },
+        {
+            label: 'Total Users',
+            value: userStats.total_users,
+            icon: Users,
+            accent: 'text-teal-600 dark:text-teal-400',
+            bg: 'bg-teal-50 dark:bg-teal-500/15',
+        },
+    ]
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6"
+        <AdminGlassCard
+            title="Platform Overview"
+            subtitle="Live distribution from current platform data"
         >
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Platform Analytics
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Growth trends over the last 6 months
-                    </p>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-green-600 dark:text-green-400">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>+18.5% growth</span>
-                </div>
-            </div>
-
-            {/* Chart Legend */}
-            <div className="flex items-center justify-center space-x-6 mb-6">
-                <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Users</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Jobs</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Applications</span>
-                </div>
-            </div>
-
-            {/* Simple Bar Chart */}
-            <div className="space-y-4">
-                {chartData.map((data, index) => (
-                    <div key={data.month} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400 font-medium">
-                                {data.month}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+                {jobMetrics.map((metric) => (
+                    <div
+                        key={metric.label}
+                        className={cn('rounded-xl p-3 md:p-4 border border-transparent', metric.bg)}
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            <metric.icon className={cn('w-4 h-4', metric.accent)} />
+                            <span className="text-[11px] md:text-xs font-medium text-gray-600 dark:text-gray-400 truncate">
+                                {metric.label}
                             </span>
-                            <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                                <span>{data.users} users</span>
-                                <span>{data.jobs} jobs</span>
-                                <span>{data.applications} apps</span>
-                            </div>
                         </div>
-
-                        <div className="flex items-end space-x-1 h-8">
-                            {/* Users bar */}
-                            <div
-                                className="bg-blue-500 rounded-t-sm transition-all duration-500 hover:bg-blue-600"
-                                style={{
-                                    width: '30%',
-                                    height: `${(data.users / maxValue) * 100}%`,
-                                    minHeight: '4px'
-                                }}
-                                title={`${data.users} users`}
-                            ></div>
-
-                            {/* Jobs bar */}
-                            <div
-                                className="bg-green-500 rounded-t-sm transition-all duration-500 hover:bg-green-600"
-                                style={{
-                                    width: '30%',
-                                    height: `${(data.jobs / maxValue) * 100}%`,
-                                    minHeight: '4px'
-                                }}
-                                title={`${data.jobs} jobs`}
-                            ></div>
-
-                            {/* Applications bar */}
-                            <div
-                                className="bg-purple-500 rounded-t-sm transition-all duration-500 hover:bg-purple-600"
-                                style={{
-                                    width: '30%',
-                                    height: `${(data.applications / maxValue) * 100}%`,
-                                    minHeight: '4px'
-                                }}
-                                title={`${data.applications} applications`}
-                            ></div>
-                        </div>
+                        <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                            {metric.value.toLocaleString()}
+                        </p>
                     </div>
                 ))}
             </div>
 
-            {/* Summary Stats */}
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="text-center">
-                        <div className="flex items-center justify-center space-x-2 mb-2">
-                            <Users className="w-4 h-4 text-blue-500" />
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                Total Users
-                            </span>
+            <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    User distribution
+                </h4>
+                {distribution.map((item) => {
+                    const pct = Math.round((item.value / maxUsers) * 100)
+                    return (
+                        <div key={item.label} className="space-y-2">
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                                    <span className="font-medium text-gray-700 dark:text-gray-300 truncate">
+                                        {item.label}
+                                    </span>
+                                </div>
+                                <span className="text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                                    {item.value.toLocaleString()}
+                                </span>
+                            </div>
+                            <div className={cn('h-2.5 rounded-full overflow-hidden', item.track)}>
+                                <div
+                                    className={cn('h-full rounded-full transition-all duration-700', item.color)}
+                                    style={{ width: `${pct}%` }}
+                                    role="progressbar"
+                                    aria-valuenow={item.value}
+                                    aria-valuemin={0}
+                                    aria-valuemax={maxUsers}
+                                    aria-label={`${item.label}: ${item.value}`}
+                                />
+                            </div>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {userStats.total_users.toLocaleString()}
-                        </p>
-                    </div>
-
-                    <div className="text-center">
-                        <div className="flex items-center justify-center space-x-2 mb-2">
-                            <Briefcase className="w-4 h-4 text-green-500" />
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                Active Jobs
-                            </span>
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {jobStats.active_jobs.toLocaleString()}
-                        </p>
-                    </div>
-
-                    <div className="text-center">
-                        <div className="flex items-center justify-center space-x-2 mb-2">
-                            <Activity className="w-4 h-4 text-purple-500" />
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                Applications
-                            </span>
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {jobStats.total_applications.toLocaleString()}
-                        </p>
-                    </div>
-                </div>
+                    )
+                })}
             </div>
-        </motion.div>
+        </AdminGlassCard>
     )
 }

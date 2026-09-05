@@ -325,7 +325,7 @@ export function UniversityTable({
     // Loading state
     if (isLoading) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm overflow-hidden">
                 <div className="p-8 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
                     <p className="text-gray-600 dark:text-gray-400">Loading universities...</p>
@@ -337,7 +337,7 @@ export function UniversityTable({
     // Error state
     if (error) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm overflow-hidden">
                 <div className="p-8 text-center">
                     <div className="text-red-500 mb-4">
                         <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -360,7 +360,7 @@ export function UniversityTable({
     // Empty state
     if (universities.length === 0) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm overflow-hidden">
                 <div className="p-8 text-center">
                     <div className="text-gray-400 mb-4">
                         <Building2 className="w-12 h-12 mx-auto" />
@@ -374,7 +374,7 @@ export function UniversityTable({
 
     return (
         <>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm overflow-hidden">
                 {/* Table Header */}
                 <div className="overflow-x-auto">
                     <table className="w-full">

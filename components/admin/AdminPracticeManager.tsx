@@ -46,6 +46,8 @@ import { BranchSelection } from '@/components/ui/BranchSelection'
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import toast from 'react-hot-toast'
 import { LoadingSkeleton, TableSkeleton, CardSkeleton, StatsSkeleton } from '@/components/ui/LoadingSkeleton'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
+import { AdminStatCard } from '@/components/admin/ui/AdminStatCard'
 
 // Helper function to parse options from various formats
 const parseQuestionOptions = (options: any): Array<{ id: string; text: string }> => {
@@ -422,34 +424,31 @@ export function AdminPracticeManager() {
                 <div className="space-y-6 main-content">
             {/* Header - Only show on main modules view */}
             {currentView === 'modules' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Practice Module Management 🧠
-                            </h1>
-                            <div className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                                Manage practice tests, questions, and view student attempts ✨
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">
-                                    🧠 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                                    📚 Question Management
-                                </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                                    🎯 Student Analytics
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+                <AdminPageHero
+                    title="Practice Module Management"
+                    subtitle="Manage practice tests, questions, and view student attempts."
+                    chips={[
+                        {
+                            label: new Date().toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                            }),
+                            tone: 'blue',
+                            icon: <Brain className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Question Management',
+                            tone: 'green',
+                            icon: <Target className="w-3.5 h-3.5" />,
+                        },
+                        {
+                            label: 'Student Analytics',
+                            tone: 'purple',
+                            icon: <Users className="w-3.5 h-3.5" />,
+                        },
+                    ]}
+                />
             )}
 
             {/* Stats Cards - Only show on main modules view */}
@@ -460,67 +459,36 @@ export function AdminPracticeManager() {
                         label: 'Total Modules',
                         value: filteredModules.length.toString(),
                         icon: Brain,
-                        color: 'text-blue-600',
-                        bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+                        accent: 'blue' as const,
                     },
                     {
                         label: 'Total Questions',
                         value: filteredModules.reduce((sum, m) => sum + m.questions_count, 0).toString(),
                         icon: Target,
-                        color: 'text-green-600',
-                        bgColor: 'bg-green-50 dark:bg-green-900/20'
+                        accent: 'green' as const,
                     },
                     {
                         label: 'Active Modules',
                         value: filteredModules.length.toString(),
                         icon: Users,
-                        color: 'text-purple-600',
-                        bgColor: 'bg-purple-50 dark:bg-purple-900/20'
+                        accent: 'purple' as const,
                     },
-                    // {
-                    //     label: 'Total Attempts',
-                    //     value: '1,247',
-                    //     icon: Clock,
-                    //     color: 'text-orange-600',
-                    //     bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-                    // }
                 ].map((stat, index) => (
-                    <motion.div
+                    <AdminStatCard
                         key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        className="w-full"
-                    >
-                        <div className="block group w-full">
-                            <div className={`p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md w-full ${stat.bgColor}`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                            {stat.label}
-                                        </p>
-                                        <div className="text-2xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform duration-200">
-                                            {modulesLoading ? (
-                                                <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-8 w-16 rounded"></div>
-                                            ) : (
-                                                stat.value
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={`p-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
+                        label={stat.label}
+                        value={stat.value}
+                        icon={stat.icon}
+                        accent={stat.accent}
+                        index={index}
+                    />
                 ))}
                 </div>
             )}
 
             {/* Search and Filters - Only show on main modules view */}
             {currentView === 'modules' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div className="rounded-[18px] border border-gray-200/70 dark:border-white/[0.08] bg-white/90 dark:bg-[#0D1628] backdrop-blur-md shadow-sm p-4 md:p-6">
                     <div className="flex flex-col sm:flex-row gap-3">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -530,7 +498,7 @@ export function AdminPracticeManager() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f1520] text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all duration-200"
                             />
                         </div>
                         <div className="relative">

@@ -5,10 +5,13 @@ import { AssessmentList } from '@/components/admin/AssessmentList'
 import { AssessmentDetailsModal } from '@/components/admin/assessments/AssessmentDetailsModal'
 import { apiClient } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
+import { adminCard, adminInput } from '@/components/admin/ui/admin-theme'
+import { cn } from '@/lib/utils'
 
 interface Assessment {
   id: string
@@ -24,8 +27,7 @@ interface Assessment {
   instructions?: string
 }
 
-const selectClass =
-  'w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white'
+const selectClass = cn(adminInput, 'px-3 py-2.5 text-sm')
 
 export default function AssessmentsPage() {
   const [assessments, setAssessments] = useState<Assessment[]>([])
@@ -107,27 +109,28 @@ export default function AssessmentsPage() {
 
   return (
     <AdminDashboardLayout>
-      <div className="min-h-screen space-y-8 bg-transparent">
-        <div className="rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 p-6 dark:border-purple-700 dark:from-purple-900/20 dark:to-blue-900/20">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
-            <div className="min-w-0 flex-1">
-              <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white md:text-3xl">
-                Assessments & Exams 📝
-              </h1>
-              <p className="mb-3 text-lg text-gray-600 dark:text-gray-300">
-                Manage hiring tests, university exams, and practice modules.
-              </p>
-            </div>
+      <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
+        <AdminPageHero
+          title="Assessments & Exams"
+          subtitle="Manage hiring tests, university exams, and practice modules."
+          chips={[
+            {
+              label: `${assessments.length} Assessments`,
+              tone: 'purple',
+              icon: <FileText className="w-3.5 h-3.5" />,
+            },
+          ]}
+          actions={
             <Link href="/dashboard/admin/assessments/create">
-              <Button className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-6 text-white shadow-md transition-all hover:bg-purple-700 hover:shadow-lg sm:w-auto">
+              <Button className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 px-6 text-white shadow-md shadow-blue-500/20 transition-all hover:opacity-95 sm:w-auto">
                 <Plus size={20} strokeWidth={2.5} />
                 <span className="font-semibold">Create Assessment</span>
               </Button>
             </Link>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className={cn(adminCard, 'p-4')}>
           <div className="flex gap-2">
             <div className="relative min-w-0 flex-1">
               <input
@@ -135,7 +138,8 @@ export default function AssessmentsPage() {
                 placeholder="Search assessments..."
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-700/40 dark:text-white dark:placeholder:text-gray-400"
+                className={cn(adminInput, 'py-2.5 pl-10 pr-4 text-sm')}
+                aria-label="Search assessments"
               />
               <svg
                 className="absolute left-3.5 top-3 h-5 w-5 text-gray-400 dark:text-gray-500"

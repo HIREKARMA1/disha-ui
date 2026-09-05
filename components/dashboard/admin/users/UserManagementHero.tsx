@@ -1,4 +1,7 @@
-"use client"
+'use client'
+
+import { Users, CheckCircle, Shield, Clock, UserX } from 'lucide-react'
+import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
 
 interface UserManagementHeroProps {
     title?: string
@@ -7,20 +10,18 @@ interface UserManagementHeroProps {
 
 export function UserManagementHero({
     title = 'User Management',
-    description = 'View and manage all Disha platform users across students, universities, and corporates.',
+    description = 'View and manage all HireKarma platform users across students, universities, and corporates.',
 }: UserManagementHeroProps) {
     return (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        {title} 👥
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-300 text-lg">
-                        {description}
-                    </p>
-                </div>
-            </div>
-        </div>
+        <AdminPageHero
+            title={title}
+            subtitle={description}
+            chips={[
+                { label: 'All roles', tone: 'blue', icon: <Users className="w-3.5 h-3.5" /> },
+                { label: 'Students', tone: 'green', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+                { label: 'Universities', tone: 'purple', icon: <Shield className="w-3.5 h-3.5" /> },
+                { label: 'Corporates', tone: 'teal', icon: <Clock className="w-3.5 h-3.5" /> },
+            ]}
+        />
     )
 }
