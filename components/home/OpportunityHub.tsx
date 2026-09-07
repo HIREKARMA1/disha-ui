@@ -1,17 +1,32 @@
-"use client"
+'use client'
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   Briefcase,
   Calendar,
-  ExternalLink,
-  LayoutGrid,
+  Code2,
+  GraduationCap,
   LogOut,
+  Menu,
+  Newspaper,
+  PlusCircle,
   Search,
+  Sparkles,
+  Trophy,
   User,
+  Users,
+  Wrench,
   X,
+  ArrowRight,
+  Brain,
+  ClipboardList,
+  FileText,
+  Library,
+  Target,
+  Video,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -20,8 +35,17 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Footer } from '@/components/ui/footer'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
-import { JobCard } from '@/components/dashboard/JobCard'
-import { ContestCard } from '@/components/events/EventCard'
+import {
+  HubCardSkeleton,
+  HubCarousel,
+  HubCarouselItem,
+  HubEventCard,
+  HubFeaturedCarousel,
+  HubJobCard,
+  HubSectionHeader,
+  HubTrustedLogos,
+} from '@/components/home/HubOpportunityCards'
+import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
 import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
@@ -35,16 +59,9 @@ import {
 import { PORTAL_CATEGORY_CHIPS } from '@/lib/eventsPortalConfig'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { cn } from '@/lib/utils'
-
-const CANDIDATE_PORTAL_URL = 'https://disha.hirekarma.in'
+import companyData from '@/data/company.json'
 
 export type OpportunityTab = 'all' | 'jobs' | 'events'
-
-const TABS: { id: OpportunityTab; label: string; icon: typeof LayoutGrid }[] = [
-  { id: 'all', label: 'All', icon: LayoutGrid },
-  { id: 'jobs', label: 'Jobs', icon: Briefcase },
-  { id: 'events', label: 'Events', icon: Calendar },
-]
 
 const EVENT_STATUS_OPTIONS = [
   { value: 'all', label: 'All status' },
@@ -77,7 +94,108 @@ const DEFAULT_FILTERS: HubFilters = {
   eventCategory: 'all',
 }
 
-/** Minimal job shape for JobCard — mirrors public jobs list fields. */
+type QuickPill = {
+  id: string
+  label: string
+  tab: OpportunityTab
+  patch?: Partial<HubFilters>
+  icon: React.ComponentType<{ className?: string }>
+}
+
+/** Category tiles — all major Disha opportunity types. */
+const CATEGORY_TILES: QuickPill[] = [
+  { id: 'all', label: 'All', tab: 'all', icon: Sparkles },
+  { id: 'jobs', label: 'Jobs', tab: 'jobs', icon: Briefcase },
+  { id: 'internship', label: 'Internships', tab: 'jobs', patch: { jobType: 'internship' }, icon: GraduationCap },
+  { id: 'full_time', label: 'Full time', tab: 'jobs', patch: { jobType: 'full_time' }, icon: Briefcase },
+  { id: 'events', label: 'Events', tab: 'events', icon: Calendar },
+  { id: 'hackathon', label: 'Hackathons', tab: 'events', patch: { eventCategory: 'hackathon' }, icon: Code2 },
+  { id: 'workshop', label: 'Workshops', tab: 'events', patch: { eventCategory: 'workshop' }, icon: Wrench },
+  {
+    id: 'placement',
+    label: 'Placement',
+    tab: 'events',
+    patch: { eventCategory: 'placement_drive' },
+    icon: Users,
+  },
+  {
+    id: 'competition',
+    label: 'Competitions',
+    tab: 'events',
+    patch: { eventCategory: 'competition' },
+    icon: Trophy,
+  },
+  {
+    id: 'coding',
+    label: 'Coding',
+    tab: 'events',
+    patch: { eventCategory: 'coding_contest' },
+    icon: Code2,
+  },
+]
+
+/** Unstop-style Explore panel under search (Disha features only). */
+type ExploreItem =
+  | { id: string; label: string; kind: 'filter'; pill: QuickPill }
+  | { id: string; label: string; kind: 'link'; href: string; icon: React.ComponentType<{ className?: string }> }
+
+const EXPLORE_ITEMS: ExploreItem[] = [
+  { id: 'jobs', label: 'Jobs', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'jobs')! },
+  {
+    id: 'internship',
+    label: 'Internships',
+    kind: 'filter',
+    pill: CATEGORY_TILES.find((t) => t.id === 'internship')!,
+  },
+  {
+    id: 'competition',
+    label: 'Competitions',
+    kind: 'filter',
+    pill: CATEGORY_TILES.find((t) => t.id === 'competition')!,
+  },
+  {
+    id: 'hackathon',
+    label: 'Hackathons',
+    kind: 'filter',
+    pill: CATEGORY_TILES.find((t) => t.id === 'hackathon')!,
+  },
+  { id: 'events', label: 'Events', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'events')! },
+  {
+    id: 'workshop',
+    label: 'Workshops',
+    kind: 'filter',
+    pill: CATEGORY_TILES.find((t) => t.id === 'workshop')!,
+  },
+  {
+    id: 'placement',
+    label: 'Placement',
+    kind: 'filter',
+    pill: CATEGORY_TILES.find((t) => t.id === 'placement')!,
+  },
+  { id: 'coding', label: 'Coding', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'coding')! },
+  {
+    id: 'full_time',
+    label: 'Full time',
+    kind: 'filter',
+    pill: CATEGORY_TILES.find((t) => t.id === 'full_time')!,
+  },
+  {
+    id: 'create',
+    label: 'Create Event',
+    kind: 'link',
+    href: '/events#create-event-request',
+    icon: PlusCircle,
+  },
+  { id: 'blogs', label: 'Blogs', kind: 'link', href: '/blogs', icon: Newspaper },
+  {
+    id: 'practice',
+    label: 'Practice',
+    kind: 'link',
+    href: '/auth/login?redirect=%2Fdashboard%2Fstudent%2Fpractice',
+    icon: Brain,
+  },
+]
+
 type HubJob = {
   id: string
   title: string
@@ -127,31 +245,6 @@ function countActiveFilters(filters: HubFilters, tab: OpportunityTab): number {
   return n
 }
 
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-        active
-          ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-sm'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-      )}
-    >
-      {children}
-    </button>
-  )
-}
-
 function FilterRadioGroup({
   title,
   name,
@@ -196,51 +289,45 @@ function FilterRadioGroup({
   )
 }
 
-function OpportunityHeader() {
+function OpportunityHeader({
+  onMenuOpen,
+  searchSlot,
+}: {
+  onMenuOpen: () => void
+  searchSlot: ReactNode
+}) {
   const { user, isAuthenticated, isLoading, logout } = useAuth()
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full border-b border-gray-200/80 bg-white/95 backdrop-blur-md',
-        'dark:border-gray-800/80 dark:bg-gray-950/95'
+        'sticky top-0 z-50 w-full border-b border-gray-200 bg-white',
+        'dark:border-gray-800 dark:bg-gray-950'
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <BrandLogo href="/" priority />
+      <div className="flex h-14 items-center gap-3 px-3 sm:px-4 lg:px-6">
+        <button
+          type="button"
+          onClick={onMenuOpen}
+          className="shrink-0 rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 lg:hidden"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="shrink-0 lg:hidden">
+          <BrandLogo href="/" priority />
+        </div>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link
-            href="/"
-            className="text-sm font-medium text-primary-600 dark:text-primary-400"
-          >
-            Opportunities
-          </Link>
-          <Link
-            href="/jobs"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
-          >
-            Jobs
-          </Link>
-          <Link
-            href="/events"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
-          >
-            Events
-          </Link>
-        </nav>
+        <div className="min-w-0 flex-1">{searchSlot}</div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {isLoading ? (
-            <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
+            <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
           ) : isAuthenticated && user ? (
             <>
               <Link href={getDashboardPath(user.user_type)} className="hidden md:block">
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
-                >
-                  <User className="mr-1.5 h-4 w-4" />
+                <Button size="sm" variant="outline" className="h-8 rounded-full shadow-none">
+                  <User className="mr-1.5 h-3.5 w-3.5" />
                   Dashboard
                 </Button>
               </Link>
@@ -248,53 +335,26 @@ function OpportunityHeader() {
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="hidden text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 md:inline-flex"
+                className="hidden h-8 text-gray-600 dark:text-gray-400 md:inline-flex"
               >
-                <LogOut className="mr-1.5 h-4 w-4" />
+                <LogOut className="mr-1.5 h-3.5 w-3.5" />
                 Logout
               </Button>
             </>
           ) : (
-            <>
-              <Link href="/auth/login" className="hidden sm:block">
-                <Button variant="outline" size="sm" className="rounded-xl">
-                  Sign in
-                </Button>
-              </Link>
-              <a href={CANDIDATE_PORTAL_URL} target="_blank" rel="noopener noreferrer">
-                <Button
-                  size="sm"
-                  className="rounded-xl bg-gradient-to-r from-secondary-500 to-primary-500 text-white hover:from-secondary-600 hover:to-primary-600"
-                >
-                  <span className="hidden sm:inline">Candidate Login</span>
-                  <span className="sm:hidden">Login</span>
-                  <ExternalLink className="ml-1.5 h-3.5 w-3.5 opacity-80" />
-                </Button>
-              </a>
-            </>
+            <Link href="/auth/login">
+              <Button
+                size="sm"
+                className="h-8 rounded-full bg-primary-600 px-4 text-white shadow-none hover:bg-primary-700"
+              >
+                Login
+              </Button>
+            </Link>
           )}
           <ThemeToggle />
         </div>
       </div>
     </header>
-  )
-}
-
-function CardSkeleton({ variant }: { variant: 'job' | 'event' }) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-gray-700/80 dark:bg-gray-900/90">
-      <div
-        className={cn(
-          'w-full animate-pulse bg-gray-100 dark:bg-gray-800',
-          variant === 'event' ? 'aspect-[16/9]' : 'h-2'
-        )}
-      />
-      <div className="space-y-3 p-4">
-        <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
-        <div className="h-9 w-full animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
-      </div>
-    </div>
   )
 }
 
@@ -307,15 +367,56 @@ export default function OpportunityHub() {
   const [filters, setFilters] = useState<HubFilters>(DEFAULT_FILTERS)
   const [draftFilters, setDraftFilters] = useState<HubFilters>(DEFAULT_FILTERS)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [exploreOpen, setExploreOpen] = useState(false)
   const [jobs, setJobs] = useState<HubJob[]>([])
   const [events, setEvents] = useState<ContestEventListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const reduceMotion = useReducedMotion()
+  const searchWrapRef = useRef<HTMLDivElement>(null)
+  const resultsAnchorRef = useRef<HTMLDivElement>(null)
+
+  const showExplore = exploreOpen && !searchInput.trim()
+
+  useEffect(() => {
+    if (!exploreOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExploreOpen(false)
+    }
+    const onPointer = (e: MouseEvent) => {
+      if (!searchWrapRef.current?.contains(e.target as Node)) {
+        setExploreOpen(false)
+        setSearchFocused(false)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onPointer)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onPointer)
+    }
+  }, [exploreOpen])
+
+  const companies = useMemo(
+    () => ((companyData as { conpanies?: { id: number; name: string; logo: string }[] }).conpanies || []).slice(0, 24),
+    []
+  )
 
   const activeFilterCount = useMemo(
     () => countActiveFilters(filters, tab),
     [filters, tab]
   )
+
+  const isBrowseHome =
+    tab === 'all' &&
+    !query &&
+    filters.jobType === '' &&
+    filters.remoteWork === '' &&
+    filters.datePosted === 'all' &&
+    filters.eventStatus === 'all' &&
+    filters.eventCategory === 'all'
 
   const fetchOpportunities = useCallback(
     async (search: string, active: HubFilters) => {
@@ -324,7 +425,7 @@ export default function OpportunityHub() {
       try {
         const jobsParams = new URLSearchParams({
           page: '1',
-          limit: '12',
+          limit: '16',
           sort_by: 'created_at',
           sort_order: 'desc',
         })
@@ -338,7 +439,7 @@ export default function OpportunityHub() {
           apiClient.client.get(`/public/jobs/?${jobsParams.toString()}`),
           contestEventService.listPublicEvents({
             page: 1,
-            limit: 12,
+            limit: 16,
             search: search || undefined,
             status: active.eventStatus !== 'all' ? active.eventStatus : undefined,
             category:
@@ -365,6 +466,7 @@ export default function OpportunityHub() {
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault()
+    setExploreOpen(false)
     setQuery(searchInput.trim())
   }
 
@@ -374,14 +476,153 @@ export default function OpportunityHub() {
   }
 
   const clearFilters = () => {
+    setTab('all')
     applyFilters(DEFAULT_FILTERS)
+    setQuery('')
+    setSearchInput('')
     setFilterSheetOpen(false)
+    setExploreOpen(false)
   }
 
   const openFilterSheet = () => {
     setDraftFilters(filters)
     setFilterSheetOpen(true)
   }
+
+  const applyQuickPill = (pill: QuickPill) => {
+    setTab(pill.tab)
+    applyFilters({ ...DEFAULT_FILTERS, ...pill.patch })
+    setExploreOpen(false)
+    setSearchFocused(false)
+    window.requestAnimationFrame(() => {
+      resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  const handleExploreSelect = (item: ExploreItem) => {
+    if (item.kind === 'filter') {
+      applyQuickPill(item.pill)
+      return
+    }
+    setExploreOpen(false)
+    if (
+      item.id === 'practice' &&
+      isAuthenticated &&
+      user?.user_type === 'student'
+    ) {
+      router.push('/dashboard/student/practice')
+      return
+    }
+    router.push(item.href)
+  }
+
+  const activeQuickPillId = useMemo(() => {
+    for (const pill of [...CATEGORY_TILES].reverse()) {
+      if (pill.tab !== tab) continue
+      if (!pill.patch) {
+        if (
+          filters.jobType === '' &&
+          filters.remoteWork === '' &&
+          filters.datePosted === 'all' &&
+          filters.eventStatus === 'all' &&
+          filters.eventCategory === 'all'
+        ) {
+          return pill.id
+        }
+        continue
+      }
+      const matches = Object.entries(pill.patch).every(
+        ([key, value]) => filters[key as keyof HubFilters] === value
+      )
+      if (matches) return pill.id
+    }
+    return null
+  }, [tab, filters])
+
+  const filterSheet = (
+    <MobileFilterBottomSheet
+      open={filterSheetOpen}
+      onOpenChange={(open) => {
+        if (open) openFilterSheet()
+        else setFilterSheetOpen(false)
+      }}
+      title="Filter opportunities"
+      activeCount={activeFilterCount}
+      onClear={clearFilters}
+      onApply={() => {
+        applyFilters(draftFilters)
+        setFilterSheetOpen(false)
+      }}
+      triggerClassName="h-9 rounded-lg px-3"
+    >
+      <div className="space-y-6">
+        {(tab === 'all' || tab === 'jobs') && (
+          <>
+            <FilterRadioGroup
+              title="Job type"
+              name="hub_job_type"
+              options={HUB_JOB_TYPES}
+              value={draftFilters.jobType}
+              onChange={(jobType) => setDraftFilters((f) => ({ ...f, jobType }))}
+            />
+            <FilterRadioGroup
+              title="Work mode"
+              name="hub_remote"
+              options={[
+                { value: '', label: 'Any' },
+                { value: 'true', label: 'Remote' },
+                { value: 'false', label: 'On-site' },
+              ]}
+              value={draftFilters.remoteWork}
+              onChange={(remoteWork) =>
+                setDraftFilters((f) => ({ ...f, remoteWork }))
+              }
+            />
+            <FilterRadioGroup
+              title="Date posted"
+              name="hub_date"
+              options={HUB_DATE_OPTIONS}
+              value={draftFilters.datePosted}
+              onChange={(datePosted) =>
+                setDraftFilters((f) => ({
+                  ...f,
+                  datePosted: datePosted as DatePostedFilter,
+                }))
+              }
+            />
+          </>
+        )}
+        {(tab === 'all' || tab === 'events') && (
+          <>
+            <FilterRadioGroup
+              title="Event status"
+              name="hub_event_status"
+              options={EVENT_STATUS_OPTIONS}
+              value={draftFilters.eventStatus}
+              onChange={(eventStatus) =>
+                setDraftFilters((f) => ({ ...f, eventStatus }))
+              }
+            />
+            <FilterRadioGroup
+              title="Event category"
+              name="hub_event_category"
+              options={[
+                { value: 'all', label: 'All categories' },
+                ...PORTAL_CATEGORY_CHIPS.map((c) => ({
+                  value: c.value,
+                  label: c.label,
+                })),
+              ]}
+              value={draftFilters.eventCategory}
+              onChange={(eventCategory) =>
+                setDraftFilters((f) => ({ ...f, eventCategory }))
+              }
+            />
+          </>
+        )}
+      </div>
+    </MobileFilterBottomSheet>
+  )
 
   const handleJobApply = (job: HubJob) => {
     const path = getJobDetailPath(job)
@@ -392,10 +633,21 @@ export default function OpportunityHub() {
     router.push(path)
   }
 
-  const showJobs = tab === 'all' || tab === 'jobs'
-  const showEvents = tab === 'all' || tab === 'events'
-  const jobsToShow = tab === 'all' ? jobs.slice(0, 6) : jobs
-  const eventsToShow = tab === 'all' ? events.slice(0, 6) : events
+  const jobsToShow = tab === 'all' ? jobs.slice(0, 12) : jobs
+  const eventsToShow = tab === 'all' ? events.slice(0, 12) : events
+
+  const mixedFeed = useMemo(() => {
+    const items: Array<
+      | { kind: 'job'; job: HubJob }
+      | { kind: 'event'; event: ContestEventListItem }
+    > = []
+    const maxLen = Math.max(jobsToShow.length, eventsToShow.length)
+    for (let i = 0; i < maxLen; i += 1) {
+      if (jobsToShow[i]) items.push({ kind: 'job', job: jobsToShow[i] })
+      if (eventsToShow[i]) items.push({ kind: 'event', event: eventsToShow[i] })
+    }
+    return items
+  }, [jobsToShow, eventsToShow])
 
   const jobsViewAllHref = useMemo(() => {
     const params = new URLSearchParams()
@@ -407,421 +659,522 @@ export default function OpportunityHub() {
     return qs ? `/jobs?${qs}` : '/jobs'
   }, [query, filters])
 
-  return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-gray-50 via-white to-primary-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-      <OpportunityHeader />
-
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mb-6 max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-            HireKarma Disha
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-            Explore jobs & campus events
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 sm:text-base">
-            Discover open roles and contests in one place — then apply or register in a few clicks.
-          </p>
+  const searchSlot = (
+    <form onSubmit={handleSearchSubmit} className="w-full max-w-2xl lg:mx-auto">
+      <div ref={searchWrapRef} className="relative">
+        <div className="flex items-center gap-2">
+          <motion.div
+            className={cn(
+              'relative min-w-0 flex-1 rounded-full transition-shadow duration-200',
+              (searchFocused || showExplore) && 'ring-2 ring-primary-500/40 shadow-sm'
+            )}
+          >
+            <Search
+              className={cn(
+                'pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors',
+                searchFocused || showExplore ? 'text-primary-500' : 'text-gray-400'
+              )}
+            />
+            <Input
+              value={searchInput}
+              onChange={(e) => {
+                const v = e.target.value
+                setSearchInput(v)
+                if (v.trim()) setExploreOpen(false)
+                else setExploreOpen(true)
+              }}
+              onFocus={() => {
+                setSearchFocused(true)
+                if (!searchInput.trim()) setExploreOpen(true)
+              }}
+              onClick={() => {
+                if (!searchInput.trim()) setExploreOpen(true)
+              }}
+              placeholder="Search…"
+              className={cn(
+                'h-10 rounded-full border-primary-300 bg-white pl-10 shadow-none',
+                'transition-colors focus-visible:border-primary-500 focus-visible:ring-0',
+                'dark:border-primary-700 dark:bg-gray-900'
+              )}
+              aria-label="Search opportunities"
+              aria-expanded={showExplore}
+              aria-controls="hub-explore-panel"
+              autoComplete="off"
+            />
+          </motion.div>
+          <div className="hidden shrink-0 sm:block">{filterSheet}</div>
         </div>
 
-        <form onSubmit={handleSearchSubmit} className="mb-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search jobs, events, companies…"
-                className="h-11 rounded-xl border-gray-200 bg-white pl-10 dark:border-gray-700 dark:bg-gray-900"
-                aria-label="Search opportunities"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                className="h-11 flex-1 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 px-6 hover:from-primary-600 hover:to-secondary-600 sm:flex-none"
-              >
-                Search
-              </Button>
-              <div className="lg:hidden">
-                <MobileFilterBottomSheet
-                  open={filterSheetOpen}
-                  onOpenChange={(open) => {
-                    if (open) openFilterSheet()
-                    else setFilterSheetOpen(false)
-                  }}
-                  title="Filter opportunities"
-                  activeCount={activeFilterCount}
-                  onClear={clearFilters}
-                  onApply={() => {
-                    applyFilters(draftFilters)
-                    setFilterSheetOpen(false)
-                  }}
-                  triggerClassName="h-11 rounded-xl px-3"
-                >
-                  <div className="space-y-6">
-                    {(tab === 'all' || tab === 'jobs') && (
-                      <>
-                        <FilterRadioGroup
-                          title="Job type"
-                          name="hub_job_type"
-                          options={HUB_JOB_TYPES}
-                          value={draftFilters.jobType}
-                          onChange={(jobType) =>
-                            setDraftFilters((f) => ({ ...f, jobType }))
-                          }
-                        />
-                        <FilterRadioGroup
-                          title="Work mode"
-                          name="hub_remote"
-                          options={[
-                            { value: '', label: 'Any' },
-                            { value: 'true', label: 'Remote' },
-                            { value: 'false', label: 'On-site' },
-                          ]}
-                          value={draftFilters.remoteWork}
-                          onChange={(remoteWork) =>
-                            setDraftFilters((f) => ({ ...f, remoteWork }))
-                          }
-                        />
-                        <FilterRadioGroup
-                          title="Date posted"
-                          name="hub_date"
-                          options={HUB_DATE_OPTIONS}
-                          value={draftFilters.datePosted}
-                          onChange={(datePosted) =>
-                            setDraftFilters((f) => ({
-                              ...f,
-                              datePosted: datePosted as DatePostedFilter,
-                            }))
-                          }
-                        />
-                      </>
-                    )}
-                    {(tab === 'all' || tab === 'events') && (
-                      <>
-                        <FilterRadioGroup
-                          title="Event status"
-                          name="hub_event_status"
-                          options={EVENT_STATUS_OPTIONS}
-                          value={draftFilters.eventStatus}
-                          onChange={(eventStatus) =>
-                            setDraftFilters((f) => ({ ...f, eventStatus }))
-                          }
-                        />
-                        <FilterRadioGroup
-                          title="Event category"
-                          name="hub_event_category"
-                          options={[
-                            { value: 'all', label: 'All categories' },
-                            ...PORTAL_CATEGORY_CHIPS.map((c) => ({
-                              value: c.value,
-                              label: c.label,
-                            })),
-                          ]}
-                          value={draftFilters.eventCategory}
-                          onChange={(eventCategory) =>
-                            setDraftFilters((f) => ({ ...f, eventCategory }))
-                          }
-                        />
-                      </>
-                    )}
-                  </div>
-                </MobileFilterBottomSheet>
+        <AnimatePresence>
+          {showExplore && (
+            <motion.div
+              id="hub-explore-panel"
+              role="listbox"
+              aria-label="Explore categories"
+              initial={reduceMotion ? false : { opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className={cn(
+                'absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40',
+                'rounded-2xl border border-gray-200 bg-white p-4 shadow-xl',
+                'dark:border-gray-700 dark:bg-gray-900 sm:p-5'
+              )}
+            >
+              <p className="mb-3 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Explore
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                {EXPLORE_ITEMS.map((item) => {
+                  const Icon = item.kind === 'filter' ? item.pill.icon : item.icon
+                  return (
+                    <motion.button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      whileHover={reduceMotion ? undefined : { y: -2, scale: 1.04 }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                      onClick={() => handleExploreSelect(item)}
+                      className="flex flex-col items-center gap-2 rounded-xl px-2 py-2.5 text-center transition-colors hover:bg-primary-50 dark:hover:bg-primary-950/40"
+                    >
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                        <Icon className="h-5 w-5" strokeWidth={1.75} />
+                      </span>
+                      <span className="text-[11px] font-medium leading-tight text-gray-700 dark:text-gray-300">
+                        {item.label}
+                      </span>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </form>
+  )
+
+  return (
+    <div className="flex min-h-screen bg-white dark:bg-gray-950">
+      <HubSidebarDesktop />
+      <HubSidebarDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <OpportunityHeader
+          onMenuOpen={() => setMenuOpen(true)}
+          searchSlot={searchSlot}
+        />
+
+        <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
+          <div ref={resultsAnchorRef} className="scroll-mt-20" />
+
+          {/* Layout headline — same hub, Unstop-like hero placement */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+              Unlock Your <span className="text-primary-600">Career!</span>
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Jobs, events, and campus opportunities on Disha.
+            </p>
+          </div>
+
+          {/* Category tiles — same filters, Unstop icon-row layout */}
+          <motion.section
+            className="mb-8"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+                <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
+                Explore categories
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="sm:hidden">{filterSheet}</div>
+                {activeFilterCount > 0 && (
+                  <motion.button
+                    type="button"
+                    onClick={clearFilters}
+                    initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-950 dark:text-primary-300"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Reset · {activeFilterCount}
+                  </motion.button>
+                )}
               </div>
             </div>
-          </div>
-        </form>
-
-        {/* Sticky tabs + desktop quick chips */}
-        <div
-          className={cn(
-            'sticky top-16 z-40 -mx-4 mb-6 border-b border-gray-200 bg-white/95 px-4 backdrop-blur-md',
-            'dark:border-gray-700 dark:bg-gray-950/95 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'
-          )}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {TABS.map(({ id, label, icon: Icon }) => {
-                const active = tab === id
+            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3 md:overflow-visible">
+              {CATEGORY_TILES.map((tile, i) => {
+                const Icon = tile.icon
+                const active = activeQuickPillId === tile.id
                 return (
-                  <button
-                    key={id}
+                  <motion.button
+                    key={tile.id}
                     type="button"
-                    onClick={() => setTab(id)}
+                    onClick={() => applyQuickPill(tile)}
+                    initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03, duration: 0.25 }}
+                    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.04 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.97 }}
                     className={cn(
-                      'relative flex shrink-0 items-center gap-1.5 px-4 py-3 text-sm font-semibold transition-colors',
+                      'group flex w-[100px] shrink-0 flex-col items-center gap-2.5 rounded-2xl border px-3 py-4 text-center shadow-sm transition-colors md:w-auto',
                       active
-                        ? 'text-primary-600 dark:text-primary-400'
-                        : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                        ? 'border-primary-400 bg-primary-50 shadow-md dark:border-primary-600 dark:bg-primary-950/40'
+                        : 'border-primary-100 bg-[#eef6ff] hover:border-primary-300 hover:bg-white hover:shadow-md dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-700'
                     )}
                   >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                    {active && (
-                      <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500" />
-                    )}
-                  </button>
+                    <span
+                      className={cn(
+                        'flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition-transform group-hover:scale-105',
+                        active
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-white text-primary-700 dark:bg-gray-800 dark:text-primary-300'
+                      )}
+                    >
+                      <Icon className="h-6 w-6" strokeWidth={1.75} />
+                    </span>
+                    <span
+                      className={cn(
+                        'text-xs font-semibold leading-tight sm:text-[13px]',
+                        active
+                          ? 'text-primary-800 dark:text-primary-200'
+                          : 'text-gray-800 dark:text-gray-200'
+                      )}
+                    >
+                      {tile.label}
+                    </span>
+                  </motion.button>
                 )
               })}
             </div>
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="hidden shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 lg:inline-flex"
-              >
-                <X className="h-3.5 w-3.5" />
-                Clear ({activeFilterCount})
-              </button>
-            )}
-          </div>
+          </motion.section>
 
-          {/* Desktop filter chips */}
-          <div className="hidden gap-2 overflow-x-auto pb-3 pt-1 lg:flex [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {showJobs && (
+          {isBrowseHome && (
               <>
-                {HUB_JOB_TYPES.map((opt) => (
-                  <Chip
-                    key={`jt-${opt.value || 'all'}`}
-                    active={filters.jobType === opt.value}
-                    onClick={() =>
-                      applyFilters({ ...filters, jobType: opt.value })
-                    }
-                  >
-                    {opt.label}
-                  </Chip>
-                ))}
-                <Chip
-                  active={filters.remoteWork === 'true'}
-                  onClick={() =>
-                    applyFilters({
-                      ...filters,
-                      remoteWork: filters.remoteWork === 'true' ? '' : 'true',
-                    })
-                  }
-                >
-                  Remote
-                </Chip>
-                {HUB_DATE_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
-                  <Chip
-                    key={`dp-${opt.value}`}
-                    active={filters.datePosted === opt.value}
-                    onClick={() =>
-                      applyFilters({
-                        ...filters,
-                        datePosted:
-                          filters.datePosted === opt.value
-                            ? 'all'
-                            : (opt.value as DatePostedFilter),
-                      })
-                    }
-                  >
-                    {opt.label}
-                  </Chip>
-                ))}
+                <HubFeaturedCarousel />
+                <HubTrustedLogos companies={companies} />
               </>
             )}
-            {showEvents && (
-              <>
-                {EVENT_STATUS_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
-                  <Chip
-                    key={`es-${opt.value}`}
-                    active={filters.eventStatus === opt.value}
-                    onClick={() =>
-                      applyFilters({
-                        ...filters,
-                        eventStatus:
-                          filters.eventStatus === opt.value ? 'all' : opt.value,
-                      })
-                    }
-                  >
-                    {opt.label}
-                  </Chip>
-                ))}
-                {PORTAL_CATEGORY_CHIPS.slice(0, 5).map((opt) => (
-                  <Chip
-                    key={`ec-${opt.value}`}
-                    active={filters.eventCategory === opt.value}
-                    onClick={() =>
-                      applyFilters({
-                        ...filters,
-                        eventCategory:
-                          filters.eventCategory === opt.value ? 'all' : opt.value,
-                      })
-                    }
-                  >
-                    {opt.label}
-                  </Chip>
-                ))}
-              </>
-            )}
-          </div>
 
-          {/* Mobile: active filter summary */}
-          {activeFilterCount > 0 && (
-            <div className="flex items-center justify-between gap-2 pb-2 lg:hidden">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {activeFilterCount} filter{activeFilterCount === 1 ? '' : 's'} active
-              </p>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400"
-              >
-                <X className="h-3.5 w-3.5" />
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
-
-        {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-200">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="space-y-8">
-            {showJobs && (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <CardSkeleton key={`j-${i}`} variant="job" />
-                ))}
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-200">
+                {error}
               </div>
             )}
-            {showEvents && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <CardSkeleton key={`e-${i}`} variant="event" />
+
+            {loading ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <HubCardSkeleton key={`s-${i}`} withImage={i % 2 === 1} />
                 ))}
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-10">
-            {showJobs && (
-              <section aria-labelledby="hub-jobs-heading">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2
-                    id="hub-jobs-heading"
-                    className="text-sm font-semibold text-gray-900 dark:text-white"
-                  >
-                    Jobs
-                    <span className="ml-2 font-normal text-gray-500">
-                      ({jobsToShow.length}
-                      {tab === 'all' && jobs.length > jobsToShow.length ? '+' : ''})
-                    </span>
-                  </h2>
-                  <Link
-                    href={jobsViewAllHref}
-                    className="text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
-                  >
-                    View all
-                  </Link>
-                </div>
-                {jobsToShow.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                    No jobs match your filters.{' '}
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="font-medium text-primary-600 hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                    {' · '}
-                    <Link href="/jobs" className="font-medium text-primary-600 hover:underline">
-                      Browse all jobs
-                    </Link>
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    {jobsToShow.map((job, index) => (
-                      <JobCard
-                        key={job.id}
-                        job={job as Parameters<typeof JobCard>[0]['job']}
-                        cardIndex={index}
-                        onViewDescription={() => router.push(getJobDetailPath(job))}
-                        onApply={() => handleJobApply(job)}
-                      />
-                    ))}
+            ) : isBrowseHome ? (
+              <div className="space-y-8">
+                <section>
+                  <HubSectionHeader
+                    title="Jobs & internships"
+                    count={jobs.length}
+                    viewAllHref={jobsViewAllHref}
+                    viewAllLabel="View all"
+                    subtitle="Fresh roles from hiring partners on Disha."
+                  />
+                  {jobs.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                      No jobs yet.{' '}
+                      <Link href="/jobs" className="font-medium text-primary-600 hover:underline">
+                        Browse jobs
+                      </Link>
+                    </p>
+                  ) : (
+                    <HubCarousel>
+                      {jobs.map((job, i) => (
+                        <HubCarouselItem key={job.id}>
+                          <HubJobCard
+                            job={job}
+                            index={i}
+                            onView={() => router.push(getJobDetailPath(job))}
+                            onApply={() => handleJobApply(job)}
+                          />
+                        </HubCarouselItem>
+                      ))}
+                    </HubCarousel>
+                  )}
+                </section>
+
+                <section>
+                  <HubSectionHeader
+                    title="Events & contests"
+                    count={events.length}
+                    viewAllHref="/events"
+                    viewAllLabel="View all"
+                    subtitle="Hackathons, workshops, and campus competitions."
+                  />
+                  {events.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                      No events yet.{' '}
+                      <Link href="/events" className="font-medium text-primary-600 hover:underline">
+                        Browse events
+                      </Link>
+                    </p>
+                  ) : (
+                    <HubCarousel>
+                      {events.map((event, i) => (
+                        <HubCarouselItem key={event.id}>
+                          <HubEventCard event={event} index={i} />
+                        </HubCarouselItem>
+                      ))}
+                    </HubCarousel>
+                  )}
+                </section>
+
+                <section className="rounded-2xl border border-gray-200 bg-gradient-to-b from-[#f3f9ff] to-white p-4 shadow-sm dark:border-gray-700 dark:from-gray-900 dark:to-gray-950 sm:p-6">
+                  <div className="mb-1 flex items-end justify-between gap-3">
+                    <div>
+                      <h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+                        <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
+                        More on Disha
+                      </h2>
+                      <p className="mt-1.5 pl-3.5 text-sm text-gray-500 dark:text-gray-400">
+                        Every student tool in one place — login to unlock your workspace.
+                      </p>
+                    </div>
                   </div>
-                )}
-              </section>
-            )}
-
-            {showEvents && (
-              <section aria-labelledby="hub-events-heading">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2
-                    id="hub-events-heading"
-                    className="text-sm font-semibold text-gray-900 dark:text-white"
-                  >
-                    Events
+                  <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {(
+                      [
+                        {
+                          label: 'Practice',
+                          path: '/dashboard/student/practice',
+                          auth: true,
+                          icon: Brain,
+                        },
+                        {
+                          label: 'Resume Builder',
+                          path: '/dashboard/student/resume-builder',
+                          auth: true,
+                          icon: FileText,
+                        },
+                        {
+                          label: 'Career Align',
+                          path: '/dashboard/student/career-align',
+                          auth: true,
+                          icon: Target,
+                        },
+                        {
+                          label: 'Library',
+                          path: '/dashboard/student/library',
+                          auth: true,
+                          icon: Library,
+                        },
+                        {
+                          label: 'Video Search',
+                          path: '/dashboard/student/video-search',
+                          auth: true,
+                          icon: Video,
+                        },
+                        {
+                          label: 'Applications',
+                          path: '/dashboard/student/applications',
+                          auth: true,
+                          icon: ClipboardList,
+                        },
+                        {
+                          label: 'Create Event',
+                          path: '/events#create-event-request',
+                          auth: false,
+                          icon: PlusCircle,
+                        },
+                        {
+                          label: 'Blogs',
+                          path: '/blogs',
+                          auth: false,
+                          icon: Newspaper,
+                        },
+                      ] as const
+                    ).map((item, i) => {
+                      const href =
+                        item.auth && !(isAuthenticated && user?.user_type === 'student')
+                          ? `/auth/login?redirect=${encodeURIComponent(item.path)}`
+                          : item.path
+                      const Icon = item.icon
+                      return (
+                        <motion.div
+                          key={item.label}
+                          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.04 + i * 0.04 }}
+                          whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                          className="h-full"
+                        >
+                          <Link
+                            href={href}
+                            className={cn(
+                              'group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm',
+                              'transition-colors hover:border-primary-300 hover:shadow-md',
+                              'dark:border-gray-700 dark:bg-gray-950 dark:hover:border-primary-700'
+                            )}
+                          >
+                            <div className="flex flex-1 flex-col items-center gap-3 bg-[#eef6ff] px-4 py-6 dark:bg-primary-950/30">
+                              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-primary-700 shadow-sm transition-transform group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white dark:bg-gray-900 dark:text-primary-300">
+                                <Icon className="h-7 w-7" strokeWidth={1.75} />
+                              </span>
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {item.label}
+                              </span>
+                            </div>
+                            <div className="border-t border-gray-100 px-3 py-2.5 dark:border-gray-800">
+                              <span className="flex h-8 w-full items-center justify-center rounded-md bg-primary-600 text-xs font-semibold text-white transition group-hover:bg-primary-700">
+                                Open
+                              </span>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+                </section>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {tab === 'jobs'
+                      ? 'Jobs'
+                      : tab === 'events'
+                        ? 'Events'
+                        : 'Opportunities'}
                     <span className="ml-2 font-normal text-gray-500">
-                      ({eventsToShow.length}
-                      {tab === 'all' && events.length > eventsToShow.length
-                        ? '+'
-                        : ''}
+                      (
+                      {tab === 'all'
+                        ? mixedFeed.length
+                        : tab === 'jobs'
+                          ? jobsToShow.length
+                          : eventsToShow.length}
                       )
                     </span>
                   </h2>
-                  <Link
-                    href="/events"
-                    className="text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
-                  >
-                    View all
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    {(tab === 'all' || tab === 'jobs') && (
+                      <Link
+                        href={jobsViewAllHref}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300"
+                      >
+                        All jobs
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-white">
+                          <ArrowRight className="h-2.5 w-2.5" strokeWidth={2.5} />
+                        </span>
+                      </Link>
+                    )}
+                    {(tab === 'all' || tab === 'events') && (
+                      <Link
+                        href="/events"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300"
+                      >
+                        All events
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-white">
+                          <ArrowRight className="h-2.5 w-2.5" strokeWidth={2.5} />
+                        </span>
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                {eventsToShow.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                    No events match your filters.{' '}
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="font-medium text-primary-600 hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                    {' · '}
-                    <Link href="/events" className="font-medium text-primary-600 hover:underline">
-                      Browse all events
-                    </Link>
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                    {eventsToShow.map((event) => (
-                      <ContestCard key={event.id} event={event} />
-                    ))}
+
+                {tab === 'all' && mixedFeed.length > 0 && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {mixedFeed.map((item, i) =>
+                      item.kind === 'job' ? (
+                        <HubJobCard
+                          key={`job-${item.job.id}`}
+                          job={item.job}
+                          index={i}
+                          onView={() => router.push(getJobDetailPath(item.job))}
+                          onApply={() => handleJobApply(item.job)}
+                        />
+                      ) : (
+                        <HubEventCard
+                          key={`event-${item.event.id}`}
+                          event={item.event}
+                          index={i}
+                        />
+                      )
+                    )}
                   </div>
                 )}
-              </section>
-            )}
 
-            {!error && jobs.length === 0 && events.length === 0 && (
-              <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                <p className="text-gray-600 dark:text-gray-400">No opportunities found.</p>
-                <div className="flex gap-2">
-                  <Link href="/jobs">
-                    <Button variant="outline" className="rounded-xl">
-                      Jobs
-                    </Button>
-                  </Link>
-                  <Link href="/events">
-                    <Button variant="outline" className="rounded-xl">
-                      Events
-                    </Button>
-                  </Link>
-                </div>
+                {tab === 'jobs' &&
+                  (jobsToShow.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                      No jobs match.{' '}
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="font-medium text-primary-600 hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {jobsToShow.map((job, i) => (
+                        <HubJobCard
+                          key={job.id}
+                          job={job}
+                          index={i}
+                          onView={() => router.push(getJobDetailPath(job))}
+                          onApply={() => handleJobApply(job)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+
+                {tab === 'events' &&
+                  (eventsToShow.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                      No events match.{' '}
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="font-medium text-primary-600 hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {eventsToShow.map((event, i) => (
+                        <HubEventCard key={event.id} event={event} index={i} />
+                      ))}
+                    </div>
+                  ))}
+
+                {!error && tab === 'all' && mixedFeed.length === 0 && (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-200 bg-white py-16 text-center dark:border-gray-700 dark:bg-gray-900">
+                    <p className="text-gray-600 dark:text-gray-400">No opportunities found.</p>
+                    <div className="flex gap-2">
+                      <Link href="/jobs">
+                        <Button variant="outline" className="rounded-md shadow-none">
+                          Jobs
+                        </Button>
+                      </Link>
+                      <Link href="/events">
+                        <Button variant="outline" className="rounded-md shadow-none">
+                          Events
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
-      </main>
+          </main>
 
-      <Footer />
+          <Footer />
+        </div>
     </div>
   )
 }
