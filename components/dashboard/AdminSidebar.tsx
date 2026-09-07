@@ -26,6 +26,7 @@ import {
     MoreHorizontal,
     KeyRound,
     Shield,
+    ClipboardList,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -117,6 +118,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/practice',
                 icon: Brain,
                 description: 'Tests & questions',
+            },
+            {
+                label: 'Mock Tests',
+                href: '/dashboard/admin/mock-tests',
+                icon: ClipboardList,
+                description: 'Topic-based mock tests',
             },
             {
                 label: 'Assessments',
