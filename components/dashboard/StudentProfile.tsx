@@ -107,7 +107,7 @@ export function StudentProfile() {
             id: 'skills',
             title: 'Skills & Interests',
             icon: Zap,
-            fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest', 'location_preferences'],
+            fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest', 'location_preferences', 'language_proficiency'],
             completed: false
         },
         {
@@ -665,7 +665,7 @@ export function StudentProfile() {
 
                                                 {editing === 'skills' ? (
                                                     <ProfileSectionForm
-                                                        section={{ id: 'skills', title: 'Skills & Interests', icon: Zap, fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest', 'location_preferences'], completed: false }}
+                                                        section={{ id: 'skills', title: 'Skills & Interests', icon: Zap, fields: ['technical_skills', 'soft_skills', 'certifications', 'preferred_industry', 'job_roles_of_interest', 'location_preferences', 'language_proficiency'], completed: false }}
                                                         profile={profile}
                                                         onSave={(formData) => handleSave('skills', formData)}
                                                         saving={saving}
@@ -739,7 +739,18 @@ export function StudentProfile() {
                                                             </div>
                                                         )}
 
-                                                        {!profile.technical_skills && !profile.soft_skills && !profile.certifications && !profile.preferred_industry && !profile.job_roles_of_interest && !profile.location_preferences && (
+                                                        {profile.language_proficiency && (
+                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                                                <div className="font-medium text-gray-900 dark:text-white mb-2">
+                                                                    Language Proficiency
+                                                                </div>
+                                                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {profile.language_proficiency}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {!profile.technical_skills && !profile.soft_skills && !profile.certifications && !profile.preferred_industry && !profile.job_roles_of_interest && !profile.location_preferences && !profile.language_proficiency && (
                                                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                                                                 <div className="font-medium text-gray-900 dark:text-white mb-2">
                                                                     Skills & Interests
@@ -1840,6 +1851,18 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             )
         }
 
+        if (field === 'language_proficiency') {
+            return (
+                <textarea
+                    value={value}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="e.g., English (Fluent), Hindi (Native), Spanish (Basic)"
+                />
+            )
+        }
+
         if (field === 'preferred_industry') {
             return (
                 <LookupSelect
@@ -2243,6 +2266,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                                         field === 'technical_skills' ||
                                         field === 'soft_skills' ||
                                         field === 'location_preferences' ||
+                                        field === 'language_proficiency' ||
                                         field === 'profile_picture'
                                         ? 'md:col-span-2'
                                         : ''
