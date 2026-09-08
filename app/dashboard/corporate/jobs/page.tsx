@@ -42,12 +42,14 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number

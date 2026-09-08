@@ -18,6 +18,7 @@ import { lookupService } from '@/services/lookupService'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
+import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
 
 interface CreateJobModalProps {
     isOpen: boolean
@@ -46,6 +47,7 @@ interface JobFormData {
     application_deadline: string
     industry: string
     selection_process: string
+    is_campus_drive: boolean
     campus_drive_date: string
     status: string
     // New fields from JD template
@@ -54,6 +56,7 @@ interface JobFormData {
     eligibility_criteria: string
     education_degree: string[]
     education_branch: string[]
+    passout_batches: string[]
     service_agreement_details: string
     expiration_date: string
     ctc_with_probation: string
@@ -92,6 +95,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             .sort((a, b) => a.label.localeCompare(b.label))
         return [...fromLookup, { value: 'Any', label: 'Any' }]
     }, [degreesData])
+
+    const passoutBatchOptions = useMemo(() => getPassoutBatchOptions(), [])
 
     useEffect(() => {
         if (!isOpen) return
@@ -145,6 +150,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         application_deadline: '',
         industry: '',
         selection_process: '',
+        is_campus_drive: userType === 'university',
         campus_drive_date: '',
         status: 'active',
         // New fields from JD template
@@ -153,6 +159,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         eligibility_criteria: '',
         education_degree: [],
         education_branch: [],
+        passout_batches: [],
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
@@ -260,6 +267,13 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         }))
     }
 
+    const handlePassoutBatchesChange = (batches: string[]) => {
+        setFormData((prev) => ({
+            ...prev,
+            passout_batches: normalizePassoutBatchSelection(batches),
+        }))
+    }
+
     const handleLogoUpload = async (file: File) => {
         setUploadingLogo(true)
         try {
@@ -339,6 +353,9 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         if (formData.location.length === 0) {
             errors.location = 'Please select a job location from the suggestions'
         }
+        if (formData.is_campus_drive && !formData.campus_drive_date) {
+            errors.campus_drive_date = 'Campus drive date is required'
+        }
 
         // Validate company information fields for university-created jobs
         if (userType === 'university') {
@@ -402,7 +419,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
-                campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
+                is_campus_drive: formData.is_campus_drive,
+                campus_drive_date: formData.is_campus_drive && formData.campus_drive_date ? formData.campus_drive_date : null,
                 status: formData.status,
                 // New fields from JD template
                 number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
@@ -410,6 +428,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: formData.eligibility_criteria || null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
+                passout_batches: formData.passout_batches.length > 0 ? formData.passout_batches : null,
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: null,
                 ctc_with_probation: formData.ctc_with_probation || null,
@@ -473,6 +492,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 application_deadline: '',
                 industry: '',
                 selection_process: '',
+                is_campus_drive: userType === 'university',
                 campus_drive_date: '',
                 status: 'active',
                 // New fields from JD template
@@ -481,6 +501,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: '',
                 education_degree: [],
                 education_branch: [],
+                passout_batches: [],
                 service_agreement_details: '',
                 expiration_date: '',
                 ctc_with_probation: '',
@@ -1184,15 +1205,49 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Campus Drive Date (if applicable)
+                                        Is this a campus drive?
                                     </label>
-                                    <DateTimePicker
-                                        value={formData.campus_drive_date}
-                                        onChange={(value) => handleInputChange('campus_drive_date', value)}
-                                        placeholder="Select campus drive date"
-                                        autoClose={true}
-                                    />
+                                    <div className="flex items-center gap-4">
+                                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="is_campus_drive"
+                                                checked={formData.is_campus_drive}
+                                                onChange={() => handleInputChange('is_campus_drive', true)}
+                                            />
+                                            Yes
+                                        </label>
+                                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="is_campus_drive"
+                                                checked={!formData.is_campus_drive}
+                                                onChange={() => {
+                                                    handleInputChange('is_campus_drive', false)
+                                                    handleInputChange('campus_drive_date', '')
+                                                }}
+                                            />
+                                            No
+                                        </label>
+                                    </div>
                                 </div>
+
+                                {formData.is_campus_drive && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Campus Drive Date
+                                        </label>
+                                        <DateTimePicker
+                                            value={formData.campus_drive_date}
+                                            onChange={(value) => handleInputChange('campus_drive_date', value)}
+                                            placeholder="Select campus drive date"
+                                            autoClose={true}
+                                        />
+                                        {validationErrors.campus_drive_date && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.campus_drive_date}</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Additional Job Details */}
@@ -1239,6 +1294,22 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                             isLoading={loadingBranches}
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Passout Batches
+                                    </label>
+                                    <MultiSearchableSelect
+                                        options={passoutBatchOptions}
+                                        values={formData.passout_batches}
+                                        onChange={handlePassoutBatchesChange}
+                                        placeholder="Select passout batch year(s)"
+                                        searchPlaceholder="Search years..."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Select &quot;All Batches&quot; to allow every student to apply, or pick specific years.
+                                    </p>
                                 </div>
 
                                 <div>

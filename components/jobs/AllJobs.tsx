@@ -33,6 +33,10 @@ import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
+  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
+  PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
+  getUniversityApplyEligibility,
+  getPassoutBatchApplyEligibility,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
@@ -60,6 +64,7 @@ export interface Job {
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -81,6 +86,7 @@ export interface Job {
     mode_of_work?: string
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     company_name?: string
     company_logo?: string
     company_website?: string
@@ -93,6 +99,9 @@ export interface Job {
     contact_designation?: string
     /** SEO slug from API: "{company}/{role}" */
     slug?: string | null
+    is_public?: boolean | null
+    public_access_level?: string | null
+    assigned_university_ids?: string[] | null
 }
 
 interface JobSearchResponse {
@@ -105,14 +114,14 @@ interface JobSearchResponse {
     has_prev: boolean
 }
 
-type CategoryChip = 'recommended' | 'all' | 'open' | 'closed' | 'saved'
+type CategoryChip = 'all' | 'open' | 'closed' | 'campus_drive' | 'saved'
 type JobStatusFilter = 'all' | 'open' | 'closed'
 
 const CATEGORY_CHIPS: readonly { value: CategoryChip; label: string }[] = [
-    { value: 'recommended', label: 'Recommended' },
     { value: 'all', label: 'All Jobs' },
     { value: 'open', label: 'Open' },
     { value: 'closed', label: 'Closed' },
+    { value: 'campus_drive', label: 'Campus Drive' },
     { value: 'saved', label: 'Saved' },
 ]
 
@@ -134,15 +143,15 @@ function parseFiltersFromParams(params: URLSearchParams): {
     const jobStatusFilter: JobStatusFilter =
         statusRaw === 'open' || statusRaw === 'closed' ? statusRaw : 'all'
 
-    const categoryRaw = params.get('category') || 'recommended'
+    const categoryRaw = params.get('category') || 'all'
     const categoryChip: CategoryChip =
         categoryRaw === 'all' ||
         categoryRaw === 'open' ||
         categoryRaw === 'closed' ||
-        categoryRaw === 'recommended' ||
+        categoryRaw === 'campus_drive' ||
         categoryRaw === 'saved'
             ? categoryRaw
-            : 'recommended'
+            : 'all'
 
     const page = Math.max(1, parseInt(params.get('page') || '1', 10) || 1)
 
@@ -182,7 +191,7 @@ function buildJobsQueryString(opts: {
     })
     if (opts.datePostedFilter !== 'all') params.set('date', opts.datePostedFilter)
     if (opts.jobStatusFilter !== 'all') params.set('status', opts.jobStatusFilter)
-    if (opts.categoryChip !== 'recommended') params.set('category', opts.categoryChip)
+    if (opts.categoryChip !== 'all') params.set('category', opts.categoryChip)
     if (opts.page > 1) params.set('page', String(opts.page))
     if (opts.jobId) params.set('jobId', opts.jobId)
     return params.toString()
@@ -225,6 +234,15 @@ function normalizePublicJob(job: Job): Job {
         industry: job.industry ? String(job.industry) : undefined,
         corporate_name: job.corporate_name ? String(job.corporate_name) : undefined,
         company_name: job.company_name ? String(job.company_name) : undefined,
+        is_public: job.is_public ?? undefined,
+        public_access_level: job.public_access_level
+            ? String(job.public_access_level)
+            : undefined,
+        assigned_university_ids: Array.isArray(job.assigned_university_ids)
+            ? job.assigned_university_ids.map(String)
+            : job.assigned_university_ids ?? undefined,
+        is_campus_drive: Boolean(job.is_campus_drive),
+        campus_drive_date: job.campus_drive_date ? String(job.campus_drive_date) : undefined,
     }
 }
 
@@ -307,7 +325,13 @@ export function AllJobs() {
 
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
-    const [studentProfile, setStudentProfile] = useState<{ degree?: string; branch?: string } | null>(null)
+    const [studentProfile, setStudentProfile] = useState<{
+        degree?: string
+        branch?: string
+        university_id?: string | null
+        graduation_year?: number
+        batch?: string
+    } | null>(null)
 
     const [filterSheetOpen, setFilterSheetOpen] = useState(false)
     const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>(initial.jobStatusFilter)
@@ -411,6 +435,10 @@ export function AllJobs() {
                     params.set('date_posted', apiDate)
                 } else if (activeDate === '15d') {
                     params.set('date_posted', '30_days')
+                }
+
+                if (activeCategory === 'campus_drive') {
+                    params.set('is_campus_drive', 'true')
                 }
 
                 return params
@@ -560,7 +588,7 @@ export function AllJobs() {
             filters: cleared,
             datePostedFilter: 'all',
             jobStatusFilter: 'all',
-            categoryChip: 'recommended',
+            categoryChip: 'all',
             page: 1,
             replaceUrl: true,
         })
@@ -592,6 +620,9 @@ export function AllJobs() {
                     setStudentProfile({
                         degree: profile.degree,
                         branch: profile.branch,
+                        university_id: profile.university_id || null,
+                        graduation_year: profile.graduation_year,
+                        batch: (profile as { batch?: string }).batch,
                     })
                     const completion = await profileService.getProfileCompletion()
                     setProfileCompletion(completion)
@@ -723,6 +754,29 @@ export function AllJobs() {
 
         if (!job.can_apply) {
             toast.error(JOB_CLOSED_MESSAGE)
+            return
+        }
+
+        const eligibility = getUniversityApplyEligibility({
+            isPublic: job.is_public,
+            publicAccessLevel: job.public_access_level,
+            assignedUniversityIds: job.assigned_university_ids,
+            isAuthenticatedStudent: isLoggedIn,
+            studentUniversityId: studentProfile?.university_id,
+        })
+        if (!eligibility.canApply) {
+            toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
+            return
+        }
+
+        const batchEligibility = getPassoutBatchApplyEligibility({
+            passoutBatches: job.passout_batches,
+            isAuthenticatedStudent: isLoggedIn,
+            studentGraduationYear: studentProfile?.graduation_year,
+            studentBatch: studentProfile?.batch,
+        })
+        if (!batchEligibility.canApply) {
+            toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
             return
         }
 
@@ -891,7 +945,9 @@ export function AllJobs() {
                             <p className="text-base font-medium text-gray-600 dark:text-gray-300 sm:text-lg">
                                 {categoryChip === 'saved' && getSavedJobIds().length === 0
                                     ? 'No saved jobs yet. Tap the bookmark icon on a job to save it here.'
-                                    : 'No jobs found matching your criteria.'}
+                                    : categoryChip === 'campus_drive'
+                                      ? 'No campus drives found matching your criteria.'
+                                      : 'No jobs found matching your criteria.'}
                             </p>
                             {!(categoryChip === 'saved' && getSavedJobIds().length === 0) && (
                             <Button

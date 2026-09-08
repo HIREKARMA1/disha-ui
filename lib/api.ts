@@ -382,7 +382,7 @@ class ApiClient {
   }
 
   async unassignJobFromUniversity(jobId: string, universityId: string): Promise<any> {
-    const response: AxiosResponse = await this.client.delete(`/jobs/admin/${jobId}/unassign-university/${universityId}`);
+    const response: AxiosResponse = await this.client.delete(`/admins/jobs/${jobId}/unassign-university/${universityId}`);
     return response.data;
   }
 
