@@ -32,6 +32,7 @@ interface Job {
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -62,6 +63,8 @@ interface AdminJobCardProps {
     onDelete: (job: Job) => void
     onStatusChange: (job: Job, status: string) => void
     onAssignToUniversity: (job: Job) => void
+    onMarkCampusDrive: (job: Job) => void
+    onUnmarkCampusDrive: (job: Job) => void
     onAssignToShortlistedBatch: (job: Job) => void
     onViewAppliedStudents: (job: Job) => void
     onMakePublic: (job: Job) => void
@@ -69,7 +72,7 @@ interface AdminJobCardProps {
     cardIndex?: number
 }
 
-export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onAssignToShortlistedBatch, onViewAppliedStudents, onMakePublic, onCreateAssessment, cardIndex = 0 }: AdminJobCardProps) {
+export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatusChange, onAssignToUniversity, onMarkCampusDrive, onUnmarkCampusDrive, onAssignToShortlistedBatch, onViewAppliedStudents, onMakePublic, onCreateAssessment, cardIndex = 0 }: AdminJobCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -229,6 +232,11 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                             )}>
                                 {getStatusLabel(typeof job.status === 'string' ? job.status : String(job.status || ''))}
                             </span>
+                            {job.is_campus_drive && (
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+                                    Campus Drive
+                                </span>
+                            )}
                         </div>
 
                         {/* 3-dots dropdown menu */}
@@ -243,7 +251,7 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                             </Button>
 
                             {showDropdown && (
-                                <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                                <div className="absolute right-0 top-8 z-50 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
                                     <div className="py-1">
                                         <button
                                             onClick={() => {
@@ -269,6 +277,30 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                             </button>
                                         )}
 
+                                        {job.is_campus_drive ? (
+                                            <button
+                                                onClick={() => {
+                                                    onUnmarkCampusDrive(job)
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center gap-2"
+                                            >
+                                                <Calendar className="w-4 h-4" />
+                                                Unmark Campus Drive
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    onMarkCampusDrive(job)
+                                                    setShowDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-2 text-left text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center gap-2"
+                                            >
+                                                <Calendar className="w-4 h-4" />
+                                                Mark as Campus Drive
+                                            </button>
+                                        )}
+
                                         <button
                                             onClick={() => {
                                                 onAssignToUniversity(job)
@@ -277,7 +309,7 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                                             className="w-full px-4 py-2 text-left text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
                                         >
                                             <GraduationCap className="w-4 h-4" />
-                                            Assign to University
+                                            Assign University / College
                                         </button>
 
                                         <button

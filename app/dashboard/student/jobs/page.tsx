@@ -46,6 +46,7 @@ interface Job {
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -354,8 +355,7 @@ function JobOpportunitiesPageContent() {
     const fetchJobs = async (
         page: number = 1,
         searchParams: JobSearchParams = {},
-        useClientSideSearch: boolean = false,
-        profileData?: { degree?: string; branch?: string } | null
+        useClientSideSearch: boolean = false
     ): Promise<void> => {
         try {
             setLoading(true)
@@ -667,29 +667,17 @@ function JobOpportunitiesPageContent() {
                     console.log(`Client-side search: ${ultraCleanJobs.length} -> ${searchFilteredJobs.length} jobs`)
                 }
 
-                // Store base jobs (after API fetch and client-side search, before degree/branch filter)
+                // Store base jobs (after API fetch and client-side search)
                 setBaseJobs(searchFilteredJobs)
                 console.log(`📦 Base jobs stored: ${searchFilteredJobs.length} jobs`)
 
-                // Use provided profile data or fall back to state
-                const profileToUse = profileData !== undefined ? profileData : studentProfile
-                
-                // Apply degree and branch filtering
-                console.log(`🔍 Applying degree/branch filter with profile:`, profileToUse)
-                const degreeBranchFilteredJobs = filterJobsByDegreeAndBranch(searchFilteredJobs, profileToUse)
-                console.log(`✅ Degree/Branch filter result: ${searchFilteredJobs.length} -> ${degreeBranchFilteredJobs.length} jobs`)
-                if (profileToUse) {
-                    console.log(`👤 Student profile: degree="${profileToUse.degree}", branch="${profileToUse.branch}"`)
-                } else {
-                    console.warn('⚠️ No student profile available - showing all jobs')
-                }
-
-                // Store jobs after degree/branch filtering (before status filter)
-                setAllFilteredJobs(degreeBranchFilteredJobs)
+                // Campus Drive lists assigned placements as returned by the API.
+                // Do not hide them with the Live Jobs degree/branch client filter.
+                setAllFilteredJobs(searchFilteredJobs)
 
                 // Apply status filter before setting state (so pagination counts are correct)
-                const statusFilteredJobs = filterJobsByStatus(degreeBranchFilteredJobs)
-                console.log(`Status filter (${jobStatusFilter}): ${degreeBranchFilteredJobs.length} -> ${statusFilteredJobs.length} jobs`)
+                const statusFilteredJobs = filterJobsByStatus(searchFilteredJobs)
+                console.log(`Status filter (${jobStatusFilter}): ${searchFilteredJobs.length} -> ${statusFilteredJobs.length} jobs`)
 
                 setJobs(statusFilteredJobs)
                 setPagination({
@@ -1109,35 +1097,13 @@ function JobOpportunitiesPageContent() {
     useEffect(() => {
         const loadData = async () => {
             console.log('🚀 Loading initial data...')
-            // Fetch profile first so filtering can work
-            const profileData = await fetchStudentProfile()
-            // Pass profile data directly to fetchJobs to avoid timing issues
-            await fetchJobs(1, {}, false, profileData)
+            await fetchStudentProfile()
+            await fetchJobs(1, {}, false)
             checkApplicationStatus()
             fetchProfileCompletion()
         }
         loadData()
     }, [])
-
-    // Refilter jobs when student profile is loaded/updated (only if we have base jobs)
-    useEffect(() => {
-        if (studentProfile && baseJobs.length > 0) {
-            console.log('🔄 Re-filtering jobs after profile update:', studentProfile)
-            // Re-apply the degree/branch filter with the updated profile
-            const degreeBranchFiltered = filterJobsByDegreeAndBranch(baseJobs, studentProfile)
-            console.log(`🔄 Re-filter result: ${baseJobs.length} -> ${degreeBranchFiltered.length} jobs`)
-            setAllFilteredJobs(degreeBranchFiltered)
-            // Then apply status filter
-            const statusFiltered = filterJobsByStatus(degreeBranchFiltered)
-            setJobs(statusFiltered)
-            setPagination(prev => ({
-                ...prev,
-                total: statusFiltered.length,
-                total_pages: Math.ceil(statusFiltered.length / prev.limit)
-            }))
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [studentProfile])
 
     // Re-apply status filter when application status or status filter changes
     useEffect(() => {
@@ -1186,10 +1152,10 @@ function JobOpportunitiesPageContent() {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
                     <div className="flex-1 min-w-0">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            Job Opportunities 💼
+                            Campus Drive 💼
                         </h1>
                         <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
-                            Discover and apply for exciting career opportunities ✨
+                            Campus placement drives assigned to universities and colleges ✨
                         </p>
                         <div className="flex flex-wrap gap-2">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200">

@@ -46,6 +46,7 @@ interface JobFormData {
     application_deadline: string
     industry: string
     selection_process: string
+    is_campus_drive: boolean
     campus_drive_date: string
     status: string
     // New fields from JD template
@@ -145,6 +146,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         application_deadline: '',
         industry: '',
         selection_process: '',
+        is_campus_drive: userType === 'university',
         campus_drive_date: '',
         status: 'active',
         // New fields from JD template
@@ -339,6 +341,9 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         if (formData.location.length === 0) {
             errors.location = 'Please select a job location from the suggestions'
         }
+        if (formData.is_campus_drive && !formData.campus_drive_date) {
+            errors.campus_drive_date = 'Campus drive date is required'
+        }
 
         // Validate company information fields for university-created jobs
         if (userType === 'university') {
@@ -402,7 +407,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
-                campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
+                is_campus_drive: formData.is_campus_drive,
+                campus_drive_date: formData.is_campus_drive && formData.campus_drive_date ? formData.campus_drive_date : null,
                 status: formData.status,
                 // New fields from JD template
                 number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
@@ -473,6 +479,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 application_deadline: '',
                 industry: '',
                 selection_process: '',
+                is_campus_drive: userType === 'university',
                 campus_drive_date: '',
                 status: 'active',
                 // New fields from JD template
@@ -1184,15 +1191,49 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Campus Drive Date (if applicable)
+                                        Is this a campus drive?
                                     </label>
-                                    <DateTimePicker
-                                        value={formData.campus_drive_date}
-                                        onChange={(value) => handleInputChange('campus_drive_date', value)}
-                                        placeholder="Select campus drive date"
-                                        autoClose={true}
-                                    />
+                                    <div className="flex items-center gap-4">
+                                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="is_campus_drive"
+                                                checked={formData.is_campus_drive}
+                                                onChange={() => handleInputChange('is_campus_drive', true)}
+                                            />
+                                            Yes
+                                        </label>
+                                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="is_campus_drive"
+                                                checked={!formData.is_campus_drive}
+                                                onChange={() => {
+                                                    handleInputChange('is_campus_drive', false)
+                                                    handleInputChange('campus_drive_date', '')
+                                                }}
+                                            />
+                                            No
+                                        </label>
+                                    </div>
                                 </div>
+
+                                {formData.is_campus_drive && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Campus Drive Date
+                                        </label>
+                                        <DateTimePicker
+                                            value={formData.campus_drive_date}
+                                            onChange={(value) => handleInputChange('campus_drive_date', value)}
+                                            placeholder="Select campus drive date"
+                                            autoClose={true}
+                                        />
+                                        {validationErrors.campus_drive_date && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.campus_drive_date}</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Additional Job Details */}

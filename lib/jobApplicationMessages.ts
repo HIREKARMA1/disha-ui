@@ -29,6 +29,8 @@ export {
 export const APPLY_SUCCESS_MESSAGE = 'Application submitted successfully.'
 export const ALREADY_APPLIED_MESSAGE = 'You have already applied for this job.'
 export const JOB_CLOSED_MESSAGE = 'This job is no longer accepting applications.'
+export const CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE =
+  'This campus drive no longer belongs to your university.'
 
 export function isAlreadyAppliedError(message: string | null | undefined): boolean {
   if (!message) return false
@@ -66,6 +68,9 @@ export function normalizeApplyErrorMessage(raw: string | null | undefined): stri
   if (isAlreadyAppliedError(raw)) return ALREADY_APPLIED_MESSAGE
   if (isJobClosedError(raw)) return JOB_CLOSED_MESSAGE
   if (isPremiumRequiredError(raw)) return PREMIUM_REQUIRED_MESSAGE
+  if (raw.toLowerCase().includes('campus drive') && raw.toLowerCase().includes('university')) {
+    return CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+  }
   return raw
 }
 

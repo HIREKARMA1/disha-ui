@@ -43,6 +43,7 @@ interface UniversityJob {
     salary_max?: string
     salary_currency?: string
     application_deadline?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     venue?: string
     max_students?: number
