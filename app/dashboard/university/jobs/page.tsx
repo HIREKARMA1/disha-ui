@@ -43,6 +43,7 @@ interface UniversityJob {
     salary_max?: string
     salary_currency?: string
     application_deadline?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     venue?: string
     max_students?: number
@@ -67,6 +68,7 @@ interface UniversityJob {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     number_of_openings?: number
     perks_and_benefits?: string
     eligibility_criteria?: string
@@ -469,6 +471,7 @@ function UniversityJobsPageContent() {
                 education_level: completeJobData.education_level || job.education_level,
                 education_degree: completeJobData.education_degree || job.education_degree,
                 education_branch: completeJobData.education_branch || job.education_branch,
+                passout_batches: completeJobData.passout_batches || job.passout_batches,
                 skills_required: completeJobData.skills_required || job.skills_required,
                 application_deadline: completeJobData.application_deadline || job.application_deadline,
                 industry: completeJobData.industry || job.industry,
@@ -890,6 +893,7 @@ function UniversityJobsPageContent() {
                         education_level: selectedJob.education_level,
                         education_degree: selectedJob.education_degree,
                         education_branch: selectedJob.education_branch,
+                        passout_batches: selectedJob.passout_batches,
                         skills_required: selectedJob.skills_required,
                         application_deadline: selectedJob.application_deadline,
                         max_applications: 0,
@@ -989,6 +993,7 @@ function UniversityJobsPageContent() {
                         education_level: editingJob.education_level,
                         education_degree: editingJob.education_degree,
                         education_branch: editingJob.education_branch,
+                        passout_batches: editingJob.passout_batches,
                         skills_required: editingJob.skills_required || [],
                         application_deadline: editingJob.application_deadline,
                         max_applications: editingJob.max_students || 0,

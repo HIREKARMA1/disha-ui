@@ -177,15 +177,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
     const getDisplayEmail = () => profileData?.email || user?.email || 'student@university.edu'
     const getProfilePicture = () => profileData?.profile_picture || null
 
-    const shouldShowCampusDrive = () => {
-        if (!profileData) return true
-        if (typeof profileData.license_status_reason === 'string') {
-            const reason = profileData.license_status_reason.toLowerCase()
-            if (reason.includes('university not found')) return false
-        }
-        if (!profileData.university_id) return false
-        return true
-    }
+    const shouldShowCampusDrive = () => true
 
     const filteredNavItems = navItems.filter((item) => {
         if (item.label === 'Campus Drive') return shouldShowCampusDrive()

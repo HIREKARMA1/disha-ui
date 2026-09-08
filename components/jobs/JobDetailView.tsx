@@ -36,12 +36,18 @@ import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
+  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
+  PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   clearAutoApplyQueryParams,
+  getUniversityApplyEligibility,
+  getPassoutBatchApplyEligibility,
   resumePendingJobApplication,
   shouldAutoApplyForJob,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import type { Job } from '@/components/jobs/AllJobs'
+import { parseEducationField } from '@/lib/parseEducationField'
+import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 
 interface JobDetailViewProps {
   companySlug: string
@@ -63,6 +69,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [isApplying, setIsApplying] = useState(false)
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
   const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
+  const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
+  const [studentGraduationYear, setStudentGraduationYear] = useState<number | null>(null)
+  const [studentBatch, setStudentBatch] = useState<string | null>(null)
 
   const canDownloadPdf =
     isAuthenticated &&
@@ -111,6 +120,14 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     profileService
       .getProfileCompletion()
       .then(setProfileCompletion)
+      .catch(() => undefined)
+    profileService
+      .getProfile()
+      .then((profile) => {
+        setStudentUniversityId(profile.university_id || null)
+        setStudentGraduationYear(profile.graduation_year ?? null)
+        setStudentBatch((profile as { batch?: string }).batch || null)
+      })
       .catch(() => undefined)
   }, [])
 
@@ -177,6 +194,31 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
     if (!job.can_apply) {
       toast.error(JOB_CLOSED_MESSAGE)
+      return
+    }
+    const eligibility = getUniversityApplyEligibility({
+      isPublic: job.is_public,
+      publicAccessLevel: job.public_access_level,
+      assignedUniversityIds: job.assigned_university_ids,
+      isAuthenticatedStudent: Boolean(
+        isAuthenticated && user?.user_type === 'student'
+      ),
+      studentUniversityId,
+    })
+    if (!eligibility.canApply) {
+      toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
+      return
+    }
+    const batchEligibility = getPassoutBatchApplyEligibility({
+      passoutBatches: job.passout_batches,
+      isAuthenticatedStudent: Boolean(
+        isAuthenticated && user?.user_type === 'student'
+      ),
+      studentGraduationYear,
+      studentBatch,
+    })
+    if (!batchEligibility.canApply) {
+      toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
       return
     }
     setShowApplicationModal(true)
@@ -406,6 +448,21 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
             {job.requirements && (
               <Section title="Requirements">
                 <Prose text={job.requirements} />
+              </Section>
+            )}
+
+            {parseEducationField(job.passout_batches).length > 0 && (
+              <Section title="Targeted Passout Batches">
+                <div className="flex flex-wrap gap-2">
+                  {parseEducationField(job.passout_batches).map((batch) => (
+                    <span
+                      key={batch}
+                      className="rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                    >
+                      {formatPassoutBatchLabel(batch)}
+                    </span>
+                  ))}
+                </div>
               </Section>
             )}
 
