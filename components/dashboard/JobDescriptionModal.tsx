@@ -9,6 +9,7 @@ import { apiClient } from '@/lib/api'
 import { useState, useEffect } from 'react'
 import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
 import { formatEducationLabel, parseEducationField } from '@/lib/parseEducationField'
+import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
@@ -34,6 +35,7 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
@@ -224,6 +226,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 education_level: formatEducationForPDF(job.education_level),
                 education_degree: formatEducationForPDF(job.education_degree),
                 education_branch: formatEducationForPDF(job.education_branch),
+                passout_batches: formatEducationForPDF(job.passout_batches),
                 skills_required: job.skills_required,
                 application_deadline: job.application_deadline,
                 industry: job.industry,
@@ -752,6 +755,26 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                             className="px-3 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-lg font-medium border border-purple-200 dark:border-purple-700"
                                         >
                                             {branch}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Passout Batches */}
+                        {job.passout_batches && parseEducationField(job.passout_batches).length > 0 && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary-500" />
+                                    Targeted Passout Batches
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {parseEducationField(job.passout_batches).map((batch, index) => (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-lg font-medium border border-amber-200 dark:border-amber-700"
+                                        >
+                                            {formatPassoutBatchLabel(batch)}
                                         </span>
                                     ))}
                                 </div>

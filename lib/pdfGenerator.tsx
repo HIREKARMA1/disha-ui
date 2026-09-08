@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, Image, StyleSheet, pdf, Font } from '@react-pdf/renderer'
 import { config } from './config'
 import { formatEducationFieldForDisplay, parseEducationField } from './parseEducationField'
+import { formatPassoutBatchLabel } from './passoutBatches'
 import { formatSalaryRange } from './currency'
 
 // Unicode font so ₹ renders correctly (Helvetica maps it to ¹).
@@ -109,6 +110,7 @@ interface JobData {
   education_level?: string | string[]
   education_degree?: string | string[]
   education_branch?: string | string[]
+  passout_batches?: string | string[]
   skills_required?: string[]
   application_deadline?: string
   industry?: string
@@ -617,7 +619,7 @@ const JobDescriptionDocument = ({
         )}
 
         {/* Education Requirements */}
-        {(job.education_level || job.education_degree || job.education_branch) && (
+        {(job.education_level || job.education_degree || job.education_branch || job.passout_batches) && (
           <View style={styles.sectionContainer}>
             <View wrap={false}>
               <Text style={styles.sectionTitle} break={false}>Education Requirements</Text>
@@ -636,6 +638,11 @@ const JobDescriptionDocument = ({
               {job.education_branch && (
                 <View style={styles.infoItem}>
                   <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Branch:</Text> {parseCommaSeparated(job.education_branch)}</Text>
+                </View>
+              )}
+              {job.passout_batches && (
+                <View style={styles.infoItem}>
+                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Passout Batches:</Text> {parseEducationField(job.passout_batches).map(formatPassoutBatchLabel).join(', ')}</Text>
                 </View>
               )}
             </View>

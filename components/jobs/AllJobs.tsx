@@ -34,7 +34,9 @@ import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
   JOB_NOT_FOR_UNIVERSITY_MESSAGE,
+  PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   getUniversityApplyEligibility,
+  getPassoutBatchApplyEligibility,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
@@ -84,6 +86,7 @@ export interface Job {
     mode_of_work?: string
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     company_name?: string
     company_logo?: string
     company_website?: string
@@ -326,6 +329,8 @@ export function AllJobs() {
         degree?: string
         branch?: string
         university_id?: string | null
+        graduation_year?: number
+        batch?: string
     } | null>(null)
 
     const [filterSheetOpen, setFilterSheetOpen] = useState(false)
@@ -616,6 +621,8 @@ export function AllJobs() {
                         degree: profile.degree,
                         branch: profile.branch,
                         university_id: profile.university_id || null,
+                        graduation_year: profile.graduation_year,
+                        batch: (profile as { batch?: string }).batch,
                     })
                     const completion = await profileService.getProfileCompletion()
                     setProfileCompletion(completion)
@@ -759,6 +766,17 @@ export function AllJobs() {
         })
         if (!eligibility.canApply) {
             toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
+            return
+        }
+
+        const batchEligibility = getPassoutBatchApplyEligibility({
+            passoutBatches: job.passout_batches,
+            isAuthenticatedStudent: isLoggedIn,
+            studentGraduationYear: studentProfile?.graduation_year,
+            studentBatch: studentProfile?.batch,
+        })
+        if (!batchEligibility.canApply) {
+            toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
             return
         }
 

@@ -174,9 +174,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
             setUnassigningUniversityId(university.id)
             await apiClient.unassignJobFromUniversity(job.id, university.id)
             setAssignedUniversities(prev => prev.filter(assigned => assigned.id !== university.id))
-            if (selectedUniversity?.id === university.id) {
-                setSelectedUniversity(null)
-            }
+            setSelectedUniversities(prev => prev.filter(selected => selected.id !== university.id))
             toast.success(`Job unassigned from ${university.university_name} successfully!`)
         } catch (error: any) {
             console.error('Failed to unassign job:', error)

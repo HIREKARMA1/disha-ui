@@ -20,7 +20,9 @@ import {
   ALREADY_APPLIED_MESSAGE,
   JOB_CLOSED_MESSAGE,
   CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
+  PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   getUniversityApplyEligibility,
+  getPassoutBatchApplyEligibility,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
@@ -74,6 +76,7 @@ interface Job {
     mode_of_work?: string
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     // Company information fields (for university-created jobs)
     company_name?: string
     company_logo?: string
@@ -156,6 +159,8 @@ function JobOpportunitiesPageContent() {
         degree?: string
         branch?: string
         university_id?: string
+        graduation_year?: number
+        batch?: string
     } | null>(null)
     const [allFilteredJobs, setAllFilteredJobs] = useState<Job[]>([]) // Store jobs after degree/branch filtering (before status filter)
     const [baseJobs, setBaseJobs] = useState<Job[]>([]) // Store jobs after API fetch and client-side search (before degree/branch filter)
@@ -168,10 +173,13 @@ function JobOpportunitiesPageContent() {
                 degree: profile.degree,
                 branch: profile.branch,
                 university_id: profile.university_id ? String(profile.university_id) : undefined,
+                graduation_year: profile.graduation_year,
+                batch: (profile as { batch?: string }).batch,
             }
             console.log('📋 Fetched student profile:', {
                 degree: profile.degree,
                 branch: profile.branch,
+                graduation_year: profile.graduation_year,
                 fullProfile: profile
             })
             setStudentProfile(profileData)
@@ -806,6 +814,17 @@ function JobOpportunitiesPageContent() {
         })
         if (!eligibility.canApply) {
             toast.error(eligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE)
+            return
+        }
+
+        const batchEligibility = getPassoutBatchApplyEligibility({
+            passoutBatches: job.passout_batches,
+            isAuthenticatedStudent: true,
+            studentGraduationYear: studentProfile?.graduation_year,
+            studentBatch: studentProfile?.batch,
+        })
+        if (!batchEligibility.canApply) {
+            toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
             return
         }
 

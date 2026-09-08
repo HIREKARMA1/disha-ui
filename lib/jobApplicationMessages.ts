@@ -34,6 +34,8 @@ export const JOB_NOT_FOR_UNIVERSITY_MESSAGE =
 export const CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE =
   'This campus drive no longer belongs to your university.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
+export const PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE =
+  'Not eligible — graduation batch does not meet the job requirements'
 
 /**
  * Client-side apply eligibility for university assignment.
@@ -78,6 +80,59 @@ export function getUniversityApplyEligibility(options: {
   }
 
   return { canApply: true, reason: null }
+}
+
+/**
+ * Client-side passout batch targeting check.
+ * Jobs remain visible to all students; apply is limited to selected batches.
+ * Empty / missing targeting or "Any" means no batch restriction.
+ */
+export function getPassoutBatchApplyEligibility(options: {
+  passoutBatches?: string | string[] | null
+  isAuthenticatedStudent: boolean
+  studentGraduationYear?: number | string | null
+  studentBatch?: string | null
+}): { canApply: boolean; reason: string | null } {
+  const raw = options.passoutBatches
+  let targeted: string[] = []
+  if (Array.isArray(raw)) {
+    targeted = raw.map((b) => String(b).trim()).filter(Boolean)
+  } else if (typeof raw === 'string' && raw.trim()) {
+    targeted = raw.split(',').map((b) => b.trim()).filter(Boolean)
+  }
+
+  if (
+    targeted.length === 0 ||
+    targeted.some((b) => {
+      const lower = b.toLowerCase()
+      return lower === 'any' || lower === 'all'
+    })
+  ) {
+    return { canApply: true, reason: null }
+  }
+
+  // Guests can click Apply and be redirected to login; backend still enforces.
+  if (!options.isAuthenticatedStudent) {
+    return { canApply: true, reason: null }
+  }
+
+  const studentTokens = new Set<string>()
+  if (
+    options.studentGraduationYear !== null &&
+    options.studentGraduationYear !== undefined &&
+    String(options.studentGraduationYear).trim()
+  ) {
+    studentTokens.add(String(options.studentGraduationYear).trim())
+  }
+  if (options.studentBatch && String(options.studentBatch).trim()) {
+    studentTokens.add(String(options.studentBatch).trim())
+  }
+
+  if (Array.from(studentTokens).some((token) => targeted.includes(token))) {
+    return { canApply: true, reason: null }
+  }
+
+  return { canApply: false, reason: PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE }
 }
 
 export function isAlreadyAppliedError(message: string | null | undefined): boolean {
@@ -125,6 +180,13 @@ export function normalizeApplyErrorMessage(raw: string | null | undefined): stri
   }
   if (raw.toLowerCase().includes('campus drive no longer belongs')) {
     return CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+  }
+  if (
+    raw.toLowerCase().includes('targeted batch') ||
+    raw.toLowerCase().includes('passout batch') ||
+    raw.toLowerCase().includes('graduation batch')
+  ) {
+    return PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE
   }
   return raw
 }
