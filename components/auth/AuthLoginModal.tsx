@@ -18,12 +18,11 @@ import {
   Shield,
   ArrowLeft,
   ArrowRight,
-  Briefcase,
-  Sparkles,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
 
+import { LoginBrandPanel } from '@/components/auth/LoginBrandPanel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -264,45 +263,7 @@ export function AuthLoginModal({
                 <X className="h-4 w-4" />
               </button>
 
-              <aside className="relative hidden overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-sky-500 p-7 text-white md:flex md:flex-col md:justify-between lg:p-9">
-                <div>
-                  <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    HireKarma · Disha
-                  </div>
-                  <h2 className="text-2xl font-bold leading-snug tracking-tight xl:text-[28px]">
-                    One platform for careers, campuses & hiring
-                  </h2>
-                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/85">
-                    Students discover opportunities. Corporates hire faster. Universities run
-                    placements with clarity.
-                  </p>
-                </div>
-
-                <div className="mt-10 grid grid-cols-2 gap-2.5">
-                  {[
-                    { label: 'Jobs', icon: Briefcase },
-                    { label: 'Internships', icon: User },
-                    { label: 'Events', icon: Sparkles },
-                    { label: 'Practice', icon: GraduationCap },
-                  ].map((chip) => {
-                    const Icon = chip.icon
-                    return (
-                      <div
-                        key={chip.label}
-                        className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-medium backdrop-blur-sm"
-                      >
-                        <Icon className="h-4 w-4 shrink-0 opacity-90" />
-                        {chip.label}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <p className="mt-8 text-xs font-medium text-white/70">
-                  Sign in to continue where you left off.
-                </p>
-              </aside>
+              <LoginBrandPanel className="md:min-h-[520px]" />
 
               <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
                 <AnimatePresence mode="wait">
@@ -526,6 +487,7 @@ export function AuthLoginModal({
         onClose={() => setShowTermsModal(false)}
         title="Terms and Conditions"
         maxWidth="2xl"
+        overlayClassName="z-[1100]"
       >
         <TermsModalContent />
         <div className="mt-6 flex justify-end">

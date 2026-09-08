@@ -12,6 +12,8 @@ interface ModalProps {
     title: string
     children: React.ReactNode
     className?: string
+    /** Applied to the fixed overlay wrapper (e.g. raise above another modal). */
+    overlayClassName?: string
     maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl"
     /** When false, modal opens without dimmed backdrop (default: true). */
     showBackdrop?: boolean
@@ -35,6 +37,7 @@ export function Modal({
     title,
     children,
     className,
+    overlayClassName,
     maxWidth = "lg",
     showBackdrop = true,
 }: ModalProps) {
@@ -68,7 +71,12 @@ export function Modal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center pointer-events-none overflow-y-auto py-6 sm:py-8">
+                <div
+                    className={cn(
+                        "fixed inset-0 flex items-start sm:items-center justify-center pointer-events-none overflow-y-auto py-6 sm:py-8",
+                        overlayClassName ?? "z-[999]"
+                    )}
+                >
                     {showBackdrop && (
                         <motion.div
                             initial={{ opacity: 0 }}

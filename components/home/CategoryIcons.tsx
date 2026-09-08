@@ -18,14 +18,20 @@ export function CategoryIcon({
     case 'all':
       return (
         <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-          <circle cx="24" cy="24" r="20" fill={active ? '#DBEAFE' : '#E0F2FE'} />
-          <path
-            d="M24 10l2.8 8.6H36l-7.2 5.2 2.8 8.6L24 27.2l-7.6 5.2 2.8-8.6L12 18.6h9.2L24 10z"
-            fill="#F59E0B"
-            stroke="#B45309"
-            strokeWidth="1.2"
-            strokeLinejoin="round"
+          {/* Soft plate */}
+          <rect
+            x="6"
+            y="6"
+            width="36"
+            height="36"
+            rx="10"
+            fill={active ? '#DBEAFE' : '#EFF6FF'}
           />
+          {/* 2×2 category tiles — “All” */}
+          <rect x="12" y="12" width="10" height="10" rx="2.5" fill="#3B82F6" />
+          <rect x="26" y="12" width="10" height="10" rx="2.5" fill="#F59E0B" />
+          <rect x="12" y="26" width="10" height="10" rx="2.5" fill="#10B981" />
+          <rect x="26" y="26" width="10" height="10" rx="2.5" fill="#8B5CF6" />
         </svg>
       )
     case 'jobs':

@@ -38,8 +38,6 @@ import { Footer } from '@/components/ui/footer'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
 import {
   HubCardSkeleton,
-  HubCarousel,
-  HubCarouselItem,
   HubEventCard,
   HubFeaturedCarousel,
   HubJobCard,
@@ -940,14 +938,18 @@ export default function OpportunityHub() {
         <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
           <div ref={resultsAnchorRef} className="scroll-mt-20" />
 
-          {/* Layout headline — same hub, Unstop-like hero placement */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-              Unlock Your <span className="text-primary-600">Career!</span>
+          {/* Hub hero headline */}
+          <div className="mb-7">
+            <h1 className="text-[1.65rem] font-extrabold uppercase leading-tight tracking-[0.04em] text-gray-900 dark:text-white sm:text-4xl sm:tracking-[0.06em]">
+              Discover Your{' '}
+              <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
+                Potential
+              </span>
             </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Jobs, events, and campus opportunities on Disha.
-            </p>
+            <div
+              className="mt-3 h-1 w-16 rounded-full bg-primary-500 sm:w-20"
+              aria-hidden
+            />
           </div>
 
           {/* Category tiles — same filters, Unstop icon-row layout */}
@@ -1079,18 +1081,17 @@ export default function OpportunityHub() {
                       </Link>
                     </p>
                   ) : (
-                    <HubCarousel>
-                      {jobs.map((job, i) => (
-                        <HubCarouselItem key={job.id}>
-                          <HubJobCard
-                            job={job}
-                            index={i}
-                            onView={() => router.push(getJobDetailPath(job))}
-                            onApply={() => handleJobApply(job)}
-                          />
-                        </HubCarouselItem>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {jobs.slice(0, 4).map((job, i) => (
+                        <HubJobCard
+                          key={job.id}
+                          job={job}
+                          index={i}
+                          onView={() => router.push(getJobDetailPath(job))}
+                          onApply={() => handleJobApply(job)}
+                        />
                       ))}
-                    </HubCarousel>
+                    </div>
                   )}
                 </section>
 
@@ -1110,13 +1111,11 @@ export default function OpportunityHub() {
                       </Link>
                     </p>
                   ) : (
-                    <HubCarousel>
-                      {events.map((event, i) => (
-                        <HubCarouselItem key={event.id}>
-                          <HubEventCard event={event} index={i} />
-                        </HubCarouselItem>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {events.slice(0, 4).map((event, i) => (
+                        <HubEventCard key={event.id} event={event} index={i} />
                       ))}
-                    </HubCarousel>
+                    </div>
                   )}
                 </section>
 

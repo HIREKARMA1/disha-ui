@@ -281,6 +281,8 @@ const FEATURED_ITEMS = [
     href: '/events',
     image: '/images/campus-events-featured.png',
     gradient: 'from-sky-900/55 via-sky-900/25 to-transparent',
+    /** Artwork already includes the title — keep CTA only */
+    hideOverlayText: true,
   },
   {
     id: 'jobs',
@@ -288,8 +290,9 @@ const FEATURED_ITEMS = [
     title: 'Internships & full-time roles',
     cta: 'Find jobs',
     href: '/jobs',
-    image: '/images/featured-jobs.png',
+    image: '/images/featured-jobs-clean.png',
     gradient: 'from-emerald-950/55 via-emerald-900/25 to-transparent',
+    hideOverlayText: true,
   },
   {
     id: 'practice',
@@ -300,6 +303,7 @@ const FEATURED_ITEMS = [
     auth: true,
     image: '/images/featured-practice.png',
     gradient: 'from-indigo-950/55 via-indigo-900/25 to-transparent',
+    hideOverlayText: true,
   },
   {
     id: 'create',
@@ -309,6 +313,7 @@ const FEATURED_ITEMS = [
     href: '/events#create-event-request',
     image: '/images/featured-create.png',
     gradient: 'from-amber-950/55 via-amber-900/25 to-transparent',
+    hideOverlayText: true,
   },
   {
     id: 'resume',
@@ -319,8 +324,9 @@ const FEATURED_ITEMS = [
     auth: true,
     image: '/images/featured-resume.png',
     gradient: 'from-rose-950/55 via-rose-900/25 to-transparent',
+    hideOverlayText: true,
   },
-]
+] as const
 
 function scrollByAmount(el: HTMLElement | null, dir: 1 | -1) {
   if (!el) return
@@ -425,6 +431,7 @@ export function HubFeaturedCarousel() {
             >
               <Link
                 href={item.auth ? '#' : item.href}
+                aria-label={`${item.title} — ${item.cta}`}
                 onClick={(e) => {
                   if (
                     item.auth &&
@@ -437,7 +444,7 @@ export function HubFeaturedCarousel() {
                     })
                   }
                 }}
-                className="group relative block h-[150px] w-[min(78vw,260px)] overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 sm:h-[168px] sm:w-[min(100%,280px)] lg:w-[300px]"
+                className="group relative block h-[150px] w-[min(78vw,260px)] overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 sm:h-[168px] sm:w-[min(100%,280px)] lg:w-[300px]"
               >
                 {item.image ? (
                   <Image
@@ -450,13 +457,32 @@ export function HubFeaturedCarousel() {
                 ) : (
                   <div className={cn('absolute inset-0 bg-gradient-to-br', item.gradient)} />
                 )}
-                <div className={cn('absolute inset-0 bg-gradient-to-r', item.gradient)} />
+                {/* Soft bottom wash only — keeps CTA readable without tinting the art */}
+                <div
+                  className={cn(
+                    'absolute inset-0 bg-gradient-to-t to-transparent',
+                    'hideOverlayText' in item && item.hideOverlayText
+                      ? 'from-black/35 via-transparent'
+                      : 'from-black/55 via-black/10'
+                  )}
+                />
                 <div className="absolute inset-0 flex flex-col justify-end p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-white/70">
-                    {item.eyebrow}
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold text-white sm:text-[15px]">{item.title}</p>
-                  <span className="mt-2 w-fit rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-gray-900 transition group-hover:bg-white">
+                  {!('hideOverlayText' in item && item.hideOverlayText) && (
+                    <>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                        {item.eyebrow}
+                      </p>
+                      <p className="mt-0.5 text-sm font-semibold text-white sm:text-[15px]">
+                        {item.title}
+                      </p>
+                    </>
+                  )}
+                  <span
+                    className={cn(
+                      'w-fit rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-gray-900 transition group-hover:bg-white',
+                      !('hideOverlayText' in item && item.hideOverlayText) && 'mt-2'
+                    )}
+                  >
                     {item.cta} →
                   </span>
                 </div>
