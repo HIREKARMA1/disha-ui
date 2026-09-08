@@ -62,6 +62,7 @@ export interface Job {
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -110,14 +111,14 @@ interface JobSearchResponse {
     has_prev: boolean
 }
 
-type CategoryChip = 'recommended' | 'all' | 'open' | 'closed' | 'saved'
+type CategoryChip = 'all' | 'open' | 'closed' | 'campus_drive' | 'saved'
 type JobStatusFilter = 'all' | 'open' | 'closed'
 
 const CATEGORY_CHIPS: readonly { value: CategoryChip; label: string }[] = [
-    { value: 'recommended', label: 'Recommended' },
     { value: 'all', label: 'All Jobs' },
     { value: 'open', label: 'Open' },
     { value: 'closed', label: 'Closed' },
+    { value: 'campus_drive', label: 'Campus Drive' },
     { value: 'saved', label: 'Saved' },
 ]
 
@@ -139,15 +140,15 @@ function parseFiltersFromParams(params: URLSearchParams): {
     const jobStatusFilter: JobStatusFilter =
         statusRaw === 'open' || statusRaw === 'closed' ? statusRaw : 'all'
 
-    const categoryRaw = params.get('category') || 'recommended'
+    const categoryRaw = params.get('category') || 'all'
     const categoryChip: CategoryChip =
         categoryRaw === 'all' ||
         categoryRaw === 'open' ||
         categoryRaw === 'closed' ||
-        categoryRaw === 'recommended' ||
+        categoryRaw === 'campus_drive' ||
         categoryRaw === 'saved'
             ? categoryRaw
-            : 'recommended'
+            : 'all'
 
     const page = Math.max(1, parseInt(params.get('page') || '1', 10) || 1)
 
@@ -187,7 +188,7 @@ function buildJobsQueryString(opts: {
     })
     if (opts.datePostedFilter !== 'all') params.set('date', opts.datePostedFilter)
     if (opts.jobStatusFilter !== 'all') params.set('status', opts.jobStatusFilter)
-    if (opts.categoryChip !== 'recommended') params.set('category', opts.categoryChip)
+    if (opts.categoryChip !== 'all') params.set('category', opts.categoryChip)
     if (opts.page > 1) params.set('page', String(opts.page))
     if (opts.jobId) params.set('jobId', opts.jobId)
     return params.toString()
@@ -237,6 +238,8 @@ function normalizePublicJob(job: Job): Job {
         assigned_university_ids: Array.isArray(job.assigned_university_ids)
             ? job.assigned_university_ids.map(String)
             : job.assigned_university_ids ?? undefined,
+        is_campus_drive: Boolean(job.is_campus_drive),
+        campus_drive_date: job.campus_drive_date ? String(job.campus_drive_date) : undefined,
     }
 }
 
@@ -429,6 +432,10 @@ export function AllJobs() {
                     params.set('date_posted', '30_days')
                 }
 
+                if (activeCategory === 'campus_drive') {
+                    params.set('is_campus_drive', 'true')
+                }
+
                 return params
             }
 
@@ -576,7 +583,7 @@ export function AllJobs() {
             filters: cleared,
             datePostedFilter: 'all',
             jobStatusFilter: 'all',
-            categoryChip: 'recommended',
+            categoryChip: 'all',
             page: 1,
             replaceUrl: true,
         })
@@ -920,7 +927,9 @@ export function AllJobs() {
                             <p className="text-base font-medium text-gray-600 dark:text-gray-300 sm:text-lg">
                                 {categoryChip === 'saved' && getSavedJobIds().length === 0
                                     ? 'No saved jobs yet. Tap the bookmark icon on a job to save it here.'
-                                    : 'No jobs found matching your criteria.'}
+                                    : categoryChip === 'campus_drive'
+                                      ? 'No campus drives found matching your criteria.'
+                                      : 'No jobs found matching your criteria.'}
                             </p>
                             {!(categoryChip === 'saved' && getSavedJobIds().length === 0) && (
                             <Button

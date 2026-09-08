@@ -31,6 +31,8 @@ export const ALREADY_APPLIED_MESSAGE = 'You have already applied for this job.'
 export const JOB_CLOSED_MESSAGE = 'This job is no longer accepting applications.'
 export const JOB_NOT_FOR_UNIVERSITY_MESSAGE =
   'Your university is not assigned for this job.'
+export const CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE =
+  'This campus drive no longer belongs to your university.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
 
 /**
@@ -44,6 +46,7 @@ export function getUniversityApplyEligibility(options: {
   assignedUniversityIds?: string[] | null
   isAuthenticatedStudent: boolean
   studentUniversityId?: string | null
+  isCampusDrive?: boolean | null
 }): { canApply: boolean; reason: string | null } {
   const assignments = options.assignedUniversityIds ?? []
   const isPublicForAll = Boolean(
@@ -66,7 +69,12 @@ export function getUniversityApplyEligibility(options: {
     !options.studentUniversityId ||
     !assignments.includes(options.studentUniversityId)
   ) {
-    return { canApply: false, reason: JOB_NOT_FOR_UNIVERSITY_MESSAGE }
+    return {
+      canApply: false,
+      reason: options.isCampusDrive
+        ? CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+        : JOB_NOT_FOR_UNIVERSITY_MESSAGE,
+    }
   }
 
   return { canApply: true, reason: null }
@@ -114,6 +122,9 @@ export function normalizeApplyErrorMessage(raw: string | null | undefined): stri
     raw.toLowerCase().includes('not available for your university')
   ) {
     return JOB_NOT_FOR_UNIVERSITY_MESSAGE
+  }
+  if (raw.toLowerCase().includes('campus drive no longer belongs')) {
+    return CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
   }
   return raw
 }

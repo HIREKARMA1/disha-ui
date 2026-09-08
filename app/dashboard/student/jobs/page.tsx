@@ -19,6 +19,8 @@ import {
   APPLY_SUCCESS_MESSAGE,
   ALREADY_APPLIED_MESSAGE,
   JOB_CLOSED_MESSAGE,
+  CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
+  getUniversityApplyEligibility,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
@@ -48,6 +50,9 @@ interface Job {
     selection_process?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    is_public?: boolean
+    public_access_level?: string
+    assigned_university_ids?: string[]
     views_count: number
     applications_count: number
     created_at: string
@@ -146,8 +151,12 @@ function JobOpportunitiesPageContent() {
     const [profileLoading, setProfileLoading] = useState(true)
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
-    const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('open') // New filter for job status
-    const [studentProfile, setStudentProfile] = useState<{ degree?: string; branch?: string } | null>(null)
+    const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+    const [studentProfile, setStudentProfile] = useState<{
+        degree?: string
+        branch?: string
+        university_id?: string
+    } | null>(null)
     const [allFilteredJobs, setAllFilteredJobs] = useState<Job[]>([]) // Store jobs after degree/branch filtering (before status filter)
     const [baseJobs, setBaseJobs] = useState<Job[]>([]) // Store jobs after API fetch and client-side search (before degree/branch filter)
 
@@ -157,7 +166,8 @@ function JobOpportunitiesPageContent() {
             const profile = await profileService.getProfile()
             const profileData = {
                 degree: profile.degree,
-                branch: profile.branch
+                branch: profile.branch,
+                university_id: profile.university_id ? String(profile.university_id) : undefined,
             }
             console.log('📋 Fetched student profile:', {
                 degree: profile.degree,
@@ -526,7 +536,13 @@ function JobOpportunitiesPageContent() {
                         current_applications: Number(job.current_applications || 0),
                         industry: job.industry ? String(job.industry) : undefined,
                         selection_process: job.selection_process ? String(job.selection_process) : undefined,
+                        is_campus_drive: Boolean(job.is_campus_drive),
                         campus_drive_date: job.campus_drive_date ? String(job.campus_drive_date) : undefined,
+                        is_public: Boolean(job.is_public),
+                        public_access_level: job.public_access_level ? String(job.public_access_level) : undefined,
+                        assigned_university_ids: Array.isArray(job.assigned_university_ids)
+                            ? job.assigned_university_ids.map(String)
+                            : undefined,
                         views_count: Number(job.views_count || 0),
                         applications_count: Number(job.applications_count || 0),
                         created_at: String(job.created_at || ''),
@@ -780,6 +796,19 @@ function JobOpportunitiesPageContent() {
             return
         }
 
+        const eligibility = getUniversityApplyEligibility({
+            isPublic: job.is_public,
+            publicAccessLevel: job.public_access_level,
+            assignedUniversityIds: job.assigned_university_ids,
+            isAuthenticatedStudent: true,
+            studentUniversityId: studentProfile?.university_id,
+            isCampusDrive: true,
+        })
+        if (!eligibility.canApply) {
+            toast.error(eligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE)
+            return
+        }
+
         // Check if already applied
         if (applicationStatus.get(job.id) === 'applied') {
             toast(ALREADY_APPLIED_MESSAGE)
@@ -827,6 +856,14 @@ function JobOpportunitiesPageContent() {
             // Close modal
             setShowApplicationModal(false)
             setCurrentApplicationJob(null)
+
+            const markApplied = (list: Job[]) =>
+                list.map((job) =>
+                    job.id === jobId ? { ...job, application_status: 'applied' } : job
+                )
+            setJobs((prev) => markApplied(prev))
+            setAllFilteredJobs((prev) => markApplied(prev))
+            setBaseJobs((prev) => markApplied(prev))
 
             // Refresh jobs to update application status
             fetchJobs(pagination.page, buildSearchParams())
@@ -989,7 +1026,7 @@ function JobOpportunitiesPageContent() {
             date_posted: ''
         })
         setSearchTerm('')
-        setJobStatusFilter('open')
+        setJobStatusFilter('all')
         setPagination(prev => ({ ...prev, page: 1 }))
         fetchJobs(1, {})
     }
@@ -1038,16 +1075,14 @@ function JobOpportunitiesPageContent() {
         return deadline < now
     }
 
-    // Helper function to check if a job is open (available for application)
+    // Helper function to check if a job is open (still accepting applications)
     const isJobOpen = (job: Job) => {
-        const status = applicationStatus.get(job.id)
-        return status !== 'applied' && !isJobExpired(job) && job.can_apply
+        return !isJobExpired(job) && job.can_apply
     }
 
-    // Helper function to check if a job is closed (applied, expired, or not available)
+    // Helper function to check if a job is closed (expired or not accepting applications)
     const isJobClosed = (job: Job) => {
-        const status = applicationStatus.get(job.id)
-        return status === 'applied' || isJobExpired(job) || !job.can_apply
+        return isJobExpired(job) || !job.can_apply
     }
 
     // Filter jobs based on job status filter
@@ -1454,7 +1489,11 @@ function JobOpportunitiesPageContent() {
                                 return (
                                     <JobCard
                                         key={job.id}
-                                        job={job}
+                                        job={{
+                                            ...job,
+                                            application_status:
+                                                applicationStatus.get(job.id) || job.application_status,
+                                        }}
                                         onViewDescription={async () => {
                                             setSelectedJob(job)
                                             setLoadingJobDetails(true)
