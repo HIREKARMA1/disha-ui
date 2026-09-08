@@ -29,8 +29,48 @@ export {
 export const APPLY_SUCCESS_MESSAGE = 'Application submitted successfully.'
 export const ALREADY_APPLIED_MESSAGE = 'You have already applied for this job.'
 export const JOB_CLOSED_MESSAGE = 'This job is no longer accepting applications.'
-export const CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE =
-  'This campus drive no longer belongs to your university.'
+export const JOB_NOT_FOR_UNIVERSITY_MESSAGE =
+  'Your university is not assigned for this job.'
+export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
+
+/**
+ * Client-side apply eligibility for university assignment.
+ * Jobs stay visible publicly; once universities are assigned, only those may apply.
+ * Public-for-all with no assignments remains open to any student.
+ */
+export function getUniversityApplyEligibility(options: {
+  isPublic?: boolean | null
+  publicAccessLevel?: string | null
+  assignedUniversityIds?: string[] | null
+  isAuthenticatedStudent: boolean
+  studentUniversityId?: string | null
+}): { canApply: boolean; reason: string | null } {
+  const assignments = options.assignedUniversityIds ?? []
+  const isPublicForAll = Boolean(
+    options.isPublic && options.publicAccessLevel === 'all'
+  )
+
+  if (assignments.length === 0) {
+    if (isPublicForAll) {
+      return { canApply: true, reason: null }
+    }
+    return { canApply: false, reason: JOB_NOT_AVAILABLE_MESSAGE }
+  }
+
+  // Guests can click Apply and be redirected to login; backend still enforces.
+  if (!options.isAuthenticatedStudent) {
+    return { canApply: true, reason: null }
+  }
+
+  if (
+    !options.studentUniversityId ||
+    !assignments.includes(options.studentUniversityId)
+  ) {
+    return { canApply: false, reason: JOB_NOT_FOR_UNIVERSITY_MESSAGE }
+  }
+
+  return { canApply: true, reason: null }
+}
 
 export function isAlreadyAppliedError(message: string | null | undefined): boolean {
   if (!message) return false
@@ -68,8 +108,12 @@ export function normalizeApplyErrorMessage(raw: string | null | undefined): stri
   if (isAlreadyAppliedError(raw)) return ALREADY_APPLIED_MESSAGE
   if (isJobClosedError(raw)) return JOB_CLOSED_MESSAGE
   if (isPremiumRequiredError(raw)) return PREMIUM_REQUIRED_MESSAGE
-  if (raw.toLowerCase().includes('campus drive') && raw.toLowerCase().includes('university')) {
-    return CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+  // Map legacy copy to the current university-assignment message
+  if (
+    raw === 'This job is not available for your university' ||
+    raw.toLowerCase().includes('not available for your university')
+  ) {
+    return JOB_NOT_FOR_UNIVERSITY_MESSAGE
   }
   return raw
 }

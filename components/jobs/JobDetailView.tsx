@@ -36,7 +36,9 @@ import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
+  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
   clearAutoApplyQueryParams,
+  getUniversityApplyEligibility,
   resumePendingJobApplication,
   shouldAutoApplyForJob,
   toastApplyError,
@@ -63,6 +65,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [isApplying, setIsApplying] = useState(false)
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
   const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
+  const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
 
   const canDownloadPdf =
     isAuthenticated &&
@@ -111,6 +114,10 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     profileService
       .getProfileCompletion()
       .then(setProfileCompletion)
+      .catch(() => undefined)
+    profileService
+      .getProfile()
+      .then((profile) => setStudentUniversityId(profile.university_id || null))
       .catch(() => undefined)
   }, [])
 
@@ -177,6 +184,19 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
     if (!job.can_apply) {
       toast.error(JOB_CLOSED_MESSAGE)
+      return
+    }
+    const eligibility = getUniversityApplyEligibility({
+      isPublic: job.is_public,
+      publicAccessLevel: job.public_access_level,
+      assignedUniversityIds: job.assigned_university_ids,
+      isAuthenticatedStudent: Boolean(
+        isAuthenticated && user?.user_type === 'student'
+      ),
+      studentUniversityId,
+    })
+    if (!eligibility.canApply) {
+      toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
       return
     }
     setShowApplicationModal(true)

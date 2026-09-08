@@ -36,6 +36,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
     const [selectedUniversities, setSelectedUniversities] = useState<University[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
+    const [unassigningUniversityId, setUnassigningUniversityId] = useState<string | null>(null)
 
     // Fetch universities when modal opens
     useEffect(() => {
@@ -166,10 +167,30 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
         }
     }
 
+    const handleUnassign = async (university: University) => {
+        if (!job || unassigningUniversityId) return
+
+        try {
+            setUnassigningUniversityId(university.id)
+            await apiClient.unassignJobFromUniversity(job.id, university.id)
+            setAssignedUniversities(prev => prev.filter(assigned => assigned.id !== university.id))
+            if (selectedUniversity?.id === university.id) {
+                setSelectedUniversity(null)
+            }
+            toast.success(`Job unassigned from ${university.university_name} successfully!`)
+        } catch (error: any) {
+            console.error('Failed to unassign job:', error)
+            toast.error(error.response?.data?.detail || 'Failed to unassign job from university')
+        } finally {
+            setUnassigningUniversityId(null)
+        }
+    }
+
     const handleClose = () => {
         setSearchTerm('')
         setSelectedUniversities([])
         setAssignedUniversities([])
+        setUnassigningUniversityId(null)
         onClose()
     }
 
@@ -264,9 +285,20 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                                         {university.location && ` • ${university.location}`}
                                                     </p>
                                                 </div>
-                                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                                    <Check className="w-4 h-4 text-white" />
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleUnassign(university)}
+                                                    disabled={unassigningUniversityId === university.id}
+                                                    title="Click to unassign university"
+                                                    aria-label={`Unassign ${university.university_name || 'university'}`}
+                                                    className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    {unassigningUniversityId === university.id ? (
+                                                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                                                    ) : (
+                                                        <Check className="w-4 h-4 text-white" />
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
