@@ -17,6 +17,7 @@ import { parseEducationField } from '@/lib/parseEducationField'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
+import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
 
 interface Job {
     id: string
@@ -38,10 +39,12 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -98,10 +101,12 @@ interface JobFormData {
     education_level: string[]
     education_degree: string[]
     education_branch: string[]
+    passout_batches: string[]
     skills_required: string[]
     application_deadline: string
     industry: string
     selection_process: string
+    is_campus_drive: boolean
     campus_drive_date: string
     status: string
     // Additional fields
@@ -149,6 +154,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         return [...fromLookup, { value: 'Any', label: 'Any' }]
     }, [degreesData])
 
+    const passoutBatchOptions = useMemo(() => getPassoutBatchOptions(), [])
+
     const [isLoading, setIsLoading] = useState(false)
     const [jobLocationLabel, setJobLocationLabel] = useState('')
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -172,10 +179,12 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         education_level: [],
         education_degree: [],
         education_branch: [],
+        passout_batches: [],
         skills_required: [],
         application_deadline: '',
         industry: '',
         selection_process: '',
+        is_campus_drive: false,
         campus_drive_date: '',
         status: 'active',
         // Additional fields
@@ -212,17 +221,20 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             console.log('🔍 Education fields before parsing:', {
                 education_level: job.education_level,
                 education_degree: job.education_degree,
-                education_branch: job.education_branch
+                education_branch: job.education_branch,
+                passout_batches: job.passout_batches,
             })
 
             const educationLevelArray = parseEducationField(job.education_level || [])
             const educationDegreeArray = parseEducationField(job.education_degree || [])
             const educationBranchArray = parseEducationField(job.education_branch || [])
+            const passoutBatchesArray = parseEducationField(job.passout_batches || [])
 
             console.log('🔍 Education fields after parsing:', {
                 educationLevelArray,
                 educationDegreeArray,
-                educationBranchArray
+                educationBranchArray,
+                passoutBatchesArray,
             })
 
             // Determine checkbox states from mode_of_work
@@ -342,10 +354,12 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_level: educationLevelArray,
                 education_degree: educationDegreeArray,
                 education_branch: educationBranchArray,
+                passout_batches: passoutBatchesArray,
                 skills_required: job.skills_required || [],
                 application_deadline: job.application_deadline ? new Date(job.application_deadline).toISOString().slice(0, 10) : '',
                 industry: normalizedIndustry || (job.industry || ''),
                 selection_process: job.selection_process || '',
+                is_campus_drive: Boolean(job.is_campus_drive || job.campus_drive_date),
                 campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : '',
                 status: job.status || 'active',
                 // Additional fields
@@ -541,6 +555,13 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         }))
     }
 
+    const handlePassoutBatchesChange = (batches: string[]) => {
+        setFormData((prev) => ({
+            ...prev,
+            passout_batches: normalizePassoutBatchSelection(batches),
+        }))
+    }
+
     const validateForm = () => {
         const errors: Record<string, string> = {}
 
@@ -548,6 +569,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (!formData.description.trim()) errors.description = 'Job description is required'
         if (!formData.job_type) errors.job_type = 'Job type is required'
         if (formData.location.length === 0) errors.location = 'Please select a job location from the suggestions'
+        if (formData.is_campus_drive && !formData.campus_drive_date) {
+            errors.campus_drive_date = 'Campus drive date is required'
+        }
 
         // Validate company information for university-created jobs
         if (isUniversity && !formData.company_name.trim()) {
@@ -622,11 +646,13 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 education_level: formData.education_level.length > 0 ? formData.education_level : null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
+                passout_batches: formData.passout_batches.length > 0 ? formData.passout_batches : null,
                 skills_required: formData.skills_required.length > 0 ? formData.skills_required : null,
                 application_deadline: formData.application_deadline ? formData.application_deadline : null,
                 industry: formData.industry || null,
                 selection_process: formData.selection_process || null,
-                campus_drive_date: formData.campus_drive_date ? formData.campus_drive_date : null,
+                is_campus_drive: formData.is_campus_drive,
+                campus_drive_date: formData.is_campus_drive && formData.campus_drive_date ? formData.campus_drive_date : null,
                 status: formData.status,
                 // Additional fields
                 number_of_openings: formData.number_of_openings && formData.number_of_openings.trim() !== '' ? parseInt(formData.number_of_openings) : null,
@@ -1426,6 +1452,22 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Passout Batches
+                                    </label>
+                                    <MultiSearchableSelect
+                                        options={passoutBatchOptions}
+                                        values={formData.passout_batches}
+                                        onChange={handlePassoutBatchesChange}
+                                        placeholder="Select passout batch year(s)"
+                                        searchPlaceholder="Search years..."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Select &quot;All Batches&quot; to allow every student to apply, or pick specific years.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Eligibility Criteria
                                     </label>
                                     <Textarea
@@ -1531,15 +1573,49 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Campus Drive Date (if applicable)
+                                        Is this a campus drive?
                                     </label>
-                                    <DateTimePicker
-                                        value={formData.campus_drive_date}
-                                        onChange={(value) => handleInputChange('campus_drive_date', value)}
-                                        placeholder="Select campus drive date"
-                                        autoClose={true}
-                                    />
+                                    <div className="flex items-center gap-4">
+                                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="edit_is_campus_drive"
+                                                checked={formData.is_campus_drive}
+                                                onChange={() => handleInputChange('is_campus_drive', true)}
+                                            />
+                                            Yes
+                                        </label>
+                                        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="edit_is_campus_drive"
+                                                checked={!formData.is_campus_drive}
+                                                onChange={() => {
+                                                    handleInputChange('is_campus_drive', false)
+                                                    handleInputChange('campus_drive_date', '')
+                                                }}
+                                            />
+                                            No
+                                        </label>
+                                    </div>
                                 </div>
+
+                                {formData.is_campus_drive && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Campus Drive Date
+                                        </label>
+                                        <DateTimePicker
+                                            value={formData.campus_drive_date}
+                                            onChange={(value) => handleInputChange('campus_drive_date', value)}
+                                            placeholder="Select campus drive date"
+                                            autoClose={true}
+                                        />
+                                        {validationErrors.campus_drive_date && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.campus_drive_date}</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

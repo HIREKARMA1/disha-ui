@@ -36,6 +36,7 @@ interface Job {
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -308,6 +309,11 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                                 )}>
                                     {getJobTypeLabel(jobType)}
                                 </span>
+                                {job.is_campus_drive && (
+                                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-md bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                                        Campus Drive
+                                    </span>
+                                )}
                             </div>
                             {companyDisplayName && (
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">

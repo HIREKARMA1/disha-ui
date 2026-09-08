@@ -13,10 +13,14 @@ import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
     APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
+    getUniversityApplyEligibility,
+    getPassoutBatchApplyEligibility,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
     toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import { parseEducationField } from '@/lib/parseEducationField'
+import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import {
     Loader2,
     AlertCircle,
@@ -100,6 +104,8 @@ export default function PublicJobPage() {
     const [activeTab, setActiveTab] = useState<'description' | 'company'>('description')
     const [corporateProfile, setCorporateProfile] = useState<any>(null)
     const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
+    const [studentGraduationYear, setStudentGraduationYear] = useState<number | null>(null)
+    const [studentBatch, setStudentBatch] = useState<string | null>(null)
     const [showShareDropdown, setShowShareDropdown] = useState(false)
     const [showPremiumModal, setShowPremiumModal] = useState(false)
     const autoApplyAttempted = useRef(false)
@@ -173,6 +179,8 @@ export default function PublicJobPage() {
                 try {
                     const profile = await apiClient.getStudentProfile()
                     setStudentUniversityId(profile.university_id || null)
+                    setStudentGraduationYear(profile.graduation_year ?? null)
+                    setStudentBatch(profile.batch || null)
                 } catch (err) {
                     console.warn('Could not fetch student profile:', err)
                 }
@@ -255,42 +263,26 @@ export default function PublicJobPage() {
     }
 
     const canStudentApply = () => {
-        // Public-for-all jobs bypass college assignment restrictions.
-        if (job?.is_public && job?.public_access_level === 'all') {
-            return { canApply: true, reason: null }
+        const universityEligibility = getUniversityApplyEligibility({
+            isPublic: job?.is_public,
+            publicAccessLevel: job?.public_access_level,
+            assignedUniversityIds: job?.assigned_university_ids,
+            isAuthenticatedStudent: Boolean(
+                isAuthenticated && user?.user_type === 'student'
+            ),
+            studentUniversityId,
+        })
+        if (!universityEligibility.canApply) {
+            return universityEligibility
         }
-
-        // Check if job is assigned to any universities
-        if (!job?.assigned_university_ids || job.assigned_university_ids.length === 0) {
-            return {
-                canApply: false,
-                reason: 'This job is not available for applications.'
-            }
-        }
-
-        // If student is not authenticated, they can't apply yet (will be redirected to login)
-        if (!isAuthenticated || user?.user_type !== 'student') {
-            return { canApply: true, reason: null }
-        }
-
-        // Check if student has a university_id
-        if (!studentUniversityId) {
-            return {
-                canApply: false,
-                reason: 'This job is not available for your university',
-            }
-        }
-
-        // Check if student's university is in the assigned universities list
-        if (!job.assigned_university_ids.includes(studentUniversityId)) {
-            return {
-                canApply: false,
-                reason: 'This job is not available for your university',
-            }
-        }
-
-        // Matching assignment: allow click; backend enforces university approval
-        return { canApply: true, reason: null }
+        return getPassoutBatchApplyEligibility({
+            passoutBatches: job?.passout_batches,
+            isAuthenticatedStudent: Boolean(
+                isAuthenticated && user?.user_type === 'student'
+            ),
+            studentGraduationYear,
+            studentBatch,
+        })
     }
 
     const handleApplyClick = () => {
@@ -804,6 +796,25 @@ export default function PublicJobPage() {
                                             </h3>
                                             <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                                 {job.eligibility_criteria}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {parseEducationField(job.passout_batches).length > 0 && (
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                                <div className="w-1 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
+                                                Targeted Passout Batches
+                                            </h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {parseEducationField(job.passout_batches).map((batch) => (
+                                                    <span
+                                                        key={batch}
+                                                        className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-lg font-medium border border-amber-200 dark:border-amber-700"
+                                                    >
+                                                        {formatPassoutBatchLabel(batch)}
+                                                    </span>
+                                                ))}
                                             </div>
                                         </div>
                                     )}

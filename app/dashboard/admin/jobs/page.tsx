@@ -14,6 +14,7 @@ import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { AssignUniversityModal } from '@/components/admin/AssignUniversityModal'
 import { AssignShortlistedBatchModal } from '@/components/admin/AssignShortlistedBatchModal'
 import { AppliedStudentsModal } from '@/components/admin/AppliedStudentsModal'
+import { MarkCampusDriveModal } from '@/components/admin/MarkCampusDriveModal'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 
@@ -38,12 +39,14 @@ interface Job {
     education_level?: string | string[]
     education_degree?: string | string[]
     education_branch?: string | string[]
+    passout_batches?: string | string[]
     skills_required?: string[]
     application_deadline?: string
     max_applications: number
     current_applications: number
     industry?: string
     selection_process?: string
+    is_campus_drive?: boolean
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -88,9 +91,11 @@ export default function AdminJobsPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showAssignModal, setShowAssignModal] = useState(false)
     const [showAssignShortlistedModal, setShowAssignShortlistedModal] = useState(false)
+    const [showMarkCampusModal, setShowMarkCampusModal] = useState(false)
     const [jobToDelete, setJobToDelete] = useState<Job | null>(null)
     const [jobToAssign, setJobToAssign] = useState<Job | null>(null)
     const [jobToAssignShortlisted, setJobToAssignShortlisted] = useState<Job | null>(null)
+    const [jobToMarkCampus, setJobToMarkCampus] = useState<Job | null>(null)
     const [showAppliedStudentsModal, setShowAppliedStudentsModal] = useState(false)
     const [jobForAppliedStudents, setJobForAppliedStudents] = useState<Job | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -186,6 +191,25 @@ export default function AdminJobsPage() {
     const handleAssignJob = (job: Job) => {
         setJobToAssign(job)
         setShowAssignModal(true)
+    }
+
+    const handleMarkCampusDrive = (job: Job) => {
+        setJobToMarkCampus(job)
+        setShowMarkCampusModal(true)
+    }
+
+    const handleUnmarkCampusDrive = async (job: Job) => {
+        try {
+            await apiClient.updateJobAdmin(job.id, {
+                is_campus_drive: false,
+                campus_drive_date: null,
+            })
+            toast.success('Campus drive unmarked')
+            fetchJobs()
+        } catch (error: any) {
+            console.error('Failed to unmark campus drive:', error)
+            toast.error(error.response?.data?.detail || 'Failed to unmark campus drive')
+        }
     }
 
     const handleAssignShortlistedBatch = (job: Job) => {
@@ -449,6 +473,8 @@ export default function AdminJobsPage() {
                                     onEdit={handleEditJob}
                                     onDelete={handleDeleteJob}
                                     onAssignToUniversity={handleAssignJob}
+                                    onMarkCampusDrive={handleMarkCampusDrive}
+                                    onUnmarkCampusDrive={handleUnmarkCampusDrive}
                                     onAssignToShortlistedBatch={handleAssignShortlistedBatch}
                                     onViewAppliedStudents={handleViewAppliedStudents}
                                     onStatusChange={handleStatusChange}
@@ -573,9 +599,17 @@ export default function AdminJobsPage() {
                 job={jobToAssign}
                 onAssigned={() => {
                     fetchJobs()
-                    setShowAssignModal(false)
-                    setJobToAssign(null)
                 }}
+            />
+
+            <MarkCampusDriveModal
+                isOpen={showMarkCampusModal}
+                onClose={() => {
+                    setShowMarkCampusModal(false)
+                    setJobToMarkCampus(null)
+                }}
+                job={jobToMarkCampus}
+                onSaved={fetchJobs}
             />
 
             <AssignShortlistedBatchModal

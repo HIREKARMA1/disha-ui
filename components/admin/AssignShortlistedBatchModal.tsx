@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Users, Search, Check, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,7 @@ export function AssignShortlistedBatchModal({
     const [assignedBatches, setAssignedBatches] = useState<ShortlistedBatch[]>([])
     const [filteredBatches, setFilteredBatches] = useState<ShortlistedBatch[]>([])
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedBatch, setSelectedBatch] = useState<ShortlistedBatch | null>(null)
+    const [selectedBatchIds, setSelectedBatchIds] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
 
@@ -70,6 +70,20 @@ export function AssignShortlistedBatchModal({
         setFilteredBatches(available)
     }, [searchTerm, batches, assignedBatches])
 
+    const allFilteredSelected = useMemo(
+        () =>
+            filteredBatches.length > 0 &&
+            filteredBatches.every((batch) => selectedBatchIds.has(batch.id)),
+        [filteredBatches, selectedBatchIds]
+    )
+
+    const someFilteredSelected = useMemo(
+        () =>
+            filteredBatches.some((batch) => selectedBatchIds.has(batch.id)) &&
+            !allFilteredSelected,
+        [filteredBatches, selectedBatchIds, allFilteredSelected]
+    )
+
     const fetchBatches = async () => {
         try {
             setIsLoading(true)
@@ -96,17 +110,82 @@ export function AssignShortlistedBatchModal({
         }
     }
 
+    const toggleBatch = (batchId: string) => {
+        setSelectedBatchIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(batchId)) {
+                next.delete(batchId)
+            } else {
+                next.add(batchId)
+            }
+            return next
+        })
+    }
+
+    const handleSelectAll = () => {
+        if (allFilteredSelected) {
+            setSelectedBatchIds((prev) => {
+                const next = new Set(prev)
+                filteredBatches.forEach((batch) => next.delete(batch.id))
+                return next
+            })
+            return
+        }
+
+        setSelectedBatchIds((prev) => {
+            const next = new Set(prev)
+            filteredBatches.forEach((batch) => next.add(batch.id))
+            return next
+        })
+    }
+
     const handleAssign = async () => {
-        if (!job || !selectedBatch) return
+        if (!job || selectedBatchIds.size === 0) return
+
+        const selectedBatches = filteredBatches.filter((batch) =>
+            selectedBatchIds.has(batch.id)
+        )
+        // Also include selected batches that may be filtered out of the current search
+        const selectedFromAll = batches.filter(
+            (batch) =>
+                selectedBatchIds.has(batch.id) &&
+                !assignedBatches.some((assigned) => assigned.id === batch.id)
+        )
+        const toAssign =
+            selectedFromAll.length > 0 ? selectedFromAll : selectedBatches
+
+        if (toAssign.length === 0) return
 
         try {
             setIsAssigning(true)
-            const result = await apiClient.assignJobToShortlistedBatch(job.id, selectedBatch.id)
-            const message =
-                result?.message === 'Already assigned'
-                    ? `Job is already assigned to ${selectedBatch.name}`
-                    : `Job assigned to ${selectedBatch.name} successfully!`
-            toast.success(message)
+            const results = await Promise.all(
+                toAssign.map((batch) =>
+                    apiClient.assignJobToShortlistedBatch(job.id, batch.id)
+                )
+            )
+
+            const alreadyAssigned = results.filter(
+                (result) => result?.message === 'Already assigned'
+            ).length
+            const newlyAssigned = toAssign.length - alreadyAssigned
+
+            if (newlyAssigned > 0 && alreadyAssigned === 0) {
+                toast.success(
+                    toAssign.length === 1
+                        ? `Job assigned to ${toAssign[0].name} successfully!`
+                        : `Job assigned to ${toAssign.length} batches successfully!`
+                )
+            } else if (newlyAssigned === 0) {
+                toast.success(
+                    toAssign.length === 1
+                        ? `Job is already assigned to ${toAssign[0].name}`
+                        : `Job is already assigned to all selected batches`
+                )
+            } else {
+                toast.success(
+                    `Assigned to ${newlyAssigned} batch${newlyAssigned === 1 ? '' : 'es'}; ${alreadyAssigned} already assigned`
+                )
+            }
             onAssigned()
         } catch (error: unknown) {
             console.error('Failed to assign job to Shortlisted batch:', error)
@@ -119,12 +198,14 @@ export function AssignShortlistedBatchModal({
 
     const handleClose = () => {
         setSearchTerm('')
-        setSelectedBatch(null)
+        setSelectedBatchIds(new Set())
         setAssignedBatches([])
         onClose()
     }
 
     if (!isOpen || !job) return null
+
+    const selectedCount = selectedBatchIds.size
 
     return (
         <AnimatePresence>
@@ -179,6 +260,29 @@ export function AssignShortlistedBatchModal({
                                     className="pl-10"
                                 />
                             </div>
+
+                            {filteredBatches.length > 0 && (
+                                <label className="mt-3 flex items-center gap-2 cursor-pointer select-none w-fit">
+                                    <input
+                                        type="checkbox"
+                                        checked={allFilteredSelected}
+                                        ref={(el) => {
+                                            if (el) el.indeterminate = someFilteredSelected
+                                        }}
+                                        onChange={handleSelectAll}
+                                        className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                                        aria-label="Select all batches"
+                                    />
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        Select All
+                                        {selectedCount > 0 && (
+                                            <span className="ml-1.5 text-orange-600 dark:text-orange-400 font-normal">
+                                                ({selectedCount} selected)
+                                            </span>
+                                        )}
+                                    </span>
+                                </label>
+                            )}
                         </div>
 
                         {assignedBatches.length > 0 && (
@@ -226,39 +330,50 @@ export function AssignShortlistedBatchModal({
                             </div>
                         ) : filteredBatches.length > 0 ? (
                             <div className="space-y-2">
-                                {filteredBatches.map((batch) => (
-                                    <div
-                                        key={batch.id}
-                                        className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
-                                            selectedBatch?.id === batch.id
-                                                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                        }`}
-                                        onClick={() => setSelectedBatch(batch)}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
-                                                    <Users className="w-5 h-5 text-white" />
+                                {filteredBatches.map((batch) => {
+                                    const isSelected = selectedBatchIds.has(batch.id)
+                                    return (
+                                        <div
+                                            key={batch.id}
+                                            className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
+                                                isSelected
+                                                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            }`}
+                                            onClick={() => toggleBatch(batch.id)}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => toggleBatch(batch.id)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                                                        aria-label={`Select ${batch.name}`}
+                                                    />
+                                                    <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
+                                                        <Users className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900 dark:text-white">
+                                                            {batch.name}
+                                                        </h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Max {batch.max_seats} students
+                                                            {batch.source && ` • ${batch.source}`}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-medium text-gray-900 dark:text-white">
-                                                        {batch.name}
-                                                    </h4>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                        Max {batch.max_seats} students
-                                                        {batch.source && ` • ${batch.source}`}
-                                                    </p>
-                                                </div>
+                                                {isSelected && (
+                                                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                                                        <Check className="w-4 h-4 text-white" />
+                                                    </div>
+                                                )}
                                             </div>
-                                            {selectedBatch?.id === batch.id && (
-                                                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                                                    <Check className="w-4 h-4 text-white" />
-                                                </div>
-                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         ) : (
                             <div className="text-center py-8">
@@ -285,7 +400,7 @@ export function AssignShortlistedBatchModal({
                         </Button>
                         <Button
                             onClick={handleAssign}
-                            disabled={!selectedBatch || isAssigning}
+                            disabled={selectedCount === 0 || isAssigning}
                             className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
                         >
                             {isAssigning ? (
@@ -293,6 +408,8 @@ export function AssignShortlistedBatchModal({
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                     Assigning...
                                 </>
+                            ) : selectedCount > 1 ? (
+                                `Assign to ${selectedCount} Batches`
                             ) : (
                                 'Assign to Batch'
                             )}
