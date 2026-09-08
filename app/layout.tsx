@@ -3,6 +3,7 @@ import { Inter, Poppins, Sora } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { LoadingProvider } from '@/contexts/LoadingContext'
+import { AuthLoginModalProvider } from '@/contexts/AuthLoginModalContext'
 import { Toaster } from 'react-hot-toast'
 import { WhatsAppFloatingButton } from '@/components/ui/WhatsAppFloatingButton'
 
@@ -47,9 +48,10 @@ export default function RootLayout({
                     disableTransitionOnChange
                 >
                     <LoadingProvider>
-                        {children}
-                        <WhatsAppFloatingButton />
-                        <Toaster
+                        <AuthLoginModalProvider>
+                          {children}
+                          <WhatsAppFloatingButton />
+                          <Toaster
                             position="top-right"
                             toastOptions={{
                                 duration: 4000,
@@ -59,7 +61,8 @@ export default function RootLayout({
                                     border: '1px solid var(--toast-border)',
                                 },
                             }}
-                        />
+                          />
+                        </AuthLoginModalProvider>
                     </LoadingProvider>
                 </ThemeProvider>
             </body>

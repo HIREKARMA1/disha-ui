@@ -29,6 +29,7 @@ import {
   Video,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -46,10 +47,11 @@ import {
   HubTrustedLogos,
 } from '@/components/home/HubOpportunityCards'
 import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
+import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
-import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
 import {
   DATE_POSTED_OPTIONS,
   JOB_TYPE_OPTIONS,
@@ -102,6 +104,75 @@ type QuickPill = {
   icon: React.ComponentType<{ className?: string }>
 }
 
+const CATEGORY_TILE_TONES: Record<
+  string,
+  { idle: string; active: string; iconWrap: string; glow: string }
+> = {
+  all: {
+    idle: 'border-slate-200/80 bg-white hover:border-primary-200 hover:bg-primary-50/30',
+    active:
+      'border-primary-300 bg-primary-50/40 shadow-sm ring-1 ring-primary-200/60',
+    iconWrap: 'bg-slate-50 shadow-none ring-1 ring-slate-100',
+    glow: 'group-hover:shadow-sm',
+  },
+  jobs: {
+    idle: 'border-slate-200/80 bg-white hover:border-blue-200 hover:bg-blue-50/25',
+    active: 'border-blue-300 bg-blue-50/40 shadow-sm ring-1 ring-blue-200/60',
+    iconWrap: 'bg-blue-50/60 shadow-none ring-1 ring-blue-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  internship: {
+    idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
+    active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
+    iconWrap: 'bg-violet-50/60 shadow-none ring-1 ring-violet-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  full_time: {
+    idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
+    active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
+    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  events: {
+    idle: 'border-slate-200/80 bg-white hover:border-orange-200 hover:bg-orange-50/25',
+    active: 'border-orange-300 bg-orange-50/40 shadow-sm ring-1 ring-orange-200/60',
+    iconWrap: 'bg-orange-50/60 shadow-none ring-1 ring-orange-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  hackathon: {
+    idle: 'border-slate-200/80 bg-white hover:border-cyan-200 hover:bg-cyan-50/25',
+    active: 'border-cyan-300 bg-cyan-50/40 shadow-sm ring-1 ring-cyan-200/60',
+    iconWrap: 'bg-cyan-50/50 shadow-none ring-1 ring-cyan-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  workshop: {
+    idle: 'border-slate-200/80 bg-white hover:border-amber-200 hover:bg-amber-50/25',
+    active: 'border-amber-300 bg-amber-50/40 shadow-sm ring-1 ring-amber-200/60',
+    iconWrap: 'bg-amber-50/50 shadow-none ring-1 ring-amber-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  placement: {
+    idle: 'border-slate-200/80 bg-white hover:border-emerald-200 hover:bg-emerald-50/25',
+    active: 'border-emerald-300 bg-emerald-50/40 shadow-sm ring-1 ring-emerald-200/60',
+    iconWrap: 'bg-emerald-50/50 shadow-none ring-1 ring-emerald-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  competition: {
+    idle: 'border-slate-200/80 bg-white hover:border-primary-200 hover:bg-primary-50/25',
+    active: 'border-primary-300 bg-primary-50/40 shadow-sm ring-1 ring-primary-200/60',
+    iconWrap: 'bg-primary-50/50 shadow-none ring-1 ring-primary-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  coding: {
+    idle: 'border-slate-200/80 bg-white hover:border-indigo-200 hover:bg-indigo-50/25',
+    active: 'border-indigo-300 bg-indigo-50/40 shadow-sm ring-1 ring-indigo-200/60',
+    iconWrap: 'bg-indigo-50/50 shadow-none ring-1 ring-indigo-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+}
+
+const DEFAULT_TILE_TONE = CATEGORY_TILE_TONES.all
+
 /** Category tiles — all major Disha opportunity types. */
 const CATEGORY_TILES: QuickPill[] = [
   { id: 'all', label: 'All', tab: 'all', icon: Sparkles },
@@ -137,7 +208,14 @@ const CATEGORY_TILES: QuickPill[] = [
 /** Unstop-style Explore panel under search (Disha features only). */
 type ExploreItem =
   | { id: string; label: string; kind: 'filter'; pill: QuickPill }
-  | { id: string; label: string; kind: 'link'; href: string; icon: React.ComponentType<{ className?: string }> }
+  | {
+      id: string
+      label: string
+      kind: 'link'
+      href: string
+      icon: React.ComponentType<{ className?: string }>
+      auth?: boolean
+    }
 
 const EXPLORE_ITEMS: ExploreItem[] = [
   { id: 'jobs', label: 'Jobs', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'jobs')! },
@@ -191,8 +269,9 @@ const EXPLORE_ITEMS: ExploreItem[] = [
     id: 'practice',
     label: 'Practice',
     kind: 'link',
-    href: '/auth/login?redirect=%2Fdashboard%2Fstudent%2Fpractice',
+    href: '/dashboard/student/practice',
     icon: Brain,
+    auth: true,
   },
 ]
 
@@ -297,6 +376,7 @@ function OpportunityHeader({
   searchSlot: ReactNode
 }) {
   const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
 
   return (
     <header
@@ -342,14 +422,13 @@ function OpportunityHeader({
               </Button>
             </>
           ) : (
-            <Link href="/auth/login">
-              <Button
-                size="sm"
-                className="h-8 rounded-full bg-primary-600 px-4 text-white shadow-none hover:bg-primary-700"
-              >
-                Login
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              className="h-8 rounded-full bg-primary-600 px-4 text-white shadow-none hover:bg-primary-700"
+              onClick={() => openLoginModal()}
+            >
+              Login
+            </Button>
           )}
           <ThemeToggle />
         </div>
@@ -361,6 +440,7 @@ function OpportunityHeader({
 export default function OpportunityHub() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
   const [tab, setTab] = useState<OpportunityTab>('all')
   const [searchInput, setSearchInput] = useState('')
   const [query, setQuery] = useState('')
@@ -377,27 +457,66 @@ export default function OpportunityHub() {
   const reduceMotion = useReducedMotion()
   const searchWrapRef = useRef<HTMLDivElement>(null)
   const resultsAnchorRef = useRef<HTMLDivElement>(null)
+  const exploreCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** True while pointer is over search + Explore (survives layout-shift scroll events). */
+  const exploreHoveringRef = useRef(false)
 
   const showExplore = exploreOpen && !searchInput.trim()
+
+  const clearExploreCloseTimer = useCallback(() => {
+    if (exploreCloseTimerRef.current) {
+      clearTimeout(exploreCloseTimerRef.current)
+      exploreCloseTimerRef.current = null
+    }
+  }, [])
+
+  const closeExplorePanel = useCallback(() => {
+    clearExploreCloseTimer()
+    setExploreOpen(false)
+    setSearchFocused(false)
+  }, [clearExploreCloseTimer])
+
+  const openExplorePanel = useCallback(() => {
+    clearExploreCloseTimer()
+    if (!searchInput.trim()) setExploreOpen(true)
+  }, [clearExploreCloseTimer, searchInput])
+
+  const scheduleCloseExplorePanel = useCallback(() => {
+    clearExploreCloseTimer()
+    exploreCloseTimerRef.current = setTimeout(() => {
+      // Only close if pointer actually left (not a gap flicker)
+      if (exploreHoveringRef.current) return
+      setExploreOpen(false)
+      setSearchFocused(false)
+      exploreCloseTimerRef.current = null
+    }, 200)
+  }, [clearExploreCloseTimer])
+
+  useEffect(() => () => clearExploreCloseTimer(), [clearExploreCloseTimer])
 
   useEffect(() => {
     if (!exploreOpen) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setExploreOpen(false)
+      if (e.key === 'Escape') closeExplorePanel()
     }
-    const onPointer = (e: MouseEvent) => {
-      if (!searchWrapRef.current?.contains(e.target as Node)) {
-        setExploreOpen(false)
-        setSearchFocused(false)
-      }
+    // Real user scroll intent — always close Explore
+    const onUserScrollIntent = () => closeExplorePanel()
+    // Layout shift can fire scroll while still hovering; ignore those
+    const onScroll = () => {
+      if (exploreHoveringRef.current) return
+      closeExplorePanel()
     }
     document.addEventListener('keydown', onKey)
-    document.addEventListener('mousedown', onPointer)
+    window.addEventListener('wheel', onUserScrollIntent, { passive: true, capture: true })
+    window.addEventListener('touchmove', onUserScrollIntent, { passive: true, capture: true })
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true })
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.removeEventListener('mousedown', onPointer)
+      window.removeEventListener('wheel', onUserScrollIntent, true)
+      window.removeEventListener('touchmove', onUserScrollIntent, true)
+      window.removeEventListener('scroll', onScroll, true)
     }
-  }, [exploreOpen])
+  }, [exploreOpen, closeExplorePanel])
 
   const companies = useMemo(
     () => ((companyData as { conpanies?: { id: number; name: string; logo: string }[] }).conpanies || []).slice(0, 24),
@@ -499,12 +618,23 @@ export default function OpportunityHub() {
     })
   }
 
+  const requireStudentLogin = (path: string) => {
+    openLoginModal({
+      redirect: path,
+      preferredType: 'student',
+    })
+  }
+
   const handleExploreSelect = (item: ExploreItem) => {
     if (item.kind === 'filter') {
       applyQuickPill(item.pill)
       return
     }
     setExploreOpen(false)
+    if (item.auth && !(isAuthenticated && user?.user_type === 'student')) {
+      requireStudentLogin(item.href)
+      return
+    }
     if (
       item.id === 'practice' &&
       isAuthenticated &&
@@ -627,7 +757,11 @@ export default function OpportunityHub() {
   const handleJobApply = (job: HubJob) => {
     const path = getJobDetailPath(job)
     if (!isAuthenticated || user?.user_type !== 'student') {
-      redirectGuestToLoginForApply(router, job.id, path)
+      const redirect = prepareGuestApplyForLogin(job.id, path)
+      openLoginModal({
+        redirect,
+        preferredType: 'student',
+      })
       return
     }
     router.push(path)
@@ -661,7 +795,18 @@ export default function OpportunityHub() {
 
   const searchSlot = (
     <form onSubmit={handleSearchSubmit} className="w-full max-w-2xl lg:mx-auto">
-      <div ref={searchWrapRef} className="relative">
+      <div
+        ref={searchWrapRef}
+        className="relative"
+        onMouseEnter={() => {
+          exploreHoveringRef.current = true
+          openExplorePanel()
+        }}
+        onMouseLeave={() => {
+          exploreHoveringRef.current = false
+          scheduleCloseExplorePanel()
+        }}
+      >
         <div className="flex items-center gap-2">
           <motion.div
             className={cn(
@@ -680,15 +825,21 @@ export default function OpportunityHub() {
               onChange={(e) => {
                 const v = e.target.value
                 setSearchInput(v)
-                if (v.trim()) setExploreOpen(false)
-                else setExploreOpen(true)
+                if (v.trim()) {
+                  clearExploreCloseTimer()
+                  setExploreOpen(false)
+                } else {
+                  openExplorePanel()
+                }
               }}
               onFocus={() => {
                 setSearchFocused(true)
-                if (!searchInput.trim()) setExploreOpen(true)
+                openExplorePanel()
               }}
-              onClick={() => {
-                if (!searchInput.trim()) setExploreOpen(true)
+              onBlur={(e) => {
+                const next = e.relatedTarget as Node | null
+                if (searchWrapRef.current?.contains(next)) return
+                scheduleCloseExplorePanel()
               }}
               placeholder="Search…"
               className={cn(
@@ -715,12 +866,23 @@ export default function OpportunityHub() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? undefined : { opacity: 0, y: -4, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className={cn(
-                'absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40',
-                'rounded-2xl border border-gray-200 bg-white p-4 shadow-xl',
-                'dark:border-gray-700 dark:bg-gray-900 sm:p-5'
-              )}
+              // top-full + pt-2 bridges the gap so hover never "falls through"
+              className="absolute left-0 right-0 top-full z-40 pt-2"
+              onMouseEnter={() => {
+                exploreHoveringRef.current = true
+                openExplorePanel()
+              }}
+              onMouseDown={(e) => {
+                // Keep search focused; avoid blur-triggered close while using Explore
+                e.preventDefault()
+              }}
             >
+              <div
+                className={cn(
+                  'rounded-2xl border border-gray-200 bg-white p-4 shadow-xl',
+                  'dark:border-gray-700 dark:bg-gray-900 sm:p-5'
+                )}
+              >
               <p className="mb-3 text-xs font-medium text-gray-500 dark:text-gray-400">
                 Explore
               </p>
@@ -732,20 +894,30 @@ export default function OpportunityHub() {
                       key={item.id}
                       type="button"
                       role="option"
-                      whileHover={reduceMotion ? undefined : { y: -2, scale: 1.04 }}
-                      whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                      whileHover={reduceMotion ? undefined : { y: -1, scale: 1.02 }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.98 }}
                       onClick={() => handleExploreSelect(item)}
-                      className="flex flex-col items-center gap-2 rounded-xl px-2 py-2.5 text-center transition-colors hover:bg-primary-50 dark:hover:bg-primary-950/40"
+                      className="group flex flex-col items-center gap-2 rounded-xl px-2 py-2.5 text-center transition-colors duration-200 hover:bg-primary-50/60 dark:hover:bg-primary-950/25"
                     >
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                      <span
+                        className={cn(
+                          'flex h-11 w-11 items-center justify-center rounded-full',
+                          'bg-slate-50/90 text-slate-500 ring-1 ring-slate-200/60',
+                          'transition-all duration-200 ease-out',
+                          'group-hover:scale-105 group-hover:bg-primary-100 group-hover:text-primary-700 group-hover:ring-primary-200',
+                          'dark:bg-slate-800/50 dark:text-slate-400 dark:ring-slate-700/50',
+                          'dark:group-hover:bg-primary-900/50 dark:group-hover:text-primary-200 dark:group-hover:ring-primary-700/50'
+                        )}
+                      >
                         <Icon className="h-5 w-5" strokeWidth={1.75} />
                       </span>
-                      <span className="text-[11px] font-medium leading-tight text-gray-700 dark:text-gray-300">
+                      <span className="text-[11px] font-medium leading-tight text-slate-500 transition-colors duration-200 group-hover:text-primary-700 dark:text-slate-400 dark:group-hover:text-primary-300">
                         {item.label}
                       </span>
                     </motion.button>
                   )
                 })}
+              </div>
               </div>
             </motion.div>
           )}
@@ -806,10 +978,10 @@ export default function OpportunityHub() {
                 )}
               </div>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3 md:overflow-visible">
+            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible">
               {CATEGORY_TILES.map((tile, i) => {
-                const Icon = tile.icon
                 const active = activeQuickPillId === tile.id
+                const tone = CATEGORY_TILE_TONES[tile.id] ?? DEFAULT_TILE_TONE
                 return (
                   <motion.button
                     key={tile.id}
@@ -818,31 +990,53 @@ export default function OpportunityHub() {
                     initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03, duration: 0.25 }}
-                    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.04 }}
-                    whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+                    whileHover={reduceMotion ? undefined : { y: -6, scale: 1.05 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.96 }}
                     className={cn(
-                      'group flex w-[100px] shrink-0 flex-col items-center gap-2.5 rounded-2xl border px-3 py-4 text-center shadow-sm transition-colors md:w-auto',
-                      active
-                        ? 'border-primary-400 bg-primary-50 shadow-md dark:border-primary-600 dark:bg-primary-950/40'
-                        : 'border-primary-100 bg-[#eef6ff] hover:border-primary-300 hover:bg-white hover:shadow-md dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-700'
+                      'group relative flex w-[108px] shrink-0 flex-col items-center gap-3 overflow-hidden rounded-2xl border px-2.5 py-4 text-center transition-all duration-200 md:w-auto',
+                      'dark:bg-gray-900 dark:hover:border-opacity-80',
+                      active ? tone.active : tone.idle,
+                      !active && `hover:shadow-sm ${tone.glow}`
                     )}
                   >
                     <span
                       className={cn(
-                        'flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm transition-transform group-hover:scale-105',
-                        active
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-white text-primary-700 dark:bg-gray-800 dark:text-primary-300'
+                        'pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full opacity-20 blur-2xl transition-opacity group-hover:opacity-35',
+                        active ? 'opacity-30' : 'opacity-15'
+                      )}
+                      style={{
+                        background:
+                          tile.id === 'jobs' || tile.id === 'full_time'
+                            ? '#3B82F6'
+                            : tile.id === 'internship' || tile.id === 'coding'
+                              ? '#8B5CF6'
+                              : tile.id === 'events' || tile.id === 'workshop'
+                                ? '#F97316'
+                                : tile.id === 'hackathon'
+                                  ? '#06B6D4'
+                                  : tile.id === 'placement'
+                                    ? '#10B981'
+                                    : tile.id === 'all' || tile.id === 'competition'
+                                      ? '#2563EB'
+                                      : '#F59E0B',
+                      }}
+                      aria-hidden
+                    />
+                    <span
+                      className={cn(
+                        'relative flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105',
+                        tone.iconWrap,
+                        active && 'scale-105'
                       )}
                     >
-                      <Icon className="h-6 w-6" strokeWidth={1.75} />
+                      <CategoryIcon id={tile.id} active={active} className="h-9 w-9" />
                     </span>
                     <span
                       className={cn(
-                        'text-xs font-semibold leading-tight sm:text-[13px]',
+                        'relative text-xs font-bold leading-tight tracking-tight sm:text-[13px]',
                         active
-                          ? 'text-primary-800 dark:text-primary-200'
-                          : 'text-gray-800 dark:text-gray-200'
+                          ? 'text-gray-900 dark:text-white'
+                          : 'text-gray-700 group-hover:text-gray-900 dark:text-gray-200'
                       )}
                     >
                       {tile.label}
@@ -853,12 +1047,7 @@ export default function OpportunityHub() {
             </div>
           </motion.section>
 
-          {isBrowseHome && (
-              <>
-                <HubFeaturedCarousel />
-                <HubTrustedLogos companies={companies} />
-              </>
-            )}
+          {isBrowseHome && <HubFeaturedCarousel />}
 
             {error && (
               <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-200">
@@ -931,113 +1120,173 @@ export default function OpportunityHub() {
                   )}
                 </section>
 
-                <section className="rounded-2xl border border-gray-200 bg-gradient-to-b from-[#f3f9ff] to-white p-4 shadow-sm dark:border-gray-700 dark:from-gray-900 dark:to-gray-950 sm:p-6">
-                  <div className="mb-1 flex items-end justify-between gap-3">
-                    <div>
-                      <h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-                        <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
-                        More on Disha
-                      </h2>
-                      <p className="mt-1.5 pl-3.5 text-sm text-gray-500 dark:text-gray-400">
-                        Every student tool in one place — login to unlock your workspace.
-                      </p>
-                    </div>
+                <section>
+                  <div className="mb-5">
+                    <h2 className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-foreground sm:text-[22px]">
+                      <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
+                      More on Disha
+                    </h2>
+                    <p className="mt-1.5 pl-3.5 text-xs text-muted-foreground sm:text-sm">
+                      Every student tool in one place — login to unlock your workspace.
+                    </p>
                   </div>
-                  <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
                     {(
                       [
                         {
                           label: 'Practice',
+                          subtitle: 'Tests, mocks & guided practice',
                           path: '/dashboard/student/practice',
                           auth: true,
                           icon: Brain,
+                          tone: 'bg-sky-50/70 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400',
+                          hover: 'hover:border-sky-100 hover:bg-sky-50/40 dark:hover:border-sky-800 dark:hover:bg-sky-950/30',
                         },
                         {
                           label: 'Resume Builder',
+                          subtitle: 'Campus-ready resumes',
                           path: '/dashboard/student/resume-builder',
                           auth: true,
                           icon: FileText,
+                          tone: 'bg-emerald-50/70 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+                          hover: 'hover:border-emerald-100 hover:bg-emerald-50/40 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/30',
                         },
                         {
                           label: 'Career Align',
+                          subtitle: 'Roles that fit your goals',
                           path: '/dashboard/student/career-align',
                           auth: true,
                           icon: Target,
+                          tone: 'bg-amber-50/70 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+                          hover: 'hover:border-amber-100 hover:bg-amber-50/40 dark:hover:border-amber-800 dark:hover:bg-amber-950/30',
                         },
                         {
                           label: 'Library',
+                          subtitle: 'Curated learning resources',
                           path: '/dashboard/student/library',
                           auth: true,
                           icon: Library,
+                          tone: 'bg-indigo-50/70 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400',
+                          hover: 'hover:border-indigo-100 hover:bg-indigo-50/40 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/30',
                         },
                         {
                           label: 'Video Search',
+                          subtitle: 'Career videos & learning',
                           path: '/dashboard/student/video-search',
                           auth: true,
                           icon: Video,
+                          tone: 'bg-rose-50/70 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400',
+                          hover: 'hover:border-rose-100 hover:bg-rose-50/40 dark:hover:border-rose-800 dark:hover:bg-rose-950/30',
                         },
                         {
                           label: 'Applications',
+                          subtitle: 'Track every application',
                           path: '/dashboard/student/applications',
                           auth: true,
                           icon: ClipboardList,
+                          tone: 'bg-cyan-50/70 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400',
+                          hover: 'hover:border-cyan-100 hover:bg-cyan-50/40 dark:hover:border-cyan-800 dark:hover:bg-cyan-950/30',
                         },
                         {
                           label: 'Create Event',
+                          subtitle: 'Workshops, contests & campus events',
                           path: '/events#create-event-request',
                           auth: false,
                           icon: PlusCircle,
+                          tone: 'bg-orange-50/70 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400',
+                          hover: 'hover:border-orange-100 hover:bg-orange-50/40 dark:hover:border-orange-800 dark:hover:bg-orange-950/30',
                         },
                         {
                           label: 'Blogs',
+                          subtitle: 'Tips, updates & stories',
                           path: '/blogs',
                           auth: false,
                           icon: Newspaper,
+                          tone: 'bg-primary-50/70 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400',
+                          hover: 'hover:border-primary-100 hover:bg-primary-50/40 dark:hover:border-primary-800 dark:hover:bg-primary-950/30',
                         },
                       ] as const
-                    ).map((item, i) => {
-                      const href =
+                    ).map((item, index) => {
+                      const needsAuth =
                         item.auth && !(isAuthenticated && user?.user_type === 'student')
-                          ? `/auth/login?redirect=${encodeURIComponent(item.path)}`
-                          : item.path
+                      const href = needsAuth ? '#' : item.path
                       const Icon = item.icon
                       return (
                         <motion.div
                           key={item.label}
-                          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.04 + i * 0.04 }}
-                          whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
-                          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                          className="h-full"
+                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                          whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                          viewport={{ once: true, amount: 0.3 }}
+                          transition={{ duration: 0.28, delay: index * 0.04, ease: 'easeOut' }}
                         >
                           <Link
                             href={href}
+                            aria-label={
+                              needsAuth
+                                ? `${item.label}: ${item.subtitle}. Login required`
+                                : `${item.label}: ${item.subtitle}`
+                            }
+                            onClick={(e) => {
+                              if (needsAuth) {
+                                e.preventDefault()
+                                requireStudentLogin(item.path)
+                              }
+                            }}
                             className={cn(
-                              'group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm',
-                              'transition-colors hover:border-primary-300 hover:shadow-md',
-                              'dark:border-gray-700 dark:bg-gray-950 dark:hover:border-primary-700'
+                              'group relative flex h-full items-start gap-3 rounded-xl border border-slate-200/80 bg-white px-3.5 py-3.5 outline-none',
+                              'transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out',
+                              'hover:-translate-y-0.5 hover:shadow-sm',
+                              'active:translate-y-0 active:scale-[0.985]',
+                              'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                              'dark:border-slate-700 dark:bg-slate-900/60',
+                              item.hover
                             )}
                           >
-                            <div className="flex flex-1 flex-col items-center gap-3 bg-[#eef6ff] px-4 py-6 dark:bg-primary-950/30">
-                              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-primary-700 shadow-sm transition-transform group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white dark:bg-gray-900 dark:text-primary-300">
-                                <Icon className="h-7 w-7" strokeWidth={1.75} />
+                            <span
+                              className={cn(
+                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 group-active:scale-100',
+                                item.tone
+                              )}
+                              aria-hidden
+                            >
+                              <Icon className="h-5 w-5" strokeWidth={1.85} />
+                            </span>
+                            <span className="min-w-0 flex-1 pt-0.5">
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-[14px] font-semibold leading-snug text-foreground transition-colors group-hover:text-primary-700 dark:group-hover:text-primary-300">
+                                  {item.label}
+                                </span>
+                                {needsAuth && (
+                                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground opacity-70 transition-opacity group-hover:opacity-100">
+                                    Login
+                                  </span>
+                                )}
                               </span>
-                              <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                                {item.label}
+                              <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground transition-colors group-hover:text-foreground/70">
+                                {item.subtitle}
                               </span>
-                            </div>
-                            <div className="border-t border-gray-100 px-3 py-2.5 dark:border-gray-800">
-                              <span className="flex h-8 w-full items-center justify-center rounded-md bg-primary-600 text-xs font-semibold text-white transition group-hover:bg-primary-700">
-                                Open
-                              </span>
-                            </div>
+                            </span>
+                            <span
+                              className={cn(
+                                'mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                                'bg-muted/60 text-muted-foreground',
+                                'opacity-0 -translate-x-1 transition-all duration-200',
+                                'group-hover:translate-x-0 group-hover:opacity-100',
+                                'group-focus-visible:translate-x-0 group-focus-visible:opacity-100',
+                                'group-hover:bg-primary-600 group-hover:text-white'
+                              )}
+                              aria-hidden
+                            >
+                              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            </span>
                           </Link>
                         </motion.div>
                       )
                     })}
                   </div>
                 </section>
+
+                <HubTrustedLogos companies={companies} />
               </div>
             ) : (
               <div>

@@ -24,6 +24,7 @@ import {
   Newspaper,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +46,15 @@ const GUEST_NAV: NavLink[] = [
 
 const CREATE_EVENT_HREF = '/events#create-event-request'
 
+/** Shown to guests as teaser tools — opens login when clicked. */
+const GUEST_STUDENT_TOOLS: NavLink[] = [
+  { label: 'Practice', href: '/dashboard/student/practice', icon: Brain },
+  { label: 'Resume Builder', href: '/dashboard/student/resume-builder', icon: FileText },
+  { label: 'Career Align', href: '/dashboard/student/career-align', icon: Target },
+  { label: 'Library', href: '/dashboard/student/library', icon: Library },
+  { label: 'Applications', href: '/dashboard/student/applications', icon: ClipboardList },
+]
+
 /** Shown after login (students on the hub). */
 const STUDENT_TOOLS: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard/student', icon: LayoutDashboard },
@@ -63,11 +73,14 @@ function NavGroup({
   items,
   collapsed,
   onNavigate,
+  onItemClick,
 }: {
   title: string
   items: NavLink[]
   collapsed?: boolean
   onNavigate?: () => void
+  /** If set, intercepts navigation (e.g. open login for guests). */
+  onItemClick?: (item: NavLink) => void
 }) {
   const pathname = usePathname()
 
@@ -86,19 +99,40 @@ function NavGroup({
               ? pathname === '/'
               : pathname === pathOnly || pathname.startsWith(`${pathOnly}/`)
           const Icon = item.icon
+          const className = cn(
+            'flex w-full items-center rounded-lg text-left text-sm transition-colors',
+            collapsed ? 'justify-center px-2 py-2.5' : 'gap-2.5 px-3 py-2',
+            active
+              ? 'bg-gray-200/80 font-semibold text-gray-900 dark:bg-gray-800 dark:text-white'
+              : 'text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-gray-800'
+          )
+
+          if (onItemClick) {
+            return (
+              <li key={item.href}>
+                <button
+                  type="button"
+                  title={collapsed ? item.label : undefined}
+                  onClick={() => {
+                    onNavigate?.()
+                    onItemClick(item)
+                  }}
+                  className={className}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </button>
+              </li>
+            )
+          }
+
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 onClick={onNavigate}
                 title={collapsed ? item.label : undefined}
-                className={cn(
-                  'flex items-center rounded-lg text-sm transition-colors',
-                  collapsed ? 'justify-center px-2 py-2.5' : 'gap-2.5 px-3 py-2',
-                  active
-                    ? 'bg-gray-200/80 font-semibold text-gray-900 dark:bg-gray-800 dark:text-white'
-                    : 'text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-gray-800'
-                )}
+                className={className}
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-80" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
@@ -119,6 +153,7 @@ export function HubSidebarNav({
   collapsed?: boolean
 }) {
   const { isAuthenticated, user } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
   const showStudentTools = isAuthenticated && user?.user_type === 'student'
 
   return (
@@ -136,7 +171,7 @@ export function HubSidebarNav({
         className={cn(
           'mb-4 flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-primary-50 font-semibold text-primary-700',
           'hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300',
-          collapsed ? 'mx-0.5 h-10 w-10 p-0' : 'mx-1 px-3 py-2.5 text-sm'
+          collapsed ? 'mx-auto h-10 w-10 shrink-0 p-0' : 'mx-1 px-3 py-2.5 text-sm'
         )}
       >
         <PlusCircle className="h-4 w-4 shrink-0" />
@@ -145,19 +180,35 @@ export function HubSidebarNav({
 
       <NavGroup title="" items={GUEST_NAV} collapsed={collapsed} onNavigate={onNavigate} />
 
-      {showStudentTools && (
+      {showStudentTools ? (
         <NavGroup
           title="Student tools"
           items={STUDENT_TOOLS}
           collapsed={collapsed}
           onNavigate={onNavigate}
         />
-      )}
+      ) : !isAuthenticated ? (
+        <NavGroup
+          title="For students"
+          items={GUEST_STUDENT_TOOLS}
+          collapsed={collapsed}
+          onNavigate={onNavigate}
+          onItemClick={(item) => {
+            openLoginModal({
+              redirect: item.href,
+              preferredType: 'student',
+            })
+          }}
+        />
+      ) : null}
 
       {!isAuthenticated && (
-        <Link
-          href="/auth/login"
-          onClick={onNavigate}
+        <button
+          type="button"
+          onClick={() => {
+            onNavigate?.()
+            openLoginModal()
+          }}
           title={collapsed ? 'Login / Sign up' : undefined}
           className={cn(
             'mt-auto flex items-center justify-center gap-2 rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700',
@@ -166,7 +217,7 @@ export function HubSidebarNav({
         >
           <LogIn className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Login / Sign up</span>}
-        </Link>
+        </button>
       )}
     </nav>
   )
@@ -216,7 +267,7 @@ export function HubSidebarDesktop() {
           collapsed ? 'justify-center px-1' : 'justify-between gap-1 pl-3 pr-2'
         )}
       >
-        {!collapsed && <BrandLogo href="/" priority className="max-w-[120px]" />}
+        {!collapsed && <BrandLogo href="/" priority className="max-w-[148px]" />}
         <button
           type="button"
           onClick={toggle}

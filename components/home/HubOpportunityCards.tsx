@@ -12,6 +12,8 @@ import { CATEGORY_LABELS, CONTEST_STATUS_LABELS } from '@/types/contestEvent'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 
 const hubCardClass =
   'flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-200 dark:border-gray-700 dark:bg-gray-900'
@@ -277,8 +279,8 @@ const FEATURED_ITEMS = [
     title: 'Campus events & contests',
     cta: 'Browse events',
     href: '/events',
-    image: 'https://hirekarma.s3.us-east-1.amazonaws.com/disha-ui/disha_hero_img.jpg',
-    gradient: 'from-sky-900/80 via-sky-800/50 to-transparent',
+    image: '/images/campus-events-featured.png',
+    gradient: 'from-sky-900/55 via-sky-900/25 to-transparent',
   },
   {
     id: 'jobs',
@@ -286,17 +288,18 @@ const FEATURED_ITEMS = [
     title: 'Internships & full-time roles',
     cta: 'Find jobs',
     href: '/jobs',
-    image: null as string | null,
-    gradient: 'from-emerald-900/90 via-emerald-800/60 to-emerald-700/20',
+    image: '/images/featured-jobs.png',
+    gradient: 'from-emerald-950/55 via-emerald-900/25 to-transparent',
   },
   {
     id: 'practice',
     eyebrow: 'Practice',
     title: 'Prep with assessments',
     cta: 'Start practice',
-    href: '/auth/login?redirect=%2Fdashboard%2Fstudent%2Fpractice',
-    image: null as string | null,
-    gradient: 'from-indigo-900/90 via-indigo-800/60 to-indigo-700/20',
+    href: '/dashboard/student/practice',
+    auth: true,
+    image: '/images/featured-practice.png',
+    gradient: 'from-indigo-950/55 via-indigo-900/25 to-transparent',
   },
   {
     id: 'create',
@@ -304,17 +307,18 @@ const FEATURED_ITEMS = [
     title: 'Create your campus event',
     cta: 'Create event',
     href: '/events#create-event-request',
-    image: null as string | null,
-    gradient: 'from-amber-900/90 via-amber-800/55 to-amber-700/20',
+    image: '/images/featured-create.png',
+    gradient: 'from-amber-950/55 via-amber-900/25 to-transparent',
   },
   {
     id: 'resume',
     eyebrow: 'Career',
     title: 'Build a stronger resume',
     cta: 'Resume builder',
-    href: '/auth/login?redirect=%2Fdashboard%2Fstudent%2Fresume-builder',
-    image: null as string | null,
-    gradient: 'from-rose-900/90 via-rose-800/55 to-rose-700/20',
+    href: '/dashboard/student/resume-builder',
+    auth: true,
+    image: '/images/featured-resume.png',
+    gradient: 'from-rose-950/55 via-rose-900/25 to-transparent',
   },
 ]
 
@@ -353,6 +357,8 @@ export function HubFeaturedCarousel() {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [paused, setPaused] = useState(false)
   const reduceMotion = useReducedMotion()
+  const { isAuthenticated, user } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
 
   useEffect(() => {
     if (reduceMotion || paused) return
@@ -418,7 +424,19 @@ export function HubFeaturedCarousel() {
               className="shrink-0"
             >
               <Link
-                href={item.href}
+                href={item.auth ? '#' : item.href}
+                onClick={(e) => {
+                  if (
+                    item.auth &&
+                    !(isAuthenticated && user?.user_type === 'student')
+                  ) {
+                    e.preventDefault()
+                    openLoginModal({
+                      redirect: item.href,
+                      preferredType: 'student',
+                    })
+                  }
+                }}
                 className="group relative block h-[150px] w-[min(78vw,260px)] overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 sm:h-[168px] sm:w-[min(100%,280px)] lg:w-[300px]"
               >
                 {item.image ? (
