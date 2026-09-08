@@ -18,6 +18,7 @@ import { lookupService } from '@/services/lookupService'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
+import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
 
 interface CreateJobModalProps {
     isOpen: boolean
@@ -55,6 +56,7 @@ interface JobFormData {
     eligibility_criteria: string
     education_degree: string[]
     education_branch: string[]
+    passout_batches: string[]
     service_agreement_details: string
     expiration_date: string
     ctc_with_probation: string
@@ -93,6 +95,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
             .sort((a, b) => a.label.localeCompare(b.label))
         return [...fromLookup, { value: 'Any', label: 'Any' }]
     }, [degreesData])
+
+    const passoutBatchOptions = useMemo(() => getPassoutBatchOptions(), [])
 
     useEffect(() => {
         if (!isOpen) return
@@ -155,6 +159,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         eligibility_criteria: '',
         education_degree: [],
         education_branch: [],
+        passout_batches: [],
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
@@ -259,6 +264,13 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         setFormData((prev) => ({
             ...prev,
             education_branch: branches,
+        }))
+    }
+
+    const handlePassoutBatchesChange = (batches: string[]) => {
+        setFormData((prev) => ({
+            ...prev,
+            passout_batches: normalizePassoutBatchSelection(batches),
         }))
     }
 
@@ -416,6 +428,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: formData.eligibility_criteria || null,
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
+                passout_batches: formData.passout_batches.length > 0 ? formData.passout_batches : null,
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: null,
                 ctc_with_probation: formData.ctc_with_probation || null,
@@ -488,6 +501,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 eligibility_criteria: '',
                 education_degree: [],
                 education_branch: [],
+                passout_batches: [],
                 service_agreement_details: '',
                 expiration_date: '',
                 ctc_with_probation: '',
@@ -1280,6 +1294,22 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                             isLoading={loadingBranches}
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Passout Batches
+                                    </label>
+                                    <MultiSearchableSelect
+                                        options={passoutBatchOptions}
+                                        values={formData.passout_batches}
+                                        onChange={handlePassoutBatchesChange}
+                                        placeholder="Select passout batch year(s)"
+                                        searchPlaceholder="Search years..."
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Select &quot;All Batches&quot; to allow every student to apply, or pick specific years.
+                                    </p>
                                 </div>
 
                                 <div>
