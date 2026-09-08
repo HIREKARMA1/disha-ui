@@ -27,6 +27,7 @@ import {
   Library,
   Target,
   Video,
+  type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
@@ -96,12 +97,14 @@ const DEFAULT_FILTERS: HubFilters = {
   eventCategory: 'all',
 }
 
+type HubIcon = LucideIcon
+
 type QuickPill = {
   id: string
   label: string
   tab: OpportunityTab
   patch?: Partial<HubFilters>
-  icon: React.ComponentType<{ className?: string }>
+  icon: HubIcon
 }
 
 const CATEGORY_TILE_TONES: Record<
@@ -213,7 +216,7 @@ type ExploreItem =
       label: string
       kind: 'link'
       href: string
-      icon: React.ComponentType<{ className?: string }>
+      icon: HubIcon
       auth?: boolean
     }
 
