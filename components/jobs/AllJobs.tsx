@@ -33,6 +33,8 @@ import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
+  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
+  getUniversityApplyEligibility,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
@@ -93,6 +95,9 @@ export interface Job {
     contact_designation?: string
     /** SEO slug from API: "{company}/{role}" */
     slug?: string | null
+    is_public?: boolean | null
+    public_access_level?: string | null
+    assigned_university_ids?: string[] | null
 }
 
 interface JobSearchResponse {
@@ -225,6 +230,13 @@ function normalizePublicJob(job: Job): Job {
         industry: job.industry ? String(job.industry) : undefined,
         corporate_name: job.corporate_name ? String(job.corporate_name) : undefined,
         company_name: job.company_name ? String(job.company_name) : undefined,
+        is_public: job.is_public ?? undefined,
+        public_access_level: job.public_access_level
+            ? String(job.public_access_level)
+            : undefined,
+        assigned_university_ids: Array.isArray(job.assigned_university_ids)
+            ? job.assigned_university_ids.map(String)
+            : job.assigned_university_ids ?? undefined,
     }
 }
 
@@ -307,7 +319,11 @@ export function AllJobs() {
 
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
-    const [studentProfile, setStudentProfile] = useState<{ degree?: string; branch?: string } | null>(null)
+    const [studentProfile, setStudentProfile] = useState<{
+        degree?: string
+        branch?: string
+        university_id?: string | null
+    } | null>(null)
 
     const [filterSheetOpen, setFilterSheetOpen] = useState(false)
     const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>(initial.jobStatusFilter)
@@ -592,6 +608,7 @@ export function AllJobs() {
                     setStudentProfile({
                         degree: profile.degree,
                         branch: profile.branch,
+                        university_id: profile.university_id || null,
                     })
                     const completion = await profileService.getProfileCompletion()
                     setProfileCompletion(completion)
@@ -723,6 +740,18 @@ export function AllJobs() {
 
         if (!job.can_apply) {
             toast.error(JOB_CLOSED_MESSAGE)
+            return
+        }
+
+        const eligibility = getUniversityApplyEligibility({
+            isPublic: job.is_public,
+            publicAccessLevel: job.public_access_level,
+            assignedUniversityIds: job.assigned_university_ids,
+            isAuthenticatedStudent: isLoggedIn,
+            studentUniversityId: studentProfile?.university_id,
+        })
+        if (!eligibility.canApply) {
+            toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
             return
         }
 

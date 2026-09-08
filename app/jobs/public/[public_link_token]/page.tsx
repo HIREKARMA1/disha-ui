@@ -13,6 +13,7 @@ import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import {
     APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
+    getUniversityApplyEligibility,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
     toastApplyError,
@@ -255,42 +256,15 @@ export default function PublicJobPage() {
     }
 
     const canStudentApply = () => {
-        // Public-for-all jobs bypass college assignment restrictions.
-        if (job?.is_public && job?.public_access_level === 'all') {
-            return { canApply: true, reason: null }
-        }
-
-        // Check if job is assigned to any universities
-        if (!job?.assigned_university_ids || job.assigned_university_ids.length === 0) {
-            return {
-                canApply: false,
-                reason: 'This job is not available for applications.'
-            }
-        }
-
-        // If student is not authenticated, they can't apply yet (will be redirected to login)
-        if (!isAuthenticated || user?.user_type !== 'student') {
-            return { canApply: true, reason: null }
-        }
-
-        // Check if student has a university_id
-        if (!studentUniversityId) {
-            return {
-                canApply: false,
-                reason: 'This job is not available for your university',
-            }
-        }
-
-        // Check if student's university is in the assigned universities list
-        if (!job.assigned_university_ids.includes(studentUniversityId)) {
-            return {
-                canApply: false,
-                reason: 'This job is not available for your university',
-            }
-        }
-
-        // Matching assignment: allow click; backend enforces university approval
-        return { canApply: true, reason: null }
+        return getUniversityApplyEligibility({
+            isPublic: job?.is_public,
+            publicAccessLevel: job?.public_access_level,
+            assignedUniversityIds: job?.assigned_university_ids,
+            isAuthenticatedStudent: Boolean(
+                isAuthenticated && user?.user_type === 'student'
+            ),
+            studentUniversityId,
+        })
     }
 
     const handleApplyClick = () => {
