@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import { sanitizeEventDescriptionHtml, stripHtmlToPlainText } from '@/lib/sanitizeHtml'
 import {
   buildEventRegisterRedirect,
@@ -115,6 +116,7 @@ interface EventDetailPageProps {
 export function EventDetailPage({ slug }: EventDetailPageProps) {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
   const isAdmin = user?.user_type === 'admin'
   const [event, setEvent] = useState<ContestEventDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -207,7 +209,10 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       const redirectPath = buildEventRegisterRedirect(slug, event?.id)
       storePendingEventRegistration(slug, event?.id)
       localStorage.setItem('redirect_after_login', redirectPath)
-      router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+      openLoginModal({
+        redirect: redirectPath,
+        preferredType: 'student',
+      })
       return
     }
     if (event?.registration_external_url) {
@@ -300,14 +305,17 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         const redirectPath = buildEventRegisterRedirect(slug, event?.id)
         storePendingEventRegistration(slug, event?.id)
         localStorage.setItem('redirect_after_login', redirectPath)
-        router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`)
+        openLoginModal({
+          redirect: redirectPath,
+          preferredType: 'student',
+        })
         return
       }
       toast.error(typeof msg === 'string' ? msg : 'Registration failed')
     } finally {
       setRegistering(false)
     }
-  }, [slug, event, isAdmin, router])
+  }, [slug, event, isAdmin, router, openLoginModal])
 
   // After login: auto-trigger registration when ?register=1&action=register (or pending storage)
   useEffect(() => {

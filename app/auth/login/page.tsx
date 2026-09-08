@@ -2,55 +2,92 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, ArrowLeft } from 'lucide-react'
+import {
+    Eye,
+    EyeOff,
+    Mail,
+    Lock,
+    User,
+    Building2,
+    GraduationCap,
+    Shield,
+    ArrowLeft,
+    ArrowRight,
+    Briefcase,
+    Sparkles,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Modal, TermsModalContent, PrivacyModalContent } from '@/components/ui/modal'
+import { Modal, TermsModalContent } from '@/components/ui/modal'
+import { BrandLogo } from '@/components/ui/BrandLogo'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
-import { Navbar } from '@/components/ui/navbar'
+import { cn } from '@/lib/utils'
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(1, 'Password is required'),
-    user_type: z.enum(['student', 'corporate', 'university', 'admin'] as const)
+    user_type: z.enum(['student', 'corporate', 'university', 'admin'] as const),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
+type LoginStep = 'identify' | 'signin'
 
-const userTypeOptions = [
-    { value: 'student', label: 'Student' },
-    { value: 'corporate', label: 'Corporate' },
-    { value: 'university', label: 'University' },
-    // { value: 'admin', label: 'Admin' }
-]
+const accountTypes = [
+    {
+        value: 'student' as const,
+        label: 'Student',
+        hint: 'Jobs, practice & career tools',
+        icon: User,
+    },
+    {
+        value: 'corporate' as const,
+        label: 'Corporate',
+        hint: 'Post roles & hire talent',
+        icon: Building2,
+    },
+    {
+        value: 'university' as const,
+        label: 'University',
+        hint: 'Manage campus opportunities',
+        icon: GraduationCap,
+    },
+] as const
 
 const userTypeIcons = {
     student: User,
     corporate: Building2,
     university: GraduationCap,
-    admin: Shield
+    admin: Shield,
+}
+
+const userTypeLabels: Record<UserType, string> = {
+    student: 'Student',
+    corporate: 'Corporate',
+    university: 'University',
+    admin: 'Admin',
 }
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-            </div>
-        }>
+        <Suspense
+            fallback={
+                <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+                    <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600" />
+                </div>
+            }
+        >
             <LoginPageContent />
         </Suspense>
     )
@@ -60,6 +97,7 @@ function LoginPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { redirectIfAuthenticated, login } = useAuth()
+    const [step, setStep] = useState<LoginStep>('identify')
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [selectedUserType, setSelectedUserType] = useState<UserType>('student')
@@ -67,10 +105,10 @@ function LoginPageContent() {
     const [showTermsModal, setShowTermsModal] = useState(false)
     const [registerLink, setRegisterLink] = useState(`/auth/register?type=student`)
 
-    // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
-        // Check if there's a redirect URL - if so, don't auto-redirect
-        const hasRedirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' && localStorage.getItem('redirect_after_login'))
+        const hasRedirectUrl =
+            searchParams.get('redirect') ||
+            (typeof window !== 'undefined' && localStorage.getItem('redirect_after_login'))
         if (!hasRedirectUrl) {
             redirectIfAuthenticated()
         }
@@ -80,12 +118,12 @@ function LoginPageContent() {
         register,
         handleSubmit,
         setValue,
-        formState: { errors }
+        formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-            user_type: 'student'
-        }
+            user_type: 'student',
+        },
     })
 
     useEffect(() => {
@@ -93,26 +131,26 @@ function LoginPageContent() {
         const registered = searchParams.get('registered')
 
         if (type && ['student', 'corporate', 'university', 'admin'].includes(type)) {
-            console.log('Setting user type from URL:', type) // Debug log
             setSelectedUserType(type)
             setValue('user_type', type)
+            if (registered === 'true' || type === 'admin' || searchParams.get('skipIdentify') === '1') {
+                setStep('signin')
+            }
         }
 
-        // Show success message if user just registered
         if (registered === 'true') {
             toast.success('Registration successful! Please log in to continue.')
         }
     }, [searchParams, setValue])
 
-    // Additional effect to ensure form value stays in sync
     useEffect(() => {
         setValue('user_type', selectedUserType)
     }, [selectedUserType, setValue])
 
-    // Compute register link with redirect URL (client-side only)
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
+            const redirectUrl =
+                searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
             const link = redirectUrl
                 ? `/auth/register?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
                 : `/auth/register?type=${selectedUserType}`
@@ -120,8 +158,27 @@ function LoginPageContent() {
         }
     }, [searchParams, selectedUserType])
 
+    const updateTypeInUrl = (userType: UserType) => {
+        const redirectUrl = searchParams.get('redirect')
+        const newUrl = redirectUrl
+            ? `/auth/login?type=${userType}&redirect=${redirectUrl}`
+            : `/auth/login?type=${userType}`
+        router.replace(newUrl)
+    }
+
+    const handleAccountTypeSelect = (userType: UserType) => {
+        setSelectedUserType(userType)
+        setValue('user_type', userType)
+        updateTypeInUrl(userType)
+        setStep('signin')
+    }
+
+    const handleBackToIdentify = () => {
+        if (selectedUserType === 'admin') return
+        setStep('identify')
+    }
+
     const onSubmit = async (data: LoginFormData) => {
-        // Check if terms and conditions are accepted
         if (!termsAndPrivacyAccepted) {
             toast.error('Please accept Terms and Conditions to continue')
             return
@@ -131,37 +188,34 @@ function LoginPageContent() {
         try {
             const response = await apiClient.login(data)
 
-            // Store tokens and user data
             apiClient.setAuthTokens(response.access_token, response.refresh_token)
 
-            // Use the auth hook to manage login state
-            login({
-                id: response.user_id || 'temp-id',
-                email: data.email,
-                user_type: data.user_type,
-                name: data.email
-            }, response.access_token, response.refresh_token)
+            login(
+                {
+                    id: response.user_id || 'temp-id',
+                    email: data.email,
+                    user_type: data.user_type,
+                    name: data.email,
+                },
+                response.access_token,
+                response.refresh_token
+            )
 
             toast.success('Login successful!')
 
-            // Check for redirect URL (from query params or localStorage)
-            let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+            let redirectUrl =
+                searchParams.get('redirect') ||
+                (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
 
             if (redirectUrl) {
-                // Decode the redirect URL
                 redirectUrl = decodeURIComponent(redirectUrl)
-                console.log('Redirecting to:', redirectUrl) // Debug log
-
-                // Clear the stored redirect URL
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('redirect_after_login')
                 }
-                // Use router.push for client-side navigation
                 router.push(redirectUrl)
                 return
             }
 
-            // Redirect based on user type if no redirect URL
             switch (data.user_type) {
                 case 'student':
                     router.push('/dashboard/student')
@@ -191,29 +245,9 @@ function LoginPageContent() {
             }
 
             toast.error(message)
-        }
-        finally {
+        } finally {
             setIsLoading(false)
         }
-    }
-
-    const handleUserTypeChange = (value: string) => {
-        const userType = value as UserType
-        console.log('Changing user type to:', userType) // Debug log
-        setSelectedUserType(userType)
-        setValue('user_type', userType)
-
-        // Preserve redirect parameter when updating URL
-        const redirectUrl = searchParams.get('redirect')
-        const newUrl = redirectUrl
-            ? `/auth/login?type=${userType}&redirect=${redirectUrl}`
-            : `/auth/login?type=${userType}`
-        router.replace(newUrl)
-
-        // Force form to recognize the change
-        setTimeout(() => {
-            setValue('user_type', userType)
-        }, 0)
     }
 
     const handleTermsAndPrivacyAccept = () => {
@@ -221,184 +255,275 @@ function LoginPageContent() {
         setShowTermsModal(false)
     }
 
+    const SelectedIcon = userTypeIcons[selectedUserType]
+    const reduceMotion = useReducedMotion()
+
     return (
-        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/40 to-sky-100/50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
-            {/* Ambient background accents */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-                <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-3xl dark:bg-primary-500/10" />
-                <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-secondary-400/15 blur-3xl dark:bg-secondary-500/10" />
-            </div>
+        <div className="relative min-h-screen bg-[#f4f5f7] dark:bg-gray-950">
+            <header className="relative z-20 flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+                <BrandLogo priority imageClassName="h-8 sm:h-9" />
+                <ThemeToggle />
+            </header>
 
-            <Navbar variant="solid" />
-
-            <div className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-20 pb-10">
+            <div className="relative z-10 flex min-h-[calc(100vh-72px)] items-center justify-center px-4 pb-10 sm:px-6">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-full max-w-md"
+                    transition={{ duration: 0.28 }}
+                    className="grid w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:grid-cols-2"
                 >
-                    {/* Header */}
-                    <div className="text-center mb-6 sm:mb-8">
-                        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl mb-4 shadow-lg shadow-primary-500/25">
-                            {(() => {
-                                const IconComponent = userTypeIcons[selectedUserType as UserType]
-                                return <IconComponent className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                            })()}
+                    {/* Left brand panel — original style */}
+                    <aside className="relative hidden overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-sky-500 p-7 text-white md:flex md:flex-col md:justify-between lg:p-9">
+                        <div>
+                            <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                HireKarma · Disha
+                            </div>
+                            <h2 className="text-2xl font-bold leading-snug tracking-tight xl:text-[28px]">
+                                One platform for careers, campuses & hiring
+                            </h2>
+                            <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/85">
+                                Students discover opportunities. Corporates hire faster. Universities
+                                run placements with clarity.
+                            </p>
                         </div>
 
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">
-                            Welcome Back
-                        </h1>
-
-                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                            Sign in to your HireKarma account
-                        </p>
-                    </div>
-
-                    {/* User Type Selection */}
-                    <div className="mb-5 sm:mb-6">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2.5">
-                            I am a
-                        </label>
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full">
-                            {userTypeOptions.map((option) => {
-                                const Icon = userTypeIcons[option.value as UserType]
-                                const isSelected = selectedUserType === option.value
-
+                        <div className="mt-10 grid grid-cols-2 gap-2.5">
+                            {[
+                                { label: 'Jobs', icon: Briefcase },
+                                { label: 'Internships', icon: User },
+                                { label: 'Events', icon: Sparkles },
+                                { label: 'Practice', icon: GraduationCap },
+                            ].map((chip) => {
+                                const Icon = chip.icon
                                 return (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        onClick={() => handleUserTypeChange(option.value)}
-                                        className={`min-w-0 p-2.5 sm:p-3.5 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-1.5 sm:gap-2 ${isSelected
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 shadow-sm shadow-primary-500/10'
-                                            : 'border-gray-200/80 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-300'
-                                            }`}
+                                    <div
+                                        key={chip.label}
+                                        className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm font-medium backdrop-blur-sm"
                                     >
-                                        <Icon className={`w-5 h-5 ${isSelected ? 'text-primary-600 dark:text-primary-300' : ''}`} />
-                                        <span className="text-xs sm:text-sm font-semibold text-center leading-tight">{option.label}</span>
-                                    </button>
+                                        <Icon className="h-4 w-4 shrink-0 opacity-90" />
+                                        {chip.label}
+                                    </div>
                                 )
                             })}
                         </div>
-                    </div>
 
-                    {/* Login Form — glass card */}
-                    <div className="bg-white/80 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-gray-900/5 dark:shadow-black/20 border border-white/60 dark:border-gray-700/60 p-5 sm:p-7">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                            <input type="hidden" {...register('user_type')} />
+                        <p className="mt-8 text-xs font-medium text-white/70">
+                            Sign in to continue where you left off.
+                        </p>
+                    </aside>
 
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                    Email Address
-                                </label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="Enter your email address"
-                                    leftIcon={<Mail className="w-4 h-4" />}
-                                    error={!!errors.email}
-                                    className="h-12 rounded-xl"
-                                    {...register('email')}
-                                />
-                                {errors.email && (
-                                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400 flex items-start gap-1">
-                                        {errors.email.message}
-                                    </p>
-                                )}
-                            </div>
+                    {/* Right: simple account options / sign-in */}
+                    <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
+                    <AnimatePresence mode="wait">
+                        {step === 'identify' ? (
+                            <motion.div
+                                key="identify"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.18 }}
+                            >
+                                <h1 className="text-[22px] font-semibold tracking-tight text-gray-900 dark:text-white">
+                                    Who are you signing in as?
+                                </h1>
+                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                    Select one to continue
+                                </p>
 
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                                    Password
-                                </label>
-                                <Input
-                                    id="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="Enter your password"
-                                    leftIcon={<Lock className="w-4 h-4" />}
-                                    rightIcon={
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition-colors"
-                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                        >
-                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
-                                    }
-                                    error={!!errors.password}
-                                    className="h-12 rounded-xl"
-                                    {...register('password')}
-                                />
-                                {errors.password && (
-                                    <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
-                                        {errors.password.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div
-                                    className="cursor-pointer flex-1"
-                                    onClick={() => setShowTermsModal(true)}
-                                >
-                                    <Checkbox
-                                        id="terms-privacy"
-                                        checked={termsAndPrivacyAccepted}
-                                        onChange={() => setShowTermsModal(true)}
-                                        label={
-                                            <span className="text-sm text-gray-700 dark:text-gray-300">
-                                                <span className="text-primary-600 dark:text-primary-400 font-medium">
-                                                    Accept Terms & Conditions
+                                <div className="mt-7 space-y-2.5">
+                                    {accountTypes.map((item, i) => {
+                                        const Icon = item.icon
+                                        return (
+                                            <motion.button
+                                                key={item.value}
+                                                type="button"
+                                                onClick={() => handleAccountTypeSelect(item.value)}
+                                                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.04 + i * 0.05 }}
+                                                whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                                                className={cn(
+                                                    'group flex w-full items-center gap-3.5 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-left transition-all',
+                                                    'hover:border-primary-500 hover:bg-primary-50/40',
+                                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
+                                                    'dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-500 dark:hover:bg-primary-950/30'
+                                                )}
+                                            >
+                                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-700 transition group-hover:border-primary-200 group-hover:bg-white group-hover:text-primary-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:group-hover:border-primary-800 dark:group-hover:text-primary-300">
+                                                    <Icon className="h-5 w-5" strokeWidth={1.75} />
                                                 </span>
-                                                {!termsAndPrivacyAccepted && <span className="text-red-500 ml-1">*</span>}
-                                            </span>
-                                        }
-                                    />
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block text-[15px] font-semibold text-gray-900 dark:text-white">
+                                                        {item.label}
+                                                    </span>
+                                                    <span className="mt-0.5 block text-[13px] text-gray-500 dark:text-gray-400">
+                                                        {item.hint}
+                                                    </span>
+                                                </span>
+                                                <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-primary-600 dark:text-gray-600 dark:group-hover:text-primary-400" />
+                                            </motion.button>
+                                        )
+                                    })}
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="signin"
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {selectedUserType !== 'admin' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleBackToIdentify}
+                                        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                        <ArrowLeft className="h-4 w-4" />
+                                        Back
+                                    </button>
+                                )}
+
+                                <div className="mb-5 flex items-center gap-3">
+                                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 text-white">
+                                        <SelectedIcon className="h-5 w-5" />
+                                    </span>
+                                    <div>
+                                        <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                            Sign in
+                                        </h1>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            {userTypeLabels[selectedUserType]} account
+                                        </p>
+                                    </div>
                                 </div>
 
-                                {selectedUserType !== 'admin' && (
-                                    <Link
-                                        href={`/auth/forgot-password?type=${selectedUserType}`}
-                                        className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors whitespace-nowrap self-start sm:self-auto"
+                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                                    <input type="hidden" {...register('user_type')} />
+
+                                    <div>
+                                        <label
+                                            htmlFor="email"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                                        >
+                                            Email
+                                        </label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="Enter your email"
+                                            leftIcon={<Mail className="w-4 h-4" />}
+                                            error={!!errors.email}
+                                            className="h-11 rounded-xl"
+                                            {...register('email')}
+                                        />
+                                        {errors.email && (
+                                            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+                                                {errors.email.message}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            htmlFor="password"
+                                            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                                        >
+                                            Password
+                                        </label>
+                                        <Input
+                                            id="password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder="Enter your password"
+                                            leftIcon={<Lock className="w-4 h-4" />}
+                                            rightIcon={
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="rounded-md p-1 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                >
+                                                    {showPassword ? (
+                                                        <EyeOff className="w-4 h-4" />
+                                                    ) : (
+                                                        <Eye className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            }
+                                            error={!!errors.password}
+                                            className="h-11 rounded-xl"
+                                            {...register('password')}
+                                        />
+                                        {errors.password && (
+                                            <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+                                                {errors.password.message}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div
+                                            className="flex-1 cursor-pointer"
+                                            onClick={() => setShowTermsModal(true)}
+                                        >
+                                            <Checkbox
+                                                id="terms-privacy"
+                                                checked={termsAndPrivacyAccepted}
+                                                onChange={() => setShowTermsModal(true)}
+                                                label={
+                                                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                        <span className="font-medium text-primary-600 dark:text-primary-400">
+                                                            Accept Terms
+                                                        </span>
+                                                        {!termsAndPrivacyAccepted && (
+                                                            <span className="ml-1 text-red-500">*</span>
+                                                        )}
+                                                    </span>
+                                                }
+                                            />
+                                        </div>
+
+                                        {selectedUserType !== 'admin' && (
+                                            <Link
+                                                href={`/auth/forgot-password?type=${selectedUserType}`}
+                                                className="self-start text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 sm:self-auto"
+                                            >
+                                                Forgot Password?
+                                            </Link>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        type="submit"
+                                        className="h-11 w-full rounded-xl bg-primary-600 text-base font-semibold hover:bg-primary-700"
+                                        loading={isLoading}
                                     >
-                                        Forgot Password?
-                                    </Link>
+                                        Sign In
+                                    </Button>
+                                </form>
+
+                                {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
+                                    <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
+                                        No account?{' '}
+                                        <Link
+                                            href={registerLink}
+                                            className="font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                                        >
+                                            Create Account
+                                        </Link>
+                                    </p>
                                 )}
-                            </div>
 
-                            <Button
-                                type="submit"
-                                className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg shadow-primary-500/25 transition-all duration-200"
-                                loading={isLoading}
-                            >
-                                Sign In
-                            </Button>
-                        </form>
-
-                        {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
-                            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    Don&apos;t have an account?{' '}
-                                    <Link
-                                        href={registerLink}
-                                        className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors"
-                                    >
-                                        Create Account
-                                    </Link>
-                                </p>
-                            </div>
+                                {selectedUserType === 'admin' && (
+                                    <p className="mt-5 text-center text-sm italic text-gray-500 dark:text-gray-400">
+                                        Admin accounts are created by authorized personnel only
+                                    </p>
+                                )}
+                            </motion.div>
                         )}
-
-                        {selectedUserType === 'admin' && (
-                            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                                    Admin accounts are created by authorized personnel only
-                                </p>
-                            </div>
-                        )}
+                    </AnimatePresence>
                     </div>
                 </motion.div>
             </div>
@@ -410,9 +535,11 @@ function LoginPageContent() {
                 maxWidth="2xl"
             >
                 <TermsModalContent />
-
                 <div className="mt-6 flex justify-end">
-                    <Button onClick={handleTermsAndPrivacyAccept} className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-xl">
+                    <Button
+                        onClick={handleTermsAndPrivacyAccept}
+                        className="rounded-xl bg-primary-600 hover:bg-primary-700"
+                    >
                         Accept Terms and Conditions and Privacy Policy
                     </Button>
                 </div>

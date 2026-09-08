@@ -1,48 +1,79 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 interface BrandLogoProps {
   href?: string
+  /** Kept for API compatibility with prior Image usage */
   priority?: boolean
   className?: string
   imageClassName?: string
 }
 
+/**
+ * Disha brand — high-contrast monogram D + clear wordmark.
+ */
 export function BrandLogo({
   href = '/',
-  priority = false,
   className,
-  imageClassName,
+  imageClassName: _imageClassName,
 }: BrandLogoProps) {
   return (
-    <Link href={href} className={cn('flex items-center shrink-0', className)}>
-      {/* Light mode logo — hidden when .dark is on <html> */}
-      <Image
-        src="/images/HKlogoblack.png"
-        alt="HireKarma Logo"
-        width={150}
-        height={50}
-        className={cn(
-          'h-8 w-auto object-contain sm:h-10 dark:hidden',
-          imageClassName
-        )}
-        priority={priority}
-      />
-      {/* Dark mode logo — CSS-driven to avoid theme hydration flash */}
-      <Image
-        src="/images/HKlogowhite.png"
-        alt="HireKarma Logo"
-        width={150}
-        height={50}
-        className={cn(
-          'hidden h-8 w-auto object-contain sm:h-10 dark:block drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] brightness-110',
-          imageClassName
-        )}
-        priority={priority}
-      />
+    <Link
+      href={href}
+      aria-label="Disha home"
+      className={cn('group flex shrink-0 items-center', className)}
+    >
+      <span className="inline-flex items-center gap-2.5">
+        <span
+          className={cn(
+            'relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[11px]',
+            'bg-[#0B1F3A] text-[#0B1F3A]',
+            'dark:bg-primary-500 dark:text-primary-500',
+            'ring-1 ring-black/10 shadow-sm',
+            'transition-transform duration-200 group-hover:scale-[1.03]'
+          )}
+          aria-hidden
+        >
+          <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/10" />
+          <svg viewBox="0 0 40 40" className="relative h-6 w-6" fill="none">
+            {/* Bold solid D */}
+            <path
+              d="M11.5 8.5h8.2c6.4 0 10.8 4.3 10.8 11.5S26.1 31.5 19.7 31.5h-8.2V8.5z"
+              fill="white"
+            />
+            {/* Inner cutout matches tile (currentColor) */}
+            <path
+              d="M17.2 13h2.2c3.9 0 6.5 2.7 6.5 7s-2.6 7-6.5 7h-2.2V13z"
+              fill="currentColor"
+            />
+            {/* Direction accents — thicker for small sizes */}
+            <path
+              d="M16.8 20.2c2.6-3.4 6.2-4.8 10.2-3.6"
+              stroke="#7DD3FC"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+            <path
+              d="M24.4 14.2l3.6 2.4-4.2 1"
+              stroke="#FBBF24"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+
+        <span className="flex flex-col justify-center leading-none">
+          <span className="text-[1.45rem] font-bold tracking-[-0.035em] text-[#0B1F3A] sm:text-[1.55rem] dark:text-white">
+            Disha
+          </span>
+          <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300">
+            Career path
+          </span>
+        </span>
+      </span>
     </Link>
   )
 }
