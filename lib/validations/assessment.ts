@@ -99,7 +99,7 @@ const roundSchema = z
 export const assessmentFormSchema = z
   .object({
     assessment_name: z.string().min(1, "Assessment name is required"),
-    mode: z.enum(["HIRING", "UNIVERSITY", "CORPORATE", "ADMIN"], {
+    mode: z.enum(["HIRING", "UNIVERSITY", "CORPORATE", "ADMIN", "MOCK"], {
       required_error: "Select what this assessment is for",
     }),
     time_window: z.object({
