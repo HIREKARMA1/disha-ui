@@ -887,6 +887,92 @@ class ApiClient {
     return response.data;
   }
 
+  // Mock Tests (assessments with mode=MOCK, published to every student)
+  async getAdminMockTests(params: {
+    skip?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+  } = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/mock-tests/admin', { params });
+    return response.data;
+  }
+
+  async createMockTest(data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post('/mock-tests/admin', data);
+    return response.data;
+  }
+
+  async getMockTest(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/admin/${id}`);
+    return response.data;
+  }
+
+  async updateMockTest(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(`/mock-tests/admin/${id}`, data);
+    return response.data;
+  }
+
+  async deleteMockTest(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(`/mock-tests/admin/${id}`);
+    return response.data;
+  }
+
+  async publishMockTest(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/admin/${id}/publish`);
+    return response.data;
+  }
+
+  async unpublishMockTest(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/admin/${id}/unpublish`);
+    return response.data;
+  }
+
+  async getMockTestStats(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/admin/${id}/stats`);
+    return response.data;
+  }
+
+  async getMockTestAttempts(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/admin/${id}/attempts`);
+    return response.data;
+  }
+
+  async getMockTestQuestions(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/admin/${id}/questions`);
+    return response.data;
+  }
+
+  async createMockTestQuestion(id: string, data: any): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/admin/${id}/questions`, data);
+    return response.data;
+  }
+
+  async deleteMockTestQuestion(id: string, questionId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/mock-tests/admin/${id}/questions/${questionId}`
+    );
+    return response.data;
+  }
+
+  async fillMockTestQuestions(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/admin/${id}/questions/fill`, {});
+    return response.data;
+  }
+
+  /** Student catalog: every published mock test. */
+  async getStudentMockTests(searchTerm?: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/mock-tests', {
+      params: searchTerm ? { search_term: searchTerm } : {},
+    });
+    return response.data;
+  }
+
+  async generateMockTestToken(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(`/mock-tests/${id}/token`);
+    return response.data;
+  }
+
   /** Public summary for shared student exam link (no auth). */
   async getPublicAssessment(assessmentId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/assessments/public/${assessmentId}`);

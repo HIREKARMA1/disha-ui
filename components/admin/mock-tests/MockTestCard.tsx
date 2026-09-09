@@ -1,0 +1,264 @@
+"use client"
+
+import { motion } from 'framer-motion'
+import {
+    Clock,
+    Calendar,
+    MoreVertical,
+    Edit,
+    Trash2,
+    Eye,
+    FileText,
+    CheckCircle2,
+    Link2
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { buildStudentExamTakeUrl } from '@/lib/assessmentLinks'
+import { useState, useEffect, useRef } from 'react'
+
+interface MockTestCardProps {
+    mockTest: any;
+    onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
+    onView: (id: string) => void;
+    onViewResults?: (id: string) => void;
+    cardIndex?: number;
+}
+
+export function MockTestCard({
+    mockTest,
+    onEdit,
+    onDelete,
+    onView,
+    onViewResults,
+    cardIndex = 0
+}: MockTestCardProps) {
+    const [showDropdown, setShowDropdown] = useState(false)
+    const [linkCopied, setLinkCopied] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    const canShareExamLink = mockTest.status === 'ACTIVE'
+
+    const copyExamLink = async () => {
+        try {
+            await navigator.clipboard.writeText(buildStudentExamTakeUrl(mockTest.id))
+            setLinkCopied(true)
+            setTimeout(() => setLinkCopied(false), 2000)
+        } catch {
+            // ignore
+        }
+    }
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [])
+
+    const getCardColorScheme = (index: number) => {
+        const colors = [
+            { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-700', hover: 'hover:border-blue-300 dark:hover:border-blue-600' },
+            { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-700', hover: 'hover:border-green-300 dark:hover:border-green-600' },
+            { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-700', hover: 'hover:border-emerald-300 dark:hover:border-emerald-600' },
+            { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-700', hover: 'hover:border-red-300 dark:hover:border-red-600' },
+            { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-700', hover: 'hover:border-purple-300 dark:hover:border-purple-600' },
+            { bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-700', hover: 'hover:border-orange-300 dark:hover:border-orange-600' },
+            { bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-200 dark:border-cyan-700', hover: 'hover:border-cyan-300 dark:hover:border-cyan-600' },
+            { bg: 'bg-pink-50 dark:bg-pink-900/20', border: 'border-pink-200 dark:border-pink-700', hover: 'hover:border-pink-300 dark:hover:border-pink-600' },
+            { bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-200 dark:border-indigo-700', hover: 'hover:border-indigo-300 dark:hover:border-indigo-600' }
+        ]
+        return colors[index % colors.length]
+    }
+
+    const cardColors = getCardColorScheme(cardIndex)
+
+    const getStatusColor = (status: string) => {
+        const colors = {
+            ACTIVE: 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400',
+            DRAFT: 'bg-gray-50 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400',
+            COMPLETED: 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+            ARCHIVED: 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+        }
+        return colors[status as keyof typeof colors] || colors.DRAFT
+    }
+
+    const formatDate = (dateString: string) => {
+        try {
+            if (!dateString) return 'Invalid date'
+            const date = new Date(dateString)
+            if (isNaN(date.getTime())) return 'Invalid date'
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            })
+        } catch (error) {
+            return 'Invalid date'
+        }
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full`}
+        >
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1 min-w-0 pr-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2 break-words">
+                            {mockTest.assessment_name}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-300 font-mono mt-1 truncate">
+                            {mockTest.disha_assessment_id}
+                        </p>
+                    </div>
+
+                    {/* 3-dots dropdown menu */}
+                    <div className="relative flex-shrink-0" ref={dropdownRef}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowDropdown(!showDropdown)}
+                            className="h-8 w-8 p-0 hover:bg-gray-200/60 dark:hover:bg-gray-700/60 text-gray-700 dark:text-gray-300 rounded-lg"
+                        >
+                            <MoreVertical className="w-4 h-4" />
+                        </Button>
+
+                        {showDropdown && (
+                            <div className="absolute right-0 top-9 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1">
+                                <div className="py-1">
+                                    <button
+                                        onClick={() => {
+                                            onView(mockTest.id)
+                                            setShowDropdown(false)
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                        View Details
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            window.location.href = `/dashboard/admin/mock-tests/${mockTest.id}`
+                                            setShowDropdown(false)
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        View Questions
+                                    </button>
+
+                                    {canShareExamLink && (
+                                        <button
+                                            onClick={async () => {
+                                                await copyExamLink()
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2"
+                                        >
+                                            <Link2 className="w-4 h-4" />
+                                            Copy student exam link
+                                        </button>
+                                    )}
+
+                                    <button
+                                        onClick={() => {
+                                            onEdit(mockTest.id)
+                                            setShowDropdown(false)
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                        Edit Configuration
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            onDelete(mockTest.id)
+                                            setShowDropdown(false)
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete Mock Test
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Mode & Status Badges */}
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-violet-50 text-violet-800 dark:bg-violet-900/20 dark:text-violet-400">
+                        MOCK TEST
+                    </span>
+                    <span className={cn(
+                        "px-2 py-0.5 text-xs font-medium rounded-full",
+                        getStatusColor(mockTest.status)
+                    )}>
+                        {mockTest.status}
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm mt-4">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4" />
+                        <span className="truncate">{mockTest.total_duration_minutes} mins</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="truncate">{mockTest.round_count} Rounds</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 col-span-2">
+                        <Calendar className="w-4 h-4" />
+                        <span className="truncate">Created: {formatDate(mockTest.created_at)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 flex-1 flex flex-col">
+                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
+                    {mockTest.description || "No description provided."}
+                </p>
+
+                <div className="mt-auto pt-4 flex flex-col gap-2">
+                    {canShareExamLink && (
+                        <Button
+                            type="button"
+                            onClick={copyExamLink}
+                            size="sm"
+                            className="w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                            <Link2 className="w-4 h-4" />
+                            {linkCopied ? 'Link copied!' : 'Copy student exam link'}
+                        </Button>
+                    )}
+                    <Button
+                        onClick={() => onViewResults ? onViewResults(mockTest.id) : onView(mockTest.id)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center gap-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-md group-hover:bg-white/50"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Result Analytics
+                    </Button>
+                </div>
+            </div>
+        </motion.div>
+    )
+}
