@@ -16,7 +16,6 @@ import {
   LayoutDashboard,
   LogIn,
   Brain,
-  PlusCircle,
   Search,
   Target,
   User,
@@ -36,15 +35,13 @@ type NavLink = {
   icon: React.ComponentType<{ className?: string }>
 }
 
-/** Public / guest — same features, Unstop-like order (Create Event = Post CTA). */
+/** Public / guest nav — Unstop-like order. */
 const GUEST_NAV: NavLink[] = [
   { label: 'Opportunities', href: '/', icon: Home },
   { label: 'Jobs', href: '/jobs', icon: Briefcase },
   { label: 'Events', href: '/events', icon: Calendar },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
 ]
-
-const CREATE_EVENT_HREF = '/events#create-event-request'
 
 /** Shown to guests as teaser tools — opens login when clicked. */
 const GUEST_STUDENT_TOOLS: NavLink[] = [
@@ -163,21 +160,6 @@ export function HubSidebarNav({
         collapsed ? 'px-1.5' : 'px-2'
       )}
     >
-      {/* Same Create Event feature — Unstop Post placement */}
-      <Link
-        href={CREATE_EVENT_HREF}
-        onClick={onNavigate}
-        title={collapsed ? 'Create Event' : undefined}
-        className={cn(
-          'mb-4 flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-primary-50 font-semibold text-primary-700',
-          'hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300',
-          collapsed ? 'mx-auto h-10 w-10 shrink-0 p-0' : 'mx-1 px-3 py-2.5 text-sm'
-        )}
-      >
-        <PlusCircle className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>Create Event</span>}
-      </Link>
-
       <NavGroup title="" items={GUEST_NAV} collapsed={collapsed} onNavigate={onNavigate} />
 
       {showStudentTools ? (

@@ -207,8 +207,8 @@ const CATEGORY_TILES: QuickPill[] = [
     tab: 'all',
     icon: Users,
   },
-  { id: 'faq', label: 'FAQ', kind: 'scroll', sectionId: 'hub-faq', tab: 'all', icon: Sparkles },
   { id: 'about', label: 'Why Disha?', kind: 'scroll', sectionId: 'hub-about', tab: 'all', icon: User },
+  { id: 'faq', label: 'FAQ', kind: 'scroll', sectionId: 'hub-faq', tab: 'all', icon: Sparkles },
   { id: 'contact', label: 'Contact Us', kind: 'scroll', sectionId: 'hub-contact', tab: 'all', icon: Newspaper },
 ]
 
@@ -749,28 +749,41 @@ export default function OpportunityHub() {
     })
   }
 
+  const getExploreHref = (item: ExploreItem): string => {
+    if (item.kind === 'link') return item.href
+    const pill = item.pill
+    if (pill.tab === 'jobs') {
+      const params = new URLSearchParams()
+      if (pill.patch?.jobType) params.set('job_type', String(pill.patch.jobType))
+      const qs = params.toString()
+      return qs ? `/jobs?${qs}` : '/jobs'
+    }
+    return '/events'
+  }
+
   const handleExploreSelect = (item: ExploreItem) => {
-    if (item.kind === 'filter') {
-      // Search Explore filters still filter the feed
-      setTab(item.pill.tab)
-      applyFilters({ ...DEFAULT_FILTERS, ...item.pill.patch })
-      setExploreOpen(false)
-      setSearchFocused(false)
-      window.requestAnimationFrame(() => {
-        resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const href = getExploreHref(item)
+    setExploreOpen(false)
+    setSearchFocused(false)
+
+    if (!isAuthenticated) {
+      openLoginModal({
+        redirect: href,
+        preferredType: 'student',
       })
       return
     }
-    setExploreOpen(false)
-    if (item.auth && !(isAuthenticated && user?.user_type === 'student')) {
+
+    if (item.kind === 'filter') {
+      router.push(href)
+      return
+    }
+
+    if (item.auth && user?.user_type !== 'student') {
       requireStudentLogin(item.href)
       return
     }
-    if (
-      item.id === 'practice' &&
-      isAuthenticated &&
-      user?.user_type === 'student'
-    ) {
+    if (item.id === 'practice' && user?.user_type === 'student') {
       router.push('/dashboard/student/practice')
       return
     }
@@ -1350,6 +1363,8 @@ export default function OpportunityHub() {
                   <HubTrustedLogos companies={companies} />
                 </div>
 
+                <HubWhyDisha />
+
                 <section id="hub-faq" className="scroll-mt-28">
                   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -1394,8 +1409,6 @@ export default function OpportunityHub() {
                     ))}
                   </div>
                 </section>
-
-                <HubWhyDisha />
               </div>
             ) : (
               <div>
