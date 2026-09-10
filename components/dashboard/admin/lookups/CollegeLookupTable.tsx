@@ -4,6 +4,7 @@ import { GraduationCap, Pencil, Trash2, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import type { CollegeLookupRow } from '@/types/lookup'
+import type { CollegeListSort } from '@/services/lookupAdminService'
 import { CollegeLookupPagination } from './CollegeLookupPagination'
 
 interface CollegeLookupTableProps {
@@ -15,6 +16,7 @@ interface CollegeLookupTableProps {
     total: number
     universityNameById: Map<string, string>
     hidePagination?: boolean
+    sort?: CollegeListSort
     onRetry: () => void
     onEdit: (row: CollegeLookupRow) => void
     onDelete: (row: CollegeLookupRow) => void
@@ -35,6 +37,7 @@ export function CollegeLookupTable({
     total,
     universityNameById,
     hidePagination = false,
+    sort = 'name_asc',
     onRetry,
     onEdit,
     onDelete,
@@ -42,6 +45,13 @@ export function CollegeLookupTable({
     onNextPage,
 }: CollegeLookupTableProps) {
     const router = useRouter()
+
+    const studentsSortHint =
+        sort === 'students_desc'
+            ? '(highest first)'
+            : sort === 'students_asc'
+              ? '(lowest first)'
+              : null
 
     const handleStudentsClick = (row: CollegeLookupRow) => {
         const count = row.student_count ?? 0
@@ -115,6 +125,11 @@ export function CollegeLookupTable({
                             </th>
                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Students
+                                {studentsSortHint && (
+                                    <span className="ml-1 font-normal normal-case tracking-normal text-gray-400">
+                                        {studentsSortHint}
+                                    </span>
+                                )}
                             </th>
                             <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Actions
