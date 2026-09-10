@@ -928,6 +928,24 @@ class ApiClient {
     return response.data;
   }
 
+  async publishMockTestResults(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/mock-tests/admin/${id}/publish-results`
+    );
+    return response.data;
+  }
+
+  async uploadMockTestBackground(file: File): Promise<{ file_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response: AxiosResponse = await this.client.post(
+      '/mock-tests/admin/upload-background',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+  }
+
   async getMockTestStats(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/mock-tests/admin/${id}/stats`);
     return response.data;
@@ -965,6 +983,11 @@ class ApiClient {
     const response: AxiosResponse = await this.client.get('/mock-tests', {
       params: searchTerm ? { search_term: searchTerm } : {},
     });
+    return response.data;
+  }
+
+  async getStudentMockTestResult(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/${id}/my-result`);
     return response.data;
   }
 

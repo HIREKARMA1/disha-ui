@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
-import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw } from 'lucide-react'
+import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw, CheckCircle2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import {
@@ -53,6 +53,8 @@ export default function MockTestAnalyticsPage() {
     const [generatingAll, setGeneratingAll] = useState(false)
     const [generateAllProgress, setGenerateAllProgress] = useState<string | null>(null)
     const [generateAllError, setGenerateAllError] = useState<string | null>(null)
+    const [publishingResults, setPublishingResults] = useState(false)
+    const [publishResultsMessage, setPublishResultsMessage] = useState<string | null>(null)
 
     useEffect(() => {
         if (assessmentId) {
@@ -268,7 +270,71 @@ export default function MockTestAnalyticsPage() {
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
                                     🎓 Student Reports
                                 </span>
+                                {assessmentDetails?.results_published ? (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200">
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        Results Published
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                                        Results Not Published
+                                    </span>
+                                )}
                             </div>
+                            {publishResultsMessage && (
+                                <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+                                    {publishResultsMessage}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                            <Button
+                                variant="outline"
+                                onClick={() => router.push(`/dashboard/admin/mock-tests/${assessmentId}`)}
+                            >
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Back
+                            </Button>
+                            {assessmentDetails?.results_published ? (
+                                <Button
+                                    disabled
+                                    className="bg-emerald-600 text-white opacity-90 cursor-default"
+                                >
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Results Published
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={async () => {
+                                        setPublishingResults(true)
+                                        setPublishResultsMessage(null)
+                                        try {
+                                            const updated = await apiClient.publishMockTestResults(assessmentId)
+                                            setAssessmentDetails(updated)
+                                            setPublishResultsMessage(
+                                                'Results are now visible to students who completed this mock test.'
+                                            )
+                                        } catch (err: any) {
+                                            setPublishResultsMessage(
+                                                err?.response?.data?.detail ||
+                                                    err?.message ||
+                                                    'Failed to publish results'
+                                            )
+                                        } finally {
+                                            setPublishingResults(false)
+                                        }
+                                    }}
+                                    disabled={publishingResults}
+                                    className="bg-gradient-to-r from-blue-500 to-violet-600 text-white hover:opacity-95"
+                                >
+                                    {publishingResults ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    ) : (
+                                        <Send className="h-4 w-4 mr-2" />
+                                    )}
+                                    Publish Results
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
