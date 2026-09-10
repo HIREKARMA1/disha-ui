@@ -22,6 +22,7 @@ interface StudentDashboardLayoutProps {
 
 function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     const [studentName, setStudentName] = useState<string>('Student')
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const { user } = useAuth()
 
     useEffect(() => {
@@ -47,26 +48,30 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     }, [user?.id, user?.user_type, user?.name])
 
     return (
-        <div className="min-h-screen bg-[#F5F7FB] dark:bg-[#0a0c14]">
-            <StudentTopNav />
-            <StudentSidebar />
+        <div className="flex min-h-screen bg-white dark:bg-gray-950">
+            <StudentSidebar
+                mobileOpen={mobileMenuOpen}
+                onMobileClose={() => setMobileMenuOpen(false)}
+            />
 
-            <div className="pt-16 lg:pl-64">
-                <main className="p-3 sm:p-5 lg:p-6 pb-28 lg:pb-6 min-h-0 relative overflow-x-hidden overflow-y-visible">
+            <div className="flex min-w-0 flex-1 flex-col">
+                <StudentTopNav onMenuOpen={() => setMobileMenuOpen(true)} />
+
+                <main className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-visible p-3 pb-6 sm:p-5 lg:p-6">
                     {children ? (
                         <div>{children}</div>
                     ) : (
                         <>
                             <EventPopup />
-                            <div className="space-y-6">
+                            <div className="mx-auto w-full max-w-[1400px] space-y-6 sm:space-y-8">
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />
-                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-4 items-start">
-                                    <div className="xl:col-span-8 space-y-3 sm:space-y-4 min-w-0 h-auto">
+                                <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12 xl:gap-5">
+                                    <div className="min-w-0 space-y-4 xl:col-span-8">
                                         <AnalyticsChart />
                                         <RecentActivities />
                                     </div>
-                                    <div className="xl:col-span-4 space-y-3 sm:space-y-4 min-w-0 h-auto self-start">
+                                    <div className="min-w-0 space-y-4 self-start xl:col-span-4">
                                         <AdvertisementBanner />
                                         <StudentQuickActions />
                                         <StudentResumeStrength />

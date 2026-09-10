@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, ArrowRight } from 'lucide-react'
 import { profileService } from '@/services/profileService'
 import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
 import { cn } from '@/lib/utils'
@@ -40,7 +40,7 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (completion / 100) * circumference
-  const stroke = completion >= 80 ? '#10B981' : completion >= 50 ? '#3B82F6' : '#F59E0B'
+  const stroke = completion >= 80 ? '#10B981' : completion >= 50 ? '#1b52a4' : '#F59E0B'
 
   const tips =
     completion >= 80
@@ -49,13 +49,14 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
 
   return (
     <StudentSectionCard padding="sm" className={cn(className)}>
-      <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2">
+      <h3 className="mb-3 flex items-center gap-2 text-base font-bold tracking-tight text-gray-900 dark:text-white sm:text-lg">
+        <span className="h-4 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-5" aria-hidden />
         Resume Strength
       </h3>
 
       <div className="flex items-center gap-3">
         {loading ? (
-          <div className="h-[88px] w-[88px] rounded-full bg-gray-100 dark:bg-white/5 animate-pulse shrink-0" />
+          <div className="h-[88px] w-[88px] shrink-0 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
         ) : (
           <div className="relative shrink-0" style={{ width: size, height: size }}>
             <svg width={size} height={size} className="-rotate-90">
@@ -65,7 +66,7 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
                 r={radius}
                 fill="none"
                 strokeWidth={strokeWidth}
-                className="stroke-gray-200 dark:stroke-white/10"
+                className="stroke-gray-200 dark:stroke-gray-700"
               />
               <circle
                 cx={size / 2}
@@ -81,18 +82,23 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">
+              <span className="text-xl font-bold leading-none tabular-nums text-gray-900 dark:text-white">
                 {completion}%
               </span>
-              <span className="text-[9px] text-emerald-500 font-semibold mt-0.5">
+              <span
+                className={cn(
+                  'mt-0.5 text-[9px] font-semibold',
+                  completion >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary-600 dark:text-primary-400'
+                )}
+              >
                 {completion >= 80 ? 'Strong' : 'Growing'}
               </span>
             </div>
           </div>
         )}
 
-        <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-snug">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs leading-snug text-gray-600 dark:text-gray-300 sm:text-sm">
             {completion >= 80
               ? 'Your resume looks competitive for campus roles.'
               : 'Complete more profile sections to improve your score.'}
@@ -100,16 +106,17 @@ export function StudentResumeStrength({ className = '' }: { className?: string }
           <ul className="mt-2 space-y-1">
             {tips.map((tip) => (
               <li key={tip} className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
-                <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" />
                 {tip}
               </li>
             ))}
           </ul>
           <Link
             href="/dashboard/student/profile"
-            className="mt-2 inline-block text-xs font-semibold text-blue-500 hover:text-blue-400"
+            className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
           >
-            Improve profile →
+            Improve profile
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       </div>

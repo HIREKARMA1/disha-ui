@@ -11,6 +11,7 @@ import {
   Calendar,
   FileText,
   Inbox,
+  ArrowRight,
 } from 'lucide-react'
 import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
 import { StatusBadge } from '@/components/student/ui/StatusBadge'
@@ -27,11 +28,11 @@ interface Activity {
 }
 
 const iconMap = {
-  apply: { Icon: Briefcase, bg: 'bg-emerald-500/15 text-emerald-500' },
-  view: { Icon: Eye, bg: 'bg-blue-500/15 text-blue-500' },
-  interview: { Icon: Calendar, bg: 'bg-violet-500/15 text-violet-500' },
-  assessment: { Icon: CheckCircle, bg: 'bg-amber-500/15 text-amber-500' },
-  resume: { Icon: FileText, bg: 'bg-sky-500/15 text-sky-500' },
+  apply: { Icon: Briefcase, bg: 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900' },
+  view: { Icon: Eye, bg: 'bg-primary-50 text-primary-600 ring-1 ring-primary-100 dark:bg-primary-950/40 dark:text-primary-400 dark:ring-primary-900' },
+  interview: { Icon: Calendar, bg: 'bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-violet-400 dark:ring-violet-900' },
+  assessment: { Icon: CheckCircle, bg: 'bg-amber-50 text-amber-600 ring-1 ring-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900' },
+  resume: { Icon: FileText, bg: 'bg-sky-50 text-sky-600 ring-1 ring-sky-100 dark:bg-sky-950/40 dark:text-sky-400 dark:ring-sky-900' },
 }
 
 function relativeTime(dateString?: string) {
@@ -118,7 +119,6 @@ export function RecentActivities({ className = '' }: { className?: string }) {
         const apps = (appsRes?.applications || appsRes?.items || []) as any[]
         const mapped = apps.map(mapApplicationToActivity)
 
-        // Resume updated — if profile was updated recently
         if (profile?.updated_at || profile?.resume) {
           const resumeTime = profile.updated_at
           const age = resumeTime ? Date.now() - new Date(resumeTime).getTime() : Infinity
@@ -148,31 +148,40 @@ export function RecentActivities({ className = '' }: { className?: string }) {
 
   return (
     <StudentSectionCard className={cn('relative', className)}>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
           Recent Activity
         </h2>
         <Link
           href="/dashboard/student/applications"
-          className="text-xs sm:text-sm font-semibold text-blue-500 hover:text-blue-400"
+          className={cn(
+            'group inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5',
+            'text-xs font-semibold text-primary-700 shadow-sm transition-colors sm:text-sm',
+            'hover:border-primary-400 hover:bg-primary-100',
+            'dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300 dark:hover:bg-primary-900/60'
+          )}
         >
-          View All
+          <span>View All</span>
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white transition-transform group-hover:translate-x-0.5">
+            <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+          </span>
         </Link>
       </div>
 
       {loading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-white/5 animate-pulse" />
+            <div key={i} className="h-14 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
           ))}
         </div>
       ) : activities.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
-            <Inbox className="w-6 h-6 text-gray-400" />
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <Inbox className="h-6 w-6 text-gray-400" />
           </div>
           <p className="text-sm font-medium text-gray-900 dark:text-white">No recent activity</p>
-          <p className="text-xs text-gray-500 mt-1 max-w-[220px]">
+          <p className="mt-1 max-w-[220px] text-xs text-gray-500">
             Apply to jobs or update your profile to see activity here.
           </p>
         </div>
@@ -183,25 +192,25 @@ export function RecentActivities({ className = '' }: { className?: string }) {
             return (
               <div
                 key={activity.id}
-                className="flex items-center gap-2.5 rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50/80 dark:bg-white/[0.03] px-2.5 py-2"
+                className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/80 px-2.5 py-2.5 dark:border-gray-700 dark:bg-gray-800/50"
               >
-                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', bg)}>
-                  <Icon className="w-4 h-4" />
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', bg)}>
+                  <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
                     {activity.title}
                   </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
-                    <Building2 className="w-3 h-3 shrink-0" />
+                  <p className="flex items-center gap-1 truncate text-[11px] text-gray-500 dark:text-gray-400">
+                    <Building2 className="h-3 w-3 shrink-0" />
                     {activity.company}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
                   <StatusBadge status={activity.status} />
                   {activity.time && (
-                    <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
-                      <Clock className="w-2.5 h-2.5" />
+                    <span className="flex items-center gap-0.5 text-[10px] text-gray-500">
+                      <Clock className="h-2.5 w-2.5" />
                       {activity.time}
                     </span>
                   )}

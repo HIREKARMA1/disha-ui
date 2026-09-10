@@ -112,8 +112,8 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
   if (loading) {
     return (
       <div className={cn('space-y-3', className)}>
-        <div className="h-36 rounded-2xl bg-gray-100 dark:bg-[#151b2b] animate-pulse" />
-        <div className="h-48 rounded-2xl bg-gray-100 dark:bg-[#151b2b] animate-pulse" />
+        <div className="h-36 animate-pulse rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900" />
+        <div className="h-48 animate-pulse rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900" />
       </div>
     )
   }
@@ -121,8 +121,8 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
   if (error) {
     return (
       <StudentSectionCard className={className}>
-        <div className="text-center py-6">
-          <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+        <div className="py-6 text-center">
+          <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-400" />
           <p className="text-sm text-gray-500">Unable to load analytics</p>
         </div>
       </StudentSectionCard>
@@ -142,15 +142,21 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
   return (
     <div className={cn('space-y-3 sm:space-y-4', className)}>
       <StudentSectionCard>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+            <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
             Application Analytics
           </h2>
           <Link
             href="/dashboard/student/applications"
-            className="text-xs sm:text-sm font-semibold text-blue-500 hover:text-blue-400"
+            className={cn(
+              'group inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1',
+              'text-xs font-semibold text-primary-700 transition-colors',
+              'hover:border-primary-400 hover:bg-primary-100',
+              'dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300 dark:hover:bg-primary-900/60'
+            )}
           >
-            View Details &gt;
+            View Details
           </Link>
         </div>
 
@@ -160,7 +166,7 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
             value={`${applicationPct.toFixed(0)}%`}
             hint={`${appliedToOpenJobs} of ${totalJobs} open jobs applied`}
             percent={applicationPct}
-            barClass="bg-blue-500"
+            barClass="bg-primary-600"
           />
           <ProgressRow
             label="Selection Rate"
@@ -180,47 +186,48 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
       </StudentSectionCard>
 
       <StudentSectionCard>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
           Application Overview
         </h2>
-        <div className="flex flex-col sm:flex-row items-center gap-5">
+        <div className="flex flex-col items-center gap-5 sm:flex-row">
           <div
-            className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-full shrink-0"
+            className="relative h-32 w-32 shrink-0 rounded-full sm:h-36 sm:w-36"
             style={{
               background:
                 donutTotal > 0
                   ? `conic-gradient(${conicParts})`
-                  : 'conic-gradient(#64748B 0% 100%)',
+                  : 'conic-gradient(#94a3b8 0% 100%)',
             }}
           >
-            <div className="absolute inset-[18%] rounded-full bg-white dark:bg-[#151b2b] flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+            <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full bg-white dark:bg-gray-900">
+              <span className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white">
                 {appliedJobs}
               </span>
               <span className="text-[10px] uppercase tracking-wide text-gray-500">Applied</span>
             </div>
           </div>
 
-          <div className="flex-1 w-full space-y-2">
+          <div className="w-full flex-1 space-y-2">
             {legend.map((item) => (
               <div key={item.label} className="flex items-center justify-between gap-2 text-sm">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
                   <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-gray-600 dark:text-gray-300 truncate">{item.label}</span>
+                  <span className="truncate text-gray-600 dark:text-gray-300">{item.label}</span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                <div className="flex shrink-0 items-center gap-2 tabular-nums">
                   <span className="font-semibold text-gray-900 dark:text-white">{item.value}</span>
-                  <span className="text-xs text-gray-500 w-12 text-right">
+                  <span className="w-12 text-right text-xs text-gray-500">
                     {item.pct.toFixed(0)}%
                   </span>
                 </div>
               </div>
             ))}
-            <div className="pt-2 flex items-center gap-1.5 text-xs text-blue-500">
-              <Briefcase className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 pt-2 text-xs font-medium text-primary-600 dark:text-primary-400">
+              <Briefcase className="h-3.5 w-3.5" />
               Open Jobs: {totalJobs}
             </div>
           </div>
@@ -246,11 +253,11 @@ function ProgressRow({
   const width = clampPct(percent)
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="mb-1.5 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
-        <span className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{value}</span>
+        <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">{value}</span>
       </div>
-      <div className="h-2 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden">
+      <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
         <div
           className={cn('h-full rounded-full transition-all duration-500', barClass)}
           style={{ width: `${width}%` }}

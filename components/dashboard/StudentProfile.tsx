@@ -64,6 +64,7 @@ export function StudentProfile() {
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const [activeTab, setActiveTab] = useState('basic')
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [imageModal, setImageModal] = useState<{ isOpen: boolean; imageUrl: string; altText: string }>({
         isOpen: false,
         imageUrl: '',
@@ -233,10 +234,13 @@ export function StudentProfile() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <StudentTopNav />
-                <StudentSidebar />
-                <div className="pt-16 lg:pl-64">
+            <div className="flex min-h-screen bg-white dark:bg-gray-950">
+                <StudentSidebar
+                    mobileOpen={mobileMenuOpen}
+                    onMobileClose={() => setMobileMenuOpen(false)}
+                />
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <StudentTopNav onMenuOpen={() => setMobileMenuOpen(true)} />
                     <main className="flex-1 p-4 lg:p-6">
                         <div className="w-full">
                             <div className="animate-pulse space-y-4 lg:space-y-6">
@@ -261,18 +265,21 @@ export function StudentProfile() {
 
     if (error && !profile) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <StudentTopNav />
-                <div className="flex">
-                    <StudentSidebar />
+            <div className="flex min-h-screen bg-white dark:bg-gray-950">
+                <StudentSidebar
+                    mobileOpen={mobileMenuOpen}
+                    onMobileClose={() => setMobileMenuOpen(false)}
+                />
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <StudentTopNav onMenuOpen={() => setMobileMenuOpen(true)} />
                     <main className="flex-1 p-4 lg:p-6">
                         <div className="w-full text-center">
-                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 lg:p-8 shadow-sm border border-gray-200 dark:border-gray-700 max-w-md mx-auto">
-                                <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mx-auto mb-4" />
-                                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                            <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 lg:p-8">
+                                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500 lg:h-16 lg:w-16" />
+                                <h2 className="mb-2 text-xl font-bold text-gray-900 dark:text-white lg:text-2xl">
                                     Unable to Load Profile
                                 </h2>
-                                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                <p className="mb-6 text-gray-600 dark:text-gray-400">
                                     {error}
                                 </p>
                                 <Button onClick={loadProfile} variant="default">
@@ -288,15 +295,18 @@ export function StudentProfile() {
 
     if (!profile) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <StudentTopNav />
-                <div className="flex">
-                    <StudentSidebar />
+            <div className="flex min-h-screen bg-white dark:bg-gray-950">
+                <StudentSidebar
+                    mobileOpen={mobileMenuOpen}
+                    onMobileClose={() => setMobileMenuOpen(false)}
+                />
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <StudentTopNav onMenuOpen={() => setMobileMenuOpen(true)} />
                     <main className="flex-1 p-4 lg:p-6">
                         <div className="w-full text-center">
-                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 lg:p-8 shadow-sm border border-gray-200 dark:border-gray-700 max-w-md mx-auto">
-                                <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-yellow-500 mx-auto mb-4" />
-                                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                            <div className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 lg:p-8">
+                                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-yellow-500 lg:h-16 lg:w-16" />
+                                <h2 className="mb-2 text-xl font-bold text-gray-900 dark:text-white lg:text-2xl">
                                     Profile Not Found
                                 </h2>
                                 <p className="text-gray-600 dark:text-gray-400">
@@ -318,39 +328,42 @@ export function StudentProfile() {
     })
 
     return (
-        <div className="min-h-screen bg-[#F5F7FB] dark:bg-[#0a0c14] pb-20 lg:pb-0">
-            <StudentTopNav />
-            <StudentSidebar />
-            <div className="pt-16 lg:pl-64">
-                <main className="flex-1 p-3 sm:p-4 lg:p-6">
-                    <div className="w-full max-w-[1400px] mx-auto">
+        <div className="flex min-h-screen bg-white dark:bg-gray-950">
+            <StudentSidebar
+                mobileOpen={mobileMenuOpen}
+                onMobileClose={() => setMobileMenuOpen(false)}
+            />
+            <div className="flex min-w-0 flex-1 flex-col">
+                <StudentTopNav onMenuOpen={() => setMobileMenuOpen(true)} />
+                <main className="flex-1 overflow-x-hidden p-3 sm:p-4 lg:p-6">
+                    <div className="mx-auto w-full max-w-[1400px]">
                         {/* Hero Banner Card - Visible on laptop/desktop only */}
-                        <div className="hidden lg:block relative overflow-hidden rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b]/90 p-4 sm:p-5 lg:p-6 mb-3 sm:mb-4 shadow-sm">
-                            <div className="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
-                            <div className="relative flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
-                                <div className="flex-1 min-w-0">
-                                    <h1 className="text-xl sm:text-2xl lg:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                        <div className="mb-3 hidden overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:mb-4 sm:p-5 lg:block lg:p-6">
+                            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
+                                <div className="min-w-0 flex-1">
+                                    <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-2xl lg:text-[28px]">
+                                        <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
                                         Student Profile
-                                        <CheckCircle className="w-5 h-5 text-blue-500" />
+                                        <CheckCircle className="h-5 w-5 text-primary-600" />
                                     </h1>
-                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-xl">
+                                    <p className="mt-1 max-w-xl pl-3.5 text-sm text-gray-500 dark:text-gray-400">
                                         Manage your personal information and career details
                                     </p>
-                                    <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">
+                                    <p className="mt-0.5 hidden pl-3.5 text-xs text-gray-500 sm:block">
                                         Keep your profile updated to get better job opportunities.
                                     </p>
-                                    <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+                                    <div className="mt-3 flex flex-wrap gap-1.5 pl-3.5 sm:gap-2">
                                         <StudentChip icon={Calendar} label={todayLabel} tone="blue" />
                                         <StudentChip icon={TrendingUp} label="Career Growth" tone="green" />
                                         <StudentChip icon={Sparkles} label="New Opportunities" tone="purple" />
                                     </div>
                                 </div>
-                                <div className="hidden sm:flex shrink-0 w-36 h-28 lg:w-48 lg:h-36 items-center justify-center relative">
-                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-500/20 to-violet-500/20" />
-                                    <svg viewBox="0 0 200 160" className="relative w-full h-full" aria-hidden>
-                                        <ellipse cx="100" cy="140" rx="70" ry="10" fill="#3B82F6" opacity="0.2" />
-                                        <rect x="55" y="70" width="90" height="55" rx="10" fill="#3B82F6" opacity="0.85" />
-                                        <rect x="70" y="55" width="60" height="20" rx="6" fill="#8B5CF6" />
+                                <div className="relative hidden h-28 w-36 shrink-0 items-center justify-center sm:flex lg:h-36 lg:w-48">
+                                    <div className="absolute inset-0 rounded-xl bg-primary-50 dark:bg-primary-950/40" />
+                                    <svg viewBox="0 0 200 160" className="relative h-full w-full" aria-hidden>
+                                        <ellipse cx="100" cy="140" rx="70" ry="10" fill="#1b52a4" opacity="0.2" />
+                                        <rect x="55" y="70" width="90" height="55" rx="10" fill="#1b52a4" opacity="0.85" />
+                                        <rect x="70" y="55" width="60" height="20" rx="6" fill="#00a2e5" />
                                         <circle cx="100" cy="40" r="18" fill="#f5d0b0" />
                                         <path d="M82 40c0-10 8-18 18-18s18 8 18 18" fill="#1e3a5f" />
                                         <rect x="85" y="85" width="30" height="20" rx="3" fill="white" opacity="0.85" />
@@ -359,9 +372,9 @@ export function StudentProfile() {
                             </div>
                         </div>
 
-                        <div className="space-y-3 sm:space-y-4 relative">
+                        <div className="relative space-y-3 sm:space-y-4">
                             {/* Sticky Edit Profile Button */}
-                            <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
+                            <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-20">
                                 <div className="sticky top-[80px] pointer-events-auto">
                                     <Button
                                         type="button"
@@ -372,9 +385,9 @@ export function StudentProfile() {
                                             }, 100)
                                         }}
                                         size="sm"
-                                        className="h-8 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-md text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all hover:scale-105"
+                                        className="flex h-8 items-center gap-1.5 rounded-full bg-primary-600 px-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 md:text-sm"
                                     >
-                                        <Pencil className="w-3.5 h-3.5" />
+                                        <Pencil className="h-3.5 w-3.5" />
                                         <span>Edit Profile</span>
                                     </Button>
                                 </div>

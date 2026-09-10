@@ -30,9 +30,9 @@ export function StudentStatCard({
   icon: Icon,
   subtitle,
   tooltip,
-  colorClass = 'text-blue-500',
-  iconBgClass = 'bg-blue-500/15',
-  bgClass = 'bg-white dark:bg-[#151b2b]/90',
+  colorClass = 'text-primary-600 dark:text-primary-400',
+  iconBgClass = 'bg-primary-50 dark:bg-primary-950/50',
+  bgClass = 'bg-white dark:bg-gray-900',
   active,
   onClick,
   className,
@@ -53,11 +53,12 @@ export function StudentStatCard({
       type={onClick ? 'button' : undefined}
       onClick={onClick}
       className={cn(
-        'w-full h-full text-left rounded-xl sm:rounded-2xl border transition-all duration-200',
-        'border-gray-200/70 dark:border-white/10 shadow-sm hover:shadow-md',
+        'w-full h-full text-left rounded-xl border transition-[box-shadow,border-color] duration-200',
+        'border-gray-200 shadow-sm dark:border-gray-700',
+        'hover:border-primary-200 hover:shadow-md dark:hover:border-primary-800',
         bgClass,
-        active && 'ring-2 ring-blue-500/50 border-blue-400/60',
-        micro ? 'p-1.5 sm:p-3 rounded-lg sm:rounded-2xl' : compact ? 'p-2 sm:p-3' : 'p-3.5 sm:p-4'
+        active && 'ring-1 ring-primary-200/60 border-primary-300 dark:ring-primary-800/60 dark:border-primary-700',
+        micro ? 'p-1.5 sm:p-3 rounded-lg sm:rounded-xl' : compact ? 'p-2.5 sm:p-3.5' : 'p-3.5 sm:p-4'
       )}
     >
       <div className="flex items-start justify-between gap-1 sm:gap-2">
@@ -104,9 +105,9 @@ export function StudentStatCard({
         </div>
         <div
           className={cn(
-            'rounded-lg sm:rounded-xl shrink-0 flex items-center justify-center',
+            'rounded-lg sm:rounded-xl shrink-0 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10',
             iconBgClass,
-            micro ? 'w-6 h-6 sm:w-8 sm:h-8' : dense ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'
+            micro ? 'w-6 h-6 sm:w-8 sm:h-8' : dense ? 'w-8 h-8 sm:w-9 sm:h-9' : 'w-10 h-10'
           )}
         >
           <Icon

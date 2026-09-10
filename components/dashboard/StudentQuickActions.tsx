@@ -10,32 +10,33 @@ const actions = [
     label: 'Update Profile',
     href: '/dashboard/student/profile',
     icon: User,
-    bg: 'bg-violet-500/15 text-violet-400 hover:bg-violet-500/25',
+    iconWrap: 'bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-violet-400 dark:ring-violet-900',
   },
   {
     label: 'Resume Builder',
     href: '/dashboard/student/resume-builder',
     icon: FileText,
-    bg: 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25',
+    iconWrap: 'bg-primary-50 text-primary-600 ring-1 ring-primary-100 dark:bg-primary-950/40 dark:text-primary-400 dark:ring-primary-900',
   },
   {
     label: 'Practice Tests',
     href: '/dashboard/student/practice',
     icon: Brain,
-    bg: 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25',
+    iconWrap: 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900',
   },
   {
     label: 'Explore Jobs',
     href: '/jobs',
     icon: Briefcase,
-    bg: 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/25',
+    iconWrap: 'bg-orange-50 text-orange-600 ring-1 ring-orange-100 dark:bg-orange-950/40 dark:text-orange-400 dark:ring-orange-900',
   },
 ]
 
 export function StudentQuickActions({ className = '' }: { className?: string }) {
   return (
     <StudentSectionCard padding="sm" className={cn('h-auto', className)}>
-      <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2.5">
+      <h2 className="mb-3 flex items-center gap-2 text-base font-bold tracking-tight text-gray-900 dark:text-white sm:text-lg">
+        <span className="h-4 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-5" aria-hidden />
         Quick Actions
       </h2>
       <div className="grid grid-cols-4 gap-2 sm:gap-3">
@@ -43,19 +44,18 @@ export function StudentQuickActions({ className = '' }: { className?: string }) 
           <Link
             key={action.href}
             href={action.href}
-            className="group flex flex-col items-center gap-1 sm:gap-1.5 text-center min-w-0"
+            className="group flex min-w-0 flex-col items-center gap-1.5 text-center"
           >
-            {/* Fixed size — avoid aspect-square which can explode height on mobile */}
             <div
               className={cn(
-                'w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-200 shrink-0',
-                action.bg,
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 sm:h-14 sm:w-14',
+                action.iconWrap,
                 'group-hover:scale-[1.03] group-hover:shadow-md'
               )}
             >
-              <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <span className="text-[9px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight line-clamp-2">
+            <span className="line-clamp-2 text-[9px] font-medium leading-tight text-gray-700 dark:text-gray-300 sm:text-xs">
               {action.label}
             </span>
           </Link>

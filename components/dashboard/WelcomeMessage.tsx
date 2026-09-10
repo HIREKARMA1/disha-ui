@@ -36,14 +36,20 @@ export function WelcomeMessage({ className = '', studentName = 'Student' }: Welc
 
   return (
     <div className={cn('relative', className)}>
-      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-        {greeting}, {studentName}{' '}
-        <span className="inline-block" aria-hidden>
-          
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl lg:text-[2rem]">
+        {greeting},{' '}
+        <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
+          {studentName}
         </span>
       </h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-2xl">{message}</p>
-      <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+      <div
+        className="mt-2.5 h-1 w-12 rounded-full bg-primary-500 sm:mt-3 sm:w-16"
+        aria-hidden
+      />
+      <p className="mt-3 max-w-2xl text-sm text-gray-500 dark:text-gray-400 sm:text-[15px]">
+        {message}
+      </p>
+      <div className="mt-3.5 flex flex-wrap gap-1.5 sm:gap-2">
         <StudentChip icon={Calendar} label={dateShort} tone="blue" className="sm:hidden" />
         <StudentChip icon={Calendar} label={dateLabel} tone="blue" className="hidden sm:inline-flex" />
         <StudentChip icon={TrendingUp} label="Career Growth" tone="green" />

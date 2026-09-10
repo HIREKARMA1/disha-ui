@@ -60,8 +60,8 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       icon: Briefcase,
       subtitle: 'Open opportunities',
       tooltip: 'Total open job opportunities currently available to you',
-      colorClass: 'text-blue-500',
-      iconBgClass: 'bg-blue-500/15',
+      colorClass: 'text-primary-600 dark:text-primary-400',
+      iconBgClass: 'bg-primary-50 dark:bg-primary-950/50',
     },
     {
       label: 'Applications',
@@ -69,8 +69,8 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       icon: FileText,
       subtitle: 'Submitted',
       tooltip: 'Number of job applications you have submitted',
-      colorClass: 'text-emerald-500',
-      iconBgClass: 'bg-emerald-500/15',
+      colorClass: 'text-emerald-600 dark:text-emerald-400',
+      iconBgClass: 'bg-emerald-50 dark:bg-emerald-950/40',
     },
     {
       label: 'Selected',
@@ -78,8 +78,8 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       icon: Trophy,
       subtitle: stats.selected > 0 ? 'Congratulations!' : 'Keep going',
       tooltip: 'Applications where you were selected by the employer',
-      colorClass: 'text-violet-500',
-      iconBgClass: 'bg-violet-500/15',
+      colorClass: 'text-violet-600 dark:text-violet-400',
+      iconBgClass: 'bg-violet-50 dark:bg-violet-950/40',
     },
     {
       label: 'Rejected',
@@ -87,18 +87,18 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
       icon: XCircle,
       subtitle: 'Keep Trying!',
       tooltip: 'Applications that were not selected — keep applying',
-      colorClass: 'text-red-500',
-      iconBgClass: 'bg-red-500/15',
+      colorClass: 'text-red-600 dark:text-red-400',
+      iconBgClass: 'bg-red-50 dark:bg-red-950/40',
     },
   ]
 
   if (loading) {
     return (
-      <div className={`grid grid-cols-4 gap-1.5 sm:gap-3 ${className}`}>
+      <div className={`grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 ${className}`}>
         {[...Array(4)].map((_, index) => (
           <div
             key={index}
-            className="h-[64px] sm:h-[92px] rounded-xl sm:rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-[#151b2b] animate-pulse"
+            className="h-[72px] animate-pulse rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900 sm:h-[92px]"
           />
         ))}
       </div>
@@ -108,11 +108,11 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
   if (error) {
     return (
       <div
-        className={`rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#151b2b] p-6 ${className}`}
+        className={`rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 ${className}`}
       >
         <div className="text-center">
-          <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-          <h3 className="text-base font-medium text-gray-900 dark:text-white mb-1">
+          <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+          <h3 className="mb-1 text-base font-medium text-gray-900 dark:text-white">
             Unable to load stats
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">Please refresh and try again.</p>
@@ -122,7 +122,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
   }
 
   return (
-    <div className={`grid grid-cols-4 gap-1.5 sm:gap-3 ${className}`}>
+    <div className={`grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 ${className}`}>
       {cards.map((stat, index) => (
         <StudentStatCard
           key={stat.label}

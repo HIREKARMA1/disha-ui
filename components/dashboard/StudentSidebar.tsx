@@ -1,21 +1,19 @@
-"use client"
+'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-    LayoutDashboard,
-    User,
-    Briefcase,
-    FileText,
-    Target,
-    Search,
-    Library,
-    X,
-    LogOut,
-    Brain,
-    ClipboardList,
-    Calendar,
-    MoreHorizontal,
+  LayoutDashboard,
+  User,
+  Briefcase,
+  FileText,
+  Target,
+  Search,
+  Library,
+  X,
+  LogOut,
+  Brain,
+  ClipboardList,
+  Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -24,431 +22,415 @@ import { apiClient } from '@/lib/api'
 import Image from 'next/image'
 import { useLoading } from '@/contexts/LoadingContext'
 import SSOService from '@/services/ssoService'
+import { BrandLogo } from '@/components/ui/BrandLogo'
 import { cn } from '@/lib/utils'
-import { MobileBottomNav, MobileBottomNavAction } from '@/components/ui/MobileBottomNav'
 
 interface NavItem {
-    label: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    description?: string
-    isSSO?: boolean
-    mobilePrimary?: boolean
+  label: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  description?: string
+  isSSO?: boolean
+  mobilePrimary?: boolean
+  group?: 'main' | 'opportunities' | 'tools'
 }
 
 const navItems: NavItem[] = [
-    {
-        label: 'Dashboard',
-        href: '/dashboard/student',
-        icon: LayoutDashboard,
-        description: 'Overview & Analytics',
-        mobilePrimary: true,
-    },
-    {
-        label: 'Profile',
-        href: '/dashboard/student/profile',
-        icon: User,
-        description: 'Personal Information',
-        mobilePrimary: true,
-    },
-    {
-        label: 'Live Jobs',
-        href: '/jobs',
-        icon: Briefcase,
-        description: 'Find & apply to jobs',
-        mobilePrimary: true,
-    },
-    {
-        label: 'Campus Drive',
-        href: '/dashboard/student/jobs',
-        icon: Search,
-        description: 'Campus opportunities',
-    },
-    {
-        label: 'Applications',
-        href: '/dashboard/student/applications',
-        icon: ClipboardList,
-        description: 'Track your applications',
-        mobilePrimary: true,
-    },
-    {
-        label: 'Resume Builder',
-        href: '/dashboard/student/resume-builder',
-        icon: FileText,
-        description: 'Create professional resume',
-    },
-    {
-        label: 'Career Align',
-        href: '/dashboard/student/career-align',
-        icon: Target,
-        description: 'Guidance & roadmap',
-    },
-    {
-        label: 'Practice',
-        href: '/dashboard/student/practice',
-        icon: Brain,
-        description: 'Tests & assessments',
-    },
-    {
-        label: 'Mock Tests',
-        href: '/dashboard/student/mock-tests',
-        icon: ClipboardList,
-        description: 'Published mock tests',
-    },
-    {
-        label: 'Events',
-        href: '/events',
-        icon: Calendar,
-        description: 'Workshops & events',
-    },
-    {
-        label: 'Library',
-        href: '/dashboard/student/library',
-        icon: Library,
-        description: 'Resources & materials',
-    },
-    {
-        label: 'Video Search',
-        href: '/dashboard/student/video-search',
-        icon: Search,
-        description: 'Learning videos',
-    },
+  {
+    label: 'Dashboard',
+    href: '/dashboard/student',
+    icon: LayoutDashboard,
+    description: 'Overview & Analytics',
+    mobilePrimary: true,
+    group: 'main',
+  },
+  {
+    label: 'Profile',
+    href: '/dashboard/student/profile',
+    icon: User,
+    description: 'Personal Information',
+    mobilePrimary: true,
+    group: 'tools',
+  },
+  {
+    label: 'Live Jobs',
+    href: '/jobs',
+    icon: Briefcase,
+    description: 'Find & apply to jobs',
+    mobilePrimary: true,
+    group: 'opportunities',
+  },
+  {
+    label: 'Campus Drive',
+    href: '/dashboard/student/jobs',
+    icon: Search,
+    description: 'Campus opportunities',
+    group: 'opportunities',
+  },
+  {
+    label: 'Applications',
+    href: '/dashboard/student/applications',
+    icon: ClipboardList,
+    description: 'Track your applications',
+    mobilePrimary: true,
+    group: 'opportunities',
+  },
+  {
+    label: 'Events',
+    href: '/events',
+    icon: Calendar,
+    description: 'Workshops & events',
+    group: 'opportunities',
+  },
+  {
+    label: 'Resume Builder',
+    href: '/dashboard/student/resume-builder',
+    icon: FileText,
+    description: 'Create professional resume',
+    group: 'tools',
+  },
+  {
+    label: 'Career Align',
+    href: '/dashboard/student/career-align',
+    icon: Target,
+    description: 'Guidance & roadmap',
+    group: 'tools',
+  },
+  {
+    label: 'Practice',
+    href: '/dashboard/student/practice',
+    icon: Brain,
+    description: 'Tests & assessments',
+    group: 'tools',
+  },
+  {
+    label: 'Mock Tests',
+    href: '/dashboard/student/mock-tests',
+    icon: ClipboardList,
+    description: 'Published mock tests',
+    group: 'tools',
+  },
+  {
+    label: 'Library',
+    href: '/dashboard/student/library',
+    icon: Library,
+    description: 'Resources & materials',
+    group: 'tools',
+  },
+  {
+    label: 'Video Search',
+    href: '/dashboard/student/video-search',
+    icon: Search,
+    description: 'Learning videos',
+    group: 'tools',
+  },
 ]
 
 interface StudentSidebarProps {
-    className?: string
+  className?: string
+  /** Controlled mobile drawer (Hub-style). When provided with onClose, parent owns open state. */
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export function StudentSidebar({ className = '' }: StudentSidebarProps) {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const [profileData, setProfileData] = useState<any>(null)
-    const [imageError, setImageError] = useState(false)
-    const pathname = usePathname()
-    const { user, getToken, logout } = useAuth()
-    const desktopNavRef = useRef<HTMLDivElement>(null)
-    const { startLoading } = useLoading()
+export function StudentSidebar({
+  className = '',
+  mobileOpen,
+  onMobileClose,
+}: StudentSidebarProps) {
+  const [internalMobileOpen, setInternalMobileOpen] = useState(false)
+  const [profileData, setProfileData] = useState<any>(null)
+  const [imageError, setImageError] = useState(false)
+  const pathname = usePathname()
+  const { user, getToken, logout } = useAuth()
+  const desktopNavRef = useRef<HTMLDivElement>(null)
+  const { startLoading } = useLoading()
 
-    const fetchProfile = useCallback(async () => {
-        if (user?.user_type === 'student') {
-            try {
-                const data = await apiClient.getStudentProfile()
-                setProfileData(data)
-                setImageError(false)
-            } catch (error) {
-                console.error('Failed to fetch profile:', error)
-            }
-        }
-    }, [user])
+  const isControlled = typeof mobileOpen === 'boolean'
+  const isMobileMenuOpen = isControlled ? mobileOpen : internalMobileOpen
+  const closeMobileMenu = () => {
+    if (isControlled) onMobileClose?.()
+    else setInternalMobileOpen(false)
+  }
 
-    useEffect(() => {
-        fetchProfile()
-    }, [fetchProfile])
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const handleProfileUpdate = () => {
-                void fetchProfile()
-            }
-            window.addEventListener('profile-updated', handleProfileUpdate)
-            return () => {
-                window.removeEventListener('profile-updated', handleProfileUpdate)
-            }
-        }
-    }, [fetchProfile])
-
-    const closeMobileMenu = () => setIsMobileMenuOpen(false)
-
-    const handleLogout = () => {
-        logout()
-        closeMobileMenu()
+  const fetchProfile = useCallback(async () => {
+    if (user?.user_type === 'student') {
+      try {
+        const data = await apiClient.getStudentProfile()
+        setProfileData(data)
+        setImageError(false)
+      } catch (error) {
+        console.error('Failed to fetch profile:', error)
+      }
     }
+  }, [user])
 
-    useEffect(() => {
-        if (!desktopNavRef.current) return
-        const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
-        if (activeItem && 'scrollIntoView' in activeItem) {
-            activeItem.scrollIntoView({
-                block: 'nearest',
-                inline: 'nearest',
-                behavior: 'smooth',
-            })
-        }
-    }, [pathname])
+  useEffect(() => {
+    fetchProfile()
+  }, [fetchProfile])
 
-    const getDisplayName = () => {
-        if (profileData?.name && profileData.name.trim()) return profileData.name
-        return user?.name || 'Student'
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleProfileUpdate = () => {
+        void fetchProfile()
+      }
+      window.addEventListener('profile-updated', handleProfileUpdate)
+      return () => {
+        window.removeEventListener('profile-updated', handleProfileUpdate)
+      }
     }
+  }, [fetchProfile])
 
-    const getDisplayEmail = () => profileData?.email || user?.email || 'student@university.edu'
-    const getProfilePicture = () => profileData?.profile_picture || null
+  const handleLogout = () => {
+    logout()
+    closeMobileMenu()
+  }
 
-    const shouldShowCampusDrive = () => true
-
-    const filteredNavItems = navItems.filter((item) => {
-        if (item.label === 'Campus Drive') return shouldShowCampusDrive()
-        return true
-    })
-
-    const mobilePrimaryItems = filteredNavItems.filter((item) => item.mobilePrimary)
-
-    const handleSSORedirect = async (item: NavItem) => {
-        const token = getToken()
-        if (!token) {
-            alert('Please log in to access Sangha Community')
-            return
-        }
-        try {
-            const ssoService = new SSOService(token)
-            await ssoService.redirectToSangha()
-        } catch (error) {
-            console.error('SSO Error:', error)
-            alert('Failed to connect to Sangha Community. Please try again.')
-        }
+  useEffect(() => {
+    if (!desktopNavRef.current) return
+    const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
+    if (activeItem && 'scrollIntoView' in activeItem) {
+      activeItem.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: 'smooth',
+      })
     }
+  }, [pathname])
 
-    const isItemActive = (href: string) => {
-        if (href === '/dashboard/student') return pathname === href
-        return pathname === href || pathname.startsWith(href + '/')
+  const getDisplayName = () => {
+    if (profileData?.name && profileData.name.trim()) return profileData.name
+    return user?.name || 'Student'
+  }
+
+  const getDisplayEmail = () => profileData?.email || user?.email || 'student@university.edu'
+  const getProfilePicture = () => profileData?.profile_picture || null
+
+  const shouldShowCampusDrive = () => true
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.label === 'Campus Drive') return shouldShowCampusDrive()
+    return true
+  })
+
+  const handleSSORedirect = async (item: NavItem) => {
+    const token = getToken()
+    if (!token) {
+      alert('Please log in to access Sangha Community')
+      return
     }
-
-    const navClass = (active: boolean) =>
-        cn(
-            'group flex items-start gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200',
-            active
-                ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-md shadow-blue-500/25'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-        )
-
-    const renderAvatar = (size: 'sm' | 'md' = 'md') => {
-        const dim = size === 'sm' ? 'w-9 h-9' : 'w-11 h-11'
-        const img = size === 'sm' ? 36 : 44
-        return (
-            <div className={cn(dim, 'rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center border-2 border-white/20 overflow-hidden shrink-0')}>
-                {getProfilePicture() && !imageError ? (
-                    <Image
-                        src={getProfilePicture()}
-                        alt="Profile"
-                        width={img}
-                        height={img}
-                        className="w-full h-full object-cover"
-                        onError={() => setImageError(true)}
-                    />
-                ) : (
-                    <span className="text-white font-semibold text-sm">
-                        {getDisplayName().charAt(0).toUpperCase()}
-                    </span>
-                )}
-            </div>
-        )
+    try {
+      const ssoService = new SSOService(token)
+      await ssoService.redirectToSangha()
+    } catch (error) {
+      console.error('SSO Error:', error)
+      alert('Failed to connect to Sangha Community. Please try again.')
     }
+  }
+
+  const isItemActive = (href: string) => {
+    if (href === '/dashboard/student') return pathname === href
+    return pathname === href || pathname.startsWith(href + '/')
+  }
+
+  const navClass = (active: boolean) =>
+    cn(
+      'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+      active
+        ? 'bg-gray-200/80 font-semibold text-gray-900 dark:bg-gray-800 dark:text-white'
+        : 'text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-gray-800'
+    )
+
+  const renderAvatar = (size: 'sm' | 'md' = 'md') => {
+    const dim = size === 'sm' ? 'w-9 h-9' : 'w-10 h-10'
+    const img = size === 'sm' ? 36 : 40
+    return (
+      <div
+        className={cn(
+          dim,
+          'flex shrink-0 items-center justify-center overflow-hidden rounded-full',
+          'bg-primary-600 ring-1 ring-black/10'
+        )}
+      >
+        {getProfilePicture() && !imageError ? (
+          <Image
+            src={getProfilePicture()}
+            alt="Profile"
+            width={img}
+            height={img}
+            className="h-full w-full object-cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <span className="text-sm font-semibold text-white">
+            {getDisplayName().charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const renderNavGroups = (onNavigate?: () => void) => {
+    const groups: { key: string; title: string; items: NavItem[] }[] = [
+      {
+        key: 'main',
+        title: '',
+        items: filteredNavItems.filter((i) => i.group === 'main'),
+      },
+      {
+        key: 'opportunities',
+        title: 'Opportunities',
+        items: filteredNavItems.filter((i) => i.group === 'opportunities'),
+      },
+      {
+        key: 'tools',
+        title: 'For students',
+        items: filteredNavItems.filter((i) => i.group === 'tools'),
+      },
+    ]
 
     return (
-        <>
-            {/* Desktop Sidebar */}
-            <aside
-                className={cn(
-                    'student-sidebar hidden lg:flex flex-col w-64 bg-white dark:bg-[#0b0e14] border-r border-gray-200/80 dark:border-white/10 fixed top-16 left-0 h-[calc(100vh-4rem)] z-40',
-                    className
-                )}
-            >
-                <div className="p-4 border-b border-gray-200/80 dark:border-white/10">
-                    <div className="rounded-2xl border border-gray-200/70 dark:border-white/10 bg-gray-50 dark:bg-[#151b2b] p-3.5">
-                        <div className="flex items-center gap-3">
-                            {renderAvatar('md')}
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{getDisplayName()}</p>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{getDisplayEmail()}</p>
-                                <span className="mt-1 inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/15 text-violet-400">
-                                    Student
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <nav ref={desktopNavRef} className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {filteredNavItems.map((item) => {
-                        const active = isItemActive(item.href)
-                        const handleClick = (e: React.MouseEvent) => {
-                            if (item.isSSO) {
-                                e.preventDefault()
-                                handleSSORedirect(item)
-                            } else if (!active) {
-                                startLoading()
-                            }
-                        }
-
-                        if (item.isSSO) {
-                            return (
-                                <button
-                                    key={item.href}
-                                    onClick={handleClick}
-                                    className={cn(navClass(active), 'w-full text-left')}
-                                    data-sidebar-item={active ? 'active' : 'inactive'}
-                                >
-                                    <item.icon className={cn('w-5 h-5 shrink-0 mt-0.5', active ? 'text-white' : '')} />
-                                    <span className="min-w-0 flex flex-col items-start">
-                                        <span className={cn('font-semibold leading-tight', active && 'text-white')}>{item.label}</span>
-                                        {item.description && (
-                                            <span className={cn('text-[10px] leading-tight mt-0.5', active ? 'text-white/80' : 'text-gray-500 dark:text-gray-500')}>
-                                                {item.description}
-                                            </span>
-                                        )}
-                                    </span>
-                                </button>
-                            )
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={handleClick}
-                                data-sidebar-item={active ? 'active' : 'inactive'}
-                                className={navClass(active)}
-                            >
-                                <item.icon className={cn('w-5 h-5 shrink-0 mt-0.5', active ? 'text-white' : '')} />
-                                <span className="min-w-0 flex flex-col items-start">
-                                    <span className={cn('font-semibold leading-tight', active && 'text-white')}>{item.label}</span>
-                                    {item.description && (
-                                        <span className={cn('text-[10px] leading-tight mt-0.5', active ? 'text-white/80' : 'text-gray-500 dark:text-gray-500')}>
-                                            {item.description}
-                                        </span>
-                                    )}
-                                </span>
-                            </Link>
-                        )
-                    })}
-                </nav>
-
-                <div className="p-3 border-t border-gray-200/80 dark:border-gray-700/70">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span>Logout</span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* Mobile Bottom Navigation */}
-            <MobileBottomNav
-                aria-label="Student mobile navigation"
-                items={mobilePrimaryItems.map((item) => ({
-                    href: item.href,
-                    label: item.label,
-                    shortLabel:
-                        item.label === 'Applications'
-                            ? 'Apps'
-                            : item.label === 'Live Jobs'
-                              ? 'Jobs'
-                              : item.label.split(' ')[0],
-                    icon: item.icon,
-                    active: isItemActive(item.href),
-                    onNavigate: startLoading,
-                }))}
-                trailing={
-                    <MobileBottomNavAction
-                        label="More"
-                        icon={MoreHorizontal}
-                        onClick={() => setIsMobileMenuOpen(true)}
-                    />
+      <div className="space-y-1">
+        {groups.map((group) => (
+          <div key={group.key} className="mb-4">
+            {group.title ? (
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                {group.title}
+              </p>
+            ) : null}
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = isItemActive(item.href)
+                const handleClick = (e: React.MouseEvent) => {
+                  if (item.isSSO) {
+                    e.preventDefault()
+                    handleSSORedirect(item)
+                  } else if (!active) {
+                    startLoading()
+                  }
+                  onNavigate?.()
                 }
-            />
 
-            {/* Mobile More Drawer */}
-            <AnimatePresence>
-                {isMobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="lg:hidden fixed inset-0 bg-black/50 z-50"
-                        onClick={closeMobileMenu}
+                if (item.isSSO) {
+                  return (
+                    <li key={item.href}>
+                      <button
+                        type="button"
+                        onClick={handleClick}
+                        className={navClass(active)}
+                        data-sidebar-item={active ? 'active' : 'inactive'}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0 opacity-80" />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    </li>
+                  )
+                }
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={handleClick}
+                      data-sidebar-item={active ? 'active' : 'inactive'}
+                      className={navClass(active)}
                     >
-                        <motion.div
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-                            className="absolute right-0 top-0 h-full w-[min(20rem,88vw)] bg-white dark:bg-gray-900 shadow-xl flex flex-col"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-500 to-secondary-500">
-                                <h2 className="text-base font-semibold text-white">Menu</h2>
-                                <button
-                                    onClick={closeMobileMenu}
-                                    className="p-2 rounded-lg hover:bg-white/20 transition-colors"
-                                    aria-label="Close menu"
-                                >
-                                    <X className="w-5 h-5 text-white" />
-                                </button>
-                            </div>
-
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden">
-                                        {getProfilePicture() && !imageError ? (
-                                            <Image
-                                                src={getProfilePicture()}
-                                                alt="Profile"
-                                                width={40}
-                                                height={40}
-                                                className="w-full h-full object-cover"
-                                                onError={() => setImageError(true)}
-                                            />
-                                        ) : (
-                                            <span className="text-white font-semibold text-sm">
-                                                {getDisplayName().charAt(0).toUpperCase()}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                            {getDisplayName()}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            {getDisplayEmail()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-                                {filteredNavItems.map((item) => {
-                                    const active = isItemActive(item.href)
-                                    return (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={() => {
-                                                closeMobileMenu()
-                                                if (!active) startLoading()
-                                            }}
-                                            className={navClass(active)}
-                                        >
-                                            <item.icon className="w-5 h-5 shrink-0" />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    )
-                                })}
-                            </nav>
-
-                            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                    Logout
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+                      <item.icon className="h-4 w-4 shrink-0 opacity-80" />
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
     )
+  }
+
+  const sidebarBody = (opts?: { onNavigate?: () => void; showBrand?: boolean }) => (
+    <>
+      {opts?.showBrand !== false && (
+        <div className="flex h-14 shrink-0 items-center justify-between gap-1 border-b border-gray-200/80 px-3 dark:border-gray-800">
+          <BrandLogo href="/" priority className="max-w-[148px]" />
+        </div>
+      )}
+
+      <div className="border-b border-gray-200/80 p-3 dark:border-gray-800">
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+          {renderAvatar('md')}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+              {getDisplayName()}
+            </p>
+            <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
+              {getDisplayEmail()}
+            </p>
+            <span className="mt-1 inline-flex rounded-md bg-primary-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-950/50 dark:text-primary-300">
+              Student
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <nav ref={desktopNavRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+        {renderNavGroups(opts?.onNavigate)}
+      </nav>
+
+      <div className="border-t border-gray-200/80 p-3 dark:border-gray-800">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop Sidebar — Hub-style full-height sticky rail */}
+      <aside
+        className={cn(
+          'student-sidebar sticky top-0 z-40 hidden h-screen w-56 shrink-0 flex-col',
+          'border-r border-gray-200 bg-[#f4f6f8] dark:border-gray-800 dark:bg-gray-950',
+          'lg:flex',
+          className
+        )}
+      >
+        {sidebarBody()}
+      </aside>
+
+      {/* Mobile drawer — Hub-style left slide-in */}
+      {isMobileMenuOpen ? (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="absolute inset-0 bg-black/40"
+            onClick={closeMobileMenu}
+          />
+          <div className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col bg-[#f4f6f8] shadow-xl dark:bg-gray-950">
+            <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-800">
+              <BrandLogo href="/" />
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="rounded-md p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {sidebarBody({ onNavigate: closeMobileMenu, showBrand: false })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
 }

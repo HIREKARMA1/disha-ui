@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 
-/** Shared dark-theme section card used across student pages */
+/** Shared section card — matches Opportunity Hub card language */
 export function StudentSectionCard({
   children,
   className,
@@ -24,10 +24,10 @@ export function StudentSectionCard({
   return (
     <div
       className={cn(
-        'relative z-0 h-auto rounded-2xl border border-gray-200/70 dark:border-white/10',
-        'bg-white dark:bg-[#151b2b]',
-        'shadow-sm dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)]',
-        'transition-shadow duration-200 hover:shadow-md',
+        'relative z-0 h-auto overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm',
+        'transition-[box-shadow,border-color] duration-200',
+        'dark:border-gray-700 dark:bg-gray-900',
+        'hover:border-primary-200 hover:shadow-md dark:hover:border-primary-800',
         pad,
         className
       )}
