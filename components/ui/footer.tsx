@@ -7,7 +7,7 @@ import { config } from '@/lib/config'
 
 export function Footer() {
     return (
-        <footer className="border-t border-gray-200 bg-white pb-8 pt-8 dark:border-gray-800 dark:bg-gray-900 md:pb-10 md:pt-14">
+        <footer id="hub-contact" className="scroll-mt-28 border-t border-gray-200 bg-white pb-8 pt-8 dark:border-gray-800 dark:bg-gray-900 md:pb-10 md:pt-14">
             <div className="container mx-auto px-5 sm:px-8 lg:px-10">
                 <div className="mb-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:mb-12 lg:grid-cols-4 lg:gap-12">
                     {/* Brand — full width on mobile so columns stay aligned */}

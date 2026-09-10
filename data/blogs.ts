@@ -276,7 +276,7 @@ export const BLOGS: BlogPost[] = [
     metaDescription: 'Explore the best career options after graduation in 2026, with skills, industries, and practical steps for fresh graduates in India.',
     primaryKeyword: 'Best Career Options After Graduation in 2026',
     category: 'Careers',
-    featured: true,
+    featured: false,
     readTime: '6 min read',
   },
   {
@@ -286,7 +286,7 @@ export const BLOGS: BlogPost[] = [
     metaDescription: 'Learn the top technical and soft skills recruiters want from freshers in 2026—and how to show them on your resume and in interviews.',
     primaryKeyword: 'Top Skills Recruiters Are Looking for in Freshers',
     category: 'Skills',
-    featured: true,
+    featured: false,
     readTime: '6 min read',
   },
   {
@@ -296,7 +296,7 @@ export const BLOGS: BlogPost[] = [
     metaDescription: 'Discover future-proof career paths for students through 2030, from AI and cybersecurity to green jobs and digital roles.',
     primaryKeyword: 'Future-Proof Careers for Students',
     category: 'Careers',
-    featured: true,
+    featured: false,
     readTime: '7 min read',
   },
   {

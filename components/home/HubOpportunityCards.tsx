@@ -385,9 +385,9 @@ export function HubFeaturedCarousel() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
     >
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-          <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
+      <div className="mb-3 flex items-end justify-between gap-3 sm:mb-4">
+        <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-3 sm:text-[22px]">
+          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
           Featured
         </h2>
         <div className="flex gap-1.5 sm:hidden">
@@ -444,7 +444,7 @@ export function HubFeaturedCarousel() {
                     })
                   }
                 }}
-                className="group relative block h-[150px] w-[min(78vw,260px)] overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 sm:h-[168px] sm:w-[min(100%,280px)] lg:w-[300px]"
+                className="group relative block h-[132px] w-[min(72vw,240px)] overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 sm:h-[168px] sm:w-[min(100%,280px)] lg:w-[300px]"
               >
                 {item.image ? (
                   <Image
@@ -497,6 +497,130 @@ export function HubFeaturedCarousel() {
 
 type LogoItem = { id: number; name: string; logo: string }
 
+type PlacedStudent = {
+  name: string
+  company: string
+  imageUrl: string
+}
+
+/** HireKarma-style placed students rail — manual arrows only (no auto-scroll). */
+export function HubPlacedStudents({
+  students,
+  subtitle,
+}: {
+  students: PlacedStudent[]
+  subtitle: string
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const [canLeft, setCanLeft] = useState(false)
+  const [canRight, setCanRight] = useState(false)
+
+  const updateArrows = useCallback(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    setCanLeft(el.scrollLeft > 4)
+    setCanRight(el.scrollLeft < max - 4)
+  }, [])
+
+  useEffect(() => {
+    updateArrows()
+    const el = scrollerRef.current
+    if (!el) return
+    el.addEventListener('scroll', updateArrows, { passive: true })
+    window.addEventListener('resize', updateArrows)
+    return () => {
+      el.removeEventListener('scroll', updateArrows)
+      window.removeEventListener('resize', updateArrows)
+    }
+  }, [updateArrows, students.length])
+
+  const scrollByDir = (dir: -1 | 1) => {
+    const el = scrollerRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * Math.min(280, el.clientWidth * 0.75), behavior: 'smooth' })
+  }
+
+  if (!students.length) return null
+
+  return (
+    <section id="hub-placed-students" className="scroll-mt-28">
+      <div className="mb-5 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+            <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+            Placed students
+          </h2>
+          <p className="mt-1.5 max-w-2xl pl-3.5 text-xs leading-relaxed text-gray-500 sm:text-sm dark:text-gray-400">
+            {subtitle}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            type="button"
+            aria-label="Previous placed students"
+            disabled={!canLeft}
+            onClick={() => scrollByDir(-1)}
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition',
+              'hover:border-primary-300 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-40',
+              'dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200'
+            )}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next placed students"
+            disabled={!canRight}
+            onClick={() => scrollByDir(1)}
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition',
+              'hover:border-primary-300 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-40',
+              'dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200'
+            )}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div
+          ref={scrollerRef}
+          className="flex gap-3 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
+        >
+          {students.map((student) => (
+            <div
+              key={`${student.name}-${student.company}`}
+              className="flex w-[240px] shrink-0 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-900 sm:w-[260px]"
+            >
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-600">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={student.imageUrl}
+                  alt={student.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                  {student.name}
+                </p>
+                <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                  {student.company}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /** Trusted hiring partners — soft marquee, pauses on hover. */
 export function HubTrustedLogos({ companies }: { companies: LogoItem[] }) {
   const reduceMotion = useReducedMotion()
@@ -511,7 +635,7 @@ export function HubTrustedLogos({ companies }: { companies: LogoItem[] }) {
       transition={{ duration: 0.4 }}
     >
       <p className="mb-4 text-center text-sm font-semibold uppercase tracking-[0.12em] text-gray-400">
-        Trusted by hiring partners
+        Our Trusted Partners
       </p>
       <div className="group/logos relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#f7f8fa] to-transparent dark:from-gray-950" />
@@ -563,15 +687,17 @@ export function HubSectionHeader({
   return (
     <div className="mb-4 flex items-start justify-between gap-3 sm:items-center">
       <div className="min-w-0">
-        <h2 className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-          <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
+        <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-x-2.5 sm:text-[22px]">
+          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
           {title}
           {typeof count === 'number' && (
-            <span className="text-base font-medium text-gray-400">({count})</span>
+            <span className="text-sm font-medium text-gray-400 sm:text-base">({count})</span>
           )}
         </h2>
         {subtitle && (
-          <p className="mt-1.5 pl-3.5 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
+          <p className="mt-1 pl-3.5 text-xs text-gray-500 dark:text-gray-400 sm:mt-1.5 sm:text-sm">
+            {subtitle}
+          </p>
         )}
       </div>
       <motion.div
