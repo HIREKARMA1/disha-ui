@@ -991,6 +991,25 @@ class ApiClient {
     return response.data;
   }
 
+  async getMockTestTopPerformerHighlights(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/mock-tests/top-performers');
+    return response.data;
+  }
+
+  async getStudentMockTestLeaderboard(id: string, limit: number = 10): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/${id}/leaderboard`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getStudentMockTestTopPerformers(id: string, limit: number = 10): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/${id}/top-performers`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
   async generateMockTestToken(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.post(`/mock-tests/${id}/token`);
     return response.data;

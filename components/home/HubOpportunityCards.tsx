@@ -272,7 +272,20 @@ export function HubPromoStrip() {
   )
 }
 
-const FEATURED_ITEMS = [
+type FeaturedItem = {
+  id: string
+  eyebrow: string
+  title: string
+  cta: string
+  href: string
+  image: string
+  gradient: string
+  auth?: boolean
+  /** Artwork already includes the title — keep CTA only */
+  hideOverlayText?: boolean
+}
+
+const FEATURED_ITEMS: FeaturedItem[] = [
   {
     id: 'events',
     eyebrow: 'Events',
@@ -281,7 +294,6 @@ const FEATURED_ITEMS = [
     href: '/events',
     image: '/images/campus-events-featured.png',
     gradient: 'from-sky-900/55 via-sky-900/25 to-transparent',
-    /** Artwork already includes the title — keep CTA only */
     hideOverlayText: true,
   },
   {
@@ -326,7 +338,7 @@ const FEATURED_ITEMS = [
     gradient: 'from-rose-950/55 via-rose-900/25 to-transparent',
     hideOverlayText: true,
   },
-] as const
+]
 
 function scrollByAmount(el: HTMLElement | null, dir: 1 | -1) {
   if (!el) return
@@ -461,13 +473,13 @@ export function HubFeaturedCarousel() {
                 <div
                   className={cn(
                     'absolute inset-0 bg-gradient-to-t to-transparent',
-                    'hideOverlayText' in item && item.hideOverlayText
+                    item.hideOverlayText
                       ? 'from-black/35 via-transparent'
                       : 'from-black/55 via-black/10'
                   )}
                 />
                 <div className="absolute inset-0 flex flex-col justify-end p-4">
-                  {!('hideOverlayText' in item && item.hideOverlayText) && (
+                  {!item.hideOverlayText && (
                     <>
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-white/70">
                         {item.eyebrow}
@@ -480,7 +492,7 @@ export function HubFeaturedCarousel() {
                   <span
                     className={cn(
                       'w-fit rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-gray-900 transition group-hover:bg-white',
-                      !('hideOverlayText' in item && item.hideOverlayText) && 'mt-2'
+                      !item.hideOverlayText && 'mt-2'
                     )}
                   >
                     {item.cta} →
