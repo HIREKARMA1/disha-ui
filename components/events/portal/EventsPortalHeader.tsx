@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import Link from 'next/link'
-import { User, ExternalLink, LogOut } from 'lucide-react'
+import { User, ExternalLink, LogOut, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -26,8 +26,26 @@ function EventsPortalHeaderComponent() {
         'dark:border-gray-800/80 dark:bg-gray-950/95'
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <BrandLogo href="/events" priority />
+      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <Link
+            href="/"
+            aria-label="Back to home"
+            className={cn(
+              'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9',
+              'border border-gray-200 bg-white text-gray-700 shadow-sm',
+              'transition hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700',
+              'active:scale-[0.96]',
+              'dark:border-white/10 dark:bg-white/5 dark:text-gray-200',
+              'dark:hover:border-primary-800 dark:hover:bg-primary-950/50 dark:hover:text-primary-300',
+              'lg:hidden'
+            )}
+          >
+            <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
+          </Link>
+          <BrandLogo href="/events" priority compact className="lg:hidden" />
+          <BrandLogo href="/events" priority className="hidden lg:flex" />
+        </div>
 
         <nav className="hidden items-center gap-6 md:flex">
           <Link

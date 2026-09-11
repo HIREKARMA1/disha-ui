@@ -29,13 +29,12 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
 import { canApplyForJobs } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
-import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
-  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
-  getUniversityApplyEligibility,
   getPassoutBatchApplyEligibility,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
@@ -306,6 +305,7 @@ export function AllJobs() {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
+    const { openLoginModal } = useAuthLoginModal()
     const initial = useMemo(() => parseFiltersFromParams(searchParams), []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const [jobs, setJobs] = useState<Job[]>([])
@@ -743,7 +743,11 @@ export function AllJobs() {
 
     const handleApplyClick = (job: Job) => {
         if (!isLoggedIn) {
-            redirectGuestToLoginForApply(router, job.id, getJobDetailPath(job))
+            const path = getJobDetailPath(job)
+            openLoginModal({
+                redirect: prepareGuestApplyForLogin(job.id, path),
+                preferredType: 'student',
+            })
             return
         }
 
@@ -754,18 +758,6 @@ export function AllJobs() {
 
         if (!job.can_apply) {
             toast.error(JOB_CLOSED_MESSAGE)
-            return
-        }
-
-        const eligibility = getUniversityApplyEligibility({
-            isPublic: job.is_public,
-            publicAccessLevel: job.public_access_level,
-            assignedUniversityIds: job.assigned_university_ids,
-            isAuthenticatedStudent: isLoggedIn,
-            studentUniversityId: studentProfile?.university_id,
-        })
-        if (!eligibility.canApply) {
-            toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
             return
         }
 

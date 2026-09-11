@@ -16,7 +16,6 @@ import {
   LayoutDashboard,
   LogIn,
   Brain,
-  PlusCircle,
   Search,
   Target,
   User,
@@ -34,17 +33,17 @@ type NavLink = {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
+  requiresAuth?: boolean
 }
 
-/** Public / guest — same features, Unstop-like order (Create Event = Post CTA). */
+/** Public / guest nav — Unstop-like order. */
 const GUEST_NAV: NavLink[] = [
   { label: 'Opportunities', href: '/', icon: Home },
   { label: 'Jobs', href: '/jobs', icon: Briefcase },
   { label: 'Events', href: '/events', icon: Calendar },
+  { label: 'Mock Tests', href: '/dashboard/student/mock-tests', icon: ClipboardList },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
 ]
-
-const CREATE_EVENT_HREF = '/events#create-event-request'
 
 /** Shown to guests as teaser tools — opens login when clicked. */
 const GUEST_STUDENT_TOOLS: NavLink[] = [
@@ -64,6 +63,7 @@ const STUDENT_TOOLS: NavLink[] = [
   { label: 'Resume Builder', href: '/dashboard/student/resume-builder', icon: FileText },
   { label: 'Career Align', href: '/dashboard/student/career-align', icon: Target },
   { label: 'Practice', href: '/dashboard/student/practice', icon: Brain },
+  { label: 'Mock Tests', href: '/dashboard/student/mock-tests', icon: ClipboardList },
   { label: 'Library', href: '/dashboard/student/library', icon: Library },
   { label: 'Video Search', href: '/dashboard/student/video-search', icon: Search },
 ]
@@ -74,6 +74,7 @@ function NavGroup({
   collapsed,
   onNavigate,
   onItemClick,
+  onAuthItemClick,
 }: {
   title: string
   items: NavLink[]
@@ -81,13 +82,15 @@ function NavGroup({
   onNavigate?: () => void
   /** If set, intercepts navigation (e.g. open login for guests). */
   onItemClick?: (item: NavLink) => void
+  /** If set, intercepts items marked requiresAuth (e.g. Jobs / Events for guests). */
+  onAuthItemClick?: (item: NavLink) => void
 }) {
   const pathname = usePathname()
 
   return (
     <div className={cn('mb-4', collapsed && 'mb-2')}>
       {!collapsed && title && (
-        <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-[#5B6684] dark:tracking-[0.06em]">
           {title}
         </p>
       )}
@@ -103,11 +106,14 @@ function NavGroup({
             'flex w-full items-center rounded-lg text-left text-sm transition-colors',
             collapsed ? 'justify-center px-2 py-2.5' : 'gap-2.5 px-3 py-2',
             active
-              ? 'bg-gray-200/80 font-semibold text-gray-900 dark:bg-gray-800 dark:text-white'
-              : 'text-gray-700 hover:bg-gray-200/60 dark:text-gray-300 dark:hover:bg-gray-800'
+              ? "relative bg-gray-200/80 font-semibold text-gray-900 dark:bg-[rgba(0,162,229,0.12)] dark:text-[#5FCBF5] dark:before:absolute dark:before:left-[-8px] dark:before:top-1/2 dark:before:h-[18px] dark:before:w-[3px] dark:before:-translate-y-1/2 dark:before:rounded-r-sm dark:before:bg-[#00A2E5] dark:before:content-['']"
+              : 'text-gray-700 hover:bg-gray-200/60 dark:text-[#93A0BD] dark:hover:bg-[#141A29] dark:hover:text-[#F4F6FA]'
           )
 
-          if (onItemClick) {
+          const intercept =
+            onItemClick || (item.requiresAuth && onAuthItemClick ? onAuthItemClick : undefined)
+
+          if (intercept) {
             return (
               <li key={item.href}>
                 <button
@@ -115,7 +121,7 @@ function NavGroup({
                   title={collapsed ? item.label : undefined}
                   onClick={() => {
                     onNavigate?.()
-                    onItemClick(item)
+                    intercept(item)
                   }}
                   className={className}
                 >
@@ -163,22 +169,21 @@ export function HubSidebarNav({
         collapsed ? 'px-1.5' : 'px-2'
       )}
     >
-      {/* Same Create Event feature — Unstop Post placement */}
-      <Link
-        href={CREATE_EVENT_HREF}
-        onClick={onNavigate}
-        title={collapsed ? 'Create Event' : undefined}
-        className={cn(
-          'mb-4 flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-primary-50 font-semibold text-primary-700',
-          'hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300',
-          collapsed ? 'mx-auto h-10 w-10 shrink-0 p-0' : 'mx-1 px-3 py-2.5 text-sm'
-        )}
-      >
-        <PlusCircle className="h-4 w-4 shrink-0" />
-        {!collapsed && <span>Create Event</span>}
-      </Link>
-
-      <NavGroup title="" items={GUEST_NAV} collapsed={collapsed} onNavigate={onNavigate} />
+      <NavGroup
+        title=""
+        items={GUEST_NAV}
+        collapsed={collapsed}
+        onNavigate={onNavigate}
+        onAuthItemClick={
+          !isAuthenticated
+            ? (item) =>
+                openLoginModal({
+                  redirect: item.href,
+                  preferredType: 'student',
+                })
+            : undefined
+        }
+      />
 
       {showStudentTools ? (
         <NavGroup
@@ -212,6 +217,7 @@ export function HubSidebarNav({
           title={collapsed ? 'Login / Sign up' : undefined}
           className={cn(
             'mt-auto flex items-center justify-center gap-2 rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700',
+            'dark:bg-gradient-to-br dark:from-[#24B4F0] dark:to-[#0C79A8] dark:text-[#04141C] dark:shadow-[0_4px_14px_rgba(0,162,229,0.25)] dark:hover:brightness-110 dark:hover:bg-transparent',
             collapsed ? 'mx-1 mb-2 p-2.5' : 'mx-2 px-3 py-2.5'
           )}
         >
@@ -259,15 +265,15 @@ export function HubSidebarDesktop() {
           ? { duration: 0 }
           : { type: 'spring', stiffness: 320, damping: 32 }
       }
-      className="sticky top-0 z-40 hidden h-screen shrink-0 border-r border-gray-200 bg-[#f4f6f8] dark:border-gray-800 dark:bg-gray-950 lg:flex lg:flex-col"
+      className="sticky top-0 z-40 hidden h-screen shrink-0 border-r border-gray-200 bg-[#f4f6f8] dark:border-[#1A2233] dark:bg-[#0F1420] lg:flex lg:flex-col"
     >
       <div
         className={cn(
-          'relative flex h-14 shrink-0 items-center border-b border-gray-200/80 dark:border-gray-800',
+          'relative flex h-14 shrink-0 items-center border-b border-gray-200/80 dark:border-[#1A2233]',
           collapsed ? 'justify-center px-1' : 'justify-between gap-1 pl-3 pr-2'
         )}
       >
-        {!collapsed && <BrandLogo href="/" priority className="max-w-[148px]" />}
+        {!collapsed && <BrandLogo href="/" priority className="max-w-[176px]" />}
         <button
           type="button"
           onClick={toggle}
@@ -277,7 +283,7 @@ export function HubSidebarDesktop() {
           className={cn(
             'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500',
             'transition hover:bg-gray-200/80 hover:text-gray-800',
-            'dark:hover:bg-gray-800 dark:hover:text-gray-200'
+            'dark:hover:bg-[#141A29] dark:hover:text-[#F4F6FA]'
           )}
         >
           {collapsed ? (
@@ -311,8 +317,8 @@ export function HubSidebarDrawer({
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      <div className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col bg-[#f4f6f8] shadow-xl dark:bg-gray-950">
-        <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-800">
+      <div className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col bg-[#f4f6f8] shadow-xl dark:bg-[#0F1420]">
+        <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4 dark:border-[#1A2233]">
           <BrandLogo href="/" />
           <button
             type="button"

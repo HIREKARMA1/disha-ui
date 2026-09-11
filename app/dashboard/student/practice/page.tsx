@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
-import { PracticeDashboard } from '@/components/practice/PracticeDashboard'
+import { PracticeComingSoon } from '@/components/practice/PracticeComingSoon'
 
 export default function StudentPracticePage() {
-    return (
-        <StudentDashboardLayout>
-            <PracticeDashboard />
-        </StudentDashboardLayout>
-    )
+  return (
+    <StudentDashboardLayout>
+      <PracticeComingSoon />
+    </StudentDashboardLayout>
+  )
 }

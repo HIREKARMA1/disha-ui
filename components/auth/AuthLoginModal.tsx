@@ -233,7 +233,7 @@ export function AuthLoginModal({
     <>
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto p-4 sm:p-6">
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -251,7 +251,7 @@ export function AuthLoginModal({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.98 }}
               transition={{ duration: 0.22 }}
-              className="relative z-10 grid w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 md:grid-cols-2"
+              className="relative z-10 grid w-full max-w-4xl max-h-[min(90dvh,calc(100dvh-1.5rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 md:grid-cols-2 md:max-h-[min(90dvh,calc(100dvh-3rem))]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -263,9 +263,9 @@ export function AuthLoginModal({
                 <X className="h-4 w-4" />
               </button>
 
-              <LoginBrandPanel className="md:min-h-[520px]" />
+              <LoginBrandPanel className="min-h-0 md:min-h-[520px]" />
 
-              <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
+              <div className="flex min-h-0 flex-col justify-center overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-8 lg:p-10">
                 <AnimatePresence mode="wait">
                   {step === 'identify' ? (
                     <motion.div
@@ -488,19 +488,21 @@ export function AuthLoginModal({
         title="Terms and Conditions"
         maxWidth="2xl"
         overlayClassName="z-[1100]"
+        footer={
+          <div className="flex justify-center">
+            <Button
+              onClick={() => {
+                setTermsAndPrivacyAccepted(true)
+                setShowTermsModal(false)
+              }}
+              className="h-auto min-h-11 w-auto max-w-full whitespace-normal rounded-xl bg-primary-600 px-4 py-2.5 text-sm leading-snug hover:bg-primary-700 sm:text-base"
+            >
+              Accept Terms and Conditions and Privacy Policy
+            </Button>
+          </div>
+        }
       >
         <TermsModalContent />
-        <div className="mt-6 flex justify-end">
-          <Button
-            onClick={() => {
-              setTermsAndPrivacyAccepted(true)
-              setShowTermsModal(false)
-            }}
-            className="rounded-xl bg-primary-600 hover:bg-primary-700"
-          >
-            Accept Terms and Conditions and Privacy Policy
-          </Button>
-        </div>
       </Modal>
     </>
   )

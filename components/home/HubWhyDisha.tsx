@@ -32,7 +32,7 @@ export function HubWhyDisha() {
           {audiences.map((audience) => (
             <div
               key={audience.id}
-              className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900"
+              className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-[#1A2233] dark:bg-[#141A29]"
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400">
                 {audience.label}

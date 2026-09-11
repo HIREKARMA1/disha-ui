@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
   Brain,
   CheckCircle2,
@@ -77,6 +79,8 @@ function formatPerformerScore(p: NonNullable<TopPerformerHighlight['top_performe
 export default function StudentMockTestsPage() {
   const router = useRouter()
   const carouselRef = useRef<HTMLDivElement>(null)
+  const { isAuthenticated, user } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
 
   const [mockTests, setMockTests] = useState<StudentMockTest[]>([])
   const [highlights, setHighlights] = useState<TopPerformerHighlight[]>([])
@@ -130,8 +134,16 @@ export default function StudentMockTestsPage() {
   }, [mockTests])
 
   const handleStart = (mockTestId: string) => {
+    const startPath = `/assessments/exam/${mockTestId}`
+    if (!isAuthenticated || user?.user_type !== 'student') {
+      openLoginModal({
+        redirect: startPath,
+        preferredType: 'student',
+      })
+      return
+    }
     setStartingId(mockTestId)
-    router.push(`/assessments/exam/${mockTestId}`)
+    router.push(startPath)
   }
 
   const handleViewResults = (mockTestId: string) => {

@@ -13,8 +13,43 @@ interface BrandLogoProps {
   compact?: boolean
 }
 
+function DishaMonogram({ compact }: { compact: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      className={cn('relative', compact ? 'h-[22px] w-[22px]' : 'h-7 w-7 sm:h-8 sm:w-8')}
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M16 12h14.6c10.6 0 18.2 7.2 18.2 20s-7.6 20-18.2 20H16V12z"
+        fill="white"
+      />
+      <path
+        d="M26.2 20h3.8c6.2 0 10.4 4.4 10.4 12s-4.2 12-10.4 12h-3.8V20z"
+        fill="currentColor"
+      />
+      <path
+        d="M22 35c6.2-6.8 13.4-8.6 22.4-5.2"
+        stroke="#5AD0F6"
+        strokeWidth="3.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M24.5 37.4c5.4-5.4 11.6-6.8 19.2-4"
+        stroke="#8EE7FF"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        opacity="0.9"
+      />
+      <circle cx="45.2" cy="28.4" r="5.1" fill="#F5A524" />
+      <circle cx="46.6" cy="27" r="1.9" fill="#FFE08A" />
+    </svg>
+  )
+}
+
 /**
- * Disha brand — high-contrast monogram D + clear wordmark.
+ * Disha brand — navy D tile + wordmark + CAREER PATH.
  */
 export function BrandLogo({
   href = '/',
@@ -28,62 +63,32 @@ export function BrandLogo({
       aria-label="Disha home"
       className={cn('group flex shrink-0 items-center', className)}
     >
-      <span className={cn('inline-flex items-center', compact ? 'gap-1.5' : 'gap-2.5')}>
+      <span className={cn('inline-flex items-center', compact ? 'gap-2' : 'gap-2.5 sm:gap-3')}>
         <span
           className={cn(
             'relative flex shrink-0 items-center justify-center overflow-hidden',
-            compact ? 'h-8 w-8 rounded-[10px]' : 'h-9 w-9 rounded-[11px]',
-            'bg-[#0B1F3A] text-[#0B1F3A]',
-            'dark:bg-primary-500 dark:text-primary-500',
+            compact ? 'h-9 w-9 rounded-[11px]' : 'h-11 w-11 rounded-[13px] sm:h-12 sm:w-12 sm:rounded-[14px]',
+            'bg-[#0A1B33] text-[#0A1B33]',
+            'dark:bg-[#0A1B33] dark:text-[#0A1B33] dark:ring-white/15',
             'ring-1 ring-black/10 shadow-sm',
             'transition-transform duration-200 group-hover:scale-[1.03]'
           )}
           aria-hidden
         >
-          <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/10" />
-          <svg
-            viewBox="0 0 40 40"
-            className={cn('relative', compact ? 'h-5 w-5' : 'h-6 w-6')}
-            fill="none"
-          >
-            {/* Bold solid D */}
-            <path
-              d="M11.5 8.5h8.2c6.4 0 10.8 4.3 10.8 11.5S26.1 31.5 19.7 31.5h-8.2V8.5z"
-              fill="white"
-            />
-            {/* Inner cutout matches tile (currentColor) */}
-            <path
-              d="M17.2 13h2.2c3.9 0 6.5 2.7 6.5 7s-2.6 7-6.5 7h-2.2V13z"
-              fill="currentColor"
-            />
-            {/* Direction accents — thicker for small sizes */}
-            <path
-              d="M16.8 20.2c2.6-3.4 6.2-4.8 10.2-3.6"
-              stroke="#7DD3FC"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-            />
-            <path
-              d="M24.4 14.2l3.6 2.4-4.2 1"
-              stroke="#FBBF24"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <DishaMonogram compact={compact} />
         </span>
 
         <span className="flex flex-col justify-center leading-none">
           <span
             className={cn(
-              'font-bold tracking-[-0.035em] text-[#0B1F3A] dark:text-white',
-              compact ? 'text-lg' : 'text-[1.45rem] sm:text-[1.55rem]'
+              'whitespace-nowrap font-poppins font-bold leading-none text-[#0A1B33] dark:text-white',
+              compact ? 'text-lg' : 'text-[1.55rem] sm:text-[1.7rem]'
             )}
           >
             Disha
           </span>
           {!compact && (
-            <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300">
+            <span className="mt-1.5 text-[8px] font-semibold uppercase tracking-[0.32em] text-[#8AA0BC] dark:text-[#93A0BD] sm:text-[9px] sm:tracking-[0.36em]">
               Career path
             </span>
           )}

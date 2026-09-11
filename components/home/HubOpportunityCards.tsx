@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Briefcase, Calendar, ChevronLeft, ChevronRight, ArrowRight, MapPin, Trophy } from 'lucide-react'
@@ -14,9 +14,13 @@ import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
+import {
+  buildEventRegisterRedirect,
+  storePendingEventRegistration,
+} from '@/lib/pendingEventRegistration'
 
 const hubCardClass =
-  'flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-200 dark:border-gray-700 dark:bg-gray-900'
+  'flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-200 dark:border-[#1A2233] dark:bg-[#141A29] dark:shadow-none'
 
 export type HubJobCardData = {
   id: string
@@ -66,7 +70,7 @@ export function HubJobCard({
       transition={{ duration: 0.28, delay: Math.min(index, 8) * 0.04 }}
       whileHover={reduceMotion ? undefined : 'hover'}
       variants={cardMotion}
-      className={cn(hubCardClass, 'hover:border-primary-200 hover:shadow-md dark:hover:border-primary-800')}
+      className={cn(hubCardClass, 'hover:border-primary-200 hover:shadow-md dark:hover:border-[#33405E] dark:hover:bg-[#1B2334]')}
     >
       <button
         type="button"
@@ -80,7 +84,14 @@ export function HubJobCard({
               <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">
                 {job.title}
               </h3>
-              <span className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-600 dark:text-gray-300">
+              <span
+                className={cn(
+                  'rounded border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:border-transparent',
+                  job.job_type === 'part_time'
+                    ? 'dark:bg-[rgba(254,196,13,0.14)] dark:text-[#FEC40D]'
+                    : 'dark:bg-[rgba(9,136,85,0.16)] dark:text-[#3FD996]'
+                )}
+              >
                 {jobTypeLabel(job.job_type)}
               </span>
             </div>
@@ -104,7 +115,7 @@ export function HubJobCard({
         <Button
           type="button"
           size="sm"
-          className="h-8 w-full rounded-md bg-primary-600 text-xs text-white shadow-none transition-transform hover:bg-primary-700 active:scale-[0.98]"
+          className="h-8 w-full rounded-md bg-primary-600 text-xs text-white shadow-none transition-transform hover:bg-primary-700 active:scale-[0.98] dark:bg-[#00A2E5] dark:text-[#04141C] dark:hover:bg-[#24B4F0]"
           onClick={onApply}
         >
           Apply
@@ -123,7 +134,7 @@ export function HubEventCard({
 }) {
   const slug = event.slug || event.id
   const detailHref = `/events/${slug}`
-  const registerHref = `/events/${slug}?register=1&action=register`
+  const registerHref = buildEventRegisterRedirect(slug, event.id)
   const isCompleted = isPortalEventCompleted(event)
   const displayStatus = isCompleted ? 'completed' : event.contest_status
   const category =
@@ -131,6 +142,24 @@ export function HubEventCard({
   const showRegister = !event.is_registered && !isCompleted
   const mediaSrc = event.banner_url || event.organizer_logo_url
   const reduceMotion = useReducedMotion()
+  const { isAuthenticated } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
+
+  const requireGuestLogin = (href: string, pendingRegister = false) => {
+    if (pendingRegister) {
+      storePendingEventRegistration(slug, event.id)
+    }
+    openLoginModal({
+      redirect: href,
+      preferredType: 'student',
+    })
+  }
+
+  const onGuestNav = (href: string, pendingRegister = false) => (e: MouseEvent) => {
+    if (isAuthenticated) return
+    e.preventDefault()
+    requireGuestLogin(href, pendingRegister)
+  }
 
   return (
     <motion.article
@@ -141,7 +170,11 @@ export function HubEventCard({
       variants={cardMotion}
       className={cn(hubCardClass, 'group hover:border-primary-200 hover:shadow-md dark:hover:border-primary-800')}
     >
-      <Link href={detailHref} className="relative block aspect-[2.4/1] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <Link
+        href={detailHref}
+        onClick={onGuestNav(detailHref)}
+        className="relative block aspect-[2.4/1] w-full overflow-hidden bg-gray-100 dark:bg-gray-800"
+      >
         {mediaSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -157,7 +190,7 @@ export function HubEventCard({
         )}
       </Link>
 
-      <Link href={detailHref} className="flex flex-1 flex-col p-3.5">
+      <Link href={detailHref} onClick={onGuestNav(detailHref)} className="flex flex-1 flex-col p-3.5">
         <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">
           {event.title}
         </h3>
@@ -191,17 +224,17 @@ export function HubEventCard({
             Registered
           </Button>
         ) : showRegister ? (
-          <Link href={registerHref} className="block">
+          <Link href={registerHref} onClick={onGuestNav(registerHref, true)} className="block">
             <Button
               type="button"
               size="sm"
-              className="h-8 w-full rounded-md bg-primary-600 text-xs text-white shadow-none transition-transform hover:bg-primary-700 active:scale-[0.98]"
+              className="h-8 w-full rounded-md bg-primary-600 text-xs text-white shadow-none transition-transform hover:bg-primary-700 active:scale-[0.98] dark:bg-[#00A2E5] dark:text-[#04141C] dark:hover:bg-[#24B4F0]"
             >
               Register
             </Button>
           </Link>
         ) : (
-          <Link href={detailHref} className="block">
+          <Link href={detailHref} onClick={onGuestNav(detailHref)} className="block">
             <Button
               type="button"
               size="sm"
@@ -242,7 +275,7 @@ export function HubPromoStrip() {
   return (
     <Link
       href="/events"
-      className="group mb-5 block overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+      className="group mb-5 block overflow-hidden rounded-lg border border-gray-200 dark:border-[#1A2233]"
     >
       <div className="relative aspect-[4.5/1] w-full min-h-[88px] sm:min-h-[100px]">
         <Image
@@ -292,7 +325,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     title: 'Campus events & contests',
     cta: 'Browse events',
     href: '/events',
-    image: '/images/campus-events-featured.png',
+    image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/1st_img(disha).png',
     gradient: 'from-sky-900/55 via-sky-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -302,7 +335,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     title: 'Internships & full-time roles',
     cta: 'Find jobs',
     href: '/jobs',
-    image: '/images/featured-jobs-clean.png',
+    image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/2nd_img2(disha).png',
     gradient: 'from-emerald-950/55 via-emerald-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -313,7 +346,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     cta: 'Start practice',
     href: '/dashboard/student/practice',
     auth: true,
-    image: '/images/featured-practice.png',
+    image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/3rd_img(disha).png',
     gradient: 'from-indigo-950/55 via-indigo-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -323,7 +356,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     title: 'Create your campus event',
     cta: 'Create event',
     href: '/events#create-event-request',
-    image: '/images/featured-create.png',
+    image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/4th_img(disha).png',
     gradient: 'from-amber-950/55 via-amber-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -334,7 +367,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     cta: 'Resume builder',
     href: '/dashboard/student/resume-builder',
     auth: true,
-    image: '/images/featured-resume.png',
+    image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/5th_img(disha).png',
     gradient: 'from-rose-950/55 via-rose-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -361,7 +394,7 @@ function RailArrow({
         'absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
         'border border-gray-200 bg-white/95 text-gray-700 shadow-md backdrop-blur',
         'transition hover:border-primary-300 hover:text-primary-700 hover:shadow-lg active:scale-95',
-        'dark:border-gray-600 dark:bg-gray-900/95 dark:text-gray-200 sm:flex',
+        'dark:border-gray-600 dark:bg-[#141A29]/95 dark:text-gray-200 sm:flex',
         dir === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2'
       )}
     >
@@ -399,7 +432,7 @@ export function HubFeaturedCarousel() {
     >
       <div className="mb-3 flex items-end justify-between gap-3 sm:mb-4">
         <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-3 sm:text-[22px]">
-          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-6" aria-hidden />
           Featured
         </h2>
         <div className="flex gap-1.5 sm:hidden">
@@ -407,7 +440,7 @@ export function HubFeaturedCarousel() {
             type="button"
             aria-label="Previous"
             onClick={() => scrollByAmount(scrollerRef.current, -1)}
-            className="rounded-full border border-gray-200 bg-white p-1.5 dark:border-gray-700 dark:bg-gray-900"
+            className="rounded-full border border-gray-200 bg-white p-1.5 dark:border-[#1A2233] dark:bg-[#141A29]"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -415,7 +448,7 @@ export function HubFeaturedCarousel() {
             type="button"
             aria-label="Next"
             onClick={() => scrollByAmount(scrollerRef.current, 1)}
-            className="rounded-full border border-gray-200 bg-white p-1.5 dark:border-gray-700 dark:bg-gray-900"
+            className="rounded-full border border-gray-200 bg-white p-1.5 dark:border-[#1A2233] dark:bg-[#141A29]"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -439,16 +472,15 @@ export function HubFeaturedCarousel() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.05, duration: 0.3 }}
               whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-              className="shrink-0"
+              className="w-[min(72vw,240px)] shrink-0 sm:w-[min(100%,280px)] lg:w-[300px] 2xl:w-[calc((100%-2.25rem)/4)]"
             >
               <Link
-                href={item.auth ? '#' : item.href}
+                href={item.href}
                 aria-label={`${item.title} — ${item.cta}`}
                 onClick={(e) => {
-                  if (
-                    item.auth &&
-                    !(isAuthenticated && user?.user_type === 'student')
-                  ) {
+                  const needsStudent = Boolean('auth' in item && item.auth)
+                  const isStudent = isAuthenticated && user?.user_type === 'student'
+                  if (needsStudent && !isStudent) {
                     e.preventDefault()
                     openLoginModal({
                       redirect: item.href,
@@ -456,19 +488,15 @@ export function HubFeaturedCarousel() {
                     })
                   }
                 }}
-                className="group relative block h-[132px] w-[min(72vw,240px)] overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 sm:h-[168px] sm:w-[min(100%,280px)] lg:w-[300px]"
+                className="group relative block h-[132px] w-full overflow-hidden rounded-xl border border-gray-200 dark:border-[#1A2233] sm:h-[168px] 2xl:h-[200px]"
               >
-                {item.image ? (
-                  <Image
-                    src={item.image}
-                    alt=""
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-                    sizes="300px"
-                  />
-                ) : (
-                  <div className={cn('absolute inset-0 bg-gradient-to-br', item.gradient)} />
-                )}
+                <Image
+                  src={item.image}
+                  alt=""
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+                  sizes="(min-width: 1536px) 25vw, 300px"
+                />
                 {/* Soft bottom wash only — keeps CTA readable without tinting the art */}
                 <div
                   className={cn(
@@ -515,7 +543,7 @@ type PlacedStudent = {
   imageUrl: string
 }
 
-/** HireKarma-style placed students rail — manual arrows only (no auto-scroll). */
+/** HireKarma-style placed students rail — auto-scroll with wrapping arrows. */
 export function HubPlacedStudents({
   students,
   subtitle,
@@ -524,33 +552,63 @@ export function HubPlacedStudents({
   subtitle: string
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
-  const [canLeft, setCanLeft] = useState(false)
-  const [canRight, setCanRight] = useState(false)
-
-  const updateArrows = useCallback(() => {
-    const el = scrollerRef.current
-    if (!el) return
-    const max = el.scrollWidth - el.clientWidth
-    setCanLeft(el.scrollLeft > 4)
-    setCanRight(el.scrollLeft < max - 4)
-  }, [])
+  const hoverPausedRef = useRef(false)
+  const resumeAtRef = useRef(0)
+  const reduceMotion = useReducedMotion()
+  const looped = useMemo(
+    () => (students.length ? [...students, ...students] : []),
+    [students]
+  )
 
   useEffect(() => {
-    updateArrows()
+    if (reduceMotion || students.length < 2) return
     const el = scrollerRef.current
     if (!el) return
-    el.addEventListener('scroll', updateArrows, { passive: true })
-    window.addEventListener('resize', updateArrows)
-    return () => {
-      el.removeEventListener('scroll', updateArrows)
-      window.removeEventListener('resize', updateArrows)
+
+    let raf = 0
+    let alive = true
+    const tick = () => {
+      if (!alive) return
+      const paused = hoverPausedRef.current || Date.now() < resumeAtRef.current
+      if (!paused) {
+        el.scrollLeft += 0.55
+        const half = el.scrollWidth / 2
+        if (half > 0 && el.scrollLeft >= half) {
+          el.scrollLeft -= half
+        }
+      }
+      raf = requestAnimationFrame(tick)
     }
-  }, [updateArrows, students.length])
+    raf = requestAnimationFrame(tick)
+    return () => {
+      alive = false
+      cancelAnimationFrame(raf)
+    }
+  }, [reduceMotion, students.length])
 
   const scrollByDir = (dir: -1 | 1) => {
     const el = scrollerRef.current
     if (!el) return
-    el.scrollBy({ left: dir * Math.min(280, el.clientWidth * 0.75), behavior: 'smooth' })
+    resumeAtRef.current = Date.now() + 5000
+
+    const step = Math.min(280, el.clientWidth * 0.75)
+    const half = el.scrollWidth / 2
+    if (half > 0 && el.scrollLeft >= half) {
+      el.scrollLeft -= half
+    }
+
+    if (dir < 0 && el.scrollLeft <= 8) {
+      if (half > 0) el.scrollLeft += half
+      el.scrollBy({ left: -step, behavior: 'smooth' })
+      return
+    }
+
+    if (dir > 0 && el.scrollLeft + el.clientWidth >= el.scrollWidth - 8) {
+      el.scrollTo({ left: 0, behavior: 'smooth' })
+      return
+    }
+
+    el.scrollBy({ left: dir * step, behavior: 'smooth' })
   }
 
   if (!students.length) return null
@@ -560,7 +618,7 @@ export function HubPlacedStudents({
       <div className="mb-5 flex items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-            <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+            <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-6" aria-hidden />
             Placed students
           </h2>
           <p className="mt-1.5 max-w-2xl pl-3.5 text-xs leading-relaxed text-gray-500 sm:text-sm dark:text-gray-400">
@@ -571,12 +629,11 @@ export function HubPlacedStudents({
           <button
             type="button"
             aria-label="Previous placed students"
-            disabled={!canLeft}
             onClick={() => scrollByDir(-1)}
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition',
-              'hover:border-primary-300 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-40',
-              'dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200'
+              'hover:border-primary-300 hover:text-primary-700',
+              'dark:border-gray-600 dark:bg-[#141A29] dark:text-gray-200'
             )}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -584,12 +641,11 @@ export function HubPlacedStudents({
           <button
             type="button"
             aria-label="Next placed students"
-            disabled={!canRight}
             onClick={() => scrollByDir(1)}
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition',
-              'hover:border-primary-300 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-40',
-              'dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200'
+              'hover:border-primary-300 hover:text-primary-700',
+              'dark:border-gray-600 dark:bg-[#141A29] dark:text-gray-200'
             )}
           >
             <ChevronRight className="h-4 w-4" />
@@ -597,15 +653,23 @@ export function HubPlacedStudents({
         </div>
       </div>
 
-      <div className="relative">
+      <div
+        className="relative"
+        onMouseEnter={() => {
+          hoverPausedRef.current = true
+        }}
+        onMouseLeave={() => {
+          hoverPausedRef.current = false
+        }}
+      >
         <div
           ref={scrollerRef}
-          className="flex gap-3 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
+          className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4"
         >
-          {students.map((student) => (
+          {looped.map((student, index) => (
             <div
-              key={`${student.name}-${student.company}`}
-              className="flex w-[240px] shrink-0 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-900 sm:w-[260px]"
+              key={`${student.name}-${student.company}-${index}`}
+              className="flex w-[240px] shrink-0 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:border-[#1A2233] dark:bg-[#141A29] sm:w-[260px] 2xl:w-[300px]"
             >
               <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-600">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -650,8 +714,8 @@ export function HubTrustedLogos({ companies }: { companies: LogoItem[] }) {
         Our Trusted Partners
       </p>
       <div className="group/logos relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#f7f8fa] to-transparent dark:from-gray-950" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#f7f8fa] to-transparent dark:from-gray-950" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#f7f8fa] to-transparent dark:from-[#0A0D14]" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#f7f8fa] to-transparent dark:from-[#0A0D14]" />
         <div
           className={cn(
             'flex w-max gap-10 py-2',
@@ -687,20 +751,29 @@ export function HubSectionHeader({
   viewAllHref,
   viewAllLabel,
   subtitle,
+  onViewAllClick,
 }: {
   title: string
   count?: number
   viewAllHref: string
   viewAllLabel: string
   subtitle?: string
+  /** If set, View all is a button (e.g. guest login) instead of a link. */
+  onViewAllClick?: () => void
 }) {
   const reduceMotion = useReducedMotion()
+  const viewAllClass = cn(
+    'group inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5',
+    'text-sm font-semibold text-primary-700 shadow-sm transition-colors',
+    'hover:border-primary-400 hover:bg-primary-100 hover:shadow-md',
+    'dark:border-[#232C42] dark:bg-[#141A29] dark:text-[#F4F6FA] dark:hover:border-[rgba(0,162,229,0.35)] dark:hover:bg-[#1B2334]'
+  )
 
   return (
     <div className="mb-4 flex items-start justify-between gap-3 sm:items-center">
       <div className="min-w-0">
         <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-x-2.5 sm:text-[22px]">
-          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-6" aria-hidden />
           {title}
           {typeof count === 'number' && (
             <span className="text-sm font-medium text-gray-400 sm:text-base">({count})</span>
@@ -717,25 +790,31 @@ export function HubSectionHeader({
         whileTap={reduceMotion ? undefined : { scale: 0.97 }}
         className="shrink-0"
       >
-        <Link
-          href={viewAllHref}
-          className={cn(
-            'group inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5',
-            'text-sm font-semibold text-primary-700 shadow-sm transition-colors',
-            'hover:border-primary-400 hover:bg-primary-100 hover:shadow-md',
-            'dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300 dark:hover:bg-primary-900/60'
-          )}
-        >
-          <span>{viewAllLabel}</span>
-          <span
-            className={cn(
-              'flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white',
-              'transition-transform duration-200 group-hover:translate-x-0.5 group-hover:bg-primary-700'
-            )}
-          >
-            <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
-          </span>
-        </Link>
+        {onViewAllClick ? (
+          <button type="button" onClick={onViewAllClick} className={viewAllClass}>
+            <span>{viewAllLabel}</span>
+            <span
+              className={cn(
+                'flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white',
+                'transition-transform duration-200 group-hover:translate-x-0.5 group-hover:bg-primary-700'
+              )}
+            >
+              <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+            </span>
+          </button>
+        ) : (
+          <Link href={viewAllHref} className={viewAllClass}>
+            <span>{viewAllLabel}</span>
+            <span
+              className={cn(
+                'flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-white',
+                'transition-transform duration-200 group-hover:translate-x-0.5 group-hover:bg-primary-700'
+              )}
+            >
+              <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+            </span>
+          </Link>
+        )}
       </motion.div>
     </div>
   )

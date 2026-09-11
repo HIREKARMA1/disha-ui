@@ -7,6 +7,7 @@ import { LoadingProvider } from '@/contexts/LoadingContext'
 import { AuthLoginModalProvider } from '@/contexts/AuthLoginModalContext'
 import { Toaster } from 'react-hot-toast'
 import { WhatsAppFloatingButton } from '@/components/ui/WhatsAppFloatingButton'
+import { config } from '@/lib/config'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const poppins = Poppins({ 
@@ -57,9 +58,10 @@ export default function RootLayout({
                 />
                 <ThemeProvider
                     attribute="class"
-                    defaultTheme="system"
-                    enableSystem
                     disableTransitionOnChange
+                    {...(config.features.darkModeToggle
+                        ? { defaultTheme: 'dark' as const }
+                        : { defaultTheme: 'light' as const, forcedTheme: 'light' })}
                 >
                     <LoadingProvider>
                         <AuthLoginModalProvider>

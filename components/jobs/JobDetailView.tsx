@@ -37,10 +37,8 @@ import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
-  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   clearAutoApplyQueryParams,
-  getUniversityApplyEligibility,
   getPassoutBatchApplyEligibility,
   resumePendingJobApplication,
   shouldAutoApplyForJob,
@@ -198,19 +196,6 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
     if (!job.can_apply) {
       toast.error(JOB_CLOSED_MESSAGE)
-      return
-    }
-    const eligibility = getUniversityApplyEligibility({
-      isPublic: job.is_public,
-      publicAccessLevel: job.public_access_level,
-      assignedUniversityIds: job.assigned_university_ids,
-      isAuthenticatedStudent: Boolean(
-        isAuthenticated && user?.user_type === 'student'
-      ),
-      studentUniversityId,
-    })
-    if (!eligibility.canApply) {
-      toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
       return
     }
     const batchEligibility = getPassoutBatchApplyEligibility({
