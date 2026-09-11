@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins, Sora } from 'next/font/google'
+import NextTopLoader from 'nextjs-toploader'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { LoadingProvider } from '@/contexts/LoadingContext'
@@ -41,6 +42,19 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${inter.variable} ${poppins.variable} ${sora.variable} font-sans`}>
+                <NextTopLoader
+                  color="#1b52a4"
+                  initialPosition={0.08}
+                  crawlSpeed={200}
+                  height={3}
+                  crawl
+                  showSpinner={false}
+                  easing="ease"
+                  speed={200}
+                  shadow="0 0 10px #1b52a4,0 0 5px #1b52a4"
+                  zIndex={9999}
+                  showAtBottom={false}
+                />
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="system"

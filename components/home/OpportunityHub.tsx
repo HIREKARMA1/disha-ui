@@ -22,11 +22,6 @@ import {
   X,
   ArrowRight,
   Brain,
-  ClipboardList,
-  FileText,
-  Library,
-  Target,
-  Video,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -39,16 +34,18 @@ import { Footer } from '@/components/ui/footer'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
 import {
   HubCardSkeleton,
-  HubCarousel,
-  HubCarouselItem,
   HubEventCard,
   HubFeaturedCarousel,
   HubJobCard,
+  HubPlacedStudents,
   HubSectionHeader,
   HubTrustedLogos,
 } from '@/components/home/HubOpportunityCards'
 import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
+import placedStudentsData from '@/data/placed-students.json'
 import { CategoryIcon } from '@/components/home/CategoryIcons'
+import { HubWhyDisha } from '@/components/home/HubWhyDisha'
+import { getFeaturedBlogs } from '@/data/blogs'
 import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
@@ -102,6 +99,10 @@ type HubIcon = LucideIcon
 type QuickPill = {
   id: string
   label: string
+  /** scroll = home-page section; filter kept for search Explore panel only */
+  kind?: 'filter' | 'scroll'
+  /** DOM id on Opportunity Hub for smooth scroll */
+  sectionId?: string
   tab: OpportunityTab
   patch?: Partial<HubFilters>
   icon: HubIcon
@@ -124,89 +125,154 @@ const CATEGORY_TILE_TONES: Record<
     iconWrap: 'bg-blue-50/60 shadow-none ring-1 ring-blue-100/80',
     glow: 'group-hover:shadow-sm',
   },
-  internship: {
-    idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
-    active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
-    iconWrap: 'bg-violet-50/60 shadow-none ring-1 ring-violet-100/80',
-    glow: 'group-hover:shadow-sm',
-  },
-  full_time: {
-    idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
-    active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
-    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80',
-    glow: 'group-hover:shadow-sm',
-  },
   events: {
     idle: 'border-slate-200/80 bg-white hover:border-orange-200 hover:bg-orange-50/25',
     active: 'border-orange-300 bg-orange-50/40 shadow-sm ring-1 ring-orange-200/60',
     iconWrap: 'bg-orange-50/60 shadow-none ring-1 ring-orange-100/80',
     glow: 'group-hover:shadow-sm',
   },
-  hackathon: {
-    idle: 'border-slate-200/80 bg-white hover:border-cyan-200 hover:bg-cyan-50/25',
-    active: 'border-cyan-300 bg-cyan-50/40 shadow-sm ring-1 ring-cyan-200/60',
-    iconWrap: 'bg-cyan-50/50 shadow-none ring-1 ring-cyan-100/80',
+  blogs: {
+    idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
+    active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
+    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80',
     glow: 'group-hover:shadow-sm',
   },
-  workshop: {
-    idle: 'border-slate-200/80 bg-white hover:border-amber-200 hover:bg-amber-50/25',
-    active: 'border-amber-300 bg-amber-50/40 shadow-sm ring-1 ring-amber-200/60',
-    iconWrap: 'bg-amber-50/50 shadow-none ring-1 ring-amber-100/80',
+  faq: {
+    idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
+    active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
+    iconWrap: 'bg-violet-50/60 shadow-none ring-1 ring-violet-100/80',
     glow: 'group-hover:shadow-sm',
   },
-  placement: {
+  placed_students: {
     idle: 'border-slate-200/80 bg-white hover:border-emerald-200 hover:bg-emerald-50/25',
     active: 'border-emerald-300 bg-emerald-50/40 shadow-sm ring-1 ring-emerald-200/60',
     iconWrap: 'bg-emerald-50/50 shadow-none ring-1 ring-emerald-100/80',
     glow: 'group-hover:shadow-sm',
   },
-  competition: {
-    idle: 'border-slate-200/80 bg-white hover:border-primary-200 hover:bg-primary-50/25',
-    active: 'border-primary-300 bg-primary-50/40 shadow-sm ring-1 ring-primary-200/60',
-    iconWrap: 'bg-primary-50/50 shadow-none ring-1 ring-primary-100/80',
+  campus_challenge: {
+    idle: 'border-slate-200/80 bg-white hover:border-amber-200 hover:bg-amber-50/25',
+    active: 'border-amber-300 bg-amber-50/40 shadow-sm ring-1 ring-amber-200/60',
+    iconWrap: 'bg-amber-50/50 shadow-none ring-1 ring-amber-100/80',
     glow: 'group-hover:shadow-sm',
   },
-  coding: {
+  trusted_partners: {
+    idle: 'border-slate-200/80 bg-white hover:border-cyan-200 hover:bg-cyan-50/25',
+    active: 'border-cyan-300 bg-cyan-50/40 shadow-sm ring-1 ring-cyan-200/60',
+    iconWrap: 'bg-cyan-50/50 shadow-none ring-1 ring-cyan-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  about: {
     idle: 'border-slate-200/80 bg-white hover:border-indigo-200 hover:bg-indigo-50/25',
     active: 'border-indigo-300 bg-indigo-50/40 shadow-sm ring-1 ring-indigo-200/60',
     iconWrap: 'bg-indigo-50/50 shadow-none ring-1 ring-indigo-100/80',
+    glow: 'group-hover:shadow-sm',
+  },
+  contact: {
+    idle: 'border-slate-200/80 bg-white hover:border-rose-200 hover:bg-rose-50/25',
+    active: 'border-rose-300 bg-rose-50/40 shadow-sm ring-1 ring-rose-200/60',
+    iconWrap: 'bg-rose-50/50 shadow-none ring-1 ring-rose-100/80',
     glow: 'group-hover:shadow-sm',
   },
 }
 
 const DEFAULT_TILE_TONE = CATEGORY_TILE_TONES.all
 
-/** Category tiles — all major Disha opportunity types. */
+/** Explore categories — scroll to matching sections on this home page. */
 const CATEGORY_TILES: QuickPill[] = [
-  { id: 'all', label: 'All', tab: 'all', icon: Sparkles },
-  { id: 'jobs', label: 'Jobs', tab: 'jobs', icon: Briefcase },
-  { id: 'internship', label: 'Internships', tab: 'jobs', patch: { jobType: 'internship' }, icon: GraduationCap },
-  { id: 'full_time', label: 'Full time', tab: 'jobs', patch: { jobType: 'full_time' }, icon: Briefcase },
-  { id: 'events', label: 'Events', tab: 'events', icon: Calendar },
-  { id: 'hackathon', label: 'Hackathons', tab: 'events', patch: { eventCategory: 'hackathon' }, icon: Code2 },
-  { id: 'workshop', label: 'Workshops', tab: 'events', patch: { eventCategory: 'workshop' }, icon: Wrench },
+  { id: 'all', label: 'All', kind: 'scroll', sectionId: 'hub-top', tab: 'all', icon: Sparkles },
+  { id: 'jobs', label: 'Jobs', kind: 'scroll', sectionId: 'hub-jobs', tab: 'all', icon: Briefcase },
+  { id: 'events', label: 'Events', kind: 'scroll', sectionId: 'hub-events', tab: 'all', icon: Calendar },
+  { id: 'blogs', label: 'Blogs', kind: 'scroll', sectionId: 'hub-blogs', tab: 'all', icon: Newspaper },
   {
-    id: 'placement',
-    label: 'Placement',
-    tab: 'events',
-    patch: { eventCategory: 'placement_drive' },
+    id: 'placed_students',
+    label: 'Placed Students',
+    kind: 'scroll',
+    sectionId: 'hub-placed-students',
+    tab: 'all',
     icon: Users,
   },
   {
+    id: 'campus_challenge',
+    label: 'Campus Hiring',
+    kind: 'scroll',
+    sectionId: 'hub-campus-challenge',
+    tab: 'all',
+    icon: Trophy,
+  },
+  {
+    id: 'trusted_partners',
+    label: 'Trusted Partner',
+    kind: 'scroll',
+    sectionId: 'hub-trusted-partners',
+    tab: 'all',
+    icon: Users,
+  },
+  { id: 'faq', label: 'FAQ', kind: 'scroll', sectionId: 'hub-faq', tab: 'all', icon: Sparkles },
+  { id: 'about', label: 'Why Disha?', kind: 'scroll', sectionId: 'hub-about', tab: 'all', icon: User },
+  { id: 'contact', label: 'Contact Us', kind: 'scroll', sectionId: 'hub-contact', tab: 'all', icon: Newspaper },
+]
+
+/** Filters still used by search Explore panel (not all shown as category tiles). */
+const EXPLORE_FILTER_PILLS: Record<string, QuickPill> = {
+  jobs: { id: 'jobs', label: 'Jobs', kind: 'filter', tab: 'jobs', icon: Briefcase },
+  internship: {
+    id: 'internship',
+    label: 'Internships',
+    kind: 'filter',
+    tab: 'jobs',
+    patch: { jobType: 'internship' },
+    icon: GraduationCap,
+  },
+  competition: {
     id: 'competition',
     label: 'Competitions',
+    kind: 'filter',
     tab: 'events',
     patch: { eventCategory: 'competition' },
     icon: Trophy,
   },
-  {
+  hackathon: {
+    id: 'hackathon',
+    label: 'Hackathons',
+    kind: 'filter',
+    tab: 'events',
+    patch: { eventCategory: 'hackathon' },
+    icon: Code2,
+  },
+  events: { id: 'events', label: 'Events', kind: 'filter', tab: 'events', icon: Calendar },
+  workshop: {
+    id: 'workshop',
+    label: 'Workshops',
+    kind: 'filter',
+    tab: 'events',
+    patch: { eventCategory: 'workshop' },
+    icon: Wrench,
+  },
+  placement: {
+    id: 'placement',
+    label: 'Placement',
+    kind: 'filter',
+    tab: 'events',
+    patch: { eventCategory: 'placement_drive' },
+    icon: Users,
+  },
+  coding: {
     id: 'coding',
     label: 'Coding',
+    kind: 'filter',
     tab: 'events',
     patch: { eventCategory: 'coding_contest' },
     icon: Code2,
   },
-]
+  full_time: {
+    id: 'full_time',
+    label: 'Full time',
+    kind: 'filter',
+    tab: 'jobs',
+    patch: { jobType: 'full_time' },
+    icon: Briefcase,
+  },
+}
 
 /** Unstop-style Explore panel under search (Disha features only). */
 type ExploreItem =
@@ -221,44 +287,44 @@ type ExploreItem =
     }
 
 const EXPLORE_ITEMS: ExploreItem[] = [
-  { id: 'jobs', label: 'Jobs', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'jobs')! },
+  { id: 'jobs', label: 'Jobs', kind: 'filter', pill: EXPLORE_FILTER_PILLS.jobs },
   {
     id: 'internship',
     label: 'Internships',
     kind: 'filter',
-    pill: CATEGORY_TILES.find((t) => t.id === 'internship')!,
+    pill: EXPLORE_FILTER_PILLS.internship,
   },
   {
     id: 'competition',
     label: 'Competitions',
     kind: 'filter',
-    pill: CATEGORY_TILES.find((t) => t.id === 'competition')!,
+    pill: EXPLORE_FILTER_PILLS.competition,
   },
   {
     id: 'hackathon',
     label: 'Hackathons',
     kind: 'filter',
-    pill: CATEGORY_TILES.find((t) => t.id === 'hackathon')!,
+    pill: EXPLORE_FILTER_PILLS.hackathon,
   },
-  { id: 'events', label: 'Events', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'events')! },
+  { id: 'events', label: 'Events', kind: 'filter', pill: EXPLORE_FILTER_PILLS.events },
   {
     id: 'workshop',
     label: 'Workshops',
     kind: 'filter',
-    pill: CATEGORY_TILES.find((t) => t.id === 'workshop')!,
+    pill: EXPLORE_FILTER_PILLS.workshop,
   },
   {
     id: 'placement',
     label: 'Placement',
     kind: 'filter',
-    pill: CATEGORY_TILES.find((t) => t.id === 'placement')!,
+    pill: EXPLORE_FILTER_PILLS.placement,
   },
-  { id: 'coding', label: 'Coding', kind: 'filter', pill: CATEGORY_TILES.find((t) => t.id === 'coding')! },
+  { id: 'coding', label: 'Coding', kind: 'filter', pill: EXPLORE_FILTER_PILLS.coding },
   {
     id: 'full_time',
     label: 'Full time',
     kind: 'filter',
-    pill: CATEGORY_TILES.find((t) => t.id === 'full_time')!,
+    pill: EXPLORE_FILTER_PILLS.full_time,
   },
   {
     id: 'create',
@@ -277,6 +343,33 @@ const EXPLORE_ITEMS: ExploreItem[] = [
     auth: true,
   },
 ]
+
+const HUB_HOME_FAQS = [
+  {
+    q: 'What industries will have the highest-paying jobs in 2026?',
+    a: 'Technology, healthcare, finance, and renewable energy are expected to lead — driven by AI, digital transformation, and ongoing demand for skilled professionals.',
+  },
+  {
+    q: 'What is the most in-demand job in India for 2026?',
+    a: 'AI and Machine Learning roles currently top the list, followed closely by cybersecurity and data science, as nearly every industry invests in these areas.',
+  },
+  {
+    q: 'Do I need a computer science degree to get into these roles?',
+    a: 'Not always. Many companies hire based on demonstrated skills and project work rather than the degree alone — practical training and placement prep matter more than ever.',
+  },
+  {
+    q: 'How is AI changing recruitment in 2026?',
+    a: 'AI now handles resume screening, sourcing, interview scheduling, and early phone screens — so hiring moves faster. Final decisions and cultural fit still need human judgment.',
+  },
+  {
+    q: 'How can job seekers prepare for AI-driven hiring?',
+    a: 'Build an ATS-friendly resume with clear skills and measurable results, practice with AI interview simulations, and be ready to move quickly once shortlisted.',
+  },
+  {
+    q: 'How does Disha / HireKarma help students get hired?',
+    a: 'Disha connects campus opportunities, jobs, and events. HireKarma also supports skill development, SolviqAI practice, Pre-Placement Training, and Shortlisted matching — from learning to offer.',
+  },
+] as const
 
 type HubJob = {
   id: string
@@ -381,6 +474,41 @@ function OpportunityHeader({
   const { user, isAuthenticated, isLoading, logout } = useAuth()
   const { openLoginModal } = useAuthLoginModal()
 
+  const authActions = (
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+      {isLoading ? (
+        <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
+      ) : isAuthenticated && user ? (
+        <>
+          <Link href={getDashboardPath(user.user_type)} className="hidden md:block">
+            <Button size="sm" variant="outline" className="h-8 rounded-full shadow-none">
+              <User className="mr-1.5 h-3.5 w-3.5" />
+              Dashboard
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="hidden h-8 text-gray-600 dark:text-gray-400 md:inline-flex"
+          >
+            <LogOut className="mr-1.5 h-3.5 w-3.5" />
+            Logout
+          </Button>
+        </>
+      ) : (
+        <Button
+          size="sm"
+          className="h-8 rounded-full bg-primary-600 px-3.5 text-sm text-white shadow-none hover:bg-primary-700 sm:px-4"
+          onClick={() => openLoginModal()}
+        >
+          Login
+        </Button>
+      )}
+      <ThemeToggle />
+    </div>
+  )
+
   return (
     <header
       className={cn(
@@ -388,52 +516,28 @@ function OpportunityHeader({
         'dark:border-gray-800 dark:bg-gray-950'
       )}
     >
-      <div className="flex h-14 items-center gap-3 px-3 sm:px-4 lg:px-6">
-        <button
-          type="button"
-          onClick={onMenuOpen}
-          className="shrink-0 rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 lg:hidden"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <div className="shrink-0 lg:hidden">
-          <BrandLogo href="/" priority />
+      {/*
+        Mobile (Unstop-like): row1 = menu · logo · Login; row2 = full search
+        Desktop (lg+): single row = search · Login (sidebar has brand)
+      */}
+      <div className="flex flex-col lg:h-14 lg:flex-row lg:items-center lg:gap-3 lg:px-6">
+        <div className="flex h-12 items-center gap-2 px-3 sm:px-4 lg:order-2 lg:h-auto lg:shrink-0 lg:px-0">
+          <button
+            type="button"
+            onClick={onMenuOpen}
+            className="shrink-0 rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 lg:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 shrink-0 lg:hidden">
+            <BrandLogo href="/" priority compact />
+          </div>
+          <div className="ml-auto lg:ml-0">{authActions}</div>
         </div>
 
-        <div className="min-w-0 flex-1">{searchSlot}</div>
-
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {isLoading ? (
-            <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
-          ) : isAuthenticated && user ? (
-            <>
-              <Link href={getDashboardPath(user.user_type)} className="hidden md:block">
-                <Button size="sm" variant="outline" className="h-8 rounded-full shadow-none">
-                  <User className="mr-1.5 h-3.5 w-3.5" />
-                  Dashboard
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="hidden h-8 text-gray-600 dark:text-gray-400 md:inline-flex"
-              >
-                <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                Logout
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              className="h-8 rounded-full bg-primary-600 px-4 text-white shadow-none hover:bg-primary-700"
-              onClick={() => openLoginModal()}
-            >
-              Login
-            </Button>
-          )}
-          <ThemeToggle />
+        <div className="min-w-0 flex-1 border-t border-gray-100 px-3 pb-2.5 pt-2 dark:border-gray-800/80 sm:px-4 lg:order-1 lg:border-0 lg:px-0 lg:pb-0 lg:pt-0">
+          {searchSlot}
         </div>
       </div>
     </header>
@@ -453,6 +557,7 @@ export default function OpportunityHub() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(false)
+  const [activeSectionId, setActiveSectionId] = useState('all')
   const [jobs, setJobs] = useState<HubJob[]>([])
   const [events, setEvents] = useState<ContestEventListItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -460,9 +565,12 @@ export default function OpportunityHub() {
   const reduceMotion = useReducedMotion()
   const searchWrapRef = useRef<HTMLDivElement>(null)
   const resultsAnchorRef = useRef<HTMLDivElement>(null)
+  const hubTopRef = useRef<HTMLDivElement>(null)
   const exploreCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** True while pointer is over search + Explore (survives layout-shift scroll events). */
   const exploreHoveringRef = useRef(false)
+
+  const featuredBlogs = useMemo(() => getFeaturedBlogs(3), [])
 
   const showExplore = exploreOpen && !searchInput.trim()
 
@@ -612,12 +720,25 @@ export default function OpportunityHub() {
   }
 
   const applyQuickPill = (pill: QuickPill) => {
-    setTab(pill.tab)
-    applyFilters({ ...DEFAULT_FILTERS, ...pill.patch })
+    setActiveSectionId(pill.id)
     setExploreOpen(false)
     setSearchFocused(false)
+
+    // Stay on browse-home layout so section anchors remain mounted
+    setTab('all')
+    applyFilters(DEFAULT_FILTERS)
+    setQuery('')
+    setSearchInput('')
+
+    const targetId = pill.sectionId || 'hub-top'
     window.requestAnimationFrame(() => {
-      resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.setTimeout(() => {
+        const el =
+          targetId === 'hub-top'
+            ? hubTopRef.current || document.getElementById('hub-top')
+            : document.getElementById(targetId)
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 80)
     })
   }
 
@@ -630,7 +751,14 @@ export default function OpportunityHub() {
 
   const handleExploreSelect = (item: ExploreItem) => {
     if (item.kind === 'filter') {
-      applyQuickPill(item.pill)
+      // Search Explore filters still filter the feed
+      setTab(item.pill.tab)
+      applyFilters({ ...DEFAULT_FILTERS, ...item.pill.patch })
+      setExploreOpen(false)
+      setSearchFocused(false)
+      window.requestAnimationFrame(() => {
+        resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
       return
     }
     setExploreOpen(false)
@@ -649,28 +777,7 @@ export default function OpportunityHub() {
     router.push(item.href)
   }
 
-  const activeQuickPillId = useMemo(() => {
-    for (const pill of [...CATEGORY_TILES].reverse()) {
-      if (pill.tab !== tab) continue
-      if (!pill.patch) {
-        if (
-          filters.jobType === '' &&
-          filters.remoteWork === '' &&
-          filters.datePosted === 'all' &&
-          filters.eventStatus === 'all' &&
-          filters.eventCategory === 'all'
-        ) {
-          return pill.id
-        }
-        continue
-      }
-      const matches = Object.entries(pill.patch).every(
-        ([key, value]) => filters[key as keyof HubFilters] === value
-      )
-      if (matches) return pill.id
-    }
-    return null
-  }, [tab, filters])
+  const activeQuickPillId = activeSectionId
 
   const filterSheet = (
     <MobileFilterBottomSheet
@@ -846,7 +953,7 @@ export default function OpportunityHub() {
               }}
               placeholder="Search…"
               className={cn(
-                'h-10 rounded-full border-primary-300 bg-white pl-10 shadow-none',
+                'h-9 rounded-full border-primary-300 bg-white pl-10 shadow-none sm:h-10',
                 'transition-colors focus-visible:border-primary-500 focus-visible:ring-0',
                 'dark:border-primary-700 dark:bg-gray-900'
               )}
@@ -940,29 +1047,33 @@ export default function OpportunityHub() {
           searchSlot={searchSlot}
         />
 
-        <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
-          <div ref={resultsAnchorRef} className="scroll-mt-20" />
+        <main className="w-full flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:px-10">
+          <div ref={resultsAnchorRef} className="scroll-mt-28" />
 
-          {/* Layout headline — same hub, Unstop-like hero placement */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-              Unlock Your <span className="text-primary-600">Career!</span>
+          {/* Hub hero headline — tighter on mobile like Unstop */}
+          <div id="hub-top" ref={hubTopRef} className="mb-5 scroll-mt-28 sm:mb-7">
+            <h1 className="text-xl font-extrabold uppercase leading-snug tracking-[0.02em] text-gray-900 dark:text-white sm:text-3xl sm:leading-tight sm:tracking-[0.06em] lg:text-4xl">
+              Discover Your{' '}
+              <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
+                Potential
+              </span>
             </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Jobs, events, and campus opportunities on Disha.
-            </p>
+            <div
+              className="mt-2.5 h-1 w-12 rounded-full bg-primary-500 sm:mt-3 sm:w-20"
+              aria-hidden
+            />
           </div>
 
           {/* Category tiles — same filters, Unstop icon-row layout */}
           <motion.section
-            className="mb-8"
+            className="mb-6 sm:mb-8"
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-3 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-                <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
+            <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
+              <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-3 sm:text-[22px]">
+                <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
                 Explore categories
               </h2>
               <div className="flex items-center gap-2">
@@ -981,7 +1092,7 @@ export default function OpportunityHub() {
                 )}
               </div>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible">
+            <div className="-mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible">
               {CATEGORY_TILES.map((tile, i) => {
                 const active = activeQuickPillId === tile.id
                 const tone = CATEGORY_TILE_TONES[tile.id] ?? DEFAULT_TILE_TONE
@@ -996,7 +1107,7 @@ export default function OpportunityHub() {
                     whileHover={reduceMotion ? undefined : { y: -6, scale: 1.05 }}
                     whileTap={reduceMotion ? undefined : { scale: 0.96 }}
                     className={cn(
-                      'group relative flex w-[108px] shrink-0 flex-col items-center gap-3 overflow-hidden rounded-2xl border px-2.5 py-4 text-center transition-all duration-200 md:w-auto',
+                      'group relative flex w-[104px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-2xl border px-2 py-3 text-center transition-all duration-200 sm:w-[120px] sm:gap-3 sm:px-2.5 sm:py-4 md:w-auto',
                       'dark:bg-gray-900 dark:hover:border-opacity-80',
                       active ? tone.active : tone.idle,
                       !active && `hover:shadow-sm ${tone.glow}`
@@ -1009,34 +1120,40 @@ export default function OpportunityHub() {
                       )}
                       style={{
                         background:
-                          tile.id === 'jobs' || tile.id === 'full_time'
+                          tile.id === 'jobs'
                             ? '#3B82F6'
-                            : tile.id === 'internship' || tile.id === 'coding'
-                              ? '#8B5CF6'
-                              : tile.id === 'events' || tile.id === 'workshop'
-                                ? '#F97316'
-                                : tile.id === 'hackathon'
-                                  ? '#06B6D4'
-                                  : tile.id === 'placement'
+                            : tile.id === 'events'
+                              ? '#F97316'
+                              : tile.id === 'blogs'
+                                ? '#0EA5E9'
+                                : tile.id === 'faq'
+                                  ? '#8B5CF6'
+                                  : tile.id === 'placed_students'
                                     ? '#10B981'
-                                    : tile.id === 'all' || tile.id === 'competition'
-                                      ? '#2563EB'
-                                      : '#F59E0B',
+                                    : tile.id === 'campus_challenge'
+                                      ? '#F59E0B'
+                                      : tile.id === 'trusted_partners'
+                                        ? '#06B6D4'
+                                        : tile.id === 'about'
+                                          ? '#6366F1'
+                                          : tile.id === 'contact'
+                                            ? '#F43F5E'
+                                            : '#2563EB',
                       }}
                       aria-hidden
                     />
                     <span
                       className={cn(
-                        'relative flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105',
+                        'relative flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 sm:h-14 sm:w-14 sm:rounded-2xl',
                         tone.iconWrap,
                         active && 'scale-105'
                       )}
                     >
-                      <CategoryIcon id={tile.id} active={active} className="h-9 w-9" />
+                      <CategoryIcon id={tile.id} active={active} className="h-7 w-7 sm:h-9 sm:w-9" />
                     </span>
                     <span
                       className={cn(
-                        'relative text-xs font-bold leading-tight tracking-tight sm:text-[13px]',
+                        'relative line-clamp-2 min-h-[2.2em] text-[10px] font-bold leading-tight tracking-tight sm:text-[12px]',
                         active
                           ? 'text-gray-900 dark:text-white'
                           : 'text-gray-700 group-hover:text-gray-900 dark:text-gray-200'
@@ -1066,9 +1183,9 @@ export default function OpportunityHub() {
               </div>
             ) : isBrowseHome ? (
               <div className="space-y-8">
-                <section>
+                <section id="hub-jobs" className="scroll-mt-28">
                   <HubSectionHeader
-                    title="Jobs & internships"
+                    title="Jobs"
                     count={jobs.length}
                     viewAllHref={jobsViewAllHref}
                     viewAllLabel="View all"
@@ -1082,24 +1199,23 @@ export default function OpportunityHub() {
                       </Link>
                     </p>
                   ) : (
-                    <HubCarousel>
-                      {jobs.map((job, i) => (
-                        <HubCarouselItem key={job.id}>
-                          <HubJobCard
-                            job={job}
-                            index={i}
-                            onView={() => router.push(getJobDetailPath(job))}
-                            onApply={() => handleJobApply(job)}
-                          />
-                        </HubCarouselItem>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {jobs.slice(0, 4).map((job, i) => (
+                        <HubJobCard
+                          key={job.id}
+                          job={job}
+                          index={i}
+                          onView={() => router.push(getJobDetailPath(job))}
+                          onApply={() => handleJobApply(job)}
+                        />
                       ))}
-                    </HubCarousel>
+                    </div>
                   )}
                 </section>
 
-                <section>
+                <section id="hub-events" className="scroll-mt-28">
                   <HubSectionHeader
-                    title="Events & contests"
+                    title="Events"
                     count={events.length}
                     viewAllHref="/events"
                     viewAllLabel="View all"
@@ -1113,183 +1229,173 @@ export default function OpportunityHub() {
                       </Link>
                     </p>
                   ) : (
-                    <HubCarousel>
-                      {events.map((event, i) => (
-                        <HubCarouselItem key={event.id}>
-                          <HubEventCard event={event} index={i} />
-                        </HubCarouselItem>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {events.slice(0, 4).map((event, i) => (
+                        <HubEventCard key={event.id} event={event} index={i} />
                       ))}
-                    </HubCarousel>
+                    </div>
                   )}
                 </section>
 
-                <section>
-                  <div className="mb-5">
-                    <h2 className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-foreground sm:text-[22px]">
-                      <span className="h-6 w-1 shrink-0 rounded-sm bg-primary-500" aria-hidden />
-                      More on Disha
-                    </h2>
-                    <p className="mt-1.5 pl-3.5 text-xs text-muted-foreground sm:text-sm">
-                      Every student tool in one place — login to unlock your workspace.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-                    {(
-                      [
-                        {
-                          label: 'Practice',
-                          subtitle: 'Tests, mocks & guided practice',
-                          path: '/dashboard/student/practice',
-                          auth: true,
-                          icon: Brain,
-                          tone: 'bg-sky-50/70 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400',
-                          hover: 'hover:border-sky-100 hover:bg-sky-50/40 dark:hover:border-sky-800 dark:hover:bg-sky-950/30',
-                        },
-                        {
-                          label: 'Resume Builder',
-                          subtitle: 'Campus-ready resumes',
-                          path: '/dashboard/student/resume-builder',
-                          auth: true,
-                          icon: FileText,
-                          tone: 'bg-emerald-50/70 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
-                          hover: 'hover:border-emerald-100 hover:bg-emerald-50/40 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/30',
-                        },
-                        {
-                          label: 'Career Align',
-                          subtitle: 'Roles that fit your goals',
-                          path: '/dashboard/student/career-align',
-                          auth: true,
-                          icon: Target,
-                          tone: 'bg-amber-50/70 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
-                          hover: 'hover:border-amber-100 hover:bg-amber-50/40 dark:hover:border-amber-800 dark:hover:bg-amber-950/30',
-                        },
-                        {
-                          label: 'Library',
-                          subtitle: 'Curated learning resources',
-                          path: '/dashboard/student/library',
-                          auth: true,
-                          icon: Library,
-                          tone: 'bg-indigo-50/70 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400',
-                          hover: 'hover:border-indigo-100 hover:bg-indigo-50/40 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/30',
-                        },
-                        {
-                          label: 'Video Search',
-                          subtitle: 'Career videos & learning',
-                          path: '/dashboard/student/video-search',
-                          auth: true,
-                          icon: Video,
-                          tone: 'bg-rose-50/70 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400',
-                          hover: 'hover:border-rose-100 hover:bg-rose-50/40 dark:hover:border-rose-800 dark:hover:bg-rose-950/30',
-                        },
-                        {
-                          label: 'Applications',
-                          subtitle: 'Track every application',
-                          path: '/dashboard/student/applications',
-                          auth: true,
-                          icon: ClipboardList,
-                          tone: 'bg-cyan-50/70 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400',
-                          hover: 'hover:border-cyan-100 hover:bg-cyan-50/40 dark:hover:border-cyan-800 dark:hover:bg-cyan-950/30',
-                        },
-                        {
-                          label: 'Create Event',
-                          subtitle: 'Workshops, contests & campus events',
-                          path: '/events#create-event-request',
-                          auth: false,
-                          icon: PlusCircle,
-                          tone: 'bg-orange-50/70 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400',
-                          hover: 'hover:border-orange-100 hover:bg-orange-50/40 dark:hover:border-orange-800 dark:hover:bg-orange-950/30',
-                        },
-                        {
-                          label: 'Blogs',
-                          subtitle: 'Tips, updates & stories',
-                          path: '/blogs',
-                          auth: false,
-                          icon: Newspaper,
-                          tone: 'bg-primary-50/70 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400',
-                          hover: 'hover:border-primary-100 hover:bg-primary-50/40 dark:hover:border-primary-800 dark:hover:bg-primary-950/30',
-                        },
-                      ] as const
-                    ).map((item, index) => {
-                      const needsAuth =
-                        item.auth && !(isAuthenticated && user?.user_type === 'student')
-                      const href = needsAuth ? '#' : item.path
-                      const Icon = item.icon
-                      return (
-                        <motion.div
-                          key={item.label}
-                          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                          whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                          viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 0.28, delay: index * 0.04, ease: 'easeOut' }}
+                <section id="hub-blogs" className="scroll-mt-28">
+                  <HubSectionHeader
+                    title="Blogs"
+                    viewAllHref="/blogs"
+                    viewAllLabel="View all"
+                    subtitle="Career guides written for students — jobs, skills, placement & hiring trends."
+                  />
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    {featuredBlogs[0] && (
+                      <Link
+                        href={`/blogs/${featuredBlogs[0].slug}`}
+                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/80 via-white to-sky-50/50 p-5 sm:p-6 lg:col-span-5 dark:border-primary-900/40 dark:from-primary-950/40 dark:via-gray-900 dark:to-sky-950/20"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-md bg-primary-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                              Featured
+                            </span>
+                            <span className="text-[11px] font-medium text-primary-700/80 dark:text-primary-300">
+                              {featuredBlogs[0].category}
+                            </span>
+                          </div>
+                          <h3 className="mt-3 text-lg font-bold leading-snug tracking-tight text-gray-900 group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300 sm:text-xl">
+                            {featuredBlogs[0].title}
+                          </h3>
+                          <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                            {featuredBlogs[0].metaDescription}
+                          </p>
+                        </div>
+                        <div className="mt-5 flex items-center justify-between gap-3">
+                          <span className="text-xs font-medium text-gray-400">
+                            {featuredBlogs[0].readTime}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600">
+                            Read article
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                          </span>
+                        </div>
+                      </Link>
+                    )}
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-7 lg:grid-cols-1">
+                      {featuredBlogs.slice(1, 3).map((post, i) => (
+                        <Link
+                          key={post.slug}
+                          href={`/blogs/${post.slug}`}
+                          className="group flex h-full gap-4 rounded-2xl border border-gray-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-5"
                         >
-                          <Link
-                            href={href}
-                            aria-label={
-                              needsAuth
-                                ? `${item.label}: ${item.subtitle}. Login required`
-                                : `${item.label}: ${item.subtitle}`
-                            }
-                            onClick={(e) => {
-                              if (needsAuth) {
-                                e.preventDefault()
-                                requireStudentLogin(item.path)
-                              }
-                            }}
-                            className={cn(
-                              'group relative flex h-full items-start gap-3 rounded-xl border border-slate-200/80 bg-white px-3.5 py-3.5 outline-none',
-                              'transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out',
-                              'hover:-translate-y-0.5 hover:shadow-sm',
-                              'active:translate-y-0 active:scale-[0.985]',
-                              'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                              'dark:border-slate-700 dark:bg-slate-900/60',
-                              item.hover
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 group-active:scale-100',
-                                item.tone
-                              )}
-                              aria-hidden
-                            >
-                              <Icon className="h-5 w-5" strokeWidth={1.85} />
-                            </span>
-                            <span className="min-w-0 flex-1 pt-0.5">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-[14px] font-semibold leading-snug text-foreground transition-colors group-hover:text-primary-700 dark:group-hover:text-primary-300">
-                                  {item.label}
-                                </span>
-                                {needsAuth && (
-                                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground opacity-70 transition-opacity group-hover:opacity-100">
-                                    Login
-                                  </span>
-                                )}
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-primary-600 ring-1 ring-slate-100 dark:bg-gray-800 dark:ring-gray-700">
+                            {String(i + 2).padStart(2, '0')}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                                {post.category}
                               </span>
-                              <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground transition-colors group-hover:text-foreground/70">
-                                {item.subtitle}
-                              </span>
+                              <span className="text-[11px] text-gray-400">{post.readTime}</span>
                             </span>
-                            <span
-                              className={cn(
-                                'mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-                                'bg-muted/60 text-muted-foreground',
-                                'opacity-0 -translate-x-1 transition-all duration-200',
-                                'group-hover:translate-x-0 group-hover:opacity-100',
-                                'group-focus-visible:translate-x-0 group-focus-visible:opacity-100',
-                                'group-hover:bg-primary-600 group-hover:text-white'
-                              )}
-                              aria-hidden
-                            >
-                              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            <span className="mt-1.5 block text-[15px] font-semibold leading-snug text-gray-900 group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
+                              {post.title}
                             </span>
-                          </Link>
-                        </motion.div>
-                      )
-                    })}
+                            <span className="mt-1.5 line-clamp-2 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                              {post.metaDescription}
+                            </span>
+                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-600">
+                              Read more
+                              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                            </span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 </section>
 
-                <HubTrustedLogos companies={companies} />
+                <HubPlacedStudents
+                  students={placedStudentsData.students}
+                  subtitle={placedStudentsData.subtitle}
+                />
+
+                <section
+                  id="hub-campus-challenge"
+                  className="scroll-mt-28 overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-5 sm:p-7 dark:border-amber-900/50 dark:from-amber-950/30 dark:via-gray-900 dark:to-orange-950/20"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                    Flagship program
+                  </p>
+                  <h2 className="mt-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-2xl">
+                    The Campus Hiring Challenge
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300">
+                    Compete, get shortlisted, and unlock interviews with top hiring partners — built for
+                    campus talent across India.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2.5">
+                    <Link
+                      href="/events"
+                      className="inline-flex h-10 items-center rounded-full bg-primary-600 px-4 text-sm font-semibold text-white hover:bg-primary-700"
+                    >
+                      Explore challenges
+                    </Link>
+                    <Link
+                      href="/jobs"
+                      className="inline-flex h-10 items-center rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 hover:border-primary-200 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    >
+                      Browse roles
+                    </Link>
+                  </div>
+                </section>
+
+                <div id="hub-trusted-partners" className="scroll-mt-28">
+                  <HubTrustedLogos companies={companies} />
+                </div>
+
+                <section id="hub-faq" className="scroll-mt-28">
+                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+                        <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+                        FAQ
+                      </h2>
+                      <p className="mt-1.5 pl-3.5 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
+                        Answers from Disha career guides — jobs, skills, AI hiring & campus prep.
+                      </p>
+                    </div>
+                    <Link
+                      href="/blogs"
+                      className="self-start text-sm font-semibold text-primary-600 hover:text-primary-700 sm:self-auto"
+                    >
+                      Browse all guides →
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+                    {HUB_HOME_FAQS.map((item, index) => (
+                      <details
+                        key={item.q}
+                        className="group rounded-2xl border border-gray-200 bg-white px-4 py-3.5 open:border-primary-200 open:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:open:border-primary-800"
+                      >
+                        <summary className="cursor-pointer list-none marker:content-none">
+                          <span className="flex items-start gap-3">
+                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary-50 text-[11px] font-bold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                              {String(index + 1).padStart(2, '0')}
+                            </span>
+                            <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-gray-900 dark:text-white">
+                              {item.q}
+                            </span>
+                            <span className="mt-0.5 text-base leading-none text-gray-400 transition group-open:rotate-45">
+                              +
+                            </span>
+                          </span>
+                        </summary>
+                        <p className="mt-2.5 pl-9 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                          {item.a}
+                        </p>
+                      </details>
+                    ))}
+                  </div>
+                </section>
+
+                <HubWhyDisha />
               </div>
             ) : (
               <div>

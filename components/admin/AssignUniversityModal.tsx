@@ -33,13 +33,16 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
     const [assignedUniversities, setAssignedUniversities] = useState<University[]>([])
     const [filteredUniversities, setFilteredUniversities] = useState<University[]>([])
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null)
+    const [selectedUniversities, setSelectedUniversities] = useState<University[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
+    const [unassigningUniversityId, setUnassigningUniversityId] = useState<string | null>(null)
 
     // Fetch universities when modal opens
     useEffect(() => {
         if (isOpen && job) {
+            setSelectedUniversities([])
+            setSearchTerm('')
             fetchUniversities()
             fetchAssignedUniversities()
         }
@@ -106,26 +109,86 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
         }
     }
 
+    const toggleUniversity = (university: University) => {
+        setSelectedUniversities((prev) => {
+            if (prev.some((item) => item.id === university.id)) {
+                return prev.filter((item) => item.id !== university.id)
+            }
+            return [...prev, university]
+        })
+    }
+
     const handleAssign = async () => {
-        if (!job || !selectedUniversity) return
+        if (!job || selectedUniversities.length === 0) return
+
+        const toAssign = selectedUniversities.filter(
+            (university) => !assignedUniversities.some((assigned) => assigned.id === university.id)
+        )
+        if (toAssign.length === 0) {
+            toast.error('These institutes are already assigned to this campus drive')
+            return
+        }
 
         try {
             setIsAssigning(true)
-            await apiClient.assignJobToUniversity(job.id, selectedUniversity.id)
-            toast.success(`Job assigned to ${selectedUniversity.university_name} successfully!`)
+            const assignedNames: string[] = []
+            const failed: string[] = []
+            for (const university of toAssign) {
+                try {
+                    await apiClient.assignJobToUniversity(job.id, university.id)
+                    assignedNames.push(university.university_name)
+                } catch (error: any) {
+                    const status = error.response?.status
+                    const message = error.response?.data?.error || error.response?.data?.detail || ''
+                    if (status === 409 || String(message).toLowerCase().includes('already assigned')) {
+                        assignedNames.push(university.university_name)
+                        continue
+                    }
+                    failed.push(university.university_name)
+                }
+            }
+
+            await fetchAssignedUniversities()
+            setSelectedUniversities([])
             onAssigned()
+
+            if (assignedNames.length > 0 && failed.length === 0) {
+                toast.success(`Campus drive assigned to ${assignedNames.join(', ')}`)
+            } else if (assignedNames.length > 0) {
+                toast.success(`Assigned to ${assignedNames.join(', ')}. Could not assign: ${failed.join(', ')}`)
+            } else {
+                toast.error('Failed to assign job to university or college')
+            }
         } catch (error: any) {
             console.error('Failed to assign job:', error)
-            toast.error(error.response?.data?.detail || 'Failed to assign job to university')
+            toast.error(error.response?.data?.error || error.response?.data?.detail || 'Failed to assign job to university or college')
         } finally {
             setIsAssigning(false)
         }
     }
 
+    const handleUnassign = async (university: University) => {
+        if (!job || unassigningUniversityId) return
+
+        try {
+            setUnassigningUniversityId(university.id)
+            await apiClient.unassignJobFromUniversity(job.id, university.id)
+            setAssignedUniversities(prev => prev.filter(assigned => assigned.id !== university.id))
+            setSelectedUniversities(prev => prev.filter(selected => selected.id !== university.id))
+            toast.success(`Job unassigned from ${university.university_name} successfully!`)
+        } catch (error: any) {
+            console.error('Failed to unassign job:', error)
+            toast.error(error.response?.data?.detail || 'Failed to unassign job from university')
+        } finally {
+            setUnassigningUniversityId(null)
+        }
+    }
+
     const handleClose = () => {
         setSearchTerm('')
-        setSelectedUniversity(null)
+        setSelectedUniversities([])
         setAssignedUniversities([])
+        setUnassigningUniversityId(null)
         onClose()
     }
 
@@ -152,10 +215,10 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                    Assign Job to University
+                                    Assign University / College
                                 </h2>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                    Select a university to assign this job for campus placement
+                                    Assign this campus drive to one or more universities or colleges. They must approve it before their students can apply.
                                 </p>
                             </div>
                             <Button
@@ -187,7 +250,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <Input
                                     type="text"
-                                    placeholder="Search universities..."
+                                    placeholder="Search universities or colleges..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10"
@@ -199,7 +262,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                         {assignedUniversities.length > 0 && (
                             <div className="mb-6">
                                 <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                                    Already Assigned Universities ({assignedUniversities.length})
+                                    Already Assigned ({assignedUniversities.length})
                                 </h4>
                                 <div className="space-y-2">
                                     {assignedUniversities.map((university) => (
@@ -220,9 +283,20 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                                         {university.location && ` • ${university.location}`}
                                                     </p>
                                                 </div>
-                                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                                    <Check className="w-4 h-4 text-white" />
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleUnassign(university)}
+                                                    disabled={unassigningUniversityId === university.id}
+                                                    title="Click to unassign university"
+                                                    aria-label={`Unassign ${university.university_name || 'university'}`}
+                                                    className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    {unassigningUniversityId === university.id ? (
+                                                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                                                    ) : (
+                                                        <Check className="w-4 h-4 text-white" />
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
@@ -233,7 +307,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                         {/* Available Universities */}
                         <div className="mb-4">
                             <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                                Available Universities ({filteredUniversities.length})
+                                Available Universities / Colleges ({filteredUniversities.length})
                             </h4>
                         </div>
 
@@ -247,11 +321,11 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                 {filteredUniversities.map((university) => (
                                     <div
                                         key={university.id}
-                                        className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${selectedUniversity?.id === university.id
+                                        className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${selectedUniversities.some((item) => item.id === university.id)
                                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                                             }`}
-                                        onClick={() => setSelectedUniversity(university)}
+                                        onClick={() => toggleUniversity(university)}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
@@ -268,7 +342,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                                     </p>
                                                 </div>
                                             </div>
-                                            {selectedUniversity?.id === university.id && (
+                                            {selectedUniversities.some((item) => item.id === university.id) && (
                                                 <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                                                     <Check className="w-4 h-4 text-white" />
                                                 </div>
@@ -282,13 +356,13 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                 <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                                     {assignedUniversities.length > 0
-                                        ? 'All universities have been assigned'
-                                        : 'No universities found'
+                                        ? 'All universities and colleges have been assigned'
+                                        : 'No universities or colleges found'
                                     }
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400">
                                     {assignedUniversities.length > 0
-                                        ? 'This job has been assigned to all available universities'
+                                        ? 'This campus drive has been assigned to all available institutes'
                                         : 'Try adjusting your search criteria'
                                     }
                                 </p>
@@ -303,7 +377,7 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                         </Button>
                         <Button
                             onClick={handleAssign}
-                            disabled={!selectedUniversity || isAssigning}
+                            disabled={selectedUniversities.length === 0 || isAssigning}
                             className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
                         >
                             {isAssigning ? (
@@ -311,8 +385,10 @@ export function AssignUniversityModal({ isOpen, onClose, job, onAssigned }: Assi
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                     Assigning...
                                 </>
+                            ) : selectedUniversities.length > 1 ? (
+                                `Assign ${selectedUniversities.length} institutes`
                             ) : (
-                                'Assign Job'
+                                'Assign institute'
                             )}
                         </Button>
                     </div>

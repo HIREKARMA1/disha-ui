@@ -9,6 +9,8 @@ interface BrandLogoProps {
   priority?: boolean
   className?: string
   imageClassName?: string
+  /** Icon + short wordmark for tight mobile headers */
+  compact?: boolean
 }
 
 /**
@@ -18,6 +20,7 @@ export function BrandLogo({
   href = '/',
   className,
   imageClassName: _imageClassName,
+  compact = false,
 }: BrandLogoProps) {
   return (
     <Link
@@ -25,10 +28,11 @@ export function BrandLogo({
       aria-label="Disha home"
       className={cn('group flex shrink-0 items-center', className)}
     >
-      <span className="inline-flex items-center gap-2.5">
+      <span className={cn('inline-flex items-center', compact ? 'gap-1.5' : 'gap-2.5')}>
         <span
           className={cn(
-            'relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[11px]',
+            'relative flex shrink-0 items-center justify-center overflow-hidden',
+            compact ? 'h-8 w-8 rounded-[10px]' : 'h-9 w-9 rounded-[11px]',
             'bg-[#0B1F3A] text-[#0B1F3A]',
             'dark:bg-primary-500 dark:text-primary-500',
             'ring-1 ring-black/10 shadow-sm',
@@ -37,7 +41,11 @@ export function BrandLogo({
           aria-hidden
         >
           <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/10" />
-          <svg viewBox="0 0 40 40" className="relative h-6 w-6" fill="none">
+          <svg
+            viewBox="0 0 40 40"
+            className={cn('relative', compact ? 'h-5 w-5' : 'h-6 w-6')}
+            fill="none"
+          >
             {/* Bold solid D */}
             <path
               d="M11.5 8.5h8.2c6.4 0 10.8 4.3 10.8 11.5S26.1 31.5 19.7 31.5h-8.2V8.5z"
@@ -66,12 +74,19 @@ export function BrandLogo({
         </span>
 
         <span className="flex flex-col justify-center leading-none">
-          <span className="text-[1.45rem] font-bold tracking-[-0.035em] text-[#0B1F3A] sm:text-[1.55rem] dark:text-white">
+          <span
+            className={cn(
+              'font-bold tracking-[-0.035em] text-[#0B1F3A] dark:text-white',
+              compact ? 'text-lg' : 'text-[1.45rem] sm:text-[1.55rem]'
+            )}
+          >
             Disha
           </span>
-          <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300">
-            Career path
-          </span>
+          {!compact && (
+            <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300">
+              Career path
+            </span>
+          )}
         </span>
       </span>
     </Link>
