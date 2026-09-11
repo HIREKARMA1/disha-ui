@@ -493,16 +493,18 @@ function LoginPageContent() {
                 onClose={() => setShowTermsModal(false)}
                 title="Terms and Conditions"
                 maxWidth="2xl"
+                footer={
+                    <div className="flex justify-center">
+                        <Button
+                            onClick={handleTermsAndPrivacyAccept}
+                            className="h-auto min-h-11 w-auto max-w-full whitespace-normal rounded-xl bg-primary-600 px-4 py-2.5 text-sm leading-snug hover:bg-primary-700 sm:text-base"
+                        >
+                            Accept Terms and Conditions and Privacy Policy
+                        </Button>
+                    </div>
+                }
             >
                 <TermsModalContent />
-                <div className="mt-6 flex justify-end">
-                    <Button
-                        onClick={handleTermsAndPrivacyAccept}
-                        className="rounded-xl bg-primary-600 hover:bg-primary-700"
-                    >
-                        Accept Terms and Conditions and Privacy Policy
-                    </Button>
-                </div>
             </Modal>
         </div>
     )

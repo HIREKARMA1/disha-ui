@@ -19,6 +19,7 @@ import { advertisementService } from '@/services/advertisementService'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import type { Advertisement } from '@/types/advertisement'
 import {
+  PORTAL_CATEGORY_CHIPS,
   PORTAL_STATUS_OPTIONS,
   type PortalStatusFilter,
 } from '@/lib/eventsPortalConfig'
@@ -96,6 +97,10 @@ function EventsPageContent() {
   })
 
   const page = parseInt(searchParams.get('page') || '1', 10)
+  const categoryParam = searchParams.get('category') || ''
+  const eventCategory = PORTAL_CATEGORY_CHIPS.some((c) => c.value === categoryParam)
+    ? categoryParam
+    : undefined
 
   const leftAds = useMemo(() => getLeftSidebarAds(ads), [ads])
   const activeFilterCount = status !== 'all' ? 1 : 0
@@ -149,6 +154,7 @@ function EventsPageContent() {
         page,
         limit: 50,
         status: status !== 'all' ? status : undefined,
+        category: eventCategory,
         registered_only: activeTab === 'registered',
       })
       setEvents(result.events)
@@ -164,7 +170,7 @@ function EventsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [page, status, activeTab])
+  }, [page, status, activeTab, eventCategory])
 
   const fetchAds = useCallback(async () => {
     try {
@@ -201,6 +207,8 @@ function EventsPageContent() {
     const s = nextStatus ?? status
     if (s && s !== 'all') params.set('status', s)
     else params.delete('status')
+    if (eventCategory) params.set('category', eventCategory)
+    else params.delete('category')
     router.push(`/events?${params.toString()}`)
   }
 

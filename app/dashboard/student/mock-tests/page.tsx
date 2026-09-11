@@ -7,6 +7,8 @@ import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardL
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
   Brain,
   CheckCircle2,
@@ -46,6 +48,8 @@ const cardTone = (index: number) => {
 
 export default function StudentMockTestsPage() {
   const router = useRouter()
+  const { isAuthenticated, user } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
 
   const [mockTests, setMockTests] = useState<StudentMockTest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -90,8 +94,16 @@ export default function StudentMockTestsPage() {
 
   // Reuse the standard assessment entry flow: instructions, camera check, then exam.
   const handleStart = (mockTestId: string) => {
+    const startPath = `/assessments/exam/${mockTestId}`
+    if (!isAuthenticated || user?.user_type !== 'student') {
+      openLoginModal({
+        redirect: startPath,
+        preferredType: 'student',
+      })
+      return
+    }
     setStartingId(mockTestId)
-    router.push(`/assessments/exam/${mockTestId}`)
+    router.push(startPath)
   }
 
   const stats = [
@@ -127,11 +139,11 @@ export default function StudentMockTestsPage() {
   return (
     <StudentDashboardLayout>
       <div className="space-y-6">
-        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-6 border border-primary-200 dark:border-primary-700">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-4 sm:p-6 border border-primary-200 dark:border-primary-700">
+          <h1 className="mb-2 text-xl font-bold text-gray-900 dark:text-white md:text-3xl">
             Mock Tests
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-300 md:text-lg">
             Take full-length timed mock tests and review how ready you are.
           </p>
         </div>

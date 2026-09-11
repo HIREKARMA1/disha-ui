@@ -1,6 +1,6 @@
 "use client"
 
-import { memo } from 'react'
+import { memo, type MouseEvent } from 'react'
 import Link from 'next/link'
 import {
   Trophy,
@@ -19,6 +19,12 @@ import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import { isPortalEventCompleted } from '@/lib/eventsPortalConfig'
 import { cn } from '@/lib/utils'
 import { stripHtmlToPlainText } from '@/lib/sanitizeHtml'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
+import {
+  buildEventRegisterRedirect,
+  storePendingEventRegistration,
+} from '@/lib/pendingEventRegistration'
 
 interface ContestCardProps {
   event: ContestEventListItem
@@ -59,7 +65,7 @@ function locationLabel(event: ContestEventListItem) {
 function ContestCardComponent({ event }: ContestCardProps) {
   const slug = event.slug || event.id
   const detailHref = `/events/${slug}`
-  const registerHref = `/events/${slug}?register=1&action=register`
+  const registerHref = buildEventRegisterRedirect(slug, event.id)
   const deadline = formatDate(event.registration_end_date)
   const isCompleted = isPortalEventCompleted(event)
   const displayStatus = isCompleted ? 'completed' : event.contest_status
@@ -72,6 +78,19 @@ function ContestCardComponent({ event }: ContestCardProps) {
   const descriptionText =
     stripHtmlToPlainText(event.short_description) ||
     (event.prize_pool ? event.prize_pool : null)
+
+  const { isAuthenticated } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
+
+  const onGuestNav = (href: string, pendingRegister = false) => (e: MouseEvent) => {
+    if (isAuthenticated) return
+    e.preventDefault()
+    if (pendingRegister) storePendingEventRegistration(slug, event.id)
+    openLoginModal({
+      redirect: href,
+      preferredType: 'student',
+    })
+  }
 
   return (
     <article
@@ -110,7 +129,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
               />
             </div>
           )}
-          <Link href={detailHref} className="min-w-0 flex-1 group/title">
+          <Link href={detailHref} onClick={onGuestNav(detailHref)} className="min-w-0 flex-1 group/title">
             <h3 className="flex items-start gap-1 text-base font-bold leading-snug text-gray-900 transition-colors group-hover/title:text-primary-600 dark:text-white dark:group-hover/title:text-primary-400 sm:text-lg">
               <span className="line-clamp-2">{event.title}</span>
               <ChevronRight className="mt-0.5 h-5 w-5 shrink-0 opacity-60" />
@@ -193,7 +212,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
 
         {/* Actions */}
         <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Link href={detailHref} className="sm:flex-1">
+          <Link href={detailHref} onClick={onGuestNav(detailHref)} className="sm:flex-1">
             <Button
               variant="outline"
               className="w-full border-primary-200 hover:bg-primary-50 dark:border-primary-800 dark:hover:bg-primary-900/20"
@@ -210,7 +229,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
               Registered
             </Button>
           ) : showRegister ? (
-            <Link href={registerHref} className="sm:flex-1">
+            <Link href={registerHref} onClick={onGuestNav(registerHref, true)} className="sm:flex-1">
               <Button className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600">
                 Register Now
               </Button>

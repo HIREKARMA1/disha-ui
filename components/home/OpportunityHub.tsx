@@ -7,21 +7,19 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   Briefcase,
   Calendar,
-  Code2,
+  ClipboardList,
+  FileText,
   GraduationCap,
   LogOut,
   Menu,
   Newspaper,
-  PlusCircle,
   Search,
   Sparkles,
-  Trophy,
   User,
   Users,
-  Wrench,
-  X,
   ArrowRight,
   Brain,
+  Code2,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,7 +29,6 @@ import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { Footer } from '@/components/ui/footer'
-import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
 import {
   HubCardSkeleton,
   HubEventCard,
@@ -50,33 +47,12 @@ import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
-import {
-  DATE_POSTED_OPTIONS,
-  JOB_TYPE_OPTIONS,
-  toApiDatePosted,
-  type DatePostedFilter,
-} from '@/components/jobs/JobsFilterFields'
-import { PORTAL_CATEGORY_CHIPS } from '@/lib/eventsPortalConfig'
+import { toApiDatePosted, type DatePostedFilter } from '@/components/jobs/JobsFilterFields'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { cn } from '@/lib/utils'
 import companyData from '@/data/company.json'
 
 export type OpportunityTab = 'all' | 'jobs' | 'events'
-
-const EVENT_STATUS_OPTIONS = [
-  { value: 'all', label: 'All status' },
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'live', label: 'Live' },
-  { value: 'registration_open', label: 'Registration open' },
-] as const
-
-const HUB_JOB_TYPES = JOB_TYPE_OPTIONS.filter((o) =>
-  ['', 'full_time', 'internship', 'part_time', 'contract'].includes(o.value)
-)
-
-const HUB_DATE_OPTIONS = DATE_POSTED_OPTIONS.filter((o) =>
-  ['all', '7d', '30d'].includes(o.value)
-)
 
 type HubFilters = {
   jobType: string
@@ -116,61 +92,61 @@ const CATEGORY_TILE_TONES: Record<
     idle: 'border-slate-200/80 bg-white hover:border-primary-200 hover:bg-primary-50/30',
     active:
       'border-primary-300 bg-primary-50/40 shadow-sm ring-1 ring-primary-200/60',
-    iconWrap: 'bg-slate-50 shadow-none ring-1 ring-slate-100',
+    iconWrap: 'bg-slate-50 shadow-none ring-1 ring-slate-100 dark:bg-[rgba(148,163,184,0.14)] dark:text-[#C5D0E6] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   jobs: {
     idle: 'border-slate-200/80 bg-white hover:border-blue-200 hover:bg-blue-50/25',
     active: 'border-blue-300 bg-blue-50/40 shadow-sm ring-1 ring-blue-200/60',
-    iconWrap: 'bg-blue-50/60 shadow-none ring-1 ring-blue-100/80',
+    iconWrap: 'bg-blue-50/60 shadow-none ring-1 ring-blue-100/80 dark:bg-[rgba(37,99,235,0.18)] dark:text-[#60A5FA] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   events: {
     idle: 'border-slate-200/80 bg-white hover:border-orange-200 hover:bg-orange-50/25',
     active: 'border-orange-300 bg-orange-50/40 shadow-sm ring-1 ring-orange-200/60',
-    iconWrap: 'bg-orange-50/60 shadow-none ring-1 ring-orange-100/80',
+    iconWrap: 'bg-orange-50/60 shadow-none ring-1 ring-orange-100/80 dark:bg-[rgba(245,128,32,0.18)] dark:text-[#FB923C] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   blogs: {
     idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
     active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
-    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80',
+    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80 dark:bg-[rgba(139,92,246,0.18)] dark:text-[#A78BFA] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   faq: {
     idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
     active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
-    iconWrap: 'bg-violet-50/60 shadow-none ring-1 ring-violet-100/80',
+    iconWrap: 'bg-violet-50/60 shadow-none ring-1 ring-violet-100/80 dark:bg-[rgba(217,70,239,0.16)] dark:text-[#E879F9] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   placed_students: {
     idle: 'border-slate-200/80 bg-white hover:border-emerald-200 hover:bg-emerald-50/25',
     active: 'border-emerald-300 bg-emerald-50/40 shadow-sm ring-1 ring-emerald-200/60',
-    iconWrap: 'bg-emerald-50/50 shadow-none ring-1 ring-emerald-100/80',
+    iconWrap: 'bg-emerald-50/50 shadow-none ring-1 ring-emerald-100/80 dark:bg-[rgba(9,136,85,0.16)] dark:text-[#3FD996] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
-  campus_challenge: {
-    idle: 'border-slate-200/80 bg-white hover:border-amber-200 hover:bg-amber-50/25',
-    active: 'border-amber-300 bg-amber-50/40 shadow-sm ring-1 ring-amber-200/60',
-    iconWrap: 'bg-amber-50/50 shadow-none ring-1 ring-amber-100/80',
+  mock_tests: {
+    idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
+    active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
+    iconWrap: 'bg-violet-50/50 shadow-none ring-1 ring-violet-100/80 dark:bg-[rgba(254,196,13,0.16)] dark:text-[#FEC40D] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   trusted_partners: {
     idle: 'border-slate-200/80 bg-white hover:border-cyan-200 hover:bg-cyan-50/25',
     active: 'border-cyan-300 bg-cyan-50/40 shadow-sm ring-1 ring-cyan-200/60',
-    iconWrap: 'bg-cyan-50/50 shadow-none ring-1 ring-cyan-100/80',
+    iconWrap: 'bg-cyan-50/50 shadow-none ring-1 ring-cyan-100/80 dark:bg-[rgba(13,148,136,0.18)] dark:text-[#2DD4BF] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   about: {
     idle: 'border-slate-200/80 bg-white hover:border-indigo-200 hover:bg-indigo-50/25',
     active: 'border-indigo-300 bg-indigo-50/40 shadow-sm ring-1 ring-indigo-200/60',
-    iconWrap: 'bg-indigo-50/50 shadow-none ring-1 ring-indigo-100/80',
+    iconWrap: 'bg-indigo-50/50 shadow-none ring-1 ring-indigo-100/80 dark:bg-[rgba(99,102,241,0.18)] dark:text-[#818CF8] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
   contact: {
     idle: 'border-slate-200/80 bg-white hover:border-rose-200 hover:bg-rose-50/25',
     active: 'border-rose-300 bg-rose-50/40 shadow-sm ring-1 ring-rose-200/60',
-    iconWrap: 'bg-rose-50/50 shadow-none ring-1 ring-rose-100/80',
+    iconWrap: 'bg-rose-50/50 shadow-none ring-1 ring-rose-100/80 dark:bg-[rgba(214,66,70,0.16)] dark:text-[#E8767A] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
 }
@@ -182,6 +158,7 @@ const CATEGORY_TILES: QuickPill[] = [
   { id: 'all', label: 'All', kind: 'scroll', sectionId: 'hub-top', tab: 'all', icon: Sparkles },
   { id: 'jobs', label: 'Jobs', kind: 'scroll', sectionId: 'hub-jobs', tab: 'all', icon: Briefcase },
   { id: 'events', label: 'Events', kind: 'scroll', sectionId: 'hub-events', tab: 'all', icon: Calendar },
+  { id: 'mock_tests', label: 'Mock Test', kind: 'scroll', tab: 'all', icon: Brain },
   { id: 'blogs', label: 'Blogs', kind: 'scroll', sectionId: 'hub-blogs', tab: 'all', icon: Newspaper },
   {
     id: 'placed_students',
@@ -190,14 +167,6 @@ const CATEGORY_TILES: QuickPill[] = [
     sectionId: 'hub-placed-students',
     tab: 'all',
     icon: Users,
-  },
-  {
-    id: 'campus_challenge',
-    label: 'Campus Hiring',
-    kind: 'scroll',
-    sectionId: 'hub-campus-challenge',
-    tab: 'all',
-    icon: Trophy,
   },
   {
     id: 'trusted_partners',
@@ -212,9 +181,8 @@ const CATEGORY_TILES: QuickPill[] = [
   { id: 'contact', label: 'Contact Us', kind: 'scroll', sectionId: 'hub-contact', tab: 'all', icon: Newspaper },
 ]
 
-/** Filters still used by search Explore panel (not all shown as category tiles). */
+/** Filters still used by search Explore panel. */
 const EXPLORE_FILTER_PILLS: Record<string, QuickPill> = {
-  jobs: { id: 'jobs', label: 'Jobs', kind: 'filter', tab: 'jobs', icon: Briefcase },
   internship: {
     id: 'internship',
     label: 'Internships',
@@ -223,58 +191,9 @@ const EXPLORE_FILTER_PILLS: Record<string, QuickPill> = {
     patch: { jobType: 'internship' },
     icon: GraduationCap,
   },
-  competition: {
-    id: 'competition',
-    label: 'Competitions',
-    kind: 'filter',
-    tab: 'events',
-    patch: { eventCategory: 'competition' },
-    icon: Trophy,
-  },
-  hackathon: {
-    id: 'hackathon',
-    label: 'Hackathons',
-    kind: 'filter',
-    tab: 'events',
-    patch: { eventCategory: 'hackathon' },
-    icon: Code2,
-  },
-  events: { id: 'events', label: 'Events', kind: 'filter', tab: 'events', icon: Calendar },
-  workshop: {
-    id: 'workshop',
-    label: 'Workshops',
-    kind: 'filter',
-    tab: 'events',
-    patch: { eventCategory: 'workshop' },
-    icon: Wrench,
-  },
-  placement: {
-    id: 'placement',
-    label: 'Placement',
-    kind: 'filter',
-    tab: 'events',
-    patch: { eventCategory: 'placement_drive' },
-    icon: Users,
-  },
-  coding: {
-    id: 'coding',
-    label: 'Coding',
-    kind: 'filter',
-    tab: 'events',
-    patch: { eventCategory: 'coding_contest' },
-    icon: Code2,
-  },
-  full_time: {
-    id: 'full_time',
-    label: 'Full time',
-    kind: 'filter',
-    tab: 'jobs',
-    patch: { jobType: 'full_time' },
-    icon: Briefcase,
-  },
 }
 
-/** Unstop-style Explore panel under search (Disha features only). */
+/** Search Explore — Disha student intents only (sidebar keeps Jobs / Events). */
 type ExploreItem =
   | { id: string; label: string; kind: 'filter'; pill: QuickPill }
   | {
@@ -287,7 +206,6 @@ type ExploreItem =
     }
 
 const EXPLORE_ITEMS: ExploreItem[] = [
-  { id: 'jobs', label: 'Jobs', kind: 'filter', pill: EXPLORE_FILTER_PILLS.jobs },
   {
     id: 'internship',
     label: 'Internships',
@@ -295,51 +213,42 @@ const EXPLORE_ITEMS: ExploreItem[] = [
     pill: EXPLORE_FILTER_PILLS.internship,
   },
   {
-    id: 'competition',
-    label: 'Competitions',
-    kind: 'filter',
-    pill: EXPLORE_FILTER_PILLS.competition,
+    id: 'campus_drive',
+    label: 'Campus Drive',
+    kind: 'link',
+    href: '/dashboard/student/jobs',
+    icon: Search,
+    auth: true,
   },
   {
     id: 'hackathon',
     label: 'Hackathons',
-    kind: 'filter',
-    pill: EXPLORE_FILTER_PILLS.hackathon,
-  },
-  { id: 'events', label: 'Events', kind: 'filter', pill: EXPLORE_FILTER_PILLS.events },
-  {
-    id: 'workshop',
-    label: 'Workshops',
-    kind: 'filter',
-    pill: EXPLORE_FILTER_PILLS.workshop,
-  },
-  {
-    id: 'placement',
-    label: 'Placement',
-    kind: 'filter',
-    pill: EXPLORE_FILTER_PILLS.placement,
-  },
-  { id: 'coding', label: 'Coding', kind: 'filter', pill: EXPLORE_FILTER_PILLS.coding },
-  {
-    id: 'full_time',
-    label: 'Full time',
-    kind: 'filter',
-    pill: EXPLORE_FILTER_PILLS.full_time,
-  },
-  {
-    id: 'create',
-    label: 'Create Event',
     kind: 'link',
-    href: '/events#create-event-request',
-    icon: PlusCircle,
+    href: '/hackathons',
+    icon: Code2,
+    auth: true,
   },
-  { id: 'blogs', label: 'Blogs', kind: 'link', href: '/blogs', icon: Newspaper },
+  {
+    id: 'mock_tests',
+    label: 'Mock Tests',
+    kind: 'link',
+    href: '/dashboard/student/mock-tests',
+    icon: ClipboardList,
+  },
   {
     id: 'practice',
     label: 'Practice',
     kind: 'link',
     href: '/dashboard/student/practice',
     icon: Brain,
+    auth: true,
+  },
+  {
+    id: 'resume',
+    label: 'Resume Builder',
+    kind: 'link',
+    href: '/dashboard/student/resume-builder',
+    icon: FileText,
     auth: true,
   },
 ]
@@ -404,66 +313,6 @@ function getDashboardPath(userType?: string) {
   return `/dashboard/${userType}`
 }
 
-function countActiveFilters(filters: HubFilters, tab: OpportunityTab): number {
-  let n = 0
-  const jobsRelevant = tab === 'all' || tab === 'jobs'
-  const eventsRelevant = tab === 'all' || tab === 'events'
-  if (jobsRelevant) {
-    if (filters.jobType) n += 1
-    if (filters.remoteWork) n += 1
-    if (filters.datePosted !== 'all') n += 1
-  }
-  if (eventsRelevant) {
-    if (filters.eventStatus !== 'all') n += 1
-    if (filters.eventCategory !== 'all') n += 1
-  }
-  return n
-}
-
-function FilterRadioGroup({
-  title,
-  name,
-  options,
-  value,
-  onChange,
-}: {
-  title: string
-  name: string
-  options: readonly { value: string; label: string }[]
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-        {title}
-      </h3>
-      <div className="flex flex-col gap-1.5">
-        {options.map((opt) => (
-          <label
-            key={opt.value || 'all'}
-            className={cn(
-              'flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors',
-              value === opt.value
-                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                : 'border-gray-200 text-gray-700 dark:border-white/10 dark:text-gray-300'
-            )}
-          >
-            <input
-              type="radio"
-              name={name}
-              checked={value === opt.value}
-              onChange={() => onChange(opt.value)}
-              className="accent-primary-500"
-            />
-            {opt.label}
-          </label>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function OpportunityHeader({
   onMenuOpen,
   searchSlot,
@@ -499,7 +348,7 @@ function OpportunityHeader({
       ) : (
         <Button
           size="sm"
-          className="h-8 rounded-full bg-primary-600 px-3.5 text-sm text-white shadow-none hover:bg-primary-700 sm:px-4"
+          className="h-8 rounded-full bg-primary-600 px-3.5 text-sm text-white shadow-none hover:bg-primary-700 sm:px-4 dark:border dark:border-[#232C42] dark:bg-[#141A29] dark:text-[#F4F6FA] dark:hover:bg-[#1B2334]"
           onClick={() => openLoginModal()}
         >
           Login
@@ -513,7 +362,7 @@ function OpportunityHeader({
     <header
       className={cn(
         'sticky top-0 z-50 w-full border-b border-gray-200 bg-white',
-        'dark:border-gray-800 dark:bg-gray-950'
+        'dark:border-[#1A2233] dark:bg-[rgba(10,13,20,0.85)] dark:backdrop-blur-[10px]'
       )}
     >
       {/*
@@ -536,7 +385,7 @@ function OpportunityHeader({
           <div className="ml-auto lg:ml-0">{authActions}</div>
         </div>
 
-        <div className="min-w-0 flex-1 border-t border-gray-100 px-3 pb-2.5 pt-2 dark:border-gray-800/80 sm:px-4 lg:order-1 lg:border-0 lg:px-0 lg:pb-0 lg:pt-0">
+        <div className="min-w-0 flex-1 border-t border-gray-100 px-3 pb-2.5 pt-2 dark:border-[#1A2233] sm:px-4 lg:order-1 lg:border-0 lg:px-0 lg:pb-0 lg:pt-0">
           {searchSlot}
         </div>
       </div>
@@ -552,8 +401,6 @@ export default function OpportunityHub() {
   const [searchInput, setSearchInput] = useState('')
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<HubFilters>(DEFAULT_FILTERS)
-  const [draftFilters, setDraftFilters] = useState<HubFilters>(DEFAULT_FILTERS)
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(false)
@@ -566,6 +413,8 @@ export default function OpportunityHub() {
   const searchWrapRef = useRef<HTMLDivElement>(null)
   const resultsAnchorRef = useRef<HTMLDivElement>(null)
   const hubTopRef = useRef<HTMLDivElement>(null)
+  const categoryScrollerRef = useRef<HTMLDivElement>(null)
+  const categoryTileRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const exploreCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** True while pointer is over search + Explore (survives layout-shift scroll events). */
   const exploreHoveringRef = useRef(false)
@@ -634,11 +483,6 @@ export default function OpportunityHub() {
     []
   )
 
-  const activeFilterCount = useMemo(
-    () => countActiveFilters(filters, tab),
-    [filters, tab]
-  )
-
   const isBrowseHome =
     tab === 'all' &&
     !query &&
@@ -702,7 +546,6 @@ export default function OpportunityHub() {
 
   const applyFilters = (next: HubFilters) => {
     setFilters(next)
-    setDraftFilters(next)
   }
 
   const clearFilters = () => {
@@ -710,17 +553,49 @@ export default function OpportunityHub() {
     applyFilters(DEFAULT_FILTERS)
     setQuery('')
     setSearchInput('')
-    setFilterSheetOpen(false)
     setExploreOpen(false)
   }
 
-  const openFilterSheet = () => {
-    setDraftFilters(filters)
-    setFilterSheetOpen(true)
+  const scrollCategoryTileIntoStrip = (tileId: string) => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(min-width: 768px)').matches) return
+
+    const scroller = categoryScrollerRef.current
+    const tile = categoryTileRefs.current[tileId]
+    if (!scroller || !tile) return
+
+    const padding = 12
+    const nextLeft =
+      scroller.scrollLeft +
+      (tile.getBoundingClientRect().left - scroller.getBoundingClientRect().left) -
+      padding
+    scroller.scrollTo({
+      left: Math.max(0, nextLeft),
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
   }
 
   const applyQuickPill = (pill: QuickPill) => {
     setActiveSectionId(pill.id)
+    scrollCategoryTileIntoStrip(pill.id)
+
+    if (pill.id === 'jobs') {
+      router.push('/jobs')
+      return
+    }
+    if (pill.id === 'events') {
+      router.push('/events')
+      return
+    }
+    if (pill.id === 'mock_tests') {
+      router.push('/dashboard/student/mock-tests')
+      return
+    }
+    if (pill.id === 'blogs') {
+      router.push('/blogs')
+      return
+    }
+
     setExploreOpen(false)
     setSearchFocused(false)
 
@@ -758,6 +633,12 @@ export default function OpportunityHub() {
       const qs = params.toString()
       return qs ? `/jobs?${qs}` : '/jobs'
     }
+    if (pill.tab === 'events') {
+      const params = new URLSearchParams()
+      if (pill.patch?.eventCategory) params.set('category', String(pill.patch.eventCategory))
+      const qs = params.toString()
+      return qs ? `/events?${qs}` : '/events'
+    }
     return '/events'
   }
 
@@ -766,7 +647,8 @@ export default function OpportunityHub() {
     setExploreOpen(false)
     setSearchFocused(false)
 
-    if (!isAuthenticated) {
+    const needsAuth = item.kind === 'link' && Boolean(item.auth)
+    if (!isAuthenticated && needsAuth) {
       openLoginModal({
         redirect: href,
         preferredType: 'student',
@@ -792,90 +674,9 @@ export default function OpportunityHub() {
 
   const activeQuickPillId = activeSectionId
 
-  const filterSheet = (
-    <MobileFilterBottomSheet
-      open={filterSheetOpen}
-      onOpenChange={(open) => {
-        if (open) openFilterSheet()
-        else setFilterSheetOpen(false)
-      }}
-      title="Filter opportunities"
-      activeCount={activeFilterCount}
-      onClear={clearFilters}
-      onApply={() => {
-        applyFilters(draftFilters)
-        setFilterSheetOpen(false)
-      }}
-      triggerClassName="h-9 rounded-lg px-3"
-    >
-      <div className="space-y-6">
-        {(tab === 'all' || tab === 'jobs') && (
-          <>
-            <FilterRadioGroup
-              title="Job type"
-              name="hub_job_type"
-              options={HUB_JOB_TYPES}
-              value={draftFilters.jobType}
-              onChange={(jobType) => setDraftFilters((f) => ({ ...f, jobType }))}
-            />
-            <FilterRadioGroup
-              title="Work mode"
-              name="hub_remote"
-              options={[
-                { value: '', label: 'Any' },
-                { value: 'true', label: 'Remote' },
-                { value: 'false', label: 'On-site' },
-              ]}
-              value={draftFilters.remoteWork}
-              onChange={(remoteWork) =>
-                setDraftFilters((f) => ({ ...f, remoteWork }))
-              }
-            />
-            <FilterRadioGroup
-              title="Date posted"
-              name="hub_date"
-              options={HUB_DATE_OPTIONS}
-              value={draftFilters.datePosted}
-              onChange={(datePosted) =>
-                setDraftFilters((f) => ({
-                  ...f,
-                  datePosted: datePosted as DatePostedFilter,
-                }))
-              }
-            />
-          </>
-        )}
-        {(tab === 'all' || tab === 'events') && (
-          <>
-            <FilterRadioGroup
-              title="Event status"
-              name="hub_event_status"
-              options={EVENT_STATUS_OPTIONS}
-              value={draftFilters.eventStatus}
-              onChange={(eventStatus) =>
-                setDraftFilters((f) => ({ ...f, eventStatus }))
-              }
-            />
-            <FilterRadioGroup
-              title="Event category"
-              name="hub_event_category"
-              options={[
-                { value: 'all', label: 'All categories' },
-                ...PORTAL_CATEGORY_CHIPS.map((c) => ({
-                  value: c.value,
-                  label: c.label,
-                })),
-              ]}
-              value={draftFilters.eventCategory}
-              onChange={(eventCategory) =>
-                setDraftFilters((f) => ({ ...f, eventCategory }))
-              }
-            />
-          </>
-        )}
-      </div>
-    </MobileFilterBottomSheet>
-  )
+  const handleJobView = (job: HubJob) => {
+    router.push(getJobDetailPath(job))
+  }
 
   const handleJobApply = (job: HubJob) => {
     const path = getJobDetailPath(job)
@@ -917,7 +718,7 @@ export default function OpportunityHub() {
   }, [query, filters])
 
   const searchSlot = (
-    <form onSubmit={handleSearchSubmit} className="w-full max-w-2xl lg:mx-auto">
+    <form onSubmit={handleSearchSubmit} className="w-full max-w-2xl lg:mx-auto 2xl:max-w-3xl">
       <div
         ref={searchWrapRef}
         className="relative"
@@ -964,11 +765,11 @@ export default function OpportunityHub() {
                 if (searchWrapRef.current?.contains(next)) return
                 scheduleCloseExplorePanel()
               }}
-              placeholder="Search…"
+              placeholder="Search opportunities, events, resources…"
               className={cn(
                 'h-9 rounded-full border-primary-300 bg-white pl-10 shadow-none sm:h-10',
                 'transition-colors focus-visible:border-primary-500 focus-visible:ring-0',
-                'dark:border-primary-700 dark:bg-gray-900'
+                'dark:border-[#232C42] dark:bg-[#141A29] dark:text-[#F4F6FA] dark:placeholder:text-[#5B6684] dark:focus-visible:border-[#33405E]'
               )}
               aria-label="Search opportunities"
               aria-expanded={showExplore}
@@ -976,7 +777,6 @@ export default function OpportunityHub() {
               autoComplete="off"
             />
           </motion.div>
-          <div className="hidden shrink-0 sm:block">{filterSheet}</div>
         </div>
 
         <AnimatePresence>
@@ -1002,14 +802,14 @@ export default function OpportunityHub() {
             >
               <div
                 className={cn(
-                  'rounded-2xl border border-gray-200 bg-white p-4 shadow-xl',
-                  'dark:border-gray-700 dark:bg-gray-900 sm:p-5'
+                  'max-h-[min(70dvh,28rem)] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-xl',
+                  'dark:border-[#232C42] dark:bg-[#141A29] sm:p-5'
                 )}
               >
               <p className="mb-3 text-xs font-medium text-gray-500 dark:text-gray-400">
                 Explore
               </p>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {EXPLORE_ITEMS.map((item) => {
                   const Icon = item.kind === 'filter' ? item.pill.icon : item.icon
                   return (
@@ -1050,29 +850,37 @@ export default function OpportunityHub() {
   )
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-gray-950">
+    <div className="relative flex min-h-screen bg-white dark:bg-[#0A0D14]">
+      <div
+        aria-hidden
+        className="pointer-events-none fixed left-[35%] top-[-200px] z-0 hidden h-[600px] w-[900px] dark:block"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(0,162,229,0.09) 0%, rgba(27,82,164,0.04) 45%, transparent 70%)',
+        }}
+      />
       <HubSidebarDesktop />
       <HubSidebarDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col">
         <OpportunityHeader
           onMenuOpen={() => setMenuOpen(true)}
           searchSlot={searchSlot}
         />
 
-        <main className="w-full flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:px-10">
+        <main className="w-full flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:px-10 2xl:px-14 2xl:py-8">
           <div ref={resultsAnchorRef} className="scroll-mt-28" />
 
           {/* Hub hero headline — tighter on mobile like Unstop */}
           <div id="hub-top" ref={hubTopRef} className="mb-5 scroll-mt-28 sm:mb-7">
-            <h1 className="text-xl font-extrabold uppercase leading-snug tracking-[0.02em] text-gray-900 dark:text-white sm:text-3xl sm:leading-tight sm:tracking-[0.06em] lg:text-4xl">
-              Discover Your{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent">
-                Potential
+            <h1 className="text-xl font-extrabold uppercase leading-snug tracking-[0.02em] text-gray-900 dark:text-[1.65rem] dark:normal-case dark:tracking-[-0.02em] dark:text-[#F4F6FA] sm:text-3xl sm:leading-tight sm:tracking-[0.06em] dark:sm:text-4xl lg:text-4xl dark:lg:text-[42px] 2xl:text-[2.6rem]">
+              Discover your{' '}
+              <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent dark:from-[#24B4F0] dark:to-[#7FD4F5]">
+                potential
               </span>
             </h1>
             <div
-              className="mt-2.5 h-1 w-12 rounded-full bg-primary-500 sm:mt-3 sm:w-20"
+              className="mt-2.5 h-1 w-12 rounded-full bg-primary-500 dark:mt-4 dark:h-[3px] dark:w-[54px] dark:bg-[#00A2E5] sm:mt-3 sm:w-20"
               aria-hidden
             />
           </div>
@@ -1084,28 +892,16 @@ export default function OpportunityHub() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4">
-              <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-3 sm:text-[22px]">
-                <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+            <div className="mb-3 sm:mb-4">
+              <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-gray-900 dark:text-[#F4F6FA] sm:gap-3 sm:text-[22px]">
+                <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-6" aria-hidden />
                 Explore categories
               </h2>
-              <div className="flex items-center gap-2">
-                <div className="sm:hidden">{filterSheet}</div>
-                {activeFilterCount > 0 && (
-                  <motion.button
-                    type="button"
-                    onClick={clearFilters}
-                    initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-950 dark:text-primary-300"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Reset · {activeFilterCount}
-                  </motion.button>
-                )}
-              </div>
             </div>
-            <div className="-mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible">
+            <div
+              ref={categoryScrollerRef}
+              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible 2xl:gap-4"
+            >
               {CATEGORY_TILES.map((tile, i) => {
                 const active = activeQuickPillId === tile.id
                 const tone = CATEGORY_TILE_TONES[tile.id] ?? DEFAULT_TILE_TONE
@@ -1113,6 +909,9 @@ export default function OpportunityHub() {
                   <motion.button
                     key={tile.id}
                     type="button"
+                    ref={(el) => {
+                      categoryTileRefs.current[tile.id] = el
+                    }}
                     onClick={() => applyQuickPill(tile)}
                     initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1120,15 +919,16 @@ export default function OpportunityHub() {
                     whileHover={reduceMotion ? undefined : { y: -6, scale: 1.05 }}
                     whileTap={reduceMotion ? undefined : { scale: 0.96 }}
                     className={cn(
-                      'group relative flex w-[104px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-2xl border px-2 py-3 text-center transition-all duration-200 sm:w-[120px] sm:gap-3 sm:px-2.5 sm:py-4 md:w-auto',
-                      'dark:bg-gray-900 dark:hover:border-opacity-80',
+                      'group relative flex w-[104px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-2xl border px-2 py-3 text-center transition-all duration-200 sm:w-[120px] sm:gap-3 sm:px-2.5 sm:py-4 md:w-auto 2xl:py-5',
+                      'dark:border-[#1A2233] dark:bg-[#141A29] dark:hover:border-[#33405E] dark:hover:bg-[#1B2334]',
+                      active && 'dark:!border-[rgba(0,162,229,0.35)] dark:!bg-[rgba(0,162,229,0.12)] dark:shadow-[0_4px_18px_rgba(0,162,229,0.15)]',
                       active ? tone.active : tone.idle,
                       !active && `hover:shadow-sm ${tone.glow}`
                     )}
                   >
                     <span
                       className={cn(
-                        'pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full opacity-20 blur-2xl transition-opacity group-hover:opacity-35',
+                        'pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full opacity-20 blur-2xl transition-opacity group-hover:opacity-35 dark:hidden',
                         active ? 'opacity-30' : 'opacity-15'
                       )}
                       style={{
@@ -1143,8 +943,8 @@ export default function OpportunityHub() {
                                   ? '#8B5CF6'
                                   : tile.id === 'placed_students'
                                     ? '#10B981'
-                                    : tile.id === 'campus_challenge'
-                                      ? '#F59E0B'
+                                    : tile.id === 'mock_tests'
+                                      ? '#8B5CF6'
                                       : tile.id === 'trusted_partners'
                                         ? '#06B6D4'
                                         : tile.id === 'about'
@@ -1157,19 +957,24 @@ export default function OpportunityHub() {
                     />
                     <span
                       className={cn(
-                        'relative flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 sm:h-14 sm:w-14 sm:rounded-2xl',
+                        'relative flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 sm:h-14 sm:w-14 sm:rounded-2xl 2xl:h-16 2xl:w-16',
+                        'dark:h-9 dark:w-9 dark:rounded-xl sm:dark:h-11 sm:dark:w-11 sm:dark:rounded-xl 2xl:dark:h-12 2xl:dark:w-12',
                         tone.iconWrap,
                         active && 'scale-105'
                       )}
                     >
-                      <CategoryIcon id={tile.id} active={active} className="h-7 w-7 sm:h-9 sm:w-9" />
+                      <CategoryIcon
+                        id={tile.id}
+                        active={active}
+                        className="h-7 w-7 sm:h-9 sm:w-9 2xl:h-10 2xl:w-10 dark:h-5 dark:w-5 sm:dark:h-6 sm:dark:w-6 2xl:dark:h-7 2xl:dark:w-7"
+                      />
                     </span>
                     <span
                       className={cn(
-                        'relative line-clamp-2 min-h-[2.2em] text-[10px] font-bold leading-tight tracking-tight sm:text-[12px]',
+                        'relative line-clamp-2 min-h-[2.2em] text-[10px] font-bold leading-tight tracking-tight sm:text-[12px] 2xl:text-[13px]',
                         active
-                          ? 'text-gray-900 dark:text-white'
-                          : 'text-gray-700 group-hover:text-gray-900 dark:text-gray-200'
+                          ? 'text-gray-900 dark:text-[#F4F6FA]'
+                          : 'text-gray-700 group-hover:text-gray-900 dark:text-[#93A0BD] dark:group-hover:text-[#F4F6FA]'
                       )}
                     >
                       {tile.label}
@@ -1205,20 +1010,20 @@ export default function OpportunityHub() {
                     subtitle="Fresh roles from hiring partners on Disha."
                   />
                   {jobs.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                    <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No jobs yet.{' '}
                       <Link href="/jobs" className="font-medium text-primary-600 hover:underline">
                         Browse jobs
                       </Link>
                     </p>
                   ) : (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
                       {jobs.slice(0, 4).map((job, i) => (
                         <HubJobCard
                           key={job.id}
                           job={job}
                           index={i}
-                          onView={() => router.push(getJobDetailPath(job))}
+                          onView={() => handleJobView(job)}
                           onApply={() => handleJobApply(job)}
                         />
                       ))}
@@ -1235,14 +1040,14 @@ export default function OpportunityHub() {
                     subtitle="Hackathons, workshops, and campus competitions."
                   />
                   {events.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                    <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No events yet.{' '}
                       <Link href="/events" className="font-medium text-primary-600 hover:underline">
                         Browse events
                       </Link>
                     </p>
                   ) : (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
                       {events.slice(0, 4).map((event, i) => (
                         <HubEventCard key={event.id} event={event} index={i} />
                       ))}
@@ -1295,7 +1100,7 @@ export default function OpportunityHub() {
                         <Link
                           key={post.slug}
                           href={`/blogs/${post.slug}`}
-                          className="group flex h-full gap-4 rounded-2xl border border-gray-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-5"
+                          className="group flex h-full gap-4 rounded-2xl border border-gray-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] sm:p-5"
                         >
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-primary-600 ring-1 ring-slate-100 dark:bg-gray-800 dark:ring-gray-700">
                             {String(i + 2).padStart(2, '0')}
@@ -1329,36 +1134,6 @@ export default function OpportunityHub() {
                   subtitle={placedStudentsData.subtitle}
                 />
 
-                <section
-                  id="hub-campus-challenge"
-                  className="scroll-mt-28 overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-5 sm:p-7 dark:border-amber-900/50 dark:from-amber-950/30 dark:via-gray-900 dark:to-orange-950/20"
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
-                    Flagship program
-                  </p>
-                  <h2 className="mt-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-2xl">
-                    The Campus Hiring Challenge
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300">
-                    Compete, get shortlisted, and unlock interviews with top hiring partners — built for
-                    campus talent across India.
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2.5">
-                    <Link
-                      href="/events"
-                      className="inline-flex h-10 items-center rounded-full bg-primary-600 px-4 text-sm font-semibold text-white hover:bg-primary-700"
-                    >
-                      Explore challenges
-                    </Link>
-                    <Link
-                      href="/jobs"
-                      className="inline-flex h-10 items-center rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 hover:border-primary-200 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                    >
-                      Browse roles
-                    </Link>
-                  </div>
-                </section>
-
                 <div id="hub-trusted-partners" className="scroll-mt-28">
                   <HubTrustedLogos companies={companies} />
                 </div>
@@ -1366,28 +1141,20 @@ export default function OpportunityHub() {
                 <HubWhyDisha />
 
                 <section id="hub-faq" className="scroll-mt-28">
-                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-                        <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
-                        FAQ
-                      </h2>
-                      <p className="mt-1.5 pl-3.5 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
-                        Answers from Disha career guides — jobs, skills, AI hiring & campus prep.
-                      </p>
-                    </div>
-                    <Link
-                      href="/blogs"
-                      className="self-start text-sm font-semibold text-primary-600 hover:text-primary-700 sm:self-auto"
-                    >
-                      Browse all guides →
-                    </Link>
+                  <div className="mb-5">
+                    <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
+                      <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+                      FAQ
+                    </h2>
+                    <p className="mt-1.5 pl-3.5 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
+                      Answers from Disha career guides — jobs, skills, AI hiring & campus prep.
+                    </p>
                   </div>
                   <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
                     {HUB_HOME_FAQS.map((item, index) => (
                       <details
                         key={item.q}
-                        className="group rounded-2xl border border-gray-200 bg-white px-4 py-3.5 open:border-primary-200 open:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:open:border-primary-800"
+                        className="group rounded-2xl border border-gray-200 bg-white px-4 py-3.5 open:border-primary-200 open:shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] dark:open:border-primary-800"
                       >
                         <summary className="cursor-pointer list-none marker:content-none">
                           <span className="flex items-start gap-3">
@@ -1463,7 +1230,7 @@ export default function OpportunityHub() {
                           key={`job-${item.job.id}`}
                           job={item.job}
                           index={i}
-                          onView={() => router.push(getJobDetailPath(item.job))}
+                          onView={() => handleJobView(item.job)}
                           onApply={() => handleJobApply(item.job)}
                         />
                       ) : (
@@ -1479,7 +1246,7 @@ export default function OpportunityHub() {
 
                 {tab === 'jobs' &&
                   (jobsToShow.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                    <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No jobs match.{' '}
                       <button
                         type="button"
@@ -1496,7 +1263,7 @@ export default function OpportunityHub() {
                           key={job.id}
                           job={job}
                           index={i}
-                          onView={() => router.push(getJobDetailPath(job))}
+                          onView={() => handleJobView(job)}
                           onApply={() => handleJobApply(job)}
                         />
                       ))}
@@ -1505,7 +1272,7 @@ export default function OpportunityHub() {
 
                 {tab === 'events' &&
                   (eventsToShow.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900">
+                    <p className="rounded-lg border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No events match.{' '}
                       <button
                         type="button"
@@ -1524,7 +1291,7 @@ export default function OpportunityHub() {
                   ))}
 
                 {!error && tab === 'all' && mixedFeed.length === 0 && (
-                  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-200 bg-white py-16 text-center dark:border-gray-700 dark:bg-gray-900">
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-200 bg-white py-16 text-center dark:border-[#1A2233] dark:bg-[#141A29]">
                     <p className="text-gray-600 dark:text-gray-400">No opportunities found.</p>
                     <div className="flex gap-2">
                       <Link href="/jobs">

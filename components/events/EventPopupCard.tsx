@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, type MouseEvent } from 'react'
 import Link from 'next/link'
 import {
   Building2,
@@ -16,6 +16,12 @@ import { Button } from '@/components/ui/button'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { CATEGORY_LABELS, CONTEST_STATUS_LABELS } from '@/types/contestEvent'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
+import {
+  buildEventRegisterRedirect,
+  storePendingEventRegistration,
+} from '@/lib/pendingEventRegistration'
 
 interface EventPopupCardProps {
   event: ContestEventListItem
@@ -49,7 +55,7 @@ function locationLabel(event: ContestEventListItem) {
 function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCardProps) {
   const slug = event.slug || event.id
   const detailHref = `/events/${slug}`
-  const registerHref = `/events/${slug}?register=1&action=register`
+  const registerHref = buildEventRegisterRedirect(slug, event.id)
   const eventDate = formatDisplayDate(event.event_start_date)
   const regDeadline = formatDisplayDate(event.registration_end_date)
   const categoryLabel = event.category
@@ -59,6 +65,21 @@ function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCar
   const location = locationLabel(event)
   const description =
     event.short_description?.trim() || event.subtitle?.trim() || null
+  const { isAuthenticated } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
+
+  const onGuestNav = (href: string, pendingRegister = false) => (e: MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault()
+      if (pendingRegister) storePendingEventRegistration(slug, event.id)
+      openLoginModal({
+        redirect: href,
+        preferredType: 'student',
+      })
+      return
+    }
+    onNavigate?.()
+  }
 
   return (
     <div className={cn('flex flex-col', className)}>
@@ -188,7 +209,7 @@ function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCar
             </Button>
           ) : (
             <Button variant="gradient" size="sm" className="w-full sm:flex-1" asChild>
-              <Link href={registerHref} onClick={onNavigate}>
+              <Link href={registerHref} onClick={onGuestNav(registerHref, true)}>
                 Register Now
               </Link>
             </Button>
@@ -199,7 +220,7 @@ function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCar
             className="w-full border-primary-200 hover:bg-primary-50 dark:border-primary-800 dark:hover:bg-primary-900/20 sm:flex-1"
             asChild
           >
-            <Link href={detailHref} onClick={onNavigate}>
+            <Link href={detailHref} onClick={onGuestNav(detailHref)}>
               View Details
             </Link>
           </Button>

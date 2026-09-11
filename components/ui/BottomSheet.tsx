@@ -33,7 +33,7 @@ export function BottomSheet({
   children,
   footer,
   className,
-  maxHeight = "min(88vh, 720px)",
+  maxHeight = "min(88dvh, 720px)",
 }: BottomSheetProps) {
   const [mounted, setMounted] = useState(false)
   const dragControls = useDragControls()
