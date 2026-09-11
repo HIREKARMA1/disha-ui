@@ -20,6 +20,7 @@ interface MockTest {
     start_time?: string;
     end_time?: string;
     passing_criteria?: any;
+    background_image_url?: string | null;
 }
 
 interface MockTestDetailsModalProps {
@@ -53,6 +54,18 @@ export function MockTestDetailsModal({
             maxWidth="2xl"
         >
             <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
+                {mockTest.background_image_url ? (
+                    <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/40">
+                        <div className="relative w-full overflow-hidden aspect-[16/9] max-h-48">
+                            <img
+                                src={mockTest.background_image_url}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover object-center"
+                            />
+                        </div>
+                    </div>
+                ) : null}
+
                 {/* Header Info */}
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">

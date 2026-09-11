@@ -16,6 +16,7 @@ import {
   Search,
   Trophy,
   X,
+  BarChart3,
 } from 'lucide-react'
 
 interface StudentMockTest {
@@ -30,6 +31,8 @@ interface StudentMockTest {
   round_count: number
   rounds?: any[]
   has_attempted?: boolean
+  background_image_url?: string | null
+  results_published?: boolean
 }
 
 const cardTone = (index: number) => {
@@ -92,6 +95,10 @@ export default function StudentMockTestsPage() {
   const handleStart = (mockTestId: string) => {
     setStartingId(mockTestId)
     router.push(`/assessments/exam/${mockTestId}`)
+  }
+
+  const handleViewResults = (mockTestId: string) => {
+    router.push(`/dashboard/student/mock-tests/${mockTestId}/results`)
   }
 
   const stats = [
@@ -226,8 +233,19 @@ export default function StudentMockTestsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`flex h-full flex-col rounded-xl border p-6 transition-all duration-200 hover:shadow-md ${cardTone(index)}`}
+                className={`flex h-full flex-col overflow-hidden rounded-xl border transition-all duration-200 hover:shadow-md ${cardTone(index)}`}
               >
+                {test.background_image_url ? (
+                  <div className="relative w-full overflow-hidden border-b border-black/5 dark:border-white/10 aspect-[16/9] max-h-40">
+                    <img
+                      src={test.background_image_url}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover object-center"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="flex h-full flex-col p-6">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="line-clamp-2 text-lg font-semibold text-gray-900 dark:text-white">
                     {test.assessment_name}
@@ -259,7 +277,17 @@ export default function StudentMockTestsPage() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-5">
+                <div className="mt-auto flex flex-col gap-2 pt-5">
+                  {test.has_attempted && test.results_published ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleViewResults(test.id)}
+                      className="w-full"
+                    >
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      View Results
+                    </Button>
+                  ) : null}
                   <Button
                     onClick={() => handleStart(test.id)}
                     disabled={startingId === test.id}
@@ -276,6 +304,7 @@ export default function StudentMockTestsPage() {
                       'Start Mock Test'
                     )}
                   </Button>
+                </div>
                 </div>
               </motion.div>
             ))}

@@ -31,6 +31,7 @@ export default function EditMockTestPage() {
                 // The form expects time_window object and metadata nesting
                 const formattedData = {
                     ...data,
+                    background_image_url: data.background_image_url || "",
                     time_window: {
                         start_time: data.start_time ? utcIsoToDatetimeLocal(data.start_time) : "",
                         end_time: data.end_time ? utcIsoToDatetimeLocal(data.end_time) : "",

@@ -34,6 +34,7 @@ interface MockTest {
   total_duration_minutes: number;
   rounds: any[];
   passing_criteria?: any;
+  background_image_url?: string | null;
 }
 
 interface MockTestStats {
@@ -697,42 +698,25 @@ export default function MockTestDetailPage() {
     <AdminDashboardLayout>
       <div className="space-y-6">
         {showCreatedBanner && (
-          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
             <p>
               Mock test created successfully. Generate/replenish questions if needed,
               then <strong>Publish</strong> to make it available to every student.
             </p>
-            {mockTest.status !== "ACTIVE" && (
-              <Button
-                onClick={handlePublish}
-                disabled={isPublishing}
-                className="bg-green-600 hover:bg-green-700 shrink-0"
-              >
-                {isPublishing ? "Publishing..." : "Publish Mock Test"}
-              </Button>
-            )}
           </div>
         )}
 
-        {/* Draft publish CTA — always visible until published */}
+        {/* Draft notice — Publish action lives in the header only */}
         {mockTest.status !== "ACTIVE" && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold text-amber-900 dark:text-amber-100">
-                This Mock Test is a draft
-              </p>
-              <p className="text-sm text-amber-800 dark:text-amber-200 mt-0.5">
-                Students cannot see it until you publish. Publishing makes it available
-                to all Disha students.
-              </p>
-            </div>
-            <Button
-              onClick={handlePublish}
-              disabled={isPublishing}
-              className="bg-green-600 hover:bg-green-700 shrink-0"
-            >
-              {isPublishing ? "Publishing..." : "Publish Mock Test"}
-            </Button>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 px-4 py-4">
+            <p className="font-semibold text-amber-900 dark:text-amber-100">
+              This Mock Test is a draft
+            </p>
+            <p className="text-sm text-amber-800 dark:text-amber-200 mt-0.5">
+              Students cannot see it until you publish. Use{" "}
+              <strong>Publish Mock Test</strong> in the actions below to make it
+              available to all Disha students.
+            </p>
           </div>
         )}
 
@@ -780,6 +764,18 @@ export default function MockTestDetailPage() {
             )}
           </div>
         </div>
+
+        {mockTest.background_image_url ? (
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/40">
+            <div className="relative w-full overflow-hidden aspect-[16/9] max-h-56 md:max-h-72">
+              <img
+                src={mockTest.background_image_url}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            </div>
+          </div>
+        ) : null}
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
