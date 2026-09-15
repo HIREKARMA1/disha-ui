@@ -1,17 +1,26 @@
 "use client"
 
 import Link from 'next/link'
-import { Linkedin, Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
+import { Linkedin, Facebook, Instagram } from 'lucide-react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { config } from '@/lib/config'
 
+const MAPS_DIRECTIONS_URL =
+    'https://www.google.com/maps/search/?api=1&query=2nd+Floor%2C+SS+Niwas%2C+Hirekarma+Private+Limited%2C+Raghunathpur%2C+Bhubaneswar%2C+Odisha+751024'
+
+const MAPS_EMBED_URL =
+    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3739.9763807315003!2d85.8203458793457!3d20.383863700000006!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a19096e0259fc7f%3A0x7ad66a4df8112eda!2sHireKarma%20Private%20Limited!5e0!3m2!1sen!2sin!4v1789020372578!5m2!1sen!2sin'
+
+const footerLinkClass =
+    'text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400'
+
 export function Footer() {
     return (
-        <footer className="border-t border-gray-200 bg-white pb-8 pt-8 dark:border-gray-800 dark:bg-gray-900 md:pb-10 md:pt-14">
+        <footer id="hub-contact" className="scroll-mt-28 border-t border-gray-200 bg-white pb-8 pt-8 dark:border-[#1A2233] dark:bg-[#0A0D14] md:pb-10 md:pt-14">
             <div className="container mx-auto px-5 sm:px-8 lg:px-10">
-                <div className="mb-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:mb-12 lg:grid-cols-4 lg:gap-12">
+                <div className="mb-8 grid grid-cols-1 items-start gap-8 sm:grid-cols-2 lg:mb-12 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-10">
                     {/* Brand — full width on mobile so columns stay aligned */}
-                    <div className="flex flex-col items-start space-y-3 sm:col-span-2 lg:col-span-1">
+                    <div className="flex flex-col items-start space-y-3 sm:col-span-2 lg:col-span-3">
                         <BrandLogo imageClassName="h-9 w-auto object-contain md:h-10" />
                         <p className="max-w-sm text-sm leading-relaxed text-gray-600 dark:text-gray-300">
                             A unified platform built for modern campus recruitment. Support available for students,
@@ -60,8 +69,8 @@ export function Footer() {
                     </div>
 
                     {/* Quick Links */}
-                    <div className="text-left">
-                        <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Quick Links</h3>
+                    <div className="text-left lg:col-span-2">
+                        <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Quick Links</h3>
                         <ul className="space-y-2.5">
                             <li>
                                 <Link
@@ -72,18 +81,12 @@ export function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/jobs"
-                                    className="text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
-                                >
+                                <Link href="/jobs" className={footerLinkClass}>
                                     Jobs
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/events"
-                                    className="text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
-                                >
+                                <Link href="/events" className={footerLinkClass}>
                                     Upcoming Events
                                 </Link>
                             </li>
@@ -107,8 +110,8 @@ export function Footer() {
                     </div>
 
                     {/* Resources */}
-                    <div className="text-left">
-                        <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Resources</h3>
+                    <div className="text-left lg:col-span-2">
+                        <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Resources</h3>
                         <ul className="space-y-2.5">
                             <li>
                                 <a
@@ -151,43 +154,60 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Contact Info */}
-                    <div className="text-left sm:col-span-2 lg:col-span-1">
-                        <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">Contact Us</h3>
-                        <ul className="space-y-3">
-                            <li>
-                                <a
-                                    href="mailto:info@hirekarma.in"
-                                    className="flex items-start gap-3 text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
-                                >
-                                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
-                                    <span>info@hirekarma.in</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href={`tel:+${config.whatsapp.number}`}
-                                    className="flex items-start gap-3 text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
-                                >
-                                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
-                                    <span>{config.support.phoneDisplay}</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="https://www.google.com/maps/search/?api=1&query=2nd+Floor%2C+SS+Niwas%2C+Hirekarma+Private+Limited%2C+Raghunathpur%2C+Bhubaneswar%2C+Odisha+751024"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-start gap-3 text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
-                                >
-                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
-                                    <span className="text-left leading-relaxed">
-                                        2nd Floor, SS Niwas, Hirekarma Private Limited, Raghunathpur, Bhubaneswar, Odisha
-                                        751024
-                                    </span>
-                                </a>
-                            </li>
-                        </ul>
+                    {/* Contact Info + map embed */}
+                    <div className="text-left sm:col-span-2 lg:col-span-5">
+                        <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-[minmax(0,1fr)_210px]">
+                            <div>
+                                <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Contact Us</h3>
+                                <dl className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
+                                    <dt className="pt-0.5 font-medium text-gray-900 dark:text-white">Email</dt>
+                                    <dd>
+                                        <a
+                                            href="mailto:info@hirekarma.in"
+                                            className="text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
+                                        >
+                                            info@hirekarma.in
+                                        </a>
+                                    </dd>
+                                    <dt className="pt-0.5 font-medium text-gray-900 dark:text-white">Contact</dt>
+                                    <dd>
+                                        <a
+                                            href={`tel:+${config.whatsapp.number}`}
+                                            className="text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
+                                        >
+                                            {config.support.phoneDisplay}
+                                        </a>
+                                    </dd>
+                                    <dt className="pt-0.5 font-medium text-gray-900 dark:text-white">Location</dt>
+                                    <dd>
+                                        <a
+                                            href={MAPS_DIRECTIONS_URL}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block leading-relaxed text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
+                                        >
+                                            2nd Floor, SS Niwas, Hirekarma Private Limited, Raghunathpur, Bhubaneswar, Odisha
+                                            751024
+                                        </a>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <a
+                                href={MAPS_DIRECTIONS_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-700"
+                                aria-label="Open HireKarma location in Google Maps"
+                            >
+                                <iframe
+                                    title="HireKarma Private Limited location"
+                                    src={MAPS_EMBED_URL}
+                                    className="pointer-events-none h-[168px] w-full border-0"
+                                    loading="lazy"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                />
+                            </a>
+                        </div>
                     </div>
                 </div>
 

@@ -67,12 +67,8 @@ export function buildJobApplyRedirect(returnPath: string): string {
   return qs ? `${path}?${qs}` : path
 }
 
-/** Guest apply: persist intent and navigate to student login. */
-export function redirectGuestToLoginForApply(
-  router: { push: (url: string) => void },
-  jobId: string,
-  returnPath: string
-): void {
+/** Guest apply: persist intent and return redirect URL (for login modal / page). */
+export function prepareGuestApplyForLogin(jobId: string, returnPath: string): string {
   const redirectUrl = buildJobApplyRedirect(returnPath)
   storePendingJobApplication(jobId, redirectUrl)
   try {
@@ -80,6 +76,16 @@ export function redirectGuestToLoginForApply(
   } catch {
     // ignore
   }
+  return redirectUrl
+}
+
+/** Guest apply: persist intent and navigate to student login page. */
+export function redirectGuestToLoginForApply(
+  router: { push: (url: string) => void },
+  jobId: string,
+  returnPath: string
+): void {
+  const redirectUrl = prepareGuestApplyForLogin(jobId, returnPath)
   router.push(
     `/auth/login?redirect=${encodeURIComponent(redirectUrl)}&type=student`
   )

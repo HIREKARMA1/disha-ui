@@ -10,12 +10,16 @@ import {
 } from "@/lib/validations/assessment";
 import { IntegerTextField } from "@/components/ui/integer-text-field";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { EventImageUpload } from "@/components/admin/EventImageUpload";
+import { apiClient } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 interface AssessmentFormProps {
   initialData?: any;
   onSubmit: (data: any) => void;
   loading: boolean;
   mode: "create" | "edit";
+  variant?: "assessment" | "mock-test";
 }
 
 const MODES = [
@@ -25,10 +29,19 @@ const MODES = [
   { value: "ADMIN", label: "Admin Assessment" },
 ];
 
-export function AssessmentForm({ initialData, onSubmit, loading, mode }: AssessmentFormProps) {
+export function AssessmentForm({
+  initialData,
+  onSubmit,
+  loading,
+  mode,
+  variant = "assessment",
+}: AssessmentFormProps) {
+  const isMockTest = variant === "mock-test";
+  const entityLabel = isMockTest ? "Mock Test" : "Assessment";
+
   const defaultValues = {
     assessment_name: "",
-    mode: "HIRING",
+    mode: isMockTest ? "MOCK" : "HIRING",
     // description: "", // Moved to metadata
     // instructions: "", // Moved to metadata
     total_duration_minutes: 0,
@@ -50,6 +63,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
         minimum_round_scores: {},
       },
     },
+    background_image_url: "",
     job_id: "", // Field for linking to a job (kept for UI valid checking but will be moved to metadata on submit)
   };
 
@@ -88,6 +102,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
   }, [initialData]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadingBackground, setUploadingBackground] = useState(false);
 
   const handleChange = (field: string, value: any) => {
     setFormData({
@@ -116,10 +131,12 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
     });
   };
 
+  const effectiveMode = isMockTest ? "MOCK" : formData.mode;
+
   const validateForm = () => {
     const result = assessmentFormSchema.safeParse({
       assessment_name: formData.assessment_name,
-      mode: formData.mode,
+      mode: effectiveMode,
       time_window: formData.time_window,
       rounds: formData.rounds,
     });
@@ -142,7 +159,9 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
     );
 
     // Auto-generate DISHA ID if not present
-    const dishaId = formData.metadata.disha_assessment_id || `DASM-${Date.now()}`;
+    const dishaId =
+      formData.metadata.disha_assessment_id ||
+      `${isMockTest ? "MOCK" : "DASM"}-${Date.now()}`;
 
     const passingCriteria = {
       ...formData.metadata.passing_criteria,
@@ -152,7 +171,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
         formData.metadata?.passing_criteria?.overall_percentage === ""
           ? 60
           : Number(formData.metadata.passing_criteria.overall_percentage),
-      ...(formData.job_id ? { job_id: formData.job_id } : {}),
+      ...(!isMockTest && formData.job_id ? { job_id: formData.job_id } : {}),
     };
 
     // Edit API expects top-level fields; create uses nested metadata.
@@ -174,7 +193,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
 
       onSubmit({
         assessment_name: formData.assessment_name,
-        mode: formData.mode,
+        mode: effectiveMode,
         time_window: normalizeAssessmentTimeWindow(formData.time_window),
         total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
         auto_submit_on_timeout: formData.auto_submit_on_timeout,
@@ -182,13 +201,16 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
         description: formData.metadata.description ?? "",
         instructions: formData.metadata.instructions ?? "",
         passing_criteria: passingCriteria,
+        ...(isMockTest
+          ? { background_image_url: formData.background_image_url || "" }
+          : {}),
       });
       return;
     }
 
     const submissionData = {
       assessment_name: formData.assessment_name,
-      mode: formData.mode,
+      mode: effectiveMode,
       time_window: normalizeAssessmentTimeWindow(formData.time_window),
       total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
       auto_submit_on_timeout: formData.auto_submit_on_timeout,
@@ -198,9 +220,25 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
         disha_assessment_id: dishaId,
         passing_criteria: passingCriteria,
       },
+      ...(isMockTest
+        ? { background_image_url: formData.background_image_url || null }
+        : {}),
     };
 
     onSubmit(submissionData);
+  };
+
+  const handleBackgroundUpload = async (file: File) => {
+    setUploadingBackground(true);
+    try {
+      const res = await apiClient.uploadMockTestBackground(file);
+      handleChange("background_image_url", res.file_url);
+      toast.success("Background image uploaded");
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploadingBackground(false);
+    }
   };
 
   return (
@@ -215,7 +253,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
             <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Basic Details</h2>
           </div>
 
-          {formData.job_id && (
+          {!isMockTest && formData.job_id && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-800">
               <Briefcase size={14} />
               <span className="font-medium">Linked to Job: {formData.job_id.substring(0, 8)}...</span>
@@ -228,13 +266,17 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
           <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                Assessment Name <span className="text-red-500">*</span>
+                {entityLabel} Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={formData.assessment_name}
                 onChange={(e) => handleChange("assessment_name", e.target.value)}
-                placeholder="e.g., Full Stack Developer Assessment"
+                placeholder={
+                  isMockTest
+                    ? "e.g., Full Stack Developer Mock Test"
+                    : "e.g., Full Stack Developer Assessment"
+                }
                 className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 ${errors.assessment_name ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : "border-gray-200 dark:border-gray-700"
                   }`}
               />
@@ -245,27 +287,29 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                What is this assessment for? <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.mode}
-                onChange={(e) => handleChange("mode", e.target.value)}
-                className="w-full px-4 py-2.5 pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white"
-              >
-                {MODES.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              {errors.mode && (
-                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-                  {errors.mode}
-                </p>
-              )}
-            </div>
+            {!isMockTest && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  What is this assessment for? <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.mode}
+                  onChange={(e) => handleChange("mode", e.target.value)}
+                  className="w-full px-4 py-2.5 pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none cursor-pointer text-gray-900 dark:text-white"
+                >
+                  {MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.mode && (
+                  <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                    {errors.mode}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -274,7 +318,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
             <textarea
               value={formData.metadata.description}
               onChange={(e) => handleMetadataChange("description", e.target.value)}
-              placeholder="Brief description of this assessment..."
+              placeholder={`Brief description of this ${entityLabel.toLowerCase()}...`}
               rows={3}
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400"
             />
@@ -290,8 +334,22 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               rows={4}
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">These instructions will be displayed to students before they start the assessment.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">These instructions will be displayed to students before they start the {entityLabel.toLowerCase()}.</p>
           </div>
+
+          {isMockTest && (
+            <div>
+              <EventImageUpload
+                label="Background Image"
+                hint="Optional. Shown on the student Mock Test page. JPG, PNG, or WEBP up to 5MB."
+                value={formData.background_image_url || ""}
+                onChange={(url) => handleChange("background_image_url", url)}
+                onUpload={handleBackgroundUpload}
+                uploading={uploadingBackground}
+                aspect="banner"
+              />
+            </div>
+          )}
 
           {/* Auto-submit */}
           {/* <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
@@ -412,7 +470,7 @@ export function AssessmentForm({ initialData, onSubmit, loading, mode }: Assessm
               Processing...
             </span>
           ) : (
-            mode === "create" ? "Create Assessment" : "Update Assessment"
+            mode === "create" ? `Create ${entityLabel}` : `Update ${entityLabel}`
           )}
         </button>
       </div>

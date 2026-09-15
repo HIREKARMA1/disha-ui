@@ -11,7 +11,11 @@ interface ModalProps {
     onClose: () => void
     title: string
     children: React.ReactNode
+    /** Sticky action row below scrollable content (e.g. Accept). */
+    footer?: React.ReactNode
     className?: string
+    /** Applied to the fixed overlay wrapper (e.g. raise above another modal). */
+    overlayClassName?: string
     maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl"
     /** When false, modal opens without dimmed backdrop (default: true). */
     showBackdrop?: boolean
@@ -34,7 +38,9 @@ export function Modal({
     onClose,
     title,
     children,
+    footer,
     className,
+    overlayClassName,
     maxWidth = "lg",
     showBackdrop = true,
 }: ModalProps) {
@@ -68,7 +74,13 @@ export function Modal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[999] flex items-start sm:items-center justify-center pointer-events-none overflow-y-auto py-6 sm:py-8">
+                <div
+                    className={cn(
+                        "fixed inset-0 flex items-center justify-center pointer-events-none overflow-y-auto",
+                        "p-3 sm:p-6",
+                        overlayClassName ?? "z-[999]"
+                    )}
+                >
                     {showBackdrop && (
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -86,14 +98,16 @@ export function Modal({
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                            "relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full mx-4 pointer-events-auto my-auto max-h-[90vh] flex flex-col",
+                            "relative flex w-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl",
+                            "pointer-events-auto dark:border-gray-700 dark:bg-gray-800",
+                            "max-h-[min(90dvh,calc(100dvh-1.5rem))] sm:max-h-[90vh]",
                             maxWidthClasses[maxWidth],
                             className
                         )}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700 sm:p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
                                 {title}
                             </h2>
                             <Button
@@ -101,16 +115,22 @@ export function Modal({
                                 variant="ghost"
                                 size="sm"
                                 onClick={onClose}
-                                className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="h-8 w-8 shrink-0 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 overflow-y-auto min-h-0">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:p-6">
                             {children}
                         </div>
+
+                        {footer && (
+                            <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 sm:px-6 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                                {footer}
+                            </div>
+                        )}
                     </motion.div>
                 </div>
             )}
@@ -120,7 +140,7 @@ export function Modal({
 
 export function TermsModalContent() {
     return (
-        <div className="max-h-96 overflow-y-auto space-y-4 text-sm text-gray-700 dark:text-gray-300">
+        <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
             <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">1. Acceptance of Terms and Conditions and Privacy Policy</h3>
                 <p>
@@ -182,7 +202,7 @@ export function TermsModalContent() {
 
 export function PrivacyModalContent() {
     return (
-        <div className="max-h-96 overflow-y-auto space-y-4 text-sm text-gray-700 dark:text-gray-300">
+        <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
             <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900 dark:text-white">1. Information We Collect</h3>
                 <p>

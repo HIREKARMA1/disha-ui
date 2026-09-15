@@ -36,7 +36,7 @@ export function WelcomeMessage({ className = '', studentName = 'Student' }: Welc
 
   return (
     <div className={cn('relative', className)}>
-      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+      <h1 className="break-words text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-2xl lg:text-3xl">
         {greeting}, {studentName}{' '}
         <span className="inline-block" aria-hidden>
           
