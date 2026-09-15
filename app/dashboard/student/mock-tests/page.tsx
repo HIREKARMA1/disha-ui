@@ -350,6 +350,34 @@ export default function StudentMockTestsPage() {
               </button>
             ) : null}
           </div>
+        <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl p-4 sm:p-6 border border-primary-200 dark:border-primary-700">
+          <h1 className="mb-2 text-xl font-bold text-gray-900 dark:text-white md:text-3xl">
+            Mock Tests
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 md:text-lg">
+            Take full-length timed mock tests and review how ready you are.
+          </p>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search mock tests by name..."
+            className="pl-10 pr-10"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {stats.map((stat, index) => (
