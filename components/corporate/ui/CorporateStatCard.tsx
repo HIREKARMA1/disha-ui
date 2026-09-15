@@ -14,6 +14,7 @@ interface CorporateStatCardProps {
   isLoading?: boolean
   className?: string
   onClick?: () => void
+  compact?: boolean
 }
 
 export function CorporateStatCard({
@@ -26,6 +27,7 @@ export function CorporateStatCard({
   isLoading = false,
   className = '',
   onClick,
+  compact = false,
 }: CorporateStatCardProps) {
   const tones = STAT_ACCENTS[accent]
 
@@ -33,7 +35,8 @@ export function CorporateStatCard({
     return (
       <div
         className={cn(
-          'rounded-[18px] border p-6 animate-pulse h-full min-h-[140px]',
+          'rounded-[18px] border animate-pulse h-full',
+          compact ? 'p-4 min-h-[96px]' : 'p-6 min-h-[140px]',
           tones.card,
           className
         )}
@@ -64,17 +67,23 @@ export function CorporateStatCard({
             : undefined
         }
         className={cn(
-                        'group p-4 md:p-6 rounded-[18px] border transition-all duration-300 hover:-translate-y-0.5 w-full h-full min-h-[120px] md:min-h-[140px]',
+          'group rounded-[18px] border transition-all duration-300 hover:-translate-y-0.5 w-full h-full',
+          compact ? 'p-3 md:p-4 min-h-[96px]' : 'p-4 md:p-6 min-h-[120px] md:min-h-[140px]',
           tones.card,
           onClick && 'cursor-pointer'
         )}
       >
-        <div className="flex items-center justify-between gap-4 h-full">
+        <div className="flex items-center justify-between gap-3 h-full">
           <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <p className="text-[14px] font-medium text-gray-600 dark:text-gray-400 mb-1.5 truncate">
+            <p className="text-[13px] font-medium text-gray-600 dark:text-gray-400 mb-1 truncate">
               {label}
             </p>
-            <p className="text-[28px] md:text-[40px] lg:text-[44px] font-bold text-gray-900 dark:text-white leading-none tabular-nums group-hover:scale-[1.02] transition-transform origin-left">
+            <p
+              className={cn(
+                'font-bold text-gray-900 dark:text-white leading-none tabular-nums group-hover:scale-[1.02] transition-transform origin-left',
+                compact ? 'text-[22px] md:text-[26px]' : 'text-[28px] md:text-[40px] lg:text-[44px]'
+              )}
+            >
               {value}
             </p>
             {subtitle && (
@@ -85,11 +94,12 @@ export function CorporateStatCard({
           </div>
           <div
             className={cn(
-              'w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300',
+              'rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300',
+              compact ? 'w-9 h-9 md:w-10 md:h-10' : 'w-10 h-10 md:w-14 md:h-14',
               tones.icon
             )}
           >
-            <Icon className="w-5 h-5 md:w-7 md:h-7" />
+            <Icon className={compact ? 'w-4 h-4 md:w-5 md:h-5' : 'w-5 h-5 md:w-7 md:h-7'} />
           </div>
         </div>
       </div>

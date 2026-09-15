@@ -27,6 +27,7 @@ import {
     KeyRound,
     Shield,
     ClipboardList,
+    Headphones,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -165,6 +166,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/bulk-whatsapp',
                 icon: MessageCircle,
                 description: 'Send WhatsApp messages',
+            },
+            {
+                label: 'Support',
+                href: '/dashboard/admin/support',
+                icon: Headphones,
+                description: 'WhatsApp customer queries',
             },
         ],
     },
