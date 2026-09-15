@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { markEventPopupLoginPending, clearEventPopupState } from '@/lib/eventPopupStorage'
+import { buildAuthPath } from '@/lib/authLinks'
 
 export interface User {
     id: string
@@ -111,7 +112,7 @@ export function useAuth() {
         clearEventPopupState()
         setUser(null)
         setIsAuthenticated(false)
-        router.push('/auth/login')
+        router.push(buildAuthPath('/auth/login'))
     }
 
     const redirectIfAuthenticated = (redirectPath: string = '/dashboard') => {
@@ -124,7 +125,7 @@ export function useAuth() {
         return false
     }
 
-    const requireAuth = (redirectPath: string = '/auth/login') => {
+    const requireAuth = (redirectPath: string = buildAuthPath('/auth/login')) => {
         if (!isAuthenticated) {
             router.push(redirectPath)
             return false

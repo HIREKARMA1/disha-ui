@@ -34,6 +34,7 @@ import {
 // import { FaHandshake } from "react-icons/fa6";
 import { apiClient } from '@/lib/api'
 import { UniversityProfile } from '@/types/university'
+import { buildAuthPath } from '@/lib/authLinks'
 
 interface NavbarProps {
     variant?: 'default' | 'transparent' | 'solid'
@@ -56,12 +57,11 @@ export function Navbar({
     const [error, setError] = useState<string | null>(null)
 
     // Helper function to get auth links with redirect
-    const getAuthLink = (basePath: string) => {
-        // Don't add redirect for auth pages themselves
-        if (pathname?.startsWith('/auth/') || pathname === '/') {
-            return basePath
-        }
-        return `${basePath}?redirect=${encodeURIComponent(pathname || '')}`
+    const getAuthLink = (kind: 'login' | 'register') => {
+        const path = kind === 'login' ? '/auth/login' : '/auth/register'
+        const redirect =
+            pathname?.startsWith('/auth/') || pathname === '/' ? undefined : pathname || undefined
+        return buildAuthPath(path, { redirect })
     }
 
     useEffect(() => {
@@ -225,7 +225,7 @@ export function Navbar({
                         {/* Logo */}
                         <div className="flex items-center">
                             <BrandLogo
-                                href="/auth/login"
+                                href={buildAuthPath('/auth/login')}
                                 priority
                                 imageClassName="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
                             />
@@ -436,10 +436,10 @@ export function Navbar({
                             </div>
                         ) : (
                             <div className="flex items-center space-x-3">
-                                <Link href={getAuthLink('/auth/register')}>
+                                <Link href={getAuthLink('register')}>
                                     <Button variant="outline" className="border-[#00BAE8] text-[#00BAE8] hover:bg-[#00BAE8] hover:text-white">Sign Up</Button>
                                 </Link>
-                                <Link href={getAuthLink('/auth/login')}>
+                                <Link href={getAuthLink('login')}>
                                     <Button className="bg-[#00BAE8] hover:bg-[#009bc2] text-white">Sign In</Button>
                                 </Link>
                             </div>
@@ -474,12 +474,12 @@ export function Navbar({
                     <div className="xl:hidden absolute left-0 right-0 top-full bg-white dark:bg-gray-900 shadow-lg border-t border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col space-y-3 p-4">
                             <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-6">
-                                <Link href={getAuthLink('/auth/register')} onClick={() => setIsMobileMenuOpen(false)}>
+                                <Link href={getAuthLink('register')} onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button variant="outline" className="w-full justify-start mb-4 border-[#00BAE8] text-[#00BAE8] hover:bg-[#00BAE8] hover:text-white">
                                         Sign Up
                                     </Button>
                                 </Link>
-                                <Link href={getAuthLink('/auth/login')} onClick={() => setIsMobileMenuOpen(false)}>
+                                <Link href={getAuthLink('login')} onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button className="w-full justify-start bg-[#00BAE8] hover:bg-[#009bc2] text-white">
                                         Sign In
                                     </Button>

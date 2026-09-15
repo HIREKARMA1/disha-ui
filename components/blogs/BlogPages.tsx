@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { BLOGS, type BlogPost } from "@/data/blogs"
-import { Navbar } from "@/components/ui/navbar"
+import { DishaTopBar } from "@/components/ui/DishaTopBar"
 import { Footer } from "@/components/ui/footer"
 import { StudentDashboardLayout } from "@/components/dashboard/StudentDashboardLayout"
 import { useAuth } from "@/hooks/useAuth"
@@ -35,8 +35,8 @@ function BlogsShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-      <Navbar variant="transparent" />
-      <div className="flex-1 pb-16 pt-24">{children}</div>
+      <DishaTopBar searchPlaceholder="Search blogs, jobs, events…" />
+      <div className="flex-1 pb-16 pt-8">{children}</div>
       <Footer />
     </div>
   )

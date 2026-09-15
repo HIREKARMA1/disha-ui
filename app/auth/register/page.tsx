@@ -36,6 +36,7 @@ import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
 import { cn } from '@/lib/utils'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
+import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
 
 // Union type for all possible form data
 type FormData = {
@@ -316,21 +317,21 @@ function RegisterPageContent() {
     }, [selectedUserType, reset, setValue])
 
     useEffect(() => {
-        const type = searchParams.get('type') as UserType
-        if (type && ['student', 'corporate', 'university'].includes(type)) {
-            setSelectedUserType(type)
-            setValue('user_type', type)
-            // Coming from login "Create Account" (or typed URL) — open form like Sign in
+        const parsed = parseRegisterUserType(searchParams.get('type'))
+        if (parsed) {
+            setSelectedUserType(parsed)
+            setValue('user_type', parsed)
             setUiStep('details')
         }
     }, [searchParams, setValue])
 
     const updateTypeInUrl = (userType: UserType) => {
-        const redirectUrl = searchParams.get('redirect')
-        const newUrl = redirectUrl
-            ? `/auth/register?type=${userType}&redirect=${redirectUrl}`
-            : `/auth/register?type=${userType}`
-        router.replace(newUrl)
+        router.replace(
+            buildAuthPath('/auth/register', {
+                type: userType,
+                redirect: searchParams.get('redirect'),
+            })
+        )
     }
 
     const handleAccountTypeSelect = (userType: UserType) => {
@@ -349,12 +350,10 @@ function RegisterPageContent() {
         setUiStep('identify')
     }
 
-    const loginHref = (() => {
-        const redirectUrl = searchParams.get('redirect')
-        return redirectUrl
-            ? `/auth/login?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
-            : `/auth/login?type=${selectedUserType}`
-    })()
+    const loginHref = buildAuthPath('/auth/login', {
+        type: selectedUserType,
+        redirect: searchParams.get('redirect'),
+    })
 
     const SelectedIcon = userTypeIcons[selectedUserType as keyof typeof userTypeIcons] || User
 
@@ -463,12 +462,14 @@ function RegisterPageContent() {
             } catch (loginError) {
                 console.error('Auto-login failed:', loginError)
                 toast.success('Registration successful! Please log in.')
-                // Preserve redirect URL when redirecting to login
                 const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
-                const loginUrl = redirectUrl
-                    ? `/auth/login?type=${selectedUserType}&registered=true&redirect=${encodeURIComponent(redirectUrl)}`
-                    : `/auth/login?type=${selectedUserType}&registered=true`
-                router.push(loginUrl)
+                router.push(
+                    buildAuthPath('/auth/login', {
+                        type: selectedUserType,
+                        redirect: redirectUrl,
+                        extra: { registered: 'true' },
+                    })
+                )
             }
         } catch (error: unknown) {
             console.error('OTP verification error:', error)

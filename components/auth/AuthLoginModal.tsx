@@ -32,6 +32,7 @@ import { getErrorMessage } from '@/lib/error-handler'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { buildAuthPath, parseAuthUserType, replaceTypeInCurrentUrl } from '@/lib/authLinks'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -115,21 +116,36 @@ export function AuthLoginModal({
 
   useEffect(() => {
     if (!isOpen) return
-    const type = preferredType && ['student', 'corporate', 'university', 'admin'].includes(preferredType)
-      ? preferredType
-      : 'student'
-    setSelectedUserType(type)
-    setValue('user_type', type)
-    setStep(skipIdentify || type === 'admin' ? 'signin' : 'identify')
+    const urlType = parseAuthUserType(
+      typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('type') : null
+    )
+    const type =
+      skipIdentify && preferredType && ['student', 'corporate', 'university', 'admin'].includes(preferredType)
+        ? preferredType
+        : urlType
     setShowPassword(false)
     setTermsAndPrivacyAccepted(false)
-    reset({ email: '', password: '', user_type: type })
+    if (type === 'admin' || skipIdentify) {
+      const nextType = type || preferredType || 'student'
+      setSelectedUserType(nextType)
+      setValue('user_type', nextType)
+      reset({ email: '', password: '', user_type: nextType })
+      setStep('signin')
+      return
+    }
+    setSelectedUserType('student')
+    setValue('user_type', 'student')
+    reset({ email: '', password: '', user_type: 'student' })
+    setStep('identify')
   }, [isOpen, preferredType, skipIdentify, setValue, reset])
 
   useEffect(() => {
     if (!isOpen) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        replaceTypeInCurrentUrl(null)
+        onClose()
+      }
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
@@ -143,13 +159,20 @@ export function AuthLoginModal({
     setValue('user_type', selectedUserType)
   }, [selectedUserType, setValue])
 
-  const registerLink = redirectPath
-    ? `/auth/register?type=${selectedUserType}&redirect=${encodeURIComponent(redirectPath)}`
-    : `/auth/register?type=${selectedUserType}`
+  const registerLink = buildAuthPath('/auth/register', {
+    type: selectedUserType,
+    redirect: redirectPath,
+  })
+
+  const handleClose = () => {
+    replaceTypeInCurrentUrl(null)
+    onClose()
+  }
 
   const handleAccountTypeSelect = (userType: UserType) => {
     setSelectedUserType(userType)
     setValue('user_type', userType)
+    replaceTypeInCurrentUrl(userType)
     setStep('signin')
   }
 
@@ -239,7 +262,7 @@ export function AuthLoginModal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
-              onClick={onClose}
+              onClick={handleClose}
               aria-hidden
             />
 
@@ -256,7 +279,7 @@ export function AuthLoginModal({
             >
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Close login"
                 className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm transition hover:bg-white hover:text-gray-900 dark:bg-gray-800 dark:text-gray-300 md:right-4 md:top-4"
               >
@@ -332,7 +355,10 @@ export function AuthLoginModal({
                       {selectedUserType !== 'admin' && !skipIdentify && (
                         <button
                           type="button"
-                          onClick={() => setStep('identify')}
+                          onClick={() => {
+                            replaceTypeInCurrentUrl(null)
+                            setStep('identify')
+                          }}
                           className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-800 dark:text-gray-400"
                         >
                           <ArrowLeft className="h-4 w-4" />
@@ -443,9 +469,9 @@ export function AuthLoginModal({
                           </div>
                           {selectedUserType !== 'admin' && (
                             <Link
-                              href={`/auth/forgot-password?type=${selectedUserType}`}
+                              href={buildAuthPath('/auth/forgot-password', { type: selectedUserType })}
                               className="self-start text-sm font-semibold text-primary-600 dark:text-primary-400 sm:self-auto"
-                              onClick={onClose}
+                              onClick={handleClose}
                             >
                               Forgot Password?
                             </Link>
@@ -467,7 +493,7 @@ export function AuthLoginModal({
                           <Link
                             href={registerLink}
                             className="font-semibold text-primary-600 dark:text-primary-400"
-                            onClick={onClose}
+                            onClick={handleClose}
                           >
                             Create Account
                           </Link>

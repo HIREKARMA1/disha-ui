@@ -21,6 +21,7 @@ function pathHasMobileBottomNav(
     if (!pathname) return false
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) return true
     if (opts.isStudent && (pathname === '/jobs' || pathname.startsWith('/jobs/'))) return true
+    if (opts.isStudent && (pathname === '/mock-tests' || pathname.startsWith('/mock-tests/'))) return true
     // Event detail sticky register CTA
     if (/^\/events\/[^/]+/.test(pathname)) return true
     return false

@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Footer } from '@/components/ui/footer'
 import { Button } from '@/components/ui/button'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
-import { EventsPortalHeader } from '@/components/events/portal/EventsPortalHeader'
+import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { EventsFilterSidebar, type StatusCounts } from '@/components/events/portal/EventsFilterSidebar'
 import { EventsContentTabs, type EventsTab } from '@/components/events/portal/EventsContentTabs'
 import { ContestCard } from '@/components/events/EventCard'
@@ -233,7 +233,7 @@ function EventsPageContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-gray-50 via-white to-primary-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 md:h-[100dvh] md:overflow-hidden">
-      <EventsPortalHeader />
+      <DishaTopBar showSearch={false} />
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col overflow-x-hidden px-4 py-4 sm:px-6 md:min-h-0 md:py-5 lg:px-8">
         {/*
@@ -440,7 +440,7 @@ export default function EventsPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-          <EventsPortalHeader />
+          <DishaTopBar showSearch={false} />
           <div className="flex flex-grow items-center justify-center p-8">
             <ContestCardSkeleton count={2} />
           </div>
