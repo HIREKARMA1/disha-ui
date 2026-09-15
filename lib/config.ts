@@ -20,12 +20,13 @@ export const config = {
     analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
     debugMode: process.env.NEXT_PUBLIC_ENABLE_DEBUG_MODE === 'true',
     /**
-     * Sun/moon toggle — localhost only, when NEXT_PUBLIC_THEME=dark.
+     * Sun/moon toggle — localhost only, when THEME=dark.
      * Production builds are always light (NODE_ENV=production).
+     * Server-only env (not NEXT_PUBLIC_); read from layout, not the browser bundle.
      */
     darkModeToggle:
       process.env.NODE_ENV !== 'production' &&
-      process.env.NEXT_PUBLIC_THEME === 'dark',
+      process.env.THEME === 'dark',
   },
 
   // WhatsApp Support Widget
