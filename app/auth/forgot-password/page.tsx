@@ -19,6 +19,7 @@ import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
 import { clearPasswordResetSession } from '@/lib/password-reset-session'
 import { UserType } from '@/types/auth'
+import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
 
 // Step 1: Email input schema
 const emailSchema = z.object({
@@ -100,9 +101,9 @@ function ForgotPasswordPageContent() {
 
     // Initialize user type from URL
     useEffect(() => {
-        const type = searchParams.get('type') as UserType
-        if (type && ['student', 'corporate', 'university'].includes(type)) {
-            setUserType(type)
+        const parsed = parseRegisterUserType(searchParams.get('type'))
+        if (parsed) {
+            setUserType(parsed)
         }
     }, [searchParams])
 
@@ -112,7 +113,7 @@ function ForgotPasswordPageContent() {
     useEffect(() => {
         if (currentStep === 'success') {
             // Redirect immediately without delay
-            router.push(`/auth/login?type=${userType}`)
+            router.push(buildAuthPath('/auth/login', { type: userType }))
         }
     }, [currentStep, router, userType])
 
@@ -311,7 +312,7 @@ function ForgotPasswordPageContent() {
 
                                         <div className="text-center">
                                             <Link
-                                                href={`/auth/login?type=${userType}`}
+                                                href={buildAuthPath('/auth/login', { type: userType })}
                                                 className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-1 transition-colors"
                                             >
                                                 <ArrowLeft className="w-4 h-4" />

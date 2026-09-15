@@ -24,7 +24,11 @@ const sora = Sora({
 export const metadata: Metadata = {
     title: 'Hire Karma - It all depends upon your karma',
     description: 'Connect with opportunities that match your skills and aspirations',
-
+    icons: {
+        icon: [{ url: '/favicon.png', type: 'image/png' }],
+        apple: [{ url: '/favicon.png', type: 'image/png' }],
+        shortcut: '/favicon.png',
+    },
 }
 
 export const viewport: Viewport = {

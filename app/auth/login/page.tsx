@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
@@ -33,6 +33,7 @@ import { getErrorMessage } from '@/lib/error-handler'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { buildAuthPath, parseAuthUserType } from '@/lib/authLinks'
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -96,13 +97,19 @@ function LoginPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { redirectIfAuthenticated, login } = useAuth()
-    const [step, setStep] = useState<LoginStep>('identify')
+    const typeFromUrl = parseAuthUserType(searchParams.get('type'))
+    const [step, setStep] = useState<LoginStep>(
+        typeFromUrl || searchParams.get('skipIdentify') === '1' ? 'signin' : 'identify'
+    )
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [selectedUserType, setSelectedUserType] = useState<UserType>('student')
+    const [selectedUserType, setSelectedUserType] = useState<UserType>(typeFromUrl ?? 'student')
     const [termsAndPrivacyAccepted, setTermsAndPrivacyAccepted] = useState(false)
     const [showTermsModal, setShowTermsModal] = useState(false)
-    const [registerLink, setRegisterLink] = useState(`/auth/register?type=student`)
+    const [registerLink, setRegisterLink] = useState(
+        buildAuthPath('/auth/register', { type: typeFromUrl ?? 'student' })
+    )
+    const registeredToastShown = useRef(false)
 
     useEffect(() => {
         const hasRedirectUrl =
@@ -121,23 +128,27 @@ function LoginPageContent() {
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-            user_type: 'student',
+            user_type: typeFromUrl ?? 'student',
         },
     })
 
     useEffect(() => {
-        const type = searchParams.get('type') as UserType
+        const parsed = parseAuthUserType(searchParams.get('type'))
         const registered = searchParams.get('registered')
+        const skipIdentify = searchParams.get('skipIdentify') === '1'
 
-        if (type && ['student', 'corporate', 'university', 'admin'].includes(type)) {
-            setSelectedUserType(type)
-            setValue('user_type', type)
-            if (registered === 'true' || type === 'admin' || searchParams.get('skipIdentify') === '1') {
-                setStep('signin')
-            }
+        if (parsed) {
+            setSelectedUserType(parsed)
+            setValue('user_type', parsed)
+            setStep('signin')
+        } else if (skipIdentify) {
+            setStep('signin')
+        } else {
+            setStep('identify')
         }
 
-        if (registered === 'true') {
+        if (registered === 'true' && !registeredToastShown.current) {
+            registeredToastShown.current = true
             toast.success('Registration successful! Please log in to continue.')
         }
     }, [searchParams, setValue])
@@ -147,22 +158,28 @@ function LoginPageContent() {
     }, [selectedUserType, setValue])
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const redirectUrl =
-                searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
-            const link = redirectUrl
-                ? `/auth/register?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
-                : `/auth/register?type=${selectedUserType}`
-            setRegisterLink(link)
-        }
+        const redirectUrl =
+            searchParams.get('redirect') ||
+            (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+        setRegisterLink(
+            buildAuthPath('/auth/register', {
+                type: selectedUserType,
+                redirect: redirectUrl,
+            })
+        )
     }, [searchParams, selectedUserType])
 
     const updateTypeInUrl = (userType: UserType) => {
-        const redirectUrl = searchParams.get('redirect')
-        const newUrl = redirectUrl
-            ? `/auth/login?type=${userType}&redirect=${redirectUrl}`
-            : `/auth/login?type=${userType}`
-        router.replace(newUrl)
+        router.replace(
+            buildAuthPath('/auth/login', {
+                type: userType,
+                redirect: searchParams.get('redirect'),
+                extra: {
+                    registered: searchParams.get('registered') === 'true' ? 'true' : undefined,
+                    skipIdentify: searchParams.get('skipIdentify') === '1' ? '1' : undefined,
+                },
+            })
+        )
     }
 
     const handleAccountTypeSelect = (userType: UserType) => {
@@ -175,6 +192,14 @@ function LoginPageContent() {
     const handleBackToIdentify = () => {
         if (selectedUserType === 'admin') return
         setStep('identify')
+        router.replace(
+            buildAuthPath('/auth/login', {
+                redirect: searchParams.get('redirect'),
+                extra: {
+                    registered: searchParams.get('registered') === 'true' ? 'true' : undefined,
+                },
+            })
+        )
     }
 
     const onSubmit = async (data: LoginFormData) => {
@@ -447,7 +472,7 @@ function LoginPageContent() {
 
                                         {selectedUserType !== 'admin' && (
                                             <Link
-                                                href={`/auth/forgot-password?type=${selectedUserType}`}
+                                                href={buildAuthPath('/auth/forgot-password', { type: selectedUserType })}
                                                 className="self-start text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 sm:self-auto"
                                             >
                                                 Forgot Password?

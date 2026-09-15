@@ -212,7 +212,7 @@ function ContestCardComponent({ event }: ContestCardProps) {
 
         {/* Actions */}
         <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Link href={detailHref} onClick={onGuestNav(detailHref)} className="sm:flex-1">
+          <Link href={detailHref} className="sm:flex-1">
             <Button
               variant="outline"
               className="w-full border-primary-200 hover:bg-primary-50 dark:border-primary-800 dark:hover:bg-primary-900/20"

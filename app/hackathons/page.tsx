@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Navbar } from '@/components/ui/navbar'
+import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { HackathonComingSoon } from '@/components/hackathons/HackathonComingSoon'
@@ -33,8 +33,8 @@ export default function HackathonsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-      <Navbar variant="transparent" />
-      <div className="flex-1 px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <DishaTopBar searchPlaceholder="Search opportunities, events, resources…" />
+      <div className="flex-1 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <HackathonComingSoon />
       </div>
       <Footer />

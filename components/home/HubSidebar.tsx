@@ -41,7 +41,7 @@ const GUEST_NAV: NavLink[] = [
   { label: 'Opportunities', href: '/', icon: Home },
   { label: 'Jobs', href: '/jobs', icon: Briefcase },
   { label: 'Events', href: '/events', icon: Calendar },
-  { label: 'Mock Tests', href: '/dashboard/student/mock-tests', icon: ClipboardList },
+  { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
 ]
 
