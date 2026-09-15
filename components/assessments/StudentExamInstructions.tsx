@@ -61,6 +61,8 @@ export interface PublicExamBrief {
   is_within_time_window: boolean
   has_ended: boolean
   has_not_started: boolean
+  background_image_url?: string | null
+  results_published?: boolean
 }
 
 const WAITING_ROOM_TIPS = [
@@ -252,6 +254,27 @@ export function StudentExamInstructions({
           <p className="text-sm text-primary-100 mt-2 font-mono">Assessment ID: {exam.disha_assessment_id}</p>
         </div>
       </div>
+
+      {exam.background_image_url ? (
+        <div className="w-full overflow-hidden border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900">
+          {/* Mobile: preserve existing fit (already correct) */}
+          <div className="relative w-full max-h-[220px] aspect-[21/9] md:hidden">
+            <img
+              src={exam.background_image_url}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+          </div>
+          {/* Desktop: contain within area without stretch/squash */}
+          <div className="relative hidden md:flex w-full max-h-[360px] min-h-[200px] items-center justify-center overflow-hidden">
+            <img
+              src={exam.background_image_url}
+              alt=""
+              className="max-h-[360px] w-full object-contain object-center"
+            />
+          </div>
+        </div>
+      ) : null}
 
       <div className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
         {cannotRetake && (

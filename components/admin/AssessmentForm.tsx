@@ -10,6 +10,9 @@ import {
 } from "@/lib/validations/assessment";
 import { IntegerTextField } from "@/components/ui/integer-text-field";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { EventImageUpload } from "@/components/admin/EventImageUpload";
+import { apiClient } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -60,6 +63,7 @@ export function AssessmentForm({
         minimum_round_scores: {},
       },
     },
+    background_image_url: "",
     job_id: "", // Field for linking to a job (kept for UI valid checking but will be moved to metadata on submit)
   };
 
@@ -98,6 +102,7 @@ export function AssessmentForm({
   }, [initialData]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadingBackground, setUploadingBackground] = useState(false);
 
   const handleChange = (field: string, value: any) => {
     setFormData({
@@ -196,6 +201,9 @@ export function AssessmentForm({
         description: formData.metadata.description ?? "",
         instructions: formData.metadata.instructions ?? "",
         passing_criteria: passingCriteria,
+        ...(isMockTest
+          ? { background_image_url: formData.background_image_url || "" }
+          : {}),
       });
       return;
     }
@@ -212,9 +220,25 @@ export function AssessmentForm({
         disha_assessment_id: dishaId,
         passing_criteria: passingCriteria,
       },
+      ...(isMockTest
+        ? { background_image_url: formData.background_image_url || null }
+        : {}),
     };
 
     onSubmit(submissionData);
+  };
+
+  const handleBackgroundUpload = async (file: File) => {
+    setUploadingBackground(true);
+    try {
+      const res = await apiClient.uploadMockTestBackground(file);
+      handleChange("background_image_url", res.file_url);
+      toast.success("Background image uploaded");
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploadingBackground(false);
+    }
   };
 
   return (
@@ -312,6 +336,20 @@ export function AssessmentForm({
             />
             <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">These instructions will be displayed to students before they start the {entityLabel.toLowerCase()}.</p>
           </div>
+
+          {isMockTest && (
+            <div>
+              <EventImageUpload
+                label="Background Image"
+                hint="Optional. Shown on the student Mock Test page. JPG, PNG, or WEBP up to 5MB."
+                value={formData.background_image_url || ""}
+                onChange={(url) => handleChange("background_image_url", url)}
+                onUpload={handleBackgroundUpload}
+                uploading={uploadingBackground}
+                aspect="banner"
+              />
+            </div>
+          )}
 
           {/* Auto-submit */}
           {/* <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">

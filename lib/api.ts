@@ -928,6 +928,24 @@ class ApiClient {
     return response.data;
   }
 
+  async publishMockTestResults(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/mock-tests/admin/${id}/publish-results`
+    );
+    return response.data;
+  }
+
+  async uploadMockTestBackground(file: File): Promise<{ file_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response: AxiosResponse = await this.client.post(
+      '/mock-tests/admin/upload-background',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+  }
+
   async getMockTestStats(id: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/mock-tests/admin/${id}/stats`);
     return response.data;
@@ -964,6 +982,30 @@ class ApiClient {
   async getStudentMockTests(searchTerm?: string): Promise<any[]> {
     const response: AxiosResponse = await this.client.get('/mock-tests', {
       params: searchTerm ? { search_term: searchTerm } : {},
+    });
+    return response.data;
+  }
+
+  async getStudentMockTestResult(id: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/${id}/my-result`);
+    return response.data;
+  }
+
+  async getMockTestTopPerformerHighlights(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/mock-tests/top-performers');
+    return response.data;
+  }
+
+  async getStudentMockTestLeaderboard(id: string, limit: number = 10): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/${id}/leaderboard`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getStudentMockTestTopPerformers(id: string, limit: number = 10): Promise<any> {
+    const response: AxiosResponse = await this.client.get(`/mock-tests/${id}/top-performers`, {
+      params: { limit },
     });
     return response.data;
   }

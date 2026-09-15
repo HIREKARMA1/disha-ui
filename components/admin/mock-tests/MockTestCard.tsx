@@ -111,8 +111,18 @@ export function MockTestCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full`}
+            className={`${cardColors.bg} rounded-xl border ${cardColors.border} ${cardColors.hover} transition-all duration-200 hover:shadow-md group flex flex-col h-full overflow-hidden`}
         >
+            {mockTest.background_image_url ? (
+                <div className="relative w-full overflow-hidden border-b border-black/5 dark:border-white/10 aspect-[16/9] max-h-40">
+                    <img
+                        src={mockTest.background_image_url}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                    />
+                </div>
+            ) : null}
+
             {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div className="flex items-start justify-between gap-3 mb-2">
