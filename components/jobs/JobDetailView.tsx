@@ -19,7 +19,7 @@ import {
   Users,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { Navbar } from '@/components/ui/navbar'
+import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
@@ -293,8 +293,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-        <Navbar variant="transparent" />
-        <div className="flex flex-grow items-center justify-center pt-24">
+        <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
+        <div className="flex flex-grow items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
         </div>
       </div>
@@ -304,8 +304,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   if (!job || error) {
     return (
       <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-        <Navbar variant="transparent" />
-        <div className="flex flex-grow flex-col items-center justify-center gap-3 px-4 pt-24 text-center">
+        <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
+        <div className="flex flex-grow flex-col items-center justify-center gap-3 px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Job not found</h1>
           <p className="text-gray-500">{error || 'This job may have been removed or the link is invalid.'}</p>
           <Button onClick={() => router.push('/jobs')}>Browse Jobs</Button>
@@ -320,9 +320,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-      <Navbar variant="transparent" />
+      <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
 
-      <div className="mx-auto w-full max-w-6xl flex-grow px-4 pb-28 pt-24 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl flex-grow px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
           <Link href="/" className="hover:text-primary-500">Home</Link>

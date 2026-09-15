@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Linkedin, Facebook, Instagram } from 'lucide-react'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { config } from '@/lib/config'
+import { buildAuthPath } from '@/lib/authLinks'
 
 const MAPS_DIRECTIONS_URL =
     'https://www.google.com/maps/search/?api=1&query=2nd+Floor%2C+SS+Niwas%2C+Hirekarma+Private+Limited%2C+Raghunathpur%2C+Bhubaneswar%2C+Odisha+751024'
@@ -91,16 +92,18 @@ export function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/auth/login"
-                                    className="text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
-                                >
+                                <Link href="/mock-tests" className={footerLinkClass}>
+                                    Mock Tests
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href={buildAuthPath('/auth/login')} className={footerLinkClass}>
                                     Sign In
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    href="/auth/register"
+                                    href={buildAuthPath('/auth/register')}
                                     className="text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                                 >
                                     Sign Up
