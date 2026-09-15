@@ -28,7 +28,7 @@ export const config = {
       process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ||
       process.env.NEXT_PUBLIC_SUPPORT_PHONE ||
       '919124364764',
-    message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi, I need help with HireKarma',
+    message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi',
   },
 
   /** Public support phone (display). Digits-only variant lives in whatsapp.number. */

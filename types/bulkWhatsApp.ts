@@ -42,7 +42,7 @@ export interface BulkWhatsAppSendRequest {
     category?: BulkWhatsAppCategory
     status?: BulkWhatsAppStatusFilter
     campaign_name: string
-    message: string
+    message?: string
     recipients: BulkWhatsAppSendRecipient[]
 }
 
@@ -51,6 +51,7 @@ export interface BulkWhatsAppSendResultItem {
     name?: string | null
     success: boolean
     status?: string | null
+    provider_message_id?: string | null
     twilio_sid?: string | null
     error_code?: number | null
     error_message?: string | null
@@ -78,6 +79,7 @@ export interface BulkWhatsAppLog {
     recipient_phone: string
     recipient_email?: string | null
     status: string
+    provider_message_id?: string | null
     twilio_sid?: string | null
     error_message?: string | null
     category?: string | null
@@ -103,6 +105,15 @@ export interface BulkWhatsAppStatistics {
     recipients: number
     todays_messages: number
     success_rate: number
+}
+
+export interface BulkWhatsAppConfig {
+    configured: boolean
+    missing_keys: string[]
+    template_name: string
+    template_language: string
+    template_params: string[]
+    from_number?: string | null
 }
 
 export type WhatsAppRecipientSource = 'filter' | 'manual' | 'imported' | 'search'

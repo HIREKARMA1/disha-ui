@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api'
 import {
     BulkWhatsAppCategory,
+    BulkWhatsAppConfig,
     BulkWhatsAppLogsResponse,
     BulkWhatsAppRecipientsResponse,
     BulkWhatsAppSendRequest,
@@ -59,13 +60,21 @@ export class BulkWhatsAppService {
             )
             return response.data
         } catch (error: any) {
-            // 502 responses include the full BulkWhatsAppSendResponse body with Twilio errors.
+            // 502 responses include the full BulkWhatsAppSendResponse body with provider errors.
             const data = error?.response?.data
             if (data && typeof data === 'object' && 'success' in data) {
                 return data as BulkWhatsAppSendResponse
             }
             throw error
         }
+    }
+
+    async getConfig(): Promise<BulkWhatsAppConfig> {
+        ensureAuth()
+        const response = await apiClient.client.get<BulkWhatsAppConfig>(
+            '/admin/bulk-whatsapp/config'
+        )
+        return response.data
     }
 
     async getLogs(limit = 20, offset = 0): Promise<BulkWhatsAppLogsResponse> {
