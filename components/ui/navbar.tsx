@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useTheme } from 'next-themes'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -46,7 +45,6 @@ export function Navbar({
     className = ""
 }: NavbarProps) {
     const { user, isAuthenticated, isLoading, logout } = useAuth()
-    const { theme, resolvedTheme } = useTheme()
     const pathname = usePathname()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [isAboutOpen, setIsAboutOpen] = useState(false)
@@ -219,11 +217,6 @@ export function Navbar({
         }
     }
 
-    const getLogoSrc = () => {
-        const isDark = resolvedTheme === 'dark' || (resolvedTheme === 'system' && theme === 'dark')
-        return isDark ? '/images/HKlogowhite.png' : '/images/HKlogoblack.png'
-    }
-
     if (isLoading || (user?.user_type === 'university' && loading)) {
         return (
             <nav className={`main-navbar ${getNavbarClasses()} ${className}`}>
@@ -270,30 +263,21 @@ export function Navbar({
                                 <Menu className="w-5 h-5" />
                             </Button>
                         )}
-                        <Link href={isAuthenticated ? getDashboardPath() : "/"} className="flex items-center">
-                            <Image
-                                src={getLogoSrc()}
-                                alt="HireKarma Logo"
-                                width={150}
-                                height={50}
-                                className="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
-                                priority
-                            />
-                        </Link>
-                        {user?.user_type === 'university' && (
+                        <BrandLogo
+                            href={isAuthenticated ? getDashboardPath() : '/'}
+                            compact
+                        />
+                        {user?.user_type === 'university' && profile?.profile_picture && (
                             <>
                                 <HeartHandshake className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary-500 flex-shrink-0" />
                                 <div className="flex items-center">
                                     <Image
-                                        src={profile?.profile_picture || getLogoSrc()}
+                                        src={profile.profile_picture}
                                         alt="University Logo"
                                         width={150}
                                         height={50}
-                                        className="h-8 w-auto sm:h-10 md:h-12 lg:h-11 object-contain"
+                                        className="h-8 w-auto object-contain sm:h-10 md:h-12 lg:h-11"
                                         priority
-                                        onError={(e) => {
-                                            e.currentTarget.src = getLogoSrc()
-                                        }}
                                     />
                                 </div>
                             </>
