@@ -2,24 +2,41 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Mail, Lock, User, Building2, GraduationCap, Shield, Phone, Globe, Calendar, MapPin, Briefcase, BookOpen, ShieldCheck } from 'lucide-react'
+import {
+    Eye,
+    EyeOff,
+    Mail,
+    Lock,
+    User,
+    Building2,
+    GraduationCap,
+    Phone,
+    Globe,
+    ShieldCheck,
+    ArrowLeft,
+    ArrowRight,
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-searchable-select'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { BrandLogo } from '@/components/ui/BrandLogo'
+import { LoginBrandPanel } from '@/components/auth/LoginBrandPanel'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
-import { UserType, StudentRegisterRequest, CorporateRegisterRequest, UniversityRegisterRequest, AdminRegisterRequest } from '@/types/auth'
+import { cn } from '@/lib/utils'
+import { UserType } from '@/types/auth'
+import { useAuth } from '@/hooks/useAuth'
+
 // Union type for all possible form data
 type FormData = {
     email: string
@@ -32,21 +49,34 @@ type FormData = {
         | { university_name: string; website_url?: string; institute_type?: string; established_year?: number; contact_person_name?: string; courses_offered?: string; phone?: string }
         | { name: string; role?: string }
     )
-import { useAuth } from '@/hooks/useAuth'
-import { Navbar } from '@/components/ui/navbar'
 
-const userTypeOptions = [
-    { value: 'student', label: 'Student' },
-    { value: 'corporate', label: 'Corporate' },
-    // { value: 'university', label: 'University' }
-    // Admin option removed for security - admin accounts must be created manually
+type RegisterUiStep = 'identify' | 'details'
+
+const accountTypes = [
+    {
+        value: 'student' as const,
+        label: 'Student',
+        hint: 'Jobs, practice & career tools',
+        icon: User,
+    },
+    {
+        value: 'corporate' as const,
+        label: 'Corporate',
+        hint: 'Post roles & hire talent',
+        icon: Building2,
+    },
 ]
 
 const userTypeIcons = {
     student: User,
     corporate: Building2,
-    university: GraduationCap
-    // Admin icon removed for security
+    university: GraduationCap,
+}
+
+const userTypeLabels: Record<string, string> = {
+    student: 'Student',
+    corporate: 'Corporate',
+    university: 'University',
 }
 
 // for the error message input
@@ -221,6 +251,8 @@ function RegisterPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { redirectIfAuthenticated, login } = useAuth()
+    const reduceMotion = useReducedMotion()
+    const [uiStep, setUiStep] = useState<RegisterUiStep>('identify')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -278,7 +310,6 @@ function RegisterPageContent() {
 
     // Update validation schema when user type changes
     useEffect(() => {
-        const newSchema = getValidationSchema(selectedUserType)
         // Reset form when changing user type to avoid validation conflicts
         reset()
         setValue('user_type', selectedUserType)
@@ -289,25 +320,43 @@ function RegisterPageContent() {
         if (type && ['student', 'corporate', 'university'].includes(type)) {
             setSelectedUserType(type)
             setValue('user_type', type)
+            // Coming from login "Create Account" (or typed URL) — open form like Sign in
+            setUiStep('details')
         }
     }, [searchParams, setValue])
 
-    const handleUserTypeChange = (value: string) => {
-        const userType = value as UserType
-        setSelectedUserType(userType)
-        setValue('user_type', userType)
-
-        // Preserve redirect parameter when updating URL
+    const updateTypeInUrl = (userType: UserType) => {
         const redirectUrl = searchParams.get('redirect')
         const newUrl = redirectUrl
             ? `/auth/register?type=${userType}&redirect=${redirectUrl}`
             : `/auth/register?type=${userType}`
         router.replace(newUrl)
+    }
 
-        // Reset form when changing user type
+    const handleAccountTypeSelect = (userType: UserType) => {
+        setSelectedUserType(userType)
+        setValue('user_type', userType)
+        updateTypeInUrl(userType)
         reset()
         setValue('user_type', userType)
+        setCurrentStep('form')
+        setUiStep('details')
     }
+
+    const handleBackToIdentify = () => {
+        setCurrentStep('form')
+        setOtp('')
+        setUiStep('identify')
+    }
+
+    const loginHref = (() => {
+        const redirectUrl = searchParams.get('redirect')
+        return redirectUrl
+            ? `/auth/login?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
+            : `/auth/login?type=${selectedUserType}`
+    })()
+
+    const SelectedIcon = userTypeIcons[selectedUserType as keyof typeof userTypeIcons] || User
 
     const onSubmit = async (data: FormData) => {
         if (!otpRateLimit.beginSend()) return
@@ -682,340 +731,407 @@ function RegisterPageContent() {
     }
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/40 to-sky-100/50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
-            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-                <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary-400/20 blur-3xl dark:bg-primary-500/10" />
-                <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-secondary-400/15 blur-3xl dark:bg-secondary-500/10" />
-            </div>
+        <div className="flex min-h-screen flex-col bg-[#f4f5f7] dark:bg-gray-950">
+            <header className="relative z-20 flex shrink-0 items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+                <BrandLogo priority imageClassName="h-8 sm:h-9" />
+                <ThemeToggle />
+            </header>
 
-            <Navbar variant="solid" />
-
-            {/* Main Content */}
-            <div className={currentStep === 'otp'
-                ? 'relative min-h-screen flex items-center justify-center px-3 sm:px-4 pt-24 sm:pt-28 pb-8 sm:pb-12'
-                : 'relative container mx-auto px-4 py-12 pt-24 sm:pt-24'}
-            >
+            <div className="relative z-10 flex w-full flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className={currentStep === 'otp' ? 'w-full max-w-md' : 'max-w-2xl mx-auto'}
+                    transition={{ duration: 0.28 }}
+                    className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 md:grid-cols-2"
                 >
-                    {/* Header - Only show on form step */}
-                    {currentStep === 'form' && (
-                        <div className="text-center mb-6 sm:mb-8">
-                            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl mb-4 shadow-lg shadow-primary-500/25">
-                                {(() => {
-                                    const IconComponent = userTypeIcons[selectedUserType as keyof typeof userTypeIcons]
-                                    return <IconComponent className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                                })()}
-                            </div>
+                    <LoginBrandPanel className="md:min-h-[560px]" />
 
-                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">
-                                Create Your {selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)} Account
-                            </h1>
-
-                            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                                Join HireKarma and start your journey today
-                            </p>
-                        </div>
-                    )}
-
-                    {/* User Type Selector - Only show on form step */}
-                    {currentStep === 'form' && (
-                        <div className="mb-6 sm:mb-8">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2.5">
-                                I am a
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-
-                                {userTypeOptions.map((option) => {
-                                    const Icon = userTypeIcons[option.value as keyof typeof userTypeIcons]
-                                    const isSelected = selectedUserType === option.value
-
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            onClick={() => handleUserTypeChange(option.value)}
-                                            className={`p-3.5 sm:p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${isSelected
-                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 shadow-sm shadow-primary-500/10'
-                                                : 'border-gray-200/80 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40 hover:border-primary-300 dark:hover:border-primary-600 text-gray-600 dark:text-gray-300'
-                                                }`}
-                                        >
-                                            <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isSelected ? 'text-primary-600 dark:text-primary-300' : ''}`} />
-                                            <span className="text-sm font-semibold">{option.label}</span>
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Registration Form or OTP Verification */}
-                    <div className={`bg-white/80 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-gray-900/5 dark:shadow-black/20 border border-white/60 dark:border-gray-700/60 ${currentStep === 'otp' ? 'p-4 sm:p-6' : 'p-5 sm:p-8'}`}>
-                        {currentStep === 'form' ? (
-                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                                {/* Hidden user_type field */}
-                                <input type="hidden" {...register('user_type')} />
-
-                                {/* Dynamic Form Fields */}
+                    <div className="flex max-h-[min(90vh,720px)] flex-col justify-center overflow-y-auto p-6 sm:p-8 lg:p-10">
+                        <AnimatePresence mode="wait">
+                            {uiStep === 'identify' ? (
                                 <motion.div
-                                    key={selectedUserType}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.3 }}
+                                    key="identify"
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }}
+                                    transition={{ duration: 0.18 }}
                                 >
-                                    {renderFormFields()}
+                                    <h1 className="text-[22px] font-semibold tracking-tight text-gray-900 dark:text-white">
+                                        Who are you creating an account as?
+                                    </h1>
+                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                        Select one to continue
+                                    </p>
+
+                                    <div className="mt-7 space-y-2.5">
+                                        {accountTypes.map((item, i) => {
+                                            const Icon = item.icon
+                                            return (
+                                                <motion.button
+                                                    key={item.value}
+                                                    type="button"
+                                                    onClick={() => handleAccountTypeSelect(item.value)}
+                                                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.04 + i * 0.05 }}
+                                                    whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                                                    className={cn(
+                                                        'group flex w-full items-center gap-3.5 rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-left transition-all',
+                                                        'hover:border-primary-500 hover:bg-primary-50/40',
+                                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
+                                                        'dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-500 dark:hover:bg-primary-950/30'
+                                                    )}
+                                                >
+                                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-700 transition group-hover:border-primary-200 group-hover:bg-white group-hover:text-primary-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                                        <Icon className="h-5 w-5" strokeWidth={1.75} />
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block text-[15px] font-semibold text-gray-900 dark:text-white">
+                                                            {item.label}
+                                                        </span>
+                                                        <span className="mt-0.5 block text-[13px] text-gray-500 dark:text-gray-400">
+                                                            {item.hint}
+                                                        </span>
+                                                    </span>
+                                                    <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-primary-600" />
+                                                </motion.button>
+                                            )
+                                        })}
+                                    </div>
+
+                                    <p className="mt-7 text-center text-sm text-gray-600 dark:text-gray-300">
+                                        Already have an account?{' '}
+                                        <Link
+                                            href={loginHref}
+                                            className="font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                                        >
+                                            Sign In
+                                        </Link>
+                                    </p>
                                 </motion.div>
-
-                                {/* Common Fields */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Email Address *
-                                        </label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            placeholder="Enter your email address"
-                                            leftIcon={<Mail className="w-4 h-4" />}
-                                            className={`${errors.email
-                                                ? "border-red-500 focus:ring-red-500"
-                                                : watch("email")
-                                                    ? "border-green-500 focus:ring-green-500"
-                                                    : "border-gray-300 focus:ring-primary-500"
-                                                }`}
-                                            {...register("email", {
-                                                onChange: (e) => {
-                                                    e.target.value = e.target.value.replace(/\s+/g, '').toLowerCase()
-                                                },
-                                                setValueAs: (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value)
-                                            })}
-                                        />
-
-                                        {(errors as any).email && (
-                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                {typeof (errors as any).email.message === 'string' ? (errors as any).email.message : 'Email is required'}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <div>
-                                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Password *
-                                            </label>
-                                            <Input
-                                                id="password"
-                                                type={showPassword ? 'text' : 'password'}
-                                                placeholder="Create a strong password"
-                                                leftIcon={<Lock className="w-4 h-4" />}
-                                                rightIcon={
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowPassword(!showPassword)}
-                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition-colors"
-                                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                                    >
-                                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    </button>
-                                                }
-                                                error={!!(errors as any).password}
-
-                                                {...register('password')}
-                                            />
-                                            {(errors as any).password && (
-                                                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                    {typeof (errors as any).password.message === 'string' ? (errors as any).password.message : 'Password is required'}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Confirm Password *
-                                            </label>
-                                            <Input
-                                                id="confirmPassword"
-                                                type={showConfirmPassword ? 'text' : 'password'}
-                                                placeholder="Confirm your password"
-                                                leftIcon={<Lock className="w-4 h-4" />}
-                                                rightIcon={
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition-colors"
-                                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                                                    >
-                                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    </button>
-                                                }
-                                                error={!!(errors as any).confirmPassword}
-
-                                                {...register('confirmPassword')}
-                                            />
-                                            {(errors as any).confirmPassword && (
-                                                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                                                    {typeof (errors as any).confirmPassword.message === 'string' ? (errors as any).confirmPassword.message : 'Please confirm your password'}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 shadow-lg shadow-primary-500/25 transition-all duration-200"
-                                    loading={isLoading}
+                            ) : (
+                                <motion.div
+                                    key={currentStep === 'otp' ? 'otp' : 'details'}
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.2 }}
                                 >
-                                    Send OTP
-                                </Button>
-                            </form>
-                        ) : (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className="space-y-4 sm:space-y-6"
-                            >
-                                {/* Header with Icon */}
-                                <div className="text-center">
-                                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl mb-3 sm:mb-4">
-                                        <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                                    </div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                        Verify Your Email
-                                    </h2>
-                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-                                        We've sent a 6-digit verification code to
-                                    </p>
-                                    <div className="w-full max-w-full px-2 sm:px-0">
-                                        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800 w-full sm:w-auto max-w-full">
-                                            <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-600 dark:text-primary-400 flex-shrink-0" />
-                                            <p className="text-primary-600 dark:text-primary-400 font-medium text-xs sm:text-sm truncate min-w-0 flex-1">
-                                                {formData?.email}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (currentStep === 'otp') {
+                                                setCurrentStep('form')
+                                                setOtp('')
+                                            } else {
+                                                handleBackToIdentify()
+                                            }
+                                        }}
+                                        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                        <ArrowLeft className="h-4 w-4" />
+                                        Back
+                                    </button>
 
-                                {/* OTP Input Field - Box Style */}
-                                <div>
-                                    <label htmlFor="otp" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Verification Code
-                                    </label>
-                                    <div className="flex justify-center gap-2 sm:gap-3 mb-2">
-                                        {[0, 1, 2, 3, 4, 5].map((index) => (
-                                            <input
-                                                key={index}
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={1}
-                                                value={otp[index] || ''}
-                                                onChange={(e) => {
-                                                    const value = e.target.value.replace(/\D/g, '')
-                                                    if (value.length <= 1) {
-                                                        const newOtp = otp.split('')
-                                                        newOtp[index] = value
-                                                        setOtp(newOtp.join('').slice(0, 6))
+                                    {currentStep === 'form' ? (
+                                        <>
+                                            <div className="mb-5 flex items-center gap-3">
+                                                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 text-white">
+                                                    <SelectedIcon className="h-5 w-5" />
+                                                </span>
+                                                <div>
+                                                    <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                                        Create account
+                                                    </h1>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {userTypeLabels[selectedUserType] || 'Student'} account
+                                                    </p>
+                                                </div>
+                                            </div>
 
-                                                        // Auto-focus next input
-                                                        if (value && index < 5) {
-                                                            const nextInput = document.querySelector(`input[data-otp-index="${index + 1}"]`) as HTMLInputElement
-                                                            nextInput?.focus()
+                                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                                                <input type="hidden" {...register('user_type')} />
+
+                                                <motion.div
+                                                    key={selectedUserType}
+                                                    initial={{ opacity: 0, x: 12 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="space-y-4"
+                                                >
+                                                    {renderFormFields()}
+                                                </motion.div>
+
+                                                <div>
+                                                    <label
+                                                        htmlFor="email"
+                                                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                                                    >
+                                                        Email
+                                                    </label>
+                                                    <Input
+                                                        id="email"
+                                                        type="email"
+                                                        placeholder="Enter your email"
+                                                        leftIcon={<Mail className="w-4 h-4" />}
+                                                        className={cn(
+                                                            'h-11 rounded-xl',
+                                                            errors.email
+                                                                ? 'border-red-500 focus:ring-red-500'
+                                                                : watch('email')
+                                                                  ? 'border-green-500 focus:ring-green-500'
+                                                                  : ''
+                                                        )}
+                                                        {...register('email', {
+                                                            onChange: (e) => {
+                                                                e.target.value = e.target.value
+                                                                    .replace(/\s+/g, '')
+                                                                    .toLowerCase()
+                                                            },
+                                                            setValueAs: (value) =>
+                                                                typeof value === 'string'
+                                                                    ? value.trim().toLowerCase()
+                                                                    : value,
+                                                        })}
+                                                    />
+                                                    {(errors as any).email && (
+                                                        <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+                                                            {typeof (errors as any).email.message === 'string'
+                                                                ? (errors as any).email.message
+                                                                : 'Email is required'}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label
+                                                        htmlFor="password"
+                                                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                                                    >
+                                                        Password
+                                                    </label>
+                                                    <Input
+                                                        id="password"
+                                                        type={showPassword ? 'text' : 'password'}
+                                                        placeholder="Create a strong password"
+                                                        leftIcon={<Lock className="w-4 h-4" />}
+                                                        rightIcon={
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowPassword(!showPassword)}
+                                                                className="rounded-md p-1 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                                                                aria-label={
+                                                                    showPassword ? 'Hide password' : 'Show password'
+                                                                }
+                                                            >
+                                                                {showPassword ? (
+                                                                    <EyeOff className="w-4 h-4" />
+                                                                ) : (
+                                                                    <Eye className="w-4 h-4" />
+                                                                )}
+                                                            </button>
                                                         }
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-                                                        const prevInput = document.querySelector(`input[data-otp-index="${index - 1}"]`) as HTMLInputElement
-                                                        prevInput?.focus()
-                                                    }
-                                                }}
-                                                onPaste={(e) => {
-                                                    e.preventDefault()
-                                                    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-                                                    if (pastedData) {
-                                                        setOtp(pastedData)
-                                                        const lastIndex = Math.min(index + pastedData.length - 1, 5)
-                                                        const lastInput = document.querySelector(`input[data-otp-index="${lastIndex}"]`) as HTMLInputElement
-                                                        lastInput?.focus()
-                                                    }
-                                                }}
-                                                data-otp-index={index}
-                                                className={`w-10 h-10 sm:w-12 sm:h-12 text-center text-xl sm:text-2xl font-semibold font-mono border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
-                                                autoFocus={index === 0}
+                                                        error={!!(errors as any).password}
+                                                        className="h-11 rounded-xl"
+                                                        {...register('password')}
+                                                    />
+                                                    {(errors as any).password && (
+                                                        <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+                                                            {typeof (errors as any).password.message === 'string'
+                                                                ? (errors as any).password.message
+                                                                : 'Password is required'}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label
+                                                        htmlFor="confirmPassword"
+                                                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                                                    >
+                                                        Confirm password
+                                                    </label>
+                                                    <Input
+                                                        id="confirmPassword"
+                                                        type={showConfirmPassword ? 'text' : 'password'}
+                                                        placeholder="Confirm your password"
+                                                        leftIcon={<Lock className="w-4 h-4" />}
+                                                        rightIcon={
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setShowConfirmPassword(!showConfirmPassword)
+                                                                }
+                                                                className="rounded-md p-1 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                                                                aria-label={
+                                                                    showConfirmPassword
+                                                                        ? 'Hide password'
+                                                                        : 'Show password'
+                                                                }
+                                                            >
+                                                                {showConfirmPassword ? (
+                                                                    <EyeOff className="w-4 h-4" />
+                                                                ) : (
+                                                                    <Eye className="w-4 h-4" />
+                                                                )}
+                                                            </button>
+                                                        }
+                                                        error={!!(errors as any).confirmPassword}
+                                                        className="h-11 rounded-xl"
+                                                        {...register('confirmPassword')}
+                                                    />
+                                                    {(errors as any).confirmPassword && (
+                                                        <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+                                                            {typeof (errors as any).confirmPassword.message ===
+                                                            'string'
+                                                                ? (errors as any).confirmPassword.message
+                                                                : 'Please confirm your password'}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <Button
+                                                    type="submit"
+                                                    className="h-11 w-full rounded-xl bg-primary-600 text-base font-semibold hover:bg-primary-700"
+                                                    loading={isLoading}
+                                                >
+                                                    Send OTP
+                                                </Button>
+                                            </form>
+
+                                            <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
+                                                Already have an account?{' '}
+                                                <Link
+                                                    href={loginHref}
+                                                    className="font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                                                >
+                                                    Sign In
+                                                </Link>
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-5">
+                                            <div className="mb-1 flex items-center gap-3">
+                                                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-600 text-white">
+                                                    <ShieldCheck className="h-5 w-5" />
+                                                </span>
+                                                <div>
+                                                    <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                                        Verify email
+                                                    </h1>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        Enter the 6-digit code we sent
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="inline-flex max-w-full items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 dark:border-primary-800 dark:bg-primary-900/20">
+                                                <Mail className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+                                                <p className="truncate text-sm font-medium text-primary-600 dark:text-primary-400">
+                                                    {formData?.email}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label
+                                                    htmlFor="otp"
+                                                    className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                                                >
+                                                    Verification code
+                                                </label>
+                                                <div className="mb-2 flex justify-center gap-2 sm:gap-3">
+                                                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                                                        <input
+                                                            key={index}
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            maxLength={1}
+                                                            value={otp[index] || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value.replace(/\D/g, '')
+                                                                if (value.length <= 1) {
+                                                                    const newOtp = otp.split('')
+                                                                    newOtp[index] = value
+                                                                    setOtp(newOtp.join('').slice(0, 6))
+                                                                    if (value && index < 5) {
+                                                                        const nextInput = document.querySelector(
+                                                                            `input[data-otp-index="${index + 1}"]`
+                                                                        ) as HTMLInputElement
+                                                                        nextInput?.focus()
+                                                                    }
+                                                                }
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                                                                    const prevInput = document.querySelector(
+                                                                        `input[data-otp-index="${index - 1}"]`
+                                                                    ) as HTMLInputElement
+                                                                    prevInput?.focus()
+                                                                }
+                                                            }}
+                                                            onPaste={(e) => {
+                                                                e.preventDefault()
+                                                                const pastedData = e.clipboardData
+                                                                    .getData('text')
+                                                                    .replace(/\D/g, '')
+                                                                    .slice(0, 6)
+                                                                if (pastedData) {
+                                                                    setOtp(pastedData)
+                                                                    const lastIndex = Math.min(
+                                                                        index + pastedData.length - 1,
+                                                                        5
+                                                                    )
+                                                                    const lastInput = document.querySelector(
+                                                                        `input[data-otp-index="${lastIndex}"]`
+                                                                    ) as HTMLInputElement
+                                                                    lastInput?.focus()
+                                                                }
+                                                            }}
+                                                            data-otp-index={index}
+                                                            className="h-10 w-10 rounded-lg border-2 border-gray-300 bg-white text-center text-xl font-semibold font-mono text-gray-900 transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white sm:h-12 sm:w-12 sm:text-2xl"
+                                                            autoFocus={index === 0}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <OtpStatusSection
+                                                formattedTimeRemaining={otpRateLimit.formattedTimeRemaining}
+                                                remainingAttempts={otpRateLimit.remainingAttempts}
+                                                maxAttempts={otpRateLimit.maxAttempts}
+                                                isLockedOut={otpRateLimit.isLockedOut}
+                                                lockoutMessage={otpRateLimit.lockoutMessage}
+                                                canShowResendButton={otpRateLimit.canShowResendButton}
+                                                isResendDisabled={otpRateLimit.isResendDisabled}
+                                                resendButtonLabel={otpRateLimit.resendButtonLabel}
+                                                onResend={handleResendOtp}
+                                                isResending={otpRateLimit.isSending || isLoading}
                                             />
-                                        ))}
-                                    </div>
-                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center px-2">
-                                        Enter the 6-digit code sent to your email address
-                                    </p>
-                                </div>
 
-                                <OtpStatusSection
-                                    formattedTimeRemaining={otpRateLimit.formattedTimeRemaining}
-                                    remainingAttempts={otpRateLimit.remainingAttempts}
-                                    maxAttempts={otpRateLimit.maxAttempts}
-                                    isLockedOut={otpRateLimit.isLockedOut}
-                                    lockoutMessage={otpRateLimit.lockoutMessage}
-                                    canShowResendButton={otpRateLimit.canShowResendButton}
-                                    isResendDisabled={otpRateLimit.isResendDisabled}
-                                    resendButtonLabel={otpRateLimit.resendButtonLabel}
-                                    onResend={handleResendOtp}
-                                    isResending={otpRateLimit.isSending || isLoading}
-                                />
+                                            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20">
+                                                <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                                                    Code sent to: <strong>{formData?.email}</strong>
+                                                </p>
+                                                <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">
+                                                    The code will expire in 2 minutes
+                                                </p>
+                                            </div>
 
-                                {/* Information Box */}
-                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                                    <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-300">
-                                        Code sent to: <strong>{formData?.email}</strong>
-                                    </p>
-                                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                                        The code will expire in 2 minutes
-                                    </p>
-                                </div>
-
-                                {/* Verify Button */}
-                                <Button
-                                    type="button"
-                                    onClick={handleVerifyOtp}
-                                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 h-10 sm:h-11 text-sm sm:text-base font-medium"
-                                    loading={isLoading}
-                                    disabled={otp.length !== 6 || isLoading}
-                                >
-                                    Verify & Register
-                                </Button>
-                            </motion.div>
-                        )}
-
-                        <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-gray-100 dark:border-gray-700/60 text-center">
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                                Already have an account?{' '}
-                                <Link
-                                    href={`/auth/login?type=${selectedUserType}`}
-                                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors touch-manipulation"
-                                >
-                                    Sign In
-                                </Link>
-                            </p>
-                        </div>
+                                            <Button
+                                                type="button"
+                                                onClick={handleVerifyOtp}
+                                                className="h-11 w-full rounded-xl bg-primary-600 text-base font-semibold hover:bg-primary-700"
+                                                loading={isLoading}
+                                                disabled={otp.length !== 6 || isLoading}
+                                            >
+                                                Verify & Register
+                                            </Button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
-
-                    {/* Additional Info */}
-                    {/* <div className="mt-6 text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            By creating an account, you agree to our{' '}
-                            <Link href="/terms" className="text-primary-600 dark:text-primary-400 hover:underline">
-                                Terms of Service
-                            </Link>{' '}
-                            and{' '}
-                            <Link href="/privacy" className="text-primary-600 dark:text-primary-400 hover:underline">
-                                Privacy Policy
-                            </Link>
-                        </p>
-                    </div> */}
                 </motion.div>
             </div>
         </div>

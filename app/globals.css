@@ -37,29 +37,45 @@ body.hide-sidebar .main-navbar {
   }
 
   .dark {
-    --toast-bg: #1f2937;
-    --toast-color: #ffffff;
-    --toast-border: #374151;
+    --toast-bg: #141A29;
+    --toast-color: #F4F6FA;
+    --toast-border: #232C42;
+
+    /* Disha homepage dark theme (mockup) */
+    --disha-bg: #0A0D14;
+    --disha-surface: #0F1420;
+    --disha-surface-2: #141A29;
+    --disha-surface-3: #1B2334;
+    --disha-border: #232C42;
+    --disha-border-soft: #1A2233;
+    --disha-text: #F4F6FA;
+    --disha-muted: #93A0BD;
+    --disha-faint: #5B6684;
+    --disha-sky: #00A2E5;
+    --disha-sky-hover: #24B4F0;
+    --disha-sky-dim: #0C79A8;
+    --disha-sky-soft: rgba(0, 162, 229, 0.12);
+    --disha-sky-ring: rgba(0, 162, 229, 0.35);
     
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 72%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: 222 33% 6%;
+    --foreground: 220 33% 97%;
+    --card: 221 28% 10%;
+    --card-foreground: 220 33% 97%;
+    --popover: 221 28% 10%;
+    --popover-foreground: 220 33% 97%;
+    --primary: 199 100% 45%;
+    --primary-foreground: 199 80% 6%;
+    --secondary: 222 27% 12%;
+    --secondary-foreground: 220 33% 97%;
+    --muted: 222 27% 12%;
+    --muted-foreground: 223 20% 66%;
+    --accent: 222 27% 12%;
+    --accent-foreground: 220 33% 97%;
     --destructive: 0 62.8% 40%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 25% 24%;
-    --input: 217.2 25% 24%;
-    --ring: 199 89% 48%;
+    --border: 222 30% 20%;
+    --input: 222 30% 20%;
+    --ring: 199 100% 45%;
   }
 }
 
@@ -68,7 +84,7 @@ body.hide-sidebar .main-navbar {
     @apply border-gray-200 dark:border-gray-700;
   }
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-white;
+    @apply bg-white text-gray-900 dark:bg-[#0A0D14] dark:text-[#F4F6FA];
   }
   
   /* Prevent layout shift when scrollbar appears/disappears */

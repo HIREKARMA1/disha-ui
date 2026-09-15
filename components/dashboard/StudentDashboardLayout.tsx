@@ -52,7 +52,7 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
             <StudentSidebar />
 
             <div className="pt-16 lg:pl-64">
-                <main className="p-3 sm:p-5 lg:p-6 pb-28 lg:pb-6 min-h-0 relative overflow-x-hidden overflow-y-visible">
+                <main className="relative min-h-0 overflow-x-hidden overflow-y-visible p-3 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:p-5 lg:p-6 lg:pb-6">
                     {children ? (
                         <div>{children}</div>
                     ) : (

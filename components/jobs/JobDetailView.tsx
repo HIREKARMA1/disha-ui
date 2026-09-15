@@ -32,14 +32,13 @@ import { getJobDetailPath } from '@/lib/jobSlug'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
 import { canApplyForJobs } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
-import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
   APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
-  JOB_NOT_FOR_UNIVERSITY_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   clearAutoApplyQueryParams,
-  getUniversityApplyEligibility,
   getPassoutBatchApplyEligibility,
   resumePendingJobApplication,
   shouldAutoApplyForJob,
@@ -59,6 +58,7 @@ interface JobDetailViewProps {
 export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetailViewProps) {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
   const [job, setJob] = useState<Job | null>(null)
   const [related, setRelated] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,7 +159,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     const token = apiClient.getAccessToken()
     if (!token) {
       autoApplyAttempted.current = true
-      redirectGuestToLoginForApply(router, job.id, getJobDetailPath(job))
+      const redirect = prepareGuestApplyForLogin(job.id, getJobDetailPath(job))
+      openLoginModal({ redirect, preferredType: 'student' })
       return
     }
     if (user && user.user_type !== 'student') {
@@ -185,7 +186,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const handleApply = () => {
     if (!job) return
     if (!apiClient.getAccessToken()) {
-      redirectGuestToLoginForApply(router, job.id, getJobDetailPath(job))
+      const redirect = prepareGuestApplyForLogin(job.id, getJobDetailPath(job))
+      openLoginModal({ redirect, preferredType: 'student' })
       return
     }
     if (profileCompletion && !canApplyForJobs(profileCompletion)) {
@@ -194,19 +196,6 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
     if (!job.can_apply) {
       toast.error(JOB_CLOSED_MESSAGE)
-      return
-    }
-    const eligibility = getUniversityApplyEligibility({
-      isPublic: job.is_public,
-      publicAccessLevel: job.public_access_level,
-      assignedUniversityIds: job.assigned_university_ids,
-      isAuthenticatedStudent: Boolean(
-        isAuthenticated && user?.user_type === 'student'
-      ),
-      studentUniversityId,
-    })
-    if (!eligibility.canApply) {
-      toast.error(eligibility.reason || JOB_NOT_FOR_UNIVERSITY_MESSAGE)
       return
     }
     const batchEligibility = getPassoutBatchApplyEligibility({
