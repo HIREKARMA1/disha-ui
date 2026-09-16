@@ -10,13 +10,10 @@ import {
     Building2,
     Settings,
     BarChart3,
-    Activity,
     Calendar,
     FileText,
     X,
     LogOut,
-    Eye,
-    Database,
     Briefcase,
     Brain,
     Library,
@@ -171,30 +168,6 @@ const navSections: NavSection[] = [
     {
         title: 'System',
         items: [
-            {
-                label: 'System Monitor',
-                href: '/dashboard/admin/monitor',
-                icon: Activity,
-                description: 'System health',
-            },
-            {
-                label: 'Reports',
-                href: '/dashboard/admin/reports',
-                icon: FileText,
-                description: 'Generate reports',
-            },
-            {
-                label: 'Audit Logs',
-                href: '/dashboard/admin/audit',
-                icon: Eye,
-                description: 'View audit logs',
-            },
-            {
-                label: 'Database',
-                href: '/dashboard/admin/database',
-                icon: Database,
-                description: 'Database management',
-            },
             {
                 label: 'Settings',
                 href: '/dashboard/admin/settings',
