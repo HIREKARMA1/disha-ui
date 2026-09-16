@@ -20,6 +20,7 @@ import Link from "next/link";
 import { AdminDashboardLayout } from "@/components/dashboard/AdminDashboardLayout";
 import { StudentExamLinkSection } from "@/components/admin/assessments/StudentExamLinkSection";
 import { CodingQuestionAssignPanel } from "@/components/admin/assessments/CodingQuestionAssignPanel";
+import { AdminAssignedCodingQuestions } from "@/components/admin/assessments/AdminAssignedCodingQuestions";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 
 interface Assessment {
@@ -885,24 +886,7 @@ export default function AssessmentDetailPage() {
                             fetchQuestions(assessmentId, assessment?.rounds || [])
                           }
                         />
-                        {questions.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                              Assigned ({questions.length})
-                            </p>
-                            {questions.map((q: any, idx: number) => (
-                              <div
-                                key={q.id}
-                                className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                              >
-                                {idx + 1}. {q.question_text}{" "}
-                                <span className="text-gray-500">
-                                  ({q.points ?? 100} pts · {q.difficulty || "—"})
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <AdminAssignedCodingQuestions questions={questions} />
                       </>
                     )}
 

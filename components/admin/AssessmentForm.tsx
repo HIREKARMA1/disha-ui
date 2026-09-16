@@ -379,6 +379,7 @@ export function AssessmentForm({
                 onChange={(value) => handleTimeChange("start_time", value)}
                 placeholder="Select start date and time"
                 showTime={true}
+                disablePast={isMockTest}
                 className={errors.start_time ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : ""}
               />
             </div>
@@ -392,6 +393,7 @@ export function AssessmentForm({
                 onChange={(value) => handleTimeChange("end_time", value)}
                 placeholder="Select end date and time"
                 showTime={true}
+                disablePast={isMockTest}
                 className={errors.end_time ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : ""}
               />
             </div>
