@@ -6,6 +6,8 @@ import {
     Building2,
     Calendar,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     ChevronsUpDown,
     ChevronUp,
     GraduationCap,
@@ -15,6 +17,7 @@ import {
     Shield,
     Users,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { AdminUserListItem } from '@/types/userManagement'
 import {
     AdminManagedUserType,
@@ -28,6 +31,33 @@ interface UserTableProps {
     isLoading: boolean
     error: string | null
     onRetry: () => void
+}
+
+function getVisiblePages(currentPage: number, totalPages: number): (number | 'start-ellipsis' | 'end-ellipsis')[] {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+
+    const pages: (number | 'start-ellipsis' | 'end-ellipsis')[] = [1]
+
+    if (currentPage > 3) pages.push('start-ellipsis')
+
+    let start = Math.max(2, currentPage - 1)
+    let end = Math.min(totalPages - 1, currentPage + 1)
+
+    if (currentPage <= 3) {
+        start = 2
+        end = 4
+    } else if (currentPage >= totalPages - 2) {
+        start = totalPages - 3
+        end = totalPages - 1
+    }
+
+    for (let i = start; i <= end; i++) pages.push(i)
+
+    if (currentPage < totalPages - 2) pages.push('end-ellipsis')
+    pages.push(totalPages)
+    return pages
 }
 
 type SortDirection = 'asc' | 'desc' | null
@@ -398,47 +428,71 @@ export function UserTable({
             </div>
 
             {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                    <div className="hidden sm:flex sm:items-center sm:justify-between">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-800 sm:px-6">
+                    <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                             Showing{' '}
-                            <span className="font-medium">{(currentPage - 1) * USER_TABLE_PAGE_SIZE + 1}</span>
-                            {' '}to{' '}
-                            <span className="font-medium">
-                                {Math.min(currentPage * USER_TABLE_PAGE_SIZE, users.length)}
+                            <span className="font-medium text-gray-900 dark:text-white">
+                                {(currentPage - 1) * USER_TABLE_PAGE_SIZE + 1}
                             </span>
-                            {' '}of{' '}
-                            <span className="font-medium">{users.length}</span> results
+                            –
+                            <span className="font-medium text-gray-900 dark:text-white">
+                                {Math.min(currentPage * USER_TABLE_PAGE_SIZE, users.length)}
+                            </span>{' '}
+                            of{' '}
+                            <span className="font-medium text-gray-900 dark:text-white">{users.length}</span>{' '}
+                            results
                         </p>
-                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                            <button
-                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+
+                        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
                                 disabled={currentPage === 1}
-                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                aria-label="Previous page"
                             >
-                                Previous
-                            </button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                        page === currentPage
-                                            ? 'z-10 bg-primary-50 dark:bg-primary-900/20 border-primary-500 text-primary-600 dark:text-primary-400'
-                                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                    }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-                            <button
-                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+
+                            <div className="flex items-center gap-1">
+                                {getVisiblePages(currentPage, totalPages).map((item) =>
+                                    item === 'start-ellipsis' || item === 'end-ellipsis' ? (
+                                        <span key={item} className="px-1 text-sm text-gray-400">
+                                            …
+                                        </span>
+                                    ) : (
+                                        <Button
+                                            key={item}
+                                            type="button"
+                                            variant={item === currentPage ? 'default' : 'outline'}
+                                            className={`h-9 w-9 p-0 font-medium transition-all ${
+                                                item === currentPage
+                                                    ? 'border-blue-600 bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                                                    : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                            }`}
+                                            onClick={() => setCurrentPage(item)}
+                                        >
+                                            {item}
+                                        </Button>
+                                    )
+                                )}
+                            </div>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
                                 disabled={currentPage === totalPages}
-                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                aria-label="Next page"
                             >
-                                Next
-                            </button>
-                        </nav>
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}

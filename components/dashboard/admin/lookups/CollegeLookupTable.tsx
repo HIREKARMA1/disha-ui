@@ -22,6 +22,7 @@ interface CollegeLookupTableProps {
     onDelete: (row: CollegeLookupRow) => void
     onPrevPage: () => void
     onNextPage: () => void
+    onPageChange: (page: number) => void
 }
 
 function cleanCollegeName(name: string) {
@@ -43,6 +44,7 @@ export function CollegeLookupTable({
     onDelete,
     onPrevPage,
     onNextPage,
+    onPageChange,
 }: CollegeLookupTableProps) {
     const router = useRouter()
 
@@ -208,6 +210,7 @@ export function CollegeLookupTable({
                     total={total}
                     onPrev={onPrevPage}
                     onNext={onNextPage}
+                    onPageChange={onPageChange}
                 />
             )}
         </div>
