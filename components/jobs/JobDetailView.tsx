@@ -293,7 +293,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-        <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
+        <DishaTopBar showSearch={false} />
         <div className="flex flex-grow items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
         </div>
@@ -304,7 +304,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   if (!job || error) {
     return (
       <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-        <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
+        <DishaTopBar showSearch={false} />
         <div className="flex flex-grow flex-col items-center justify-center gap-3 px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Job not found</h1>
           <p className="text-gray-500">{error || 'This job may have been removed or the link is invalid.'}</p>
@@ -320,7 +320,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-      <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
+      <DishaTopBar showSearch={false} />
 
       <div className="mx-auto w-full max-w-6xl flex-grow px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
