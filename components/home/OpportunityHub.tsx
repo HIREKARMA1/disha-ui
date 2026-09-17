@@ -39,9 +39,9 @@ import {
 } from '@/components/home/HubOpportunityCards'
 import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
 import placedStudentsData from '@/data/placed-students.json'
-import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { HubWhyDisha } from '@/components/home/HubWhyDisha'
 import { getFeaturedBlogs } from '@/data/blogs'
+import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
@@ -550,11 +550,11 @@ export default function OpportunityHub() {
     scrollCategoryTileIntoStrip(pill.id)
 
     if (pill.id === 'jobs') {
-      router.push('/jobs')
+      window.open('/jobs', '_blank', 'noopener,noreferrer')
       return
     }
     if (pill.id === 'events') {
-      router.push('/events')
+      window.open('/events', '_blank', 'noopener,noreferrer')
       return
     }
     if (pill.id === 'mock_tests') {
@@ -631,6 +631,10 @@ export default function OpportunityHub() {
     }
 
     if (item.kind === 'filter') {
+      if (href.startsWith('/jobs') || href.startsWith('/events')) {
+        window.open(href, '_blank', 'noopener,noreferrer')
+        return
+      }
       router.push(href)
       return
     }
@@ -846,7 +850,7 @@ export default function OpportunityHub() {
           <div ref={resultsAnchorRef} className="scroll-mt-28" />
 
           {/* Hub hero headline — tighter on mobile like Unstop */}
-          <div id="hub-top" ref={hubTopRef} className="mb-5 scroll-mt-28 sm:mb-7">
+          <div id="hub-top" ref={hubTopRef} className="mb-8 scroll-mt-28 sm:mb-10">
             <h1 className="text-xl font-extrabold uppercase leading-snug tracking-[0.02em] text-gray-900 dark:text-[1.65rem] dark:normal-case dark:tracking-[-0.02em] dark:text-[#F4F6FA] sm:text-3xl sm:leading-tight sm:tracking-[0.06em] dark:sm:text-4xl lg:text-4xl dark:lg:text-[42px] 2xl:text-[2.6rem]">
               Discover your{' '}
               <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent dark:from-[#24B4F0] dark:to-[#7FD4F5]">
@@ -974,19 +978,25 @@ export default function OpportunityHub() {
                 ))}
               </div>
             ) : isBrowseHome ? (
-              <div className="space-y-8">
+              <div className="space-y-12 sm:space-y-14">
                 <section id="hub-jobs" className="scroll-mt-28">
                   <HubSectionHeader
                     title="Jobs"
                     count={jobs.length}
                     viewAllHref={jobsViewAllHref}
                     viewAllLabel="View all"
+                    viewAllNewTab
                     subtitle="Fresh roles from hiring partners on Disha."
                   />
                   {jobs.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No jobs yet.{' '}
-                      <Link href="/jobs" className="font-medium text-primary-600 hover:underline">
+                      <Link
+                        href="/jobs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary-600 hover:underline"
+                      >
                         Browse jobs
                       </Link>
                     </p>
@@ -1011,12 +1021,18 @@ export default function OpportunityHub() {
                     count={events.length}
                     viewAllHref="/events"
                     viewAllLabel="View all"
+                    viewAllNewTab
                     subtitle="Hackathons, workshops, and campus competitions."
                   />
                   {events.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No events yet.{' '}
-                      <Link href="/events" className="font-medium text-primary-600 hover:underline">
+                      <Link
+                        href="/events"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary-600 hover:underline"
+                      >
                         Browse events
                       </Link>
                     </p>
@@ -1115,9 +1131,9 @@ export default function OpportunityHub() {
                 <HubWhyDisha />
 
                 <section id="hub-faq" className="scroll-mt-28">
-                  <div className="mb-5">
+                  <div className="mb-6">
                     <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-                      <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+                      <span className="h-7 w-1.5 shrink-0 rounded-sm bg-primary-500 sm:h-8" aria-hidden />
                       Frequently Asked Questions
                     </h2>
                     <p className="mt-1.5 pl-3.5 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
@@ -1171,6 +1187,8 @@ export default function OpportunityHub() {
                     {(tab === 'all' || tab === 'jobs') && (
                       <Link
                         href={jobsViewAllHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300"
                       >
                         All jobs
@@ -1182,6 +1200,8 @@ export default function OpportunityHub() {
                     {(tab === 'all' || tab === 'events') && (
                       <Link
                         href="/events"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300"
                       >
                         All events
@@ -1265,12 +1285,12 @@ export default function OpportunityHub() {
                   <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-200 bg-white py-16 text-center dark:border-[#1A2233] dark:bg-[#141A29]">
                     <p className="text-gray-600 dark:text-gray-400">No opportunities found.</p>
                     <div className="flex gap-2">
-                      <Link href="/jobs">
+                      <Link href="/jobs" target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" className="rounded-md shadow-none">
                           Jobs
                         </Button>
                       </Link>
-                      <Link href="/events">
+                      <Link href="/events" target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" className="rounded-md shadow-none">
                           Events
                         </Button>

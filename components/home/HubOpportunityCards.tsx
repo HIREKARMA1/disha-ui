@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Briefcase, Calendar, ChevronLeft, ChevronRight, ArrowRight, MapPin, Trophy } from 'lucide-react'
@@ -305,6 +305,44 @@ export function HubPromoStrip() {
   )
 }
 
+type LogoItem = { id: number; name: string; logo: string }
+
+type PlacedStudent = {
+  name: string
+  company: string
+  imageUrl: string
+}
+
+function scrollByAmount(el: HTMLElement | null, dir: 1 | -1) {
+  if (!el) return
+  el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.85, 320), behavior: 'smooth' })
+}
+
+function RailArrow({
+  dir,
+  onClick,
+}: {
+  dir: 'left' | 'right'
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={dir === 'left' ? 'Scroll left' : 'Scroll right'}
+      className={cn(
+        'absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
+        'border border-gray-200 bg-white/95 text-gray-700 shadow-md backdrop-blur',
+        'transition hover:border-primary-300 hover:text-primary-700 hover:shadow-lg active:scale-95',
+        'dark:border-gray-600 dark:bg-[#141A29]/95 dark:text-gray-200 sm:flex',
+        dir === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2'
+      )}
+    >
+      {dir === 'left' ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+    </button>
+  )
+}
+
 type FeaturedItem = {
   id: string
   eyebrow: string
@@ -314,6 +352,7 @@ type FeaturedItem = {
   image: string
   gradient: string
   auth?: boolean
+  openInNewTab?: boolean
   /** Artwork already includes the title — keep CTA only */
   hideOverlayText?: boolean
 }
@@ -328,6 +367,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/1st_img(disha).png',
     gradient: 'from-sky-900/55 via-sky-900/25 to-transparent',
     hideOverlayText: true,
+    openInNewTab: true,
   },
   {
     id: 'jobs',
@@ -338,6 +378,7 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     image: 'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/2nd_img2(disha).png',
     gradient: 'from-emerald-950/55 via-emerald-900/25 to-transparent',
     hideOverlayText: true,
+    openInNewTab: true,
   },
   {
     id: 'practice',
@@ -372,36 +413,6 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     hideOverlayText: true,
   },
 ]
-
-function scrollByAmount(el: HTMLElement | null, dir: 1 | -1) {
-  if (!el) return
-  el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.85, 320), behavior: 'smooth' })
-}
-
-function RailArrow({
-  dir,
-  onClick,
-}: {
-  dir: 'left' | 'right'
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={dir === 'left' ? 'Scroll left' : 'Scroll right'}
-      className={cn(
-        'absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full',
-        'border border-gray-200 bg-white/95 text-gray-700 shadow-md backdrop-blur',
-        'transition hover:border-primary-300 hover:text-primary-700 hover:shadow-lg active:scale-95',
-        'dark:border-gray-600 dark:bg-[#141A29]/95 dark:text-gray-200 sm:flex',
-        dir === 'left' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2'
-      )}
-    >
-      {dir === 'left' ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-    </button>
-  )
-}
 
 /** Horizontal featured strip with arrows + auto-nudge. */
 export function HubFeaturedCarousel() {
@@ -477,8 +488,9 @@ export function HubFeaturedCarousel() {
               <Link
                 href={item.href}
                 aria-label={`${item.title} — ${item.cta}`}
+                {...(item.openInNewTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 onClick={(e) => {
-                  const needsStudent = Boolean('auth' in item && item.auth)
+                  const needsStudent = Boolean(item.auth)
                   const isStudent = isAuthenticated && user?.user_type === 'student'
                   if (needsStudent && !isStudent) {
                     e.preventDefault()
@@ -497,7 +509,6 @@ export function HubFeaturedCarousel() {
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                   sizes="(min-width: 1536px) 25vw, 300px"
                 />
-                {/* Soft bottom wash only — keeps CTA readable without tinting the art */}
                 <div
                   className={cn(
                     'absolute inset-0 bg-gradient-to-t to-transparent',
@@ -533,14 +544,6 @@ export function HubFeaturedCarousel() {
       </div>
     </motion.section>
   )
-}
-
-type LogoItem = { id: number; name: string; logo: string }
-
-type PlacedStudent = {
-  name: string
-  company: string
-  imageUrl: string
 }
 
 /** HireKarma-style placed students rail — auto-scroll with wrapping arrows. */
@@ -618,7 +621,7 @@ export function HubPlacedStudents({
       <div className="mb-5 flex items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-            <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-6" aria-hidden />
+            <span className="h-7 w-1.5 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-8" aria-hidden />
             Placed students
           </h2>
           <p className="mt-1.5 max-w-2xl pl-3.5 text-xs leading-relaxed text-gray-500 sm:text-sm dark:text-gray-400">
@@ -752,6 +755,7 @@ export function HubSectionHeader({
   viewAllLabel,
   subtitle,
   onViewAllClick,
+  viewAllNewTab = false,
 }: {
   title: string
   count?: number
@@ -760,6 +764,8 @@ export function HubSectionHeader({
   subtitle?: string
   /** If set, View all is a button (e.g. guest login) instead of a link. */
   onViewAllClick?: () => void
+  /** Open View all in a new browser tab. */
+  viewAllNewTab?: boolean
 }) {
   const reduceMotion = useReducedMotion()
   const viewAllClass = cn(
@@ -770,10 +776,10 @@ export function HubSectionHeader({
   )
 
   return (
-    <div className="mb-4 flex items-start justify-between gap-3 sm:items-center">
+    <div className="mb-5 flex items-start justify-between gap-3 sm:mb-6 sm:items-center">
       <div className="min-w-0">
         <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:gap-x-2.5 sm:text-[22px]">
-          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-6" aria-hidden />
+          <span className="h-7 w-1.5 shrink-0 rounded-sm bg-primary-500 dark:bg-[#00A2E5] sm:h-8" aria-hidden />
           {title}
           {typeof count === 'number' && (
             <span className="text-sm font-medium text-gray-400 sm:text-base">({count})</span>
@@ -803,7 +809,11 @@ export function HubSectionHeader({
             </span>
           </button>
         ) : (
-          <Link href={viewAllHref} className={viewAllClass}>
+          <Link
+            href={viewAllHref}
+            className={viewAllClass}
+            {...(viewAllNewTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
             <span>{viewAllLabel}</span>
             <span
               className={cn(

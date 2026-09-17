@@ -34,13 +34,14 @@ type NavLink = {
   href: string
   icon: React.ComponentType<{ className?: string }>
   requiresAuth?: boolean
+  openInNewTab?: boolean
 }
 
 /** Public / guest nav — Unstop-like order. */
 const GUEST_NAV: NavLink[] = [
   { label: 'Opportunities', href: '/', icon: Home },
-  { label: 'Jobs', href: '/jobs', icon: Briefcase },
-  { label: 'Events', href: '/events', icon: Calendar },
+  { label: 'Jobs', href: '/jobs', icon: Briefcase, openInNewTab: true },
+  { label: 'Events', href: '/events', icon: Calendar, openInNewTab: true },
   { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
 ]
@@ -139,6 +140,7 @@ function NavGroup({
                 onClick={onNavigate}
                 title={collapsed ? item.label : undefined}
                 className={className}
+                {...(item.openInNewTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-80" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
