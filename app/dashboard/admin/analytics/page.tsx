@@ -27,9 +27,22 @@ function AdminAnalyticsContent() {
     const load = async () => {
       setJobsLoading(true)
       try {
-        const jobs = await apiClient.getAllJobsAdmin()
+        const [jobs, licenseRequests] = await Promise.all([
+          apiClient.getAllJobsAdmin(),
+          apiClient.getLicenseRequests({
+            status: 'pending',
+            page: 1,
+            page_size: 1,
+          }),
+        ])
         const list = Array.isArray(jobs) ? jobs : jobs?.jobs || []
         if (cancelled) return
+        const pendingTotal = Number(licenseRequests?.total)
+        const pendingFromRows = Array.isArray(licenseRequests?.requests)
+          ? licenseRequests.requests.filter(
+              (r: { status?: string }) => r.status === 'pending'
+            ).length
+          : 0
         setJobStats({
           total_jobs: list.length,
           active_jobs: list.filter(
@@ -44,9 +57,9 @@ function AdminAnalyticsContent() {
               sum + (j.applications_count ?? j.current_applications ?? 0),
             0
           ),
-          pending_approvals: list.filter(
-            (j: { status?: string }) => j.status === 'pending' || j.status === 'pending_approval'
-          ).length,
+          pending_approvals: Number.isFinite(pendingTotal)
+            ? pendingTotal
+            : pendingFromRows,
         })
       } catch (err) {
         console.error('Failed to load analytics job stats:', err)

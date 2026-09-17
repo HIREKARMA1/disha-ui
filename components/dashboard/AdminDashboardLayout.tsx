@@ -48,7 +48,14 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
         const fetchJobStats = async () => {
             setIsJobStatsLoading(true)
             try {
-                const jobs = await apiClient.getAllJobsAdmin()
+                const [jobs, licenseRequests] = await Promise.all([
+                    apiClient.getAllJobsAdmin(),
+                    apiClient.getLicenseRequests({
+                        status: 'pending',
+                        page: 1,
+                        page_size: 1,
+                    }),
+                ])
                 const list = Array.isArray(jobs) ? jobs : jobs?.jobs || []
                 if (cancelled) return
 
@@ -65,9 +72,16 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
                         sum + (j.applications_count ?? j.current_applications ?? 0),
                     0
                 )
-                const pending_approvals = list.filter(
-                    (j: { status?: string }) => j.status === 'pending' || j.status === 'pending_approval'
-                ).length
+                // Same source of truth as License Management: LicenseRequest status === 'pending'
+                const pendingTotal = Number(licenseRequests?.total)
+                const pendingFromRows = Array.isArray(licenseRequests?.requests)
+                    ? licenseRequests.requests.filter(
+                          (r: { status?: string }) => r.status === 'pending'
+                      ).length
+                    : 0
+                const pending_approvals = Number.isFinite(pendingTotal)
+                    ? pendingTotal
+                    : pendingFromRows
 
                 setJobStats({
                     total_jobs,

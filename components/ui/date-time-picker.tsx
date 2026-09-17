@@ -15,6 +15,8 @@ interface DateTimePickerProps {
     disabled?: boolean
     autoClose?: boolean
     showTime?: boolean
+    /** When true, past calendar days and past times (for today) cannot be selected. */
+    disablePast?: boolean
 }
 
 export function DateTimePicker({
@@ -24,12 +26,13 @@ export function DateTimePicker({
     className,
     disabled,
     autoClose = true,
-    showTime = false
+    showTime = false,
+    disablePast = false,
 }: DateTimePickerProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [currentMonth, setCurrentMonth] = useState(new Date())
-    
+
     // Time picker states
     const [hour, setHour] = useState(12)
     const [minute, setMinute] = useState(0)
@@ -111,10 +114,57 @@ export function DateTimePicker({
         return `${year}-${month}-${day}T${hrsStr}:${minsStr}`
     }
 
+    const startOfDay = (date: Date) => {
+        const d = new Date(date)
+        d.setHours(0, 0, 0, 0)
+        return d
+    }
+
+    const isToday = (date: Date) => {
+        const today = new Date()
+        return date.toDateString() === today.toDateString()
+    }
+
+    const isPastDate = (date: Date) => {
+        if (!disablePast) return false
+        return startOfDay(date).getTime() < startOfDay(new Date()).getTime()
+    }
+
+    const toMinutes = (h12: number, m: number, p: 'AM' | 'PM') => {
+        let h24 = h12
+        if (p === 'PM' && h12 < 12) h24 = h12 + 12
+        if (p === 'AM' && h12 === 12) h24 = 0
+        return h24 * 60 + m
+    }
+
+    const isPastDateTime = (date: Date, h12: number, m: number, p: 'AM' | 'PM') => {
+        if (!disablePast) return false
+        if (isPastDate(date)) return true
+        if (!isToday(date) || !showTime) return false
+        const now = new Date()
+        const selectedMins = toMinutes(h12, m, p)
+        const nowMins = now.getHours() * 60 + now.getMinutes()
+        return selectedMins < nowMins
+    }
+
     const handleDateSelect = (date: Date) => {
+        if (isPastDate(date)) return
         setSelectedDate(date)
         if (showTime) {
-            onChange(formatDateValue(date, hour, minute, period))
+            let nextH = hour
+            let nextM = minute
+            let nextP = period
+            if (disablePast && isToday(date) && isPastDateTime(date, hour, minute, period)) {
+                const now = new Date()
+                const h = now.getHours()
+                nextM = now.getMinutes()
+                nextP = h >= 12 ? 'PM' : 'AM'
+                nextH = h % 12 || 12
+                setHour(nextH)
+                setMinute(nextM)
+                setPeriod(nextP)
+            }
+            onChange(formatDateValue(date, nextH, nextM, nextP))
         } else {
             onChange(formatDateValue(date, 12, 0, 'AM'))
             if (autoClose) {
@@ -124,6 +174,7 @@ export function DateTimePicker({
     }
 
     const handleHourSelect = (h: number) => {
+        if (selectedDate && isPastDateTime(selectedDate, h, minute, period)) return
         setHour(h)
         if (selectedDate) {
             onChange(formatDateValue(selectedDate, h, minute, period))
@@ -131,6 +182,7 @@ export function DateTimePicker({
     }
 
     const handleMinuteSelect = (m: number) => {
+        if (selectedDate && isPastDateTime(selectedDate, hour, m, period)) return
         setMinute(m)
         if (selectedDate) {
             onChange(formatDateValue(selectedDate, hour, m, period))
@@ -138,6 +190,7 @@ export function DateTimePicker({
     }
 
     const handlePeriodSelect = (p: 'AM' | 'PM') => {
+        if (selectedDate && isPastDateTime(selectedDate, hour, minute, p)) return
         setPeriod(p)
         if (selectedDate) {
             onChange(formatDateValue(selectedDate, hour, minute, p))
@@ -152,6 +205,7 @@ export function DateTimePicker({
 
     const handleToday = () => {
         const today = new Date()
+        if (disablePast && !showTime && isPastDate(today)) return
         setSelectedDate(today)
         setCurrentMonth(today)
 
@@ -184,12 +238,10 @@ export function DateTimePicker({
 
         const days = []
 
-        // Add empty cells for days before the first day of the month
         for (let i = 0; i < startingDayOfWeek; i++) {
             days.push(null)
         }
 
-        // Add days of the month
         for (let day = 1; day <= daysInMonth; day++) {
             days.push(new Date(year, month, day))
         }
@@ -207,11 +259,6 @@ export function DateTimePicker({
             }
             return newMonth
         })
-    }
-
-    const isToday = (date: Date) => {
-        const today = new Date()
-        return date.toDateString() === today.toDateString()
     }
 
     const isSelected = (date: Date) => {
@@ -276,9 +323,7 @@ export function DateTimePicker({
                         </div>
 
                         <div className={cn("flex flex-col sm:flex-row gap-4", showTime ? "items-stretch" : "")}>
-                            {/* Calendar Section */}
                             <div className="w-[248px] shrink-0">
-                                {/* Month Navigation */}
                                 <div className="flex items-center justify-between mb-2">
                                     <Button
                                         type="button"
@@ -305,7 +350,6 @@ export function DateTimePicker({
                                     </Button>
                                 </div>
 
-                                {/* Days of Week */}
                                 <div className="grid grid-cols-7 gap-0.5 mb-1 text-center">
                                     {dayNames.map(day => (
                                         <div key={day} className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase py-1">
@@ -314,7 +358,6 @@ export function DateTimePicker({
                                     ))}
                                 </div>
 
-                                {/* Calendar Grid */}
                                 <div className="grid grid-cols-7 gap-0.5">
                                     {getDaysInMonth(currentMonth).map((date, index) => {
                                         if (!date) {
@@ -323,19 +366,22 @@ export function DateTimePicker({
 
                                         const selected = isSelected(date)
                                         const today = isToday(date)
+                                        const past = isPastDate(date)
 
                                         return (
                                             <button
                                                 type="button"
                                                 key={index}
+                                                disabled={past}
                                                 onClick={() => handleDateSelect(date)}
                                                 className={cn(
                                                     "h-7 w-7 p-0 text-xs font-semibold rounded-lg flex items-center justify-center transition-all",
-                                                    selected
+                                                    past && "opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 hover:bg-transparent",
+                                                    !past && selected
                                                         ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                                                        : today
+                                                        : !past && today
                                                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
-                                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                                                            : !past && "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                                                 )}
                                             >
                                                 {date.getDate()}
@@ -345,43 +391,52 @@ export function DateTimePicker({
                                 </div>
                             </div>
 
-                            {/* Time Section (Only if showTime is enabled) */}
                             {showTime && (
                                 <div className="flex flex-col gap-2 p-1 pl-4 border-t sm:border-t-0 sm:border-l border-gray-100 dark:border-gray-700/80 min-w-[140px] shrink-0">
                                     <div className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-1">Time</div>
                                     <div className="flex gap-1 h-[160px]">
-                                        {/* Hours scroll column */}
                                         <div className="flex-1 flex flex-col overflow-y-auto scrollbar-none gap-0.5 border border-gray-100 dark:border-gray-700/50 rounded-lg p-0.5 bg-gray-50/50 dark:bg-gray-900/10">
-                                            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-                                                <button
-                                                    key={h}
-                                                    type="button"
-                                                    onClick={() => handleHourSelect(h)}
-                                                    className={cn(
-                                                        "text-[11px] py-1 px-1 rounded-md font-bold text-center transition-colors shrink-0",
-                                                        hour === h
-                                                            ? "bg-blue-600 text-white"
-                                                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                                                    )}
-                                                >
-                                                    {h}
-                                                </button>
-                                            ))}
+                                            {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => {
+                                                const past =
+                                                    !!selectedDate &&
+                                                    isPastDateTime(selectedDate, h, minute, period)
+                                                return (
+                                                    <button
+                                                        key={h}
+                                                        type="button"
+                                                        disabled={past}
+                                                        onClick={() => handleHourSelect(h)}
+                                                        className={cn(
+                                                            "text-[11px] py-1 px-1 rounded-md font-bold text-center transition-colors shrink-0",
+                                                            past && "opacity-30 cursor-not-allowed",
+                                                            !past && hour === h
+                                                                ? "bg-blue-600 text-white"
+                                                                : !past && "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                                                        )}
+                                                    >
+                                                        {h}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
-                                        {/* Minutes scroll column */}
                                         <div className="flex-1 flex flex-col overflow-y-auto scrollbar-none gap-0.5 border border-gray-100 dark:border-gray-700/50 rounded-lg p-0.5 bg-gray-50/50 dark:bg-gray-900/10">
                                             {Array.from({ length: 60 }, (_, i) => i).map((m) => {
                                                 const displayM = String(m).padStart(2, '0')
+                                                const past =
+                                                    !!selectedDate &&
+                                                    isPastDateTime(selectedDate, hour, m, period)
                                                 return (
                                                     <button
                                                         key={m}
                                                         type="button"
+                                                        disabled={past}
                                                         onClick={() => handleMinuteSelect(m)}
                                                         className={cn(
                                                             "text-[11px] py-1 px-1 rounded-md font-bold text-center transition-colors shrink-0",
-                                                            minute === m
+                                                            past && "opacity-30 cursor-not-allowed",
+                                                            !past && minute === m
                                                                 ? "bg-blue-600 text-white"
-                                                                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                                                                : !past && "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                                                         )}
                                                     >
                                                         {displayM}
@@ -389,30 +444,35 @@ export function DateTimePicker({
                                                 )
                                             })}
                                         </div>
-                                        {/* AM/PM column */}
                                         <div className="flex flex-col gap-1 border border-gray-100 dark:border-gray-700/50 rounded-lg p-0.5 bg-gray-50/50 dark:bg-gray-900/10 justify-center">
-                                            {(['AM', 'PM'] as const).map((p) => (
-                                                <button
-                                                    key={p}
-                                                    type="button"
-                                                    onClick={() => handlePeriodSelect(p)}
-                                                    className={cn(
-                                                        "text-[10px] py-2 px-1.5 rounded-md font-bold text-center transition-colors shrink-0",
-                                                        period === p
-                                                            ? "bg-blue-600 text-white"
-                                                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                                                    )}
-                                                >
-                                                    {p}
-                                                </button>
-                                            ))}
+                                            {(['AM', 'PM'] as const).map((p) => {
+                                                const past =
+                                                    !!selectedDate &&
+                                                    isPastDateTime(selectedDate, hour, minute, p)
+                                                return (
+                                                    <button
+                                                        key={p}
+                                                        type="button"
+                                                        disabled={past}
+                                                        onClick={() => handlePeriodSelect(p)}
+                                                        className={cn(
+                                                            "text-[10px] py-2 px-1.5 rounded-md font-bold text-center transition-colors shrink-0",
+                                                            past && "opacity-30 cursor-not-allowed",
+                                                            !past && period === p
+                                                                ? "bg-blue-600 text-white"
+                                                                : !past && "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                                                        )}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Calendar Footer */}
                         <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/80">
                             <Button
                                 type="button"
