@@ -86,7 +86,7 @@ export function AdminDashboardStats({ userStats, jobStats, isLoading }: AdminDas
     ]
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
             {stats.map((stat, index) => (
                 <AdminStatCard
                     key={stat.label}
@@ -97,6 +97,7 @@ export function AdminDashboardStats({ userStats, jobStats, isLoading }: AdminDas
                     accent={stat.accent}
                     index={index}
                     isLoading={isLoading}
+                    compact
                 />
             ))}
         </div>

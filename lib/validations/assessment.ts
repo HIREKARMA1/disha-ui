@@ -122,6 +122,31 @@ export const assessmentFormSchema = z
         });
       }
     }
+
+    // Mock Tests: reject past start/end (full local date+time)
+    if (data.mode === "MOCK") {
+      const now = Date.now() - 60_000; // 60s clock skew
+      if (data.time_window.start_time) {
+        const start = new Date(data.time_window.start_time);
+        if (!Number.isNaN(start.getTime()) && start.getTime() < now) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Start date & time cannot be in the past",
+            path: ["time_window", "start_time"],
+          });
+        }
+      }
+      if (data.time_window.end_time) {
+        const end = new Date(data.time_window.end_time);
+        if (!Number.isNaN(end.getTime()) && end.getTime() < now) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "End date & time cannot be in the past",
+            path: ["time_window", "end_time"],
+          });
+        }
+      }
+    }
   });
 
 export type AssessmentFormValues = z.infer<typeof assessmentFormSchema>;

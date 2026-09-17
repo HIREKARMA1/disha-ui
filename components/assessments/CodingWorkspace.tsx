@@ -41,8 +41,9 @@ const SAFE_STARTERS: Record<string, string> = {
     "use std::io::{self, Read};\nfn main() {\n  let mut s = String::new();\n  io::stdin().read_to_string(&mut s).unwrap();\n}\n",
 };
 
+/* Single native caret; extra right padding so it never covers the value text */
 const selectClass =
-  "bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
+  "bg-white text-gray-900 border border-gray-300 rounded-md pl-2.5 pr-9 py-1.5 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 cursor-pointer min-w-[6rem]";
 
 function MetaBlock({
   title,
