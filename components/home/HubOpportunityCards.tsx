@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Briefcase, Calendar, ChevronLeft, ChevronRight, ArrowRight, MapPin, Trophy } from 'lucide-react'
@@ -155,7 +155,7 @@ export function HubEventCard({
     })
   }
 
-  const onGuestNav = (href: string, pendingRegister = false) => (e: MouseEvent) => {
+  const onGuestNav = (href: string, pendingRegister = false) => (e: MouseEvent<HTMLAnchorElement>) => {
     if (isAuthenticated) return
     e.preventDefault()
     requireGuestLogin(href, pendingRegister)
