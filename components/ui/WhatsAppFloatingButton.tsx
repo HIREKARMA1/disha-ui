@@ -1,10 +1,12 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { FaWhatsapp } from 'react-icons/fa'
 import { config } from '@/lib/config'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
+import { subscribeProfileFormEditing } from '@/lib/profileEditingUi'
 
 function buildWhatsAppUrl(number: string, message: string): string | null {
     const normalized = number.replace(/\D/g, '')
@@ -32,6 +34,9 @@ export function WhatsAppFloatingButton() {
     const { user, isAuthenticated } = useAuth()
     const { number, message } = config.whatsapp
     const href = buildWhatsAppUrl(number, message)
+    const [profileEditing, setProfileEditing] = useState(false)
+
+    useEffect(() => subscribeProfileFormEditing(setProfileEditing), [])
 
     const isExamPage = pathname?.startsWith('/assessments/exam')
     const isEventsListPage = pathname === '/events'
@@ -39,7 +44,8 @@ export function WhatsAppFloatingButton() {
         isStudent: Boolean(isAuthenticated && user?.user_type === 'student'),
     })
 
-    if (!href || isExamPage) {
+    // Hide while profile edit action bar is open (avoids overlapping Save)
+    if (!href || isExamPage || profileEditing) {
         return null
     }
 
@@ -55,8 +61,8 @@ export function WhatsAppFloatingButton() {
                 'transition-[bottom,right,transform] duration-300 ease-out',
                 'hover:scale-105 hover:shadow-xl',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2',
-                // Events list: bottom-right corner under Create Event submit (circled spot).
-                // Elsewhere: clear bottom nav / safe-area. Bottom sheet uses z-[100].
+                // Events list: bottom-right corner under Create Event submit.
+                // Elsewhere: clear bottom nav / safe-area.
                 isEventsListPage
                     ? 'bottom-3 right-3'
                     : cn(

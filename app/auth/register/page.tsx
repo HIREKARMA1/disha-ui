@@ -145,7 +145,7 @@ const isValidPublicUrl = (value: string) => {
 const studentSchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     name: z
         .string()
@@ -174,7 +174,7 @@ const studentSchema = z.object({
 const corporateSchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     company_name: z
         .string()
@@ -207,7 +207,7 @@ const corporateSchema = z.object({
 const universitySchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     college_id: z.string().min(1, 'Please select a college/university'),
     university_name: z.string().optional(), // Auto-filled from dropdown selection
@@ -868,7 +868,7 @@ function RegisterPageContent() {
                                                         htmlFor="email"
                                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                                                     >
-                                                        Email
+                                                        Email *
                                                     </label>
                                                     <Input
                                                         id="email"
@@ -909,7 +909,7 @@ function RegisterPageContent() {
                                                         htmlFor="password"
                                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                                                     >
-                                                        Password
+                                                        Password *
                                                     </label>
                                                     <Input
                                                         id="password"
@@ -950,7 +950,7 @@ function RegisterPageContent() {
                                                         htmlFor="confirmPassword"
                                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                                                     >
-                                                        Confirm password
+                                                        Confirm password *
                                                     </label>
                                                     <Input
                                                         id="confirmPassword"
