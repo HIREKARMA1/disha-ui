@@ -42,6 +42,8 @@ export interface BulkWhatsAppSendRequest {
     category?: BulkWhatsAppCategory
     status?: BulkWhatsAppStatusFilter
     campaign_name: string
+    template_name: string
+    template_params: string[]
     message?: string
     recipients: BulkWhatsAppSendRecipient[]
 }
@@ -107,9 +109,24 @@ export interface BulkWhatsAppStatistics {
     success_rate: number
 }
 
+export interface BulkWhatsAppTemplateParam {
+    key: string
+    label: string
+    source: 'admin' | 'recipient_name' | string
+}
+
+export interface BulkWhatsAppTemplate {
+    name: string
+    language: string
+    label: string
+    body: string
+    params: BulkWhatsAppTemplateParam[]
+}
+
 export interface BulkWhatsAppConfig {
     configured: boolean
     missing_keys: string[]
+    templates: BulkWhatsAppTemplate[]
     template_name: string
     template_language: string
     template_params: string[]

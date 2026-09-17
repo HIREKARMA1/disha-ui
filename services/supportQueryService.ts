@@ -47,6 +47,14 @@ export class SupportQueryService {
     return rows
   }
 
+  async get(queryNumber: number): Promise<SupportQuery> {
+    ensureAuth()
+    const response = await apiClient.client.get<SupportQuery>(
+      `/admin/support-queries/${queryNumber}`
+    )
+    return response.data
+  }
+
   async updateStatus(queryNumber: number, status: SupportQueryStatus): Promise<SupportQuery> {
     ensureAuth()
     const response = await apiClient.client.patch<SupportQuery>(

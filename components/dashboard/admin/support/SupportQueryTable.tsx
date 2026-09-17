@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import { Headphones, Phone } from 'lucide-react'
 import { SupportPaymentDecision, SupportQuery, SupportQueryStatus } from '@/types/supportQuery'
 
@@ -134,6 +135,9 @@ export function SupportQueryTable({
                 Payment
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Attachment
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Created
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -144,9 +148,14 @@ export function SupportQueryTable({
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {queries.map((row) => {
               const busy = updatingQueryNumber === row.query_number
-              const showPaymentActions =
-                row.enquiry_type === 'batch_enroll' &&
-                PAYMENT_ACTIONABLE.has(String(row.payment_status || ''))
+              const isBatchEnroll = row.enquiry_type === 'batch_enroll'
+              const paymentAwaitingAction = PAYMENT_ACTIONABLE.has(String(row.payment_status || ''))
+              const showStatusDropdown = !isBatchEnroll
+              const showApprovePayment = isBatchEnroll && paymentAwaitingAction
+              const showRejectPayment = isBatchEnroll && paymentAwaitingAction
+              const hasAttachment =
+                isBatchEnroll &&
+                Boolean(row.payment_screenshot_url || row.resume_url)
               return (
                 <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.03]">
                   <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
@@ -179,48 +188,62 @@ export function SupportQueryTable({
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap capitalize">
                     {paymentLabel(row.payment_status)}
                   </td>
+                  <td className="px-4 py-3 text-sm whitespace-nowrap">
+                    {hasAttachment ? (
+                      <Link
+                        href={`/dashboard/admin/support/${row.query_number}/attachments`}
+                        className="inline-flex h-8 items-center px-3 rounded-md bg-primary-600 text-white text-xs font-medium hover:bg-primary-700"
+                      >
+                        View
+                      </Link>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                     {formatDate(row.created_at)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex flex-col gap-2 min-w-[160px]">
-                      <select
-                        aria-label={`Update status for query ${row.query_number}`}
-                        value={row.status}
-                        disabled={busy}
-                        onChange={(e) => {
-                          const next = e.target.value as SupportQueryStatus
-                          if (next !== row.status) {
-                            onStatusChange(row.query_number, next)
-                          }
-                        }}
-                        className="h-9 min-w-[140px] px-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white disabled:opacity-60"
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      {showPaymentActions && (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => onPaymentDecision(row.query_number, 'approved')}
-                            className="h-8 px-2 rounded-md bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-60"
-                          >
-                            Approve payment
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => onPaymentDecision(row.query_number, 'rejected')}
-                            className="h-8 px-2 rounded-md bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-60"
-                          >
-                            Reject payment
-                          </button>
-                        </div>
+                      {showStatusDropdown && (
+                        <select
+                          aria-label={`Update status for query ${row.query_number}`}
+                          value={row.status}
+                          disabled={busy}
+                          onChange={(e) => {
+                            const next = e.target.value as SupportQueryStatus
+                            if (next !== row.status) {
+                              onStatusChange(row.query_number, next)
+                            }
+                          }}
+                          className="h-9 min-w-[140px] px-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white disabled:opacity-60"
+                        >
+                          {STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {showApprovePayment && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => onPaymentDecision(row.query_number, 'approved')}
+                          className="h-9 px-3 rounded-md bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-60 whitespace-nowrap"
+                        >
+                          Approve payment
+                        </button>
+                      )}
+                      {showRejectPayment && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => onPaymentDecision(row.query_number, 'rejected')}
+                          className="h-9 px-3 rounded-md bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-60 whitespace-nowrap"
+                        >
+                          Reject payment
+                        </button>
                       )}
                     </div>
                   </td>

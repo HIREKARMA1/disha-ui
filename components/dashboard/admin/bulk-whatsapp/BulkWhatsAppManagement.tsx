@@ -35,6 +35,7 @@ import {
     BulkWhatsAppLog,
     BulkWhatsAppStatistics,
     BulkWhatsAppStatusFilter,
+    BulkWhatsAppTemplate,
     ManagedWhatsAppRecipient,
 } from '@/types/bulkWhatsApp'
 import { AdminUserListItem } from '@/types/userManagement'
@@ -48,27 +49,38 @@ function isLikelyPhone(phone: string) {
     return digits.length >= 10 && digits.length <= 15
 }
 
-function renderTemplatePreview(
+function findSelectedTemplate(
     config: BulkWhatsAppConfig | null,
-    recipient?: Pick<
-        ManagedWhatsAppRecipient,
-        'name' | 'email' | 'phone' | 'college' | 'branch' | 'company'
-    > | null
+    templateName: string
+): BulkWhatsAppTemplate | null {
+    return config?.templates?.find((item) => item.name === templateName) || null
+}
+
+function resolvePreviewBody(
+    template: BulkWhatsAppTemplate | null,
+    adminValues: Record<string, string>,
+    recipientName?: string | null
 ) {
-    const name = config?.template_name || '(template not configured)'
-    const values: Record<string, string> = {
-        name: recipient?.name || '',
-        email: recipient?.email || '',
-        phone: recipient?.phone || '',
-        college: recipient?.college || '',
-        branch: recipient?.branch || '',
-        company: recipient?.company || '',
-    }
-    const parts = [`template:${name}`]
-    ;(config?.template_params || []).forEach((key, index) => {
-        parts.push(`{{${index + 1}}}=${key}:${values[key] || ''}`)
+    if (!template) return ''
+    let text = template.body
+    template.params.forEach((param, index) => {
+        const value =
+            param.source === 'recipient_name'
+                ? (recipientName || '').trim() || 'there'
+                : (adminValues[param.key] || '').trim()
+        text = text.replaceAll(`{{${index + 1}}}`, value || `{{${index + 1}}}`)
     })
-    return parts.join(' | ')
+    return text
+}
+
+function buildAdminParamList(
+    template: BulkWhatsAppTemplate | null,
+    adminValues: Record<string, string>
+) {
+    if (!template) return []
+    return template.params
+        .filter((param) => param.source === 'admin')
+        .map((param) => (adminValues[param.key] || '').trim())
 }
 
 export function BulkWhatsAppManagement() {
@@ -79,6 +91,8 @@ export function BulkWhatsAppManagement() {
     const [manualName, setManualName] = useState('')
     const [importedCount, setImportedCount] = useState(0)
     const [campaignName, setCampaignName] = useState('')
+    const [selectedTemplateName, setSelectedTemplateName] = useState('')
+    const [adminParamValues, setAdminParamValues] = useState<Record<string, string>>({})
     const [isLoadingRecipients, setIsLoadingRecipients] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const [isSending, setIsSending] = useState(false)
@@ -104,7 +118,36 @@ export function BulkWhatsAppManagement() {
 
     const totalRecipients = recipients.length
     const previewRecipient = recipients[0] || null
-    const previewMessage = renderTemplatePreview(campaignConfig, previewRecipient)
+    const selectedTemplate = useMemo(
+        () => findSelectedTemplate(campaignConfig, selectedTemplateName),
+        [campaignConfig, selectedTemplateName]
+    )
+    const previewMessage = useMemo(
+        () => resolvePreviewBody(selectedTemplate, adminParamValues, previewRecipient?.name),
+        [selectedTemplate, adminParamValues, previewRecipient?.name]
+    )
+
+    const syncAdminParamsForTemplate = useCallback(
+        (
+            template: BulkWhatsAppTemplate | null | undefined,
+            previous: Record<string, string> = {}
+        ) => {
+            const next: Record<string, string> = {}
+            template?.params
+                .filter((param) => param.source === 'admin')
+                .forEach((param) => {
+                    next[param.key] = previous[param.key] || ''
+                })
+            return next
+        },
+        []
+    )
+
+    const handleTemplateChange = (templateName: string) => {
+        setSelectedTemplateName(templateName)
+        const template = findSelectedTemplate(campaignConfig, templateName)
+        setAdminParamValues(syncAdminParamsForTemplate(template))
+    }
 
     const mergeRecipients = useCallback((
         incoming: ManagedWhatsAppRecipient[],
@@ -173,11 +216,24 @@ export function BulkWhatsAppManagement() {
     const fetchConfig = useCallback(async () => {
         try {
             const result = await bulkWhatsAppService.getConfig()
-            setCampaignConfig(result)
+            const templates = result.templates || []
+            setCampaignConfig({ ...result, templates })
+            setSelectedTemplateName((current) => {
+                if (current && templates.some((item) => item.name === current)) {
+                    return current
+                }
+                return templates[0]?.name || ''
+            })
         } catch (error) {
             console.error('Failed to fetch bulk WhatsApp config:', error)
         }
     }, [])
+
+    useEffect(() => {
+        if (!campaignConfig) return
+        const template = findSelectedTemplate(campaignConfig, selectedTemplateName)
+        setAdminParamValues((previous) => syncAdminParamsForTemplate(template, previous))
+    }, [campaignConfig, selectedTemplateName, syncAdminParamsForTemplate])
 
     useEffect(() => {
         fetchRecipients()
@@ -318,8 +374,25 @@ export function BulkWhatsAppManagement() {
             toast.error(
                 campaignConfig?.missing_keys?.length
                     ? `Serri is not configured: ${campaignConfig.missing_keys.join(', ')}`
-                    : 'Serri WhatsApp template is not configured'
+                    : 'Serri WhatsApp is not configured'
             )
+            return
+        }
+
+        const templateName = (selectedTemplateName || selectedTemplate?.name || '').trim()
+        const template =
+            selectedTemplate || findSelectedTemplate(campaignConfig, templateName)
+        if (!templateName || !template) {
+            toast.error('Please select an approved WhatsApp template')
+            return
+        }
+
+        const adminParams = buildAdminParamList(template, adminParamValues)
+        const missing = template.params
+            .filter((param) => param.source === 'admin')
+            .find((param, index) => !adminParams[index])
+        if (missing) {
+            toast.error(`Please fill in "${missing.label}"`)
             return
         }
         if (totalRecipients === 0) {
@@ -336,7 +409,9 @@ export function BulkWhatsAppManagement() {
                 category,
                 status: statusFilter,
                 campaign_name: campaignName.trim(),
-                message: previewMessage,
+                template_name: templateName,
+                template_params: adminParams,
+                message: resolvePreviewBody(template, adminParamValues, previewRecipient?.name),
                 recipients: recipients.map((recipient) => ({
                     phone: recipient.phone,
                     name: recipient.name,
@@ -350,6 +425,7 @@ export function BulkWhatsAppManagement() {
             if (result.success) {
                 toast.success(result.message, { id: toastId })
                 setCampaignName('')
+                handleTemplateChange(templateName)
                 setRecipients([])
                 setImportedCount(0)
                 setShowConfirm(false)
@@ -683,7 +759,9 @@ export function BulkWhatsAppManagement() {
                 <CardHeader>
                     <CardTitle>WhatsApp Campaign Template</CardTitle>
                     <CardDescription>
-                        Campaigns send the approved Serri WhatsApp template. Recipient fields fill template parameters.
+                        Use the <strong>Approved template</strong> dropdown and pick the exact Serri
+                        template name (e.g. <code>disha_job_alert_copy</code>,{" "}
+                        <code>disha_event_alert</code>). Then fill only the dynamic fields.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -702,24 +780,88 @@ export function BulkWhatsAppManagement() {
                             onChange={(event) => setCampaignName(event.target.value)}
                         />
                     </div>
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2 text-sm">
-                        <div>
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">Template:</span>{' '}
-                            {campaignConfig?.template_name || '—'}
-                        </div>
-                        <div>
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">Language:</span>{' '}
-                            {campaignConfig?.template_language || 'en'}
-                        </div>
-                        <div>
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">Parameters:</span>{' '}
-                            {(campaignConfig?.template_params || []).length === 0
-                                ? 'none'
-                                : campaignConfig?.template_params
-                                      .map((key, index) => `{{${index + 1}}} = ${key}`)
-                                      .join(', ')}
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="bulk-whatsapp-template">
+                            Approved template (template name) *
+                        </Label>
+                        <select
+                            id="bulk-whatsapp-template"
+                            value={selectedTemplateName}
+                            onChange={(event) => handleTemplateChange(event.target.value)}
+                            className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                            <option value="" disabled>
+                                Select a template
+                            </option>
+                            {(campaignConfig?.templates || []).map((template) => (
+                                <option key={template.name} value={template.name}>
+                                    {template.name}
+                                </option>
+                            ))}
+                        </select>
+                        {selectedTemplateName ? (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Selected template name sent to Serri:{' '}
+                                <code className="font-mono">{selectedTemplateName}</code>
+                            </p>
+                        ) : (
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                Choose a template here before sending.
+                            </p>
+                        )}
                     </div>
+                    {selectedTemplate ? (
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 text-sm">
+                            <div>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">Template ID:</span>{' '}
+                                {selectedTemplate.name}
+                            </div>
+                            <div>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">Language:</span>{' '}
+                                {selectedTemplate.language}
+                            </div>
+                            <div>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                                    Approved message (fixed):
+                                </span>
+                                <pre className="whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900/40 p-3 text-xs text-gray-700 dark:text-gray-300">
+                                    {selectedTemplate.body}
+                                </pre>
+                            </div>
+                            <div className="space-y-3 pt-1">
+                                <p className="font-semibold text-gray-700 dark:text-gray-300">
+                                    Dynamic fields
+                                </p>
+                                {selectedTemplate.params.map((param, index) =>
+                                    param.source === 'recipient_name' ? (
+                                        <div
+                                            key={param.key}
+                                            className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
+                                        >
+                                            {`{{${index + 1}}} ${param.label}`}: uses each recipient&apos;s name
+                                        </div>
+                                    ) : (
+                                        <div key={param.key} className="space-y-1.5">
+                                            <Label htmlFor={`bulk-wa-param-${param.key}`}>
+                                                {`{{${index + 1}}} ${param.label}`}
+                                            </Label>
+                                            <Input
+                                                id={`bulk-wa-param-${param.key}`}
+                                                value={adminParamValues[param.key] || ''}
+                                                onChange={(event) =>
+                                                    setAdminParamValues((current) => ({
+                                                        ...current,
+                                                        [param.key]: event.target.value,
+                                                    }))
+                                                }
+                                                placeholder={`Enter ${param.label.toLowerCase()}`}
+                                            />
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    ) : null}
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Button type="button" variant="outline" onClick={() => setShowPreview(true)}>
                             <Eye className="h-4 w-4 mr-2" />
@@ -733,7 +875,23 @@ export function BulkWhatsAppManagement() {
                                     return
                                 }
                                 if (!campaignConfig?.configured) {
-                                    toast.error('Serri WhatsApp template is not configured')
+                                    toast.error('Serri WhatsApp is not configured')
+                                    return
+                                }
+                                const templateName = (selectedTemplateName || '').trim()
+                                const template =
+                                    selectedTemplate ||
+                                    findSelectedTemplate(campaignConfig, templateName)
+                                if (!templateName || !template) {
+                                    toast.error('Please select an approved WhatsApp template')
+                                    return
+                                }
+                                const adminParams = buildAdminParamList(template, adminParamValues)
+                                const missing = template.params
+                                    .filter((param) => param.source === 'admin')
+                                    .find((param, index) => !adminParams[index])
+                                if (missing) {
+                                    toast.error(`Please fill in "${missing.label}"`)
                                     return
                                 }
                                 if (totalRecipients === 0) {
@@ -819,7 +977,7 @@ export function BulkWhatsAppManagement() {
                     </div>
                     <div>
                         <span className="font-semibold text-gray-700 dark:text-gray-300 block mb-2">
-                            Message (approved template with recipient parameters):
+                            Message preview (approved template with your values):
                         </span>
                         <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 font-sans text-sm">
                             {previewMessage || '—'}
