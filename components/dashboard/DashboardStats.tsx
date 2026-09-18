@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { dashboardService, type DashboardStats } from '@/services/dashboardService'
 import { StudentStatCard } from '@/components/student/ui/StudentStatCard'
+import { buildAuthPath } from '@/lib/authLinks'
 
 interface DashboardStatsProps {
   className?: string
@@ -41,7 +42,7 @@ export function DashboardStats({ className = '' }: DashboardStatsProps) {
           error.message?.includes('not authenticated') ||
           error.message?.includes('Authentication failed')
         ) {
-          router.push('/auth/login')
+          router.push(buildAuthPath('/auth/login'))
           return
         }
         setError(error.message || 'Unable to fetch data. Please try again later.')

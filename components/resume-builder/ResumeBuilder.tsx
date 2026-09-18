@@ -19,6 +19,7 @@ if (typeof window !== 'undefined') {
 }
 import toast from 'react-hot-toast'
 import { imageUrlToDataUrl, inlineImagesForPdf } from '@/lib/resumePdfImages'
+import { buildAuthPath } from '@/lib/authLinks'
 
 interface ResumeBuilderProps {
     templateId: string | null
@@ -568,13 +569,13 @@ export function ResumeBuilder({ templateId, resumeId }: ResumeBuilderProps) {
                         </p>
                         <div className="space-y-3">
                             <button
-                                onClick={() => window.location.href = '/auth/login'}
+                                onClick={() => window.location.href = buildAuthPath('/auth/login')}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                             >
                                 Log In
                             </button>
                             <button
-                                onClick={() => window.location.href = '/auth/register'}
+                                onClick={() => window.location.href = buildAuthPath('/auth/register')}
                                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
                             >
                                 Create Account

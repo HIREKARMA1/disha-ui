@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { AssessmentExam } from '@/components/assessments/AssessmentExam';
 import { Loader2 } from 'lucide-react';
+import { buildAuthPath } from '@/lib/authLinks';
 
 export default function AssessmentExamTakePage() {
   const params = useParams();
@@ -18,9 +19,10 @@ export default function AssessmentExamTakePage() {
     if (isLoading) return;
     if (!isAuthenticated || user?.user_type !== 'student') {
       router.replace(
-        `/auth/login?type=student&redirect=${encodeURIComponent(
-          `/assessments/exam/${assessmentId}/take?attempt=${attemptId}`
-        )}`
+        buildAuthPath('/auth/login', {
+          type: 'student',
+          redirect: `/assessments/exam/${assessmentId}/take?attempt=${attemptId}`,
+        })
       );
     }
   }, [isLoading, isAuthenticated, user, router, assessmentId, attemptId]);

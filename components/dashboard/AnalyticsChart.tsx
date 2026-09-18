@@ -7,6 +7,7 @@ import { AlertCircle, Briefcase } from 'lucide-react'
 import { dashboardService, type DashboardStats } from '@/services/dashboardService'
 import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
 import { cn } from '@/lib/utils'
+import { buildAuthPath } from '@/lib/authLinks'
 
 interface AnalyticsChartProps {
   className?: string
@@ -46,7 +47,7 @@ export function AnalyticsChart({ className = '' }: AnalyticsChartProps) {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unable to fetch analytics data.'
         if (message.includes('not authenticated') || message.includes('Authentication failed')) {
-          router.push('/auth/login')
+          router.push(buildAuthPath('/auth/login'))
           return
         }
         setError(message)

@@ -7,6 +7,7 @@ import { LoadingProvider } from '@/contexts/LoadingContext'
 import { AuthLoginModalProvider } from '@/contexts/AuthLoginModalContext'
 import { Toaster } from 'react-hot-toast'
 import { WhatsAppFloatingButton } from '@/components/ui/WhatsAppFloatingButton'
+import { ProfileCompletionModalHost } from '@/components/ui/ProfileCompletionModalHost'
 import { config } from '@/lib/config'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -24,7 +25,11 @@ const sora = Sora({
 export const metadata: Metadata = {
     title: 'Hire Karma - It all depends upon your karma',
     description: 'Connect with opportunities that match your skills and aspirations',
-
+    icons: {
+        icon: [{ url: '/favicon.png', type: 'image/png' }],
+        apple: [{ url: '/favicon.png', type: 'image/png' }],
+        shortcut: '/favicon.png',
+    },
 }
 
 export const viewport: Viewport = {
@@ -55,6 +60,7 @@ export default function RootLayout({
                         <AuthLoginModalProvider>
                           {children}
                           <WhatsAppFloatingButton />
+                          <ProfileCompletionModalHost />
                           <Toaster
                             position="top-right"
                             toastOptions={{

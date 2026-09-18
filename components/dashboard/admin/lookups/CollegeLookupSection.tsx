@@ -13,7 +13,7 @@ import { CollegeLookupTable } from './CollegeLookupTable'
 import { CollegeLookupFormModal, type CollegeFormMode } from './CollegeLookupFormModal'
 
 const PAGE_SIZE = 25
-const DEFAULT_SORT: CollegeListSort = 'students_desc'
+const DEFAULT_SORT: CollegeListSort = 'name_asc'
 
 export function CollegeLookupSection() {
     const [selectedInstituteId, setSelectedInstituteId] = useState<string | undefined>()
@@ -167,6 +167,7 @@ export function CollegeLookupSection() {
                 onDelete={setDeleteTarget}
                 onPrevPage={() => setSkip((s) => Math.max(0, s - PAGE_SIZE))}
                 onNextPage={() => setSkip((s) => s + PAGE_SIZE)}
+                onPageChange={(page) => setSkip((page - 1) * PAGE_SIZE)}
             />
 
             <CollegeLookupFormModal

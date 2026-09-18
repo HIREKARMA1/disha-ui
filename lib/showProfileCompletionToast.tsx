@@ -1,23 +1,13 @@
-"use client"
+'use client'
 
-import Link from 'next/link'
-import toast from 'react-hot-toast'
-import { PROFILE_COMPLETION_MESSAGE, STUDENT_PROFILE_PATH } from '@/lib/profileCompletion'
+import { showProfileCompletionDialog } from '@/lib/profileCompletionDialogStore'
 
+/**
+ * Opens the profile-completion dialog (no timeout).
+ * Kept as `showProfileCompletionToast` so existing apply call sites keep working.
+ */
 export function showProfileCompletionToast() {
-    toast.error(
-        (t) => (
-            <span>
-                {PROFILE_COMPLETION_MESSAGE}{' '}
-                <Link
-                    href={STUDENT_PROFILE_PATH}
-                    className="font-semibold underline"
-                    onClick={() => toast.dismiss(t.id)}
-                >
-                    Update Profile
-                </Link>
-            </span>
-        ),
-        { duration: 6000 }
-    )
+  showProfileCompletionDialog()
 }
+
+export { showProfileCompletionDialog }

@@ -39,12 +39,18 @@ import { buildLocationLabel } from '@/lib/googlePlacesUtils'
 import { useBranches, useDegrees, useUniversities, useIndustries } from '@/hooks/useLookup'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { LookupSelect } from '@/components/ui/lookup-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { GraduationYearSelect } from '@/components/ui/GraduationYearSelect'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
 import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { ProfileSummaryCard } from '@/components/student/ui/ProfileSummaryCard'
 import { StudentChip } from '@/components/student/ui/StudentChip'
+import { setProfileFormEditing } from '@/lib/profileEditingUi'
+import {
+    registerSectionSaveRunner,
+    runSectionSave,
+    type SectionSaveResult,
+} from '@/lib/profileSectionSaveRegistry'
 
 interface ProfileSection {
     id: string
@@ -64,6 +70,8 @@ export function StudentProfile() {
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const [activeTab, setActiveTab] = useState('basic')
+    /** Mobile (< md): Academics content is merged under Basic Info and the Academics tab is hidden. */
+    const [isMobile, setIsMobile] = useState(false)
     const [imageModal, setImageModal] = useState<{ isOpen: boolean; imageUrl: string; altText: string }>({
         isOpen: false,
         imageUrl: '',
@@ -71,6 +79,23 @@ export function StudentProfile() {
     })
     const formRef = useRef<HTMLDivElement>(null)
     const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const mq = window.matchMedia('(max-width: 767px)')
+        const sync = () => setIsMobile(mq.matches)
+        sync()
+        mq.addEventListener('change', sync)
+        return () => mq.removeEventListener('change', sync)
+    }, [])
+
+    // Mobile: Academics lives under Basic Info — leave that tab if we shrink to mobile
+    useEffect(() => {
+        if (isMobile && activeTab === 'academic') {
+            setActiveTab('basic')
+            if (editing === 'academic') setEditing('basic')
+        }
+    }, [isMobile, activeTab, editing])
 
     // Mobile: keep the active profile tab fully visible / centered in the horizontal nav
     useEffect(() => {
@@ -141,6 +166,7 @@ export function StudentProfile() {
         { id: 'documents', label: 'Documents', icon: Shield },
         { id: 'social', label: 'Social Links', icon: Globe }
     ]
+    const visibleTabs = isMobile ? tabs.filter((tab) => tab.id !== 'academic') : tabs
 
     useEffect(() => {
         loadProfile()
@@ -184,7 +210,11 @@ export function StudentProfile() {
         }
     }
 
-    const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
+    const handleSave = async (
+        sectionId: string,
+        formData: ProfileUpdateData,
+        options?: { closeEditing?: boolean }
+    ) => {
         try {
             setSaving(true)
             setError(null)
@@ -205,7 +235,9 @@ export function StudentProfile() {
             const completionData = await profileService.getProfileCompletion()
             setProfileCompletion(completionData)
 
-            setEditing(null)
+            if (options?.closeEditing !== false) {
+                setEditing(null)
+            }
 
             // Only show success toast if there were actual changes
             // The form validation already ensures we only get here if there are changes
@@ -226,6 +258,7 @@ export function StudentProfile() {
             } else {
                 toast.error(`Failed to save: ${error.message}`)
             }
+            throw error
         } finally {
             setSaving(false)
         }
@@ -360,7 +393,8 @@ export function StudentProfile() {
                         </div>
 
                         <div className="space-y-3 sm:space-y-4 relative">
-                            {/* Sticky Edit Profile Button */}
+                            {/* Sticky Edit Profile Button — hide while already editing */}
+                            {!editing && (
                             <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
                                 <div className="sticky top-[80px] pointer-events-auto">
                                     <Button
@@ -379,6 +413,7 @@ export function StudentProfile() {
                                     </Button>
                                 </div>
                             </div>
+                            )}
 
                             <ProfileSummaryCard
                                 profile={profile}
@@ -406,10 +441,13 @@ export function StudentProfile() {
                                     <div className="mb-3 sm:mb-4">
                                         <div className="border-b border-gray-200 dark:border-white/10 overflow-x-auto scrollbar-none">
                                             <nav className="flex gap-1 sm:gap-4 min-w-max">
-                                                {tabs.map((tab) => (
+                                                {visibleTabs.map((tab) => (
                                                     <button
                                                         key={tab.id}
                                                         type="button"
+                                                        ref={(el) => {
+                                                            tabButtonRefs.current[tab.id] = el
+                                                        }}
                                                         onClick={() => {
                                                             setActiveTab(tab.id)
                                                             if (editing) {
@@ -436,6 +474,8 @@ export function StudentProfile() {
 
                                     {/* Tab Content */}
                                     <div ref={formRef} className="min-h-0 lg:min-h-[480px] scroll-mt-20">
+                                        {(activeTab === 'basic' || (activeTab === 'academic' && !isMobile)) && (
+                                        <div className={cn(activeTab === 'basic' && isMobile && 'space-y-4')}>
                                         {activeTab === 'basic' && (
                                             <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                                 <div className="flex items-center justify-between mb-6">
@@ -457,6 +497,7 @@ export function StudentProfile() {
                                                         onSave={(formData) => handleSave('basic', formData)}
                                                         saving={saving}
                                                         onCancel={() => setEditing(null)}
+                                                        showMobileActions={!(isMobile && activeTab === 'basic')}
                                                     />
                                                 ) : (
                                                     <div className="space-y-4">
@@ -549,7 +590,7 @@ export function StudentProfile() {
                                             </div>
                                         )}
 
-                                        {activeTab === 'academic' && (
+                                        {((activeTab === 'basic' && isMobile) || activeTab === 'academic') && (
                                             <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-4 sm:p-5 lg:p-6 shadow-sm">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <div className="flex items-center space-x-3">
@@ -563,7 +604,7 @@ export function StudentProfile() {
                                                     </div>
                                                 </div>
 
-                                                {editing === 'academic' ? (
+                                                {editing === 'academic' || (isMobile && activeTab === 'basic' && editing === 'basic') ? (
                                                     <ProfileSectionForm
                                                         section={{ id: 'academic', title: 'Academic Information', icon: GraduationCap, fields: ['institution', 'degree', 'branch', 'graduation_year', 'btech_cgpa', 'twelfth_institution', 'twelfth_stream', 'twelfth_year', 'twelfth_grade_percentage', 'tenth_institution', 'tenth_stream', 'tenth_year', 'tenth_grade_percentage'], completed: false }}
                                                         profile={profile}
@@ -647,6 +688,8 @@ export function StudentProfile() {
                                                     </div>
                                                 )}
                                             </div>
+                                        )}
+                                        </div>
                                         )}
 
                                         {activeTab === 'skills' && (
@@ -1190,13 +1233,23 @@ interface ProfileSectionFormProps {
         completed: boolean
     }
     profile: StudentProfile
-    onSave: (formData: any) => void
+    onSave: (formData: any, options?: { closeEditing?: boolean }) => void | Promise<void>
     saving: boolean
     onCancel: () => void
     onProfilePictureUploaded?: () => void | Promise<void>
+    /** Mobile sticky Cancel/Save bar. Default true. Set false when another form owns the bar. */
+    showMobileActions?: boolean
 }
 
-function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProfilePictureUploaded }: ProfileSectionFormProps) {
+function ProfileSectionForm({
+    section,
+    profile,
+    onSave,
+    saving,
+    onCancel,
+    onProfilePictureUploaded,
+    showMobileActions = true,
+}: ProfileSectionFormProps) {
     const { getToken } = useAuth()
     const [formData, setFormData] = useState<any>({})
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -1214,6 +1267,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
+
+    // Signal sticky action bar / hide WhatsApp while this form owns the mobile actions
+    useEffect(() => {
+        if (!mounted || !isMobile || !showMobileActions) return
+        setProfileFormEditing(true)
+        return () => setProfileFormEditing(false)
+    }, [mounted, isMobile, showMobileActions])
+
+    const formId = `profile-section-form-${section.id}`
 
     const getFieldErrors = () => {
         const errors: Record<string, string> = {}
@@ -1309,7 +1371,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
 
     useEffect(() => {
         if (profile && section) {
-            // Initialize form data with current profile values
+            // Initialize form data with current profile values (once per mounted section)
             const initialData: any = {}
             section.fields.forEach(field => {
                 initialData[field] = profile[field as keyof StudentProfile] || ''
@@ -1327,11 +1389,15 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
 
             setFormData(initialData)
         }
-    }, [profile, section])
+        // Only re-seed when the section form mounts / section changes — not on every
+        // profile refresh (e.g. Basic save while Academic is also open on mobile).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [section.id])
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-
+    const runSave = async (options?: {
+        closeEditing?: boolean
+        skipCancelWhenUnchanged?: boolean
+    }): Promise<SectionSaveResult> => {
         // Clean up form data - convert empty strings to null for numeric fields
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
@@ -1348,6 +1414,20 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         })
 
         // Institution locked after registration — exclude from change detection
+        const valuesEqual = (current: unknown, original: unknown) => {
+            if (current === original) return true
+            if (current == null && (original === '' || original == null)) return true
+            if (original == null && (current === '' || current == null)) return true
+            // graduation_year / numerics may be number vs string after form edits
+            if (
+                (typeof current === 'number' || typeof original === 'number') &&
+                String(current) === String(original)
+            ) {
+                return true
+            }
+            return false
+        }
+
         const hasChanges = Object.keys(cleanedFormData).some(key => {
             if (key === 'email') return false // Skip email field
             if (
@@ -1358,12 +1438,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             }
             const currentValue = cleanedFormData[key]
             const originalValue = profile[key as keyof StudentProfile]
-            return currentValue !== originalValue
+            return !valuesEqual(currentValue, originalValue)
         })
 
         if (!hasChanges) {
-            onCancel() // Just close the form
-            return
+            if (!options?.skipCancelWhenUnchanged) {
+                onCancel() // Just close the form
+            }
+            return 'skipped'
         }
 
         // Field-specific validation
@@ -1567,7 +1649,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             } else {
                 toast.error('Please fix the validation errors before saving')
             }
-            return
+            return 'invalid'
         }
 
         if (section.id === 'academic') {
@@ -1576,15 +1658,40 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
             delete cleanedFormData.university_id
         }
 
-
         try {
-            // Call onSave and handle the result
-            onSave(cleanedFormData)
-
-            // The onSave function should handle success/error toasts
-            // We'll update the handleSave function to properly handle toasts
-        } catch (error) {
+            await onSave(cleanedFormData, {
+                closeEditing: options?.closeEditing !== false,
+            })
+            return 'saved'
+        } catch {
             toast.error('Failed to save changes')
+            return 'invalid'
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        void runSave({ closeEditing: true })
+    }
+
+    // Allow another form (mobile Academic Save) to trigger this section's save
+    useEffect(() => {
+        return registerSectionSaveRunner(section.id, () =>
+            runSave({ closeEditing: false, skipCancelWhenUnchanged: true })
+        )
+        // formData/profile/errors drive save payload — re-register when they change
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [section.id, formData, profile, locationError, errors])
+
+    const handleMobileSaveAll = async () => {
+        // On mobile merged Basic+Academic, Save lives on Academic — persist Basic first
+        if (section.id === 'academic') {
+            const basicResult = await runSectionSave('basic')
+            if (basicResult === 'invalid') return
+        }
+        const result = await runSave({ closeEditing: true, skipCancelWhenUnchanged: true })
+        if (result === 'skipped') {
+            onCancel()
         }
     }
 
@@ -1880,26 +1987,26 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
         if (field === 'graduation_year') {
             const currentYear = new Date().getFullYear()
             const yearOptions = Array.from({ length: 21 }, (_, i) => currentYear + 10 - i)
-            const selectedYear = value != null && value !== '' ? String(value) : undefined
+            const selectedYear = value != null && value !== '' ? String(value) : ''
+            const selectedNum = selectedYear ? Number(selectedYear) : NaN
+            if (!Number.isNaN(selectedNum) && !yearOptions.includes(selectedNum)) {
+                yearOptions.push(selectedNum)
+                yearOptions.sort((a, b) => b - a)
+            }
 
             return (
-                <Select
+                <GraduationYearSelect
                     value={selectedYear}
-                    onValueChange={(year) =>
-                        setFormData({ ...formData, graduation_year: Number(year) })
+                    years={yearOptions}
+                    required
+                    placeholder="Select graduation year"
+                    onChange={(year) =>
+                        setFormData({
+                            ...formData,
+                            graduation_year: year === '' ? null : Number(year),
+                        })
                     }
-                >
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select graduation year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {yearOptions.map((year) => (
-                            <SelectItem key={year} value={String(year)}>
-                                {year}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                />
             )
         }
 
@@ -2101,7 +2208,14 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
     }
 
     return (
-        <form id="profile-section-form" onSubmit={handleSubmit} className="space-y-6">
+        <form
+            id={formId}
+            onSubmit={handleSubmit}
+            className={cn(
+                'space-y-6',
+                isMobile && showMobileActions && 'pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))]'
+            )}
+        >
             {/* Display upload errors */}
             {uploadError && (
                 <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
@@ -2303,29 +2417,37 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                 </div>
             )}
 
-            {/* Action buttons (static on desktop/laptop, sticky portal bar on mobile) */}
+            {/* Action buttons (static on desktop; full-width bar above bottom nav on mobile) */}
             {mounted && (
                 isMobile ? (
+                    showMobileActions &&
                     typeof document !== 'undefined' && createPortal(
-                        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center justify-center gap-3 p-2 bg-[#1a2030]/95 text-white backdrop-blur-lg border border-white/15 shadow-2xl rounded-2xl ring-1 ring-black/20 animate-in fade-in slide-in-from-bottom-3 duration-200">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onCancel}
-                                size="sm"
-                                className="h-9 px-4 text-xs font-semibold rounded-lg border-gray-600 bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                form="profile-section-form"
-                                disabled={saving || hasFieldErrors}
-                                size="sm"
-                                className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
-                            >
-                                {saving ? 'Saving...' : 'Save Changes'}
-                            </Button>
+                        <div
+                            className="fixed inset-x-0 z-[100] border-t border-gray-200/80 bg-white/95 px-3 py-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] backdrop-blur-md dark:border-white/10 dark:bg-[#0f1219]/95 dark:shadow-[0_-4px_20px_rgba(0,0,0,0.35)] animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            style={{
+                                bottom: 'calc(3.75rem + env(safe-area-inset-bottom, 0px))',
+                            }}
+                        >
+                            <div className="mx-auto flex max-w-lg items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={onCancel}
+                                    size="sm"
+                                    className="h-10 flex-1 rounded-xl border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-transparent dark:text-gray-200 dark:hover:bg-white/5 sm:text-sm"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => void handleMobileSaveAll()}
+                                    disabled={saving || hasFieldErrors}
+                                    size="sm"
+                                    className="h-10 flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-xs font-semibold text-white shadow-md hover:from-blue-500 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                                >
+                                    {saving ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                            </div>
                         </div>,
                         document.body
                     )
@@ -2342,7 +2464,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel, onProf
                         </Button>
                         <Button
                             type="submit"
-                            form="profile-section-form"
+                            form={formId}
                             disabled={saving || hasFieldErrors}
                             size="sm"
                             className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"

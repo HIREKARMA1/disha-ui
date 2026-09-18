@@ -1,13 +1,15 @@
 "use client"
 
+import { useState, useCallback, type ReactElement, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Briefcase, Clock, Banknote, Users, Building, Eye, CheckCircle, Calendar, X, Bookmark } from 'lucide-react'
+import { MapPin, Clock, Users, Eye, CheckCircle, X, Bookmark, Share2 } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
+import { SalaryBadge, hasJobSalary } from '@/components/jobs/SalaryBadge'
+import { ShareJobModal } from '@/components/jobs/ShareJobModal'
 import { Tooltip } from '@/components/ui/tooltip'
-import type { ReactElement, ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useSavedJobs } from '@/hooks/useSavedJobs'
 
@@ -75,6 +77,8 @@ interface JobCardProps {
 
 export function JobCard({ job, onViewDescription, onApply, isApplying = false, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
     const { isSaved, toggle: toggleSaved } = useSavedJobs(job?.id)
+    const [showShareModal, setShowShareModal] = useState(false)
+    const closeShareModal = useCallback(() => setShowShareModal(false), [])
     // Safety check - ensure job object is valid
     if (!job || typeof job !== 'object') {
         console.error('Invalid job object:', job)
@@ -334,6 +338,18 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                                 onClick={(e) => {
                                     e.preventDefault()
                                     e.stopPropagation()
+                                    setShowShareModal(true)
+                                }}
+                                className="p-1.5 rounded-lg text-gray-400 transition-colors hover:bg-blue-500/10 hover:text-blue-500"
+                                aria-label="Share job"
+                            >
+                                <Share2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
                                     const saved = toggleSaved(job.id)
                                     toast.success(saved ? 'Job saved' : 'Removed from saved jobs')
                                 }}
@@ -351,17 +367,23 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                         </div>
                     </div>
 
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                        <span className="inline-flex items-center gap-1 min-w-0">
+                    <div className="mt-2 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        <span className="inline-flex min-w-0 flex-1 items-center gap-1">
                             <MapPin className="w-3.5 h-3.5 shrink-0 text-blue-400" />
                             <span className="truncate">
                                 {Array.isArray(job.location) ? job.location.join(', ') : (job.location || 'Location TBA')}
                             </span>
                         </span>
-                        <span className="inline-flex items-center gap-1">
-                            <Banknote className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-                            {formatSalaryRange(job.salary_min, job.salary_max)}
-                        </span>
+                        {hasJobSalary(job.salary_min, job.salary_max) ? (
+                            <SalaryBadge
+                                salaryMin={job.salary_min}
+                                salaryMax={job.salary_max}
+                            />
+                        ) : (
+                            <span className="shrink-0 text-gray-500 dark:text-gray-400">
+                                {formatSalaryRange(job.salary_min, job.salary_max)}
+                            </span>
+                        )}
                     </div>
 
                     <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
@@ -441,6 +463,12 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                     )}
                 </div>
             </div>
+
+            <ShareJobModal
+                isOpen={showShareModal}
+                onClose={closeShareModal}
+                job={job}
+            />
         </motion.div>
     )
 }

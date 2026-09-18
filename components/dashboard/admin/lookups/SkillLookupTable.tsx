@@ -22,6 +22,7 @@ interface SkillLookupTableProps {
     onDelete: (row: SkillRow) => void
     onPrevPage: () => void
     onNextPage: () => void
+    onPageChange: (page: number) => void
 }
 
 export function SkillLookupTable({
@@ -39,6 +40,7 @@ export function SkillLookupTable({
     onDelete,
     onPrevPage,
     onNextPage,
+    onPageChange,
 }: SkillLookupTableProps) {
     const label = entityLabel ?? (kind === 'technical' ? 'technical skills' : 'soft skills')
 
@@ -99,7 +101,14 @@ export function SkillLookupTable({
                     </tbody>
                 </table>
             </div>
-            <CollegeLookupPagination skip={skip} limit={limit} total={total} onPrev={onPrevPage} onNext={onNextPage} />
+            <CollegeLookupPagination
+                skip={skip}
+                limit={limit}
+                total={total}
+                onPrev={onPrevPage}
+                onNext={onNextPage}
+                onPageChange={onPageChange}
+            />
         </div>
     )
 }
