@@ -1,5 +1,18 @@
+const path = require("path");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ["nextjs-toploader"],
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "nextjs-toploader": path.join(
+        __dirname,
+        "node_modules/nextjs-toploader/dist/index.js"
+      ),
+    };
+    return config;
+  },
   images: {
     remotePatterns: [
       {
