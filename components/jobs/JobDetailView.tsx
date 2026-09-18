@@ -23,6 +23,9 @@ import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
+import { SalaryBadge, hasJobSalary } from '@/components/jobs/SalaryBadge'
+import { ShareJobModal } from '@/components/jobs/ShareJobModal'
+import { JobAdditionalInfo } from '@/components/jobs/JobAdditionalInfo'
 import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
 import { apiClient } from '@/lib/api'
 import { formatSalaryRange } from '@/lib/currency'
@@ -66,6 +69,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const autoApplyAttempted = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [showApplicationModal, setShowApplicationModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const closeShareModal = useCallback(() => setShowShareModal(false), [])
   const [isApplying, setIsApplying] = useState(false)
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
   const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
@@ -237,18 +242,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
   }
 
-  const handleShare = async () => {
-    const url = typeof window !== 'undefined' ? window.location.href : ''
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: job?.title, url })
-        return
-      }
-      await navigator.clipboard.writeText(url)
-      toast.success('Link copied')
-    } catch {
-      toast.error('Unable to share')
-    }
+  const handleShare = () => {
+    setShowShareModal(true)
   }
 
   const handleDownloadPDF = async () => {
@@ -363,7 +358,23 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           </div>
 
           <div className="grid gap-3 border-b border-gray-100 p-5 dark:border-white/10 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
-            <Meta icon={Banknote} label="Salary" value={formatSalaryRange(job.salary_min, job.salary_max)} />
+            <div className="flex items-start gap-2.5">
+              <div className="mt-0.5 rounded-lg bg-emerald-50 p-2 dark:bg-emerald-900/30">
+                <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500">Salary</p>
+                {hasJobSalary(job.salary_min, job.salary_max) ? (
+                  <div className="mt-1">
+                    <SalaryBadge salaryMin={job.salary_min} salaryMax={job.salary_max} />
+                  </div>
+                ) : (
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {formatSalaryRange(job.salary_min, job.salary_max)}
+                  </p>
+                )}
+              </div>
+            </div>
             <Meta
               icon={Briefcase}
               label="Experience"
@@ -467,6 +478,17 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               </Section>
             )}
 
+            <JobAdditionalInfo
+              locationLabel={locationLabel}
+              experienceMin={job.experience_min}
+              experienceMax={job.experience_max}
+              salaryMin={job.salary_min}
+              salaryMax={job.salary_max}
+              jobType={job.job_type}
+              modeOfWork={job.mode_of_work}
+              remoteWork={job.remote_work}
+            />
+
             {related.length > 0 && (
               <Section title="Related Jobs">
                 <div className="space-y-3">
@@ -569,6 +591,12 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           onSubmit={handleApplySubmit}
         />
       )}
+
+      <ShareJobModal
+        isOpen={showShareModal}
+        onClose={closeShareModal}
+        job={job}
+      />
     </div>
   )
 }
