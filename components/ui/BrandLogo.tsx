@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
@@ -9,21 +8,23 @@ interface BrandLogoProps {
   /** Kept for API compatibility with prior Image usage */
   priority?: boolean
   className?: string
+  /** Kept for API compatibility; sizing uses `compact` instead */
   imageClassName?: string
-  /** Slightly shorter wordmark for tight mobile headers */
+  /** Slightly tighter mark for mobile headers */
   compact?: boolean
 }
 
-const LOGO_SRC = '/images/disha-logo.png'
-const LOGO_WIDTH = 1567
-const LOGO_HEIGHT = 485
+/** Classic DISHA brand blue (matches product UI). */
+const DISHA_BLUE = '#1B52A4'
 
-/** Disha brand — uploaded DISHA wordmark (person-as-I, path, plane). Favicon unchanged. */
+/**
+ * Disha brand — blue rounded square with white D + DISHA wordmark.
+ * Favicon is separate and intentionally unchanged.
+ */
 export function BrandLogo({
   href = '/',
-  priority = false,
   className,
-  imageClassName,
+  imageClassName: _imageClassName,
   compact = false,
 }: BrandLogoProps) {
   return (
@@ -32,18 +33,43 @@ export function BrandLogo({
       aria-label="DISHA home"
       className={cn('group flex shrink-0 items-center', className)}
     >
-      <Image
-        src={LOGO_SRC}
-        alt="DISHA"
-        width={LOGO_WIDTH}
-        height={LOGO_HEIGHT}
-        priority={priority}
+      <span
         className={cn(
-          'w-auto max-w-full object-contain object-left rounded-sm bg-white',
-          'transition-opacity duration-200 group-hover:opacity-90',
-          imageClassName ?? (compact ? 'h-8' : 'h-9 sm:h-10')
+          'inline-flex items-center',
+          compact ? 'gap-2' : 'gap-2.5'
         )}
-      />
+      >
+        <span
+          className={cn(
+            'relative flex shrink-0 items-center justify-center overflow-hidden text-white shadow-sm',
+            'transition-transform duration-200 group-hover:scale-[1.03]',
+            compact
+              ? 'h-8 w-8 rounded-lg'
+              : 'h-9 w-9 rounded-[10px] sm:h-10 sm:w-10 sm:rounded-xl'
+          )}
+          style={{ backgroundColor: DISHA_BLUE }}
+          aria-hidden
+        >
+          <span
+            className={cn(
+              'select-none font-poppins font-bold leading-none text-white',
+              compact ? 'text-lg' : 'text-xl sm:text-2xl'
+            )}
+          >
+            D
+          </span>
+        </span>
+
+        <span
+          className={cn(
+            'select-none whitespace-nowrap font-poppins font-bold uppercase leading-none tracking-[0.14em]',
+            compact ? 'text-base' : 'text-lg sm:text-xl'
+          )}
+          style={{ color: DISHA_BLUE }}
+        >
+          DISHA
+        </span>
+      </span>
     </Link>
   )
 }

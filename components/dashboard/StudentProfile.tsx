@@ -46,6 +46,11 @@ import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { ProfileSummaryCard } from '@/components/student/ui/ProfileSummaryCard'
 import { StudentChip } from '@/components/student/ui/StudentChip'
 import { setProfileFormEditing } from '@/lib/profileEditingUi'
+import {
+    registerSectionSaveRunner,
+    runSectionSave,
+    type SectionSaveResult,
+} from '@/lib/profileSectionSaveRegistry'
 
 interface ProfileSection {
     id: string
@@ -205,7 +210,11 @@ export function StudentProfile() {
         }
     }
 
-    const handleSave = async (sectionId: string, formData: ProfileUpdateData) => {
+    const handleSave = async (
+        sectionId: string,
+        formData: ProfileUpdateData,
+        options?: { closeEditing?: boolean }
+    ) => {
         try {
             setSaving(true)
             setError(null)
@@ -226,7 +235,9 @@ export function StudentProfile() {
             const completionData = await profileService.getProfileCompletion()
             setProfileCompletion(completionData)
 
-            setEditing(null)
+            if (options?.closeEditing !== false) {
+                setEditing(null)
+            }
 
             // Only show success toast if there were actual changes
             // The form validation already ensures we only get here if there are changes
@@ -247,6 +258,7 @@ export function StudentProfile() {
             } else {
                 toast.error(`Failed to save: ${error.message}`)
             }
+            throw error
         } finally {
             setSaving(false)
         }
@@ -1221,7 +1233,7 @@ interface ProfileSectionFormProps {
         completed: boolean
     }
     profile: StudentProfile
-    onSave: (formData: any) => void
+    onSave: (formData: any, options?: { closeEditing?: boolean }) => void | Promise<void>
     saving: boolean
     onCancel: () => void
     onProfilePictureUploaded?: () => void | Promise<void>
@@ -1359,7 +1371,7 @@ function ProfileSectionForm({
 
     useEffect(() => {
         if (profile && section) {
-            // Initialize form data with current profile values
+            // Initialize form data with current profile values (once per mounted section)
             const initialData: any = {}
             section.fields.forEach(field => {
                 initialData[field] = profile[field as keyof StudentProfile] || ''
@@ -1377,11 +1389,15 @@ function ProfileSectionForm({
 
             setFormData(initialData)
         }
-    }, [profile, section])
+        // Only re-seed when the section form mounts / section changes — not on every
+        // profile refresh (e.g. Basic save while Academic is also open on mobile).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [section.id])
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-
+    const runSave = async (options?: {
+        closeEditing?: boolean
+        skipCancelWhenUnchanged?: boolean
+    }): Promise<SectionSaveResult> => {
         // Clean up form data - convert empty strings to null for numeric fields
         const cleanedFormData = { ...formData }
         Object.keys(cleanedFormData).forEach(key => {
@@ -1426,8 +1442,10 @@ function ProfileSectionForm({
         })
 
         if (!hasChanges) {
-            onCancel() // Just close the form
-            return
+            if (!options?.skipCancelWhenUnchanged) {
+                onCancel() // Just close the form
+            }
+            return 'skipped'
         }
 
         // Field-specific validation
@@ -1631,7 +1649,7 @@ function ProfileSectionForm({
             } else {
                 toast.error('Please fix the validation errors before saving')
             }
-            return
+            return 'invalid'
         }
 
         if (section.id === 'academic') {
@@ -1640,15 +1658,40 @@ function ProfileSectionForm({
             delete cleanedFormData.university_id
         }
 
-
         try {
-            // Call onSave and handle the result
-            onSave(cleanedFormData)
-
-            // The onSave function should handle success/error toasts
-            // We'll update the handleSave function to properly handle toasts
-        } catch (error) {
+            await onSave(cleanedFormData, {
+                closeEditing: options?.closeEditing !== false,
+            })
+            return 'saved'
+        } catch {
             toast.error('Failed to save changes')
+            return 'invalid'
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        void runSave({ closeEditing: true })
+    }
+
+    // Allow another form (mobile Academic Save) to trigger this section's save
+    useEffect(() => {
+        return registerSectionSaveRunner(section.id, () =>
+            runSave({ closeEditing: false, skipCancelWhenUnchanged: true })
+        )
+        // formData/profile/errors drive save payload — re-register when they change
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [section.id, formData, profile, locationError, errors])
+
+    const handleMobileSaveAll = async () => {
+        // On mobile merged Basic+Academic, Save lives on Academic — persist Basic first
+        if (section.id === 'academic') {
+            const basicResult = await runSectionSave('basic')
+            if (basicResult === 'invalid') return
+        }
+        const result = await runSave({ closeEditing: true, skipCancelWhenUnchanged: true })
+        if (result === 'skipped') {
+            onCancel()
         }
     }
 
@@ -2396,8 +2439,8 @@ function ProfileSectionForm({
                                     Cancel
                                 </Button>
                                 <Button
-                                    type="submit"
-                                    form={formId}
+                                    type="button"
+                                    onClick={() => void handleMobileSaveAll()}
                                     disabled={saving || hasFieldErrors}
                                     size="sm"
                                     className="h-10 flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-xs font-semibold text-white shadow-md hover:from-blue-500 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
