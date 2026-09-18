@@ -2,6 +2,23 @@
 
 import { cn } from '@/lib/utils'
 
+/** Disha brand palette — icons use only these hues. */
+const D = {
+  navy: '#1b52a4',
+  navyDeep: '#15407f',
+  cyan: '#00a2e5',
+  yellow: '#fec40d',
+  orange: '#f58020',
+  orangeDeep: '#dc6e12',
+  red: '#d64246',
+  green: '#098855',
+  greenDeep: '#077046',
+  greenSoft: '#2aa56c',
+  ink: '#FFFFFF',
+  washNavy: '#EEF3FA',
+  washNavyActive: '#D6E4F5',
+} as const
+
 const stroke = {
   width: 2,
   line: { strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const },
@@ -124,20 +141,20 @@ export function CategoryIcon({
       case 'all':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="6" y="6" width="36" height="36" rx="10" fill={active ? '#DBEAFE' : '#EFF6FF'} />
-            <rect x="12" y="12" width="10" height="10" rx="2.5" fill="#3B82F6" />
-            <rect x="26" y="12" width="10" height="10" rx="2.5" fill="#F59E0B" />
-            <rect x="12" y="26" width="10" height="10" rx="2.5" fill="#10B981" />
-            <rect x="26" y="26" width="10" height="10" rx="2.5" fill="#8B5CF6" />
+            <rect x="6" y="6" width="36" height="36" rx="10" fill={active ? D.washNavyActive : D.washNavy} />
+            <rect x="12" y="12" width="10" height="10" rx="2.5" fill={D.navy} />
+            <rect x="26" y="12" width="10" height="10" rx="2.5" fill={D.cyan} />
+            <rect x="12" y="26" width="10" height="10" rx="2.5" fill={D.cyan} />
+            <rect x="26" y="26" width="10" height="10" rx="2.5" fill={D.navy} />
           </svg>
         )
       case 'jobs':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="8" y="16" width="32" height="24" rx="4" fill="#3B82F6" />
-            <rect x="8" y="16" width="32" height="8" rx="4" fill="#1D4ED8" />
-            <path d="M18 16V13a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3" stroke="#1E3A8A" strokeWidth="2.5" strokeLinecap="round" />
-            <rect x="20" y="26" width="8" height="5" rx="1.5" fill="#FDE68A" />
+            <rect x="8" y="16" width="32" height="24" rx="4" fill={D.navy} />
+            <rect x="8" y="16" width="32" height="8" rx="4" fill={D.navyDeep} />
+            <path d="M18 16V13a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3" stroke={D.navyDeep} strokeWidth="2.5" strokeLinecap="round" />
+            <rect x="20" y="26" width="8" height="5" rx="1.5" fill={D.yellow} />
           </svg>
         )
       case 'internship':
@@ -163,14 +180,14 @@ export function CategoryIcon({
       case 'events':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="8" y="12" width="32" height="28" rx="4" fill="#F97316" />
-            <rect x="8" y="12" width="32" height="10" fill="#EA580C" />
-            <path d="M15 9v6M33 9v6" stroke="#9A3412" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="17" cy="30" r="2.5" fill="#FEF3C7" />
-            <circle cx="24" cy="30" r="2.5" fill="#FEF3C7" />
-            <circle cx="31" cy="30" r="2.5" fill="#FEF3C7" />
-            <circle cx="17" cy="36" r="2.5" fill="#FED7AA" />
-            <circle cx="24" cy="36" r="2.5" fill="#FED7AA" />
+            <rect x="8" y="12" width="32" height="28" rx="4" fill={D.orange} />
+            <rect x="8" y="12" width="32" height="10" fill={D.orangeDeep} />
+            <path d="M15 9v6M33 9v6" stroke={D.navyDeep} strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="17" cy="30" r="2.5" fill={D.ink} />
+            <circle cx="24" cy="30" r="2.5" fill={D.ink} />
+            <circle cx="31" cy="30" r="2.5" fill={D.ink} />
+            <circle cx="17" cy="36" r="2.5" fill={D.yellow} />
+            <circle cx="24" cy="36" r="2.5" fill={D.yellow} />
           </svg>
         )
       case 'hackathon':
@@ -230,71 +247,71 @@ export function CategoryIcon({
       case 'blogs':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="10" y="8" width="28" height="32" rx="3" fill="#0EA5E9" />
-            <rect x="14" y="14" width="20" height="3" rx="1.5" fill="#E0F2FE" />
-            <rect x="14" y="21" width="16" height="2.5" rx="1" fill="#BAE6FD" />
-            <rect x="14" y="27" width="18" height="2.5" rx="1" fill="#BAE6FD" />
-            <rect x="14" y="33" width="12" height="2.5" rx="1" fill="#7DD3FC" />
+            <rect x="10" y="8" width="28" height="32" rx="3" fill={D.cyan} />
+            <rect x="14" y="14" width="20" height="3" rx="1.5" fill={D.ink} />
+            <rect x="14" y="21" width="16" height="2.5" rx="1" fill="#d7f1fb" />
+            <rect x="14" y="27" width="18" height="2.5" rx="1" fill="#d7f1fb" />
+            <rect x="14" y="33" width="12" height="2.5" rx="1" fill={D.navyDeep} />
           </svg>
         )
       case 'faq':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <circle cx="24" cy="24" r="16" fill="#8B5CF6" />
-            <path d="M20 19c0-2.5 2-4.5 4.5-4.5S29 16.5 29 19c0 2-1.2 3.2-3 4.2-.8.5-1.5 1.2-1.5 2.3" stroke="#F5F3FF" strokeWidth="2.6" strokeLinecap="round" />
-            <circle cx="24.5" cy="31.5" r="1.8" fill="#F5F3FF" />
+            <circle cx="24" cy="24" r="16" fill={D.navy} />
+            <path d="M20 19c0-2.5 2-4.5 4.5-4.5S29 16.5 29 19c0 2-1.2 3.2-3 4.2-.8.5-1.5 1.2-1.5 2.3" stroke={D.ink} strokeWidth="2.6" strokeLinecap="round" />
+            <circle cx="24.5" cy="31.5" r="1.8" fill={D.ink} />
           </svg>
         )
       case 'placed_students':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <circle cx="18" cy="16" r="6" fill="#34D399" />
-            <path d="M8 36c0-5.5 4.5-10 10-10s10 4.5 10 10" fill="#10B981" />
-            <circle cx="32" cy="18" r="5" fill="#6EE7B7" />
-            <path d="M24 36c1-4.5 5-8 10-8 4 0 7.5 2.5 9 6" fill="#059669" />
-            <path d="M22 28l4 4 8-9" stroke="#FEF3C7" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="18" cy="16" r="6" fill={D.greenSoft} />
+            <path d="M8 36c0-5.5 4.5-10 10-10s10 4.5 10 10" fill={D.green} />
+            <circle cx="32" cy="18" r="5" fill={D.green} />
+            <path d="M24 36c1-4.5 5-8 10-8 4 0 7.5 2.5 9 6" fill={D.greenDeep} />
+            <path d="M22 28l4 4 8-9" stroke={D.ink} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )
       case 'mock_tests':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="10" y="8" width="28" height="34" rx="4" fill="#8B5CF6" />
-            <rect x="14" y="14" width="20" height="3" rx="1.5" fill="#EDE9FE" />
-            <rect x="14" y="21" width="14" height="2.5" rx="1" fill="#DDD6FE" />
-            <rect x="14" y="27" width="16" height="2.5" rx="1" fill="#DDD6FE" />
-            <path d="M16 35l3 3 7-8" stroke="#FDE68A" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            <rect x="10" y="8" width="28" height="34" rx="4" fill={D.yellow} />
+            <rect x="14" y="14" width="20" height="3" rx="1.5" fill={D.navy} />
+            <rect x="14" y="21" width="14" height="2.5" rx="1" fill={D.navyDeep} />
+            <rect x="14" y="27" width="16" height="2.5" rx="1" fill={D.navyDeep} />
+            <path d="M16 35l3 3 7-8" stroke={D.navy} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )
       case 'trusted_partners':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="8" y="14" width="14" height="20" rx="3" fill="#06B6D4" />
-            <rect x="26" y="14" width="14" height="20" rx="3" fill="#0891B2" />
-            <path d="M18 24h12" stroke="#ECFEFF" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="15" cy="20" r="2" fill="#CFFAFE" />
-            <circle cx="33" cy="20" r="2" fill="#CFFAFE" />
+            <rect x="8" y="14" width="14" height="20" rx="3" fill={D.navy} />
+            <rect x="26" y="14" width="14" height="20" rx="3" fill={D.navyDeep} />
+            <path d="M18 24h12" stroke={D.cyan} strokeWidth="3" strokeLinecap="round" />
+            <circle cx="15" cy="20" r="2" fill={D.ink} />
+            <circle cx="33" cy="20" r="2" fill={D.ink} />
           </svg>
         )
       case 'about':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <circle cx="24" cy="24" r="16" fill="#6366F1" />
-            <circle cx="24" cy="18" r="2.2" fill="#EEF2FF" />
-            <path d="M24 23v10" stroke="#EEF2FF" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="24" cy="24" r="16" fill={D.cyan} />
+            <circle cx="24" cy="18" r="2.2" fill={D.ink} />
+            <path d="M24 23v10" stroke={D.ink} strokeWidth="3" strokeLinecap="round" />
           </svg>
         )
       case 'contact':
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <rect x="8" y="14" width="32" height="22" rx="4" fill="#F43F5E" />
-            <path d="M10 16l14 11L38 16" stroke="#FFE4E6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <rect x="8" y="14" width="32" height="22" rx="4" fill={D.red} />
+            <path d="M10 16l14 11L38 16" stroke={D.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )
       default:
         return (
           <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
-            <circle cx="24" cy="24" r="18" fill="#BFDBFE" />
-            <circle cx="24" cy="24" r="8" fill="#3B82F6" />
+            <circle cx="24" cy="24" r="18" fill={D.washNavy} />
+            <circle cx="24" cy="24" r="8" fill={D.navy} />
           </svg>
         )
     }
