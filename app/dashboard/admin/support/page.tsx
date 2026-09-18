@@ -108,7 +108,7 @@ export default function AdminSupportPage() {
     setUpdatingQueryNumber(queryNumber)
     try {
       await supportQueryService.updateStatus(queryNumber, status)
-      toast.success(`Query #${queryNumber} updated to ${status.replaceAll('_', ' ')}`)
+      toast.success(`Query #${queryNumber} updated to ${status.replace(/_/g, ' ')}`)
       await fetchQueries()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Failed to update query status.'))

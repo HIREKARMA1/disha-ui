@@ -31,7 +31,7 @@ function enquiryLabel(value?: string | null) {
 
 function paymentLabel(value?: string | null) {
   if (!value || value === 'none') return '—'
-  return value.replaceAll('_', ' ')
+  return value.replace(/_/g, ' ')
 }
 
 function snippet(problem: string, max = 80) {

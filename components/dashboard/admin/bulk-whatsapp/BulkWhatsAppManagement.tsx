@@ -68,7 +68,7 @@ function resolvePreviewBody(
             param.source === 'recipient_name'
                 ? (recipientName || '').trim() || 'there'
                 : (adminValues[param.key] || '').trim()
-        text = text.replaceAll(`{{${index + 1}}}`, value || `{{${index + 1}}}`)
+        text = text.split(`{{${index + 1}}}`).join(value || `{{${index + 1}}}`)
     })
     return text
 }
