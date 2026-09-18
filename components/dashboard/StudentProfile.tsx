@@ -20,6 +20,7 @@ import {
     TrendingUp,
     Sparkles,
     Pencil,
+    KeyRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StudentSidebar } from './StudentSidebar'
@@ -45,6 +46,7 @@ import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { ProfileSummaryCard } from '@/components/student/ui/ProfileSummaryCard'
 import { StudentChip } from '@/components/student/ui/StudentChip'
+import { StudentPersonalSecurity } from './StudentPersonalSecurity'
 
 interface ProfileSection {
     id: string
@@ -139,7 +141,8 @@ export function StudentProfile() {
         { id: 'skills', label: 'Skills', icon: Zap },
         { id: 'experience', label: 'Experience', icon: Trophy },
         { id: 'documents', label: 'Documents', icon: Shield },
-        { id: 'social', label: 'Social Links', icon: Globe }
+        { id: 'social', label: 'Social Links', icon: Globe },
+        { id: 'personal', label: 'Personal', icon: KeyRound },
     ]
 
     useEffect(() => {
@@ -360,7 +363,8 @@ export function StudentProfile() {
                         </div>
 
                         <div className="space-y-3 sm:space-y-4 relative">
-                            {/* Sticky Edit Profile Button */}
+                            {/* Sticky Edit Profile Button — not used on Personal (password) tab */}
+                            {activeTab !== 'personal' && (
                             <div className="absolute top-4 right-4 bottom-4 pointer-events-none z-20">
                                 <div className="sticky top-[80px] pointer-events-auto">
                                     <Button
@@ -379,6 +383,7 @@ export function StudentProfile() {
                                     </Button>
                                 </div>
                             </div>
+                            )}
 
                             <ProfileSummaryCard
                                 profile={profile}
@@ -412,6 +417,10 @@ export function StudentProfile() {
                                                         type="button"
                                                         onClick={() => {
                                                             setActiveTab(tab.id)
+                                                            if (tab.id === 'personal') {
+                                                                setEditing(null)
+                                                                return
+                                                            }
                                                             if (editing) {
                                                                 setEditing(tab.id)
                                                             }
@@ -1160,6 +1169,10 @@ export function StudentProfile() {
                                                     </div>
                                                 )}
                                             </div>
+                                        )}
+
+                                        {activeTab === 'personal' && (
+                                            <StudentPersonalSecurity email={profile.email || ''} />
                                         )}
                                     </div>
                                 </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     Building2,
@@ -18,13 +18,14 @@ import {
 import { AdminUserListItem } from '@/types/userManagement'
 import {
     AdminManagedUserType,
+    AdminUserTypeFilter,
     USER_TABLE_PAGE_SIZE,
     USER_TYPE_SINGULAR_LABELS,
 } from '@/lib/userManagementConfig'
 
 interface UserTableProps {
     users: AdminUserListItem[]
-    userType: AdminManagedUserType
+    userType: AdminUserTypeFilter
     isLoading: boolean
     error: string | null
     onRetry: () => void
@@ -52,25 +53,25 @@ type SortField =
 interface ColumnConfig {
     key: SortField
     label: string
-    types: AdminManagedUserType[]
+    types: AdminUserTypeFilter[]
 }
 
 const TABLE_COLUMNS: ColumnConfig[] = [
-    { key: 'display_name', label: 'Name', types: ['student', 'university', 'corporate'] },
-    { key: 'email', label: 'Email', types: ['student', 'university', 'corporate'] },
-    { key: 'phone', label: 'Phone', types: ['student', 'university', 'corporate'] },
+    { key: 'display_name', label: 'Name', types: ['all', 'student', 'university', 'corporate'] },
+    { key: 'email', label: 'Email', types: ['all', 'student', 'university', 'corporate'] },
+    { key: 'phone', label: 'Phone', types: ['all', 'student', 'university', 'corporate'] },
     { key: 'institution', label: 'Institution', types: ['student'] },
     { key: 'degree', label: 'Degree', types: ['student'] },
     { key: 'university_name', label: 'University', types: ['university'] },
     { key: 'institute_type', label: 'Institute Type', types: ['university'] },
     { key: 'company_name', label: 'Company', types: ['corporate'] },
     { key: 'industry', label: 'Industry', types: ['corporate'] },
-    { key: 'location', label: 'Location', types: ['student', 'university', 'corporate'] },
-    { key: 'is_verified', label: 'Verified', types: ['student', 'university', 'corporate'] },
-    { key: 'status', label: 'Status', types: ['student', 'university', 'corporate'] },
+    { key: 'location', label: 'Location', types: ['all', 'student', 'university', 'corporate'] },
+    { key: 'is_verified', label: 'Verified', types: ['all', 'student', 'university', 'corporate'] },
+    { key: 'status', label: 'Status', types: ['all', 'student', 'university', 'corporate'] },
     { key: 'profile_completion_percentage', label: 'Profile %', types: ['student'] },
-    { key: 'created_at', label: 'Created', types: ['student', 'university', 'corporate'] },
-    { key: 'last_login', label: 'Last Login', types: ['student', 'university', 'corporate'] },
+    { key: 'created_at', label: 'Created', types: ['all', 'student', 'university', 'corporate'] },
+    { key: 'last_login', label: 'Last Login', types: ['all', 'student', 'university', 'corporate'] },
 ]
 
 const TYPE_ICONS: Record<AdminManagedUserType, React.ComponentType<{ className?: string }>> = {
@@ -262,6 +263,10 @@ export function UserTable({
     const [currentPage, setCurrentPage] = useState(1)
 
     const visibleColumns = TABLE_COLUMNS.filter((column) => column.types.includes(userType))
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [userType])
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {

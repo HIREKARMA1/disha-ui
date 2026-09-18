@@ -110,6 +110,35 @@ class ApiClient {
     return response.data;
   }
 
+  async verifyPasswordResetOtp(payload: {
+    email: string;
+    user_type: string;
+    code: string;
+  }): Promise<{ message: string; success: boolean }> {
+    const response: AxiosResponse = await this.client.post('/auth/password-reset/verify-otp', payload);
+    return response.data;
+  }
+
+  async resetPasswordWithOtp(payload: {
+    email: string;
+    user_type: string;
+    code: string;
+    new_password: string;
+  }): Promise<{ message: string; success: boolean }> {
+    const response: AxiosResponse = await this.client.post('/auth/password-reset/reset', payload);
+    return response.data;
+  }
+
+  /** Change password for the currently authenticated user (JWT-scoped). */
+  async changePassword(payload: {
+    current_password: string;
+    new_password: string;
+    confirm_password?: string;
+  }): Promise<{ message: string }> {
+    const response: AxiosResponse = await this.client.post('/auth/change-password', payload);
+    return response.data;
+  }
+
   async verifyEmailOtp(payload: { email: string; code: string }): Promise<{ message: string }> {
     const response: AxiosResponse = await this.client.post('/auth/verify-email-otp', payload);
     return response.data;
