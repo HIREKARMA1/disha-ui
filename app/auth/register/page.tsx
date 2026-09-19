@@ -438,6 +438,25 @@ function RegisterPageContent() {
                 // Check for redirect URL (from query params or localStorage)
                 let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
 
+                // Quick Apply / pending job: return to Jobs (not dashboard)
+                if (!redirectUrl && typeof window !== 'undefined') {
+                    try {
+                        const raw = localStorage.getItem('pending_job_application')
+                        if (raw) {
+                            const pending = JSON.parse(raw) as { returnUrl?: string }
+                            if (pending?.returnUrl) redirectUrl = pending.returnUrl
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+                if (!redirectUrl && selectedUserType === 'student') {
+                    const fromJobs =
+                        typeof document !== 'undefined' &&
+                        document.referrer.includes('/jobs')
+                    if (fromJobs) redirectUrl = '/jobs'
+                }
+
                 if (redirectUrl) {
                     // Decode the redirect URL
                     redirectUrl = decodeURIComponent(redirectUrl)

@@ -9,13 +9,15 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Loader2, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MobileFilterBottomSheet } from '@/components/ui/MobileFilterBottomSheet'
 import { StickyFilterPanel } from '@/components/ui/StickyFilterPanel'
 import { JobCard } from '@/components/dashboard/JobCard'
-import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
+import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
+import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
+import { JobsLinkedInRightRail } from '@/components/jobs/JobsLinkedInRightRail'
 import {
   JobsFilterFields,
   EMPTY_JOB_FILTERS,
@@ -27,19 +29,24 @@ import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { toast } from 'react-hot-toast'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { canApplyForJobs } from '@/lib/profileCompletion'
-import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
+import { profileService } from '@/services/profileService'
 import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
-  APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   getPassoutBatchApplyEligibility,
-  toastApplyError,
+  clearAutoApplyQueryParams,
 } from '@/lib/jobApplicationMessages'
 import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
+import { peekPendingJobApplication } from '@/lib/pendingJobApplication'
+import {
+    canPersonalizeJobs,
+    buildPreferencesSummary,
+    rankJobsBySkills,
+    type StudentMatchProfile,
+} from '@/lib/jobSkillMatch'
+import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 
 export interface Job {
     id: string
@@ -431,6 +438,8 @@ export function AllJobs() {
     const initial = useMemo(() => parseFiltersFromParams(searchParams), []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const [jobs, setJobs] = useState<Job[]>([])
+    /** Full filtered job list — used to rank then client-paginate for 75%+ students */
+    const [jobsPool, setJobsPool] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState(initial.searchTerm)
     const [suggestionsOpen, setSuggestionsOpen] = useState(false)
@@ -443,12 +452,14 @@ export function AllJobs() {
     })
 
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
-    const [showApplicationModal, setShowApplicationModal] = useState(false)
-    const [isApplying, setIsApplying] = useState(false)
+    const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
+    const [showApplyFormInPanel, setShowApplyFormInPanel] = useState(false)
+    const [desktopFilterOpen, setDesktopFilterOpen] = useState(false)
+    const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [applyingJobId, setApplyingJobId] = useState<string | null>(null)
+    const pendingApplyOpened = useRef(false)
 
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
     const [studentProfile, setStudentProfile] = useState<{
         degree?: string
         branch?: string
@@ -456,6 +467,8 @@ export function AllJobs() {
         graduation_year?: number
         batch?: string
     } | null>(null)
+    const [matchProfile, setMatchProfile] = useState<StudentMatchProfile | null>(null)
+    const [suggestionReady, setSuggestionReady] = useState(false)
 
     const [filterSheetOpen, setFilterSheetOpen] = useState(false)
     const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>(initial.jobStatusFilter)
@@ -473,7 +486,46 @@ export function AllJobs() {
     const didMountFetch = useRef(false)
     const searchBoxRef = useRef<HTMLDivElement>(null)
 
-    const jobSuggestionPool = useMemo(() => collectJobSuggestionPool(jobs), [jobs])
+    const jobSuggestionPool = useMemo(
+        () => collectJobSuggestionPool(jobsPool.length > 0 ? jobsPool : jobs),
+        [jobsPool, jobs]
+    )
+    const personalizeFeed = canPersonalizeJobs(matchProfile)
+    /** 75%+ suggestion-ready: rank entire pool desc by match, then paginate (keep page controls). */
+    const useRankedPagination = Boolean(
+        suggestionReady && personalizeFeed && matchProfile
+    )
+
+    const rankedPool = useMemo(() => {
+        const source = useRankedPagination
+            ? jobsPool
+            : jobs
+        if (!personalizeFeed || !matchProfile) {
+            return source.map((job) => ({
+                ...job,
+                match_score: 0,
+                matched_skills: [] as string[],
+            }))
+        }
+        return rankJobsBySkills(source, matchProfile)
+    }, [jobs, jobsPool, matchProfile, personalizeFeed, useRankedPagination])
+
+    const displayJobs = useMemo(() => {
+        if (!useRankedPagination) return rankedPool
+        const pageSize = pagination.limit || 12
+        const page = Math.max(1, pagination.page || 1)
+        const start = (page - 1) * pageSize
+        return rankedPool.slice(start, start + pageSize)
+    }, [rankedPool, useRankedPagination, pagination.page, pagination.limit])
+
+    const preferencesSummary = useMemo(
+        () => (matchProfile && personalizeFeed ? buildPreferencesSummary(matchProfile) : ''),
+        [matchProfile, personalizeFeed]
+    )
+    const matchedCount = useMemo(
+        () => rankedPool.filter((j) => j.match_score >= 1).length,
+        [rankedPool]
+    )
     const searchSuggestions = useMemo(
         () => filterJobSuggestions(searchTerm, jobSuggestionPool),
         [searchTerm, jobSuggestionPool]
@@ -609,6 +661,7 @@ export function AllJobs() {
                     if (savedIds.length === 0) {
                         if (requestId !== fetchIdRef.current) return
                         setJobs([])
+                        setJobsPool([])
                         setPagination({
                             page: 1,
                             limit: pageSize,
@@ -640,6 +693,7 @@ export function AllJobs() {
                     validatedJobs.sort(
                         (a, b) => savedIds.indexOf(b.id) - savedIds.indexOf(a.id)
                     )
+                    setJobsPool(validatedJobs)
                     const totalPages = Math.max(1, Math.ceil(validatedJobs.length / pageSize) || 0)
                     const safePage = Math.min(Math.max(1, page), totalPages || 1)
                     const start = (safePage - 1) * pageSize
@@ -654,10 +708,58 @@ export function AllJobs() {
                     return
                 }
 
+                // 75%+ students: load full result set, rank by match desc, then client-paginate
+                const rankAllPages =
+                    suggestionReady && canPersonalizeJobs(matchProfile) && Boolean(matchProfile)
+
+                if (rankAllPages) {
+                    const collected: Job[] = []
+                    let pageNum = 1
+                    let hasNext = true
+                    const maxPages = 30
+                    const seen = new Set<string>()
+
+                    while (hasNext && pageNum <= maxPages) {
+                        const result = await fetchPage(pageNum, 50)
+                        if (requestId !== fetchIdRef.current) return
+                        for (const job of result.jobs) {
+                            if (!seen.has(job.id)) {
+                                seen.add(job.id)
+                                collected.push(job)
+                            }
+                        }
+                        hasNext = result.has_next
+                        if (result.jobs.length === 0) break
+                        pageNum += 1
+                    }
+
+                    const validatedJobs = applyClientJobFilters(
+                        collected,
+                        activeStatus,
+                        activeDate
+                    )
+                    setJobsPool(validatedJobs)
+
+                    const ranked = rankJobsBySkills(validatedJobs, matchProfile!)
+                    const totalPages = Math.max(1, Math.ceil(ranked.length / pageSize) || 0)
+                    const safePage = Math.min(Math.max(1, page), totalPages || 1)
+                    const start = (safePage - 1) * pageSize
+
+                    setJobs(ranked.slice(start, start + pageSize))
+                    setPagination({
+                        page: ranked.length === 0 ? 1 : safePage,
+                        limit: pageSize,
+                        total: ranked.length,
+                        total_pages: ranked.length === 0 ? 0 : totalPages,
+                    })
+                    return
+                }
+
                 const result = await fetchPage(page, pageSize)
                 if (requestId !== fetchIdRef.current) return
 
                 const validatedJobs = applyClientJobFilters(result.jobs, activeStatus, activeDate)
+                setJobsPool([])
                 setJobs(validatedJobs)
                 setPagination({
                     page: result.page,
@@ -670,11 +772,21 @@ export function AllJobs() {
                 console.error('Error fetching jobs:', error)
                 toast.error('Failed to load jobs')
                 setJobs([])
+                setJobsPool([])
             } finally {
                 if (requestId === fetchIdRef.current) setLoading(false)
             }
         },
-        [searchTerm, filters, datePostedFilter, jobStatusFilter, categoryChip, pagination.limit]
+        [
+            searchTerm,
+            filters,
+            datePostedFilter,
+            jobStatusFilter,
+            categoryChip,
+            pagination.limit,
+            suggestionReady,
+            matchProfile,
+        ]
     )
 
     const applyFiltersAndFetch = useCallback(
@@ -760,7 +872,10 @@ export function AllJobs() {
             if (token) {
                 setIsLoggedIn(true)
                 try {
-                    const profile = await profileService.getProfile()
+                    const [profile, completion] = await Promise.all([
+                        profileService.getProfile(),
+                        profileService.getProfileCompletion().catch(() => null),
+                    ])
                     setStudentProfile({
                         degree: profile.degree,
                         branch: profile.branch,
@@ -768,8 +883,22 @@ export function AllJobs() {
                         graduation_year: profile.graduation_year,
                         batch: (profile as { batch?: string }).batch,
                     })
-                    const completion = await profileService.getProfileCompletion()
-                    setProfileCompletion(completion)
+                    setMatchProfile({
+                        technical_skills: profile.technical_skills,
+                        soft_skills: profile.soft_skills,
+                        preferred_industry: profile.preferred_industry,
+                        job_roles_of_interest: profile.job_roles_of_interest,
+                        location_preferences: profile.location_preferences,
+                    })
+                    setSuggestionReady(
+                        Boolean(
+                            completion?.suggestion_ready ||
+                                ((completion?.completion_percentage ?? 0) >= 75 &&
+                                    profile.technical_skills &&
+                                    profile.soft_skills &&
+                                    profile.preferred_industry)
+                        )
+                    )
                 } catch {
                     // Silent fail
                 }
@@ -777,6 +906,16 @@ export function AllJobs() {
         }
         void checkLoginStatus()
     }, [])
+
+    // Once profile is suggestion-ready (~75%), reload with full ranked pagination
+    const rankedFetchDone = useRef(false)
+    useEffect(() => {
+        if (!suggestionReady || !canPersonalizeJobs(matchProfile)) return
+        if (rankedFetchDone.current) return
+        rankedFetchDone.current = true
+        void fetchJobs(pagination.page || 1)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [suggestionReady, matchProfile])
 
     // Initial load + browser back/forward restore from query params
     useEffect(() => {
@@ -917,21 +1056,65 @@ export function AllJobs() {
             categoryChip,
             page,
         })
+        // Ranked mode: pool already loaded — only change page slice (no API refetch)
+        if (useRankedPagination && jobsPool.length > 0) {
+            return
+        }
         void fetchJobs(page)
     }
 
-    const handleApplyClick = (job: Job) => {
-        if (!isLoggedIn) {
-            const path = getJobDetailPath(job)
-            openLoginModal({
-                redirect: prepareGuestApplyForLogin(job.id, path),
-                preferredType: 'student',
-            })
+    // After login/register from Quick Apply on /jobs: open right-rail form
+    useEffect(() => {
+        if (pendingApplyOpened.current || !isLoggedIn || loading || displayJobs.length === 0) return
+        if (typeof window === 'undefined') return
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('auto_apply') !== '1') return
+        const pending = peekPendingJobApplication()
+        if (!pending?.jobId) {
+            clearAutoApplyQueryParams()
             return
         }
+        const match = displayJobs.find((j) => j.id === pending.jobId)
+        if (!match) return
+        pendingApplyOpened.current = true
+        clearAutoApplyQueryParams()
+        setSelectedJob(match)
+        setDesktopFilterOpen(false)
+        setShowApplyFormInPanel(false)
+        setShowQuickApplyModal(true)
+    }, [isLoggedIn, loading, displayJobs])
 
-        if (profileCompletion && !canApplyForJobs(profileCompletion)) {
-            showProfileCompletionToast()
+    // Default right panel: first job in the (possibly ranked) list
+    useEffect(() => {
+        if (loading || displayJobs.length === 0) return
+        setSelectedJob((prev) => {
+            if (prev && displayJobs.some((j) => j.id === prev.id)) {
+                return displayJobs.find((j) => j.id === prev.id) ?? prev
+            }
+            return displayJobs[0]
+        })
+    }, [loading, displayJobs])
+
+    const selectJobForPanel = (job: Job) => {
+        setSelectedJob(job)
+        setDesktopFilterOpen(false)
+        setShowApplyFormInPanel(false)
+    }
+
+    const handleApplyClick = (job: Job) => {
+        const isDesktop =
+            typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+
+        if (!isLoggedIn) {
+            const returnPath = isDesktop ? '/jobs' : getJobDetailPath(job)
+            if (isDesktop) {
+                setSelectedJob(job)
+                setDesktopFilterOpen(false)
+            }
+            openLoginModal({
+                redirect: prepareGuestApplyForLogin(job.id, returnPath),
+                preferredType: 'student',
+            })
             return
         }
 
@@ -952,60 +1135,74 @@ export function AllJobs() {
         }
 
         setSelectedJob(job)
-        setShowApplicationModal(true)
+        setDesktopFilterOpen(false)
+        setShowApplyFormInPanel(false)
+        setShowQuickApplyModal(true)
     }
 
-    const handleApplySubmit = async (data: {
-        cover_letter?: string
-        expected_salary?: string | number
-        availability_date?: string
-    }) => {
+    const handleQuickApplySuccess = () => {
         if (!selectedJob) return
-
-        try {
-            setIsApplying(true)
-            setApplyingJobId(selectedJob.id)
-
-            await apiClient.applyForJob(selectedJob.id, {
-                job_id: selectedJob.id,
-                cover_letter: data.cover_letter,
-                expected_salary: data.expected_salary ? Number(data.expected_salary) : null,
-                availability_date: data.availability_date,
-            })
-
-            toast.success(APPLY_SUCCESS_MESSAGE)
-            setShowApplicationModal(false)
-
-            setJobs((prevJobs) =>
-                prevJobs.map((job) =>
-                    job.id === selectedJob.id
-                        ? { ...job, application_status: 'applied', can_apply: false }
-                        : job
-                )
+        const jobId = selectedJob.id
+        setShowQuickApplyModal(false)
+        setShowApplyFormInPanel(false)
+        setJobs((prevJobs) =>
+            prevJobs.map((job) =>
+                job.id === jobId
+                    ? { ...job, application_status: 'applied', can_apply: false }
+                    : job
             )
-
-            void fetchJobs(pagination.page)
-        } catch (error: unknown) {
-            console.error('Application error:', error)
-            toastApplyError(error)
-        } finally {
-            setIsApplying(false)
-            setApplyingJobId(null)
-        }
+        )
+        setJobsPool((prevJobs) =>
+            prevJobs.map((job) =>
+                job.id === jobId
+                    ? { ...job, application_status: 'applied', can_apply: false }
+                    : job
+            )
+        )
+        setSelectedJob((prev) =>
+            prev && prev.id === jobId
+                ? { ...prev, application_status: 'applied', can_apply: false }
+                : prev
+        )
+        setApplyingJobId(null)
+        void (async () => {
+            try {
+                const completion = await profileService.getProfileCompletion()
+                if (shouldShowPostApplySkillsNudge(completion)) {
+                    setShowSkillsNudge(true)
+                }
+            } catch {
+                // Skip nudge if we can't verify — avoid prompting complete profiles
+            }
+        })()
+        void fetchJobs(pagination.page)
     }
 
     return (
         <div className="w-full overflow-x-hidden">
             <div className="mb-3 sm:mb-4">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Live Jobs
+                    {personalizeFeed ? 'Jobs based on your preferences' : 'Live Jobs'}
                 </h1>
                 <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
-                    Discover and apply to the best job opportunities.
+                    {personalizeFeed
+                        ? preferencesSummary
+                        : 'Discover and apply to the best job opportunities.'}
                 </p>
+                {personalizeFeed && (
+                    <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 sm:text-xs">
+                        {useRankedPagination
+                            ? matchedCount > 0
+                                ? `${matchedCount} match${matchedCount === 1 ? '' : 'es'} · sorted highest to lowest · page 1 starts at the best fit`
+                                : 'Sorted by best fit to your profile'
+                            : matchedCount > 0
+                              ? `${matchedCount} match${matchedCount === 1 ? '' : 'es'} · ranked by your skills — reach ~75% profile for full ranked pages`
+                              : 'Add skills to rank jobs by fit'}
+                    </p>
+                )}
             </div>
 
-            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-4">
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-4">
                 <div className="min-w-0">
                     {/* Search + mobile filter */}
                     <div className="mb-3 rounded-xl border border-gray-200/70 bg-white p-2.5 shadow-sm dark:border-white/10 dark:bg-[#151b2b]/90 sm:mb-4 sm:rounded-2xl sm:p-4">
@@ -1088,6 +1285,27 @@ export function AllJobs() {
                                 />
                             </MobileFilterBottomSheet>
                             <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setDesktopFilterOpen((open) => !open)
+                                    if (!desktopFilterOpen) setShowApplyFormInPanel(false)
+                                }}
+                                className={`hidden h-10 shrink-0 rounded-xl px-4 font-semibold lg:inline-flex ${
+                                    desktopFilterOpen
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                        : ''
+                                }`}
+                            >
+                                <Filter className="mr-2 h-4 w-4" />
+                                Filter
+                                {activeFilterCount > 0 ? (
+                                    <span className="ml-1.5 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                        {activeFilterCount}
+                                    </span>
+                                ) : null}
+                            </Button>
+                            <Button
                                 type="submit"
                                 className="hidden h-10 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:bg-blue-500 sm:inline-flex"
                             >
@@ -1155,7 +1373,7 @@ export function AllJobs() {
                                 </p>
                             </div>
                         </div>
-                    ) : jobs.length === 0 ? (
+                    ) : (useRankedPagination ? rankedPool.length === 0 : jobs.length === 0) ? (
                         <div className="rounded-2xl border border-dashed border-gray-200 bg-white/50 px-4 py-16 text-center dark:border-gray-700 dark:bg-gray-800/40">
                             <p className="text-base font-medium text-gray-600 dark:text-gray-300 sm:text-lg">
                                 {categoryChip === 'saved' && getSavedJobIds().length === 0
@@ -1176,14 +1394,18 @@ export function AllJobs() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-3">
-                            {jobs.map((job, index) => (
+                            {displayJobs.map((job, index) => (
                                 <JobCard
                                     key={job.id}
                                     job={job}
                                     cardIndex={index}
+                                    selected={selectedJob?.id === job.id}
+                                    onSelect={() => selectJobForPanel(job)}
                                     onViewDescription={() => router.push(getJobDetailPath(job))}
                                     onApply={() => handleApplyClick(job)}
                                     isApplying={applyingJobId === job.id}
+                                    showMatchScore={personalizeFeed && job.match_score >= 1}
+                                    matchScore={job.match_score}
                                 />
                             ))}
                         </div>
@@ -1282,35 +1504,80 @@ export function AllJobs() {
                     )}
                 </div>
 
-                <StickyFilterPanel title="Filter Jobs" onClear={clearFilters}>
-                    <div className="space-y-4 text-sm">
-                        <JobsFilterFields
-                            filters={filters}
-                            datePosted={datePostedFilter}
-                            onFilterChange={handleFilterChange}
-                            onDatePostedChange={handleDesktopDateChange}
-                            dense
-                            namePrefix="jobs-sidebar"
-                        />
-                        <Button
-                            type="button"
-                            onClick={handleDesktopShowResults}
-                            className="h-10 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500"
-                        >
-                            Show Results
-                        </Button>
-                    </div>
-                </StickyFilterPanel>
+                {desktopFilterOpen ? (
+                    <StickyFilterPanel title="Filter Jobs" onClear={clearFilters}>
+                        <div className="space-y-4 text-sm">
+                            <JobsFilterFields
+                                filters={filters}
+                                datePosted={datePostedFilter}
+                                onFilterChange={handleFilterChange}
+                                onDatePostedChange={handleDesktopDateChange}
+                                dense
+                                namePrefix="jobs-sidebar"
+                            />
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    handleDesktopShowResults()
+                                    setDesktopFilterOpen(false)
+                                }}
+                                className="h-10 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500"
+                            >
+                                Show Results
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setDesktopFilterOpen(false)}
+                                className="h-10 w-full rounded-xl"
+                            >
+                                Close filters
+                            </Button>
+                        </div>
+                    </StickyFilterPanel>
+                ) : (
+                    <JobsLinkedInRightRail
+                        job={selectedJob}
+                        highlightJobs={displayJobs.filter((j) => {
+                            const status = String(j.status || '').toLowerCase()
+                            return status !== 'closed' && status !== 'expired'
+                        })}
+                        isLoggedIn={isLoggedIn}
+                        showApplyForm={showApplyFormInPanel}
+                        onSelectJob={(job) => {
+                            setSelectedJob(job)
+                            setDesktopFilterOpen(false)
+                            setShowApplyFormInPanel(false)
+                        }}
+                        onStartQuickApply={() => {
+                            if (!selectedJob) return
+                            handleApplyClick(selectedJob)
+                        }}
+                        onGuestAuth={() => {
+                            if (!selectedJob) return
+                            handleApplyClick(selectedJob)
+                        }}
+                        onApplySuccess={handleQuickApplySuccess}
+                        onCloseApplyForm={() => setShowApplyFormInPanel(false)}
+                    />
+                )}
             </div>
 
-            {showApplicationModal && selectedJob && (
-                <ApplicationModal
+            {showQuickApplyModal && selectedJob && (
+                <QuickApplyModal
                     job={selectedJob}
-                    isApplying={isApplying}
-                    onClose={() => setShowApplicationModal(false)}
-                    onSubmit={handleApplySubmit}
+                    onClose={() => {
+                        setShowQuickApplyModal(false)
+                        setApplyingJobId(null)
+                    }}
+                    onSuccess={handleQuickApplySuccess}
                 />
             )}
+
+            <PostQuickApplySkillsNudgeDialog
+                isOpen={showSkillsNudge}
+                onClose={() => setShowSkillsNudge(false)}
+            />
         </div>
     )
 }

@@ -27,6 +27,10 @@ import { StudentTopNav } from './StudentTopNav'
 import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
 import { ProfilePictureUpload } from '../profile/ProfilePictureUpload'
+import {
+    StructuredWorkExperienceFields,
+    WorkExperienceDisplay,
+} from '../profile/StructuredWorkExperience'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { cn, truncateText, getInitials } from '@/lib/utils'
@@ -559,7 +563,7 @@ export function StudentProfile() {
                                                                 Resume <span className="text-red-500">*</span>
                                                             </div>
                                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                                                Required for job applications (part of the 75% from Basic Info only)
+                                                                Required for job applications. Add technical and soft skills to reach ~75% for job suggestions.
                                                             </p>
                                                             <FileUpload
                                                                 type="document"
@@ -817,7 +821,7 @@ export function StudentProfile() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Experience & Projects</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Work experience, projects, and extracurricular activities</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -832,21 +836,21 @@ export function StudentProfile() {
                                                     />
                                                 ) : (
                                                     <div className="space-y-4">
-                                                        {profile.internship_experience && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                                        </svg>
+                                                        {profile.internship_experience ? (
+                                                            <WorkExperienceDisplay text={profile.internship_experience} />
+                                                        ) : (
+                                                            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/40 p-4 dark:border-gray-700 dark:bg-gray-800/30">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                                                        <Trophy className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                            Internship Experience
+                                                                    <div>
+                                                                        <div className="font-medium text-gray-900 dark:text-white">
+                                                                            Work experience
                                                                         </div>
-                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            {profile.internship_experience}
-                                                                        </div>
+                                                                        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                                                                            No work experience yet — mark yourself as a fresher or add your latest role when you edit.
+                                                                        </p>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -886,26 +890,6 @@ export function StudentProfile() {
                                                                         </div>
                                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
                                                                             {profile.extracurricular_activities}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {!profile.internship_experience && !profile.project_details && !profile.extracurricular_activities && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                        <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                                        </svg>
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                            Experience & Projects
-                                                                        </div>
-                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            No experience or projects provided yet
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1566,9 +1550,13 @@ function ProfileSectionForm({
 
         // Skills Validation
         if (section.id === 'skills') {
-            // Technical skills validation
             if (!cleanedFormData.technical_skills || cleanedFormData.technical_skills.trim().length === 0) {
                 validationErrors.push('Technical skills are required')
+                hasValidationErrors = true
+            }
+
+            if (!cleanedFormData.soft_skills || cleanedFormData.soft_skills.trim().length === 0) {
+                validationErrors.push('Soft skills are required')
                 hasValidationErrors = true
             }
 
@@ -1879,7 +1867,18 @@ function ProfileSectionForm({
             )
         }
 
-        if (field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities')) {
+        if (field === 'internship_experience') {
+            return (
+                <StructuredWorkExperienceFields
+                    value={value || ''}
+                    onChange={(serialized) =>
+                        setFormData({ ...formData, internship_experience: serialized })
+                    }
+                />
+            )
+        }
+
+        if (field.includes('bio') || field.includes('details') || field.includes('activities')) {
             return (
                 <textarea
                     value={value}
@@ -2363,6 +2362,9 @@ function ProfileSectionForm({
                             if (fieldName === '10th_certificate') return '10th Certificate'
                             if (fieldName === '12th_certificate') return '12th Certificate'
                             if (fieldName === 'city') return 'Location'
+                            if (fieldName === 'internship_experience') return 'Work Experience'
+                            if (fieldName === 'project_details') return 'Projects'
+                            if (fieldName === 'extracurricular_activities') return 'Extracurricular Activities'
                             return fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                         }
 
@@ -2397,7 +2399,10 @@ function ProfileSectionForm({
                                         'state',
                                         'city',
                                         'bio',
-                                        'resume'
+                                        'resume',
+                                        'technical_skills',
+                                        'soft_skills',
+                                        'preferred_industry',
                                     ].includes(field) && (
                                             <span className="text-red-500 ml-1">*</span>
                                         )}

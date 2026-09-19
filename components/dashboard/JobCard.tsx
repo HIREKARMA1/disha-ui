@@ -73,9 +73,13 @@ interface JobCardProps {
     cardIndex?: number // Add card index for consecutive color assignment
     showMatchScore?: boolean // Add option to show match score pie chart
     matchScore?: number // Add match score for career align jobs
+    /** Highlight when selected in split view */
+    selected?: boolean
+    /** Click card body (not View/Apply) to select job for right panel */
+    onSelect?: () => void
 }
 
-export function JobCard({ job, onViewDescription, onApply, isApplying = false, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
+export function JobCard({ job, onViewDescription, onApply, isApplying = false, cardIndex = 0, showMatchScore = false, matchScore, selected = false, onSelect }: JobCardProps) {
     const { isSaved, toggle: toggleSaved } = useSavedJobs(job?.id)
     const [showShareModal, setShowShareModal] = useState(false)
     const closeShareModal = useCallback(() => setShowShareModal(false), [])
@@ -289,7 +293,14 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -1 }}
             transition={{ duration: 0.25 }}
-            className="group relative rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b] shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all duration-200 p-3.5 sm:p-4"
+            className={cn(
+                'group relative rounded-2xl border bg-white dark:bg-[#151b2b] shadow-sm transition-all duration-200 p-3.5 sm:p-4',
+                selected
+                    ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                    : 'border-gray-200/70 dark:border-white/10 hover:shadow-md hover:border-blue-500/30',
+                onSelect && 'cursor-pointer'
+            )}
+            onClick={onSelect}
         >
             <div className="flex items-start gap-3 sm:gap-4">
                 {/* Company logo */}
@@ -407,16 +418,18 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                             {showMatchScore && matchScore !== undefined && (
                                 <span className={cn(
                                     'inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-md',
-                                    matchScore >= 80 ? 'bg-emerald-500 text-white' :
-                                        matchScore >= 60 ? 'bg-orange-500 text-white' :
-                                            'bg-red-500 text-white'
+                                    matchScore >= 70
+                                        ? 'bg-emerald-500 text-white'
+                                        : matchScore >= 40
+                                          ? 'bg-orange-500 text-white'
+                                          : 'bg-red-500 text-white'
                                 )}>
                                     {Math.round(matchScore)}% Match
                                 </span>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2 ml-auto">
+                        <div className="flex items-center gap-2 ml-auto" onClick={(e) => e.stopPropagation()}>
                             <Button
                                 onClick={onViewDescription}
                                 variant="outline"

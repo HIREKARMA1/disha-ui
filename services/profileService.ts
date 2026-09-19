@@ -110,12 +110,51 @@ export interface ProfileCompletionResponse {
     extended_total?: number
     core_missing_fields?: string[]
     can_apply_for_jobs?: boolean
+    suggestion_ready?: boolean
+    path_percentage?: number
+    path_target?: number
+    sections?: Record<
+        string,
+        {
+            weight: number
+            ratio: number
+            score: number
+            completed_fields: string[]
+            missing_fields: string[]
+        }
+    >
 }
 
 export interface FileUploadResponse {
-    success: boolean
+    success?: boolean
     file_url: string
-    message: string
+    resume_url?: string
+    message?: string
+}
+
+/** Turn FastAPI `detail` (string | object | array) into a readable message. */
+function formatApiErrorDetail(detail: unknown, fallback: string): string {
+    if (typeof detail === 'string' && detail.trim()) return detail
+    if (Array.isArray(detail)) {
+        const parts = detail
+            .map((item) => {
+                if (typeof item === 'string') return item
+                if (item && typeof item === 'object') {
+                    const row = item as { msg?: string; message?: string; detail?: string }
+                    return row.msg || row.message || row.detail || null
+                }
+                return null
+            })
+            .filter(Boolean)
+        if (parts.length) return parts.join('; ')
+    }
+    if (detail && typeof detail === 'object') {
+        const row = detail as { msg?: string; message?: string; detail?: string }
+        if (typeof row.message === 'string' && row.message.trim()) return row.message
+        if (typeof row.msg === 'string' && row.msg.trim()) return row.msg
+        if (typeof row.detail === 'string' && row.detail.trim()) return row.detail
+    }
+    return fallback
 }
 
 export class ProfileService {
@@ -217,7 +256,7 @@ export class ProfileService {
             }
 
             const formData = new FormData()
-            formData.append('resume', file)
+            formData.append('file', file)
 
             const response = await apiClient.client.post('/students/upload-resume', formData, {
                 headers: {
@@ -225,10 +264,22 @@ export class ProfileService {
                 },
             })
 
-            return response.data
+            const data = response.data || {}
+            const url =
+                (typeof data.file_url === 'string' && data.file_url) ||
+                (typeof data.resume_url === 'string' && data.resume_url) ||
+                (typeof data.url === 'string' && data.url) ||
+                ''
+
+            return {
+                success: true,
+                file_url: url,
+                resume_url: data.resume_url || url,
+                message: data.message || 'Resume uploaded successfully',
+            }
         } catch (error: any) {
             console.error('Error uploading resume:', error)
-            
+
             if (error.response?.status === 401) {
                 throw new Error('Authentication failed. Please log in again.')
             } else if (error.response?.status === 413) {
@@ -236,11 +287,71 @@ export class ProfileService {
             } else if (error.response?.status === 415) {
                 throw new Error('Invalid file type. Please upload a valid document.')
             } else if (error.response?.status >= 500) {
-                throw new Error('Server error. Please try again later.')
+                const detail = formatApiErrorDetail(
+                    error.response?.data?.detail,
+                    'Server error. Please try again later.'
+                )
+                throw new Error(detail)
             } else {
-                throw new Error(error.response?.data?.detail || 'Failed to upload resume.')
+                const detail = formatApiErrorDetail(
+                    error.response?.data?.detail,
+                    'Failed to upload resume.'
+                )
+                throw new Error(detail)
             }
         }
+    }
+
+    /**
+     * List stored resume PDFs (max 5). One is selected for applications.
+     */
+    async listResumeFiles(): Promise<{
+        resumes: Array<{
+            id: string
+            file_url: string
+            file_name?: string | null
+            is_selected: boolean
+            created_at?: string | null
+        }>
+        max_resumes: number
+        selected_resume_url?: string | null
+    }> {
+        const response = await apiClient.client.get('/students/resume-files')
+        return response.data
+    }
+
+    async selectResumeFile(resumeFileId: string): Promise<{
+        resumes: Array<{
+            id: string
+            file_url: string
+            file_name?: string | null
+            is_selected: boolean
+            created_at?: string | null
+        }>
+        max_resumes: number
+        selected_resume_url?: string | null
+    }> {
+        const response = await apiClient.client.post(
+            `/students/resume-files/${resumeFileId}/select`
+        )
+        return response.data
+    }
+
+    async deleteResumeFile(resumeFileId: string): Promise<{
+        resumes: Array<{
+            id: string
+            file_url: string
+            file_name?: string | null
+            is_selected: boolean
+            created_at?: string | null
+        }>
+        max_resumes: number
+        selected_resume_url?: string | null
+    }> {
+        const response = await apiClient.client.delete(
+            `/students/resume-files/${resumeFileId}`
+        )
+        return response.data
     }
 
     /**

@@ -1,5 +1,5 @@
 export const PROFILE_COMPLETION_MESSAGE =
-    'Profile completion must be at least 75% to apply.'
+    'Complete about 75% of your profile, including technical and soft skills, for personalized job suggestions.'
 
 export const STUDENT_PROFILE_PATH = '/dashboard/student/profile'
 
@@ -7,18 +7,29 @@ export type ProfileCompletionCheck = {
     can_apply_for_jobs?: boolean
     core_percentage?: number
     completion_percentage?: number
+    suggestion_ready?: boolean
 }
 
-/** Apply gate: prefer backend can_apply_for_jobs; fallback requires full core fields. */
+/** Apply gate: prefer backend can_apply_for_jobs (resume). 75% is for suggestions, not apply. */
 export function canApplyForJobs(completion?: ProfileCompletionCheck | null): boolean {
     if (!completion) return false
     if (completion.can_apply_for_jobs !== undefined) {
         return completion.can_apply_for_jobs
     }
-    if (completion.core_percentage !== undefined) {
-        return completion.core_percentage >= 100
-    }
-    return (completion.completion_percentage ?? 0) >= 75
+    return true
+}
+
+/**
+ * Post–Quick Apply “complete profile for suggestions” dialog.
+ * Only show when the student is not already suggestion-ready (~75% + skills).
+ */
+export function shouldShowPostApplySkillsNudge(
+    completion?: ProfileCompletionCheck | null
+): boolean {
+    if (!completion) return false
+    if (completion.suggestion_ready === true) return false
+    if ((completion.completion_percentage ?? 0) >= 75) return false
+    return true
 }
 
 /** Detect profile-completion errors from API or client-side checks. */

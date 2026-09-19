@@ -60,8 +60,9 @@ export function ProfileCompletionModal({ isOpen, onClose }: ProfileCompletionMod
                   {PROFILE_COMPLETION_MESSAGE}
                 </p>
                 <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-                  Finish required Basic Info fields and upload your resume to reach 75% and apply
-                  for jobs.
+                  Finish Basic Info, education, and both technical and soft skills to reach
+                  about 75% for better job suggestions. Quick Apply still only needs DOB,
+                  location, gender, and resume.
                 </p>
               </div>
             </div>

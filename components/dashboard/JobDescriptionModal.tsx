@@ -1106,7 +1106,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         ) : (
                                             <>
                                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                                {applicationStatus === 'applied' ? 'Already Applied' : isDeadlineExpired() ? 'Expired' : 'Apply Now'}
+                                                {applicationStatus === 'applied' ? 'Already Applied' : isDeadlineExpired() ? 'Expired' : 'Apply'}
                                             </>
                                         )}
                                     </Button>
