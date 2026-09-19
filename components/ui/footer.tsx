@@ -151,7 +151,7 @@ export function Footer() {
                                     href="/contact"
                                     className="text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                                 >
-                                    Get in Touch
+                                    Contact &amp; Support
                                 </a>
                             </li>
                         </ul>
