@@ -16,6 +16,7 @@ import {
     Award,
     Settings,
     MoreHorizontal,
+    Headphones,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -81,6 +82,12 @@ const navItems: NavItem[] = [
         href: '/dashboard/university/licenses',
         icon: Award,
         description: 'View and manage student licenses',
+    },
+    {
+        label: 'Contact Support',
+        href: '/dashboard/university/contact-support',
+        icon: Headphones,
+        description: 'WhatsApp, email & office',
     },
     {
         label: 'Settings',

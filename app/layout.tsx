@@ -3,6 +3,7 @@ import { Inter, Poppins, Sora } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { TopLoader } from '@/components/providers/top-loader'
+import { StoreProvider } from '@/store/StoreProvider'
 import { LoadingProvider } from '@/contexts/LoadingContext'
 import { AuthLoginModalProvider } from '@/contexts/AuthLoginModalContext'
 import { Toaster } from 'react-hot-toast'
@@ -56,24 +57,26 @@ export default function RootLayout({
                         ? { defaultTheme: 'dark' as const }
                         : { defaultTheme: 'light' as const, forcedTheme: 'light' })}
                 >
-                    <LoadingProvider>
-                        <AuthLoginModalProvider>
-                          {children}
-                          <WhatsAppFloatingButton />
-                          <ProfileCompletionModalHost />
-                          <Toaster
-                            position="top-right"
-                            toastOptions={{
-                                duration: 4000,
-                                style: {
-                                    background: 'var(--toast-bg)',
-                                    color: 'var(--toast-color)',
-                                    border: '1px solid var(--toast-border)',
-                                },
-                            }}
-                          />
-                        </AuthLoginModalProvider>
-                    </LoadingProvider>
+                    <StoreProvider>
+                        <LoadingProvider>
+                            <AuthLoginModalProvider>
+                                {children}
+                                <WhatsAppFloatingButton />
+                                <ProfileCompletionModalHost />
+                                <Toaster
+                                    position="top-right"
+                                    toastOptions={{
+                                        duration: 4000,
+                                        style: {
+                                            background: 'var(--toast-bg)',
+                                            color: 'var(--toast-color)',
+                                            border: '1px solid var(--toast-border)',
+                                        },
+                                    }}
+                                />
+                            </AuthLoginModalProvider>
+                        </LoadingProvider>
+                    </StoreProvider>
                 </ThemeProvider>
             </body>
         </html>

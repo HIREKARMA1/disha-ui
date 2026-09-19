@@ -16,6 +16,7 @@ import {
     ClipboardList,
     Calendar,
     MoreHorizontal,
+    Headphones,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -114,6 +115,12 @@ const navItems: NavItem[] = [
         href: '/dashboard/student/video-search',
         icon: Search,
         description: 'Learning videos',
+    },
+    {
+        label: 'Contact Support',
+        href: '/dashboard/student/contact-support',
+        icon: Headphones,
+        description: 'WhatsApp, email & office',
     },
 ]
 
