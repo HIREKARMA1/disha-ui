@@ -36,6 +36,7 @@ import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
 import { cn } from '@/lib/utils'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
+import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
 
 // Union type for all possible form data
 type FormData = {
@@ -144,7 +145,7 @@ const isValidPublicUrl = (value: string) => {
 const studentSchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     name: z
         .string()
@@ -173,7 +174,7 @@ const studentSchema = z.object({
 const corporateSchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     company_name: z
         .string()
@@ -206,7 +207,7 @@ const corporateSchema = z.object({
 const universitySchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
     user_type: z.enum(['student', 'corporate', 'university', 'admin']),
     college_id: z.string().min(1, 'Please select a college/university'),
     university_name: z.string().optional(), // Auto-filled from dropdown selection
@@ -316,21 +317,21 @@ function RegisterPageContent() {
     }, [selectedUserType, reset, setValue])
 
     useEffect(() => {
-        const type = searchParams.get('type') as UserType
-        if (type && ['student', 'corporate', 'university'].includes(type)) {
-            setSelectedUserType(type)
-            setValue('user_type', type)
-            // Coming from login "Create Account" (or typed URL) — open form like Sign in
+        const parsed = parseRegisterUserType(searchParams.get('type'))
+        if (parsed) {
+            setSelectedUserType(parsed)
+            setValue('user_type', parsed)
             setUiStep('details')
         }
     }, [searchParams, setValue])
 
     const updateTypeInUrl = (userType: UserType) => {
-        const redirectUrl = searchParams.get('redirect')
-        const newUrl = redirectUrl
-            ? `/auth/register?type=${userType}&redirect=${redirectUrl}`
-            : `/auth/register?type=${userType}`
-        router.replace(newUrl)
+        router.replace(
+            buildAuthPath('/auth/register', {
+                type: userType,
+                redirect: searchParams.get('redirect'),
+            })
+        )
     }
 
     const handleAccountTypeSelect = (userType: UserType) => {
@@ -349,12 +350,10 @@ function RegisterPageContent() {
         setUiStep('identify')
     }
 
-    const loginHref = (() => {
-        const redirectUrl = searchParams.get('redirect')
-        return redirectUrl
-            ? `/auth/login?type=${selectedUserType}&redirect=${encodeURIComponent(redirectUrl)}`
-            : `/auth/login?type=${selectedUserType}`
-    })()
+    const loginHref = buildAuthPath('/auth/login', {
+        type: selectedUserType,
+        redirect: searchParams.get('redirect'),
+    })
 
     const SelectedIcon = userTypeIcons[selectedUserType as keyof typeof userTypeIcons] || User
 
@@ -463,12 +462,14 @@ function RegisterPageContent() {
             } catch (loginError) {
                 console.error('Auto-login failed:', loginError)
                 toast.success('Registration successful! Please log in.')
-                // Preserve redirect URL when redirecting to login
                 const redirectUrl = searchParams.get('redirect') || localStorage.getItem('redirect_after_login')
-                const loginUrl = redirectUrl
-                    ? `/auth/login?type=${selectedUserType}&registered=true&redirect=${encodeURIComponent(redirectUrl)}`
-                    : `/auth/login?type=${selectedUserType}&registered=true`
-                router.push(loginUrl)
+                router.push(
+                    buildAuthPath('/auth/login', {
+                        type: selectedUserType,
+                        redirect: redirectUrl,
+                        extra: { registered: 'true' },
+                    })
+                )
             }
         } catch (error: unknown) {
             console.error('OTP verification error:', error)
@@ -867,7 +868,7 @@ function RegisterPageContent() {
                                                         htmlFor="email"
                                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                                                     >
-                                                        Email
+                                                        Email *
                                                     </label>
                                                     <Input
                                                         id="email"
@@ -908,7 +909,7 @@ function RegisterPageContent() {
                                                         htmlFor="password"
                                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                                                     >
-                                                        Password
+                                                        Password *
                                                     </label>
                                                     <Input
                                                         id="password"
@@ -949,7 +950,7 @@ function RegisterPageContent() {
                                                         htmlFor="confirmPassword"
                                                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                                                     >
-                                                        Confirm password
+                                                        Confirm password *
                                                     </label>
                                                     <Input
                                                         id="confirmPassword"

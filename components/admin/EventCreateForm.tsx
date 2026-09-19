@@ -25,6 +25,7 @@ import {
 } from '@/components/admin/EventAdvertisementSection'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
+import { utcIsoToDatetimeLocal } from '@/lib/datetime'
 import { toast } from 'react-hot-toast'
 
 interface EventFormProps {
@@ -146,10 +147,20 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             venue: event.venue,
             mode: event.mode,
             category: event.category,
-            registration_start_date: event.registration_start_date?.slice(0, 16),
-            registration_end_date: event.registration_end_date?.slice(0, 16),
-            event_start_date: event.event_start_date?.slice(0, 16),
-            event_end_date: event.event_end_date?.slice(0, 16),
+            // Convert API UTC ISO → local wall-clock for datetime-local inputs.
+            // Do NOT use .slice(0, 16): that keeps UTC hours and shifts displayed times.
+            registration_start_date: event.registration_start_date
+              ? utcIsoToDatetimeLocal(event.registration_start_date)
+              : undefined,
+            registration_end_date: event.registration_end_date
+              ? utcIsoToDatetimeLocal(event.registration_end_date)
+              : undefined,
+            event_start_date: event.event_start_date
+              ? utcIsoToDatetimeLocal(event.event_start_date)
+              : '',
+            event_end_date: event.event_end_date
+              ? utcIsoToDatetimeLocal(event.event_end_date)
+              : undefined,
             max_participants: event.max_participants,
             registration_limit: event.registration_limit,
             prize_pool: event.prize_pool,

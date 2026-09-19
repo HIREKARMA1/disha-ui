@@ -3,6 +3,8 @@
  * Cleared after a successful attempt (or when consumed as expired).
  */
 
+import { buildAuthPath } from '@/lib/authLinks'
+
 const STORAGE_KEY = 'pending_job_application'
 const MAX_AGE_MS = 30 * 60 * 1000 // 30 minutes
 
@@ -87,6 +89,6 @@ export function redirectGuestToLoginForApply(
 ): void {
   const redirectUrl = prepareGuestApplyForLogin(jobId, returnPath)
   router.push(
-    `/auth/login?redirect=${encodeURIComponent(redirectUrl)}&type=student`
+    buildAuthPath('/auth/login', { type: 'student', redirect: redirectUrl })
   )
 }

@@ -17,7 +17,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import {
@@ -32,14 +31,14 @@ import { userManagementService } from '@/services/userManagementService'
 import { getErrorMessage } from '@/lib/error-handler'
 import {
     BulkWhatsAppCategory,
+    BulkWhatsAppConfig,
     BulkWhatsAppLog,
     BulkWhatsAppStatistics,
     BulkWhatsAppStatusFilter,
+    BulkWhatsAppTemplate,
     ManagedWhatsAppRecipient,
 } from '@/types/bulkWhatsApp'
 import { AdminUserListItem } from '@/types/userManagement'
-
-const WHATSAPP_MAX_CHARS = 4096
 
 function normalizePhone(phone: string) {
     return phone.replace(/[^\d+]/g, '').trim()
@@ -50,22 +49,38 @@ function isLikelyPhone(phone: string) {
     return digits.length >= 10 && digits.length <= 15
 }
 
-function applyPlaceholders(
-    template: string,
-    recipient?: Pick<
-        ManagedWhatsAppRecipient,
-        'name' | 'email' | 'phone' | 'college' | 'branch' | 'company'
-    > | null
+function findSelectedTemplate(
+    config: BulkWhatsAppConfig | null,
+    templateName: string
+): BulkWhatsAppTemplate | null {
+    return config?.templates?.find((item) => item.name === templateName) || null
+}
+
+function resolvePreviewBody(
+    template: BulkWhatsAppTemplate | null,
+    adminValues: Record<string, string>,
+    recipientName?: string | null
 ) {
-    const values: Record<string, string> = {
-        name: recipient?.name || '',
-        email: recipient?.email || '',
-        phone: recipient?.phone || '',
-        college: recipient?.college || '',
-        branch: recipient?.branch || '',
-        company: recipient?.company || '',
-    }
-    return template.replace(/\{\{\s*(\w+)\s*\}\}/gi, (_, key: string) => values[key.toLowerCase()] ?? '')
+    if (!template) return ''
+    let text = template.body
+    template.params.forEach((param, index) => {
+        const value =
+            param.source === 'recipient_name'
+                ? (recipientName || '').trim() || 'there'
+                : (adminValues[param.key] || '').trim()
+        text = text.split(`{{${index + 1}}}`).join(value || `{{${index + 1}}}`)
+    })
+    return text
+}
+
+function buildAdminParamList(
+    template: BulkWhatsAppTemplate | null,
+    adminValues: Record<string, string>
+) {
+    if (!template) return []
+    return template.params
+        .filter((param) => param.source === 'admin')
+        .map((param) => (adminValues[param.key] || '').trim())
 }
 
 export function BulkWhatsAppManagement() {
@@ -76,7 +91,8 @@ export function BulkWhatsAppManagement() {
     const [manualName, setManualName] = useState('')
     const [importedCount, setImportedCount] = useState(0)
     const [campaignName, setCampaignName] = useState('')
-    const [message, setMessage] = useState('')
+    const [selectedTemplateName, setSelectedTemplateName] = useState('')
+    const [adminParamValues, setAdminParamValues] = useState<Record<string, string>>({})
     const [isLoadingRecipients, setIsLoadingRecipients] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const [isSending, setIsSending] = useState(false)
@@ -84,11 +100,11 @@ export function BulkWhatsAppManagement() {
     const [showConfirm, setShowConfirm] = useState(false)
     const [recentLogs, setRecentLogs] = useState<BulkWhatsAppLog[]>([])
     const [statistics, setStatistics] = useState<BulkWhatsAppStatistics | null>(null)
+    const [campaignConfig, setCampaignConfig] = useState<BulkWhatsAppConfig | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<AdminUserListItem[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const messageRef = useRef<HTMLTextAreaElement>(null)
 
     const filterRecipientCount = useMemo(
         () => recipients.filter((recipient) => recipient.source === 'filter').length,
@@ -101,9 +117,37 @@ export function BulkWhatsAppManagement() {
     )
 
     const totalRecipients = recipients.length
-    const charCount = message.length
     const previewRecipient = recipients[0] || null
-    const previewMessage = applyPlaceholders(message, previewRecipient)
+    const selectedTemplate = useMemo(
+        () => findSelectedTemplate(campaignConfig, selectedTemplateName),
+        [campaignConfig, selectedTemplateName]
+    )
+    const previewMessage = useMemo(
+        () => resolvePreviewBody(selectedTemplate, adminParamValues, previewRecipient?.name),
+        [selectedTemplate, adminParamValues, previewRecipient?.name]
+    )
+
+    const syncAdminParamsForTemplate = useCallback(
+        (
+            template: BulkWhatsAppTemplate | null | undefined,
+            previous: Record<string, string> = {}
+        ) => {
+            const next: Record<string, string> = {}
+            template?.params
+                .filter((param) => param.source === 'admin')
+                .forEach((param) => {
+                    next[param.key] = previous[param.key] || ''
+                })
+            return next
+        },
+        []
+    )
+
+    const handleTemplateChange = (templateName: string) => {
+        setSelectedTemplateName(templateName)
+        const template = findSelectedTemplate(campaignConfig, templateName)
+        setAdminParamValues(syncAdminParamsForTemplate(template))
+    }
 
     const mergeRecipients = useCallback((
         incoming: ManagedWhatsAppRecipient[],
@@ -169,6 +213,28 @@ export function BulkWhatsAppManagement() {
         }
     }, [])
 
+    const fetchConfig = useCallback(async () => {
+        try {
+            const result = await bulkWhatsAppService.getConfig()
+            const templates = result.templates || []
+            setCampaignConfig({ ...result, templates })
+            setSelectedTemplateName((current) => {
+                if (current && templates.some((item) => item.name === current)) {
+                    return current
+                }
+                return templates[0]?.name || ''
+            })
+        } catch (error) {
+            console.error('Failed to fetch bulk WhatsApp config:', error)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!campaignConfig) return
+        const template = findSelectedTemplate(campaignConfig, selectedTemplateName)
+        setAdminParamValues((previous) => syncAdminParamsForTemplate(template, previous))
+    }, [campaignConfig, selectedTemplateName, syncAdminParamsForTemplate])
+
     useEffect(() => {
         fetchRecipients()
     }, [fetchRecipients])
@@ -176,7 +242,8 @@ export function BulkWhatsAppManagement() {
     useEffect(() => {
         fetchLogs()
         fetchStatistics()
-    }, [fetchLogs, fetchStatistics])
+        fetchConfig()
+    }, [fetchLogs, fetchStatistics, fetchConfig])
 
     const handleAddPhone = () => {
         const trimmed = manualPhone.trim()
@@ -303,8 +370,29 @@ export function BulkWhatsAppManagement() {
             toast.error('Campaign name is required')
             return
         }
-        if (!message.trim()) {
-            toast.error('WhatsApp message is required')
+        if (!campaignConfig?.configured) {
+            toast.error(
+                campaignConfig?.missing_keys?.length
+                    ? `Serri is not configured: ${campaignConfig.missing_keys.join(', ')}`
+                    : 'Serri WhatsApp is not configured'
+            )
+            return
+        }
+
+        const templateName = (selectedTemplateName || selectedTemplate?.name || '').trim()
+        const template =
+            selectedTemplate || findSelectedTemplate(campaignConfig, templateName)
+        if (!templateName || !template) {
+            toast.error('Please select an approved WhatsApp template')
+            return
+        }
+
+        const adminParams = buildAdminParamList(template, adminParamValues)
+        const missing = template.params
+            .filter((param) => param.source === 'admin')
+            .find((param, index) => !adminParams[index])
+        if (missing) {
+            toast.error(`Please fill in "${missing.label}"`)
             return
         }
         if (totalRecipients === 0) {
@@ -314,14 +402,16 @@ export function BulkWhatsAppManagement() {
 
         setIsSending(true)
         const toastId = toast.loading(
-            `Sending WhatsApp messages to ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}...`
+            `Sending WhatsApp template to ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}...`
         )
         try {
             const result = await bulkWhatsAppService.sendBulkWhatsApp({
                 category,
                 status: statusFilter,
                 campaign_name: campaignName.trim(),
-                message: message.trim(),
+                template_name: templateName,
+                template_params: adminParams,
+                message: resolvePreviewBody(template, adminParamValues, previewRecipient?.name),
                 recipients: recipients.map((recipient) => ({
                     phone: recipient.phone,
                     name: recipient.name,
@@ -335,7 +425,7 @@ export function BulkWhatsAppManagement() {
             if (result.success) {
                 toast.success(result.message, { id: toastId })
                 setCampaignName('')
-                setMessage('')
+                handleTemplateChange(templateName)
                 setRecipients([])
                 setImportedCount(0)
                 setShowConfirm(false)
@@ -344,7 +434,7 @@ export function BulkWhatsAppManagement() {
                     result.error ||
                     result.message ||
                     result.results?.find((item) => item.error_message)?.error_message ||
-                    'Twilio did not accept the message'
+                    'Serri did not accept the message'
                 toast.error(detail, { id: toastId, duration: 10000 })
                 setShowConfirm(false)
             }
@@ -667,12 +757,20 @@ export function BulkWhatsAppManagement() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>WhatsApp Message Composer</CardTitle>
+                    <CardTitle>WhatsApp Campaign Template</CardTitle>
                     <CardDescription>
-                        Compose a multi-line WhatsApp message with emoji support.
+                        Use the <strong>Approved template</strong> dropdown and pick the exact Serri
+                        template name (e.g. <code>disha_job_alert_copy</code>,{" "}
+                        <code>disha_event_alert</code>). Then fill only the dynamic fields.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    {campaignConfig && !campaignConfig.configured ? (
+                        <p className="text-sm text-amber-700 dark:text-amber-400">
+                            Serri is not configured. Missing: {campaignConfig.missing_keys.join(', ') || 'unknown'}.
+                            Add these to disha-server/.env and restart the API.
+                        </p>
+                    ) : null}
                     <div className="space-y-2">
                         <Label htmlFor="bulk-whatsapp-campaign">Campaign Name</Label>
                         <Input
@@ -683,22 +781,87 @@ export function BulkWhatsAppManagement() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                            <Label htmlFor="bulk-whatsapp-message">WhatsApp Message</Label>
-                            <span className={`text-xs ${charCount > WHATSAPP_MAX_CHARS ? 'text-red-600' : 'text-gray-500'}`}>
-                                {charCount} / {WHATSAPP_MAX_CHARS}
-                            </span>
-                        </div>
-                        <Textarea
-                            id="bulk-whatsapp-message"
-                            ref={messageRef}
-                            rows={10}
-                            value={message}
-                            onChange={(event) => setMessage(event.target.value)}
-                            placeholder="Type your WhatsApp message."
-                            className="font-sans"
-                        />
+                        <Label htmlFor="bulk-whatsapp-template">
+                            Approved template (template name) *
+                        </Label>
+                        <select
+                            id="bulk-whatsapp-template"
+                            value={selectedTemplateName}
+                            onChange={(event) => handleTemplateChange(event.target.value)}
+                            className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                            <option value="" disabled>
+                                Select a template
+                            </option>
+                            {(campaignConfig?.templates || []).map((template) => (
+                                <option key={template.name} value={template.name}>
+                                    {template.name}
+                                </option>
+                            ))}
+                        </select>
+                        {selectedTemplateName ? (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Selected template name sent to Serri:{' '}
+                                <code className="font-mono">{selectedTemplateName}</code>
+                            </p>
+                        ) : (
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                Choose a template here before sending.
+                            </p>
+                        )}
                     </div>
+                    {selectedTemplate ? (
+                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3 text-sm">
+                            <div>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">Template ID:</span>{' '}
+                                {selectedTemplate.name}
+                            </div>
+                            <div>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">Language:</span>{' '}
+                                {selectedTemplate.language}
+                            </div>
+                            <div>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                                    Approved message (fixed):
+                                </span>
+                                <pre className="whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900/40 p-3 text-xs text-gray-700 dark:text-gray-300">
+                                    {selectedTemplate.body}
+                                </pre>
+                            </div>
+                            <div className="space-y-3 pt-1">
+                                <p className="font-semibold text-gray-700 dark:text-gray-300">
+                                    Dynamic fields
+                                </p>
+                                {selectedTemplate.params.map((param, index) =>
+                                    param.source === 'recipient_name' ? (
+                                        <div
+                                            key={param.key}
+                                            className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-600 dark:text-gray-400"
+                                        >
+                                            {`{{${index + 1}}} ${param.label}`}: uses each recipient&apos;s name
+                                        </div>
+                                    ) : (
+                                        <div key={param.key} className="space-y-1.5">
+                                            <Label htmlFor={`bulk-wa-param-${param.key}`}>
+                                                {`{{${index + 1}}} ${param.label}`}
+                                            </Label>
+                                            <Input
+                                                id={`bulk-wa-param-${param.key}`}
+                                                value={adminParamValues[param.key] || ''}
+                                                onChange={(event) =>
+                                                    setAdminParamValues((current) => ({
+                                                        ...current,
+                                                        [param.key]: event.target.value,
+                                                    }))
+                                                }
+                                                placeholder={`Enter ${param.label.toLowerCase()}`}
+                                            />
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    ) : null}
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Button type="button" variant="outline" onClick={() => setShowPreview(true)}>
                             <Eye className="h-4 w-4 mr-2" />
@@ -711,12 +874,24 @@ export function BulkWhatsAppManagement() {
                                     toast.error('Campaign name is required')
                                     return
                                 }
-                                if (!message.trim()) {
-                                    toast.error('WhatsApp message is required')
+                                if (!campaignConfig?.configured) {
+                                    toast.error('Serri WhatsApp is not configured')
                                     return
                                 }
-                                if (charCount > WHATSAPP_MAX_CHARS) {
-                                    toast.error(`Message exceeds ${WHATSAPP_MAX_CHARS} characters`)
+                                const templateName = (selectedTemplateName || '').trim()
+                                const template =
+                                    selectedTemplate ||
+                                    findSelectedTemplate(campaignConfig, templateName)
+                                if (!templateName || !template) {
+                                    toast.error('Please select an approved WhatsApp template')
+                                    return
+                                }
+                                const adminParams = buildAdminParamList(template, adminParamValues)
+                                const missing = template.params
+                                    .filter((param) => param.source === 'admin')
+                                    .find((param, index) => !adminParams[index])
+                                if (missing) {
+                                    toast.error(`Please fill in "${missing.label}"`)
                                     return
                                 }
                                 if (totalRecipients === 0) {
@@ -738,7 +913,7 @@ export function BulkWhatsAppManagement() {
                 <CardHeader>
                     <CardTitle>WhatsApp Logs</CardTitle>
                     <CardDescription>
-                        Per-recipient delivery history with Twilio SID and errors.
+                        Per-recipient delivery history with Serri message ID and errors.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -755,7 +930,7 @@ export function BulkWhatsAppManagement() {
                                         <th className="px-3 py-2 text-left">Phone</th>
                                         <th className="px-3 py-2 text-left">Campaign</th>
                                         <th className="px-3 py-2 text-left">Status</th>
-                                        <th className="px-3 py-2 text-left">Twilio SID</th>
+                                        <th className="px-3 py-2 text-left">Message ID</th>
                                         <th className="px-3 py-2 text-left">Error</th>
                                         <th className="px-3 py-2 text-left">Sent Time</th>
                                     </tr>
@@ -767,7 +942,7 @@ export function BulkWhatsAppManagement() {
                                             <td className="px-3 py-3">{log.recipient_phone}</td>
                                             <td className="px-3 py-3">{log.campaign_name}</td>
                                             <td className="px-3 py-3 capitalize">{log.status}</td>
-                                            <td className="px-3 py-3 font-mono text-xs">{log.twilio_sid || '—'}</td>
+                                            <td className="px-3 py-3 font-mono text-xs">{log.provider_message_id || log.twilio_sid || '—'}</td>
                                             <td className="px-3 py-3 text-red-600 max-w-xs truncate" title={log.error_message || undefined}>
                                                 {log.error_message || '—'}
                                             </td>
@@ -802,7 +977,7 @@ export function BulkWhatsAppManagement() {
                     </div>
                     <div>
                         <span className="font-semibold text-gray-700 dark:text-gray-300 block mb-2">
-                            Message (placeholders filled from selected recipient data):
+                            Message preview (approved template with your values):
                         </span>
                         <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 font-sans text-sm">
                             {previewMessage || '—'}
@@ -816,7 +991,7 @@ export function BulkWhatsAppManagement() {
                 onClose={() => setShowConfirm(false)}
                 onConfirm={handleSend}
                 title="Send Bulk WhatsApp"
-                message={`Are you sure you want to send this WhatsApp message to ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}?`}
+                message={`Are you sure you want to send the approved WhatsApp template to ${totalRecipients} recipient${totalRecipients === 1 ? '' : 's'}?`}
                 confirmText="Send"
                 cancelText="Cancel"
                 variant="info"

@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins, Sora } from 'next/font/google'
-import NextTopLoader from 'nextjs-toploader'
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { TopLoader } from '@/components/providers/top-loader'
 import { LoadingProvider } from '@/contexts/LoadingContext'
 import { AuthLoginModalProvider } from '@/contexts/AuthLoginModalContext'
 import { Toaster } from 'react-hot-toast'
 import { WhatsAppFloatingButton } from '@/components/ui/WhatsAppFloatingButton'
+import { ProfileCompletionModalHost } from '@/components/ui/ProfileCompletionModalHost'
 import { config } from '@/lib/config'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -24,7 +25,11 @@ const sora = Sora({
 export const metadata: Metadata = {
     title: 'Hire Karma - It all depends upon your karma',
     description: 'Connect with opportunities that match your skills and aspirations',
-
+    icons: {
+        icon: [{ url: '/favicon.png', type: 'image/png' }],
+        apple: [{ url: '/favicon.png', type: 'image/png' }],
+        shortcut: '/favicon.png',
+    },
 }
 
 export const viewport: Viewport = {
@@ -43,19 +48,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${inter.variable} ${poppins.variable} ${sora.variable} font-sans`}>
-                <NextTopLoader
-                  color="#1b52a4"
-                  initialPosition={0.08}
-                  crawlSpeed={200}
-                  height={3}
-                  crawl
-                  showSpinner={false}
-                  easing="ease"
-                  speed={200}
-                  shadow="0 0 10px #1b52a4,0 0 5px #1b52a4"
-                  zIndex={9999}
-                  showAtBottom={false}
-                />
+                <TopLoader />
                 <ThemeProvider
                     attribute="class"
                     disableTransitionOnChange
@@ -67,6 +60,7 @@ export default function RootLayout({
                         <AuthLoginModalProvider>
                           {children}
                           <WhatsAppFloatingButton />
+                          <ProfileCompletionModalHost />
                           <Toaster
                             position="top-right"
                             toastOptions={{

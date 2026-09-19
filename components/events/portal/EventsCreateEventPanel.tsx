@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { eventRequestService } from '@/services/eventRequestService'
 import type { EventRequestStatus } from '@/types/eventRequest'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 
 const ORG_KINDS = ['Corporate', 'University', 'Organization', 'Other'] as const
 
@@ -143,6 +145,8 @@ export function EventsCreateEventPanel({
   className,
   fillHeight = false,
 }: EventsCreateEventPanelProps) {
+  const { isAuthenticated } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [requestId, setRequestId] = useState<string | null>(null)
@@ -197,6 +201,13 @@ export function EventsCreateEventPanel({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+
+    if (!isAuthenticated) {
+      openLoginModal({
+        redirect: '/events#create-event-request',
+      })
+      return
+    }
 
     const isOtherOrg = form.orgKind === 'Other'
     const isOtherEvent = form.eventType === 'Other'

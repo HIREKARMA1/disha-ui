@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast'
 import { getErrorMessage, type ApiError } from '@/lib/error-handler'
 import type { CollegeLookupRow } from '@/types/lookup'
 import * as lookupAdminService from '@/services/lookupAdminService'
+import type { CollegeListSort } from '@/services/lookupAdminService'
 import { universityManagementService } from '@/services/universityManagementService'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { CollegeLookupToolbar } from './CollegeLookupToolbar'
@@ -12,9 +13,11 @@ import { CollegeLookupTable } from './CollegeLookupTable'
 import { CollegeLookupFormModal, type CollegeFormMode } from './CollegeLookupFormModal'
 
 const PAGE_SIZE = 25
+const DEFAULT_SORT: CollegeListSort = 'name_asc'
 
 export function CollegeLookupSection() {
     const [selectedInstituteId, setSelectedInstituteId] = useState<string | undefined>()
+    const [sort, setSort] = useState<CollegeListSort>(DEFAULT_SORT)
     const [skip, setSkip] = useState(0)
 
     const [colleges, setColleges] = useState<CollegeLookupRow[]>([])
@@ -33,7 +36,7 @@ export function CollegeLookupSection() {
 
     useEffect(() => {
         setSkip(0)
-    }, [selectedInstituteId])
+    }, [selectedInstituteId, sort])
 
     const loadUniversities = useCallback(async () => {
         try {
@@ -57,6 +60,7 @@ export function CollegeLookupSection() {
                     college_id: selectedInstituteId,
                     include_student_counts: true,
                     limit: 1,
+                    sort,
                 })
                 setColleges(res.colleges)
                 setTotal(res.total)
@@ -65,6 +69,7 @@ export function CollegeLookupSection() {
                     skip,
                     limit: PAGE_SIZE,
                     include_student_counts: true,
+                    sort,
                 })
                 setColleges(res.colleges)
                 setTotal(res.total)
@@ -76,7 +81,7 @@ export function CollegeLookupSection() {
         } finally {
             setIsLoading(false)
         }
-    }, [skip, selectedInstituteId])
+    }, [skip, selectedInstituteId, sort])
 
     useEffect(() => {
         loadUniversities()
@@ -141,8 +146,10 @@ export function CollegeLookupSection() {
         <div className="space-y-6">
             <CollegeLookupToolbar
                 selectedInstituteId={selectedInstituteId}
+                sort={sort}
                 onInstituteChange={(collegeId) => setSelectedInstituteId(collegeId)}
                 onClearInstitute={() => setSelectedInstituteId(undefined)}
+                onSortChange={setSort}
                 onAdd={openCreate}
             />
             <CollegeLookupTable
@@ -154,11 +161,13 @@ export function CollegeLookupSection() {
                 total={total}
                 universityNameById={univMap}
                 hidePagination={!!selectedInstituteId}
+                sort={sort}
                 onRetry={fetchColleges}
                 onEdit={openEdit}
                 onDelete={setDeleteTarget}
                 onPrevPage={() => setSkip((s) => Math.max(0, s - PAGE_SIZE))}
                 onNextPage={() => setSkip((s) => s + PAGE_SIZE)}
+                onPageChange={(page) => setSkip((page - 1) * PAGE_SIZE)}
             />
 
             <CollegeLookupFormModal

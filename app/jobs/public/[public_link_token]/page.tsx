@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
-import { Navbar } from '@/components/ui/navbar'
+import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { formatSalaryRange } from '@/lib/currency'
 import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
+import { buildAuthPath } from '@/lib/authLinks'
 import {
     APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
@@ -402,7 +403,7 @@ export default function PublicJobPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Navbar variant="transparent" />
+                <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
                 <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center">
                         <Loader2 className="w-8 h-8 animate-spin text-primary-600 mx-auto mb-4" />
@@ -416,8 +417,8 @@ export default function PublicJobPage() {
     if (error || !job) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Navbar variant="transparent" />
-                <div className="flex items-center justify-center min-h-[60vh] pt-24 px-4">
+                <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
+                <div className="flex items-center justify-center min-h-[60vh] px-4">
                     <div className="text-center">
                         <AlertCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-4" />
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -426,7 +427,7 @@ export default function PublicJobPage() {
                         <p className="text-gray-600 dark:text-gray-400 mb-4">
                             {error || 'This job is not publicly accessible or has been removed.'}
                         </p>
-                        <Button onClick={() => router.push('/auth/login')}>
+                        <Button onClick={() => router.push(buildAuthPath('/auth/login'))}>
                             Go to Login
                         </Button>
                     </div>
@@ -459,14 +460,14 @@ export default function PublicJobPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            <Navbar variant="transparent" />
+            <DishaTopBar searchPlaceholder="Search jobs, events, resources…" />
 
             <PremiumAccessModal
                 isOpen={showPremiumModal}
                 onClose={() => setShowPremiumModal(false)}
             />
 
-            <div className="w-full pt-24 pb-12">
+            <div className="w-full pt-6 pb-12">
                 <div className="w-full px-4 sm:px-6 lg:px-8 mb-6">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
                         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   LayoutDashboard,
   BookOpen,
@@ -37,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         {/* Logo */}
         <div className="p-6 flex items-center justify-between">
-          {sidebarOpen && <h1 className="text-xl font-bold">DISHA Admin</h1>}
+          {sidebarOpen && <BrandLogo href="/admin/dashboard" imageClassName="h-8" />}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-1 hover:bg-gray-800 rounded-lg"

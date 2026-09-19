@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { buildAuthPath } from '@/lib/authLinks'
 
 export default function AdminSectionLayout({
   children,
@@ -15,11 +16,21 @@ export default function AdminSectionLayout({
   useEffect(() => {
     if (isLoading) return
     if (!user) {
-      router.replace('/auth/login?type=admin&redirect=/dashboard/admin/events/requests')
+      router.replace(
+        buildAuthPath('/auth/login', {
+          type: 'admin',
+          redirect: '/dashboard/admin/events/requests',
+        })
+      )
       return
     }
     if (user.user_type !== 'admin') {
-      router.replace('/auth/login?type=admin&redirect=/dashboard/admin/events/requests')
+      router.replace(
+        buildAuthPath('/auth/login', {
+          type: 'admin',
+          redirect: '/dashboard/admin/events/requests',
+        })
+      )
     }
   }, [isLoading, user, router])
 

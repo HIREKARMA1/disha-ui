@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { config } from './config';
+import { buildAuthPath } from './authLinks';
 import {
   StudentRegisterRequest,
   CorporateRegisterRequest,
@@ -62,7 +63,7 @@ class ApiClient {
             // Refresh failed, redirect to login
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
-            window.location.href = '/auth/login';
+            window.location.href = buildAuthPath('/auth/login');
           }
         }
 

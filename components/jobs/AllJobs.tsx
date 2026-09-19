@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   type FormEvent,
+  type KeyboardEvent,
 } from 'react'
 import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -124,6 +125,127 @@ const CATEGORY_CHIPS: readonly { value: CategoryChip; label: string }[] = [
     { value: 'campus_drive', label: 'Campus Drive' },
     { value: 'saved', label: 'Saved' },
 ]
+
+const MAX_SEARCH_SUGGESTIONS = 8
+
+const JOB_SEARCH_SUGGESTIONS: readonly string[] = [
+    'Data Analyst',
+    'Data Science',
+    'Data Scientist',
+    'Data Engineer',
+    'Database Administrator',
+    'Software Engineer',
+    'Software Developer',
+    'Frontend Developer',
+    'Backend Developer',
+    'Full Stack Developer',
+    'Web Developer',
+    'Mobile Developer',
+    'Android Developer',
+    'iOS Developer',
+    'React Developer',
+    'Python Developer',
+    'Java Developer',
+    'Machine Learning Engineer',
+    'AI Engineer',
+    'DevOps Engineer',
+    'Cloud Engineer',
+    'Business Analyst',
+    'Product Manager',
+    'Project Manager',
+    'UI/UX Designer',
+    'Graphic Designer',
+    'QA Engineer',
+    'Test Engineer',
+    'Cyber Security Analyst',
+    'Network Engineer',
+    'System Administrator',
+    'HR Executive',
+    'Digital Marketing',
+    'Content Writer',
+    'Sales Executive',
+    'Customer Support',
+    'Internship',
+    'Campus Drive',
+    'Python',
+    'JavaScript',
+    'React',
+    'SQL',
+    'AWS',
+    'Machine Learning',
+]
+
+function suggestionMatchesQuery(text: string, query: string): boolean {
+    const t = text.toLowerCase()
+    const q = query.toLowerCase()
+    if (t.startsWith(q)) return true
+    return t.split(/[\s/+\-_,.()]+/).some((word) => word.startsWith(q))
+}
+
+function collectJobSuggestionPool(jobs: Job[]): string[] {
+    const seen = new Set<string>()
+    const out: string[] = []
+    const add = (raw?: string | null) => {
+        const value = raw?.trim()
+        if (!value) return
+        const key = value.toLowerCase()
+        if (seen.has(key)) return
+        seen.add(key)
+        out.push(value)
+    }
+
+    for (const job of jobs) {
+        add(job.title)
+        add(job.company_name)
+        add(job.corporate_name)
+        add(job.industry)
+        for (const skill of job.skills_required || []) add(skill)
+    }
+
+    return out
+}
+
+function filterJobSuggestions(query: string, fromJobs: string[]): string[] {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+
+    const seen = new Set<string>()
+    const ranked: { value: string; score: number }[] = []
+
+    const consider = (value: string, fromLiveJob: boolean) => {
+        if (!suggestionMatchesQuery(value, q)) return
+        const key = value.toLowerCase()
+        if (seen.has(key)) return
+        seen.add(key)
+        const lower = value.toLowerCase()
+        let score = fromLiveJob ? 0 : 20
+        if (lower.startsWith(q)) score -= 10
+        score += Math.min(value.length, 40)
+        ranked.push({ value, score })
+    }
+
+    fromJobs.forEach((value) => consider(value, true))
+    JOB_SEARCH_SUGGESTIONS.forEach((value) => consider(value, false))
+
+    ranked.sort((a, b) => a.score - b.score)
+    return ranked.slice(0, MAX_SEARCH_SUGGESTIONS).map((item) => item.value)
+}
+
+function highlightSuggestion(text: string, query: string) {
+    const q = query.trim()
+    if (!q) return text
+    const index = text.toLowerCase().indexOf(q.toLowerCase())
+    if (index < 0) return text
+    return (
+        <>
+            {text.slice(0, index)}
+            <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {text.slice(index, index + q.length)}
+            </span>
+            {text.slice(index + q.length)}
+        </>
+    )
+}
 
 function parseFiltersFromParams(params: URLSearchParams): {
     searchTerm: string
@@ -317,6 +439,8 @@ export function AllJobs() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState(initial.searchTerm)
+    const [suggestionsOpen, setSuggestionsOpen] = useState(false)
+    const [activeSuggestion, setActiveSuggestion] = useState(-1)
     const [pagination, setPagination] = useState({
         page: initial.page,
         limit: 12,
@@ -353,6 +477,26 @@ export function AllJobs() {
     const ignoreUrlEffect = useRef(false)
     const fetchIdRef = useRef(0)
     const didMountFetch = useRef(false)
+    const searchBoxRef = useRef<HTMLDivElement>(null)
+
+    const jobSuggestionPool = useMemo(() => collectJobSuggestionPool(jobs), [jobs])
+    const searchSuggestions = useMemo(
+        () => filterJobSuggestions(searchTerm, jobSuggestionPool),
+        [searchTerm, jobSuggestionPool]
+    )
+    const showSearchSuggestions =
+        suggestionsOpen && searchTerm.trim().length >= 1 && searchSuggestions.length > 0
+
+    useEffect(() => {
+        const onPointerDown = (event: MouseEvent) => {
+            if (!searchBoxRef.current?.contains(event.target as Node)) {
+                setSuggestionsOpen(false)
+                setActiveSuggestion(-1)
+            }
+        }
+        document.addEventListener('mousedown', onPointerDown)
+        return () => document.removeEventListener('mousedown', onPointerDown)
+    }, [])
 
     const activeFilterCount = useMemo(() => {
         let count = Object.values(filters).filter(Boolean).length
@@ -719,9 +863,44 @@ export function AllJobs() {
         pagination.page,
     ])
 
+    const pickSearchSuggestion = (value: string) => {
+        setSearchTerm(value)
+        setSuggestionsOpen(false)
+        setActiveSuggestion(-1)
+        applyFiltersAndFetch({ searchTerm: value, page: 1 })
+    }
+
     const handleSearch = (e?: FormEvent) => {
         e?.preventDefault()
+        setSuggestionsOpen(false)
+        setActiveSuggestion(-1)
         applyFiltersAndFetch({ searchTerm, page: 1 })
+    }
+
+    const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (!showSearchSuggestions) return
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setActiveSuggestion((prev) => (prev + 1) % searchSuggestions.length)
+            return
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setActiveSuggestion((prev) =>
+                prev <= 0 ? searchSuggestions.length - 1 : prev - 1
+            )
+            return
+        }
+        if (e.key === 'Escape') {
+            setSuggestionsOpen(false)
+            setActiveSuggestion(-1)
+            return
+        }
+        if (e.key === 'Enter' && activeSuggestion >= 0 && searchSuggestions[activeSuggestion]) {
+            e.preventDefault()
+            pickSearchSuggestion(searchSuggestions[activeSuggestion])
+        }
     }
 
     const handleCategoryChange = (value: CategoryChip) => {
@@ -848,15 +1027,59 @@ export function AllJobs() {
                             onSubmit={handleSearch}
                             className="flex gap-1.5 sm:gap-3"
                         >
-                            <div className="relative min-w-0 flex-1">
-                                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 sm:left-3 sm:h-4 sm:w-4" />
+                            <div ref={searchBoxRef} className="relative min-w-0 flex-1">
+                                <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 sm:left-3 sm:h-4 sm:w-4" />
                                 <Input
                                     type="text"
+                                    role="combobox"
+                                    aria-expanded={showSearchSuggestions}
+                                    aria-controls="jobs-search-suggestions"
+                                    aria-autocomplete="list"
+                                    aria-activedescendant={
+                                        activeSuggestion >= 0
+                                            ? `jobs-search-option-${activeSuggestion}`
+                                            : undefined
+                                    }
+                                    autoComplete="off"
                                     placeholder="Search for jobs, roles, skills or companies..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value)
+                                        setSuggestionsOpen(true)
+                                        setActiveSuggestion(-1)
+                                    }}
+                                    onFocus={() => {
+                                        if (searchTerm.trim().length >= 1) setSuggestionsOpen(true)
+                                    }}
+                                    onKeyDown={handleSearchKeyDown}
                                     className="h-9 rounded-lg border-gray-200 bg-white pl-8 text-sm focus:border-blue-500 focus:ring-blue-500/20 dark:border-white/10 dark:bg-[#0f1219] sm:h-10 sm:rounded-xl sm:pl-9"
                                 />
+                                {showSearchSuggestions && (
+                                    <ul
+                                        id="jobs-search-suggestions"
+                                        role="listbox"
+                                        className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-[#151b2b]"
+                                    >
+                                        {searchSuggestions.map((suggestion, index) => (
+                                            <li
+                                                key={suggestion}
+                                                id={`jobs-search-option-${index}`}
+                                                role="option"
+                                                aria-selected={index === activeSuggestion}
+                                                className={`cursor-pointer px-3 py-2 text-sm ${
+                                                    index === activeSuggestion
+                                                        ? 'bg-blue-50 text-gray-900 dark:bg-blue-500/15 dark:text-white'
+                                                        : 'text-gray-800 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-white/5'
+                                                }`}
+                                                onMouseDown={(event) => event.preventDefault()}
+                                                onMouseEnter={() => setActiveSuggestion(index)}
+                                                onClick={() => pickSearchSuggestion(suggestion)}
+                                            >
+                                                {highlightSuggestion(suggestion, searchTerm)}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                             <MobileFilterBottomSheet
                                 open={filterSheetOpen}

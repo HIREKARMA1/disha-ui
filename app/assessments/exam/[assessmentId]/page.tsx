@@ -11,6 +11,7 @@ import {
   type PublicExamBrief,
   type StudentExamEligibility,
 } from '@/components/assessments/StudentExamInstructions'
+import { buildAuthPath } from '@/lib/authLinks'
 
 export default function StudentExamEntryPage() {
   const params = useParams()
@@ -27,11 +28,11 @@ export default function StudentExamEntryPage() {
 
   const examPath = `/assessments/exam/${assessmentId}`
   const loginUrl = useMemo(
-    () => `/auth/login?type=student&redirect=${encodeURIComponent(examPath)}`,
+    () => buildAuthPath('/auth/login', { type: 'student', redirect: examPath }),
     [examPath]
   )
   const registerUrl = useMemo(
-    () => `/auth/register?type=student&redirect=${encodeURIComponent(examPath)}`,
+    () => buildAuthPath('/auth/register', { type: 'student', redirect: examPath }),
     [examPath]
   )
 

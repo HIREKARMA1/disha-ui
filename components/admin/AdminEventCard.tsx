@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
+import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 import { cn } from '@/lib/utils'
 
 const pubBadge: Record<string, string> = {
@@ -101,7 +102,12 @@ export function AdminEventCard({
 
           <h3 className="line-clamp-2 text-lg font-bold text-gray-900 dark:text-white">{event.title}</h3>
           {event.short_description && (
-            <p className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{event.short_description}</p>
+            <div
+              className="event-description-html mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeEventDescriptionHtml(event.short_description, ''),
+              }}
+            />
           )}
 
           <div className="mt-3 grid grid-cols-1 gap-1.5 text-sm text-gray-600 dark:text-gray-400 sm:grid-cols-2">

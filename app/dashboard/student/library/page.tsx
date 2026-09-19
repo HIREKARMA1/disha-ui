@@ -6,6 +6,7 @@ import { Search, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
+import { buildAuthPath } from '@/lib/authLinks'
 
 interface LibraryTopic {
     id: number
@@ -100,7 +101,7 @@ export default function LibraryPage() {
             setTotalPages(1)
 
             if (error.response?.status === 401) {
-                window.location.href = '/auth/login'
+                window.location.href = buildAuthPath('/auth/login')
             }
         } finally {
             setLoading(false)
