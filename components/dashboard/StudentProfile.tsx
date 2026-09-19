@@ -20,6 +20,7 @@ import {
     TrendingUp,
     Sparkles,
     Pencil,
+    KeyRound,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StudentSidebar } from './StudentSidebar'
@@ -45,6 +46,7 @@ import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { ProfileSummaryCard } from '@/components/student/ui/ProfileSummaryCard'
 import { StudentChip } from '@/components/student/ui/StudentChip'
+import { StudentPersonalSecurity } from './StudentPersonalSecurity'
 import { setProfileFormEditing } from '@/lib/profileEditingUi'
 import {
     registerSectionSaveRunner,
@@ -164,7 +166,8 @@ export function StudentProfile() {
         { id: 'skills', label: 'Skills', icon: Zap },
         { id: 'experience', label: 'Experience', icon: Trophy },
         { id: 'documents', label: 'Documents', icon: Shield },
-        { id: 'social', label: 'Social Links', icon: Globe }
+        { id: 'social', label: 'Social Links', icon: Globe },
+        { id: 'personal', label: 'Secrets', icon: KeyRound },
     ]
     const visibleTabs = isMobile ? tabs.filter((tab) => tab.id !== 'academic') : tabs
 
@@ -450,6 +453,10 @@ export function StudentProfile() {
                                                         }}
                                                         onClick={() => {
                                                             setActiveTab(tab.id)
+                                                            if (tab.id === 'personal') {
+                                                                setEditing(null)
+                                                                return
+                                                            }
                                                             if (editing) {
                                                                 setEditing(tab.id)
                                                             }
@@ -1203,6 +1210,10 @@ export function StudentProfile() {
                                                     </div>
                                                 )}
                                             </div>
+                                        )}
+
+                                        {activeTab === 'personal' && (
+                                            <StudentPersonalSecurity email={profile.email || ''} />
                                         )}
                                     </div>
                                 </div>

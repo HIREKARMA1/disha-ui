@@ -114,13 +114,14 @@ interface JobSearchResponse {
     has_prev: boolean
 }
 
-type CategoryChip = 'all' | 'open' | 'closed' | 'campus_drive' | 'saved'
+type CategoryChip = 'all' | 'open' | 'closed' | 'public' | 'campus_drive' | 'saved'
 type JobStatusFilter = 'all' | 'open' | 'closed'
 
 const CATEGORY_CHIPS: readonly { value: CategoryChip; label: string }[] = [
     { value: 'all', label: 'All Jobs' },
     { value: 'open', label: 'Open' },
     { value: 'closed', label: 'Closed' },
+    { value: 'public', label: 'Public Jobs' },
     { value: 'campus_drive', label: 'Campus Drive' },
     { value: 'saved', label: 'Saved' },
 ]
@@ -269,6 +270,7 @@ function parseFiltersFromParams(params: URLSearchParams): {
         categoryRaw === 'all' ||
         categoryRaw === 'open' ||
         categoryRaw === 'closed' ||
+        categoryRaw === 'public' ||
         categoryRaw === 'campus_drive' ||
         categoryRaw === 'saved'
             ? categoryRaw
@@ -397,6 +399,10 @@ function applyClientJobFilters(
     }
 
     validatedJobs.sort((a, b) => {
+        // Open jobs first, closed last; preserve newest-first within each group.
+        const aOpen = isJobOpen(a) ? 0 : 1
+        const bOpen = isJobOpen(b) ? 0 : 1
+        if (aOpen !== bOpen) return aOpen - bOpen
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
         return dateB - dateA
@@ -585,6 +591,10 @@ export function AllJobs() {
                     params.set('is_campus_drive', 'true')
                 }
 
+                if (activeCategory === 'public') {
+                    params.set('is_public', 'true')
+                }
+
                 return params
             }
 
@@ -637,9 +647,13 @@ export function AllJobs() {
                     }
 
                     const validatedJobs = applyClientJobFilters(collected, activeStatus, activeDate)
-                    validatedJobs.sort(
-                        (a, b) => savedIds.indexOf(b.id) - savedIds.indexOf(a.id)
-                    )
+                    // Keep saved order as a secondary key, but open jobs still come first.
+                    validatedJobs.sort((a, b) => {
+                        const aOpen = isJobOpen(a) ? 0 : 1
+                        const bOpen = isJobOpen(b) ? 0 : 1
+                        if (aOpen !== bOpen) return aOpen - bOpen
+                        return savedIds.indexOf(b.id) - savedIds.indexOf(a.id)
+                    })
                     const totalPages = Math.max(1, Math.ceil(validatedJobs.length / pageSize) || 0)
                     const safePage = Math.min(Math.max(1, page), totalPages || 1)
                     const start = (safePage - 1) * pageSize
