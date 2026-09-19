@@ -317,7 +317,7 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
             <KeyRound className="w-6 h-6 text-white" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Personal</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Secrets</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">Password &amp; security settings</p>
           </div>
         </div>

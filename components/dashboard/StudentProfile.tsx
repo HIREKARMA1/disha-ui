@@ -167,7 +167,7 @@ export function StudentProfile() {
         { id: 'experience', label: 'Experience', icon: Trophy },
         { id: 'documents', label: 'Documents', icon: Shield },
         { id: 'social', label: 'Social Links', icon: Globe },
-        { id: 'personal', label: 'Personal', icon: KeyRound },
+        { id: 'personal', label: 'Secrets', icon: KeyRound },
     ]
     const visibleTabs = isMobile ? tabs.filter((tab) => tab.id !== 'academic') : tabs
 

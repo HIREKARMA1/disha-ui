@@ -7,12 +7,12 @@ import {
     User,
     Briefcase,
     FileText,
-    Target,
+    // Target, // used by hidden Career Align nav item
     Search,
-    Library,
+    // Library, // used by hidden Library nav item
     X,
     LogOut,
-    Brain,
+    // Brain, // used by hidden Practice nav item
     ClipboardList,
     Calendar,
     MoreHorizontal,
@@ -77,18 +77,19 @@ const navItems: NavItem[] = [
         icon: FileText,
         description: 'Create professional resume',
     },
-    {
-        label: 'Career Align',
-        href: '/dashboard/student/career-align',
-        icon: Target,
-        description: 'Guidance & roadmap',
-    },
-    {
-        label: 'Practice',
-        href: '/dashboard/student/practice',
-        icon: Brain,
-        description: 'Tests & assessments',
-    },
+    // Temporarily hidden from Student navigation — keep for easy re-enable
+    // {
+    //     label: 'Career Align',
+    //     href: '/dashboard/student/career-align',
+    //     icon: Target,
+    //     description: 'Guidance & roadmap',
+    // },
+    // {
+    //     label: 'Practice',
+    //     href: '/dashboard/student/practice',
+    //     icon: Brain,
+    //     description: 'Tests & assessments',
+    // },
     {
         label: 'Mock Tests',
         href: '/dashboard/student/mock-tests',
@@ -101,12 +102,13 @@ const navItems: NavItem[] = [
         icon: Calendar,
         description: 'Workshops & events',
     },
-    {
-        label: 'Library',
-        href: '/dashboard/student/library',
-        icon: Library,
-        description: 'Resources & materials',
-    },
+    // Temporarily hidden from Student navigation — keep for easy re-enable
+    // {
+    //     label: 'Library',
+    //     href: '/dashboard/student/library',
+    //     icon: Library,
+    //     description: 'Resources & materials',
+    // },
     {
         label: 'Video Search',
         href: '/dashboard/student/video-search',
