@@ -39,14 +39,24 @@ import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
   APPLY_SUCCESS_MESSAGE,
+  CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   JOB_CLOSED_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   clearAutoApplyQueryParams,
+  getApplyErrorMessage,
   getPassoutBatchApplyEligibility,
+  getUniversityApplyEligibility,
+  isCampusDriveNotForUniversityMessage,
   resumePendingJobApplication,
   shouldAutoApplyForJob,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import {
+  resolveCampusDriveInterestOutcome,
+  submitCampusDriveInterest,
+  toastCampusDriveRequestStatus,
+} from '@/lib/campusDriveInterest'
+import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import type { Job } from '@/components/jobs/AllJobs'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
@@ -77,6 +87,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
   const [studentGraduationYear, setStudentGraduationYear] = useState<number | null>(null)
   const [studentBatch, setStudentBatch] = useState<string | null>(null)
+  const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+  const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
+  const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
 
   const canDownloadPdf =
     isAuthenticated &&
@@ -188,7 +201,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     })()
   }, [job, authLoading, user, router])
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!job) return
     if (!apiClient.getAccessToken()) {
       const redirect = prepareGuestApplyForLogin(job.id, getJobDetailPath(job))
@@ -203,6 +216,38 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       toast.error(JOB_CLOSED_MESSAGE)
       return
     }
+
+    const universityEligibility = getUniversityApplyEligibility({
+      isPublic: job.is_public,
+      publicAccessLevel: job.public_access_level,
+      assignedUniversityIds: job.assigned_university_ids,
+      isAuthenticatedStudent: Boolean(isAuthenticated && user?.user_type === 'student'),
+      studentUniversityId,
+      isCampusDrive: Boolean(job.is_campus_drive),
+      hasAcceptedCampusDriveRequest,
+    })
+    if (!universityEligibility.canApply) {
+      const reason = universityEligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+      if (isCampusDriveNotForUniversityMessage(reason)) {
+        const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+        if (outcome === 'accepted') {
+          setHasAcceptedCampusDriveRequest(true)
+        } else if (outcome === 'pending' || outcome === 'rejected') {
+          toastCampusDriveRequestStatus(outcome)
+          return
+        } else if (outcome === 'show_interest_modal') {
+          setShowCampusDriveInterestModal(true)
+          return
+        } else {
+          toast.error(reason)
+          return
+        }
+      } else {
+        toast.error(reason)
+        return
+      }
+    }
+
     const batchEligibility = getPassoutBatchApplyEligibility({
       passoutBatches: job.passout_batches,
       isAuthenticatedStudent: Boolean(
@@ -216,6 +261,22 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       return
     }
     setShowApplicationModal(true)
+  }
+
+  const handleCampusDriveStillInterested = async () => {
+    if (!job || campusDriveInterestSubmitting) return
+    setCampusDriveInterestSubmitting(true)
+    try {
+      const result = await submitCampusDriveInterest(job.id)
+      if (result.ok) {
+        setShowCampusDriveInterestModal(false)
+        if (result.status === 'accepted') {
+          setHasAcceptedCampusDriveRequest(true)
+        }
+      }
+    } finally {
+      setCampusDriveInterestSubmitting(false)
+    }
   }
 
   const handleApplySubmit = async (data: {
@@ -236,6 +297,19 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       setShowApplicationModal(false)
       setJob({ ...job, application_status: 'applied', can_apply: false })
     } catch (error: unknown) {
+      if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
+        setShowApplicationModal(false)
+        const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+        if (outcome === 'pending' || outcome === 'rejected') {
+          toastCampusDriveRequestStatus(outcome)
+        } else if (outcome === 'accepted') {
+          setHasAcceptedCampusDriveRequest(true)
+          toastApplyError(error)
+        } else {
+          setShowCampusDriveInterestModal(true)
+        }
+        return
+      }
       toastApplyError(error)
     } finally {
       setIsApplying(false)
@@ -591,6 +665,16 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           onSubmit={handleApplySubmit}
         />
       )}
+
+      <CampusDriveInterestModal
+        isOpen={showCampusDriveInterestModal}
+        onClose={() => {
+          if (campusDriveInterestSubmitting) return
+          setShowCampusDriveInterestModal(false)
+        }}
+        onStillInterested={handleCampusDriveStillInterested}
+        isSubmitting={campusDriveInterestSubmitting}
+      />
 
       <ShareJobModal
         isOpen={showShareModal}

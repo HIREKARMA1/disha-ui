@@ -17,6 +17,13 @@ interface DateTimePickerProps {
     showTime?: boolean
     /** When true, past calendar days and past times (for today) cannot be selected. */
     disablePast?: boolean
+    /**
+     * Calendar popover placement relative to the input.
+     * - below (default): always open under the input (existing behavior)
+     * - above: always open above the input
+     * - auto: open below when space allows; otherwise flip above to avoid clipping
+     */
+    placement?: 'below' | 'above' | 'auto'
 }
 
 export function DateTimePicker({
@@ -28,8 +35,10 @@ export function DateTimePicker({
     autoClose = true,
     showTime = false,
     disablePast = false,
+    placement = 'below',
 }: DateTimePickerProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const [openAbove, setOpenAbove] = useState(false)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [currentMonth, setCurrentMonth] = useState(new Date())
 
@@ -39,6 +48,53 @@ export function DateTimePicker({
     const [period, setPeriod] = useState<'AM' | 'PM'>('AM')
 
     const containerRef = useRef<HTMLDivElement>(null)
+
+    const estimatePanelHeight = () => (showTime ? 380 : 360)
+
+    const shouldOpenAbove = () => {
+        if (placement === 'above') return true
+        if (placement !== 'auto') return false
+        const rect = containerRef.current?.getBoundingClientRect()
+        if (!rect) return false
+        const gap = 8
+        const panelHeight = estimatePanelHeight()
+        const spaceBelow = window.innerHeight - rect.bottom - gap
+        const spaceAbove = rect.top - gap
+        return spaceBelow < panelHeight && spaceAbove >= spaceBelow
+    }
+
+    const openPicker = () => {
+        if (disabled) return
+        setOpenAbove(shouldOpenAbove())
+        setIsOpen(true)
+    }
+
+    const togglePicker = () => {
+        if (disabled) return
+        if (isOpen) {
+            setIsOpen(false)
+            return
+        }
+        openPicker()
+    }
+
+    // Keep auto placement correct on resize/scroll while open
+    useEffect(() => {
+        if (!isOpen || placement !== 'auto') return
+
+        const updatePlacement = () => {
+            setOpenAbove(shouldOpenAbove())
+        }
+
+        updatePlacement()
+        window.addEventListener('resize', updatePlacement)
+        window.addEventListener('scroll', updatePlacement, true)
+        return () => {
+            window.removeEventListener('resize', updatePlacement)
+            window.removeEventListener('scroll', updatePlacement, true)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-bind while open / placement mode
+    }, [isOpen, placement, showTime])
 
     // Robust parsing of initial value (timezone-agnostic manual parsing)
     useEffect(() => {
@@ -280,7 +336,7 @@ export function DateTimePicker({
                     value={formatDisplayValue()}
                     placeholder={placeholder}
                     readOnly
-                    onClick={() => !disabled && setIsOpen(!isOpen)}
+                    onClick={togglePicker}
                     className={cn(
                         "cursor-pointer pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-lg text-gray-900 dark:text-white transition-all outline-none",
                         className
@@ -297,12 +353,13 @@ export function DateTimePicker({
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: openAbove ? -10 : 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        exit={{ opacity: 0, y: openAbove ? -10 : 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
                         className={cn(
-                            "absolute top-full left-0 mt-2 z-50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-4 animate-in fade-in duration-200",
+                            "absolute left-0 z-50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-4 animate-in fade-in duration-200",
+                            openAbove ? "bottom-full mb-2" : "top-full mt-2",
                             showTime ? "w-auto min-w-[420px]" : "w-[280px]"
                         )}
                     >

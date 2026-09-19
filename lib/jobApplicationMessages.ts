@@ -33,6 +33,11 @@ export const JOB_NOT_FOR_UNIVERSITY_MESSAGE =
   'Your university is not assigned for this job.'
 export const CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE =
   'This campus drive no longer belongs to your university.'
+export const CAMPUS_DRIVE_REQUEST_PENDING_MESSAGE = 'Request Pending'
+export const CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE =
+  'Your request to apply for this campus drive was rejected.'
+export const CAMPUS_DRIVE_REQUEST_SENT_MESSAGE =
+  'Your request has been sent to the admin. You will be able to apply if your request is approved.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
 export const PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE =
   'Not eligible — graduation batch does not meet the job requirements'
@@ -41,6 +46,7 @@ export const PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE =
  * Client-side apply eligibility for university assignment.
  * Jobs stay visible publicly; once universities are assigned, only those may apply.
  * Public-for-all with no assignments remains open to any student.
+ * Accepted Campus Drive Requests unlock apply for that specific job only.
  */
 export function getUniversityApplyEligibility(options: {
   isPublic?: boolean | null
@@ -49,6 +55,7 @@ export function getUniversityApplyEligibility(options: {
   isAuthenticatedStudent: boolean
   studentUniversityId?: string | null
   isCampusDrive?: boolean | null
+  hasAcceptedCampusDriveRequest?: boolean | null
 }): { canApply: boolean; reason: string | null } {
   const assignments = options.assignedUniversityIds ?? []
   const isPublicForAll = Boolean(
@@ -71,6 +78,9 @@ export function getUniversityApplyEligibility(options: {
     !options.studentUniversityId ||
     !assignments.includes(options.studentUniversityId)
   ) {
+    if (options.hasAcceptedCampusDriveRequest) {
+      return { canApply: true, reason: null }
+    }
     return {
       canApply: false,
       reason: options.isCampusDrive
@@ -80,6 +90,13 @@ export function getUniversityApplyEligibility(options: {
   }
 
   return { canApply: true, reason: null }
+}
+
+export function isCampusDriveNotForUniversityMessage(
+  message: string | null | undefined
+): boolean {
+  if (!message) return false
+  return message.toLowerCase().includes('campus drive no longer belongs')
 }
 
 /**

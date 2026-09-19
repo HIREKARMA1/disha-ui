@@ -14,12 +14,20 @@ import { buildAuthPath } from '@/lib/authLinks'
 import {
     APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
+    getApplyErrorMessage,
     getUniversityApplyEligibility,
     getPassoutBatchApplyEligibility,
+    isCampusDriveNotForUniversityMessage,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
     toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import {
+    resolveCampusDriveInterestOutcome,
+    submitCampusDriveInterest,
+    toastCampusDriveRequestStatus,
+} from '@/lib/campusDriveInterest'
+import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import {
@@ -109,6 +117,9 @@ export default function PublicJobPage() {
     const [studentBatch, setStudentBatch] = useState<string | null>(null)
     const [showShareDropdown, setShowShareDropdown] = useState(false)
     const [showPremiumModal, setShowPremiumModal] = useState(false)
+    const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+    const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
+    const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
     const autoApplyAttempted = useRef(false)
 
     useEffect(() => {
@@ -272,6 +283,8 @@ export default function PublicJobPage() {
                 isAuthenticated && user?.user_type === 'student'
             ),
             studentUniversityId,
+            isCampusDrive: Boolean(job?.is_campus_drive),
+            hasAcceptedCampusDriveRequest,
         })
         if (!universityEligibility.canApply) {
             return universityEligibility
@@ -286,7 +299,7 @@ export default function PublicJobPage() {
         })
     }
 
-    const handleApplyClick = () => {
+    const handleApplyClick = async () => {
         if (!isAuthenticated) {
             if (job) {
                 redirectGuestToLoginForApply(router, job.id, `/jobs/public/${publicLinkToken}`)
@@ -302,11 +315,44 @@ export default function PublicJobPage() {
         // Check university assignment before applying
         const eligibility = canStudentApply()
         if (!eligibility.canApply) {
-            toast.error(eligibility.reason || 'You are not eligible to apply for this job')
+            const reason = eligibility.reason || 'You are not eligible to apply for this job'
+            if (isCampusDriveNotForUniversityMessage(reason) && job) {
+                const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+                if (outcome === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                    await handleApply()
+                    return
+                }
+                if (outcome === 'pending' || outcome === 'rejected') {
+                    toastCampusDriveRequestStatus(outcome)
+                    return
+                }
+                if (outcome === 'show_interest_modal') {
+                    setShowCampusDriveInterestModal(true)
+                    return
+                }
+            }
+            toast.error(reason)
             return
         }
 
         handleApply()
+    }
+
+    const handleCampusDriveStillInterested = async () => {
+        if (!job || campusDriveInterestSubmitting) return
+        setCampusDriveInterestSubmitting(true)
+        try {
+            const result = await submitCampusDriveInterest(job.id)
+            if (result.ok) {
+                setShowCampusDriveInterestModal(false)
+                if (result.status === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                }
+            }
+        } finally {
+            setCampusDriveInterestSubmitting(false)
+        }
     }
 
     const handleApply = async () => {
@@ -325,6 +371,18 @@ export default function PublicJobPage() {
             toast.success(APPLY_SUCCESS_MESSAGE)
         } catch (error: unknown) {
             console.error('Error applying for job:', error)
+            if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
+                const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+                if (outcome === 'pending' || outcome === 'rejected') {
+                    toastCampusDriveRequestStatus(outcome)
+                } else if (outcome === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                    toastApplyError(error)
+                } else {
+                    setShowCampusDriveInterestModal(true)
+                }
+                return
+            }
             toastApplyError(error)
         } finally {
             setIsApplying(false)
@@ -963,6 +1021,15 @@ export default function PublicJobPage() {
             </div>
 
 
+            <CampusDriveInterestModal
+                isOpen={showCampusDriveInterestModal}
+                onClose={() => {
+                    if (campusDriveInterestSubmitting) return
+                    setShowCampusDriveInterestModal(false)
+                }}
+                onStillInterested={handleCampusDriveStillInterested}
+                isSubmitting={campusDriveInterestSubmitting}
+            />
         </div>
     )
 }

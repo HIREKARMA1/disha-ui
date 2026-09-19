@@ -26,7 +26,7 @@ import {
     type DatePostedFilter,
 } from '@/components/jobs/JobsFilterFields'
 
-type CategoryChip = 'recommended' | 'all' | 'open' | 'closed'
+type CategoryChip = 'recommended' | 'all' | 'open' | 'closed' | 'unapproved'
 
 interface UniversityJob {
     id: string
@@ -207,6 +207,10 @@ function UniversityJobsPageContent() {
                 job.rejected ||
                 job.status === 'closed' ||
                 job.is_active === false
+            )) ||
+            (categoryChip === 'unapproved' && (
+                job.approval_status === 'pending' ||
+                (job.pending === true && job.approval_status !== 'approved' && job.approval_status !== 'rejected')
             ))
 
         const matchesJobType = !filters.job_type || job.job_type === filters.job_type
@@ -663,6 +667,7 @@ function UniversityJobsPageContent() {
                                         { value: 'all', label: 'All Jobs' },
                                         { value: 'open', label: 'Open' },
                                         { value: 'closed', label: 'Closed' },
+                                        { value: 'unapproved', label: 'Un Approved' },
                                     ] as const
                                 ).map((tab) => {
                                     const isActive = categoryChip === tab.value
