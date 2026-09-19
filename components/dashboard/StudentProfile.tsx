@@ -46,6 +46,7 @@ import { parseSkillsField, joinSkillsField } from '@/lib/skillsFieldUtils'
 import { CollegeInfoDisplay } from './CollegeInfoDisplay'
 import { ProfileSummaryCard } from '@/components/student/ui/ProfileSummaryCard'
 import { StudentChip } from '@/components/student/ui/StudentChip'
+import { StudentPersonalSecurity } from './StudentPersonalSecurity'
 import { setProfileFormEditing } from '@/lib/profileEditingUi'
 import {
     registerSectionSaveRunner,
