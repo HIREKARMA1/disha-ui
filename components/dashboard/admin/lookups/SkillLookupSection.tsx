@@ -176,6 +176,7 @@ export function SkillLookupSection({ kind }: SkillLookupSectionProps) {
                 onDelete={setDeleteTarget}
                 onPrevPage={() => setSkip((s) => Math.max(0, s - PAGE_SIZE))}
                 onNextPage={() => setSkip((s) => s + PAGE_SIZE)}
+                onPageChange={(page) => setSkip((page - 1) * PAGE_SIZE)}
             />
             <SkillLookupFormModal
                 isOpen={formOpen}

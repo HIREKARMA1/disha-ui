@@ -10,7 +10,6 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
-  LogOut,
   Menu,
   Newspaper,
   Search,
@@ -26,8 +25,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { BrandLogo } from '@/components/ui/BrandLogo'
+import { DishaAuthActions } from '@/components/ui/DishaAuthActions'
 import { Footer } from '@/components/ui/footer'
 import {
   HubCardSkeleton,
@@ -40,9 +39,9 @@ import {
 } from '@/components/home/HubOpportunityCards'
 import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
 import placedStudentsData from '@/data/placed-students.json'
-import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { HubWhyDisha } from '@/components/home/HubWhyDisha'
 import { getFeaturedBlogs } from '@/data/blogs'
+import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
 import { getJobDetailPath } from '@/lib/jobSlug'
@@ -232,7 +231,7 @@ const EXPLORE_ITEMS: ExploreItem[] = [
     id: 'mock_tests',
     label: 'Mock Tests',
     kind: 'link',
-    href: '/dashboard/student/mock-tests',
+    href: '/mock-tests',
     icon: ClipboardList,
   },
   {
@@ -255,28 +254,44 @@ const EXPLORE_ITEMS: ExploreItem[] = [
 
 const HUB_HOME_FAQS = [
   {
-    q: 'What industries will have the highest-paying jobs in 2026?',
-    a: 'Technology, healthcare, finance, and renewable energy are expected to lead — driven by AI, digital transformation, and ongoing demand for skilled professionals.',
+    q: 'What is DISHA and how does it help?',
+    a: 'DISHA connects students, universities and recruiters on one platform to make campus recruitment simpler and more accessible.',
   },
   {
-    q: 'What is the most in-demand job in India for 2026?',
-    a: 'AI and Machine Learning roles currently top the list, followed closely by cybersecurity and data science, as nearly every industry invests in these areas.',
+    q: 'How do students create a profile and find opportunities?',
+    a: 'Students can build their profile with academic, skill and eligibility details and discover relevant recruitment opportunities.',
   },
   {
-    q: 'Do I need a computer science degree to get into these roles?',
-    a: 'Not always. Many companies hire based on demonstrated skills and project work rather than the degree alone — practical training and placement prep matter more than ever.',
+    q: 'Can students apply to opportunities beyond their university?',
+    a: 'Yes, eligible students can explore and apply for opportunities available across participating universities.',
   },
   {
-    q: 'How is AI changing recruitment in 2026?',
-    a: 'AI now handles resume screening, sourcing, interview scheduling, and early phone screens — so hiring moves faster. Final decisions and cultural fit still need human judgment.',
+    q: 'Will students get updates about new opportunities?',
+    a: 'Yes. Students will receive updates when new recruitment opportunities are added to DISHA, helping them stay informed and apply on time.',
   },
   {
-    q: 'How can job seekers prepare for AI-driven hiring?',
-    a: 'Build an ATS-friendly resume with clear skills and measurable results, practice with AI interview simulations, and be ready to move quickly once shortlisted.',
+    q: 'Can students track their application status?',
+    a: 'Yes, students can track their applications and stay updated throughout the recruitment process.',
   },
   {
-    q: 'How does Disha / HireKarma help students get hired?',
-    a: 'Disha connects campus opportunities, jobs, and events. HireKarma also supports skill development, SolviqAI practice, Pre-Placement Training, and Shortlisted matching — from learning to offer.',
+    q: 'How does DISHA help universities manage placements?',
+    a: 'Universities can manage students, coordinate campus drives, set eligibility criteria and track recruitment activities from one platform.',
+  },
+  {
+    q: 'How does DISHA connect companies with students?',
+    a: 'Recruiters can post campus jobs with specific requirements and connect with eligible students across participating institutions.',
+  },
+  {
+    q: 'How does DISHA help recruiters find the right candidates?',
+    a: 'Eligibility screening, Career Align and video profiles help recruiters identify and review relevant candidates efficiently.',
+  },
+  {
+    q: 'Can recruiters reach students across multiple universities?',
+    a: 'Yes, recruiters can expand their campus hiring reach by connecting with eligible talent across participating partner universities.',
+  },
+  {
+    q: 'Who can use DISHA and how can they get started?',
+    a: 'DISHA supports students, universities and corporate recruiters; students can register directly, while institutions and recruiters can connect with HireKarma.',
   },
 ] as const
 
@@ -308,11 +323,6 @@ type HubJob = {
   [key: string]: unknown
 }
 
-function getDashboardPath(userType?: string) {
-  if (!userType) return '/dashboard'
-  return `/dashboard/${userType}`
-}
-
 function OpportunityHeader({
   onMenuOpen,
   searchSlot,
@@ -320,44 +330,6 @@ function OpportunityHeader({
   onMenuOpen: () => void
   searchSlot: ReactNode
 }) {
-  const { user, isAuthenticated, isLoading, logout } = useAuth()
-  const { openLoginModal } = useAuthLoginModal()
-
-  const authActions = (
-    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-      {isLoading ? (
-        <div className="h-8 w-8 animate-pulse rounded-md bg-gray-200 dark:bg-gray-800" />
-      ) : isAuthenticated && user ? (
-        <>
-          <Link href={getDashboardPath(user.user_type)} className="hidden md:block">
-            <Button size="sm" variant="outline" className="h-8 rounded-full shadow-none">
-              <User className="mr-1.5 h-3.5 w-3.5" />
-              Dashboard
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={logout}
-            className="hidden h-8 text-gray-600 dark:text-gray-400 md:inline-flex"
-          >
-            <LogOut className="mr-1.5 h-3.5 w-3.5" />
-            Logout
-          </Button>
-        </>
-      ) : (
-        <Button
-          size="sm"
-          className="h-8 rounded-full bg-primary-600 px-3.5 text-sm text-white shadow-none hover:bg-primary-700 sm:px-4 dark:border dark:border-[#232C42] dark:bg-[#141A29] dark:text-[#F4F6FA] dark:hover:bg-[#1B2334]"
-          onClick={() => openLoginModal()}
-        >
-          Login
-        </Button>
-      )}
-      <ThemeToggle />
-    </div>
-  )
-
   return (
     <header
       className={cn(
@@ -365,12 +337,8 @@ function OpportunityHeader({
         'dark:border-[#1A2233] dark:bg-[rgba(10,13,20,0.85)] dark:backdrop-blur-[10px]'
       )}
     >
-      {/*
-        Mobile (Unstop-like): row1 = menu · logo · Login; row2 = full search
-        Desktop (lg+): single row = search · Login (sidebar has brand)
-      */}
       <div className="flex flex-col lg:h-14 lg:flex-row lg:items-center lg:gap-3 lg:px-6">
-        <div className="flex h-12 items-center gap-2 px-3 sm:px-4 lg:order-2 lg:h-auto lg:shrink-0 lg:px-0">
+        <div className="flex min-h-12 flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-1.5 sm:px-4 lg:order-2 lg:h-auto lg:shrink-0 lg:flex-nowrap lg:px-0 lg:py-0">
           <button
             type="button"
             onClick={onMenuOpen}
@@ -382,7 +350,9 @@ function OpportunityHeader({
           <div className="min-w-0 shrink-0 lg:hidden">
             <BrandLogo href="/" priority compact />
           </div>
-          <div className="ml-auto lg:ml-0">{authActions}</div>
+          <div className="ml-auto lg:ml-0">
+            <DishaAuthActions />
+          </div>
         </div>
 
         <div className="min-w-0 flex-1 border-t border-gray-100 px-3 pb-2.5 pt-2 dark:border-[#1A2233] sm:px-4 lg:order-1 lg:border-0 lg:px-0 lg:pb-0 lg:pt-0">
@@ -580,19 +550,23 @@ export default function OpportunityHub() {
     scrollCategoryTileIntoStrip(pill.id)
 
     if (pill.id === 'jobs') {
-      router.push('/jobs')
+      window.open('/jobs', '_blank', 'noopener,noreferrer')
       return
     }
     if (pill.id === 'events') {
-      router.push('/events')
+      window.open('/events', '_blank', 'noopener,noreferrer')
       return
     }
     if (pill.id === 'mock_tests') {
-      router.push('/dashboard/student/mock-tests')
+      router.push('/mock-tests')
       return
     }
     if (pill.id === 'blogs') {
       router.push('/blogs')
+      return
+    }
+    if (pill.id === 'contact') {
+      window.location.href = 'mailto:info@hirekarma.in'
       return
     }
 
@@ -657,6 +631,10 @@ export default function OpportunityHub() {
     }
 
     if (item.kind === 'filter') {
+      if (href.startsWith('/jobs') || href.startsWith('/events')) {
+        window.open(href, '_blank', 'noopener,noreferrer')
+        return
+      }
       router.push(href)
       return
     }
@@ -872,7 +850,7 @@ export default function OpportunityHub() {
           <div ref={resultsAnchorRef} className="scroll-mt-28" />
 
           {/* Hub hero headline — tighter on mobile like Unstop */}
-          <div id="hub-top" ref={hubTopRef} className="mb-5 scroll-mt-28 sm:mb-7">
+          <div id="hub-top" ref={hubTopRef} className="mb-8 scroll-mt-28 sm:mb-10">
             <h1 className="text-xl font-extrabold uppercase leading-snug tracking-[0.02em] text-gray-900 dark:text-[1.65rem] dark:normal-case dark:tracking-[-0.02em] dark:text-[#F4F6FA] sm:text-3xl sm:leading-tight sm:tracking-[0.06em] dark:sm:text-4xl lg:text-4xl dark:lg:text-[42px] 2xl:text-[2.6rem]">
               Discover your{' '}
               <span className="bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent dark:from-[#24B4F0] dark:to-[#7FD4F5]">
@@ -919,7 +897,7 @@ export default function OpportunityHub() {
                     whileHover={reduceMotion ? undefined : { y: -6, scale: 1.05 }}
                     whileTap={reduceMotion ? undefined : { scale: 0.96 }}
                     className={cn(
-                      'group relative flex w-[104px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-2xl border px-2 py-3 text-center transition-all duration-200 sm:w-[120px] sm:gap-3 sm:px-2.5 sm:py-4 md:w-auto 2xl:py-5',
+                      'group relative flex w-[118px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-2xl border px-1.5 py-3 text-center transition-all duration-200 sm:w-[136px] sm:gap-3 sm:px-2 sm:py-4 md:w-auto 2xl:py-5',
                       'dark:border-[#1A2233] dark:bg-[#141A29] dark:hover:border-[#33405E] dark:hover:bg-[#1B2334]',
                       active && 'dark:!border-[rgba(0,162,229,0.35)] dark:!bg-[rgba(0,162,229,0.12)] dark:shadow-[0_4px_18px_rgba(0,162,229,0.15)]',
                       active ? tone.active : tone.idle,
@@ -971,7 +949,7 @@ export default function OpportunityHub() {
                     </span>
                     <span
                       className={cn(
-                        'relative line-clamp-2 min-h-[2.2em] text-[10px] font-bold leading-tight tracking-tight sm:text-[12px] 2xl:text-[13px]',
+                        'relative whitespace-nowrap text-[10px] font-bold leading-none tracking-tight sm:text-[12px] 2xl:text-[13px]',
                         active
                           ? 'text-gray-900 dark:text-[#F4F6FA]'
                           : 'text-gray-700 group-hover:text-gray-900 dark:text-[#93A0BD] dark:group-hover:text-[#F4F6FA]'
@@ -1000,19 +978,25 @@ export default function OpportunityHub() {
                 ))}
               </div>
             ) : isBrowseHome ? (
-              <div className="space-y-8">
+              <div className="space-y-12 sm:space-y-14">
                 <section id="hub-jobs" className="scroll-mt-28">
                   <HubSectionHeader
                     title="Jobs"
                     count={jobs.length}
                     viewAllHref={jobsViewAllHref}
                     viewAllLabel="View all"
+                    viewAllNewTab
                     subtitle="Fresh roles from hiring partners on Disha."
                   />
                   {jobs.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No jobs yet.{' '}
-                      <Link href="/jobs" className="font-medium text-primary-600 hover:underline">
+                      <Link
+                        href="/jobs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary-600 hover:underline"
+                      >
                         Browse jobs
                       </Link>
                     </p>
@@ -1037,12 +1021,18 @@ export default function OpportunityHub() {
                     count={events.length}
                     viewAllHref="/events"
                     viewAllLabel="View all"
+                    viewAllNewTab
                     subtitle="Hackathons, workshops, and campus competitions."
                   />
                   {events.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-8 text-center text-sm text-gray-500 dark:border-[#1A2233] dark:bg-[#141A29]">
                       No events yet.{' '}
-                      <Link href="/events" className="font-medium text-primary-600 hover:underline">
+                      <Link
+                        href="/events"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary-600 hover:underline"
+                      >
                         Browse events
                       </Link>
                     </p>
@@ -1141,35 +1131,32 @@ export default function OpportunityHub() {
                 <HubWhyDisha />
 
                 <section id="hub-faq" className="scroll-mt-28">
-                  <div className="mb-5">
+                  <div className="mb-6">
                     <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-                      <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
-                      FAQ
+                      <span className="h-7 w-1.5 shrink-0 rounded-sm bg-primary-500 sm:h-8" aria-hidden />
+                      Frequently Asked Questions
                     </h2>
                     <p className="mt-1.5 pl-3.5 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
-                      Answers from Disha career guides — jobs, skills, AI hiring & campus prep.
+                      Common questions about DISHA for students, universities and recruiters.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
-                    {HUB_HOME_FAQS.map((item, index) => (
+                  <div className="flex flex-col gap-2.5">
+                    {HUB_HOME_FAQS.map((item) => (
                       <details
                         key={item.q}
-                        className="group rounded-2xl border border-gray-200 bg-white px-4 py-3.5 open:border-primary-200 open:shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] dark:open:border-primary-800"
+                        className="group rounded-xl border border-gray-200 bg-white px-4 py-3.5 open:border-primary-200 open:shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] dark:open:border-primary-800"
                       >
                         <summary className="cursor-pointer list-none marker:content-none">
-                          <span className="flex items-start gap-3">
-                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary-50 text-[11px] font-bold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-                              {String(index + 1).padStart(2, '0')}
-                            </span>
+                          <span className="flex items-center gap-3">
                             <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-gray-900 dark:text-white">
                               {item.q}
                             </span>
-                            <span className="mt-0.5 text-base leading-none text-gray-400 transition group-open:rotate-45">
+                            <span className="shrink-0 text-lg leading-none text-gray-400 transition group-open:rotate-45">
                               +
                             </span>
                           </span>
                         </summary>
-                        <p className="mt-2.5 pl-9 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                        <p className="mt-2.5 pr-6 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
                           {item.a}
                         </p>
                       </details>
@@ -1200,6 +1187,8 @@ export default function OpportunityHub() {
                     {(tab === 'all' || tab === 'jobs') && (
                       <Link
                         href={jobsViewAllHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300"
                       >
                         All jobs
@@ -1211,6 +1200,8 @@ export default function OpportunityHub() {
                     {(tab === 'all' || tab === 'events') && (
                       <Link
                         href="/events"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300"
                       >
                         All events
@@ -1294,12 +1285,12 @@ export default function OpportunityHub() {
                   <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-200 bg-white py-16 text-center dark:border-[#1A2233] dark:bg-[#141A29]">
                     <p className="text-gray-600 dark:text-gray-400">No opportunities found.</p>
                     <div className="flex gap-2">
-                      <Link href="/jobs">
+                      <Link href="/jobs" target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" className="rounded-md shadow-none">
                           Jobs
                         </Button>
                       </Link>
-                      <Link href="/events">
+                      <Link href="/events" target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" className="rounded-md shadow-none">
                           Events
                         </Button>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/ui/navbar'
+import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -454,8 +454,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   if (!event) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <Navbar variant="transparent" />
-        <div className="flex-grow flex items-center justify-center pt-24">
+        <DishaTopBar searchPlaceholder="Search events, jobs, resources…" />
+        <div className="flex-grow flex items-center justify-center py-16">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Event Not Found</h1>
             <p className="text-gray-500 mt-2">The event you are looking for does not exist.</p>
@@ -654,10 +654,10 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Navbar variant="transparent" />
+      <DishaTopBar searchPlaceholder="Search events, jobs, resources…" />
 
       {/* ========== MOBILE HERO (< md) ========== */}
-      <div className="md:hidden pt-16">
+      <div className="md:hidden pt-3">
         {/* 1. Full-width banner */}
         <div className="px-3">
           <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm aspect-[16/9] max-h-[210px]">
@@ -773,7 +773,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       </div>
 
       {/* ========== DESKTOP / TABLET HERO (md+) ========== */}
-      <div className="relative hidden pt-20 md:block lg:pt-24">
+      <div className="relative hidden pt-4 md:block">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Full-width 16:9 banner — cover + center on desktop */}
           <div className="relative w-full aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">

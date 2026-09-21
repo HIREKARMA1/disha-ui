@@ -22,15 +22,33 @@ function ensureAuth() {
 
 // —— Colleges ——
 
+export type CollegeListSort =
+    | 'name_asc'
+    | 'students_desc'
+    | 'students_asc'
+
 export async function listColleges(params: {
     skip?: number
     limit?: number
     search?: string
     college_id?: string
     include_student_counts?: boolean
+    sort?: CollegeListSort
 }): Promise<CollegeListApiResponse> {
     ensureAuth()
-    return apiClient.get('/admin/lookups/colleges', { params })
+    const { sort, ...rest } = params
+    const query: Record<string, string | number | boolean | undefined> = { ...rest }
+    if (sort === 'students_desc') {
+        query.sort_by = 'student_count'
+        query.sort_order = 'desc'
+    } else if (sort === 'students_asc') {
+        query.sort_by = 'student_count'
+        query.sort_order = 'asc'
+    } else if (sort === 'name_asc') {
+        query.sort_by = 'name'
+        query.sort_order = 'asc'
+    }
+    return apiClient.get('/admin/lookups/colleges', { params: query })
 }
 
 export async function listCollegeStudents(

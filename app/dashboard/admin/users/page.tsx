@@ -12,8 +12,8 @@ import { userManagementService } from '@/services/userManagementService'
 import { AdminUserListItem } from '@/types/userManagement'
 import { getErrorMessage } from '@/lib/error-handler'
 import {
-    ADMIN_MANAGED_USER_TYPES,
-    AdminManagedUserType,
+    ADMIN_USER_TYPE_FILTERS,
+    AdminUserTypeFilter,
     DEFAULT_ADMIN_USER_TYPE,
 } from '@/lib/userManagementConfig'
 import { exportUsersToSpreadsheet } from '@/utils/exportUsers'
@@ -51,7 +51,7 @@ function matchesCreatedDateRange(
 function AdminUsersContent() {
     const { typeCounts } = useAdminUserStatsContext()
     const [users, setUsers] = useState<AdminUserListItem[]>([])
-    const [activeUserType, setActiveUserType] = useState<AdminManagedUserType>(DEFAULT_ADMIN_USER_TYPE)
+    const [activeUserType, setActiveUserType] = useState<AdminUserTypeFilter>(DEFAULT_ADMIN_USER_TYPE)
     const [isLoading, setIsLoading] = useState(true)
     const [isExporting, setIsExporting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -67,8 +67,9 @@ function AdminUsersContent() {
         setError(null)
 
         try {
+            // Omit user_type for "all" so the API returns students + corporate + university.
             const response = await userManagementService.getUsers({
-                user_type: activeUserType,
+                ...(activeUserType !== 'all' ? { user_type: activeUserType } : {}),
                 fetch_all: true,
             })
             setUsers(response.users)
@@ -125,13 +126,16 @@ function AdminUsersContent() {
         setIsExporting(true)
         try {
             if (filteredUsers.length > 0) {
-                exportUsersToSpreadsheet(filteredUsers, activeUserType)
+                exportUsersToSpreadsheet(
+                    filteredUsers,
+                    activeUserType === 'all' ? 'all_users' : activeUserType
+                )
                 toast.success('Users exported successfully!')
                 return
             }
 
             const blob = await userManagementService.exportUsers({
-                user_type: activeUserType,
+                ...(activeUserType !== 'all' ? { user_type: activeUserType } : {}),
                 status: statusFilter !== 'all' ? statusFilter : undefined,
                 is_verified:
                     verificationFilter === 'verified'
@@ -161,8 +165,8 @@ function AdminUsersContent() {
         }
     }
 
-    const handleTypeChange = (type: AdminManagedUserType) => {
-        if (!ADMIN_MANAGED_USER_TYPES.includes(type)) return
+    const handleTypeChange = (type: AdminUserTypeFilter) => {
+        if (!ADMIN_USER_TYPE_FILTERS.includes(type)) return
         setActiveUserType(type)
     }
 

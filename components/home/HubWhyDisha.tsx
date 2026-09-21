@@ -6,10 +6,10 @@ export function HubWhyDisha() {
   const { title, tagline, intro, audiencesHeading, audiences } = WHY_DISHA
 
   return (
-    <section id="hub-about" className="scroll-mt-28 space-y-8 sm:space-y-10">
+    <section id="hub-about" className="scroll-mt-28 space-y-10 sm:space-y-12">
       <div>
         <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-gray-900 dark:text-white sm:text-[22px]">
-          <span className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6" aria-hidden />
+          <span className="h-7 w-1.5 shrink-0 rounded-sm bg-primary-500 sm:h-8" aria-hidden />
           {title}
         </h2>
         <p className="mt-2 pl-3.5 text-base font-semibold tracking-tight text-gray-800 dark:text-gray-100 sm:text-lg">

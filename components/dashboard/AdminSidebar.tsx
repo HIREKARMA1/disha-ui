@@ -10,13 +10,10 @@ import {
     Building2,
     Settings,
     BarChart3,
-    Activity,
     Calendar,
     FileText,
     X,
     LogOut,
-    Eye,
-    Database,
     Briefcase,
     Brain,
     Library,
@@ -27,6 +24,7 @@ import {
     KeyRound,
     Shield,
     ClipboardList,
+    Headphones,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -166,35 +164,17 @@ const navSections: NavSection[] = [
                 icon: MessageCircle,
                 description: 'Send WhatsApp messages',
             },
+            {
+                label: 'Support',
+                href: '/dashboard/admin/support',
+                icon: Headphones,
+                description: 'WhatsApp customer queries',
+            },
         ],
     },
     {
         title: 'System',
         items: [
-            {
-                label: 'System Monitor',
-                href: '/dashboard/admin/monitor',
-                icon: Activity,
-                description: 'System health',
-            },
-            {
-                label: 'Reports',
-                href: '/dashboard/admin/reports',
-                icon: FileText,
-                description: 'Generate reports',
-            },
-            {
-                label: 'Audit Logs',
-                href: '/dashboard/admin/audit',
-                icon: Eye,
-                description: 'View audit logs',
-            },
-            {
-                label: 'Database',
-                href: '/dashboard/admin/database',
-                icon: Database,
-                description: 'Database management',
-            },
             {
                 label: 'Settings',
                 href: '/dashboard/admin/settings',

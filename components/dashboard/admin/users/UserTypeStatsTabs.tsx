@@ -1,26 +1,28 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { Building2, GraduationCap, Users } from 'lucide-react'
+import { Building2, GraduationCap, Users, UserRound } from 'lucide-react'
 import {
-    ADMIN_MANAGED_USER_TYPES,
-    AdminManagedUserType,
-    USER_TYPE_LABELS,
+    ADMIN_USER_TYPE_FILTERS,
+    AdminUserTypeFilter,
+    USER_TYPE_FILTER_LABELS,
 } from '@/lib/userManagementConfig'
 
 interface UserTypeStatsTabsProps {
-    activeType: AdminManagedUserType
-    counts: Record<AdminManagedUserType, number>
-    onTypeChange: (type: AdminManagedUserType) => void
+    activeType: AdminUserTypeFilter
+    counts: Record<'student' | 'university' | 'corporate', number>
+    onTypeChange: (type: AdminUserTypeFilter) => void
 }
 
-const TAB_ICONS: Record<AdminManagedUserType, React.ComponentType<{ className?: string }>> = {
+const TAB_ICONS: Record<AdminUserTypeFilter, React.ComponentType<{ className?: string }>> = {
+    all: UserRound,
     student: GraduationCap,
     university: Building2,
     corporate: Users,
 }
 
-const TAB_COLORS: Record<AdminManagedUserType, string> = {
+const TAB_COLORS: Record<AdminUserTypeFilter, string> = {
+    all: 'from-slate-500 to-slate-700',
     student: 'from-blue-500 to-cyan-600',
     university: 'from-purple-500 to-pink-600',
     corporate: 'from-orange-500 to-red-600',
@@ -31,11 +33,15 @@ export function UserTypeStatsTabs({
     counts,
     onTypeChange,
 }: UserTypeStatsTabsProps) {
+    const allCount = counts.student + counts.university + counts.corporate
+
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {ADMIN_MANAGED_USER_TYPES.map((type) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {ADMIN_USER_TYPE_FILTERS.map((type) => {
                 const Icon = TAB_ICONS[type]
                 const isActive = activeType === type
+                const count =
+                    type === 'all' ? allCount : counts[type]
 
                 return (
                     <motion.button
@@ -59,10 +65,10 @@ export function UserTypeStatsTabs({
                                 </div>
                                 <div className="min-w-0">
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Total {USER_TYPE_LABELS[type]}
+                                        Total {USER_TYPE_FILTER_LABELS[type]}
                                     </p>
                                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        {counts[type].toLocaleString()}
+                                        {count.toLocaleString()}
                                     </p>
                                 </div>
                             </div>

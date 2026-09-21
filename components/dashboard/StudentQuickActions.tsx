@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Briefcase, FileText, User, Brain } from 'lucide-react'
+import { Briefcase, FileText, User } from 'lucide-react'
+// Brain — used by hidden Practice Tests quick action
 import { StudentSectionCard } from '@/components/student/ui/StudentSectionCard'
 import { cn } from '@/lib/utils'
 
@@ -18,12 +19,13 @@ const actions = [
     icon: FileText,
     bg: 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25',
   },
-  {
-    label: 'Practice Tests',
-    href: '/dashboard/student/practice',
-    icon: Brain,
-    bg: 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25',
-  },
+  // Temporarily hidden from Student Quick Actions — keep for easy re-enable
+  // {
+  //   label: 'Practice Tests',
+  //   href: '/dashboard/student/practice',
+  //   icon: Brain,
+  //   bg: 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25',
+  // },
   {
     label: 'Explore Jobs',
     href: '/jobs',
