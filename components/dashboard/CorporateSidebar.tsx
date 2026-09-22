@@ -17,6 +17,7 @@ import {
     Users,
     Layers,
     MoreHorizontal,
+    Headphones,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -70,6 +71,12 @@ const navItems: NavItem[] = [
         href: '/dashboard/corporate/analytics',
         icon: BarChart3,
         description: 'Reports & insights',
+    },
+    {
+        label: 'Contact Support',
+        href: '/dashboard/corporate/contact-support',
+        icon: Headphones,
+        description: 'WhatsApp, email & office',
     },
     {
         label: 'Settings',
