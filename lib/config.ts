@@ -49,6 +49,12 @@ export const config = {
       process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
       '',
   },
+
+  /** Supabase (student Google OAuth identity only — DISHA JWT remains the app session). */
+  supabase: {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
+  },
   
   // Environment
   isDevelopment: process.env.NODE_ENV === 'development',

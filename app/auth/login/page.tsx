@@ -28,6 +28,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Modal, TermsModalContent } from '@/components/ui/modal'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { LoginBrandPanel } from '@/components/auth/LoginBrandPanel'
+import {
+    StudentGoogleAuthButton,
+    StudentGoogleAuthDivider,
+} from '@/components/auth/StudentGoogleAuthButton'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { UserType } from '@/types/auth'
@@ -488,6 +492,23 @@ function LoginPageContent() {
                                         Sign In
                                     </Button>
                                 </form>
+
+                                {selectedUserType === 'student' && (
+                                    <>
+                                        <StudentGoogleAuthDivider />
+                                        <StudentGoogleAuthButton
+                                            label="Continue with Google"
+                                            requireTerms
+                                            termsAccepted={termsAndPrivacyAccepted}
+                                            redirectPath={
+                                                searchParams.get('redirect') ||
+                                                (typeof window !== 'undefined'
+                                                    ? localStorage.getItem('redirect_after_login')
+                                                    : null)
+                                            }
+                                        />
+                                    </>
+                                )}
 
                                 {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
                                     <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">

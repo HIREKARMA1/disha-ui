@@ -23,6 +23,10 @@ import {
 import Link from 'next/link'
 
 import { LoginBrandPanel } from '@/components/auth/LoginBrandPanel'
+import {
+  StudentGoogleAuthButton,
+  StudentGoogleAuthDivider,
+} from '@/components/auth/StudentGoogleAuthButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -486,6 +490,23 @@ export function AuthLoginModal({
                           Sign In
                         </Button>
                       </form>
+
+                      {selectedUserType === 'student' && (
+                        <>
+                          <StudentGoogleAuthDivider />
+                          <StudentGoogleAuthButton
+                            label="Continue with Google"
+                            requireTerms
+                            termsAccepted={termsAndPrivacyAccepted}
+                            redirectPath={
+                              redirectPath ||
+                              (typeof window !== 'undefined'
+                                ? localStorage.getItem('redirect_after_login')
+                                : null)
+                            }
+                          />
+                        </>
+                      )}
 
                       {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
                         <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
