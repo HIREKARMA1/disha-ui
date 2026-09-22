@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { JobCard } from '@/components/dashboard/JobCard'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
+import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
@@ -23,8 +24,16 @@ import {
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   getUniversityApplyEligibility,
   getPassoutBatchApplyEligibility,
+  getApplyErrorMessage,
+  isCampusDriveNotForUniversityMessage,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import {
+  resolveCampusDriveInterestOutcome,
+  submitCampusDriveInterest,
+  toastCampusDriveRequestStatus,
+  getCampusDriveRequestApplyOverride,
+} from '@/lib/campusDriveInterest'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
 interface Job {
@@ -64,6 +73,7 @@ interface Job {
     is_active: boolean
     can_apply: boolean
     application_status?: string
+    campus_drive_request_status?: string | null
     // Additional fields
     number_of_openings?: number
     perks_and_benefits?: string
@@ -154,6 +164,10 @@ function JobOpportunitiesPageContent() {
     const [profileLoading, setProfileLoading] = useState(true)
     const [showApplicationModal, setShowApplicationModal] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
+    const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+    const [campusDriveInterestJobId, setCampusDriveInterestJobId] = useState<string | null>(null)
+    const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
+    const [acceptedCampusDriveJobs, setAcceptedCampusDriveJobs] = useState<Set<string>>(new Set())
     const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
     const [studentProfile, setStudentProfile] = useState<{
         degree?: string
@@ -798,7 +812,19 @@ function JobOpportunitiesPageContent() {
     }
 
     // Handle job application initiation
-    const handleApplyClick = (job: Job) => {
+    const handleApplyClick = async (job: Job) => {
+        if (job.application_status === 'applied' || applicationStatus.get(job.id) === 'applied') {
+            return
+        }
+
+        const requestOverride = getCampusDriveRequestApplyOverride(
+            job.campus_drive_request_status
+        )
+        if (requestOverride === 'pending' || requestOverride === 'rejected') {
+            toastCampusDriveRequestStatus(requestOverride)
+            return
+        }
+
         if (!job.can_apply) {
             toast.error(JOB_CLOSED_MESSAGE)
             return
@@ -811,10 +837,46 @@ function JobOpportunitiesPageContent() {
             isAuthenticatedStudent: true,
             studentUniversityId: studentProfile?.university_id,
             isCampusDrive: true,
+            hasAcceptedCampusDriveRequest:
+                acceptedCampusDriveJobs.has(job.id) ||
+                job.campus_drive_request_status === 'accepted',
         })
         if (!eligibility.canApply) {
-            toast.error(eligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE)
-            return
+            const reason = eligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+            if (isCampusDriveNotForUniversityMessage(reason)) {
+                const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+                if (outcome === 'accepted') {
+                    setAcceptedCampusDriveJobs((prev) => new Set(prev).add(job.id))
+                    setJobs((prev) =>
+                        prev.map((j) =>
+                            j.id === job.id
+                                ? { ...j, campus_drive_request_status: 'accepted' }
+                                : j
+                        )
+                    )
+                    // Fall through to normal apply checks below
+                } else if (outcome === 'pending' || outcome === 'rejected') {
+                    setJobs((prev) =>
+                        prev.map((j) =>
+                            j.id === job.id
+                                ? { ...j, campus_drive_request_status: outcome }
+                                : j
+                        )
+                    )
+                    toastCampusDriveRequestStatus(outcome)
+                    return
+                } else if (outcome === 'show_interest_modal') {
+                    setCampusDriveInterestJobId(job.id)
+                    setShowCampusDriveInterestModal(true)
+                    return
+                } else {
+                    toast.error(reason)
+                    return
+                }
+            } else {
+                toast.error(reason)
+                return
+            }
         }
 
         const batchEligibility = getPassoutBatchApplyEligibility({
@@ -844,12 +906,39 @@ function JobOpportunitiesPageContent() {
         setShowApplicationModal(true)
     }
 
+    const handleCampusDriveStillInterested = async () => {
+        if (!campusDriveInterestJobId || campusDriveInterestSubmitting) return
+        const jobId = campusDriveInterestJobId
+        setCampusDriveInterestSubmitting(true)
+        try {
+            const result = await submitCampusDriveInterest(jobId)
+            if (result.ok) {
+                setShowCampusDriveInterestModal(false)
+                setCampusDriveInterestJobId(null)
+                if (result.status) {
+                    setJobs((prev) =>
+                        prev.map((j) =>
+                            j.id === jobId
+                                ? { ...j, campus_drive_request_status: result.status }
+                                : j
+                        )
+                    )
+                }
+                if (result.status === 'accepted') {
+                    setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+                }
+            }
+        } finally {
+            setCampusDriveInterestSubmitting(false)
+        }
+    }
+
     // Apply for a job with enhanced data
     const applyForJob = async (jobId: string, applicationData: any) => {
         try {
             setApplyingJobs(prev => new Set(prev).add(jobId))
 
-            const response = await apiClient.client.post(`/applications/apply/${jobId}`, {
+            await apiClient.client.post(`/applications/apply/${jobId}`, {
                 job_id: jobId, // Add the missing job_id field
                 cover_letter: applicationData.cover_letter || `I am interested in this position and believe my skills and experience make me a great fit.`,
                 expected_salary: applicationData.expected_salary || null,
@@ -886,8 +975,22 @@ function JobOpportunitiesPageContent() {
 
             // Refresh jobs to update application status
             fetchJobs(pagination.page, buildSearchParams())
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error applying for job:', error)
+            if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
+                setShowApplicationModal(false)
+                const { outcome } = await resolveCampusDriveInterestOutcome(jobId)
+                if (outcome === 'pending' || outcome === 'rejected') {
+                    toastCampusDriveRequestStatus(outcome)
+                } else if (outcome === 'accepted') {
+                    setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+                    toastApplyError(error)
+                } else {
+                    setCampusDriveInterestJobId(jobId)
+                    setShowCampusDriveInterestModal(true)
+                }
+                return
+            }
             toastApplyError(error)
         } finally {
             setApplyingJobs(prev => {
@@ -1512,6 +1615,8 @@ function JobOpportunitiesPageContent() {
                                             ...job,
                                             application_status:
                                                 applicationStatus.get(job.id) || job.application_status,
+                                            campus_drive_request_status:
+                                                job.campus_drive_request_status,
                                         }}
                                         onViewDescription={async () => {
                                             setSelectedJob(job)
@@ -1670,6 +1775,17 @@ function JobOpportunitiesPageContent() {
                     isApplying={applyingJobs.has(currentApplicationJob.id)}
                 />
             )}
+
+            <CampusDriveInterestModal
+                isOpen={showCampusDriveInterestModal}
+                onClose={() => {
+                    if (campusDriveInterestSubmitting) return
+                    setShowCampusDriveInterestModal(false)
+                    setCampusDriveInterestJobId(null)
+                }}
+                onStillInterested={handleCampusDriveStillInterested}
+                isSubmitting={campusDriveInterestSubmitting}
+            />
 
         </StudentDashboardLayout>
     )
