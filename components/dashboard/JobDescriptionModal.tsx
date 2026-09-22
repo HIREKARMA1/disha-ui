@@ -13,6 +13,7 @@ import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
+import { getCampusDriveRequestApplyOverride } from '@/lib/campusDriveInterest'
 
 interface Job {
     id: string
@@ -51,6 +52,7 @@ interface Job {
     corporate_name?: string
     is_active: boolean
     can_apply: boolean
+    campus_drive_request_status?: string | null
     // Additional fields
     number_of_openings?: number
     perks_and_benefits?: string
@@ -300,7 +302,26 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
     }
 
     const canApply = () => {
-        return applicationStatus !== 'applied' && !isDeadlineExpired() && job.can_apply
+        const requestOverride = getCampusDriveRequestApplyOverride(
+            job.campus_drive_request_status
+        )
+        return (
+            applicationStatus !== 'applied' &&
+            !isDeadlineExpired() &&
+            job.can_apply &&
+            !requestOverride
+        )
+    }
+
+    const applyButtonLabel = () => {
+        if (applicationStatus === 'applied') return 'Already Applied'
+        const requestOverride = getCampusDriveRequestApplyOverride(
+            job.campus_drive_request_status
+        )
+        if (requestOverride === 'pending') return 'Pending'
+        if (requestOverride === 'rejected') return 'Rejected'
+        if (isDeadlineExpired()) return 'Expired'
+        return 'Apply Now'
     }
 
     return (
@@ -1106,7 +1127,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         ) : (
                                             <>
                                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                                {applicationStatus === 'applied' ? 'Already Applied' : isDeadlineExpired() ? 'Expired' : 'Apply Now'}
+                                                {applyButtonLabel()}
                                             </>
                                         )}
                                     </Button>
