@@ -1,5 +1,5 @@
 export const PROFILE_COMPLETION_MESSAGE =
-    'Complete about 75% of your profile, including technical and soft skills, for personalized job suggestions.'
+    'On Profile, complete Basic info and Education to reach ~75%. Skills are optional for better matches. Completing all 3 Quick Apply steps (Contact, Education, Resume) also unlocks 75%.'
 
 export const STUDENT_PROFILE_PATH = '/dashboard/student/profile'
 
@@ -8,6 +8,8 @@ export type ProfileCompletionCheck = {
     core_percentage?: number
     completion_percentage?: number
     suggestion_ready?: boolean
+    skills_complete?: boolean
+    quick_apply_profile_unlocked?: boolean
 }
 
 /** Apply gate: prefer backend can_apply_for_jobs (resume). 75% is for suggestions, not apply. */
@@ -20,13 +22,15 @@ export function canApplyForJobs(completion?: ProfileCompletionCheck | null): boo
 }
 
 /**
- * Post–Quick Apply “complete profile for suggestions” dialog.
- * Only show when the student is not already suggestion-ready (~75% + skills).
+ * Post–Quick Apply skills nudge: encourage skills for better matches.
+ * Still show when 75% came from Quick Apply unlock but skills are missing.
  */
 export function shouldShowPostApplySkillsNudge(
     completion?: ProfileCompletionCheck | null
 ): boolean {
     if (!completion) return false
+    if (completion.skills_complete === true) return false
+    if (completion.quick_apply_profile_unlocked === true) return true
     if (completion.suggestion_ready === true) return false
     if ((completion.completion_percentage ?? 0) >= 75) return false
     return true

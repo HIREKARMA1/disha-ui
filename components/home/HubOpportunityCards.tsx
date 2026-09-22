@@ -364,7 +364,8 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     title: 'Campus events & contests',
     cta: 'Explore',
     href: '/events',
-    image: '/images/hub/featured-events.png',
+    image:
+      'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/file_0000000012848230ba9aaa54851995a4.png',
     gradient: 'from-sky-900/55 via-sky-900/25 to-transparent',
     hideOverlayText: true,
     openInNewTab: true,
@@ -375,7 +376,8 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     title: 'Internships & full-time roles',
     cta: 'Explore',
     href: '/jobs',
-    image: '/images/hub/featured-jobs.png',
+    image:
+      'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/file_0000000078e0820884775abb847b699d.png',
     gradient: 'from-emerald-950/55 via-emerald-900/25 to-transparent',
     hideOverlayText: true,
     openInNewTab: true,
@@ -387,7 +389,8 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     cta: 'Explore',
     href: '/dashboard/student/practice',
     auth: true,
-    image: '/images/hub/featured-practice.png',
+    image:
+      'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/file_00000000120c8211a99feb92363d34f4.png',
     gradient: 'from-indigo-950/55 via-indigo-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -397,7 +400,8 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     title: 'Create your campus event',
     cta: 'Explore',
     href: '/events#create-event-request',
-    image: '/images/hub/featured-create-event.png',
+    image:
+      'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/file_0000000014108211af239daf7d267032.png',
     gradient: 'from-amber-950/55 via-amber-900/25 to-transparent',
     hideOverlayText: true,
   },
@@ -408,7 +412,8 @@ const FEATURED_ITEMS: FeaturedItem[] = [
     cta: 'Explore',
     href: '/dashboard/student/resume-builder',
     auth: true,
-    image: '/images/hub/featured-resume.png',
+    image:
+      'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/file_0000000086b082118b444bd301b765de.png',
     gradient: 'from-rose-950/55 via-rose-900/25 to-transparent',
     hideOverlayText: true,
   },

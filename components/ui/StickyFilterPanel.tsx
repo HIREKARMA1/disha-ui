@@ -38,7 +38,7 @@ export function StickyFilterPanel({
   return (
     <aside
       className={cn(
-        "sticky z-10 hidden self-start overflow-y-auto overscroll-contain lg:block",
+        "sticky z-10 hidden h-fit w-full self-start overflow-y-auto overscroll-contain lg:block",
         topClassName,
         maxHeightClassName,
         className
@@ -46,7 +46,7 @@ export function StickyFilterPanel({
     >
       <div
         className={cn(
-          "rounded-2xl border border-gray-200/70 bg-white p-4 shadow-sm",
+          "h-fit rounded-2xl border border-gray-200/70 bg-white p-4 shadow-sm",
           "dark:border-white/10 dark:bg-[#151b2b]/90",
           cardClassName
         )}

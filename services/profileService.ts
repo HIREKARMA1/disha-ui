@@ -94,6 +94,8 @@ export interface ProfileUpdateData {
     tenth_institution?: string
     tenth_stream?: string
     tenth_year?: string
+    /** Quick Apply only — unlocks dual-path 75% when Contact + Education + Resume are complete */
+    unlock_via_quick_apply?: boolean
 }
 
 export interface ProfileCompletionResponse {
@@ -111,6 +113,9 @@ export interface ProfileCompletionResponse {
     core_missing_fields?: string[]
     can_apply_for_jobs?: boolean
     suggestion_ready?: boolean
+    skills_complete?: boolean
+    quick_apply_profile_unlocked?: boolean
+    weighted_completion_percentage?: number
     path_percentage?: number
     path_target?: number
     sections?: Record<

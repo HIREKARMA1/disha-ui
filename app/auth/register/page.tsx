@@ -80,6 +80,18 @@ const userTypeLabels: Record<string, string> = {
     university: 'University',
 }
 
+/** Name/company for OTP email greeting */
+function getSignupDisplayName(data: FormData): string | undefined {
+    const anyData = data as Record<string, unknown>
+    const raw =
+        (typeof anyData.name === 'string' && anyData.name) ||
+        (typeof anyData.company_name === 'string' && anyData.company_name) ||
+        (typeof anyData.university_name === 'string' && anyData.university_name) ||
+        ''
+    const trimmed = String(raw).trim()
+    return trimmed || undefined
+}
+
 // for the error message input
 const getInputStatus = (name: keyof FormData, errors: any, value: any) => {
     if (errors[name]) return "error";   // red border
@@ -362,7 +374,7 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(data.email)
+            const response = await apiClient.sendEmailOtp(data.email, getSignupDisplayName(data))
             setFormData(data)
             setCurrentStep('otp')
             otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
@@ -382,7 +394,10 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(formData.email)
+            const response = await apiClient.sendEmailOtp(
+                formData.email,
+                getSignupDisplayName(formData)
+            )
             otpRateLimit.handleSendSuccess(response.rate_limit, formData.email)
             toast.success('OTP resent to your email address')
         } catch (error: unknown) {

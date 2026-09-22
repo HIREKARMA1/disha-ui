@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 export interface LookupSelectProps {
   value: string
   onChange: (value: string) => void
-  data: Array<{ id: string; name: string }>
+  data: Array<{ id: string; name: string; label?: string }>
   loading?: boolean
   placeholder?: string
   disabled?: boolean
@@ -60,9 +60,14 @@ export function LookupSelect({
         <option value="">
           {loading ? "Loading..." : placeholder}
         </option>
+        {/* Keep current value selectable when it is not in lookup data (e.g. Quick Apply canonical names) */}
+        {value &&
+          !data.some((item) => item.name === value) && (
+            <option value={value}>{value}</option>
+          )}
         {data.map((item) => (
           <option key={item.id} value={item.name}>
-            {item.name}
+            {item.label || item.name}
           </option>
         ))}
       </select>

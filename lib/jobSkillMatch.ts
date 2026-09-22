@@ -636,7 +636,7 @@ export type RankedJob<T extends MatchableJob> = T & {
     matched_skills: string[]
 }
 
-/** Sort jobs by match score (desc). */
+/** Sort jobs by match score (desc). Skill-related (score > 0) always before others. */
 export function rankJobsBySkills<T extends MatchableJob>(
     jobs: T[],
     profile: StudentMatchProfile
@@ -647,9 +647,25 @@ export function rankJobsBySkills<T extends MatchableJob>(
             return { ...job, match_score: score, matched_skills: matchedSkills }
         })
         .sort((a, b) => {
+            const aRelated = a.match_score > 0 ? 1 : 0
+            const bRelated = b.match_score > 0 ? 1 : 0
+            // 1) Jobs related to skills first, then everything else
+            if (bRelated !== aRelated) return bRelated - aRelated
+            // 2) Within related: highest score first
             if (b.match_score !== a.match_score) return b.match_score - a.match_score
             return String(a.title || '').localeCompare(String(b.title || ''))
         })
+}
+
+/**
+ * Strip seed labels like "— High Match" from titles for display.
+ * Ranking uses match_score; these suffixes are not the algorithm result.
+ */
+export function displayJobTitle(title?: string | null): string {
+    if (!title) return ''
+    return String(title)
+        .replace(/\s*[—–-]\s*(High|Mid|Minimal)\s+Match\s*$/i, '')
+        .trim()
 }
 
 export function filterMatchedJobs<T extends { match_score: number }>(

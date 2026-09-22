@@ -18,6 +18,8 @@ import { JobCard } from '@/components/dashboard/JobCard'
 import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
 import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
 import { JobsLinkedInRightRail } from '@/components/jobs/JobsLinkedInRightRail'
+import { CompanyLogo } from '@/components/jobs/CompanyLogo'
+import { cn } from '@/lib/utils'
 import {
   JobsFilterFields,
   EMPTY_JOB_FILTERS,
@@ -33,16 +35,19 @@ import { profileService } from '@/services/profileService'
 import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
+  APPLY_SUCCESS_MESSAGE,
   JOB_CLOSED_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
+  defaultApplyPayload,
   getPassoutBatchApplyEligibility,
   clearAutoApplyQueryParams,
+  toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
 import { peekPendingJobApplication } from '@/lib/pendingJobApplication'
 import {
     canPersonalizeJobs,
-    buildPreferencesSummary,
+    displayJobTitle,
     rankJobsBySkills,
     type StudentMatchProfile,
 } from '@/lib/jobSkillMatch'
@@ -246,7 +251,7 @@ function highlightSuggestion(text: string, query: string) {
     return (
         <>
             {text.slice(0, index)}
-            <span className="font-semibold text-blue-600 dark:text-blue-400">
+            <span className="font-semibold text-primary-600 dark:text-secondary-400">
                 {text.slice(index, index + q.length)}
             </span>
             {text.slice(index + q.length)}
@@ -328,11 +333,34 @@ function buildJobsQueryString(opts: {
 }
 
 function isJobOpen(job: Job): boolean {
+    const status = String(job.status || '').toLowerCase()
+    if (status === 'closed' || status === 'expired') return false
     if (!job.can_apply || !job.is_active) return false
     if (job.application_deadline) {
-        return new Date(job.application_deadline) > new Date()
+        const deadline = new Date(job.application_deadline)
+        if (!Number.isNaN(deadline.getTime()) && deadline < new Date()) return false
     }
     return true
+}
+
+/** Live Jobs feed: open skill matches → other open → expired (skill matches first within each). */
+function compareLiveJobsFeed(
+    a: Job & { match_score?: number },
+    b: Job & { match_score?: number }
+): number {
+    const aOpen = isJobOpen(a) ? 1 : 0
+    const bOpen = isJobOpen(b) ? 1 : 0
+    if (aOpen !== bOpen) return bOpen - aOpen
+
+    const aRelated = (a.match_score ?? 0) > 0 ? 1 : 0
+    const bRelated = (b.match_score ?? 0) > 0 ? 1 : 0
+    if (aRelated !== bRelated) return bRelated - aRelated
+
+    const aScore = a.match_score ?? 0
+    const bScore = b.match_score ?? 0
+    if (aScore !== bScore) return bScore - aScore
+
+    return 0
 }
 
 function normalizePublicJob(job: Job): Job {
@@ -464,6 +492,7 @@ export function AllJobs() {
     const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [applyingJobId, setApplyingJobId] = useState<string | null>(null)
     const pendingApplyOpened = useRef(false)
+    const pendingScrollJobIdRef = useRef<string | null>(null)
 
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [studentProfile, setStudentProfile] = useState<{
@@ -497,41 +526,38 @@ export function AllJobs() {
         [jobsPool, jobs]
     )
     const personalizeFeed = canPersonalizeJobs(matchProfile)
-    /** 75%+ suggestion-ready: rank entire pool desc by match, then paginate (keep page controls). */
-    const useRankedPagination = Boolean(
-        suggestionReady && personalizeFeed && matchProfile
-    )
+    /** Full pool loaded — left list is client-paginated; right rail shows all open jobs. */
+    const useClientPagination = jobsPool.length > 0
 
     const rankedPool = useMemo(() => {
-        const source = useRankedPagination
-            ? jobsPool
-            : jobs
-        if (!personalizeFeed || !matchProfile) {
-            return source.map((job) => ({
-                ...job,
-                match_score: 0,
-                matched_skills: [] as string[],
-            }))
-        }
-        return rankJobsBySkills(source, matchProfile)
-    }, [jobs, jobsPool, matchProfile, personalizeFeed, useRankedPagination])
+        const source = useClientPagination ? jobsPool : jobs
+        const ranked =
+            !personalizeFeed || !matchProfile
+                ? source.map((job) => ({
+                      ...job,
+                      match_score: 0,
+                      matched_skills: [] as string[],
+                  }))
+                : rankJobsBySkills(source, matchProfile)
+
+        // Open first (skill-matched live → other live), then expired — never mix expired above live
+        return [...ranked].sort(compareLiveJobsFeed)
+    }, [jobs, jobsPool, matchProfile, personalizeFeed, useClientPagination])
 
     const displayJobs = useMemo(() => {
-        if (!useRankedPagination) return rankedPool
+        if (!useClientPagination) return rankedPool
         const pageSize = pagination.limit || 12
         const page = Math.max(1, pagination.page || 1)
         const start = (page - 1) * pageSize
         return rankedPool.slice(start, start + pageSize)
-    }, [rankedPool, useRankedPagination, pagination.page, pagination.limit])
+    }, [rankedPool, useClientPagination, pagination.page, pagination.limit])
 
-    const preferencesSummary = useMemo(
-        () => (matchProfile && personalizeFeed ? buildPreferencesSummary(matchProfile) : ''),
-        [matchProfile, personalizeFeed]
-    )
-    const matchedCount = useMemo(
-        () => rankedPool.filter((j) => j.match_score >= 1).length,
+    /** Open jobs for the right rail — full pool, not the current page only. */
+    const railOpenJobs = useMemo(
+        () => rankedPool.filter((j) => isJobOpen(j)),
         [rankedPool]
     )
+
     const searchSuggestions = useMemo(
         () => filterJobSuggestions(searchTerm, jobSuggestionPool),
         [searchTerm, jobSuggestionPool]
@@ -707,6 +733,7 @@ export function AllJobs() {
                         if (aOpen !== bOpen) return aOpen - bOpen
                         return savedIds.indexOf(b.id) - savedIds.indexOf(a.id)
                     })
+                    setJobsPool(validatedJobs)
                     const totalPages = Math.max(1, Math.ceil(validatedJobs.length / pageSize) || 0)
                     const safePage = Math.min(Math.max(1, page), totalPages || 1)
                     const start = (safePage - 1) * pageSize
@@ -721,11 +748,9 @@ export function AllJobs() {
                     return
                 }
 
-                // 75%+ students: load full result set, rank by match desc, then client-paginate
-                const rankAllPages =
-                    suggestionReady && canPersonalizeJobs(matchProfile) && Boolean(matchProfile)
-
-                if (rankAllPages) {
+                // Always load the full filtered result set so the right rail can list every
+                // open Live Job. Left list is client-paginated from this pool.
+                {
                     const collected: Job[] = []
                     let pageNum = 1
                     let hasNext = true
@@ -753,33 +778,23 @@ export function AllJobs() {
                     )
                     setJobsPool(validatedJobs)
 
-                    const ranked = rankJobsBySkills(validatedJobs, matchProfile!)
-                    const totalPages = Math.max(1, Math.ceil(ranked.length / pageSize) || 0)
+                    const listForPages =
+                        suggestionReady && canPersonalizeJobs(matchProfile) && matchProfile
+                            ? rankJobsBySkills(validatedJobs, matchProfile)
+                            : validatedJobs
+
+                    const totalPages = Math.max(1, Math.ceil(listForPages.length / pageSize) || 0)
                     const safePage = Math.min(Math.max(1, page), totalPages || 1)
                     const start = (safePage - 1) * pageSize
 
-                    setJobs(ranked.slice(start, start + pageSize))
+                    setJobs(listForPages.slice(start, start + pageSize))
                     setPagination({
-                        page: ranked.length === 0 ? 1 : safePage,
+                        page: listForPages.length === 0 ? 1 : safePage,
                         limit: pageSize,
-                        total: ranked.length,
-                        total_pages: ranked.length === 0 ? 0 : totalPages,
+                        total: listForPages.length,
+                        total_pages: listForPages.length === 0 ? 0 : totalPages,
                     })
-                    return
                 }
-
-                const result = await fetchPage(page, pageSize)
-                if (requestId !== fetchIdRef.current) return
-
-                const validatedJobs = applyClientJobFilters(result.jobs, activeStatus, activeDate)
-                setJobsPool([])
-                setJobs(validatedJobs)
-                setPagination({
-                    page: result.page,
-                    limit: result.limit,
-                    total: result.total,
-                    total_pages: result.total_pages,
-                })
             } catch (error) {
                 if (requestId !== fetchIdRef.current) return
                 console.error('Error fetching jobs:', error)
@@ -1069,8 +1084,8 @@ export function AllJobs() {
             categoryChip,
             page,
         })
-        // Ranked mode: pool already loaded — only change page slice (no API refetch)
-        if (useRankedPagination && jobsPool.length > 0) {
+        // Full pool already loaded — only change page slice (no API refetch)
+        if (useClientPagination) {
             return
         }
         void fetchJobs(page)
@@ -1097,16 +1112,19 @@ export function AllJobs() {
         setShowQuickApplyModal(true)
     }, [isLoggedIn, loading, displayJobs])
 
-    // Default right panel: first job in the (possibly ranked) list
+    // Default right panel: keep selection in sync with visible list (don't clobber rail picks)
     useEffect(() => {
         if (loading || displayJobs.length === 0) return
         setSelectedJob((prev) => {
-            if (prev && displayJobs.some((j) => j.id === prev.id)) {
-                return displayJobs.find((j) => j.id === prev.id) ?? prev
+            if (prev) {
+                const onPage = displayJobs.find((j) => j.id === prev.id)
+                if (onPage) return onPage
+                // Selection still in pool (e.g. rail pick while page is catching up)
+                if (rankedPool.some((j) => j.id === prev.id)) return prev
             }
             return displayJobs[0]
         })
-    }, [loading, displayJobs])
+    }, [loading, displayJobs, rankedPool])
 
     const selectJobForPanel = (job: Job) => {
         setSelectedJob(job)
@@ -1114,26 +1132,66 @@ export function AllJobs() {
         setShowApplyFormInPanel(false)
     }
 
-    const handleApplyClick = (job: Job) => {
-        const isDesktop =
-            typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+    const scrollJobCardIntoView = useCallback((jobId: string) => {
+        if (typeof document === 'undefined') return
+        const el = document.querySelector<HTMLElement>(`[data-job-card-id="${jobId}"]`)
+        if (!el) return
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    }, [])
 
-        if (!isLoggedIn) {
-            const returnPath = isDesktop ? '/jobs' : getJobDetailPath(job)
-            if (isDesktop) {
-                setSelectedJob(job)
-                setDesktopFilterOpen(false)
+    /**
+     * Right-rail → left list sync: select job, jump to its page if needed, scroll into view.
+     */
+    const selectJobFromRail = useCallback(
+        (railJob: { id: string }) => {
+            const full =
+                rankedPool.find((j) => j.id === railJob.id) ??
+                displayJobs.find((j) => j.id === railJob.id)
+            if (!full) return
+
+            selectJobForPanel(full)
+            pendingScrollJobIdRef.current = full.id
+
+            // Rail lists the full pool — jump left list to the page that contains this job
+            if (useClientPagination) {
+                const pageSize = pagination.limit || 12
+                const idx = rankedPool.findIndex((j) => j.id === full.id)
+                if (idx >= 0) {
+                    const targetPage = Math.floor(idx / pageSize) + 1
+                    if (targetPage !== pagination.page) {
+                        handlePageChange(targetPage)
+                        return
+                    }
+                }
             }
-            openLoginModal({
-                redirect: prepareGuestApplyForLogin(job.id, returnPath),
-                preferredType: 'student',
-            })
-            return
-        }
 
+            requestAnimationFrame(() => scrollJobCardIntoView(full.id))
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [
+            rankedPool,
+            displayJobs,
+            pagination.limit,
+            pagination.page,
+            scrollJobCardIntoView,
+            useClientPagination,
+        ]
+    )
+
+    // After page change from rail selection, scroll the card into view
+    useEffect(() => {
+        const id = pendingScrollJobIdRef.current
+        if (!id || loading) return
+        if (!displayJobs.some((j) => j.id === id)) return
+        pendingScrollJobIdRef.current = null
+        const t = window.setTimeout(() => scrollJobCardIntoView(id), 50)
+        return () => window.clearTimeout(t)
+    }, [displayJobs, loading, scrollJobCardIntoView])
+
+    const assertCanStartApply = (job: Job): boolean => {
         if (!job.can_apply) {
             toast.error(JOB_CLOSED_MESSAGE)
-            return
+            return false
         }
 
         const batchEligibility = getPassoutBatchApplyEligibility({
@@ -1144,8 +1202,34 @@ export function AllJobs() {
         })
         if (!batchEligibility.canApply) {
             toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
+            return false
+        }
+
+        return true
+    }
+
+    const promptGuestApplyLogin = (job: Job) => {
+        const isDesktop =
+            typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+        const returnPath = isDesktop ? '/jobs' : getJobDetailPath(job)
+        if (isDesktop) {
+            setSelectedJob(job)
+            setDesktopFilterOpen(false)
+        }
+        openLoginModal({
+            redirect: prepareGuestApplyForLogin(job.id, returnPath),
+            preferredType: 'student',
+        })
+    }
+
+    /** Card Apply — always opens the 2-step Quick Apply modal. */
+    const handleApplyClick = (job: Job) => {
+        if (!isLoggedIn) {
+            promptGuestApplyLogin(job)
             return
         }
+
+        if (!assertCanStartApply(job)) return
 
         setSelectedJob(job)
         setDesktopFilterOpen(false)
@@ -1153,9 +1237,45 @@ export function AllJobs() {
         setShowQuickApplyModal(true)
     }
 
-    const handleQuickApplySuccess = () => {
-        if (!selectedJob) return
-        const jobId = selectedJob.id
+    /**
+     * Right-rail Quick Apply — when profile is suggestion-ready (~75%+),
+     * submit immediately; otherwise fall back to the 2-step modal.
+     */
+    const handleRailQuickApply = async () => {
+        const job = selectedJob
+        if (!job) return
+
+        if (!isLoggedIn) {
+            promptGuestApplyLogin(job)
+            return
+        }
+
+        if (!assertCanStartApply(job)) return
+
+        if (!suggestionReady) {
+            setDesktopFilterOpen(false)
+            setShowApplyFormInPanel(false)
+            setShowQuickApplyModal(true)
+            return
+        }
+
+        if (applyingJobId) return
+
+        setApplyingJobId(job.id)
+        try {
+            await apiClient.applyForJob(job.id, defaultApplyPayload(job.id))
+            toast.success(APPLY_SUCCESS_MESSAGE)
+            markJobApplied(job.id)
+            void maybeShowSkillsNudge()
+            void fetchJobs(pagination.page)
+        } catch (error: unknown) {
+            toastApplyError(error)
+        } finally {
+            setApplyingJobId(null)
+        }
+    }
+
+    const markJobApplied = (jobId: string) => {
         setShowQuickApplyModal(false)
         setShowApplyFormInPanel(false)
         setJobs((prevJobs) =>
@@ -1178,53 +1298,66 @@ export function AllJobs() {
                 : prev
         )
         setApplyingJobId(null)
-        void (async () => {
-            try {
-                const completion = await profileService.getProfileCompletion()
-                if (shouldShowPostApplySkillsNudge(completion)) {
-                    setShowSkillsNudge(true)
-                }
-            } catch {
-                // Skip nudge if we can't verify — avoid prompting complete profiles
+    }
+
+    const maybeShowSkillsNudge = async () => {
+        try {
+            const completion = await profileService.getProfileCompletion()
+            setSuggestionReady(
+                Boolean(
+                    completion?.suggestion_ready ||
+                        ((completion?.completion_percentage ?? 0) >= 75 &&
+                            completion?.skills_complete)
+                )
+            )
+            if (shouldShowPostApplySkillsNudge(completion)) {
+                setShowSkillsNudge(true)
             }
-        })()
+        } catch {
+            // Skip nudge if we can't verify — avoid prompting complete profiles
+        }
+    }
+
+    const handleQuickApplySuccess = () => {
+        if (!selectedJob) return
+        const jobId = selectedJob.id
+        markJobApplied(jobId)
+        void maybeShowSkillsNudge()
         void fetchJobs(pagination.page)
     }
 
     return (
-        <div className="w-full overflow-x-hidden">
-            <div className="mb-3 sm:mb-4">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    {personalizeFeed ? 'Jobs based on your preferences' : 'Live Jobs'}
-                </h1>
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
-                    {personalizeFeed
-                        ? preferencesSummary
-                        : 'Discover and apply to the best job opportunities.'}
-                </p>
-                {personalizeFeed && (
-                    <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 sm:text-xs">
-                        {useRankedPagination
-                            ? matchedCount > 0
-                                ? `${matchedCount} match${matchedCount === 1 ? '' : 'es'} · sorted highest to lowest · page 1 starts at the best fit`
-                                : 'Sorted by best fit to your profile'
-                            : matchedCount > 0
-                              ? `${matchedCount} match${matchedCount === 1 ? '' : 'es'} · ranked by your skills — reach ~75% profile for full ranked pages`
-                              : 'Add skills to rank jobs by fit'}
+        <div className="w-full min-w-0">
+            <div className="mb-4 sm:mb-5">
+                <div className="flex items-center gap-2.5">
+                    <span
+                        className="h-5 w-1 shrink-0 rounded-sm bg-primary-500 sm:h-6"
+                        aria-hidden
+                    />
+                    <h1 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white sm:text-xl lg:text-2xl">
+                        {personalizeFeed ? 'Jobs based on your preferences' : 'Live Jobs'}
+                    </h1>
+                </div>
+                {!personalizeFeed && (
+                    <p className="mt-1 pl-3.5 text-xs text-gray-500 dark:text-gray-400 sm:pl-[1.125rem] sm:text-sm">
+                        <span className="sm:hidden">Open roles you can apply to now.</span>
+                        <span className="hidden sm:inline">
+                            Discover and apply to the best job opportunities.
+                        </span>
                     </p>
                 )}
             </div>
 
             <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-4">
-                <div className="min-w-0">
+                <div className="min-w-0 overflow-x-visible lg:overflow-x-clip">
                     {/* Search + mobile filter */}
-                    <div className="mb-3 rounded-xl border border-gray-200/70 bg-white p-2.5 shadow-sm dark:border-white/10 dark:bg-[#151b2b]/90 sm:mb-4 sm:rounded-2xl sm:p-4">
+                    <div className="mb-3 rounded-xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] sm:mb-3 sm:p-3.5 lg:mb-4">
                         <form
                             onSubmit={handleSearch}
-                            className="flex gap-1.5 sm:gap-3"
+                            className="flex gap-2"
                         >
                             <div ref={searchBoxRef} className="relative min-w-0 flex-1">
-                                <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 sm:left-3 sm:h-4 sm:w-4" />
+                                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 sm:h-4 sm:w-4" />
                                 <Input
                                     type="text"
                                     role="combobox"
@@ -1237,7 +1370,7 @@ export function AllJobs() {
                                             : undefined
                                     }
                                     autoComplete="off"
-                                    placeholder="Search for jobs, roles, skills or companies..."
+                                    placeholder="Search jobs, roles, skills..."
                                     value={searchTerm}
                                     onChange={(e) => {
                                         setSearchTerm(e.target.value)
@@ -1248,7 +1381,7 @@ export function AllJobs() {
                                         if (searchTerm.trim().length >= 1) setSuggestionsOpen(true)
                                     }}
                                     onKeyDown={handleSearchKeyDown}
-                                    className="h-9 rounded-lg border-gray-200 bg-white pl-8 text-sm focus:border-blue-500 focus:ring-blue-500/20 dark:border-white/10 dark:bg-[#0f1219] sm:h-10 sm:rounded-xl sm:pl-9"
+                                    className="h-9 rounded-full border-primary-200/80 bg-white pl-9 text-sm shadow-none focus-visible:border-primary-500 focus-visible:ring-0 dark:border-[#33405E] dark:bg-[#0f1219] sm:h-10 sm:pl-10"
                                 />
                                 {showSearchSuggestions && (
                                     <ul
@@ -1264,7 +1397,7 @@ export function AllJobs() {
                                                 aria-selected={index === activeSuggestion}
                                                 className={`cursor-pointer px-3 py-2 text-sm ${
                                                     index === activeSuggestion
-                                                        ? 'bg-blue-50 text-gray-900 dark:bg-blue-500/15 dark:text-white'
+                                                        ? 'bg-primary-50 text-gray-900 dark:bg-primary-900/30 dark:text-white'
                                                         : 'text-gray-800 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-white/5'
                                                 }`}
                                                 onMouseDown={(event) => event.preventDefault()}
@@ -1304,31 +1437,31 @@ export function AllJobs() {
                                     setDesktopFilterOpen((open) => !open)
                                     if (!desktopFilterOpen) setShowApplyFormInPanel(false)
                                 }}
-                                className={`hidden h-10 shrink-0 rounded-xl px-4 font-semibold lg:inline-flex ${
+                                className={`hidden h-10 shrink-0 rounded-full px-4 font-medium shadow-none lg:inline-flex ${
                                     desktopFilterOpen
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                        : ''
+                                        ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-600 dark:bg-primary-950/40 dark:text-primary-200'
+                                        : 'border-gray-200'
                                 }`}
                             >
                                 <Filter className="mr-2 h-4 w-4" />
                                 Filter
                                 {activeFilterCount > 0 ? (
-                                    <span className="ml-1.5 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                    <span className="ml-1.5 rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                         {activeFilterCount}
                                     </span>
                                 ) : null}
                             </Button>
                             <Button
                                 type="submit"
-                                className="hidden h-10 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:bg-blue-500 sm:inline-flex"
+                                className="hidden h-10 shrink-0 rounded-full bg-primary-600 px-5 font-semibold text-white shadow-none transition-colors hover:bg-primary-700 sm:inline-flex"
                             >
                                 Search
                             </Button>
                         </form>
 
                         {/* Category tabs */}
-                        <div className="mt-2 -mx-0.5 overflow-x-auto px-0.5 scrollbar-none sm:mt-3">
-                            <div className="flex min-w-max gap-1 sm:gap-1.5">
+                        <div className="mt-2.5 -mx-0.5 overflow-x-auto px-0.5 scrollbar-none sm:mt-3">
+                            <div className="flex min-w-max gap-1.5">
                                 {CATEGORY_CHIPS.map((tab) => {
                                     const isActive = categoryChip === tab.value
                                     return (
@@ -1336,10 +1469,10 @@ export function AllJobs() {
                                             key={tab.value}
                                             type="button"
                                             onClick={() => handleCategoryChange(tab.value)}
-                                            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-sm ${
+                                            className={`whitespace-nowrap rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-colors sm:px-3.5 sm:text-xs ${
                                                 isActive
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10'
+                                                    ? 'border-primary-300 bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-200/60 dark:border-primary-600 dark:bg-primary-950/40 dark:text-primary-200'
+                                                    : 'border-gray-200/80 bg-white text-gray-600 hover:border-primary-200 hover:bg-primary-50/30 dark:border-white/10 dark:bg-transparent dark:text-gray-300 dark:hover:border-primary-700/50'
                                             }`}
                                         >
                                             {tab.label}
@@ -1362,10 +1495,10 @@ export function AllJobs() {
                                                 key={`date-${tab.value}`}
                                                 type="button"
                                                 onClick={() => handleDesktopDateChange(tab.value)}
-                                                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-all sm:px-3 sm:py-1.5 sm:text-xs ${
+                                                className={`whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-3 sm:py-1.5 ${
                                                     active
-                                                        ? 'border border-violet-500/30 bg-violet-500/15 text-violet-300'
-                                                        : 'border border-transparent text-gray-500 hover:border-gray-200 dark:text-gray-400 dark:hover:border-white/10'
+                                                        ? 'border-secondary-300 bg-secondary-50 text-secondary-700 dark:border-secondary-600 dark:bg-secondary-950/40 dark:text-secondary-300'
+                                                        : 'border-transparent text-gray-500 hover:border-gray-200 dark:text-gray-400 dark:hover:border-white/10'
                                                 }`}
                                             >
                                                 {tab.label}
@@ -1377,6 +1510,65 @@ export function AllJobs() {
                         </div>
                     </div>
 
+                    {/* Mobile: Open now strip (desktop uses right rail) */}
+                    {!loading && railOpenJobs.length > 0 && (
+                        <div className="mb-3 lg:hidden">
+                            <div className="mb-1.5 flex items-center justify-between gap-2 px-0.5">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200">
+                                    Open now
+                                </p>
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                                    <span className="relative flex h-1.5 w-1.5">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    </span>
+                                    {railOpenJobs.length} live
+                                </span>
+                            </div>
+                            <div className="-mx-0.5 flex gap-2 overflow-x-auto overscroll-x-contain px-0.5 pb-1 scrollbar-none">
+                                {railOpenJobs.map((job) => {
+                                    const active = selectedJob?.id === job.id
+                                    const company =
+                                        job.company_name || job.corporate_name || 'Company'
+                                    return (
+                                        <button
+                                            key={`open-now-${job.id}`}
+                                            type="button"
+                                            onClick={() => selectJobFromRail(job)}
+                                            className={cn(
+                                                'w-[9.5rem] shrink-0 rounded-xl border border-l-[3px] border-l-primary-500 p-2.5 text-left transition-colors dark:border-l-primary-400',
+                                                active
+                                                    ? 'border-primary-300 bg-primary-50/80 ring-1 ring-primary-200/60 dark:border-primary-600/50 dark:bg-primary-950/40'
+                                                    : 'border-gray-200 bg-white hover:border-primary-200 dark:border-[#1A2233] dark:bg-[#141A29]'
+                                            )}
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <CompanyLogo
+                                                    logoUrl={job.company_logo}
+                                                    companyName={company}
+                                                    size="sm"
+                                                    className="h-8 w-8 shrink-0 rounded-md text-xs"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="line-clamp-2 text-[11px] font-semibold leading-snug text-gray-900 dark:text-white">
+                                                        {displayJobTitle(job.title)}
+                                                    </p>
+                                                    <p className="mt-0.5 truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                                        {company}
+                                                    </p>
+                                                    <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-400">
+                                                        <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                                                        Live
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {loading ? (
                         <div className="flex h-64 items-center justify-center">
                             <div className="flex flex-col items-center gap-3">
@@ -1386,7 +1578,7 @@ export function AllJobs() {
                                 </p>
                             </div>
                         </div>
-                    ) : (useRankedPagination ? rankedPool.length === 0 : jobs.length === 0) ? (
+                    ) : rankedPool.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-gray-200 bg-white/50 px-4 py-16 text-center dark:border-gray-700 dark:bg-gray-800/40">
                             <p className="text-base font-medium text-gray-600 dark:text-gray-300 sm:text-lg">
                                 {categoryChip === 'saved' && getSavedJobIds().length === 0
@@ -1406,7 +1598,7 @@ export function AllJobs() {
                             )}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 gap-3.5 pb-2 sm:gap-3 lg:pb-0">
                             {displayJobs.map((job, index) => (
                                 <JobCard
                                     key={job.id}
@@ -1417,15 +1609,14 @@ export function AllJobs() {
                                     onViewDescription={() => router.push(getJobDetailPath(job))}
                                     onApply={() => handleApplyClick(job)}
                                     isApplying={applyingJobId === job.id}
-                                    showMatchScore={personalizeFeed && job.match_score >= 1}
-                                    matchScore={job.match_score}
+                                    compactMobile
                                 />
                             ))}
                         </div>
                     )}
 
                     {pagination.total_pages > 1 && (
-                        <div className="mt-8 flex justify-center pb-8">
+                        <div className="mt-8 flex justify-center pb-6 sm:pb-8">
                             <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                                 <Button
                                     variant="outline"
@@ -1446,9 +1637,9 @@ export function AllJobs() {
                                             <Button
                                                 key={pageNum}
                                                 variant={currentPage === pageNum ? 'default' : 'outline'}
-                                                className={`h-9 w-9 p-0 font-medium transition-all ${
+                                                className={`h-9 w-9 p-0 font-medium shadow-none transition-colors ${
                                                     currentPage === pageNum
-                                                        ? 'border-blue-600 bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                                                        ? 'border-primary-600 bg-primary-600 text-white hover:bg-primary-700'
                                                         : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                                                 }`}
                                                 onClick={() => handlePageChange(pageNum)}
@@ -1534,7 +1725,7 @@ export function AllJobs() {
                                     handleDesktopShowResults()
                                     setDesktopFilterOpen(false)
                                 }}
-                                className="h-10 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500"
+                                className="h-10 w-full rounded-md bg-primary-600 font-semibold text-white shadow-none hover:bg-primary-700"
                             >
                                 Show Results
                             </Button>
@@ -1551,21 +1742,16 @@ export function AllJobs() {
                 ) : (
                     <JobsLinkedInRightRail
                         job={selectedJob}
-                        highlightJobs={displayJobs.filter((j) => {
-                            const status = String(j.status || '').toLowerCase()
-                            return status !== 'closed' && status !== 'expired'
-                        })}
+                        highlightJobs={railOpenJobs}
                         isLoggedIn={isLoggedIn}
                         showApplyForm={showApplyFormInPanel}
                         onSelectJob={(job) => {
-                            setSelectedJob(job)
-                            setDesktopFilterOpen(false)
-                            setShowApplyFormInPanel(false)
+                            selectJobFromRail(job)
                         }}
                         onStartQuickApply={() => {
-                            if (!selectedJob) return
-                            handleApplyClick(selectedJob)
+                            void handleRailQuickApply()
                         }}
+                        isApplying={Boolean(selectedJob && applyingJobId === selectedJob.id)}
                         onGuestAuth={() => {
                             if (!selectedJob) return
                             handleApplyClick(selectedJob)

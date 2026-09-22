@@ -29,6 +29,8 @@ interface ProfileCompletionData {
     core_completed_count?: number
     core_total?: number
     suggestion_ready?: boolean
+    skills_complete?: boolean
+    quick_apply_profile_unlocked?: boolean
     path_percentage?: number
     path_target?: number
 }
@@ -44,30 +46,34 @@ interface ProfileCompletionProps {
 
 const SUGGESTION_THRESHOLD = 75
 
-/** Mirrors backend: Basic 35 + Education 14 + Skills 26 = 75 (skills required to reach 75) */
+/** Mirrors backend Profile path: Basic 45 + Education 30 = 75 (Skills optional toward 100%) */
 const PATH_STEPS = [
     {
         id: 'basic',
         label: 'Basic info',
-        weight: 35,
-        weightLabel: '35%',
+        weight: 45,
+        weightLabel: '45%',
+        mandatory: true,
         fields: ['name', 'email', 'phone', 'dob', 'gender', 'country', 'state', 'city'],
     },
     {
         id: 'education',
         label: 'Education',
-        weight: 14,
-        weightLabel: '14%',
+        weight: 30,
+        weightLabel: '30%',
+        mandatory: true,
         fields: ['institution', 'degree', 'branch', 'graduation_year'],
     },
-    {
-        id: 'skills',
-        label: 'Skills & industry',
-        weight: 26,
-        weightLabel: '26%',
-        fields: ['technical_skills', 'soft_skills', 'preferred_industry'],
-    },
 ] as const
+
+const OPTIONAL_SKILLS_STEP = {
+    id: 'skills',
+    label: 'Skills & industry',
+    weight: 12,
+    weightLabel: '12%',
+    mandatory: false,
+    fields: ['technical_skills', 'soft_skills', 'preferred_industry'],
+} as const
 
 function formatFieldName(fieldName: string) {
     return fieldName
@@ -126,20 +132,27 @@ export function ProfileCompletion({
             ).length
             const total = step.fields.length
             const complete = doneCount === total
-            // Match backend: skills section is all-or-nothing (26% only when both filled)
             const stepScore =
-                step.id === 'skills'
-                    ? complete
-                        ? step.weight
-                        : 0
-                    : total > 0
-                      ? (doneCount / total) * step.weight
-                      : 0
+                total > 0 ? (doneCount / total) * step.weight : 0
             const missingNames = step.fields
                 .filter((f) => !isFieldDone(f, completedSet, missingSet))
                 .map(formatFieldName)
             return { ...step, doneCount, total, complete, stepScore, missingNames }
         })
+    }, [completedSet, missingSet])
+
+    const skillsStep = useMemo(() => {
+        const step = OPTIONAL_SKILLS_STEP
+        const doneCount = step.fields.filter((f) =>
+            isFieldDone(f, completedSet, missingSet)
+        ).length
+        const total = step.fields.length
+        const complete = doneCount === total
+        const stepScore = complete ? step.weight : 0
+        const missingNames = step.fields
+            .filter((f) => !isFieldDone(f, completedSet, missingSet))
+            .map(formatFieldName)
+        return { ...step, doneCount, total, complete, stepScore, missingNames }
     }, [completedSet, missingSet])
 
     const pathComplete = pathSteps.every((s) => s.complete)
@@ -153,6 +166,9 @@ export function ProfileCompletion({
     const suggestionReady =
         completionData?.suggestion_ready === true ||
         (completion >= SUGGESTION_THRESHOLD && pathComplete)
+    const qaUnlocked = completionData?.quick_apply_profile_unlocked === true
+    const skillsComplete =
+        completionData?.skills_complete === true || skillsStep.complete
     const toward75 = Math.min(
         100,
         Math.round((Math.min(pathScore, SUGGESTION_THRESHOLD) / SUGGESTION_THRESHOLD) * 100)
@@ -177,21 +193,41 @@ export function ProfileCompletion({
                 )}
             >
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    Path to {SUGGESTION_THRESHOLD}%
+                    {qaUnlocked ? '75% unlocked' : `Path to ${SUGGESTION_THRESHOLD}%`}
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
-                    {suggestionReady ? (
+                    {qaUnlocked ? (
                         <>
-                            You&apos;re suggestion-ready. Optional fields below can take you to 100%.
+                            You reached ~{SUGGESTION_THRESHOLD}% via{' '}
+                            <span className="font-medium text-gray-900 dark:text-white">Quick Apply</span>{' '}
+                            (Contact + Education + Resume).
+                            {!skillsComplete ? (
+                                <>
+                                    {' '}
+                                    Still add{' '}
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                        Skills
+                                    </span>{' '}
+                                    for stronger job matches.
+                                </>
+                            ) : (
+                                <> Optional fields can take you to 100%.</>
+                            )}
+                        </>
+                    ) : suggestionReady ? (
+                        <>
+                            You&apos;re at ~{SUGGESTION_THRESHOLD}% with{' '}
+                            <span className="font-medium text-gray-900 dark:text-white">Basic info</span> and{' '}
+                            <span className="font-medium text-gray-900 dark:text-white">Education</span>.
+                            Optional fields below can take you to 100%.
                         </>
                     ) : (
                         <>
-                            Complete <span className="font-medium text-gray-900 dark:text-white">Basic info</span>,{' '}
-                            <span className="font-medium text-gray-900 dark:text-white">Education</span>, and{' '}
-                            <span className="font-medium text-gray-900 dark:text-white">
-                                skills + preferred industry
-                            </span>{' '}
-                            to reach ~{SUGGESTION_THRESHOLD}% and unlock personalized job suggestions.
+                            On Profile, complete{' '}
+                            <span className="font-medium text-gray-900 dark:text-white">Basic info</span> and{' '}
+                            <span className="font-medium text-gray-900 dark:text-white">Education</span>{' '}
+                            to reach ~{SUGGESTION_THRESHOLD}%. Skills are optional for better matches.
+                            Completing all 3 Quick Apply steps also unlocks 75%.
                         </>
                     )}
                 </p>
@@ -199,7 +235,7 @@ export function ProfileCompletion({
                 {!suggestionReady && (
                     <div className="mt-2.5">
                         <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400">
-                            <span>Progress to suggestions</span>
+                            <span>Mandatory sections progress</span>
                             <span className="tabular-nums font-medium text-gray-700 dark:text-gray-300">
                                 {Math.min(pathScore, SUGGESTION_THRESHOLD)}% / {SUGGESTION_THRESHOLD}%
                             </span>
@@ -246,6 +282,11 @@ export function ProfileCompletion({
                                         {index + 1}.
                                     </span>
                                     {step.label}
+                                    {step.mandatory && (
+                                        <span className="ml-1.5 text-[9px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                                            Required
+                                        </span>
+                                    )}
                                 </span>
                                 <span className="shrink-0 text-[10px] tabular-nums text-gray-400 dark:text-gray-500">
                                     {step.weightLabel}
@@ -267,6 +308,55 @@ export function ProfileCompletion({
                         </div>
                     </li>
                 ))}
+                <li
+                    className={cn(
+                        'flex gap-2.5 rounded-lg px-2 py-1.5',
+                        skillsStep.complete
+                            ? 'bg-emerald-50/60 dark:bg-emerald-950/20'
+                            : 'bg-transparent'
+                    )}
+                >
+                    <div className="mt-0.5 shrink-0">
+                        {skillsStep.complete ? (
+                            <CheckCircle className="h-4 w-4 text-emerald-500" aria-hidden />
+                        ) : (
+                            <Circle className="h-4 w-4 text-gray-300 dark:text-gray-600" aria-hidden />
+                        )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                            <span
+                                className={cn(
+                                    'text-xs font-medium',
+                                    skillsStep.complete
+                                        ? 'text-emerald-800 dark:text-emerald-300'
+                                        : 'text-gray-800 dark:text-gray-200'
+                                )}
+                            >
+                                <span className="mr-1.5 text-[10px] font-normal text-gray-400 dark:text-gray-500">
+                                    3.
+                                </span>
+                                {skillsStep.label}
+                                <span className="ml-1.5 text-[9px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                    Optional
+                                </span>
+                            </span>
+                            <span className="shrink-0 text-[10px] tabular-nums text-gray-400 dark:text-gray-500">
+                                {skillsStep.weightLabel}
+                            </span>
+                        </div>
+                        {!skillsStep.complete && skillsStep.missingNames.length > 0 && (
+                            <p className="mt-0.5 truncate text-[10px] text-gray-500 dark:text-gray-400">
+                                Add for better matches: {skillsStep.missingNames.slice(0, 3).join(', ')}
+                            </p>
+                        )}
+                        {skillsStep.complete && (
+                            <p className="mt-0.5 text-[10px] text-emerald-600/90 dark:text-emerald-400/90">
+                                Complete
+                            </p>
+                        )}
+                    </div>
+                </li>
             </ol>
         </div>
     )

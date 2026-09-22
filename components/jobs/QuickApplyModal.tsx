@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Briefcase, CheckCircle2, Eye, FileText, Loader2, MapPin, Trash2, X, Zap } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import {
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import { extractErrorDetail } from '@/lib/profileCompletion'
+import { DEGREE_OPTIONS, getBranchesForDegrees, resolveCanonicalDegree } from '@/lib/academicHierarchy'
 import { cn } from '@/lib/utils'
 
 export interface QuickApplyJobInfo {
@@ -35,7 +36,7 @@ interface QuickApplyModalProps {
   variant?: 'modal' | 'panel'
 }
 
-type StepId = 0 | 1
+type StepId = 0 | 1 | 2
 
 type ResumeFileItem = {
   id: string
@@ -54,6 +55,21 @@ function isBlank(value?: string | null): boolean {
   return !value || !String(value).trim()
 }
 
+const DEGREE_SELECT_OPTIONS = DEGREE_OPTIONS.map((d) => ({
+  value: d.value,
+  label: d.label,
+}))
+
+function buildGraduationYearOptions(selected?: number | null): number[] {
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 21 }, (_, i) => currentYear + 10 - i)
+  if (selected != null && !Number.isNaN(selected) && !years.includes(selected)) {
+    years.push(selected)
+    years.sort((a, b) => b - a)
+  }
+  return years
+}
+
 export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProps) {
   const [step, setStep] = useState<StepId>(0)
   const [loadingProfile, setLoadingProfile] = useState(true)
@@ -69,6 +85,12 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [country, setCountry] = useState('')
+
+  const [institution, setInstitution] = useState('')
+  const [degree, setDegree] = useState('')
+  const [branch, setBranch] = useState('')
+  const [graduationYear, setGraduationYear] = useState('')
+
   const [resumeUrl, setResumeUrl] = useState<string | null>(null)
   const [resumeFiles, setResumeFiles] = useState<ResumeFileItem[]>([])
   const [maxResumes, setMaxResumes] = useState(5)
@@ -87,6 +109,16 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
   const canEditGender = !hasAppliedBefore && !genderLockedFromProfile
   const canEditLocation = !hasAppliedBefore && !locationLockedFromProfile
   const anyBasicsEditable = canEditDob || canEditGender || canEditLocation
+
+  const branchOptions = useMemo(() => {
+    if (!degree) return [] as string[]
+    return getBranchesForDegrees([degree])
+  }, [degree])
+
+  const graduationYearOptions = useMemo(
+    () => buildGraduationYearOptions(graduationYear ? Number(graduationYear) : null),
+    [graduationYear]
+  )
 
   const applyResumeLibrary = (data: {
     resumes: ResumeFileItem[]
@@ -143,6 +175,39 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
         setState(nextState)
         setCountry(nextCountry)
 
+        setInstitution(profile.institution || '')
+        // Normalize degree/branch so Profile edits match Quick Apply dropdowns
+        const rawDegree = profile.degree || ''
+        const canonicalDegree =
+          resolveCanonicalDegree(rawDegree) || rawDegree.trim() || ''
+        setDegree(canonicalDegree)
+
+        const rawBranch = (profile.branch || '').trim()
+        const branchChoices = canonicalDegree
+          ? getBranchesForDegrees([canonicalDegree])
+          : []
+        const matchedBranch =
+          branchChoices.find(
+            (b) => b.toLowerCase() === rawBranch.toLowerCase()
+          ) ||
+          branchChoices.find((b) => {
+            const bl = b.toLowerCase()
+            const rl = rawBranch.toLowerCase()
+            return (
+              bl.includes(rl) ||
+              rl.includes(bl.split('(')[0].trim()) ||
+              (rl.length >= 2 && bl.includes(rl))
+            )
+          }) ||
+          rawBranch
+        setBranch(matchedBranch)
+
+        setGraduationYear(
+          profile.graduation_year != null && profile.graduation_year !== undefined
+            ? String(profile.graduation_year)
+            : ''
+        )
+
         setDobLockedFromProfile(!isBlank(nextDob))
         setGenderLockedFromProfile(!isBlank(nextGender))
         setLocationLockedFromProfile(
@@ -167,9 +232,8 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
     }
   }, [])
 
-  const stepLabels = ['Contact info', 'Resume'] as const
+  const stepLabels = ['Contact info', 'Education', 'Resume'] as const
   const currentStepLabel = stepLabels[step]
-  // Progress follows current step (not pre-filled profile completeness)
   const progressPercent = Math.round(((step + 1) / stepLabels.length) * 100)
 
   const validateBasics = (): boolean => {
@@ -208,6 +272,22 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
       setLocationError(locMsg)
     } else {
       setLocationError('')
+    }
+    setFieldErrors(next)
+    return Object.keys(next).length === 0
+  }
+
+  const validateEducation = (): boolean => {
+    const next: Record<string, string> = {}
+    if (isBlank(degree)) next.degree = 'Degree is required'
+    if (isBlank(branch)) next.branch = 'Branch is required'
+    if (isBlank(graduationYear)) {
+      next.graduation_year = 'Graduation year is required'
+    } else {
+      const year = Number(graduationYear)
+      if (!Number.isInteger(year) || year < 1950 || year > 2100) {
+        next.graduation_year = 'Enter a valid graduation year'
+      }
     }
     setFieldErrors(next)
     return Object.keys(next).length === 0
@@ -287,30 +367,58 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
         return
       }
       setStep(1)
+      setFieldErrors({})
+      return
+    }
+    if (step === 1) {
+      if (!validateEducation()) {
+        toast.error('Please complete education details')
+        return
+      }
+      setStep(2)
+      setFieldErrors({})
     }
   }
 
   const goBack = () => {
     if (step === 0) return
-    setStep(0)
+    setStep((prev) => (prev === 2 ? 1 : 0))
     setFieldErrors({})
   }
 
   const handleSubmit = async () => {
-    if (!validateBasics() || !validateResume()) {
-      toast.error('Please complete required fields')
+    if (!validateBasics()) {
+      setStep(0)
+      toast.error('Please complete required contact details')
+      return
+    }
+    if (!validateEducation()) {
+      setStep(1)
+      toast.error('Please complete education details')
+      return
+    }
+    if (!validateResume()) {
+      toast.error('Please select a resume')
       return
     }
 
     try {
       setSubmitting(true)
-      await profileService.updateProfile({
+      const profilePatch: Partial<StudentProfile> & {
+        unlock_via_quick_apply?: boolean
+        graduation_year?: number
+      } = {
         dob,
         gender,
         city: city || undefined,
         state: state || undefined,
         country: country || undefined,
-      })
+        degree: (resolveCanonicalDegree(degree.trim()) || degree.trim()),
+        branch: branch.trim(),
+        graduation_year: Number(graduationYear),
+        unlock_via_quick_apply: true,
+      }
+      await profileService.updateProfile(profilePatch)
 
       await apiClient.applyForJob(job.id, defaultApplyPayload(job.id))
       clearPendingJobApplication()
@@ -326,6 +434,23 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
   const companyLabel = job.company_name || job.corporate_name || 'Company'
   const locationDisplay =
     [city, state, country].filter(Boolean).join(', ') || city
+
+  const fieldControlClass = (hasError?: string, muted?: boolean) =>
+    cn(
+      'box-border h-10 w-full min-w-0 max-w-full rounded-lg border px-3 text-sm leading-none',
+      muted
+        ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300'
+        : 'bg-white dark:bg-gray-800 dark:text-white',
+      hasError ? 'border-red-500' : !muted && 'border-gray-300 dark:border-gray-600'
+    )
+
+  const selectClass = (hasError?: string) =>
+    cn(fieldControlClass(hasError, false), 'min-w-0 max-w-full')
+
+  const fieldGridClass =
+    'grid w-full grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
+
+  const fieldCellClass = 'flex min-w-0 w-full max-w-full flex-col overflow-hidden'
 
   return (
     <div className="fixed inset-0 z-[200] overflow-y-auto" role="presentation">
@@ -384,7 +509,6 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
               </button>
             </div>
 
-            {/* Progress — bar + % only (step title shown in body) */}
             <div className="mt-4 flex items-center gap-3">
               <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
                 <div
@@ -422,45 +546,50 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                       </p>
                     </div>
 
-                    {/* Profile snapshot (prefilled context) */}
-                    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/80 p-3 dark:border-white/10 dark:bg-white/[0.04]">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                        {(profileName || 'S').charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Name
+                      </label>
+                      <div
+                        className={cn(
+                          fieldControlClass(undefined, true),
+                          'flex items-center gap-2.5 py-0'
+                        )}
+                      >
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                          {(profileName || 'S').charAt(0).toUpperCase()}
+                        </div>
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-700 dark:text-gray-200">
                           {profileName || 'Student'}
                         </p>
                       </div>
                     </div>
 
-                    {profileEmail && (
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={profileEmail}
-                          readOnly
-                          className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300"
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={profileEmail}
+                        readOnly
+                        placeholder="Not set"
+                        className={fieldControlClass(undefined, true)}
+                      />
+                    </div>
 
-                    {profilePhone && (
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                          Mobile phone
-                        </label>
-                        <input
-                          type="tel"
-                          value={profilePhone}
-                          readOnly
-                          className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300"
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Mobile phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={profilePhone}
+                        readOnly
+                        placeholder="Not set"
+                        className={fieldControlClass(undefined, true)}
+                      />
+                    </div>
 
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {anyBasicsEditable ? (
@@ -496,12 +625,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                             setDob(e.target.value)
                             setFieldErrors((prev) => ({ ...prev, dob: '' }))
                           }}
-                          className={cn(
-                            'w-full rounded-lg border px-3 py-2 dark:bg-gray-800 dark:text-white',
-                            fieldErrors.dob
-                              ? 'border-red-500'
-                              : 'border-gray-300 dark:border-gray-600'
-                          )}
+                          className={fieldControlClass(fieldErrors.dob)}
                         />
                       ) : (
                         <input
@@ -517,12 +641,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                           }
                           readOnly
                           placeholder="Not set in profile"
-                          className={cn(
-                            'w-full cursor-not-allowed rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300',
-                            fieldErrors.dob
-                              ? 'border-red-500'
-                              : 'border-gray-200 dark:border-white/10'
-                          )}
+                          className={fieldControlClass(fieldErrors.dob, true)}
                         />
                       )}
                       {fieldErrors.dob && (
@@ -541,12 +660,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                             setGender(e.target.value)
                             setFieldErrors((prev) => ({ ...prev, gender: '' }))
                           }}
-                          className={cn(
-                            'w-full rounded-lg border px-3 py-2 dark:bg-gray-800 dark:text-white',
-                            fieldErrors.gender
-                              ? 'border-red-500'
-                              : 'border-gray-300 dark:border-gray-600'
-                          )}
+                          className={selectClass(fieldErrors.gender)}
                         >
                           <option value="">Select your gender</option>
                           <option value="male">Male</option>
@@ -563,12 +677,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                           }
                           readOnly
                           placeholder="Not set in profile"
-                          className={cn(
-                            'w-full cursor-not-allowed rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300',
-                            fieldErrors.gender
-                              ? 'border-red-500'
-                              : 'border-gray-200 dark:border-white/10'
-                          )}
+                          className={fieldControlClass(fieldErrors.gender, true)}
                         />
                       )}
                       {fieldErrors.gender && (
@@ -607,11 +716,9 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                             }
                             readOnly
                             placeholder="Not set in profile"
-                            className={cn(
-                              'w-full cursor-not-allowed rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300',
-                              locationError || fieldErrors.location
-                                ? 'border-red-500'
-                                : 'border-gray-200 dark:border-white/10'
+                            className={fieldControlClass(
+                              locationError || fieldErrors.location,
+                              true
                             )}
                           />
                           {(locationError || fieldErrors.location) && (
@@ -626,6 +733,148 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                 )}
 
                 {step === 1 && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                        Education
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                        Confirm your academic details. Institution is set at registration; complete
+                        degree, branch, and graduation year.
+                      </p>
+                    </div>
+
+                    <div className={fieldGridClass}>
+                      <div className={fieldCellClass}>
+                        <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
+                          Institution <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={institution}
+                          readOnly
+                          disabled
+                          placeholder="Not set"
+                          className={fieldControlClass(undefined, true)}
+                        />
+                        <p className="mt-1 min-h-[1rem] text-xs invisible">placeholder</p>
+                      </div>
+
+                      <div className={fieldCellClass}>
+                        <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
+                          Degree <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={degree}
+                          onChange={(e) => {
+                            setDegree(e.target.value)
+                            setBranch('')
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              degree: '',
+                              branch: '',
+                            }))
+                          }}
+                          className={selectClass(fieldErrors.degree)}
+                        >
+                          <option value="">Select your degree</option>
+                          {DEGREE_SELECT_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                          {degree &&
+                            !DEGREE_SELECT_OPTIONS.some((o) => o.value === degree) && (
+                              <option value={degree}>{degree}</option>
+                            )}
+                        </select>
+                        <p
+                          className={cn(
+                            'mt-1 min-h-[1rem] text-xs',
+                            fieldErrors.degree ? 'text-red-500' : 'invisible'
+                          )}
+                        >
+                          {fieldErrors.degree || 'placeholder'}
+                        </p>
+                      </div>
+
+                      <div className={fieldCellClass}>
+                        <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
+                          Branch <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={branch}
+                          disabled={!degree}
+                          onChange={(e) => {
+                            setBranch(e.target.value)
+                            setFieldErrors((prev) => ({ ...prev, branch: '' }))
+                          }}
+                          className={cn(
+                            selectClass(fieldErrors.branch),
+                            !degree && 'cursor-not-allowed opacity-70'
+                          )}
+                        >
+                          <option value="">
+                            {degree ? 'Select your branch' : 'Select degree first'}
+                          </option>
+                          {branch && !branchOptions.includes(branch) && (
+                            <option value={branch}>{branch}</option>
+                          )}
+                          {branchOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                        <p
+                          className={cn(
+                            'mt-1 min-h-[1rem] text-xs',
+                            fieldErrors.branch ? 'text-red-500' : 'invisible'
+                          )}
+                        >
+                          {fieldErrors.branch || 'placeholder'}
+                        </p>
+                      </div>
+
+                      <div className={fieldCellClass}>
+                        <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
+                          Graduation Year <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={graduationYear}
+                          onChange={(e) => {
+                            setGraduationYear(e.target.value)
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              graduation_year: '',
+                            }))
+                          }}
+                          className={selectClass(fieldErrors.graduation_year)}
+                        >
+                          <option value="">Select graduation year</option>
+                          {graduationYearOptions.map((year) => (
+                            <option key={year} value={String(year)}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                        <p
+                          className={cn(
+                            'mt-1 min-h-[1rem] text-xs',
+                            fieldErrors.graduation_year ? 'text-red-500' : 'invisible'
+                          )}
+                        >
+                          {fieldErrors.graduation_year || 'placeholder'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Institution is set during registration and cannot be changed.
+                    </p>
+                  </div>
+                )}
+
+                {step === 2 && (
                   <div className="w-full space-y-3">
                     <div>
                       <h3 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -760,7 +1009,6 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                     )}
                   </div>
                 )}
-
               </>
             )}
           </div>
@@ -777,7 +1025,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
               {step === 0 ? 'Cancel' : 'Back'}
             </Button>
 
-            {step < 1 ? (
+            {step < 2 ? (
               <Button
                 type="button"
                 onClick={goNext}
