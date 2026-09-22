@@ -12,16 +12,17 @@ import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import { buildAuthPath } from '@/lib/authLinks'
 import {
-    APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
     getUniversityApplyEligibility,
     getPassoutBatchApplyEligibility,
-    resumePendingJobApplication,
     shouldAutoApplyForJob,
-    toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
+import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
+import { profileService } from '@/services/profileService'
+import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 import {
     Loader2,
     AlertCircle,
@@ -100,8 +101,9 @@ export default function PublicJobPage() {
     const [job, setJob] = useState<Job | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [isApplying, setIsApplying] = useState(false)
     const [hasApplied, setHasApplied] = useState(false)
+    const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
+    const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [activeTab, setActiveTab] = useState<'description' | 'company'>('description')
     const [corporateProfile, setCorporateProfile] = useState<any>(null)
     const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
@@ -132,7 +134,7 @@ export default function PublicJobPage() {
         }
     }, [isAuthenticated, user, publicLinkToken, job?.id])
 
-    // After login: auto-submit pending application for this public job
+    // After login/register from Quick Apply: open Quick Apply form
     useEffect(() => {
         if (!job || authLoading || autoApplyAttempted.current) return
         if (!shouldAutoApplyForJob(job.id)) return
@@ -150,14 +152,7 @@ export default function PublicJobPage() {
 
         autoApplyAttempted.current = true
         clearAutoApplyQueryParams()
-        setIsApplying(true)
-        void (async () => {
-            const result = await resumePendingJobApplication(job.id)
-            if (result === 'success' || result === 'already_applied') {
-                setHasApplied(true)
-            }
-            setIsApplying(false)
-        })()
+        setShowQuickApplyModal(true)
     }, [job, authLoading, isAuthenticated, user, router, publicLinkToken])
 
     useEffect(() => {
@@ -306,29 +301,7 @@ export default function PublicJobPage() {
             return
         }
 
-        handleApply()
-    }
-
-    const handleApply = async () => {
-        if (!job) return
-
-        setIsApplying(true)
-        try {
-            await apiClient.client.post(`/applications/apply/${job.id}`, {
-                job_id: job.id,
-                cover_letter: `I am interested in this position and believe my skills and experience make me a great fit.`,
-                expected_salary: null,
-                availability_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            })
-
-            setHasApplied(true)
-            toast.success(APPLY_SUCCESS_MESSAGE)
-        } catch (error: unknown) {
-            console.error('Error applying for job:', error)
-            toastApplyError(error)
-        } finally {
-            setIsApplying(false)
-        }
+        setShowQuickApplyModal(true)
     }
 
     const getSalaryDisplay = () => formatSalaryRange(job?.salary_min, job?.salary_max, 'Not disclosed')
@@ -582,8 +555,8 @@ export default function PublicJobPage() {
                                         ) : (
                                             <Button
                                                 onClick={handleApplyClick}
-                                                disabled={!job.can_apply || isApplying || hasApplied}
-                                                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+                                                disabled={!job.can_apply || hasApplied}
+                                                className="w-full bg-blue-600 hover:bg-blue-500 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200"
                                                 size="lg"
                                                 title={
                                                     hasApplied
@@ -595,17 +568,8 @@ export default function PublicJobPage() {
                                                                 : ''
                                                 }
                                             >
-                                                {isApplying ? (
-                                                    <>
-                                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                                        Applying...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-5 h-5 mr-2" />
-                                                        Apply Now
-                                                    </>
-                                                )}
+                                                <CheckCircle className="w-5 h-5 mr-2" />
+                                                Quick Apply
                                             </Button>
                                         )}
 
@@ -962,7 +926,31 @@ export default function PublicJobPage() {
                 </div>
             </div>
 
+            {showQuickApplyModal && job && (
+                <QuickApplyModal
+                    job={job}
+                    onClose={() => setShowQuickApplyModal(false)}
+                    onSuccess={() => {
+                        setShowQuickApplyModal(false)
+                        setHasApplied(true)
+                        void (async () => {
+                            try {
+                                const completion = await profileService.getProfileCompletion()
+                                if (shouldShowPostApplySkillsNudge(completion)) {
+                                    setShowSkillsNudge(true)
+                                }
+                            } catch {
+                                // Skip nudge if we can't verify
+                            }
+                        })()
+                    }}
+                />
+            )}
 
+            <PostQuickApplySkillsNudgeDialog
+                isOpen={showSkillsNudge}
+                onClose={() => setShowSkillsNudge(false)}
+            />
         </div>
     )
 }

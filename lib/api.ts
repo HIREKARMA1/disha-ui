@@ -131,8 +131,14 @@ class ApiClient {
   }
 
   // Email OTP for signup
-  async sendEmailOtp(email: string): Promise<{ message: string; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
-    const response: AxiosResponse = await this.client.post('/auth/send-email-otp', { email });
+  async sendEmailOtp(
+    email: string,
+    name?: string
+  ): Promise<{ message: string; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
+    const response: AxiosResponse = await this.client.post('/auth/send-email-otp', {
+      email,
+      ...(name?.trim() ? { name: name.trim() } : {}),
+    });
     return response.data;
   }
 

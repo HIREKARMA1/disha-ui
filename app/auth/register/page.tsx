@@ -80,6 +80,18 @@ const userTypeLabels: Record<string, string> = {
     university: 'University',
 }
 
+/** Name/company for OTP email greeting */
+function getSignupDisplayName(data: FormData): string | undefined {
+    const anyData = data as Record<string, unknown>
+    const raw =
+        (typeof anyData.name === 'string' && anyData.name) ||
+        (typeof anyData.company_name === 'string' && anyData.company_name) ||
+        (typeof anyData.university_name === 'string' && anyData.university_name) ||
+        ''
+    const trimmed = String(raw).trim()
+    return trimmed || undefined
+}
+
 // for the error message input
 const getInputStatus = (name: keyof FormData, errors: any, value: any) => {
     if (errors[name]) return "error";   // red border
@@ -362,7 +374,7 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(data.email)
+            const response = await apiClient.sendEmailOtp(data.email, getSignupDisplayName(data))
             setFormData(data)
             setCurrentStep('otp')
             otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
@@ -382,7 +394,10 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(formData.email)
+            const response = await apiClient.sendEmailOtp(
+                formData.email,
+                getSignupDisplayName(formData)
+            )
             otpRateLimit.handleSendSuccess(response.rate_limit, formData.email)
             toast.success('OTP resent to your email address')
         } catch (error: unknown) {
@@ -437,6 +452,25 @@ function RegisterPageContent() {
 
                 // Check for redirect URL (from query params or localStorage)
                 let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+
+                // Quick Apply / pending job: return to Jobs (not dashboard)
+                if (!redirectUrl && typeof window !== 'undefined') {
+                    try {
+                        const raw = localStorage.getItem('pending_job_application')
+                        if (raw) {
+                            const pending = JSON.parse(raw) as { returnUrl?: string }
+                            if (pending?.returnUrl) redirectUrl = pending.returnUrl
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+                if (!redirectUrl && selectedUserType === 'student') {
+                    const fromJobs =
+                        typeof document !== 'undefined' &&
+                        document.referrer.includes('/jobs')
+                    if (fromJobs) redirectUrl = '/jobs'
+                }
 
                 if (redirectUrl) {
                     // Decode the redirect URL

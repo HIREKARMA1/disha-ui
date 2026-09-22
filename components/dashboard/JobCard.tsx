@@ -4,6 +4,7 @@ import { useState, useCallback, type ReactElement, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Clock, Users, Eye, CheckCircle, X, Bookmark, Share2 } from 'lucide-react'
 import { formatSalaryRange } from '@/lib/currency'
+import { displayJobTitle } from '@/lib/jobSkillMatch'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
@@ -71,11 +72,30 @@ interface JobCardProps {
     onApply: () => void
     isApplying?: boolean
     cardIndex?: number // Add card index for consecutive color assignment
-    showMatchScore?: boolean // Add option to show match score pie chart
-    matchScore?: number // Add match score for career align jobs
+    /** @deprecated Match % badge removed from UI; ranking still uses match_score upstream */
+    showMatchScore?: boolean
+    /** @deprecated Match % badge removed from UI */
+    matchScore?: number
+    /** Highlight when selected in split view */
+    selected?: boolean
+    /** Click card body (not View/Apply) to select job for right panel */
+    onSelect?: () => void
+    /** Quieter layout on small screens (hide secondary badges) */
+    compactMobile?: boolean
 }
 
-export function JobCard({ job, onViewDescription, onApply, isApplying = false, cardIndex = 0, showMatchScore = false, matchScore }: JobCardProps) {
+export function JobCard({
+    job,
+    onViewDescription,
+    onApply,
+    isApplying = false,
+    cardIndex = 0,
+    showMatchScore: _showMatchScore = false,
+    matchScore: _matchScore,
+    selected = false,
+    onSelect,
+    compactMobile = false,
+}: JobCardProps) {
     const { isSaved, toggle: toggleSaved } = useSavedJobs(job?.id)
     const [showShareModal, setShowShareModal] = useState(false)
     const closeShareModal = useCallback(() => setShowShareModal(false), [])
@@ -175,6 +195,15 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         return !job.application_status && !isDeadlineExpired() && job.can_apply
     }
 
+    const statusLower = String(job.status || '').toLowerCase()
+    const isLive =
+        Boolean(job.is_active) &&
+        Boolean(job.can_apply) &&
+        !isDeadlineExpired() &&
+        statusLower !== 'closed' &&
+        statusLower !== 'expired'
+    const isExpiredCard = isDeadlineExpired() || statusLower === 'expired' || statusLower === 'closed'
+
     // Check if job is university-created (on-campus job)
     // Matches the logic from UniversityJobCard: university_id exists and no corporate_id
     const isOnCampusJob = () => {
@@ -194,40 +223,40 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
         switch (status) {
             case 'applied':
                 badge = (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white border border-blue-500">
-                        <CheckCircle className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1 rounded-md border border-primary-200 bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700 dark:border-primary-700/50 dark:bg-primary-900/30 dark:text-primary-200">
+                        <CheckCircle className="h-3 w-3" />
                         Applied
                     </span>
                 )
                 break
             case 'shortlisted':
                 badge = (
-                    <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium flex items-center justify-center gap-1">
-                        <Users className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#f58020]">
+                        <Users className="h-3 w-3" />
                         Shortlisted
                     </span>
                 )
                 break
             case 'selected':
                 badge = (
-                    <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        Selected! 🎉
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#098855]">
+                        <CheckCircle className="h-3 w-3" />
+                        Selected
                     </span>
                 )
                 break
             case 'rejected':
                 badge = (
-                    <span className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center justify-center gap-1">
-                        <X className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#d64246]">
+                        <X className="h-3 w-3" />
                         Not Selected
                     </span>
                 )
                 break
             case 'pending':
                 badge = (
-                    <span className="text-xs text-purple-600 dark:text-purple-400 font-medium flex items-center justify-center gap-1">
-                        <Clock className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-secondary-600 dark:text-secondary-400">
+                        <Clock className="h-3 w-3" />
                         Under Review
                     </span>
                 )
@@ -289,7 +318,22 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -1 }}
             transition={{ duration: 0.25 }}
-            className="group relative rounded-2xl border border-gray-200/70 dark:border-white/10 bg-white dark:bg-[#151b2b] shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all duration-200 p-3.5 sm:p-4"
+            className={cn(
+                'group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm transition-[box-shadow,border-color] duration-200 dark:border-[#1A2233] dark:bg-[#141A29] dark:shadow-none sm:p-4',
+                selected
+                    ? 'border-primary-300 bg-primary-50/40 shadow-sm ring-1 ring-primary-200/60 dark:border-primary-600/50 dark:bg-primary-950/30 dark:ring-primary-700/40'
+                    : 'hover:border-primary-200 hover:shadow-md dark:hover:border-[#33405E] dark:hover:bg-[#1B2334]',
+                isLive &&
+                    !selected &&
+                    'border-l-[3px] border-l-primary-500 dark:border-l-primary-400',
+                isExpiredCard &&
+                    !selected &&
+                    'border-gray-200/90 bg-gray-50/70 opacity-90 dark:border-[#1A2233] dark:bg-[#10141c]/80 dark:opacity-80',
+                onSelect && 'cursor-pointer'
+            )}
+            onClick={onSelect}
+            data-job-card-id={job.id}
+            aria-selected={selected}
         >
             <div className="flex items-start gap-3 sm:gap-4">
                 {/* Company logo */}
@@ -303,33 +347,51 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                 <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-snug">
-                                    {typeof job.title === 'string' ? job.title : String(job.title || '')}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">
+                                    {displayJobTitle(typeof job.title === 'string' ? job.title : String(job.title || ''))}
                                 </h3>
-                                <span className={cn(
-                                    'inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-md',
-                                    'bg-emerald-500/15 text-emerald-500 border border-emerald-500/20'
-                                )}>
+                                {selected && (
+                                    <span
+                                        className={cn(
+                                            'inline-flex items-center rounded border border-primary-200 bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700 dark:border-primary-700/50 dark:bg-primary-900/40 dark:text-primary-200',
+                                            compactMobile && 'hidden sm:inline-flex'
+                                        )}
+                                    >
+                                        Selected
+                                    </span>
+                                )}
+                                <span className="inline-flex items-center rounded border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-600 dark:text-gray-300">
                                     {getJobTypeLabel(jobType)}
                                 </span>
+                                {isLive && (
+                                    <span className="inline-flex items-center gap-1 rounded border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+                                        Live
+                                    </span>
+                                )}
                                 {job.is_campus_drive && (
-                                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-md bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/20">
+                                    <span
+                                        className={cn(
+                                            'inline-flex items-center rounded border border-secondary-200 bg-secondary-50 px-1.5 py-0.5 text-[10px] font-medium text-secondary-700 dark:border-secondary-700/40 dark:bg-secondary-950/40 dark:text-secondary-300',
+                                            compactMobile && 'hidden sm:inline-flex'
+                                        )}
+                                    >
                                         Campus Drive
                                     </span>
                                 )}
                             </div>
                             {companyDisplayName && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                                <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
                                     {companyDisplayName}
                                 </p>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
                             {isDeadlineNear() && !isDeadlineExpired() && (
-                                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-orange-400">
-                                    <Clock className="w-3 h-3" />
+                                <span className="hidden items-center gap-1 text-[11px] font-semibold text-[#f58020] sm:inline-flex">
+                                    <Clock className="h-3 w-3" />
                                     Apply Soon
                                 </span>
                             )}
@@ -340,10 +402,13 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                                     e.stopPropagation()
                                     setShowShareModal(true)
                                 }}
-                                className="p-1.5 rounded-lg text-gray-400 transition-colors hover:bg-blue-500/10 hover:text-blue-500"
+                                className={cn(
+                                    'rounded-md p-1.5 text-gray-400 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/40 dark:hover:text-primary-300',
+                                    compactMobile && 'hidden sm:inline-flex'
+                                )}
                                 aria-label="Share job"
                             >
-                                <Share2 className="w-4 h-4" />
+                                <Share2 className="h-4 w-4" />
                             </button>
                             <button
                                 type="button"
@@ -354,22 +419,22 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                                     toast.success(saved ? 'Job saved' : 'Removed from saved jobs')
                                 }}
                                 className={cn(
-                                    'p-1.5 rounded-lg transition-colors',
+                                    'rounded-md p-1.5 transition-colors',
                                     isSaved
-                                        ? 'text-blue-500 bg-blue-500/10 hover:text-blue-600 hover:bg-blue-500/15'
-                                        : 'text-gray-400 hover:text-blue-500 hover:bg-blue-500/10'
+                                        ? 'bg-primary-50 text-primary-600 hover:bg-primary-100 dark:bg-primary-950/40 dark:text-primary-300'
+                                        : 'text-gray-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/40'
                                 )}
                                 aria-label={isSaved ? 'Unsave job' : 'Save job'}
                                 aria-pressed={isSaved}
                             >
-                                <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+                                <Bookmark className="h-4 w-4" fill={isSaved ? 'currentColor' : 'none'} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="mt-2 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                    <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 sm:gap-3 sm:text-sm">
                         <span className="inline-flex min-w-0 flex-1 items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-secondary-500" />
                             <span className="truncate">
                                 {Array.isArray(job.location) ? job.location.join(', ') : (job.location || 'Location TBA')}
                             </span>
@@ -387,43 +452,47 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                     </div>
 
                     <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div
+                            className={cn(
+                                'flex flex-wrap items-center gap-1.5',
+                                compactMobile && 'hidden sm:flex'
+                            )}
+                        >
                             {isOnCampusJob() && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                                <span className="inline-flex items-center gap-1 rounded border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-600 dark:text-gray-300">
                                     On Campus
                                 </span>
                             )}
                             {(job.number_of_openings || 0) > 1 && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-orange-500/15 text-orange-400 border border-orange-500/20">
-                                    <Users className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 rounded border border-[#f58020]/25 bg-[#f58020]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#f58020]">
+                                    <Users className="h-3 w-3" />
                                     {job.number_of_openings} Vacancies
                                 </span>
                             )}
                             {isDeadlineNear() && !isDeadlineExpired() && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                                    ⚡ Urgent Hiring
-                                </span>
-                            )}
-                            {showMatchScore && matchScore !== undefined && (
-                                <span className={cn(
-                                    'inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-md',
-                                    matchScore >= 80 ? 'bg-emerald-500 text-white' :
-                                        matchScore >= 60 ? 'bg-orange-500 text-white' :
-                                            'bg-red-500 text-white'
-                                )}>
-                                    {Math.round(matchScore)}% Match
+                                <span className="inline-flex items-center gap-1 rounded border border-[#fec40d]/30 bg-[#fec40d]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#b3880a] dark:text-[#fec40d]">
+                                    Urgent
                                 </span>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2 ml-auto">
+                        <div
+                            className={cn(
+                                'flex items-center gap-2',
+                                compactMobile ? 'w-full sm:ml-auto sm:w-auto' : 'ml-auto'
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <Button
                                 onClick={onViewDescription}
                                 variant="outline"
                                 size="sm"
-                                className="h-8 px-3 rounded-lg text-xs border-gray-200 dark:border-white/10"
+                                className={cn(
+                                    'h-8 rounded-md border-gray-200 px-3 text-xs shadow-none dark:border-gray-600',
+                                    compactMobile && 'h-9 flex-1 sm:h-8 sm:flex-none'
+                                )}
                             >
-                                <Eye className="w-3.5 h-3.5 mr-1" />
+                                <Eye className="mr-1 h-3.5 w-3.5" />
                                 View
                             </Button>
                             <Button
@@ -431,33 +500,41 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                                 disabled={!canApply() || isApplying}
                                 size="sm"
                                 className={cn(
-                                    'h-8 px-4 rounded-lg text-xs font-semibold',
+                                    'h-8 rounded-md px-4 text-xs font-semibold shadow-none',
+                                    compactMobile && 'h-9 flex-1 sm:h-8 sm:flex-none',
                                     job.application_status === 'applied'
-                                        ? 'bg-blue-600 text-white border-0 cursor-default hover:bg-blue-600'
+                                        ? 'bg-primary-600 text-white hover:bg-primary-600'
                                         : !canApply()
-                                            ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed text-white'
-                                            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/25'
+                                          ? 'cursor-not-allowed bg-gray-300 text-white dark:bg-gray-600'
+                                          : 'bg-primary-600 text-white hover:bg-primary-700'
                                 )}
                             >
                                 {isApplying ? (
                                     <span className="inline-flex items-center gap-1.5">
-                                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                         Applying
                                     </span>
+                                ) : job.application_status === 'applied' ? (
+                                    'Applied'
+                                ) : job.application_status === 'selected' ? (
+                                    'Selected'
+                                ) : job.application_status === 'rejected' ? (
+                                    'Not Selected'
+                                ) : job.application_status === 'shortlisted' ? (
+                                    'Shortlisted'
+                                ) : job.application_status === 'pending' ? (
+                                    'Under Review'
+                                ) : isDeadlineExpired() ? (
+                                    'Expired'
                                 ) : (
-                                    job.application_status === 'applied' ? 'Applied' :
-                                        job.application_status === 'selected' ? 'Selected' :
-                                            job.application_status === 'rejected' ? 'Not Selected' :
-                                                job.application_status === 'shortlisted' ? 'Shortlisted' :
-                                                    job.application_status === 'pending' ? 'Under Review' :
-                                                        isDeadlineExpired() ? 'Expired' : 'Apply'
+                                    'Apply'
                                 )}
                             </Button>
                         </div>
                     </div>
 
                     {job.application_status && job.application_status !== 'none' && (
-                        <div className="mt-2">
+                        <div className={cn('mt-2', compactMobile && 'hidden sm:block')}>
                             {getApplicationStatusDisplay(job.application_status)}
                         </div>
                     )}
