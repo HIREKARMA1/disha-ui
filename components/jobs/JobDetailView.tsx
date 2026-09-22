@@ -26,30 +26,25 @@ import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 import { SalaryBadge, hasJobSalary } from '@/components/jobs/SalaryBadge'
 import { ShareJobModal } from '@/components/jobs/ShareJobModal'
 import { JobAdditionalInfo } from '@/components/jobs/JobAdditionalInfo'
-import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
+import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
+import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
 import { apiClient } from '@/lib/api'
 import { formatSalaryRange } from '@/lib/currency'
 import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
 import { useAuth } from '@/hooks/useAuth'
 import { getJobDetailPath } from '@/lib/jobSlug'
-import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { canApplyForJobs } from '@/lib/profileCompletion'
-import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
+import { profileService } from '@/services/profileService'
 import { prepareGuestApplyForLogin } from '@/lib/pendingJobApplication'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
-  APPLY_SUCCESS_MESSAGE,
   CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   JOB_CLOSED_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   clearAutoApplyQueryParams,
-  getApplyErrorMessage,
   getPassoutBatchApplyEligibility,
   getUniversityApplyEligibility,
   isCampusDriveNotForUniversityMessage,
-  resumePendingJobApplication,
   shouldAutoApplyForJob,
-  toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import {
   resolveCampusDriveInterestOutcome,
@@ -61,6 +56,7 @@ import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestM
 import type { Job } from '@/components/jobs/AllJobs'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
+import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 
 interface JobDetailViewProps {
   companySlug: string
@@ -76,15 +72,13 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [job, setJob] = useState<Job | null>(null)
   const [related, setRelated] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
-  const [isAutoApplying, setIsAutoApplying] = useState(false)
   const autoApplyAttempted = useRef(false)
   const [error, setError] = useState<string | null>(null)
-  const [showApplicationModal, setShowApplicationModal] = useState(false)
+  const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
+  const [showSkillsNudge, setShowSkillsNudge] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const closeShareModal = useCallback(() => setShowShareModal(false), [])
-  const [isApplying, setIsApplying] = useState(false)
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
-  const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
   const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
   const [studentGraduationYear, setStudentGraduationYear] = useState<number | null>(null)
   const [studentBatch, setStudentBatch] = useState<string | null>(null)
@@ -143,10 +137,6 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     const token = apiClient.getAccessToken()
     if (!token) return
     profileService
-      .getProfileCompletion()
-      .then(setProfileCompletion)
-      .catch(() => undefined)
-    profileService
       .getProfile()
       .then((profile) => {
         setStudentUniversityId(profile.university_id || null)
@@ -176,7 +166,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   const companyName = job?.company_name || job?.corporate_name || 'Company'
 
-  // After login: auto-submit pending application for this job
+  // After login/register from Quick Apply: open Quick Apply form (not dashboard)
   useEffect(() => {
     if (!job || authLoading || autoApplyAttempted.current) return
     if (!shouldAutoApplyForJob(job.id)) return
@@ -196,17 +186,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
     autoApplyAttempted.current = true
     clearAutoApplyQueryParams()
-    setIsAutoApplying(true)
-    void (async () => {
-      const result = await resumePendingJobApplication(job.id)
-      if (result === 'success' || result === 'already_applied') {
-        setJob((prev) =>
-          prev ? { ...prev, application_status: 'applied', can_apply: false } : prev
-        )
-      }
-      setIsAutoApplying(false)
-    })()
-  }, [job, authLoading, user, router])
+    setShowQuickApplyModal(true)
+  }, [job, authLoading, user, openLoginModal])
 
   const requestApplyOverride = getCampusDriveRequestApplyOverride(
     job?.campus_drive_request_status
@@ -214,8 +195,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const applyDisabled =
     !job?.can_apply ||
     job?.application_status === 'applied' ||
-    Boolean(requestApplyOverride) ||
-    isAutoApplying
+    Boolean(requestApplyOverride)
   const applyLabel =
     job?.application_status === 'applied'
       ? 'Already Applied'
@@ -223,7 +203,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         ? 'Pending'
         : requestApplyOverride === 'rejected'
           ? 'Rejected'
-          : 'Apply Now'
+          : 'Quick Apply'
 
   const handleApply = async () => {
     if (!job) return
@@ -238,10 +218,6 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     )
     if (requestOverride === 'pending' || requestOverride === 'rejected') {
       toastCampusDriveRequestStatus(requestOverride)
-      return
-    }
-    if (profileCompletion && !canApplyForJobs(profileCompletion)) {
-      showProfileCompletionToast()
       return
     }
     if (!job.can_apply) {
@@ -299,7 +275,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
       return
     }
-    setShowApplicationModal(true)
+    setShowQuickApplyModal(true)
   }
 
   const handleCampusDriveStillInterested = async () => {
@@ -323,41 +299,20 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
   }
 
-  const handleApplySubmit = async (data: {
-    cover_letter?: string
-    expected_salary?: string | number
-    availability_date?: string
-  }) => {
+  const handleQuickApplySuccess = () => {
     if (!job) return
-    try {
-      setIsApplying(true)
-      await apiClient.applyForJob(job.id, {
-        job_id: job.id,
-        cover_letter: data.cover_letter,
-        expected_salary: data.expected_salary ? Number(data.expected_salary) : null,
-        availability_date: data.availability_date,
-      })
-      toast.success(APPLY_SUCCESS_MESSAGE)
-      setShowApplicationModal(false)
-      setJob({ ...job, application_status: 'applied', can_apply: false })
-    } catch (error: unknown) {
-      if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
-        setShowApplicationModal(false)
-        const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
-        if (outcome === 'pending' || outcome === 'rejected') {
-          toastCampusDriveRequestStatus(outcome)
-        } else if (outcome === 'accepted') {
-          setHasAcceptedCampusDriveRequest(true)
-          toastApplyError(error)
-        } else {
-          setShowCampusDriveInterestModal(true)
+    setShowQuickApplyModal(false)
+    setJob({ ...job, application_status: 'applied', can_apply: false })
+    void (async () => {
+      try {
+        const completion = await profileService.getProfileCompletion()
+        if (shouldShowPostApplySkillsNudge(completion)) {
+          setShowSkillsNudge(true)
         }
-        return
+      } catch {
+        // Profile already may be complete — skip nudge if we can't verify
       }
-      toastApplyError(error)
-    } finally {
-      setIsApplying(false)
-    }
+    })()
   }
 
   const handleShare = () => {
@@ -512,17 +467,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               disabled={applyDisabled}
               className="bg-primary-500 hover:bg-primary-600"
             >
-              {isAutoApplying ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Applying…
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  {applyLabel}
-                </>
-              )}
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {applyLabel}
             </Button>
             {canDownloadPdf && (
               <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloadingPDF}>
@@ -691,7 +637,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       {/* Mobile sticky apply */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 md:hidden">
         <Button
-          className="h-11 w-full bg-primary-500 hover:bg-primary-600"
+          className="h-11 w-full bg-blue-600 hover:bg-blue-500"
           onClick={handleApply}
           disabled={applyDisabled}
         >
@@ -701,14 +647,18 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
       <Footer />
 
-      {showApplicationModal && (
-        <ApplicationModal
+      {showQuickApplyModal && (
+        <QuickApplyModal
           job={job}
-          isApplying={isApplying}
-          onClose={() => setShowApplicationModal(false)}
-          onSubmit={handleApplySubmit}
+          onClose={() => setShowQuickApplyModal(false)}
+          onSuccess={handleQuickApplySuccess}
         />
       )}
+
+      <PostQuickApplySkillsNudgeDialog
+        isOpen={showSkillsNudge}
+        onClose={() => setShowSkillsNudge(false)}
+      />
 
       <CampusDriveInterestModal
         isOpen={showCampusDriveInterestModal}

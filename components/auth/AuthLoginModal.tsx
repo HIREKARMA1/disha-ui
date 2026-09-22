@@ -458,7 +458,7 @@ export function AuthLoginModal({
                               label={
                                 <span className="text-sm text-gray-700 dark:text-gray-300">
                                   <span className="font-medium text-primary-600 dark:text-primary-400">
-                                    Accept Terms
+                                    Terms and Conditions
                                   </span>
                                   {!termsAndPrivacyAccepted && (
                                     <span className="ml-1 text-red-500">*</span>

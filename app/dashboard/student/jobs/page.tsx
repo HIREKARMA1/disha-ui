@@ -8,26 +8,30 @@ import { Input } from '@/components/ui/input'
 
 import { JobCard } from '@/components/dashboard/JobCard'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
-import { ApplicationModal } from '@/components/dashboard/ApplicationModal'
+import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
+import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
 import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { apiClient } from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { StudentDashboardLayout } from '@/components/dashboard/StudentDashboardLayout'
 import { profileService, type ProfileCompletionResponse } from '@/services/profileService'
-import { canApplyForJobs } from '@/lib/profileCompletion'
 import {
-  APPLY_SUCCESS_MESSAGE,
+  canPersonalizeJobs,
+  buildPreferencesSummary,
+  rankJobsBySkills,
+  type StudentMatchProfile,
+} from '@/lib/jobSkillMatch'
+import {
   ALREADY_APPLIED_MESSAGE,
   JOB_CLOSED_MESSAGE,
   CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   getUniversityApplyEligibility,
   getPassoutBatchApplyEligibility,
-  getApplyErrorMessage,
   isCampusDriveNotForUniversityMessage,
-  toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 import {
   resolveCampusDriveInterestOutcome,
   submitCampusDriveInterest,
@@ -162,7 +166,8 @@ function JobOpportunitiesPageContent() {
     const [applicationStatus, setApplicationStatus] = useState<Map<string, string>>(new Map()) // Track application status
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
-    const [showApplicationModal, setShowApplicationModal] = useState(false)
+    const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
+    const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
     const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
     const [campusDriveInterestJobId, setCampusDriveInterestJobId] = useState<string | null>(null)
@@ -176,8 +181,28 @@ function JobOpportunitiesPageContent() {
         graduation_year?: number
         batch?: string
     } | null>(null)
+    const [matchProfile, setMatchProfile] = useState<StudentMatchProfile | null>(null)
     const [allFilteredJobs, setAllFilteredJobs] = useState<Job[]>([]) // Store jobs after degree/branch filtering (before status filter)
     const [baseJobs, setBaseJobs] = useState<Job[]>([]) // Store jobs after API fetch and client-side search (before degree/branch filter)
+
+    const personalizeFeed = canPersonalizeJobs(matchProfile)
+    const suggestionReady = Boolean(
+        profileCompletion?.suggestion_ready ||
+            ((profileCompletion?.completion_percentage ?? 0) >= 75 &&
+                matchProfile?.technical_skills &&
+                matchProfile?.soft_skills &&
+                matchProfile?.preferred_industry)
+    )
+    const preferencesSummary =
+        matchProfile && personalizeFeed ? buildPreferencesSummary(matchProfile) : ''
+
+    const rankedAllJobs =
+        personalizeFeed && matchProfile
+            ? rankJobsBySkills(jobs, matchProfile)
+            : jobs.map((job) => ({ ...job, match_score: 0, matched_skills: [] as string[] }))
+
+    const displayJobs = rankedAllJobs
+    const matchedCount = rankedAllJobs.filter((j) => j.match_score >= 1).length
 
     // Fetch student profile to get degree and branch
     const fetchStudentProfile = async (): Promise<{ degree?: string; branch?: string } | null> => {
@@ -197,6 +222,13 @@ function JobOpportunitiesPageContent() {
                 fullProfile: profile
             })
             setStudentProfile(profileData)
+            setMatchProfile({
+                technical_skills: profile.technical_skills,
+                soft_skills: profile.soft_skills,
+                preferred_industry: profile.preferred_industry,
+                job_roles_of_interest: profile.job_roles_of_interest,
+                location_preferences: profile.location_preferences,
+            })
             return profileData
         } catch (error) {
             console.error('Failed to fetch student profile:', error)
@@ -896,14 +928,8 @@ function JobOpportunitiesPageContent() {
             return
         }
 
-        // Check Basic Info tab complete (75% apply threshold)
-        if (!profileCompletion || !canApplyForJobs(profileCompletion)) {
-            showProfileCompletionToast()
-            return
-        }
-
         setCurrentApplicationJob(job)
-        setShowApplicationModal(true)
+        setShowQuickApplyModal(true)
     }
 
     const handleCampusDriveStillInterested = async () => {
@@ -933,72 +959,38 @@ function JobOpportunitiesPageContent() {
         }
     }
 
-    // Apply for a job with enhanced data
-    const applyForJob = async (jobId: string, applicationData: any) => {
-        try {
-            setApplyingJobs(prev => new Set(prev).add(jobId))
+    const handleQuickApplySuccess = () => {
+        if (!currentApplicationJob) return
+        const jobId = currentApplicationJob.id
 
-            await apiClient.client.post(`/applications/apply/${jobId}`, {
-                job_id: jobId, // Add the missing job_id field
-                cover_letter: applicationData.cover_letter || `I am interested in this position and believe my skills and experience make me a great fit.`,
-                expected_salary: applicationData.expected_salary || null,
-                availability_date: applicationData.availability_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            })
+        setApplicationStatus((prev) => {
+            const newStatus = new Map(prev).set(jobId, 'applied')
+            localStorage.setItem('appliedJobs', JSON.stringify(Object.fromEntries(newStatus)))
+            return newStatus
+        })
 
-            // Update application status
-            setApplicationStatus(prev => {
-                const newStatus = new Map(prev).set(jobId, 'applied')
+        setShowQuickApplyModal(false)
+        setCurrentApplicationJob(null)
 
-                // Save to localStorage for persistence
-                const currentStatus = Object.fromEntries(newStatus)
-                localStorage.setItem('appliedJobs', JSON.stringify(currentStatus))
-
-                console.log(`Application status updated for job ${jobId}:`, newStatus.get(jobId))
-                console.log('All application statuses:', Object.fromEntries(newStatus))
-
-                return newStatus
-            })
-
-            toast.success(APPLY_SUCCESS_MESSAGE)
-
-            // Close modal
-            setShowApplicationModal(false)
-            setCurrentApplicationJob(null)
-
-            const markApplied = (list: Job[]) =>
-                list.map((job) =>
-                    job.id === jobId ? { ...job, application_status: 'applied' } : job
-                )
-            setJobs((prev) => markApplied(prev))
-            setAllFilteredJobs((prev) => markApplied(prev))
-            setBaseJobs((prev) => markApplied(prev))
-
-            // Refresh jobs to update application status
-            fetchJobs(pagination.page, buildSearchParams())
-        } catch (error: unknown) {
-            console.error('Error applying for job:', error)
-            if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
-                setShowApplicationModal(false)
-                const { outcome } = await resolveCampusDriveInterestOutcome(jobId)
-                if (outcome === 'pending' || outcome === 'rejected') {
-                    toastCampusDriveRequestStatus(outcome)
-                } else if (outcome === 'accepted') {
-                    setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
-                    toastApplyError(error)
-                } else {
-                    setCampusDriveInterestJobId(jobId)
-                    setShowCampusDriveInterestModal(true)
+        const markApplied = (list: Job[]) =>
+            list.map((job) =>
+                job.id === jobId ? { ...job, application_status: 'applied' } : job
+            )
+        setJobs((prev) => markApplied(prev))
+        setAllFilteredJobs((prev) => markApplied(prev))
+        setBaseJobs((prev) => markApplied(prev))
+        void (async () => {
+            try {
+                const completion =
+                    profileCompletion ?? (await profileService.getProfileCompletion())
+                if (shouldShowPostApplySkillsNudge(completion)) {
+                    setShowSkillsNudge(true)
                 }
-                return
+            } catch {
+                // Skip nudge if we can't verify
             }
-            toastApplyError(error)
-        } finally {
-            setApplyingJobs(prev => {
-                const newSet = new Set(prev)
-                newSet.delete(jobId)
-                return newSet
-            })
-        }
+        })()
+        fetchJobs(pagination.page, buildSearchParams())
     }
 
     // Build search parameters from filters
@@ -1528,8 +1520,24 @@ function JobOpportunitiesPageContent() {
 
             {/* Main Content */}
             <div>
-                {/* Results Summary */}
+                {/* Preferences / results summary */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                    {personalizeFeed ? (
+                        <div className="space-y-2">
+                            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                                Jobs based on your preferences
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {preferencesSummary}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {matchedCount > 0
+                                    ? `${matchedCount} match${matchedCount === 1 ? '' : 'es'} · sorted highest → lowest match${suggestionReady ? '' : ' (complete ~75% for full ranked pages on Live Jobs)'}`
+                                    : 'Showing all jobs, ranked by best fit to your profile'}
+                                {loading ? '' : ` · ${filterJobsByStatus(jobs).length} listed`}
+                            </p>
+                        </div>
+                    ) : (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="text-gray-600 dark:text-gray-300 text-sm">
                             {loading ? (
@@ -1551,22 +1559,23 @@ function JobOpportunitiesPageContent() {
                             </div>
                         )}
                     </div>
+                    )}
                 </div>
 
-                {/* Profile Completion Banner */}
-                {profileCompletion && !canApplyForJobs(profileCompletion) && (
-                    <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl">
+                {/* Skills / profile tip — optional benefit, not an apply blocker */}
+                {profileCompletion && (profileCompletion.completion_percentage ?? 0) < 75 && (
+                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                                <span className="text-amber-600 dark:text-amber-400 text-sm font-bold">!</span>
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 dark:text-blue-400 text-sm font-bold">i</span>
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">
-                                    Profile Completion Required
+                                <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                                    Get better job suggestions
                                 </h3>
-                                <p className="text-sm text-amber-700 dark:text-amber-300">
-                                    Your profile is {profileCompletion.completion_percentage}% complete. Fill in all Basic Info fields and upload your resume to apply (75% from Basic Info only).
-                                    <a href="/dashboard/student/profile" className="text-amber-600 dark:text-amber-400 hover:underline ml-1 font-medium">
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    Your profile is {profileCompletion.completion_percentage}% complete. Add technical and soft skills and reach about 75% so we can suggest matching jobs. You can still Quick Apply with DOB, location, gender, and resume.
+                                    <a href="/dashboard/student/profile" className="text-blue-600 dark:text-blue-400 hover:underline ml-1 font-medium">
                                         Go to profile →
                                     </a>
                                 </p>
@@ -1593,7 +1602,7 @@ function JobOpportunitiesPageContent() {
                 ) : jobs.length > 0 ? (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {jobs.map((job, index) => {
+                            {displayJobs.map((job, index) => {
                                 // Final safety check before rendering
                                 if (!job || typeof job !== 'object') {
                                     console.error('Attempting to render invalid job:', job)
@@ -1618,6 +1627,8 @@ function JobOpportunitiesPageContent() {
                                             campus_drive_request_status:
                                                 job.campus_drive_request_status,
                                         }}
+                                        showMatchScore={personalizeFeed && job.match_score >= 1}
+                                        matchScore={job.match_score}
                                         onViewDescription={async () => {
                                             setSelectedJob(job)
                                             setLoadingJobDetails(true)
@@ -1763,18 +1774,21 @@ function JobOpportunitiesPageContent() {
                 />
             )}
 
-            {/* Application Modal */}
-            {showApplicationModal && currentApplicationJob && (
-                <ApplicationModal
-                    job={currentApplicationJob as any}
+            {showQuickApplyModal && currentApplicationJob && (
+                <QuickApplyModal
+                    job={currentApplicationJob}
                     onClose={() => {
-                        setShowApplicationModal(false)
+                        setShowQuickApplyModal(false)
                         setCurrentApplicationJob(null)
                     }}
-                    onSubmit={(applicationData) => applyForJob(currentApplicationJob.id, applicationData)}
-                    isApplying={applyingJobs.has(currentApplicationJob.id)}
+                    onSuccess={handleQuickApplySuccess}
                 />
             )}
+
+            <PostQuickApplySkillsNudgeDialog
+                isOpen={showSkillsNudge}
+                onClose={() => setShowSkillsNudge(false)}
+            />
 
             <CampusDriveInterestModal
                 isOpen={showCampusDriveInterestModal}

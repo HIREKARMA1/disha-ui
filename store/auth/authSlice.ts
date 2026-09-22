@@ -7,6 +7,7 @@ import {
   type AuthUser,
 } from '@/lib/authSession'
 import { clearEventPopupState, markEventPopupLoginPending } from '@/lib/eventPopupStorage'
+import { clearQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
 
 export type { AuthUser }
 
@@ -37,6 +38,7 @@ export const hydrateAuth = createAsyncThunk(
     if (!localUser) {
       clearAuthStorage()
       clearEventPopupState()
+      clearQuickAccountSetupPending()
       return { skipped: false as const, user: null }
     }
 
@@ -91,16 +93,25 @@ const authSlice = createSlice({
 export const { setCredentials, clearAuth, setLoading } = authSlice.actions
 
 export const loginUser =
-  (payload: { user: AuthUser; accessToken: string; refreshToken: string }) =>
+  (payload: {
+    user: AuthUser
+    accessToken: string
+    refreshToken: string
+    /** When true (student signup), skip Event popup so Quick Account Setup can show instead. */
+    skipEventPopup?: boolean
+  }) =>
   (dispatch: Dispatch) => {
     persistLoginSession(payload.user, payload.accessToken, payload.refreshToken)
-    markEventPopupLoginPending()
+    if (!payload.skipEventPopup) {
+      markEventPopupLoginPending()
+    }
     dispatch(setCredentials(payload.user))
   }
 
 export const logoutUser = () => (dispatch: Dispatch) => {
   clearAuthStorage()
   clearEventPopupState()
+  clearQuickAccountSetupPending()
   dispatch(clearAuth())
 }
 
