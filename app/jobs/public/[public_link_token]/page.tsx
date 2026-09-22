@@ -12,16 +12,15 @@ import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import { buildAuthPath } from '@/lib/authLinks'
 import {
-    APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
-    getApplyErrorMessage,
     getUniversityApplyEligibility,
     getPassoutBatchApplyEligibility,
     isCampusDriveNotForUniversityMessage,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
-    toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
+import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
 import {
     resolveCampusDriveInterestOutcome,
     submitCampusDriveInterest,
@@ -32,6 +31,8 @@ import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestM
 import { campusDriveRequestService } from '@/services/campusDriveRequestService'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
+import { profileService } from '@/services/profileService'
+import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 import {
     Loader2,
     AlertCircle,
@@ -110,8 +111,9 @@ export default function PublicJobPage() {
     const [job, setJob] = useState<Job | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [isApplying, setIsApplying] = useState(false)
     const [hasApplied, setHasApplied] = useState(false)
+    const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
+    const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [activeTab, setActiveTab] = useState<'description' | 'company'>('description')
     const [corporateProfile, setCorporateProfile] = useState<any>(null)
     const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
@@ -170,7 +172,7 @@ export default function PublicJobPage() {
         }
     }, [isAuthenticated, user, publicLinkToken, job?.id])
 
-    // After login: auto-submit pending application for this public job
+    // After login/register from Quick Apply: open Quick Apply form
     useEffect(() => {
         if (!job || authLoading || autoApplyAttempted.current) return
         if (!shouldAutoApplyForJob(job.id)) return
@@ -188,14 +190,7 @@ export default function PublicJobPage() {
 
         autoApplyAttempted.current = true
         clearAutoApplyQueryParams()
-        setIsApplying(true)
-        void (async () => {
-            const result = await resumePendingJobApplication(job.id)
-            if (result === 'success' || result === 'already_applied') {
-                setHasApplied(true)
-            }
-            setIsApplying(false)
-        })()
+        setShowQuickApplyModal(true)
     }, [job, authLoading, isAuthenticated, user, router, publicLinkToken])
 
     useEffect(() => {
@@ -369,7 +364,7 @@ export default function PublicJobPage() {
                     setJob((prev: any) =>
                         prev ? { ...prev, campus_drive_request_status: 'accepted' } : prev
                     )
-                    await handleApply()
+                    setShowQuickApplyModal(true)
                     return
                 }
                 if (outcome === 'pending' || outcome === 'rejected') {
@@ -388,7 +383,7 @@ export default function PublicJobPage() {
             return
         }
 
-        handleApply()
+        setShowQuickApplyModal(true)
     }
 
     const handleCampusDriveStillInterested = async () => {
@@ -409,40 +404,6 @@ export default function PublicJobPage() {
             }
         } finally {
             setCampusDriveInterestSubmitting(false)
-        }
-    }
-
-    const handleApply = async () => {
-        if (!job) return
-
-        setIsApplying(true)
-        try {
-            await apiClient.client.post(`/applications/apply/${job.id}`, {
-                job_id: job.id,
-                cover_letter: `I am interested in this position and believe my skills and experience make me a great fit.`,
-                expected_salary: null,
-                availability_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            })
-
-            setHasApplied(true)
-            toast.success(APPLY_SUCCESS_MESSAGE)
-        } catch (error: unknown) {
-            console.error('Error applying for job:', error)
-            if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
-                const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
-                if (outcome === 'pending' || outcome === 'rejected') {
-                    toastCampusDriveRequestStatus(outcome)
-                } else if (outcome === 'accepted') {
-                    setHasAcceptedCampusDriveRequest(true)
-                    toastApplyError(error)
-                } else {
-                    setShowCampusDriveInterestModal(true)
-                }
-                return
-            }
-            toastApplyError(error)
-        } finally {
-            setIsApplying(false)
         }
     }
 
@@ -699,7 +660,6 @@ export default function PublicJobPage() {
                                                 onClick={handleApplyClick}
                                                 disabled={
                                                     !job.can_apply ||
-                                                    isApplying ||
                                                     hasApplied ||
                                                     Boolean(requestApplyOverride)
                                                 }
@@ -719,21 +679,12 @@ export default function PublicJobPage() {
                                                                         : ''
                                                 }
                                             >
-                                                {isApplying ? (
-                                                    <>
-                                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                                        Applying...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-5 h-5 mr-2" />
-                                                        {requestApplyOverride === 'pending'
-                                                            ? 'Pending'
-                                                            : requestApplyOverride === 'rejected'
-                                                                ? 'Rejected'
-                                                                : 'Apply Now'}
-                                                    </>
-                                                )}
+                                                <CheckCircle className="w-5 h-5 mr-2" />
+                                                {requestApplyOverride === 'pending'
+                                                    ? 'Pending'
+                                                    : requestApplyOverride === 'rejected'
+                                                        ? 'Rejected'
+                                                        : 'Quick Apply'}
                                             </Button>
                                         )}
 
@@ -1090,6 +1041,31 @@ export default function PublicJobPage() {
                 </div>
             </div>
 
+            {showQuickApplyModal && job && (
+                <QuickApplyModal
+                    job={job}
+                    onClose={() => setShowQuickApplyModal(false)}
+                    onSuccess={() => {
+                        setShowQuickApplyModal(false)
+                        setHasApplied(true)
+                        void (async () => {
+                            try {
+                                const completion = await profileService.getProfileCompletion()
+                                if (shouldShowPostApplySkillsNudge(completion)) {
+                                    setShowSkillsNudge(true)
+                                }
+                            } catch {
+                                // Skip nudge if we can't verify
+                            }
+                        })()
+                    }}
+                />
+            )}
+
+            <PostQuickApplySkillsNudgeDialog
+                isOpen={showSkillsNudge}
+                onClose={() => setShowSkillsNudge(false)}
+            />
 
             <CampusDriveInterestModal
                 isOpen={showCampusDriveInterestModal}
