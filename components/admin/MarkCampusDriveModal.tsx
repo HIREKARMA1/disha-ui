@@ -73,7 +73,7 @@ export function MarkCampusDriveModal({ isOpen, onClose, job, onSaved }: MarkCamp
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md"
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-visible"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -109,6 +109,7 @@ export function MarkCampusDriveModal({ isOpen, onClose, job, onSaved }: MarkCamp
                                 onChange={setCampusDriveDate}
                                 placeholder="Select campus drive date"
                                 autoClose={true}
+                                placement="auto"
                             />
                         </div>
                     </div>

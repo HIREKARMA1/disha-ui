@@ -2,6 +2,18 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { config } from './config';
 import { buildAuthPath } from './authLinks';
 import {
+  clearAuthStorage,
+  getAccessToken as readAccessToken,
+  getRefreshToken,
+  hasValidAccessSession,
+  isAccessTokenValid,
+  isAuthRetryExcludedUrl,
+  setAuthTokens as persistAuthTokens,
+  TEMP_ACCESS_TOKEN,
+} from './authSession';
+import { getStore } from '@/store';
+import { logoutUser } from '@/store/auth/authSlice';
+import {
   StudentRegisterRequest,
   CorporateRegisterRequest,
   UniversityRegisterRequest,
@@ -29,7 +41,25 @@ class ApiClient {
     // Add request interceptor to include auth token
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('access_token');
+        const requestUrl = `${config.url || ''}`;
+        const token = readAccessToken();
+
+        // Expired access token: log out before the call (skip auth endpoints)
+        if (
+          token &&
+          token !== TEMP_ACCESS_TOKEN &&
+          !isAccessTokenValid(token) &&
+          !isAuthRetryExcludedUrl(requestUrl)
+        ) {
+          getStore().dispatch(logoutUser());
+          if (typeof window !== 'undefined') {
+            window.location.href = buildAuthPath('/auth/login');
+          }
+          return Promise.reject(
+            new Error('Session expired. Please log in again.')
+          );
+        }
+
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -45,25 +75,37 @@ class ApiClient {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
+        const requestUrl = `${originalRequest?.url || ''}`;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (
+          error.response?.status === 401 &&
+          originalRequest &&
+          !originalRequest._retry &&
+          !isAuthRetryExcludedUrl(requestUrl)
+        ) {
           originalRequest._retry = true;
 
-          try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-              const response = await this.refreshToken(refreshToken);
-              localStorage.setItem('access_token', response.access_token);
-              localStorage.setItem('refresh_token', response.refresh_token);
-
-              originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
-              return this.client(originalRequest);
+          const refreshToken = getRefreshToken();
+          if (!refreshToken) {
+            getStore().dispatch(logoutUser());
+            if (typeof window !== 'undefined') {
+              window.location.href = buildAuthPath('/auth/login');
             }
+            return Promise.reject(error);
+          }
+
+          try {
+            const response = await this.refreshToken(refreshToken);
+            persistAuthTokens(response.access_token, response.refresh_token);
+
+            originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
+            return this.client(originalRequest);
           } catch (refreshError) {
-            // Refresh failed, redirect to login
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            window.location.href = buildAuthPath('/auth/login');
+            getStore().dispatch(logoutUser());
+            if (typeof window !== 'undefined') {
+              window.location.href = buildAuthPath('/auth/login');
+            }
+            return Promise.reject(refreshError);
           }
         }
 
@@ -89,8 +131,14 @@ class ApiClient {
   }
 
   // Email OTP for signup
-  async sendEmailOtp(email: string): Promise<{ message: string; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
-    const response: AxiosResponse = await this.client.post('/auth/send-email-otp', { email });
+  async sendEmailOtp(
+    email: string,
+    name?: string
+  ): Promise<{ message: string; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
+    const response: AxiosResponse = await this.client.post('/auth/send-email-otp', {
+      email,
+      ...(name?.trim() ? { name: name.trim() } : {}),
+    });
     return response.data;
   }
 
@@ -174,8 +222,7 @@ class ApiClient {
 
   // Helper method to set auth tokens
   setAuthTokens(accessToken: string, refreshToken: string): void {
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
+    persistAuthTokens(accessToken, refreshToken);
   }
 
   async refreshToken(refreshToken: string): Promise<TokenResponse> {
@@ -215,16 +262,17 @@ class ApiClient {
 
   // Utility methods
   clearAuthTokens() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearAuthStorage();
   }
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('access_token');
+    return hasValidAccessSession();
   }
 
   getAccessToken(): string | null {
-    return localStorage.getItem('access_token');
+    const token = readAccessToken();
+    if (!token || !isAccessTokenValid(token)) return null;
+    return token;
   }
 
   // Dashboard and data endpoints

@@ -12,16 +12,27 @@ import { formatEducationFieldForDisplay } from '@/lib/parseEducationField'
 import { redirectGuestToLoginForApply } from '@/lib/pendingJobApplication'
 import { buildAuthPath } from '@/lib/authLinks'
 import {
-    APPLY_SUCCESS_MESSAGE,
     clearAutoApplyQueryParams,
     getUniversityApplyEligibility,
     getPassoutBatchApplyEligibility,
+    isCampusDriveNotForUniversityMessage,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
-    toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import { QuickApplyModal } from '@/components/jobs/QuickApplyModal'
+import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickApplySkillsNudgeDialog'
+import {
+    resolveCampusDriveInterestOutcome,
+    submitCampusDriveInterest,
+    toastCampusDriveRequestStatus,
+    getCampusDriveRequestApplyOverride,
+} from '@/lib/campusDriveInterest'
+import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
+import { campusDriveRequestService } from '@/services/campusDriveRequestService'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
+import { profileService } from '@/services/profileService'
+import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 import {
     Loader2,
     AlertCircle,
@@ -100,8 +111,9 @@ export default function PublicJobPage() {
     const [job, setJob] = useState<Job | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [isApplying, setIsApplying] = useState(false)
     const [hasApplied, setHasApplied] = useState(false)
+    const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
+    const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [activeTab, setActiveTab] = useState<'description' | 'company'>('description')
     const [corporateProfile, setCorporateProfile] = useState<any>(null)
     const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
@@ -109,6 +121,9 @@ export default function PublicJobPage() {
     const [studentBatch, setStudentBatch] = useState<string | null>(null)
     const [showShareDropdown, setShowShareDropdown] = useState(false)
     const [showPremiumModal, setShowPremiumModal] = useState(false)
+    const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+    const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
+    const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
     const autoApplyAttempted = useRef(false)
 
     useEffect(() => {
@@ -116,6 +131,31 @@ export default function PublicJobPage() {
             fetchPublicJob()
         }
     }, [publicLinkToken])
+
+    // Persist campus-drive request button state from backend for this student+job.
+    useEffect(() => {
+        if (!job?.id || !isAuthenticated || user?.user_type !== 'student') return
+        let cancelled = false
+        void (async () => {
+            try {
+                const existing = await campusDriveRequestService.getMyRequestForJob(job.id)
+                if (cancelled || !existing.exists || !existing.status) return
+                setJob((prev: any) =>
+                    prev
+                        ? { ...prev, campus_drive_request_status: existing.status }
+                        : prev
+                )
+                if (existing.status === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                }
+            } catch {
+                // ignore — button falls back to Apply until known
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [job?.id, isAuthenticated, user?.user_type])
 
     useEffect(() => {
         // Check if user just logged in and should be redirected here
@@ -132,7 +172,7 @@ export default function PublicJobPage() {
         }
     }, [isAuthenticated, user, publicLinkToken, job?.id])
 
-    // After login: auto-submit pending application for this public job
+    // After login/register from Quick Apply: open Quick Apply form
     useEffect(() => {
         if (!job || authLoading || autoApplyAttempted.current) return
         if (!shouldAutoApplyForJob(job.id)) return
@@ -150,14 +190,7 @@ export default function PublicJobPage() {
 
         autoApplyAttempted.current = true
         clearAutoApplyQueryParams()
-        setIsApplying(true)
-        void (async () => {
-            const result = await resumePendingJobApplication(job.id)
-            if (result === 'success' || result === 'already_applied') {
-                setHasApplied(true)
-            }
-            setIsApplying(false)
-        })()
+        setShowQuickApplyModal(true)
     }, [job, authLoading, isAuthenticated, user, router, publicLinkToken])
 
     useEffect(() => {
@@ -217,6 +250,12 @@ export default function PublicJobPage() {
             console.log('Public job response:', response)
             if (response) {
                 setJob(response)
+                if (response.campus_drive_request_status === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                }
+                if (response.application_status === 'applied') {
+                    setHasApplied(true)
+                }
             } else {
                 setError('Job not found or not publicly accessible')
             }
@@ -272,6 +311,10 @@ export default function PublicJobPage() {
                 isAuthenticated && user?.user_type === 'student'
             ),
             studentUniversityId,
+            isCampusDrive: Boolean(job?.is_campus_drive),
+            hasAcceptedCampusDriveRequest:
+                hasAcceptedCampusDriveRequest ||
+                job?.campus_drive_request_status === 'accepted',
         })
         if (!universityEligibility.canApply) {
             return universityEligibility
@@ -286,7 +329,11 @@ export default function PublicJobPage() {
         })
     }
 
-    const handleApplyClick = () => {
+    const requestApplyOverride = getCampusDriveRequestApplyOverride(
+        job?.campus_drive_request_status
+    )
+
+    const handleApplyClick = async () => {
         if (!isAuthenticated) {
             if (job) {
                 redirectGuestToLoginForApply(router, job.id, `/jobs/public/${publicLinkToken}`)
@@ -299,35 +346,64 @@ export default function PublicJobPage() {
             return
         }
 
-        // Check university assignment before applying
-        const eligibility = canStudentApply()
-        if (!eligibility.canApply) {
-            toast.error(eligibility.reason || 'You are not eligible to apply for this job')
+        if (hasApplied) return
+
+        if (requestApplyOverride === 'pending' || requestApplyOverride === 'rejected') {
+            toastCampusDriveRequestStatus(requestApplyOverride)
             return
         }
 
-        handleApply()
+        // Check university assignment before applying
+        const eligibility = canStudentApply()
+        if (!eligibility.canApply) {
+            const reason = eligibility.reason || 'You are not eligible to apply for this job'
+            if (isCampusDriveNotForUniversityMessage(reason) && job) {
+                const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+                if (outcome === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                    setJob((prev: any) =>
+                        prev ? { ...prev, campus_drive_request_status: 'accepted' } : prev
+                    )
+                    setShowQuickApplyModal(true)
+                    return
+                }
+                if (outcome === 'pending' || outcome === 'rejected') {
+                    setJob((prev: any) =>
+                        prev ? { ...prev, campus_drive_request_status: outcome } : prev
+                    )
+                    toastCampusDriveRequestStatus(outcome)
+                    return
+                }
+                if (outcome === 'show_interest_modal') {
+                    setShowCampusDriveInterestModal(true)
+                    return
+                }
+            }
+            toast.error(reason)
+            return
+        }
+
+        setShowQuickApplyModal(true)
     }
 
-    const handleApply = async () => {
-        if (!job) return
-
-        setIsApplying(true)
+    const handleCampusDriveStillInterested = async () => {
+        if (!job || campusDriveInterestSubmitting) return
+        setCampusDriveInterestSubmitting(true)
         try {
-            await apiClient.client.post(`/applications/apply/${job.id}`, {
-                job_id: job.id,
-                cover_letter: `I am interested in this position and believe my skills and experience make me a great fit.`,
-                expected_salary: null,
-                availability_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            })
-
-            setHasApplied(true)
-            toast.success(APPLY_SUCCESS_MESSAGE)
-        } catch (error: unknown) {
-            console.error('Error applying for job:', error)
-            toastApplyError(error)
+            const result = await submitCampusDriveInterest(job.id)
+            if (result.ok) {
+                setShowCampusDriveInterestModal(false)
+                if (result.status) {
+                    setJob((prev: any) =>
+                        prev ? { ...prev, campus_drive_request_status: result.status } : prev
+                    )
+                }
+                if (result.status === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                }
+            }
         } finally {
-            setIsApplying(false)
+            setCampusDriveInterestSubmitting(false)
         }
     }
 
@@ -582,30 +658,33 @@ export default function PublicJobPage() {
                                         ) : (
                                             <Button
                                                 onClick={handleApplyClick}
-                                                disabled={!job.can_apply || isApplying || hasApplied}
+                                                disabled={
+                                                    !job.can_apply ||
+                                                    hasApplied ||
+                                                    Boolean(requestApplyOverride)
+                                                }
                                                 className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
                                                 size="lg"
                                                 title={
                                                     hasApplied
                                                         ? 'You have already applied for this job'
-                                                        : !job.can_apply
-                                                            ? 'Applications are not currently open for this job'
-                                                            : !isEligibleToApply
-                                                                ? eligibility.reason || 'You are not eligible to apply for this job'
-                                                                : ''
+                                                        : requestApplyOverride === 'pending'
+                                                            ? 'Your request is pending admin review'
+                                                            : requestApplyOverride === 'rejected'
+                                                                ? 'Your request was rejected'
+                                                                : !job.can_apply
+                                                                    ? 'Applications are not currently open for this job'
+                                                                    : !isEligibleToApply
+                                                                        ? eligibility.reason || 'You are not eligible to apply for this job'
+                                                                        : ''
                                                 }
                                             >
-                                                {isApplying ? (
-                                                    <>
-                                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                                        Applying...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-5 h-5 mr-2" />
-                                                        Apply Now
-                                                    </>
-                                                )}
+                                                <CheckCircle className="w-5 h-5 mr-2" />
+                                                {requestApplyOverride === 'pending'
+                                                    ? 'Pending'
+                                                    : requestApplyOverride === 'rejected'
+                                                        ? 'Rejected'
+                                                        : 'Quick Apply'}
                                             </Button>
                                         )}
 
@@ -962,7 +1041,41 @@ export default function PublicJobPage() {
                 </div>
             </div>
 
+            {showQuickApplyModal && job && (
+                <QuickApplyModal
+                    job={job}
+                    onClose={() => setShowQuickApplyModal(false)}
+                    onSuccess={() => {
+                        setShowQuickApplyModal(false)
+                        setHasApplied(true)
+                        void (async () => {
+                            try {
+                                const completion = await profileService.getProfileCompletion()
+                                if (shouldShowPostApplySkillsNudge(completion)) {
+                                    setShowSkillsNudge(true)
+                                }
+                            } catch {
+                                // Skip nudge if we can't verify
+                            }
+                        })()
+                    }}
+                />
+            )}
 
+            <PostQuickApplySkillsNudgeDialog
+                isOpen={showSkillsNudge}
+                onClose={() => setShowSkillsNudge(false)}
+            />
+
+            <CampusDriveInterestModal
+                isOpen={showCampusDriveInterestModal}
+                onClose={() => {
+                    if (campusDriveInterestSubmitting) return
+                    setShowCampusDriveInterestModal(false)
+                }}
+                onStillInterested={handleCampusDriveStillInterested}
+                isSubmitting={campusDriveInterestSubmitting}
+            />
         </div>
     )
 }

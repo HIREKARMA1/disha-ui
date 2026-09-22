@@ -11,6 +11,7 @@ import {
   ChevronsRight,
   ClipboardList,
   FileText,
+  Headphones,
   Home,
   Library,
   LayoutDashboard,
@@ -44,6 +45,7 @@ const GUEST_NAV: NavLink[] = [
   { label: 'Events', href: '/events', icon: Calendar, openInNewTab: true },
   { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
+  { label: 'Support', href: '/contact', icon: Headphones },
 ]
 
 /** Shown to guests as teaser tools — opens login when clicked. */

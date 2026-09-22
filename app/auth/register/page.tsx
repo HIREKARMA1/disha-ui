@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
+import { markQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
 
 // Union type for all possible form data
 type FormData = {
@@ -82,6 +83,18 @@ const userTypeLabels: Record<string, string> = {
     student: 'Student',
     corporate: 'Corporate',
     university: 'University',
+}
+
+/** Name/company for OTP email greeting */
+function getSignupDisplayName(data: FormData): string | undefined {
+    const anyData = data as Record<string, unknown>
+    const raw =
+        (typeof anyData.name === 'string' && anyData.name) ||
+        (typeof anyData.company_name === 'string' && anyData.company_name) ||
+        (typeof anyData.university_name === 'string' && anyData.university_name) ||
+        ''
+    const trimmed = String(raw).trim()
+    return trimmed || undefined
 }
 
 // for the error message input
@@ -366,7 +379,7 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(data.email)
+            const response = await apiClient.sendEmailOtp(data.email, getSignupDisplayName(data))
             setFormData(data)
             setCurrentStep('otp')
             otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
@@ -386,7 +399,10 @@ function RegisterPageContent() {
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(formData.email)
+            const response = await apiClient.sendEmailOtp(
+                formData.email,
+                getSignupDisplayName(formData)
+            )
             otpRateLimit.handleSendSuccess(response.rate_limit, formData.email)
             toast.success('OTP resent to your email address')
         } catch (error: unknown) {
@@ -432,15 +448,42 @@ function RegisterPageContent() {
                     user_type: selectedUserType
                 })
                 apiClient.setAuthTokens(loginResponse.access_token, loginResponse.refresh_token)
-                login({
-                    id: loginResponse.user_id || 'temp-id',
-                    email: formData.email,
-                    user_type: selectedUserType,
-                    name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
-                }, loginResponse.access_token, loginResponse.refresh_token)
+
+                const isNewStudent = selectedUserType === 'student'
+                login(
+                    {
+                        id: loginResponse.user_id || 'temp-id',
+                        email: formData.email,
+                        user_type: selectedUserType,
+                        name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
+                    },
+                    loginResponse.access_token,
+                    loginResponse.refresh_token,
+                    isNewStudent ? { skipEventPopup: true } : undefined
+                )
+
+                // New students: Quick Account Setup on dashboard (keep pending job / redirect in storage)
+                if (isNewStudent) {
+                    markQuickAccountSetupPending()
+                    router.push('/dashboard/student')
+                    return
+                }
 
                 // Check for redirect URL (from query params or localStorage)
                 let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+
+                // Quick Apply / pending job: return to Jobs (not dashboard)
+                if (!redirectUrl && typeof window !== 'undefined') {
+                    try {
+                        const raw = localStorage.getItem('pending_job_application')
+                        if (raw) {
+                            const pending = JSON.parse(raw) as { returnUrl?: string }
+                            if (pending?.returnUrl) redirectUrl = pending.returnUrl
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
 
                 if (redirectUrl) {
                     // Decode the redirect URL
@@ -458,7 +501,6 @@ function RegisterPageContent() {
 
                 // Redirect based on user type if no redirect URL
                 switch (selectedUserType) {
-                    case 'student': router.push('/dashboard/student'); break
                     case 'corporate': router.push('/dashboard/corporate'); break
                     case 'university': router.push('/dashboard/university'); break
                     default: router.push('/dashboard')
