@@ -28,12 +28,18 @@ export function useAuth() {
   const user = isAuthenticated ? storeUser : null
 
   const login = useCallback(
-    (userData: User, accessToken: string, refreshToken: string) => {
+    (
+      userData: User,
+      accessToken: string,
+      refreshToken: string,
+      options?: { skipEventPopup?: boolean }
+    ) => {
       dispatch(
         loginUser({
           user: userData,
           accessToken,
           refreshToken,
+          skipEventPopup: options?.skipEventPopup,
         })
       )
     },

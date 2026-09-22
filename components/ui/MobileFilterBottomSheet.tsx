@@ -49,7 +49,7 @@ export function MobileFilterBottomSheet({
           size="sm"
           onClick={() => onOpenChange(true)}
           className={cn(
-            "relative h-9 shrink-0 rounded-lg border-gray-200 px-3 dark:border-white/10 lg:hidden",
+            "relative h-9 shrink-0 rounded-full border-gray-200 px-3 dark:border-white/10 lg:hidden",
             triggerClassName
           )}
           aria-label={title}

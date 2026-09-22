@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
 import { Calendar, ChevronLeft, ChevronRight, X, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +18,22 @@ interface DateTimePickerProps {
     showTime?: boolean
     /** When true, past calendar days and past times (for today) cannot be selected. */
     disablePast?: boolean
+    /** Inclusive lower bound (start of day). Dates before this cannot be selected. */
+    minDate?: Date
+    /** Inclusive upper bound (start of day). Dates after this cannot be selected. */
+    maxDate?: Date
+    /**
+     * Calendar popover placement relative to the input.
+     * - below (default): always open under the input (existing behavior)
+     * - above: always open above the input
+     * - auto: open below when space allows; otherwise flip above to avoid clipping
+     */
+    placement?: 'below' | 'above' | 'auto'
+}
+
+type PanelPosition = {
+    top: number
+    left: number
 }
 
 export function DateTimePicker({
@@ -28,10 +45,16 @@ export function DateTimePicker({
     autoClose = true,
     showTime = false,
     disablePast = false,
+    minDate,
+    maxDate,
+    placement = 'below',
 }: DateTimePickerProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const [openAbove, setOpenAbove] = useState(false)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [currentMonth, setCurrentMonth] = useState(new Date())
+    const [mounted, setMounted] = useState(false)
+    const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null)
 
     // Time picker states
     const [hour, setHour] = useState(12)
@@ -39,6 +62,59 @@ export function DateTimePicker({
     const [period, setPeriod] = useState<'AM' | 'PM'>('AM')
 
     const containerRef = useRef<HTMLDivElement>(null)
+    const triggerRef = useRef<HTMLDivElement>(null)
+    const panelRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    const estimatePanelHeight = () => (showTime ? 380 : 360)
+
+    const shouldOpenAbove = () => {
+        if (placement === 'above') return true
+        if (placement !== 'auto') return false
+        const rect = containerRef.current?.getBoundingClientRect()
+        if (!rect) return false
+        const gap = 8
+        const panelHeight = estimatePanelHeight()
+        const spaceBelow = window.innerHeight - rect.bottom - gap
+        const spaceAbove = rect.top - gap
+        return spaceBelow < panelHeight && spaceAbove >= spaceBelow
+    }
+
+    const openPicker = () => {
+        if (disabled) return
+        setOpenAbove(shouldOpenAbove())
+        setIsOpen(true)
+    }
+
+    const togglePicker = () => {
+        if (disabled) return
+        if (isOpen) {
+            setIsOpen(false)
+            return
+        }
+        openPicker()
+    }
+
+    // Keep auto placement correct on resize/scroll while open
+    useEffect(() => {
+        if (!isOpen || placement !== 'auto') return
+
+        const updatePlacement = () => {
+            setOpenAbove(shouldOpenAbove())
+        }
+
+        updatePlacement()
+        window.addEventListener('resize', updatePlacement)
+        window.addEventListener('scroll', updatePlacement, true)
+        return () => {
+            window.removeEventListener('resize', updatePlacement)
+            window.removeEventListener('scroll', updatePlacement, true)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-bind while open / placement mode
+    }, [isOpen, placement, showTime])
 
     // Robust parsing of initial value (timezone-agnostic manual parsing)
     useEffect(() => {
@@ -47,31 +123,81 @@ export function DateTimePicker({
             const datePart = parts[0]
             const timePart = parts[1] || ''
 
-            const parsedDate = new Date(datePart)
+            const [yStr, mStr, dStr] = datePart.split('-')
+            const y = parseInt(yStr, 10)
+            const m = parseInt(mStr, 10)
+            const d = parseInt(dStr, 10)
+            const parsedDate =
+                !isNaN(y) && !isNaN(m) && !isNaN(d)
+                    ? new Date(y, m - 1, d)
+                    : new Date(datePart)
             if (!isNaN(parsedDate.getTime())) {
                 setSelectedDate(parsedDate)
                 setCurrentMonth(parsedDate)
             }
 
             if (showTime && timePart) {
-                const [hStr, mStr] = timePart.split(':')
+                const [hStr, mStr2] = timePart.split(':')
                 const h24 = parseInt(hStr, 10)
-                const m = parseInt(mStr, 10)
-                if (!isNaN(h24) && !isNaN(m)) {
+                const mins = parseInt(mStr2, 10)
+                if (!isNaN(h24) && !isNaN(mins)) {
                     setHour(h24 % 12 || 12)
-                    setMinute(m)
+                    setMinute(mins)
                     setPeriod(h24 >= 12 ? 'PM' : 'AM')
                 }
             }
+        } else {
+            setSelectedDate(null)
         }
     }, [value, showTime])
+
+    const updatePanelPosition = useCallback(() => {
+        const trigger = triggerRef.current
+        if (!trigger) return
+        const rect = trigger.getBoundingClientRect()
+        const panelWidth = showTime ? 420 : 280
+        const left = Math.min(
+            Math.max(8, rect.left),
+            Math.max(8, window.innerWidth - panelWidth - 8)
+        )
+        let top = rect.bottom + 8
+        const estimatedHeight = showTime ? 360 : 340
+        if (top + estimatedHeight > window.innerHeight - 8) {
+            top = Math.max(8, rect.top - estimatedHeight - 8)
+        }
+        setPanelPosition({ top, left })
+    }, [showTime])
+
+    useLayoutEffect(() => {
+        if (!isOpen) {
+            setPanelPosition(null)
+            return
+        }
+        updatePanelPosition()
+    }, [isOpen, updatePanelPosition])
+
+    useEffect(() => {
+        if (!isOpen) return
+        const handleReposition = () => updatePanelPosition()
+        window.addEventListener('resize', handleReposition)
+        window.addEventListener('scroll', handleReposition, true)
+        return () => {
+            window.removeEventListener('resize', handleReposition)
+            window.removeEventListener('scroll', handleReposition, true)
+        }
+    }, [isOpen, updatePanelPosition])
 
     // Close popover when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
+            const target = event.target as Node
+            if (
+                containerRef.current?.contains(target) ||
+                panelRef.current?.contains(target)
+            ) {
+                return
             }
+            setIsOpen(false)
         }
 
         document.addEventListener('mousedown', handleClickOutside)
@@ -125,10 +251,19 @@ export function DateTimePicker({
         return date.toDateString() === today.toDateString()
     }
 
+    const isOutOfRange = (date: Date) => {
+        const day = startOfDay(date).getTime()
+        if (minDate && day < startOfDay(minDate).getTime()) return true
+        if (maxDate && day > startOfDay(maxDate).getTime()) return true
+        return false
+    }
+
     const isPastDate = (date: Date) => {
         if (!disablePast) return false
         return startOfDay(date).getTime() < startOfDay(new Date()).getTime()
     }
+
+    const isDisabledDate = (date: Date) => isPastDate(date) || isOutOfRange(date)
 
     const toMinutes = (h12: number, m: number, p: 'AM' | 'PM') => {
         let h24 = h12
@@ -148,7 +283,7 @@ export function DateTimePicker({
     }
 
     const handleDateSelect = (date: Date) => {
-        if (isPastDate(date)) return
+        if (isDisabledDate(date)) return
         setSelectedDate(date)
         if (showTime) {
             let nextH = hour
@@ -203,9 +338,11 @@ export function DateTimePicker({
         setIsOpen(false)
     }
 
+    const canSelectToday = !isDisabledDate(new Date())
+
     const handleToday = () => {
         const today = new Date()
-        if (disablePast && !showTime && isPastDate(today)) return
+        if (isDisabledDate(today)) return
         setSelectedDate(today)
         setCurrentMonth(today)
 
@@ -249,7 +386,21 @@ export function DateTimePicker({
         return days
     }
 
+    const canNavigatePrev = () => {
+        if (!minDate) return true
+        const prevMonthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0)
+        return !isOutOfRange(prevMonthEnd) || prevMonthEnd >= startOfDay(minDate)
+    }
+
+    const canNavigateNext = () => {
+        if (!maxDate) return true
+        const nextMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+        return !isOutOfRange(nextMonthStart) || nextMonthStart <= startOfDay(maxDate)
+    }
+
     const navigateMonth = (direction: 'prev' | 'next') => {
+        if (direction === 'prev' && !canNavigatePrev()) return
+        if (direction === 'next' && !canNavigateNext()) return
         setCurrentMonth(prev => {
             const newMonth = new Date(prev)
             if (direction === 'prev') {
@@ -272,40 +423,24 @@ export function DateTimePicker({
 
     const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
-    return (
-        <div className="relative" ref={containerRef}>
-            <div className="relative">
-                <Input
-                    type="text"
-                    value={formatDisplayValue()}
-                    placeholder={placeholder}
-                    readOnly
-                    onClick={() => !disabled && setIsOpen(!isOpen)}
-                    className={cn(
-                        "cursor-pointer pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-lg text-gray-900 dark:text-white transition-all outline-none",
-                        className
-                    )}
-                    disabled={disabled}
-                />
-                {showTime ? (
-                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                ) : (
-                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                )}
-            </div>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
-                        className={cn(
-                            "absolute top-full left-0 mt-2 z-50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-4 animate-in fade-in duration-200",
-                            showTime ? "w-auto min-w-[420px]" : "w-[280px]"
-                        )}
-                    >
+    const calendarPanel =
+        isOpen && mounted && panelPosition
+            ? createPortal(
+                  <motion.div
+                      ref={panelRef}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                          position: 'fixed',
+                          top: panelPosition.top,
+                          left: panelPosition.left,
+                      }}
+                      className={cn(
+                          "z-[300] bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-4",
+                          showTime ? "w-auto min-w-[420px]" : "w-[280px]"
+                      )}
+                  >
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 dark:border-gray-700/50">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-1.5">
                                 {showTime ? <Clock className="w-4 h-4 text-blue-500" /> : <Calendar className="w-4 h-4 text-blue-500" />}
@@ -329,8 +464,9 @@ export function DateTimePicker({
                                         type="button"
                                         variant="ghost"
                                         size="sm"
+                                        disabled={!canNavigatePrev()}
                                         onClick={() => navigateMonth('prev')}
-                                        className="h-7 w-7 p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        className="h-7 w-7 p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
                                     >
                                         <ChevronLeft className="w-4 h-4" />
                                     </Button>
@@ -343,8 +479,9 @@ export function DateTimePicker({
                                         type="button"
                                         variant="ghost"
                                         size="sm"
+                                        disabled={!canNavigateNext()}
                                         onClick={() => navigateMonth('next')}
-                                        className="h-7 w-7 p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        className="h-7 w-7 p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
                                     >
                                         <ChevronRight className="w-4 h-4" />
                                     </Button>
@@ -366,22 +503,22 @@ export function DateTimePicker({
 
                                         const selected = isSelected(date)
                                         const today = isToday(date)
-                                        const past = isPastDate(date)
+                                        const disabledDay = isDisabledDate(date)
 
                                         return (
                                             <button
                                                 type="button"
                                                 key={index}
-                                                disabled={past}
+                                                disabled={disabledDay}
                                                 onClick={() => handleDateSelect(date)}
                                                 className={cn(
                                                     "h-7 w-7 p-0 text-xs font-semibold rounded-lg flex items-center justify-center transition-all",
-                                                    past && "opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 hover:bg-transparent",
-                                                    !past && selected
+                                                    disabledDay && "opacity-30 cursor-not-allowed text-gray-400 dark:text-gray-600 hover:bg-transparent",
+                                                    !disabledDay && selected
                                                         ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                                                        : !past && today
+                                                        : !disabledDay && today
                                                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
-                                                            : !past && "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                                                            : !disabledDay && "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                                                 )}
                                             >
                                                 {date.getDate()}
@@ -485,15 +622,17 @@ export function DateTimePicker({
                             </Button>
 
                             <div className="flex items-center gap-1.5">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleToday}
-                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs h-7 px-2"
-                                >
-                                    Today
-                                </Button>
+                                {canSelectToday && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleToday}
+                                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs h-7 px-2"
+                                    >
+                                        Today
+                                    </Button>
+                                )}
                                 {showTime && (
                                     <Button
                                         type="button"
@@ -506,9 +645,34 @@ export function DateTimePicker({
                                 )}
                             </div>
                         </div>
-                    </motion.div>
+                      </motion.div>,
+                  document.body
+              )
+            : null
+
+    return (
+        <div className="relative" ref={containerRef}>
+            <div className="relative" ref={triggerRef}>
+                <Input
+                    type="text"
+                    value={formatDisplayValue()}
+                    placeholder={placeholder}
+                    readOnly
+                    onClick={() => !disabled && setIsOpen(!isOpen)}
+                    className={cn(
+                        "cursor-pointer pr-10 bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-lg text-gray-900 dark:text-white transition-all outline-none",
+                        className
+                    )}
+                    disabled={disabled}
+                />
+                {showTime ? (
+                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                ) : (
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 )}
-            </AnimatePresence>
+            </div>
+
+            {calendarPanel}
         </div>
     )
 }

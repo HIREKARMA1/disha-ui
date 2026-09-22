@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
@@ -28,6 +29,10 @@ import { StudentTopNav } from './StudentTopNav'
 import { ProfileCompletion } from '../ui/profile-completion'
 import { FileUpload } from '../ui/file-upload'
 import { ProfilePictureUpload } from '../profile/ProfilePictureUpload'
+import {
+    StructuredWorkExperienceFields,
+    WorkExperienceDisplay,
+} from '../profile/StructuredWorkExperience'
 import { ImageModal } from '../ui/image-modal'
 import { SingleBranchSelection } from '../ui/SingleBranchSelection'
 import { cn, truncateText, getInitials } from '@/lib/utils'
@@ -38,7 +43,12 @@ import toast from 'react-hot-toast'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { buildLocationLabel } from '@/lib/googlePlacesUtils'
 import { useBranches, useDegrees, useUniversities, useIndustries } from '@/hooks/useLookup'
-import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
+import {
+    DEGREE_OPTIONS,
+    filterBranchNamesForDegree,
+    getBranchesForDegrees,
+    resolveCanonicalDegree,
+} from '@/lib/academicHierarchy'
 import { LookupSelect } from '@/components/ui/lookup-select'
 import { GraduationYearSelect } from '@/components/ui/GraduationYearSelect'
 import { SkillLookupMultiSelect } from '@/components/ui/SkillLookupMultiSelect'
@@ -64,6 +74,7 @@ interface ProfileSection {
 
 export function StudentProfile() {
     const { getToken } = useAuth()
+    const searchParams = useSearchParams()
     const [profile, setProfile] = useState<StudentProfile | null>(null)
     const [uploadingResume, setUploadingResume] = useState(false)
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
@@ -81,6 +92,29 @@ export function StudentProfile() {
     })
     const formRef = useRef<HTMLDivElement>(null)
     const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+    // Deep-link from post-apply nudge: /profile?section=skills
+    useEffect(() => {
+        const section = (searchParams.get('section') || '').toLowerCase()
+        const allowed = new Set([
+            'basic',
+            'academic',
+            'skills',
+            'experience',
+            'documents',
+            'social',
+            'personal',
+        ])
+        if (!section || !allowed.has(section)) return
+        if (isMobile && section === 'academic') {
+            setActiveTab('basic')
+            return
+        }
+        setActiveTab(section)
+        if (section === 'skills') {
+            setEditing('skills')
+        }
+    }, [searchParams, isMobile])
 
     useEffect(() => {
         if (typeof window === 'undefined') return
@@ -492,7 +526,9 @@ export function StudentProfile() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Personal details and contact information</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                Mandatory for 75% · personal details and contact
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -566,7 +602,7 @@ export function StudentProfile() {
                                                                 Resume <span className="text-red-500">*</span>
                                                             </div>
                                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                                                Required for job applications (part of the 75% from Basic Info only)
+                                                                Required for job applications. On Profile, complete Basic info and Education to reach ~75%. Skills are optional for better matches. Completing all 3 Quick Apply steps also unlocks 75%.
                                                             </p>
                                                             <FileUpload
                                                                 type="document"
@@ -606,7 +642,8 @@ export function StudentProfile() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Academic Information</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Educational background and achievements</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                Mandatory for 75% · institution, degree, branch, graduation year                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -708,7 +745,9 @@ export function StudentProfile() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Skills & Interests</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Technical skills, soft skills, and career preferences</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                Optional · technical skills, soft skills, and preferred industry (better matches)
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -824,7 +863,7 @@ export function StudentProfile() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Experience & Projects</h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Internships, projects, and extracurricular activities</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400">Work experience, projects, and extracurricular activities</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -839,21 +878,21 @@ export function StudentProfile() {
                                                     />
                                                 ) : (
                                                     <div className="space-y-4">
-                                                        {profile.internship_experience && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                                        </svg>
+                                                        {profile.internship_experience ? (
+                                                            <WorkExperienceDisplay text={profile.internship_experience} />
+                                                        ) : (
+                                                            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/40 p-4 dark:border-gray-700 dark:bg-gray-800/30">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                                                        <Trophy className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                                                     </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                            Internship Experience
+                                                                    <div>
+                                                                        <div className="font-medium text-gray-900 dark:text-white">
+                                                                            Work experience
                                                                         </div>
-                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            {profile.internship_experience}
-                                                                        </div>
+                                                                        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                                                                            No work experience yet — mark yourself as a fresher or add your latest role when you edit.
+                                                                        </p>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -893,26 +932,6 @@ export function StudentProfile() {
                                                                         </div>
                                                                         <div className="text-sm text-gray-600 dark:text-gray-400">
                                                                             {profile.extracurricular_activities}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {!profile.internship_experience && !profile.project_details && !profile.extracurricular_activities && (
-                                                            <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                                                <div className="flex items-start space-x-3">
-                                                                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-600/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                        <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                                                        </svg>
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="font-medium text-gray-900 dark:text-white mb-1">
-                                                                            Experience & Projects
-                                                                        </div>
-                                                                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                                                                            No experience or projects provided yet
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1306,7 +1325,143 @@ function ProfileSectionForm({
     const fieldValidationErrors = getFieldErrors()
     const hasFieldErrors = Object.keys(fieldValidationErrors).length > 0
 
-    // Use professional lookup hook for branches
+    /** Empty / whitespace / empty JSON list → not filled */
+    const isFilled = (value: unknown): boolean => {
+        if (value == null) return false
+        if (typeof value === 'number') return !Number.isNaN(value)
+        if (typeof value === 'string') {
+            const trimmed = value.trim()
+            if (!trimmed || trimmed === '[]') return false
+            if (trimmed.startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(trimmed)
+                    return Array.isArray(parsed) && parsed.length > 0
+                } catch {
+                    return true
+                }
+            }
+            return true
+        }
+        if (Array.isArray(value)) return value.length > 0
+        return Boolean(value)
+    }
+
+    const mandatoryMissing = useMemo(() => {
+        const missing: { key: string; label: string }[] = []
+        const require = (key: string, label: string, value?: unknown) => {
+            const v = value !== undefined ? value : formData[key]
+            if (!isFilled(v)) missing.push({ key, label })
+        }
+
+        if (section.id === 'basic') {
+            require('name', 'Name')
+            require('phone', 'Phone number')
+            if (isFilled(formData.phone) && String(formData.phone).replace(/\D/g, '').length < 10) {
+                missing.push({ key: 'phone', label: 'Phone number (10 digits)' })
+            }
+            require('dob', 'Date of birth')
+            require('gender', 'Gender')
+            require('country', 'Country')
+            require('state', 'State')
+            require('city', 'City')
+            require('bio', 'Bio')
+            require('resume', 'Resume')
+            if (locationError) {
+                missing.push({ key: 'location', label: 'Valid location' })
+            }
+        } else if (section.id === 'academic') {
+            const institutionValue =
+                formData.institution || profile?.institution || ''
+            require('institution', 'Institution', institutionValue)
+            require('degree', 'Degree')
+            require('branch', 'Branch')
+            require('graduation_year', 'Graduation year')
+        } else if (section.id === 'skills') {
+            require('technical_skills', 'Technical skills')
+            require('soft_skills', 'Soft skills')
+            require('preferred_industry', 'Preferred industry')
+        } else if (section.id === 'experience') {
+            const hasAny = [
+                'internship_experience',
+                'project_details',
+                'extracurricular_activities',
+            ].some((key) => isFilled(formData[key]))
+            if (!hasAny) {
+                missing.push({
+                    key: 'experience',
+                    label: 'At least one of: internship, project, or activities',
+                })
+            }
+        } else if (section.id === 'social') {
+            const hasAny = [
+                'linkedin_profile',
+                'github_profile',
+                'personal_website',
+            ].some((key) => isFilled(formData[key]))
+            if (!hasAny) {
+                missing.push({
+                    key: 'social',
+                    label: 'At least one of: LinkedIn, GitHub, or website',
+                })
+            }
+        }
+
+        // Deduplicate by key+label
+        const seen = new Set<string>()
+        return missing.filter((item) => {
+            const id = `${item.key}:${item.label}`
+            if (seen.has(id)) return false
+            seen.add(id)
+            return true
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- isFilled is stable inline helper
+    }, [section.id, formData, profile?.institution, locationError])
+
+    const sectionGuidance = useMemo(() => {
+        switch (section.id) {
+            case 'basic':
+                return {
+                    title: 'Fill required contact details',
+                    body: 'Complete every field marked * (name, phone, date of birth, gender, location, bio, and resume). Save stays off until these are done.',
+                }
+            case 'academic':
+                return {
+                    title: 'Fill required college details',
+                    body: 'Degree, branch, and graduation year are required (marked *). Institution is set at registration and cannot be changed here.',
+                }
+            case 'skills':
+                return {
+                    title: 'Add your skills (optional)',
+                    body: 'Technical skills, soft skills, and preferred industry improve job matches. Not required for 75% — fill them when you can.',
+                }
+            case 'experience':
+                return {
+                    title: 'Share at least one experience',
+                    body: 'Add an internship, a project, or extracurricular activities — at least one is needed to save.',
+                }
+            case 'social':
+                return {
+                    title: 'Add a profile link',
+                    body: 'Add at least one of LinkedIn, GitHub, or your personal website to save.',
+                }
+            case 'documents':
+                return {
+                    title: 'Optional certificates',
+                    body: 'You can upload 10th, 12th, or internship certificates anytime. Nothing here is required to save.',
+                }
+            default:
+                return {
+                    title: 'Complete this section',
+                    body: 'Fill the required fields marked * before saving.',
+                }
+        }
+    }, [section.id])
+
+    const saveEnabled =
+        !saving &&
+        !hasFieldErrors &&
+        (section.id === 'documents' || mandatoryMissing.length === 0)
+
     const {
         data: branches,
         loading: loadingBranches,
@@ -1319,35 +1474,60 @@ function ProfileSectionForm({
     // Use professional lookup hook for degrees
     const {
         data: degrees,
-        loading: loadingDegrees,
         error: degreesError
     } = useDegrees({
         enabled: section.id === 'academic',
         limit: 1000,
     })
 
+    // Same canonical list as Quick Apply so saved degree/branch values display correctly
     const degreeOptions = useMemo(() => {
-        const seen = new Set<string>()
-        return degrees
-            .filter((d) => {
-                const name = d.name?.trim()
-                if (!name || seen.has(name)) return false
-                seen.add(name)
-                return true
-            })
-            .sort((a, b) => a.name.localeCompare(b.name))
+        const fromHierarchy: Array<{ id: string; name: string; label: string }> = [
+            ...DEGREE_OPTIONS.map((d) => ({
+                id: String(d.value),
+                name: String(d.value),
+                label: String(d.label),
+            })),
+        ]
+        const seen = new Set<string>(fromHierarchy.map((d) => d.name))
+        // Keep any extra API degrees that aren't in the hierarchy
+        for (const d of degrees) {
+            const name = d.name?.trim()
+            if (!name || seen.has(name)) continue
+            const canonical = resolveCanonicalDegree(name)
+            if (canonical && seen.has(canonical)) continue
+            seen.add(name)
+            fromHierarchy.push({ id: d.id || name, name, label: name })
+        }
+        return fromHierarchy
     }, [degrees])
 
-    // Degree → related branches only (B.Tech → engineering, B.Sc → science, etc.)
+    // Degree → related branches (hierarchy first, same as Quick Apply; merge API extras)
     const filteredBranches = useMemo(() => {
         const selectedDegree = String(formData.degree || '')
-        if (!selectedDegree) return []
-        const allowedNames = filterBranchNamesForDegree(
+        if (!selectedDegree) return [] as Array<{ id: string; name: string }>
+
+        const hierarchyNames = getBranchesForDegrees([selectedDegree])
+        const fromHierarchy = hierarchyNames.map((name) => ({ id: name, name }))
+        const seen = new Set(hierarchyNames)
+
+        const allowedApiNames = filterBranchNamesForDegree(
             branches.map((b) => b.name),
             selectedDegree
         )
-        return branches.filter((b) => allowedNames.includes(b.name))
-    }, [branches, formData.degree])
+        for (const b of branches) {
+            if (!allowedApiNames.includes(b.name) || seen.has(b.name)) continue
+            seen.add(b.name)
+            fromHierarchy.push({ id: b.id || b.name, name: b.name })
+        }
+
+        const currentBranch = String(formData.branch || '').trim()
+        if (currentBranch && !seen.has(currentBranch)) {
+            fromHierarchy.unshift({ id: currentBranch, name: currentBranch })
+        }
+
+        return fromHierarchy
+    }, [branches, formData.degree, formData.branch])
 
     // Use professional lookup hook for universities
     const {
@@ -1382,10 +1562,15 @@ function ProfileSectionForm({
 
     useEffect(() => {
         if (profile && section) {
-            // Initialize form data with current profile values (once per mounted section)
+            // Initialize form data with current profile values
             const initialData: any = {}
             section.fields.forEach(field => {
-                initialData[field] = profile[field as keyof StudentProfile] || ''
+                let value: unknown = profile[field as keyof StudentProfile] ?? ''
+                // Normalize degree to canonical name so it matches Quick Apply / DEGREE_OPTIONS
+                if (field === 'degree' && value) {
+                    value = resolveCanonicalDegree(String(value)) || value
+                }
+                initialData[field] = value === null || value === undefined ? '' : value
             })
 
             // Include university_id and college_id for academic/basic sections
@@ -1400,10 +1585,10 @@ function ProfileSectionForm({
 
             setFormData(initialData)
         }
-        // Only re-seed when the section form mounts / section changes — not on every
-        // profile refresh (e.g. Basic save while Academic is also open on mobile).
+        // Re-seed when section changes or profile first becomes available (form can mount
+        // before loadProfile finishes — without this, Degree/Branch stay empty).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [section.id])
+    }, [section.id, !!profile])
 
     const runSave = async (options?: {
         closeEditing?: boolean
@@ -1538,6 +1723,28 @@ function ProfileSectionForm({
 
         // Academic Information Validation
         if (section.id === 'academic') {
+            const academicFieldErrors: Record<string, string> = {}
+            if (!cleanedFormData.degree || String(cleanedFormData.degree).trim() === '') {
+                academicFieldErrors.degree = 'Degree is required'
+                hasValidationErrors = true
+            }
+            if (!cleanedFormData.branch || String(cleanedFormData.branch).trim() === '') {
+                academicFieldErrors.branch = 'Branch is required'
+                hasValidationErrors = true
+            }
+            if (
+                cleanedFormData.graduation_year === null ||
+                cleanedFormData.graduation_year === undefined ||
+                cleanedFormData.graduation_year === ''
+            ) {
+                academicFieldErrors.graduation_year = 'Graduation year is required'
+                hasValidationErrors = true
+            }
+            if (Object.keys(academicFieldErrors).length > 0) {
+                setErrors((prev) => ({ ...prev, ...academicFieldErrors }))
+                validationErrors.push('Please fill Degree, Branch, and Graduation Year')
+            }
+
             // CGPA validation
             if (cleanedFormData.btech_cgpa !== null && cleanedFormData.btech_cgpa !== undefined) {
                 const cgpa = parseFloat(cleanedFormData.btech_cgpa)
@@ -1577,9 +1784,13 @@ function ProfileSectionForm({
 
         // Skills Validation
         if (section.id === 'skills') {
-            // Technical skills validation
             if (!cleanedFormData.technical_skills || cleanedFormData.technical_skills.trim().length === 0) {
                 validationErrors.push('Technical skills are required')
+                hasValidationErrors = true
+            }
+
+            if (!cleanedFormData.soft_skills || cleanedFormData.soft_skills.trim().length === 0) {
+                validationErrors.push('Soft skills are required')
                 hasValidationErrors = true
             }
 
@@ -1667,6 +1878,10 @@ function ProfileSectionForm({
             delete cleanedFormData.institution
             delete cleanedFormData.college_id
             delete cleanedFormData.university_id
+            if (cleanedFormData.degree) {
+                const canonical = resolveCanonicalDegree(String(cleanedFormData.degree))
+                if (canonical) cleanedFormData.degree = canonical
+            }
         }
 
         try {
@@ -1682,6 +1897,10 @@ function ProfileSectionForm({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        if (!saveEnabled) {
+            toast.error('Please fill all required fields marked * before saving')
+            return
+        }
         void runSave({ closeEditing: true })
     }
 
@@ -1695,6 +1914,10 @@ function ProfileSectionForm({
     }, [section.id, formData, profile, locationError, errors])
 
     const handleMobileSaveAll = async () => {
+        if (!saveEnabled) {
+            toast.error('Please fill all required fields marked * before saving')
+            return
+        }
         // On mobile merged Basic+Academic, Save lives on Academic — persist Basic first
         if (section.id === 'academic') {
             const basicResult = await runSectionSave('basic')
@@ -1890,7 +2113,18 @@ function ProfileSectionForm({
             )
         }
 
-        if (field.includes('bio') || field.includes('experience') || field.includes('details') || field.includes('activities')) {
+        if (field === 'internship_experience') {
+            return (
+                <StructuredWorkExperienceFields
+                    value={value || ''}
+                    onChange={(serialized) =>
+                        setFormData({ ...formData, internship_experience: serialized })
+                    }
+                />
+            )
+        }
+
+        if (field.includes('bio') || field.includes('details') || field.includes('activities')) {
             return (
                 <textarea
                     value={value}
@@ -2141,7 +2375,7 @@ function ProfileSectionForm({
                         setFormData({ ...formData, degree: newValue, branch: '' })
                     }
                     data={degreeOptions}
-                    loading={loadingDegrees}
+                    loading={false}
                     placeholder="Select your degree"
                     error={degreesError || undefined}
                     required
@@ -2247,27 +2481,81 @@ function ProfileSectionForm({
                 </div>
             )}
 
+            {/* Mandatory-field guidance */}
+            <div
+                className={cn(
+                    'rounded-xl border p-4',
+                    mandatoryMissing.length > 0 && section.id !== 'documents'
+                        ? 'border-amber-200 bg-amber-50/90 dark:border-amber-800/50 dark:bg-amber-950/30'
+                        : 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-800/40 dark:bg-emerald-950/25'
+                )}
+            >
+                <div className="flex items-start gap-3">
+                    <div
+                        className={cn(
+                            'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
+                            mandatoryMissing.length > 0 && section.id !== 'documents'
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                        )}
+                    >
+                        {mandatoryMissing.length > 0 && section.id !== 'documents' ? (
+                            <AlertCircle className="h-3 w-3 text-white" />
+                        ) : (
+                            <CheckCircle className="h-3 w-3 text-white" />
+                        )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h4
+                            className={cn(
+                                'text-sm font-semibold',
+                                mandatoryMissing.length > 0 && section.id !== 'documents'
+                                    ? 'text-amber-900 dark:text-amber-100'
+                                    : 'text-emerald-900 dark:text-emerald-100'
+                            )}
+                        >
+                            {sectionGuidance.title}
+                        </h4>
+                        <p
+                            className={cn(
+                                'mt-1 text-xs leading-relaxed',
+                                mandatoryMissing.length > 0 && section.id !== 'documents'
+                                    ? 'text-amber-800 dark:text-amber-200'
+                                    : 'text-emerald-800 dark:text-emerald-200'
+                            )}
+                        >
+                            {sectionGuidance.body}
+                        </p>
+                        {mandatoryMissing.length > 0 && section.id !== 'documents' && (
+                            <p className="mt-2 text-xs font-medium text-amber-900 dark:text-amber-100">
+                                Still need:{' '}
+                                <span className="font-semibold">
+                                    {mandatoryMissing.map((m) => m.label).join(', ')}
+                                </span>
+                                . Fill these to enable{' '}
+                                <span className="font-semibold">Save Changes</span>.
+                            </p>
+                        )}
+                        {(section.id === 'documents' || mandatoryMissing.length === 0) && (
+                            <p className="mt-2 text-xs font-medium text-emerald-900 dark:text-emerald-100">
+                                {section.id === 'documents'
+                                    ? 'You can save anytime.'
+                                    : 'Required fields look complete — you can save.'}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             {section.id === 'academic' ? (
                 // Academic Section - Organized Layout
                 <>
-                    {/* Academic Information Notice */}
-                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-                        <div className="flex items-start space-x-3">
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
-                                    Flexible Academic Information
-                                </h4>
-                                <p className="text-xs text-blue-700 dark:text-blue-300">
-                                    You can fill any combination of College, Class XII, and Class X information.
-                                    Fill in the sections that apply to your educational background.
-                                </p>
-                            </div>
-                        </div>
+                    {/* Optional grades hint */}
+                    <div className="mb-2 rounded-lg border border-blue-200 bg-blue-50/80 p-3 dark:border-blue-700/50 dark:bg-blue-900/20">
+                        <p className="text-xs leading-relaxed text-blue-800 dark:text-blue-200">
+                            <span className="font-semibold">Tip:</span> Class XII and Class X below are
+                            optional. Focus on Degree, Branch, and Graduation Year first.
+                        </p>
                     </div>
 
                     {/* College Section */}
@@ -2374,6 +2662,9 @@ function ProfileSectionForm({
                             if (fieldName === '10th_certificate') return '10th Certificate'
                             if (fieldName === '12th_certificate') return '12th Certificate'
                             if (fieldName === 'city') return 'Location'
+                            if (fieldName === 'internship_experience') return 'Work Experience'
+                            if (fieldName === 'project_details') return 'Projects'
+                            if (fieldName === 'extracurricular_activities') return 'Extracurricular Activities'
                             return fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                         }
 
@@ -2408,7 +2699,10 @@ function ProfileSectionForm({
                                         'state',
                                         'city',
                                         'bio',
-                                        'resume'
+                                        'resume',
+                                        'technical_skills',
+                                        'soft_skills',
+                                        'preferred_industry',
                                     ].includes(field) && (
                                             <span className="text-red-500 ml-1">*</span>
                                         )}
@@ -2452,18 +2746,24 @@ function ProfileSectionForm({
                                 <Button
                                     type="button"
                                     onClick={() => void handleMobileSaveAll()}
-                                    disabled={saving || hasFieldErrors}
+                                    disabled={!saveEnabled}
                                     size="sm"
                                     className="h-10 flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-xs font-semibold text-white shadow-md hover:from-blue-500 hover:to-violet-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                                 >
                                     {saving ? 'Saving...' : 'Save Changes'}
                                 </Button>
                             </div>
+                            {!saveEnabled && !saving && mandatoryMissing.length > 0 && (
+                                <p className="mx-auto mt-1.5 max-w-lg text-center text-[11px] text-amber-700 dark:text-amber-300">
+                                    Fill required fields above to enable Save.
+                                </p>
+                            )}
                         </div>,
                         document.body
                     )
                 ) : (
-                    <div className="flex items-center justify-start gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700/50">
+                    <div className="mt-8 space-y-2 border-t border-gray-200 pt-6 dark:border-gray-700/50">
+                        <div className="flex items-center justify-start gap-3">
                         <Button
                             type="button"
                             variant="outline"
@@ -2476,12 +2776,18 @@ function ProfileSectionForm({
                         <Button
                             type="submit"
                             form={formId}
-                            disabled={saving || hasFieldErrors}
+                            disabled={!saveEnabled}
                             size="sm"
-                            className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
+                            className="h-9 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105 disabled:hover:scale-100"
                         >
                             {saving ? 'Saving...' : 'Save Changes'}
                         </Button>
+                        </div>
+                        {!saveEnabled && !saving && mandatoryMissing.length > 0 && (
+                            <p className="text-xs text-amber-700 dark:text-amber-300">
+                                Fill required fields marked * to enable Save Changes.
+                            </p>
+                        )}
                     </div>
                 )
             )}
