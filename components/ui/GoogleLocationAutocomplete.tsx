@@ -4,11 +4,13 @@ import {
     useCallback,
     useEffect,
     useId,
+    useLayoutEffect,
     useRef,
     useState,
     type KeyboardEvent,
     type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { loadGoogleMaps } from '@/lib/googleMapsLoader'
@@ -32,6 +34,12 @@ type PredictionItem = {
     description: string
     mainText: string
     secondaryText: string
+}
+
+type DropdownPosition = {
+    top: number
+    left: number
+    width: number
 }
 
 const MIN_QUERY_LENGTH = 2
@@ -77,6 +85,7 @@ export function GoogleLocationAutocomplete({
 }: GoogleLocationAutocompleteProps) {
     const inputRef = useRef<HTMLInputElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
+    const listboxRef = useRef<HTMLUListElement>(null)
     const onChangeRef = useRef(onChange)
     const requestIdRef = useRef(0)
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -92,8 +101,14 @@ export function GoogleLocationAutocomplete({
     const [loadError, setLoadError] = useState<string | null>(null)
     const [isReady, setIsReady] = useState(false)
     const [activeIndex, setActiveIndex] = useState(-1)
+    const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null)
+    const [mounted, setMounted] = useState(false)
     const inputId = useId()
     const listboxId = `${inputId}-listbox`
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     useEffect(() => {
         onChangeRef.current = onChange
@@ -138,15 +153,55 @@ export function GoogleLocationAutocomplete({
         }
     }, [disabled])
 
+    const updateDropdownPosition = useCallback(() => {
+        const input = inputRef.current
+        if (!input) return
+        const rect = input.getBoundingClientRect()
+        setDropdownPosition({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+        })
+    }, [])
+
+    const displayError = error || loadError
+    const showDropdown =
+        isOpen &&
+        !disabled &&
+        !loadError &&
+        inputValue.trim().length >= MIN_QUERY_LENGTH
+
+    useLayoutEffect(() => {
+        if (!showDropdown) {
+            setDropdownPosition(null)
+            return
+        }
+        updateDropdownPosition()
+    }, [showDropdown, suggestions.length, isSearching, updateDropdownPosition])
+
+    useEffect(() => {
+        if (!showDropdown) return
+
+        const handleReposition = () => updateDropdownPosition()
+        window.addEventListener('resize', handleReposition)
+        window.addEventListener('scroll', handleReposition, true)
+        return () => {
+            window.removeEventListener('resize', handleReposition)
+            window.removeEventListener('scroll', handleReposition, true)
+        }
+    }, [showDropdown, updateDropdownPosition])
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node
             if (
-                containerRef.current &&
-                !containerRef.current.contains(event.target as Node)
+                containerRef.current?.contains(target) ||
+                listboxRef.current?.contains(target)
             ) {
-                setIsOpen(false)
-                setActiveIndex(-1)
+                return
             }
+            setIsOpen(false)
+            setActiveIndex(-1)
         }
 
         document.addEventListener('mousedown', handleClickOutside)
@@ -356,18 +411,77 @@ export function GoogleLocationAutocomplete({
         }
     }
 
-    const displayError = error || loadError
-    const showDropdown =
-        isOpen &&
-        !disabled &&
-        !loadError &&
-        inputValue.trim().length >= MIN_QUERY_LENGTH
-
     const showNoResults =
         showDropdown &&
         !isSearching &&
         !searchError &&
         suggestions.length === 0
+
+    const dropdownList =
+        showDropdown && mounted && dropdownPosition
+            ? createPortal(
+                  <ul
+                      ref={listboxRef}
+                      id={listboxId}
+                      role="listbox"
+                      style={{
+                          position: 'fixed',
+                          top: dropdownPosition.top,
+                          left: dropdownPosition.left,
+                          width: dropdownPosition.width,
+                      }}
+                      className="z-[300] max-h-60 overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                  >
+                      {isSearching && (
+                          <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                              Searching locations...
+                          </li>
+                      )}
+
+                      {!isSearching && searchError && (
+                          <li className="px-3 py-2 text-sm text-red-600 dark:text-red-400">
+                              {searchError}
+                          </li>
+                      )}
+
+                      {showNoResults && (
+                          <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                              No locations found
+                          </li>
+                      )}
+
+                      {!isSearching &&
+                          !searchError &&
+                          suggestions.map((suggestion, index) => (
+                              <li
+                                  key={suggestion.placeId}
+                                  id={`${listboxId}-option-${index}`}
+                                  role="option"
+                                  aria-selected={index === activeIndex}
+                                  className={cn(
+                                      'cursor-pointer px-3 py-2 text-sm text-gray-900 dark:text-white',
+                                      index === activeIndex
+                                          ? 'bg-primary-50 dark:bg-primary-900/30'
+                                          : 'hover:bg-gray-50 dark:hover:bg-gray-700/60'
+                                  )}
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onMouseEnter={() => setActiveIndex(index)}
+                                  onClick={() => selectPrediction(suggestion)}
+                              >
+                                  <div className="font-medium">
+                                      {highlightMatch(suggestion.mainText, inputValue)}
+                                  </div>
+                                  {suggestion.secondaryText && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                          {highlightMatch(suggestion.secondaryText, inputValue)}
+                                      </div>
+                                  )}
+                              </li>
+                          ))}
+                  </ul>,
+                  document.body
+              )
+            : null
 
     return (
         <div ref={containerRef} className={cn('relative space-y-1', className)}>
@@ -406,60 +520,7 @@ export function GoogleLocationAutocomplete({
                 )}
             />
 
-            {showDropdown && (
-                <ul
-                    id={listboxId}
-                    role="listbox"
-                    className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                >
-                    {isSearching && (
-                        <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                            Searching locations...
-                        </li>
-                    )}
-
-                    {!isSearching && searchError && (
-                        <li className="px-3 py-2 text-sm text-red-600 dark:text-red-400">
-                            {searchError}
-                        </li>
-                    )}
-
-                    {showNoResults && (
-                        <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                            No locations found
-                        </li>
-                    )}
-
-                    {!isSearching &&
-                        !searchError &&
-                        suggestions.map((suggestion, index) => (
-                            <li
-                                key={suggestion.placeId}
-                                id={`${listboxId}-option-${index}`}
-                                role="option"
-                                aria-selected={index === activeIndex}
-                                className={cn(
-                                    'cursor-pointer px-3 py-2 text-sm text-gray-900 dark:text-white',
-                                    index === activeIndex
-                                        ? 'bg-primary-50 dark:bg-primary-900/30'
-                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/60'
-                                )}
-                                onMouseDown={(e) => e.preventDefault()}
-                                onMouseEnter={() => setActiveIndex(index)}
-                                onClick={() => selectPrediction(suggestion)}
-                            >
-                                <div className="font-medium">
-                                    {highlightMatch(suggestion.mainText, inputValue)}
-                                </div>
-                                {suggestion.secondaryText && (
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {highlightMatch(suggestion.secondaryText, inputValue)}
-                                    </div>
-                                )}
-                            </li>
-                        ))}
-                </ul>
-            )}
+            {dropdownList}
 
             {!isReady && !loadError && !disabled && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">Loading location search...</p>
