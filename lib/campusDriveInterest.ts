@@ -19,6 +19,18 @@ export type CampusDriveInterestOutcome =
   | 'error'
 
 /**
+ * Apply-button override from campus-drive request status.
+ * Application status always wins when present (priority 1–2 → Applied).
+ */
+export function getCampusDriveRequestApplyOverride(
+  campusDriveRequestStatus?: string | null
+): 'pending' | 'rejected' | null {
+  if (campusDriveRequestStatus === 'pending') return 'pending'
+  if (campusDriveRequestStatus === 'rejected') return 'rejected'
+  return null
+}
+
+/**
  * Resolve how a non-eligible campus-drive apply should be handled for this student+job.
  */
 export async function resolveCampusDriveInterestOutcome(

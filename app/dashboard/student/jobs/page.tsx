@@ -32,6 +32,7 @@ import {
   resolveCampusDriveInterestOutcome,
   submitCampusDriveInterest,
   toastCampusDriveRequestStatus,
+  getCampusDriveRequestApplyOverride,
 } from '@/lib/campusDriveInterest'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
@@ -72,6 +73,7 @@ interface Job {
     is_active: boolean
     can_apply: boolean
     application_status?: string
+    campus_drive_request_status?: string | null
     // Additional fields
     number_of_openings?: number
     perks_and_benefits?: string
@@ -811,6 +813,18 @@ function JobOpportunitiesPageContent() {
 
     // Handle job application initiation
     const handleApplyClick = async (job: Job) => {
+        if (job.application_status === 'applied' || applicationStatus.get(job.id) === 'applied') {
+            return
+        }
+
+        const requestOverride = getCampusDriveRequestApplyOverride(
+            job.campus_drive_request_status
+        )
+        if (requestOverride === 'pending' || requestOverride === 'rejected') {
+            toastCampusDriveRequestStatus(requestOverride)
+            return
+        }
+
         if (!job.can_apply) {
             toast.error(JOB_CLOSED_MESSAGE)
             return
@@ -823,7 +837,9 @@ function JobOpportunitiesPageContent() {
             isAuthenticatedStudent: true,
             studentUniversityId: studentProfile?.university_id,
             isCampusDrive: true,
-            hasAcceptedCampusDriveRequest: acceptedCampusDriveJobs.has(job.id),
+            hasAcceptedCampusDriveRequest:
+                acceptedCampusDriveJobs.has(job.id) ||
+                job.campus_drive_request_status === 'accepted',
         })
         if (!eligibility.canApply) {
             const reason = eligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
@@ -831,8 +847,22 @@ function JobOpportunitiesPageContent() {
                 const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
                 if (outcome === 'accepted') {
                     setAcceptedCampusDriveJobs((prev) => new Set(prev).add(job.id))
+                    setJobs((prev) =>
+                        prev.map((j) =>
+                            j.id === job.id
+                                ? { ...j, campus_drive_request_status: 'accepted' }
+                                : j
+                        )
+                    )
                     // Fall through to normal apply checks below
                 } else if (outcome === 'pending' || outcome === 'rejected') {
+                    setJobs((prev) =>
+                        prev.map((j) =>
+                            j.id === job.id
+                                ? { ...j, campus_drive_request_status: outcome }
+                                : j
+                        )
+                    )
                     toastCampusDriveRequestStatus(outcome)
                     return
                 } else if (outcome === 'show_interest_modal') {
@@ -885,6 +915,15 @@ function JobOpportunitiesPageContent() {
             if (result.ok) {
                 setShowCampusDriveInterestModal(false)
                 setCampusDriveInterestJobId(null)
+                if (result.status) {
+                    setJobs((prev) =>
+                        prev.map((j) =>
+                            j.id === jobId
+                                ? { ...j, campus_drive_request_status: result.status }
+                                : j
+                        )
+                    )
+                }
                 if (result.status === 'accepted') {
                     setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
                 }
@@ -1576,6 +1615,8 @@ function JobOpportunitiesPageContent() {
                                             ...job,
                                             application_status:
                                                 applicationStatus.get(job.id) || job.application_status,
+                                            campus_drive_request_status:
+                                                job.campus_drive_request_status,
                                         }}
                                         onViewDescription={async () => {
                                             setSelectedJob(job)

@@ -91,9 +91,9 @@ export function CampusDriveRequestList() {
           ? (err as { response: { status: number } }).response.status
           : undefined
       if (status === 401 || status === 403) {
-        toast.error('Admin login required to view campus drive requests')
+        toast.error('Admin login required to view job requests')
       } else {
-        toast.error('Failed to load campus drive requests')
+        toast.error('Failed to load job requests')
       }
       setRequests([])
       setTotal(0)
@@ -110,7 +110,7 @@ export function CampusDriveRequestList() {
     setBusyId(item.id)
     try {
       const updated = await campusDriveRequestService.accept(item.id)
-      toast.success('Request accepted')
+      toast.success('Request accepted and application submitted')
       if (statusFilter === 'pending') {
         setRequests((prev) => prev.filter((r) => r.id !== item.id))
         setTotal((t) => Math.max(0, t - 1))
@@ -119,8 +119,26 @@ export function CampusDriveRequestList() {
       } else {
         setRequests((prev) => prev.map((r) => (r.id === item.id ? updated : r)))
       }
-    } catch {
-      toast.error('Failed to accept request')
+    } catch (err: unknown) {
+      const detail =
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response?: { data?: { detail?: unknown } } }).response?.data
+          ?.detail !== 'undefined'
+          ? (err as { response: { data: { detail: unknown } } }).response.data.detail
+          : undefined
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : detail &&
+              typeof detail === 'object' &&
+              detail !== null &&
+              'message' in detail &&
+              typeof (detail as { message?: unknown }).message === 'string'
+            ? (detail as { message: string }).message
+            : 'Failed to accept request'
+      toast.error(message)
     } finally {
       setBusyId(null)
     }
@@ -158,7 +176,7 @@ export function CampusDriveRequestList() {
   return (
     <div className="space-y-6">
       <AdminPageHero
-        title="Campus Drive Requests"
+        title="Job Requests"
         subtitle="Review student interest requests for campus drives outside their university assignment."
       />
 
@@ -235,7 +253,7 @@ export function CampusDriveRequestList() {
               ) : requests.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-10 text-center text-gray-500 dark:text-gray-400">
-                    No campus drive requests found.
+                    No job requests found.
                   </td>
                 </tr>
               ) : (

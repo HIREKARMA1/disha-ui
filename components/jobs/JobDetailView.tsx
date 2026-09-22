@@ -55,6 +55,7 @@ import {
   resolveCampusDriveInterestOutcome,
   submitCampusDriveInterest,
   toastCampusDriveRequestStatus,
+  getCampusDriveRequestApplyOverride,
 } from '@/lib/campusDriveInterest'
 import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import type { Job } from '@/components/jobs/AllJobs'
@@ -104,6 +105,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         `/public/jobs/by-slug/${encodeURIComponent(companySlug)}/${encodeURIComponent(jobSlug)}`
       )
       setJob(response.data)
+      if (response.data?.campus_drive_request_status === 'accepted') {
+        setHasAcceptedCampusDriveRequest(true)
+      }
     } catch (err: unknown) {
       // Fallback: load by id if provided
       if (fallbackJobId) {
@@ -114,6 +118,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           const match = (byId.data?.jobs || []).find((j: Job) => j.id === fallbackJobId)
           if (match) {
             setJob(match)
+            if (match.campus_drive_request_status === 'accepted') {
+              setHasAcceptedCampusDriveRequest(true)
+            }
             return
           }
         } catch {
@@ -201,11 +208,36 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     })()
   }, [job, authLoading, user, router])
 
+  const requestApplyOverride = getCampusDriveRequestApplyOverride(
+    job?.campus_drive_request_status
+  )
+  const applyDisabled =
+    !job?.can_apply ||
+    job?.application_status === 'applied' ||
+    Boolean(requestApplyOverride) ||
+    isAutoApplying
+  const applyLabel =
+    job?.application_status === 'applied'
+      ? 'Already Applied'
+      : requestApplyOverride === 'pending'
+        ? 'Pending'
+        : requestApplyOverride === 'rejected'
+          ? 'Rejected'
+          : 'Apply Now'
+
   const handleApply = async () => {
     if (!job) return
     if (!apiClient.getAccessToken()) {
       const redirect = prepareGuestApplyForLogin(job.id, getJobDetailPath(job))
       openLoginModal({ redirect, preferredType: 'student' })
+      return
+    }
+    if (job.application_status === 'applied') return
+    const requestOverride = getCampusDriveRequestApplyOverride(
+      job.campus_drive_request_status
+    )
+    if (requestOverride === 'pending' || requestOverride === 'rejected') {
+      toastCampusDriveRequestStatus(requestOverride)
       return
     }
     if (profileCompletion && !canApplyForJobs(profileCompletion)) {
@@ -224,7 +256,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       isAuthenticatedStudent: Boolean(isAuthenticated && user?.user_type === 'student'),
       studentUniversityId,
       isCampusDrive: Boolean(job.is_campus_drive),
-      hasAcceptedCampusDriveRequest,
+      hasAcceptedCampusDriveRequest:
+        hasAcceptedCampusDriveRequest || job.campus_drive_request_status === 'accepted',
     })
     if (!universityEligibility.canApply) {
       const reason = universityEligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
@@ -232,7 +265,13 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
         if (outcome === 'accepted') {
           setHasAcceptedCampusDriveRequest(true)
+          setJob((prev) =>
+            prev ? { ...prev, campus_drive_request_status: 'accepted' } : prev
+          )
         } else if (outcome === 'pending' || outcome === 'rejected') {
+          setJob((prev) =>
+            prev ? { ...prev, campus_drive_request_status: outcome } : prev
+          )
           toastCampusDriveRequestStatus(outcome)
           return
         } else if (outcome === 'show_interest_modal') {
@@ -270,6 +309,11 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       const result = await submitCampusDriveInterest(job.id)
       if (result.ok) {
         setShowCampusDriveInterestModal(false)
+        if (result.status) {
+          setJob((prev) =>
+            prev ? { ...prev, campus_drive_request_status: result.status } : prev
+          )
+        }
         if (result.status === 'accepted') {
           setHasAcceptedCampusDriveRequest(true)
         }
@@ -465,7 +509,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           <div className="flex flex-wrap gap-2 p-5 sm:p-6">
             <Button
               onClick={handleApply}
-              disabled={!job.can_apply || job.application_status === 'applied' || isAutoApplying}
+              disabled={applyDisabled}
               className="bg-primary-500 hover:bg-primary-600"
             >
               {isAutoApplying ? (
@@ -476,7 +520,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  {job.application_status === 'applied' ? 'Already Applied' : 'Apply Now'}
+                  {applyLabel}
                 </>
               )}
             </Button>
@@ -649,9 +693,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         <Button
           className="h-11 w-full bg-primary-500 hover:bg-primary-600"
           onClick={handleApply}
-          disabled={!job.can_apply || job.application_status === 'applied'}
+          disabled={applyDisabled}
         >
-          {job.application_status === 'applied' ? 'Already Applied' : 'Apply Now'}
+          {applyLabel}
         </Button>
       </div>
 

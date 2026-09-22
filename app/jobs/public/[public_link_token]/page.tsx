@@ -26,8 +26,10 @@ import {
     resolveCampusDriveInterestOutcome,
     submitCampusDriveInterest,
     toastCampusDriveRequestStatus,
+    getCampusDriveRequestApplyOverride,
 } from '@/lib/campusDriveInterest'
 import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
+import { campusDriveRequestService } from '@/services/campusDriveRequestService'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import {
@@ -127,6 +129,31 @@ export default function PublicJobPage() {
             fetchPublicJob()
         }
     }, [publicLinkToken])
+
+    // Persist campus-drive request button state from backend for this student+job.
+    useEffect(() => {
+        if (!job?.id || !isAuthenticated || user?.user_type !== 'student') return
+        let cancelled = false
+        void (async () => {
+            try {
+                const existing = await campusDriveRequestService.getMyRequestForJob(job.id)
+                if (cancelled || !existing.exists || !existing.status) return
+                setJob((prev: any) =>
+                    prev
+                        ? { ...prev, campus_drive_request_status: existing.status }
+                        : prev
+                )
+                if (existing.status === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                }
+            } catch {
+                // ignore — button falls back to Apply until known
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [job?.id, isAuthenticated, user?.user_type])
 
     useEffect(() => {
         // Check if user just logged in and should be redirected here
@@ -228,6 +255,12 @@ export default function PublicJobPage() {
             console.log('Public job response:', response)
             if (response) {
                 setJob(response)
+                if (response.campus_drive_request_status === 'accepted') {
+                    setHasAcceptedCampusDriveRequest(true)
+                }
+                if (response.application_status === 'applied') {
+                    setHasApplied(true)
+                }
             } else {
                 setError('Job not found or not publicly accessible')
             }
@@ -284,7 +317,9 @@ export default function PublicJobPage() {
             ),
             studentUniversityId,
             isCampusDrive: Boolean(job?.is_campus_drive),
-            hasAcceptedCampusDriveRequest,
+            hasAcceptedCampusDriveRequest:
+                hasAcceptedCampusDriveRequest ||
+                job?.campus_drive_request_status === 'accepted',
         })
         if (!universityEligibility.canApply) {
             return universityEligibility
@@ -299,6 +334,10 @@ export default function PublicJobPage() {
         })
     }
 
+    const requestApplyOverride = getCampusDriveRequestApplyOverride(
+        job?.campus_drive_request_status
+    )
+
     const handleApplyClick = async () => {
         if (!isAuthenticated) {
             if (job) {
@@ -312,6 +351,13 @@ export default function PublicJobPage() {
             return
         }
 
+        if (hasApplied) return
+
+        if (requestApplyOverride === 'pending' || requestApplyOverride === 'rejected') {
+            toastCampusDriveRequestStatus(requestApplyOverride)
+            return
+        }
+
         // Check university assignment before applying
         const eligibility = canStudentApply()
         if (!eligibility.canApply) {
@@ -320,10 +366,16 @@ export default function PublicJobPage() {
                 const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
                 if (outcome === 'accepted') {
                     setHasAcceptedCampusDriveRequest(true)
+                    setJob((prev: any) =>
+                        prev ? { ...prev, campus_drive_request_status: 'accepted' } : prev
+                    )
                     await handleApply()
                     return
                 }
                 if (outcome === 'pending' || outcome === 'rejected') {
+                    setJob((prev: any) =>
+                        prev ? { ...prev, campus_drive_request_status: outcome } : prev
+                    )
                     toastCampusDriveRequestStatus(outcome)
                     return
                 }
@@ -346,6 +398,11 @@ export default function PublicJobPage() {
             const result = await submitCampusDriveInterest(job.id)
             if (result.ok) {
                 setShowCampusDriveInterestModal(false)
+                if (result.status) {
+                    setJob((prev: any) =>
+                        prev ? { ...prev, campus_drive_request_status: result.status } : prev
+                    )
+                }
                 if (result.status === 'accepted') {
                     setHasAcceptedCampusDriveRequest(true)
                 }
@@ -640,17 +697,26 @@ export default function PublicJobPage() {
                                         ) : (
                                             <Button
                                                 onClick={handleApplyClick}
-                                                disabled={!job.can_apply || isApplying || hasApplied}
+                                                disabled={
+                                                    !job.can_apply ||
+                                                    isApplying ||
+                                                    hasApplied ||
+                                                    Boolean(requestApplyOverride)
+                                                }
                                                 className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
                                                 size="lg"
                                                 title={
                                                     hasApplied
                                                         ? 'You have already applied for this job'
-                                                        : !job.can_apply
-                                                            ? 'Applications are not currently open for this job'
-                                                            : !isEligibleToApply
-                                                                ? eligibility.reason || 'You are not eligible to apply for this job'
-                                                                : ''
+                                                        : requestApplyOverride === 'pending'
+                                                            ? 'Your request is pending admin review'
+                                                            : requestApplyOverride === 'rejected'
+                                                                ? 'Your request was rejected'
+                                                                : !job.can_apply
+                                                                    ? 'Applications are not currently open for this job'
+                                                                    : !isEligibleToApply
+                                                                        ? eligibility.reason || 'You are not eligible to apply for this job'
+                                                                        : ''
                                                 }
                                             >
                                                 {isApplying ? (
@@ -661,7 +727,11 @@ export default function PublicJobPage() {
                                                 ) : (
                                                     <>
                                                         <CheckCircle className="w-5 h-5 mr-2" />
-                                                        Apply Now
+                                                        {requestApplyOverride === 'pending'
+                                                            ? 'Pending'
+                                                            : requestApplyOverride === 'rejected'
+                                                                ? 'Rejected'
+                                                                : 'Apply Now'}
                                                     </>
                                                 )}
                                             </Button>

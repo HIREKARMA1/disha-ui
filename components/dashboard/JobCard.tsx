@@ -12,6 +12,7 @@ import { ShareJobModal } from '@/components/jobs/ShareJobModal'
 import { Tooltip } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
 import { useSavedJobs } from '@/hooks/useSavedJobs'
+import { getCampusDriveRequestApplyOverride } from '@/lib/campusDriveInterest'
 
 interface Job {
     id: string
@@ -53,6 +54,7 @@ interface Job {
     is_active: boolean
     can_apply: boolean
     application_status?: string
+    campus_drive_request_status?: string | null
     // Additional fields
     number_of_openings?: number
     perks_and_benefits?: string
@@ -172,7 +174,31 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
     }
 
     const canApply = () => {
-        return !job.application_status && !isDeadlineExpired() && job.can_apply
+        const requestOverride = getCampusDriveRequestApplyOverride(
+            job.campus_drive_request_status
+        )
+        return (
+            !job.application_status &&
+            !isDeadlineExpired() &&
+            job.can_apply &&
+            !requestOverride
+        )
+    }
+
+    const applyButtonLabel = () => {
+        if (isApplying) return null
+        if (job.application_status === 'applied') return 'Applied'
+        if (job.application_status === 'selected') return 'Selected'
+        if (job.application_status === 'rejected') return 'Not Selected'
+        if (job.application_status === 'shortlisted') return 'Shortlisted'
+        if (job.application_status === 'pending') return 'Under Review'
+        const requestOverride = getCampusDriveRequestApplyOverride(
+            job.campus_drive_request_status
+        )
+        if (requestOverride === 'pending') return 'Pending'
+        if (requestOverride === 'rejected') return 'Rejected'
+        if (isDeadlineExpired()) return 'Expired'
+        return 'Apply'
     }
 
     // Check if job is university-created (on-campus job)
@@ -445,12 +471,7 @@ export function JobCard({ job, onViewDescription, onApply, isApplying = false, c
                                         Applying
                                     </span>
                                 ) : (
-                                    job.application_status === 'applied' ? 'Applied' :
-                                        job.application_status === 'selected' ? 'Selected' :
-                                            job.application_status === 'rejected' ? 'Not Selected' :
-                                                job.application_status === 'shortlisted' ? 'Shortlisted' :
-                                                    job.application_status === 'pending' ? 'Under Review' :
-                                                        isDeadlineExpired() ? 'Expired' : 'Apply'
+                                    applyButtonLabel()
                                 )}
                             </Button>
                         </div>

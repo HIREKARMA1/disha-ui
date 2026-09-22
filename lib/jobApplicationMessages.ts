@@ -37,7 +37,7 @@ export const CAMPUS_DRIVE_REQUEST_PENDING_MESSAGE = 'Request Pending'
 export const CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE =
   'Your request to apply for this campus drive was rejected.'
 export const CAMPUS_DRIVE_REQUEST_SENT_MESSAGE =
-  'Your request has been sent to the admin. You will be able to apply if your request is approved.'
+  'Your request has been sent to the admin. This job will be automatically applied if your request is approved.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
 export const PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE =
   'Not eligible — graduation batch does not meet the job requirements'

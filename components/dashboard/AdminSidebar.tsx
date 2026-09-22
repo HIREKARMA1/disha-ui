@@ -107,7 +107,7 @@ const navSections: NavSection[] = [
                 description: 'Manage job postings',
             },
             {
-                label: 'Campus Drive Requests',
+                label: 'Job Requests',
                 href: '/dashboard/admin/campus-drive-requests',
                 icon: School,
                 description: 'Student interest requests',
