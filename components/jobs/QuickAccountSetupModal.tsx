@@ -1,41 +1,24 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Briefcase, CheckCircle2, Eye, FileText, Loader2, MapPin, Trash2, X, Zap } from 'lucide-react'
+import {
+  CheckCircle2,
+  Eye,
+  FileText,
+  Loader2,
+  Trash2,
+  UserRound,
+  X,
+} from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
-import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { DobDatePicker } from '@/components/ui/dob-date-picker'
 import { profileService, type StudentProfile } from '@/services/profileService'
-import { apiClient } from '@/lib/api'
-import { clearPendingJobApplication } from '@/lib/pendingJobApplication'
-import {
-  APPLY_SUCCESS_MESSAGE,
-  defaultApplyPayload,
-  toastApplyError,
-} from '@/lib/jobApplicationMessages'
 import { extractErrorDetail } from '@/lib/profileCompletion'
 import { DEGREE_OPTIONS, getBranchesForDegrees, resolveCanonicalDegree } from '@/lib/academicHierarchy'
+import { clearQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
 import { cn } from '@/lib/utils'
-
-export interface QuickApplyJobInfo {
-  id: string
-  title: string
-  company_name?: string
-  corporate_name?: string
-  company_logo?: string
-  location?: string | string[]
-  job_type?: string
-}
-
-interface QuickApplyModalProps {
-  job: QuickApplyJobInfo
-  onClose: () => void
-  onSuccess: () => void
-  /** @deprecated Always opens as LinkedIn-style centered modal */
-  variant?: 'modal' | 'panel'
-}
 
 type StepId = 0 | 1 | 2
 
@@ -45,11 +28,6 @@ type ResumeFileItem = {
   file_name?: string | null
   is_selected: boolean
   created_at?: string | null
-}
-
-function formatLocation(location?: string | string[]): string {
-  if (!location) return 'Location not specified'
-  return Array.isArray(location) ? location.filter(Boolean).join(', ') : location
 }
 
 function isBlank(value?: string | null): boolean {
@@ -71,7 +49,21 @@ function buildGraduationYearOptions(selected?: number | null): number[] {
   return years
 }
 
-export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProps) {
+function getDobBounds() {
+  const today = new Date()
+  const minDate = new Date(today)
+  minDate.setFullYear(today.getFullYear() - 100)
+  const maxDate = new Date(today)
+  maxDate.setFullYear(today.getFullYear() - 16)
+  return { minDate, maxDate }
+}
+
+interface QuickAccountSetupModalProps {
+  onClose: () => void
+  onComplete: () => void
+}
+
+export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetupModalProps) {
   const [step, setStep] = useState<StepId>(0)
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -96,28 +88,10 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
   const [resumeFiles, setResumeFiles] = useState<ResumeFileItem[]>([])
   const [maxResumes, setMaxResumes] = useState(5)
 
-  /** After first application, DOB/gender/location are always read-only. */
-  const [hasAppliedBefore, setHasAppliedBefore] = useState(false)
-  /** Fields already present on profile stay read-only even on first apply. */
-  const [dobLockedFromProfile, setDobLockedFromProfile] = useState(false)
-  const [genderLockedFromProfile, setGenderLockedFromProfile] = useState(false)
-  const [locationLockedFromProfile, setLocationLockedFromProfile] = useState(false)
-  const [degreeLockedFromProfile, setDegreeLockedFromProfile] = useState(false)
-  const [branchLockedFromProfile, setBranchLockedFromProfile] = useState(false)
-  const [gradYearLockedFromProfile, setGradYearLockedFromProfile] = useState(false)
-
   const [locationError, setLocationError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  const canEditDob = !hasAppliedBefore && !dobLockedFromProfile
-  const canEditGender = !hasAppliedBefore && !genderLockedFromProfile
-  const canEditLocation = !hasAppliedBefore && !locationLockedFromProfile
-  const canEditDegree = !degreeLockedFromProfile
-  const canEditBranch = !branchLockedFromProfile
-  const canEditGradYear = !gradYearLockedFromProfile
-  const anyBasicsEditable = canEditDob || canEditGender || canEditLocation
-  const anyEducationEditable = canEditDegree || canEditBranch || canEditGradYear
-  const profileDetailsLocked = !anyBasicsEditable && !anyEducationEditable
+  const { minDate: dobMinDate, maxDate: dobMaxDate } = useMemo(() => getDobBounds(), [])
 
   const branchOptions = useMemo(() => {
     if (!degree) return [] as string[]
@@ -156,36 +130,22 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
     ;(async () => {
       try {
         setLoadingProfile(true)
-        const [profile, appsResponse, resumeLibrary] = await Promise.all([
+        const [profile, resumeLibrary] = await Promise.all([
           profileService.getProfile(),
-          apiClient.getStudentApplications({ page: 1, limit: 1 }).catch(() => null),
           profileService.listResumeFiles().catch(() => null),
         ])
         if (cancelled) return
 
-        const appCount =
-          Number((appsResponse as { total_count?: number } | null)?.total_count || 0) ||
-          ((appsResponse as { applications?: unknown[] } | null)?.applications || []).length
-        setHasAppliedBefore(appCount > 0)
-
         setProfileName(profile.name || '')
         setProfileEmail(profile.email || '')
         setProfilePhone(profile.phone || '')
-
-        const nextDob = profile.dob ? String(profile.dob).slice(0, 10) : ''
-        const nextGender = profile.gender || ''
-        const nextCity = profile.city || ''
-        const nextState = profile.state || ''
-        const nextCountry = profile.country || ''
-
-        setDob(nextDob)
-        setGender(nextGender)
-        setCity(nextCity)
-        setState(nextState)
-        setCountry(nextCountry)
-
+        setDob(profile.dob ? String(profile.dob).slice(0, 10) : '')
+        setGender(profile.gender || '')
+        setCity(profile.city || '')
+        setState(profile.state || '')
+        setCountry(profile.country || '')
         setInstitution(profile.institution || '')
-        // Normalize degree/branch so Profile edits match Quick Apply dropdowns
+
         const rawDegree = profile.degree || ''
         const canonicalDegree =
           resolveCanonicalDegree(rawDegree) || rawDegree.trim() || ''
@@ -196,9 +156,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
           ? getBranchesForDegrees([canonicalDegree])
           : []
         const matchedBranch =
-          branchChoices.find(
-            (b) => b.toLowerCase() === rawBranch.toLowerCase()
-          ) ||
+          branchChoices.find((b) => b.toLowerCase() === rawBranch.toLowerCase()) ||
           branchChoices.find((b) => {
             const bl = b.toLowerCase()
             const rl = rawBranch.toLowerCase()
@@ -215,17 +173,6 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
           profile.graduation_year != null && profile.graduation_year !== undefined
             ? String(profile.graduation_year)
             : ''
-        )
-
-        setDobLockedFromProfile(!isBlank(nextDob))
-        setGenderLockedFromProfile(!isBlank(nextGender))
-        setLocationLockedFromProfile(
-          !(isBlank(nextCity) && isBlank(nextState) && isBlank(nextCountry))
-        )
-        setDegreeLockedFromProfile(!isBlank(canonicalDegree))
-        setBranchLockedFromProfile(!isBlank(matchedBranch))
-        setGradYearLockedFromProfile(
-          profile.graduation_year != null && profile.graduation_year !== undefined
         )
 
         if (resumeLibrary) {
@@ -252,36 +199,19 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
 
   const validateBasics = (): boolean => {
     const next: Record<string, string> = {}
-    const profileHint = 'Add your date of birth in Profile → Basic Info'
     if (isBlank(dob)) {
-      next.dob = canEditDob ? 'Date of birth is required' : profileHint
+      next.dob = 'Date of birth is required'
     } else {
-      const dobDate = new Date(dob)
+      const dobDate = new Date(dob + 'T00:00:00')
       const today = new Date()
-      const minDate = new Date()
-      minDate.setFullYear(today.getFullYear() - 100)
-      const maxDate = new Date()
-      maxDate.setFullYear(today.getFullYear() - 16)
-      if (Number.isNaN(dobDate.getTime())) {
-        next.dob = canEditDob
-          ? 'Enter a valid date of birth'
-          : 'Enter a valid date of birth in your profile'
-      } else if (dobDate > today) next.dob = 'Date of birth cannot be in the future'
-      else if (dobDate < minDate) {
-        next.dob = canEditDob
-          ? 'Please enter a valid date of birth'
-          : 'Please enter a valid date of birth in your profile'
-      } else if (dobDate > maxDate) next.dob = 'You must be at least 16 years old'
+      if (Number.isNaN(dobDate.getTime())) next.dob = 'Enter a valid date of birth'
+      else if (dobDate > today) next.dob = 'Date of birth cannot be in the future'
+      else if (dobDate < dobMinDate) next.dob = 'Please enter a valid date of birth'
+      else if (dobDate > dobMaxDate) next.dob = 'You must be at least 16 years old'
     }
-    if (isBlank(gender)) {
-      next.gender = canEditGender
-        ? 'Gender is required'
-        : 'Add your gender in Profile → Basic Info'
-    }
+    if (isBlank(gender)) next.gender = 'Gender is required'
     if (isBlank(city) && isBlank(state) && isBlank(country)) {
-      const locMsg = canEditLocation
-        ? 'Location is required'
-        : 'Add your location in Profile → Basic Info'
+      const locMsg = 'Location is required'
       next.location = locMsg
       setLocationError(locMsg)
     } else {
@@ -293,23 +223,14 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
 
   const validateEducation = (): boolean => {
     const next: Record<string, string> = {}
-    const profileEduHint = 'Update this in Profile → Education'
-    if (isBlank(degree)) {
-      next.degree = canEditDegree ? 'Degree is required' : profileEduHint
-    }
-    if (isBlank(branch)) {
-      next.branch = canEditBranch ? 'Branch is required' : profileEduHint
-    }
+    if (isBlank(degree)) next.degree = 'Degree is required'
+    if (isBlank(branch)) next.branch = 'Branch is required'
     if (isBlank(graduationYear)) {
-      next.graduation_year = canEditGradYear
-        ? 'Graduation year is required'
-        : profileEduHint
+      next.graduation_year = 'Graduation year is required'
     } else {
       const year = Number(graduationYear)
       if (!Number.isInteger(year) || year < 1950 || year > 2100) {
-        next.graduation_year = canEditGradYear
-          ? 'Enter a valid graduation year'
-          : 'Enter a valid graduation year in your profile'
+        next.graduation_year = 'Enter a valid graduation year'
       }
     }
     setFieldErrors(next)
@@ -325,7 +246,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
     return true
   }
 
-  const handleResumeSelect = async (file: File) => {
+  const handleResumeUpload = async (file: File) => {
     try {
       setUploadingResume(true)
       setFieldErrors((prev) => ({ ...prev, resume: '' }))
@@ -421,42 +342,44 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
       return
     }
     if (!validateResume()) {
-      toast.error('Please select a resume')
+      setStep(2)
+      toast.error('Please upload or select a resume')
       return
     }
 
     try {
       setSubmitting(true)
       const profilePatch: Partial<StudentProfile> & {
-        unlock_via_quick_apply?: boolean
         graduation_year?: number
+        unlock_via_quick_apply?: boolean
       } = {
         dob,
         gender,
         city: city || undefined,
         state: state || undefined,
         country: country || undefined,
-        degree: (resolveCanonicalDegree(degree.trim()) || degree.trim()),
+        degree: resolveCanonicalDegree(degree.trim()) || degree.trim(),
         branch: branch.trim(),
         graduation_year: Number(graduationYear),
         unlock_via_quick_apply: true,
       }
       await profileService.updateProfile(profilePatch)
-
-      await apiClient.applyForJob(job.id, defaultApplyPayload(job.id))
-      clearPendingJobApplication()
-      toast.success(APPLY_SUCCESS_MESSAGE)
-      onSuccess()
+      clearQuickAccountSetupPending()
+      toast.success('Account setup complete — your profile is ~75% ready.')
+      onComplete()
     } catch (error: unknown) {
-      toastApplyError(error)
+      const fromApi = extractErrorDetail(error)
+      toast.error(
+        (fromApi && fromApi !== '[object Object]' ? fromApi : null) ||
+          (error instanceof Error ? error.message : null) ||
+          'Could not save your details. Please try again.'
+      )
     } finally {
       setSubmitting(false)
     }
   }
 
-  const companyLabel = job.company_name || job.corporate_name || 'Company'
-  const locationDisplay =
-    [city, state, country].filter(Boolean).join(', ') || city
+  const locationDisplay = [city, state, country].filter(Boolean).join(', ') || city
 
   const fieldControlClass = (hasError?: string, muted?: boolean) =>
     cn(
@@ -487,40 +410,24 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="quick-apply-title"
+          aria-labelledby="quick-account-setup-title"
           className="relative flex max-h-[94vh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#151b2b] sm:rounded-2xl"
         >
-          {/* Header */}
           <div className="shrink-0 border-b border-gray-100 px-4 pb-3 pt-4 dark:border-white/10 sm:px-5">
             <div className="flex items-start gap-3">
-              <CompanyLogo
-                logoUrl={job.company_logo}
-                companyName={companyLabel}
-                size="md"
-                className="shrink-0 rounded-lg"
-              />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+                <UserRound className="h-5 w-5" />
+              </div>
               <div className="min-w-0 flex-1">
                 <h2
-                  id="quick-apply-title"
+                  id="quick-account-setup-title"
                   className="text-lg font-semibold text-gray-900 dark:text-white"
                 >
-                  Apply to {companyLabel}
+                  Quick Account Setup
                 </h2>
-                <p className="mt-0.5 truncate text-sm text-gray-600 dark:text-gray-300">
-                  {job.title}
+                <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
+                  Finish a few details so you can apply to jobs seamlessly.
                 </p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {formatLocation(job.location)}
-                  </span>
-                  {job.job_type && (
-                    <span className="inline-flex items-center gap-1">
-                      <Briefcase className="h-3.5 w-3.5" />
-                      {job.job_type}
-                    </span>
-                  )}
-                </div>
               </div>
               <button
                 type="button"
@@ -548,7 +455,6 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
             </p>
           </div>
 
-          {/* Body */}
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             {loadingProfile ? (
               <div className="flex items-center justify-center py-16 text-sm text-gray-500">
@@ -564,9 +470,8 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                         Contact info
                       </h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                        {profileDetailsLocked
-                          ? 'Your contact details are on file. Continue to confirm education, then add a resume to apply.'
-                          : 'Confirm your details. Fields already on your profile are filled in — complete any required blanks.'}
+                        Name, email, and phone come from signup. Add date of birth, gender, and
+                        location.
                       </p>
                     </div>
 
@@ -615,69 +520,21 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                       />
                     </div>
 
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {anyBasicsEditable ? (
-                        <>
-                          Fill any missing details below. Values already on your profile stay locked —
-                          edit those in{' '}
-                          <span className="font-medium text-gray-700 dark:text-gray-200">
-                            Profile → Basic Info
-                          </span>
-                          .
-                        </>
-                      ) : (
-                        <>
-                          Date of birth, gender, and location come from your profile. To change them,
-                          edit{' '}
-                          <span className="font-medium text-gray-700 dark:text-gray-200">
-                            Profile → Basic Info
-                          </span>
-                          .
-                        </>
-                      )}
-                    </p>
-
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
                         Date of Birth <span className="text-red-500">*</span>
                       </label>
-                      {canEditDob ? (
-                        <DobDatePicker
-                          value={dob}
-                          onChange={(next) => {
-                            setDob(next)
-                            setFieldErrors((prev) => ({ ...prev, dob: '' }))
-                          }}
-                          placeholder="Select date of birth"
-                          minDate={(() => {
-                            const d = new Date()
-                            d.setFullYear(d.getFullYear() - 100)
-                            return d
-                          })()}
-                          maxDate={(() => {
-                            const d = new Date()
-                            d.setFullYear(d.getFullYear() - 16)
-                            return d
-                          })()}
-                          error={Boolean(fieldErrors.dob)}
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          value={
-                            dob
-                              ? new Date(dob + 'T00:00:00').toLocaleDateString(undefined, {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })
-                              : ''
-                          }
-                          readOnly
-                          placeholder="Not set in profile"
-                          className={fieldControlClass(fieldErrors.dob, true)}
-                        />
-                      )}
+                      <DobDatePicker
+                        value={dob}
+                        onChange={(next) => {
+                          setDob(next)
+                          setFieldErrors((prev) => ({ ...prev, dob: '' }))
+                        }}
+                        placeholder="Select date of birth"
+                        minDate={dobMinDate}
+                        maxDate={dobMaxDate}
+                        error={Boolean(fieldErrors.dob)}
+                      />
                       {fieldErrors.dob && (
                         <p className="mt-1 text-xs text-red-500">{fieldErrors.dob}</p>
                       )}
@@ -687,33 +544,19 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                       <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
                         Gender <span className="text-red-500">*</span>
                       </label>
-                      {canEditGender ? (
-                        <select
-                          value={gender}
-                          onChange={(e) => {
-                            setGender(e.target.value)
-                            setFieldErrors((prev) => ({ ...prev, gender: '' }))
-                          }}
-                          className={selectClass(fieldErrors.gender)}
-                        >
-                          <option value="">Select your gender</option>
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                          <option value="other">Other</option>
-                        </select>
-                      ) : (
-                        <input
-                          type="text"
-                          value={
-                            gender
-                              ? gender.charAt(0).toUpperCase() + gender.slice(1)
-                              : ''
-                          }
-                          readOnly
-                          placeholder="Not set in profile"
-                          className={fieldControlClass(fieldErrors.gender, true)}
-                        />
-                      )}
+                      <select
+                        value={gender}
+                        onChange={(e) => {
+                          setGender(e.target.value)
+                          setFieldErrors((prev) => ({ ...prev, gender: '' }))
+                        }}
+                        className={selectClass(fieldErrors.gender)}
+                      >
+                        <option value="">Select your gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
                       {fieldErrors.gender && (
                         <p className="mt-1 text-xs text-red-500">{fieldErrors.gender}</p>
                       )}
@@ -723,45 +566,22 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                       <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
                         Location (city) <span className="text-red-500">*</span>
                       </label>
-                      {canEditLocation ? (
-                        <GoogleLocationAutocomplete
-                          value={
-                            locationDisplay ||
-                            [city, state, country].filter(Boolean).join(', ')
-                          }
-                          placeholder="City, town, or locality"
-                          mode="all"
-                          error={locationError || fieldErrors.location}
-                          onChange={(place) => {
-                            setLocationError('')
-                            setFieldErrors((prev) => ({ ...prev, location: '' }))
-                            setCity(place.city || place.formattedAddress || '')
-                            setState(place.state || '')
-                            setCountry(place.country || '')
-                          }}
-                        />
-                      ) : (
-                        <>
-                          <input
-                            type="text"
-                            value={
-                              locationDisplay ||
-                              [city, state, country].filter(Boolean).join(', ')
-                            }
-                            readOnly
-                            placeholder="Not set in profile"
-                            className={fieldControlClass(
-                              locationError || fieldErrors.location,
-                              true
-                            )}
-                          />
-                          {(locationError || fieldErrors.location) && (
-                            <p className="mt-1 text-xs text-red-500">
-                              {locationError || fieldErrors.location}
-                            </p>
-                          )}
-                        </>
-                      )}
+                      <GoogleLocationAutocomplete
+                        value={
+                          locationDisplay ||
+                          [city, state, country].filter(Boolean).join(', ')
+                        }
+                        placeholder="City, town, or locality"
+                        mode="all"
+                        error={locationError || fieldErrors.location}
+                        onChange={(place) => {
+                          setLocationError('')
+                          setFieldErrors((prev) => ({ ...prev, location: '' }))
+                          setCity(place.city || place.formattedAddress || '')
+                          setState(place.state || '')
+                          setCountry(place.country || '')
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -773,9 +593,8 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                         Education
                       </h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                        {anyEducationEditable
-                          ? 'Confirm your academic details. Institution is set at registration; complete degree, branch, and graduation year.'
-                          : 'Education details come from your profile. To change them, edit Profile → Education. Next, select or upload a resume.'}
+                        Institution is set at registration. Complete degree, branch, and graduation
+                        year.
                       </p>
                     </div>
 
@@ -792,50 +611,37 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                           placeholder="Not set"
                           className={fieldControlClass(undefined, true)}
                         />
-                        <p className="mt-1 min-h-[1rem] text-xs invisible">placeholder</p>
+                        <p className="invisible mt-1 min-h-[1rem] text-xs">placeholder</p>
                       </div>
 
                       <div className={fieldCellClass}>
                         <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
                           Degree <span className="text-red-500">*</span>
                         </label>
-                        {canEditDegree ? (
-                          <select
-                            value={degree}
-                            onChange={(e) => {
-                              setDegree(e.target.value)
-                              setBranch('')
-                              setFieldErrors((prev) => ({
-                                ...prev,
-                                degree: '',
-                                branch: '',
-                              }))
-                            }}
-                            className={selectClass(fieldErrors.degree)}
-                          >
-                            <option value="">Select your degree</option>
-                            {DEGREE_SELECT_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                            {degree &&
-                              !DEGREE_SELECT_OPTIONS.some((o) => o.value === degree) && (
-                                <option value={degree}>{degree}</option>
-                              )}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={
-                              DEGREE_SELECT_OPTIONS.find((o) => o.value === degree)?.label ||
-                              degree
-                            }
-                            readOnly
-                            placeholder="Not set in profile"
-                            className={fieldControlClass(fieldErrors.degree, true)}
-                          />
-                        )}
+                        <select
+                          value={degree}
+                          onChange={(e) => {
+                            setDegree(e.target.value)
+                            setBranch('')
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              degree: '',
+                              branch: '',
+                            }))
+                          }}
+                          className={selectClass(fieldErrors.degree)}
+                        >
+                          <option value="">Select your degree</option>
+                          {DEGREE_SELECT_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                          {degree &&
+                            !DEGREE_SELECT_OPTIONS.some((o) => o.value === degree) && (
+                              <option value={degree}>{degree}</option>
+                            )}
+                        </select>
                         <p
                           className={cn(
                             'mt-1 min-h-[1rem] text-xs',
@@ -850,40 +656,30 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                         <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
                           Branch <span className="text-red-500">*</span>
                         </label>
-                        {canEditBranch ? (
-                          <select
-                            value={branch}
-                            disabled={!degree}
-                            onChange={(e) => {
-                              setBranch(e.target.value)
-                              setFieldErrors((prev) => ({ ...prev, branch: '' }))
-                            }}
-                            className={cn(
-                              selectClass(fieldErrors.branch),
-                              !degree && 'cursor-not-allowed opacity-70'
-                            )}
-                          >
-                            <option value="">
-                              {degree ? 'Select your branch' : 'Select degree first'}
+                        <select
+                          value={branch}
+                          disabled={!degree}
+                          onChange={(e) => {
+                            setBranch(e.target.value)
+                            setFieldErrors((prev) => ({ ...prev, branch: '' }))
+                          }}
+                          className={cn(
+                            selectClass(fieldErrors.branch),
+                            !degree && 'cursor-not-allowed opacity-70'
+                          )}
+                        >
+                          <option value="">
+                            {degree ? 'Select your branch' : 'Select degree first'}
+                          </option>
+                          {branch && !branchOptions.includes(branch) && (
+                            <option value={branch}>{branch}</option>
+                          )}
+                          {branchOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
                             </option>
-                            {branch && !branchOptions.includes(branch) && (
-                              <option value={branch}>{branch}</option>
-                            )}
-                            {branchOptions.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={branch}
-                            readOnly
-                            placeholder="Not set in profile"
-                            className={fieldControlClass(fieldErrors.branch, true)}
-                          />
-                        )}
+                          ))}
+                        </select>
                         <p
                           className={cn(
                             'mt-1 min-h-[1rem] text-xs',
@@ -898,34 +694,24 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                         <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
                           Graduation Year <span className="text-red-500">*</span>
                         </label>
-                        {canEditGradYear ? (
-                          <select
-                            value={graduationYear}
-                            onChange={(e) => {
-                              setGraduationYear(e.target.value)
-                              setFieldErrors((prev) => ({
-                                ...prev,
-                                graduation_year: '',
-                              }))
-                            }}
-                            className={selectClass(fieldErrors.graduation_year)}
-                          >
-                            <option value="">Select graduation year</option>
-                            {graduationYearOptions.map((year) => (
-                              <option key={year} value={String(year)}>
-                                {year}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={graduationYear}
-                            readOnly
-                            placeholder="Not set in profile"
-                            className={fieldControlClass(fieldErrors.graduation_year, true)}
-                          />
-                        )}
+                        <select
+                          value={graduationYear}
+                          onChange={(e) => {
+                            setGraduationYear(e.target.value)
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              graduation_year: '',
+                            }))
+                          }}
+                          className={selectClass(fieldErrors.graduation_year)}
+                        >
+                          <option value="">Select graduation year</option>
+                          {graduationYearOptions.map((year) => (
+                            <option key={year} value={String(year)}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
                         <p
                           className={cn(
                             'mt-1 min-h-[1rem] text-xs',
@@ -937,9 +723,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                       </div>
                     </div>
                     <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      {anyEducationEditable
-                        ? 'Institution is set during registration and cannot be changed.'
-                        : 'To update education details, edit Profile → Education.'}
+                      Institution is set during registration and cannot be changed here.
                     </p>
                   </div>
                 )}
@@ -951,10 +735,8 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                         Resume
                       </h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                        {profileDetailsLocked
-                          ? 'Your profile is ready — select or upload a resume to submit this application. '
-                          : 'Select one resume for this application. '}
-                        You can store up to {maxResumes} PDFs.{' '}
+                        Upload a resume to reach ~75% profile completion. You can reuse it when
+                        applying, or upload another later. Store up to {maxResumes} PDFs.{' '}
                         <span className="text-red-500">*</span>
                       </p>
                     </div>
@@ -977,7 +759,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                             <div className="flex min-w-0 flex-1 items-center gap-3">
                               <input
                                 type="radio"
-                                name="quick-apply-resume"
+                                name="quick-setup-resume"
                                 checked={selected}
                                 onChange={() => void handleSelectResume(item.id)}
                                 className="h-4 w-4 shrink-0 border-gray-300 text-blue-600"
@@ -1050,7 +832,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               e.target.value = ''
-                              if (file) void handleResumeSelect(file)
+                              if (file) void handleResumeUpload(file)
                             }}
                           />
                           <div className="flex items-center gap-2">
@@ -1086,7 +868,6 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
             )}
           </div>
 
-          {/* Footer */}
           <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 sm:px-5">
             <Button
               type="button"
@@ -1095,7 +876,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
               onClick={step === 0 ? onClose : goBack}
               disabled={submitting}
             >
-              {step === 0 ? 'Cancel' : 'Back'}
+              {step === 0 ? 'Remind me later' : 'Back'}
             </Button>
 
             {step < 2 ? (
@@ -1117,12 +898,12 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting…
+                    Saving…
                   </>
                 ) : (
                   <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Submit
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Finish setup
                   </>
                 )}
               </Button>

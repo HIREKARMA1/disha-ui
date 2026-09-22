@@ -505,14 +505,14 @@ export function HubFeaturedCarousel() {
                     })
                   }
                 }}
-                className="group relative block h-[132px] w-full overflow-hidden rounded-xl border border-gray-200 dark:border-[#1A2233] sm:h-[168px] 2xl:h-[200px]"
+                className="group relative block aspect-[1672/941] w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-[#1A2233] dark:bg-[#0F1520]"
               >
                 <Image
                   src={item.image}
                   alt=""
                   fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-                  sizes="(min-width: 1536px) 25vw, 300px"
+                  className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.05]"
+                  sizes="(min-width: 1536px) 25vw, (min-width: 1024px) 300px, 280px"
                 />
                 <div
                   className={cn(

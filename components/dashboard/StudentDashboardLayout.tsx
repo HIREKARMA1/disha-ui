@@ -12,9 +12,11 @@ import { StudentQuickActions } from './StudentQuickActions'
 import { StudentResumeStrength } from './StudentResumeStrength'
 import { RecommendedJobs } from './RecommendedJobs'
 import { EventPopup } from '@/components/events/EventPopup'
+import { QuickAccountSetupModal } from '@/components/jobs/QuickAccountSetupModal'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient } from '@/lib/api'
 import { LoadingOverlay } from './LoadingOverlay'
+import { isQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
 
 interface StudentDashboardLayoutProps {
     children?: React.ReactNode
@@ -22,7 +24,15 @@ interface StudentDashboardLayoutProps {
 
 function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
     const [studentName, setStudentName] = useState<string>('Student')
+    const [quickSetupPending, setQuickSetupPending] = useState(false)
+    const [showQuickSetup, setShowQuickSetup] = useState(false)
     const { user } = useAuth()
+
+    useEffect(() => {
+        const pending = isQuickAccountSetupPending()
+        setQuickSetupPending(pending)
+        setShowQuickSetup(pending)
+    }, [])
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -46,6 +56,11 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
         fetchProfile()
     }, [user?.id, user?.user_type, user?.name])
 
+    const handleQuickSetupComplete = () => {
+        setQuickSetupPending(false)
+        setShowQuickSetup(false)
+    }
+
     return (
         <div className="min-h-screen bg-[#F5F7FB] dark:bg-[#0a0c14]">
             <StudentTopNav />
@@ -57,7 +72,13 @@ function StudentDashboardContent({ children }: StudentDashboardLayoutProps) {
                         <div>{children}</div>
                     ) : (
                         <>
-                            <EventPopup />
+                            {showQuickSetup && (
+                                <QuickAccountSetupModal
+                                    onClose={() => setShowQuickSetup(false)}
+                                    onComplete={handleQuickSetupComplete}
+                                />
+                            )}
+                            {!quickSetupPending && <EventPopup />}
                             <div className="space-y-6">
                                 <WelcomeMessage studentName={studentName} />
                                 <DashboardStats />

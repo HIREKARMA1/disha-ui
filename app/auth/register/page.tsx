@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
+import { markQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
 
 // Union type for all possible form data
 type FormData = {
@@ -443,12 +444,26 @@ function RegisterPageContent() {
                     user_type: selectedUserType
                 })
                 apiClient.setAuthTokens(loginResponse.access_token, loginResponse.refresh_token)
-                login({
-                    id: loginResponse.user_id || 'temp-id',
-                    email: formData.email,
-                    user_type: selectedUserType,
-                    name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
-                }, loginResponse.access_token, loginResponse.refresh_token)
+
+                const isNewStudent = selectedUserType === 'student'
+                login(
+                    {
+                        id: loginResponse.user_id || 'temp-id',
+                        email: formData.email,
+                        user_type: selectedUserType,
+                        name: loginResponse.name || (formData as any).name || (formData as any).company_name || (formData as any).university_name || formData.email
+                    },
+                    loginResponse.access_token,
+                    loginResponse.refresh_token,
+                    isNewStudent ? { skipEventPopup: true } : undefined
+                )
+
+                // New students: Quick Account Setup on dashboard (keep pending job / redirect in storage)
+                if (isNewStudent) {
+                    markQuickAccountSetupPending()
+                    router.push('/dashboard/student')
+                    return
+                }
 
                 // Check for redirect URL (from query params or localStorage)
                 let redirectUrl = searchParams.get('redirect') || (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
@@ -464,12 +479,6 @@ function RegisterPageContent() {
                     } catch {
                         // ignore
                     }
-                }
-                if (!redirectUrl && selectedUserType === 'student') {
-                    const fromJobs =
-                        typeof document !== 'undefined' &&
-                        document.referrer.includes('/jobs')
-                    if (fromJobs) redirectUrl = '/jobs'
                 }
 
                 if (redirectUrl) {
@@ -488,7 +497,6 @@ function RegisterPageContent() {
 
                 // Redirect based on user type if no redirect URL
                 switch (selectedUserType) {
-                    case 'student': router.push('/dashboard/student'); break
                     case 'corporate': router.push('/dashboard/corporate'); break
                     case 'university': router.push('/dashboard/university'); break
                     default: router.push('/dashboard')
