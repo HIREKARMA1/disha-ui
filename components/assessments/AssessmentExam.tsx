@@ -1418,7 +1418,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                       className="rounded bg-[#16A34A] px-4 sm:px-8 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-60"
                     >
                       <span className="sm:hidden">Next</span>
-                      <span className="hidden sm:inline">Submit & Next</span>
+                      <span className="hidden sm:inline">Next</span>
                     </button>
                   ) : hasMoreRounds ? (
                     <button

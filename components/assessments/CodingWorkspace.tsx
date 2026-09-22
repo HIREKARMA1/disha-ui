@@ -173,6 +173,19 @@ export function CodingWorkspace({
 
   const handleRun = useCallback(async () => {
     if (submitted) return;
+    if (useCustomInput && !customInput.trim()) {
+      const tip =
+        "No input provided — paste sample input above, or uncheck Custom input to use the sample."
+      toast.error(tip)
+      setConsoleOut({
+        mode: "custom",
+        status: "Missing input",
+        stdout: "",
+        stderr: tip,
+        empty_custom_input: true,
+      } as any)
+      return
+    }
     try {
       setBusy(true);
       setConsoleOut(null);
@@ -188,7 +201,7 @@ export function CodingWorkspace({
         setConsoleOut({ error: job.error_message });
       } else {
         setConsoleOut(job.result);
-        toast.success("Run completed");
+        toast.success("Run completed (practice — not graded)");
       }
     } catch (e: any) {
       toast.error(e?.response?.data?.detail || e?.message || "Run failed");
@@ -326,7 +339,7 @@ export function CodingWorkspace({
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-700">Sample Output</p>
-                  <pre className="mt-1 whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-2 font-mono text-xs text-gray-800">
+                  <pre className="mt-1 whitespace-pre-wrap rounded-lg border border-emerald-200 bg-emerald-50/50 p-2 font-mono text-xs text-emerald-900">
                     {meta.sample_output || "—"}
                   </pre>
                 </div>
@@ -348,8 +361,16 @@ export function CodingWorkspace({
                     key={tc.id || i}
                     className="rounded border border-gray-200 bg-gray-50 p-2 font-mono text-xs text-gray-800"
                   >
-                    <div>In: {tc.input || "—"}</div>
-                    <div>Out: {tc.expected_output || "—"}</div>
+                    <div>
+                      <span className="font-semibold text-gray-600">In: </span>
+                      <span className="whitespace-pre-wrap">{tc.input || "—"}</span>
+                    </div>
+                    <div className="mt-0.5">
+                      <span className="font-semibold text-emerald-700">Out: </span>
+                      <span className="whitespace-pre-wrap">
+                        {tc.expected_output || "—"}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -399,27 +420,32 @@ export function CodingWorkspace({
                 ))}
               </select>
             </label>
-            <div className="ml-auto flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy || submitted}
-                onClick={handleRun}
-                className="gap-1 bg-gray-800 text-white hover:bg-gray-900"
-              >
-                {busy ? <Loader2 className="animate-spin" size={14} /> : <Play size={14} />}
-                Run
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy || submitted}
-                onClick={requestSubmit}
-                className="gap-1 bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <Send size={14} />
-                {submitted ? "Saved" : "Save Answer"}
-              </Button>
+            <div className="ml-auto flex flex-col items-end gap-1">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={busy || submitted}
+                  onClick={handleRun}
+                  className="gap-1 bg-gray-800 text-white hover:bg-gray-900"
+                >
+                  {busy ? <Loader2 className="animate-spin" size={14} /> : <Play size={14} />}
+                  Run
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={busy || submitted}
+                  onClick={requestSubmit}
+                  className="gap-1 bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <Send size={14} />
+                  {submitted ? "Saved" : "Save Answer"}
+                </Button>
+              </div>
+              <p className="max-w-[22rem] text-right text-[10px] leading-snug text-gray-500 sm:text-[11px]">
+                Run = practice (not graded) · Save Answer = counts for marks
+              </p>
             </div>
           </div>
 
@@ -471,7 +497,7 @@ export function CodingWorkspace({
               <textarea
                 className="mb-2 w-full rounded border border-gray-300 bg-white p-2 font-mono text-xs text-gray-900"
                 rows={3}
-                placeholder="Custom stdin…"
+                placeholder="Paste sample input here (required when Custom input is on)…"
                 value={customInput}
                 disabled={submitted}
                 onChange={(e) => setCustomInput(e.target.value)}
@@ -480,8 +506,8 @@ export function CodingWorkspace({
             <div className="max-h-40 overflow-y-auto rounded border border-gray-200 bg-white p-2 font-mono text-xs whitespace-pre-wrap text-gray-900">
               {!consoleOut && (
                 <span className="text-gray-400">
-                  Console output will appear here. Run checks public tests only
-                  (not graded). Use Save Answer to score all tests.
+                  Console output will appear here. Run = practice (not graded) ·
+                  Save Answer = counts for marks.
                 </span>
               )}
               {consoleOut?.error && (
@@ -489,13 +515,32 @@ export function CodingWorkspace({
               )}
               {consoleOut?.mode === "custom" && (
                 <>
-                  <div className="mb-1 text-xs font-semibold text-gray-600">
-                    Custom stdin run (not graded)
-                  </div>
-                  <div>Status: {consoleOut.status}</div>
-                  <div>stdout:{'\n'}{consoleOut.stdout}</div>
-                  {consoleOut.stderr && (
-                    <div>stderr:{'\n'}{consoleOut.stderr}</div>
+                  {(consoleOut as any).empty_custom_input ? (
+                    <div className="mb-1 text-xs font-semibold text-amber-700">
+                      No input provided — paste sample input above, or uncheck
+                      Custom input to use the sample.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-1 text-xs font-semibold text-gray-600">
+                        Custom stdin run (not graded)
+                      </div>
+                      <div>Status: {consoleOut.status}</div>
+                      <div>stdout:{'\n'}{consoleOut.stdout}</div>
+                      {consoleOut.stderr && (
+                        <div>
+                          {/invalid literal for int|EOFError|ValueError/i.test(
+                            String(consoleOut.stderr)
+                          ) && !String(customInput || "").trim() ? (
+                            <div className="mb-1 text-amber-700">
+                              No input provided — paste sample input above, or
+                              uncheck Custom input.
+                            </div>
+                          ) : null}
+                          <div>stderr:{'\n'}{consoleOut.stderr}</div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
