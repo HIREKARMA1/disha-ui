@@ -7,7 +7,6 @@ import { StoreProvider } from '@/store/StoreProvider'
 import { LoadingProvider } from '@/contexts/LoadingContext'
 import { AuthLoginModalProvider } from '@/contexts/AuthLoginModalContext'
 import { Toaster } from 'react-hot-toast'
-import { WhatsAppFloatingButton } from '@/components/ui/WhatsAppFloatingButton'
 import { ProfileCompletionModalHost } from '@/components/ui/ProfileCompletionModalHost'
 import { config } from '@/lib/config'
 
@@ -61,7 +60,6 @@ export default function RootLayout({
                         <LoadingProvider>
                             <AuthLoginModalProvider>
                                 {children}
-                                <WhatsAppFloatingButton />
                                 <ProfileCompletionModalHost />
                                 <Toaster
                                     position="top-right"
