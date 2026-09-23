@@ -35,6 +35,8 @@ interface NavItem {
     description?: string
     isSSO?: boolean
     mobilePrimary?: boolean
+    /** Open in a new browser tab (e.g. public Live Jobs / Events). */
+    openInNewTab?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -58,6 +60,7 @@ const navItems: NavItem[] = [
         icon: Briefcase,
         description: 'Find & apply to jobs',
         mobilePrimary: true,
+        openInNewTab: true,
     },
     {
         label: 'Campus Drive',
@@ -102,6 +105,7 @@ const navItems: NavItem[] = [
         href: '/events',
         icon: Calendar,
         description: 'Workshops & events',
+        openInNewTab: true,
     },
     // Temporarily hidden from Student navigation — keep for easy re-enable
     // {
@@ -283,7 +287,7 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                             if (item.isSSO) {
                                 e.preventDefault()
                                 handleSSORedirect(item)
-                            } else if (!active) {
+                            } else if (!active && !item.openInNewTab) {
                                 startLoading()
                             }
                         }
@@ -316,6 +320,9 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                 onClick={handleClick}
                                 data-sidebar-item={active ? 'active' : 'inactive'}
                                 className={navClass(active)}
+                                {...(item.openInNewTab
+                                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                                    : {})}
                             >
                                 <item.icon className={cn('w-5 h-5 shrink-0 mt-0.5', active ? 'text-white' : '')} />
                                 <span className="min-w-0 flex flex-col items-start">
@@ -356,7 +363,8 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                               : item.label.split(' ')[0],
                     icon: item.icon,
                     active: isItemActive(item.href),
-                    onNavigate: startLoading,
+                    openInNewTab: item.openInNewTab,
+                    onNavigate: item.openInNewTab ? undefined : startLoading,
                 }))}
                 trailing={
                     <MobileBottomNavAction
@@ -434,9 +442,12 @@ export function StudentSidebar({ className = '' }: StudentSidebarProps) {
                                             href={item.href}
                                             onClick={() => {
                                                 closeMobileMenu()
-                                                if (!active) startLoading()
+                                                if (!active && !item.openInNewTab) startLoading()
                                             }}
                                             className={navClass(active)}
+                                            {...(item.openInNewTab
+                                                ? { target: '_blank', rel: 'noopener noreferrer' }
+                                                : {})}
                                         >
                                             <item.icon className="w-5 h-5 shrink-0" />
                                             <span>{item.label}</span>
