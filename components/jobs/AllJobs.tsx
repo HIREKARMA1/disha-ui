@@ -517,6 +517,7 @@ export function AllJobs() {
     const pendingScrollJobIdRef = useRef<string | null>(null)
 
     const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [studentProfileLoaded, setStudentProfileLoaded] = useState(false)
     const [studentProfile, setStudentProfile] = useState<{
         degree?: string
         branch?: string
@@ -951,7 +952,11 @@ export function AllJobs() {
                     )
                 } catch {
                     // Silent fail
+                } finally {
+                    setStudentProfileLoaded(true)
                 }
+            } else {
+                setStudentProfileLoaded(true)
             }
         }
         void checkLoginStatus()
@@ -1113,9 +1118,9 @@ export function AllJobs() {
         void fetchJobs(page)
     }
 
-    // After login/register from Quick Apply on /jobs: open Quick Apply modal
+    // After login/register from Quick Apply on /jobs: gate campus-drive, then open Quick Apply
     useEffect(() => {
-        if (pendingApplyOpened.current || !isLoggedIn || loading || displayJobs.length === 0) return
+        if (pendingApplyOpened.current || !isLoggedIn || !studentProfileLoaded || loading || displayJobs.length === 0) return
         if (typeof window === 'undefined') return
         const params = new URLSearchParams(window.location.search)
         if (params.get('auto_apply') !== '1') return
@@ -1131,8 +1136,13 @@ export function AllJobs() {
         setSelectedJob(match)
         setDesktopFilterOpen(false)
         setShowApplyFormInPanel(false)
-        setShowQuickApplyModal(true)
-    }, [isLoggedIn, loading, displayJobs])
+
+        void (async () => {
+            if (!(await ensureCampusDriveEligibility(match))) return
+            if (!assertCanStartApply(match)) return
+            setShowQuickApplyModal(true)
+        })()
+    }, [isLoggedIn, studentProfileLoaded, loading, displayJobs])
 
     // Default right panel: keep selection in sync with visible list (don't clobber rail picks)
     useEffect(() => {
@@ -1398,6 +1408,25 @@ export function AllJobs() {
         } finally {
             setCampusDriveInterestSubmitting(false)
         }
+    }
+
+    const handleCampusDriveInterestFromQuickApply = (
+        status?: 'pending' | 'accepted' | 'rejected'
+    ) => {
+        if (!selectedJob) return
+        const jobId = selectedJob.id
+        if (status) {
+            setJobs((prev) =>
+                prev.map((j) =>
+                    j.id === jobId ? { ...j, campus_drive_request_status: status } : j
+                )
+            )
+        }
+        if (status === 'accepted') {
+            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+        }
+        setShowQuickApplyModal(false)
+        setApplyingJobId(null)
     }
 
     const markJobApplied = (jobId: string) => {
@@ -1895,6 +1924,7 @@ export function AllJobs() {
                         setApplyingJobId(null)
                     }}
                     onSuccess={handleQuickApplySuccess}
+                    onCampusDriveInterestSubmitted={handleCampusDriveInterestFromQuickApply}
                 />
             )}
 

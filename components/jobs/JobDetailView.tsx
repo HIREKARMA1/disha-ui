@@ -82,6 +82,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
   const [studentGraduationYear, setStudentGraduationYear] = useState<number | null>(null)
   const [studentBatch, setStudentBatch] = useState<string | null>(null)
+  const [studentProfileLoaded, setStudentProfileLoaded] = useState(false)
   const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
   const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
   const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
@@ -135,7 +136,10 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   useEffect(() => {
     const token = apiClient.getAccessToken()
-    if (!token) return
+    if (!token) {
+      setStudentProfileLoaded(true)
+      return
+    }
     profileService
       .getProfile()
       .then((profile) => {
@@ -144,6 +148,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         setStudentBatch((profile as { batch?: string }).batch || null)
       })
       .catch(() => undefined)
+      .finally(() => setStudentProfileLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -166,9 +171,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   const companyName = job?.company_name || job?.corporate_name || 'Company'
 
-  // After login/register from Quick Apply: open Quick Apply form (not dashboard)
+  // After login/register from Quick Apply: gate campus-drive, then open Quick Apply form
   useEffect(() => {
-    if (!job || authLoading || autoApplyAttempted.current) return
+    if (!job || authLoading || !studentProfileLoaded || autoApplyAttempted.current) return
     if (!shouldAutoApplyForJob(job.id)) return
 
     const token = apiClient.getAccessToken()
@@ -186,8 +191,71 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
     autoApplyAttempted.current = true
     clearAutoApplyQueryParams()
-    setShowQuickApplyModal(true)
-  }, [job, authLoading, user, openLoginModal])
+
+    void (async () => {
+      const universityEligibility = getUniversityApplyEligibility({
+        isPublic: job.is_public,
+        publicAccessLevel: job.public_access_level,
+        assignedUniversityIds: job.assigned_university_ids,
+        isAuthenticatedStudent: Boolean(user?.user_type === 'student'),
+        studentUniversityId,
+        isCampusDrive: Boolean(job.is_campus_drive),
+        hasAcceptedCampusDriveRequest:
+          hasAcceptedCampusDriveRequest || job.campus_drive_request_status === 'accepted',
+      })
+      if (!universityEligibility.canApply) {
+        const reason =
+          universityEligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+        if (isCampusDriveNotForUniversityMessage(reason)) {
+          const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+          if (outcome === 'accepted') {
+            setHasAcceptedCampusDriveRequest(true)
+            setJob((prev) =>
+              prev ? { ...prev, campus_drive_request_status: 'accepted' } : prev
+            )
+            setShowQuickApplyModal(true)
+            return
+          }
+          if (outcome === 'pending' || outcome === 'rejected') {
+            setJob((prev) =>
+              prev ? { ...prev, campus_drive_request_status: outcome } : prev
+            )
+            toastCampusDriveRequestStatus(outcome)
+            return
+          }
+          if (outcome === 'show_interest_modal') {
+            setShowCampusDriveInterestModal(true)
+            return
+          }
+        }
+        toast.error(reason)
+        return
+      }
+
+      const batchEligibility = getPassoutBatchApplyEligibility({
+        passoutBatches: job.passout_batches,
+        isAuthenticatedStudent: Boolean(user?.user_type === 'student'),
+        studentGraduationYear,
+        studentBatch,
+      })
+      if (!batchEligibility.canApply) {
+        toast.error(batchEligibility.reason || PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE)
+        return
+      }
+
+      setShowQuickApplyModal(true)
+    })()
+  }, [
+    job,
+    authLoading,
+    studentProfileLoaded,
+    user,
+    openLoginModal,
+    studentUniversityId,
+    studentGraduationYear,
+    studentBatch,
+    hasAcceptedCampusDriveRequest,
+  ])
 
   const requestApplyOverride = getCampusDriveRequestApplyOverride(
     job?.campus_drive_request_status
@@ -297,6 +365,21 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     } finally {
       setCampusDriveInterestSubmitting(false)
     }
+  }
+
+  const handleCampusDriveInterestFromQuickApply = (
+    status?: 'pending' | 'accepted' | 'rejected'
+  ) => {
+    if (!job) return
+    if (status) {
+      setJob((prev) =>
+        prev ? { ...prev, campus_drive_request_status: status } : prev
+      )
+    }
+    if (status === 'accepted') {
+      setHasAcceptedCampusDriveRequest(true)
+    }
+    setShowQuickApplyModal(false)
   }
 
   const handleQuickApplySuccess = () => {
@@ -652,6 +735,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           job={job}
           onClose={() => setShowQuickApplyModal(false)}
           onSuccess={handleQuickApplySuccess}
+          onCampusDriveInterestSubmitted={handleCampusDriveInterestFromQuickApply}
         />
       )}
 
