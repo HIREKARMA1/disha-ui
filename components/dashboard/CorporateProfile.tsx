@@ -555,6 +555,8 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
     const [uploadError, setUploadError] = useState<string | null>(null)
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
     const [addressError, setAddressError] = useState<string>('')
+    /** True only after picking a Google suggestion (or loading an existing saved address). */
+    const [addressFromSuggestion, setAddressFromSuggestion] = useState(false)
     const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null)
     const pendingLogoPreviewRef = useRef<string | null>(null)
 
@@ -575,6 +577,9 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             revokePendingLogoPreview()
             setPendingLogoFile(null)
             setFormData(initialData)
+            setAddressError('')
+            // Existing saved address counts as already chosen from suggestions
+            setAddressFromSuggestion(Boolean(String(initialData.address || '').trim()))
         }
     }, [profile, section])
 
@@ -637,11 +642,23 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             }
         }
         
-        // Validate address for basic section
+        // Validate address for basic section — must pick from Google suggestions
         if (section.id === 'basic') {
             if (!formData.address || !String(formData.address).trim()) {
-                validationErrors.push('Address is required. Please select a location from the suggestions.')
-                setAddressError('Address is required. Please select a location from the suggestions.')
+                validationErrors.push(
+                    'Address is required. Please select a location from the suggestions.'
+                )
+                setAddressError(
+                    'Address is required. Please select a location from the suggestions.'
+                )
+                hasValidationErrors = true
+            } else if (!addressFromSuggestion) {
+                validationErrors.push(
+                    'Please select a location from the suggestions. Random typed locations are not allowed.'
+                )
+                setAddressError(
+                    'Please select a location from the suggestions. Random typed locations are not allowed.'
+                )
                 hasValidationErrors = true
             }
         }
@@ -899,16 +916,37 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             return (
                 <GoogleLocationAutocomplete
                     value={value}
-                    placeholder="Search for your company address"
-                    mode="address"
+                    placeholder="Search and select company, building, address, city, or locality"
+                    mode="all"
                     required
                     error={addressError}
-                    onChange={(place) => {
+                    onInputChange={(text) => {
                         setAddressError('')
-                        setFormData({
-                            ...formData,
-                            address: place.formattedAddress,
-                        })
+                        // Any edit that differs from the last selected value must be re-picked
+                        if (text.trim() !== String(value || '').trim()) {
+                            setAddressFromSuggestion(false)
+                        }
+                    }}
+                    onChange={(place) => {
+                        const next = (place.formattedAddress || '').trim()
+                        setAddressError('')
+                        if (!next) {
+                            setAddressFromSuggestion(false)
+                            setFormData((prev: any) => ({ ...prev, address: '' }))
+                            return
+                        }
+                        setAddressFromSuggestion(true)
+                        setFormData((prev: any) => ({
+                            ...prev,
+                            address: next,
+                        }))
+                    }}
+                    onBlur={() => {
+                        // Display reverts to last selected value; restore validity if we still have one
+                        if (String(formData.address || '').trim()) {
+                            setAddressFromSuggestion(true)
+                            setAddressError('')
+                        }
                     }}
                 />
             )
@@ -1037,7 +1075,7 @@ function ProfileSectionForm({ section, profile, onSave, saving, onCancel }: Prof
             placeholder = 'Enter contact person designation'
         } else if (field === 'address') {
             fieldLabel = 'Address'
-            placeholder = 'Search for your company address'
+            placeholder = 'Search and select a location from suggestions'
         }
 
         return (
