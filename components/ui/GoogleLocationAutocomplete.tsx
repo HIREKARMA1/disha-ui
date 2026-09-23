@@ -26,6 +26,13 @@ export interface GoogleLocationAutocompleteProps {
     className?: string
     mode?: GoogleLocationMode
     onChange?: (selectedPlace: ParsedGooglePlace) => void
+    /** Fires on every keystroke so parents can keep form state in sync. */
+    onInputChange?: (value: string) => void
+    /**
+     * When true, typed text (without picking a suggestion) is committed on blur
+     * via onChange({ formattedAddress }).
+     */
+    allowFreeText?: boolean
     onBlur?: () => void
 }
 
@@ -81,6 +88,8 @@ export function GoogleLocationAutocomplete({
     className,
     mode = 'all',
     onChange,
+    onInputChange,
+    allowFreeText = false,
     onBlur,
 }: GoogleLocationAutocompleteProps) {
     const inputRef = useRef<HTMLInputElement>(null)
@@ -369,7 +378,20 @@ export function GoogleLocationAutocomplete({
 
     const handleInputChange = (nextValue: string) => {
         setInputValue(nextValue)
+        onInputChange?.(nextValue)
         scheduleSearch(nextValue)
+    }
+
+    const commitFreeText = () => {
+        if (!allowFreeText) return
+        const trimmed = inputValue.trim()
+        if (!trimmed) {
+            onChange?.({ formattedAddress: '' })
+            return
+        }
+        if (trimmed !== (value || '').trim()) {
+            onChange?.({ formattedAddress: trimmed })
+        }
     }
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -380,7 +402,12 @@ export function GoogleLocationAutocomplete({
             return
         }
 
-        if (!isOpen) return
+        if (!isOpen) {
+            if (event.key === 'Enter' && allowFreeText) {
+                commitFreeText()
+            }
+            return
+        }
 
         if (event.key === 'ArrowDown') {
             event.preventDefault()
@@ -400,6 +427,10 @@ export function GoogleLocationAutocomplete({
             if (activeIndex >= 0 && suggestions[activeIndex]) {
                 event.preventDefault()
                 selectPrediction(suggestions[activeIndex])
+            } else if (allowFreeText) {
+                event.preventDefault()
+                setIsOpen(false)
+                commitFreeText()
             }
             return
         }
@@ -430,7 +461,7 @@ export function GoogleLocationAutocomplete({
                           left: dropdownPosition.left,
                           width: dropdownPosition.width,
                       }}
-                      className="z-[300] max-h-60 overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                      className="z-[1100] max-h-60 overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                   >
                       {isSearching && (
                           <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
@@ -510,7 +541,17 @@ export function GoogleLocationAutocomplete({
                         }
                     }
                 }}
-                onBlur={onBlur}
+                onBlur={() => {
+                    if (allowFreeText) {
+                        commitFreeText()
+                    } else {
+                        // Revert typed text that wasn't chosen from suggestions
+                        setInputValue(value || '')
+                        setIsOpen(false)
+                        setActiveIndex(-1)
+                    }
+                    onBlur?.()
+                }}
                 onKeyDown={handleKeyDown}
                 className={cn(
                     'flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm text-gray-900 ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:text-white dark:ring-offset-gray-900 dark:placeholder:text-gray-400',
