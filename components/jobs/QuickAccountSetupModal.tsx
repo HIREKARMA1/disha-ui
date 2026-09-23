@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   CheckCircle2,
   Eye,
@@ -14,7 +14,12 @@ import { toast } from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
 import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutocomplete'
 import { DobDatePicker } from '@/components/ui/dob-date-picker'
+import {
+  AsyncSearchableSelect,
+  type AsyncSelectOption,
+} from '@/components/ui/async-searchable-select'
 import { profileService, type StudentProfile } from '@/services/profileService'
+import { apiClient } from '@/lib/api'
 import { extractErrorDetail } from '@/lib/profileCompletion'
 import { DEGREE_OPTIONS, getBranchesForDegrees, resolveCanonicalDegree } from '@/lib/academicHierarchy'
 import { clearQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
@@ -32,6 +37,10 @@ type ResumeFileItem = {
 
 function isBlank(value?: string | null): boolean {
   return !value || !String(value).trim()
+}
+
+function normalizePhoneDigits(value: string): string {
+  return String(value || '').replace(/\D/g, '').slice(0, 10)
 }
 
 const DEGREE_SELECT_OPTIONS = DEGREE_OPTIONS.map((d) => ({
@@ -53,7 +62,7 @@ function getDobBounds() {
   const today = new Date()
   const minDate = new Date(today)
   minDate.setFullYear(today.getFullYear() - 100)
-  const maxDate = new Date(today)
+  const maxDate = new Date()
   maxDate.setFullYear(today.getFullYear() - 16)
   return { minDate, maxDate }
 }
@@ -61,9 +70,18 @@ function getDobBounds() {
 interface QuickAccountSetupModalProps {
   onClose: () => void
   onComplete: () => void
+  /**
+   * When true, modal cannot be dismissed (no X, Remind me later, backdrop, Escape).
+   * Prefer auto-detect from missing institution (Google new students).
+   */
+  mandatory?: boolean
 }
 
-export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetupModalProps) {
+export function QuickAccountSetupModal({
+  onClose,
+  onComplete,
+  mandatory: mandatoryProp,
+}: QuickAccountSetupModalProps) {
   const [step, setStep] = useState<StepId>(0)
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -80,6 +98,12 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
   const [country, setCountry] = useState('')
 
   const [institution, setInstitution] = useState('')
+  const [collegeId, setCollegeId] = useState('')
+  /** True when institution was empty on load (Google / incomplete) — searchable + required */
+  const [institutionEditable, setInstitutionEditable] = useState(false)
+  /** Mandatory close lock — Google new students without institution */
+  const [mandatoryFromProfile, setMandatoryFromProfile] = useState(false)
+
   const [degree, setDegree] = useState('')
   const [branch, setBranch] = useState('')
   const [graduationYear, setGraduationYear] = useState('')
@@ -91,6 +115,8 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
   const [locationError, setLocationError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
+  const isMandatory = mandatoryProp === true || mandatoryFromProfile
+
   const { minDate: dobMinDate, maxDate: dobMaxDate } = useMemo(() => getDobBounds(), [])
 
   const branchOptions = useMemo(() => {
@@ -101,6 +127,31 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
   const graduationYearOptions = useMemo(
     () => buildGraduationYearOptions(graduationYear ? Number(graduationYear) : null),
     [graduationYear]
+  )
+
+  const fetchCollegeOptions = useCallback(
+    async (query: string): Promise<AsyncSelectOption[]> => {
+      try {
+        const response = await apiClient.get('/admin/lookups/colleges', {
+          params: {
+            search: query,
+            limit: 100,
+          },
+        })
+        const colleges = response.colleges || []
+        return colleges.map((c: { id: string; name?: string }) => {
+          const cleanName = c.name ? c.name.replace(/['"]+/g, '').trim() : 'Unknown College'
+          return {
+            value: c.id,
+            label: cleanName,
+          }
+        })
+      } catch (error) {
+        console.error('Failed to fetch colleges', error)
+        return []
+      }
+    },
+    []
   )
 
   const applyResumeLibrary = (data: {
@@ -126,6 +177,18 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
   }, [])
 
   useEffect(() => {
+    if (!isMandatory) return
+    const blockEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+    window.addEventListener('keydown', blockEscape, true)
+    return () => window.removeEventListener('keydown', blockEscape, true)
+  }, [isMandatory])
+
+  useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
@@ -138,13 +201,22 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
 
         setProfileName(profile.name || '')
         setProfileEmail(profile.email || '')
-        setProfilePhone(profile.phone || '')
+        setProfilePhone(normalizePhoneDigits(profile.phone || ''))
         setDob(profile.dob ? String(profile.dob).slice(0, 10) : '')
         setGender(profile.gender || '')
         setCity(profile.city || '')
         setState(profile.state || '')
         setCountry(profile.country || '')
-        setInstitution(profile.institution || '')
+
+        const existingInstitution = (profile.institution || '').trim()
+        setInstitution(existingInstitution)
+        setCollegeId(profile.college_id || '')
+        // Email/password registration always sets institution; Google new students do not.
+        const needsInstitution = !existingInstitution
+        setInstitutionEditable(needsInstitution)
+        if (mandatoryProp !== true) {
+          setMandatoryFromProfile(needsInstitution)
+        }
 
         const rawDegree = profile.degree || ''
         const canonicalDegree =
@@ -191,7 +263,7 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [mandatoryProp])
 
   const stepLabels = ['Contact info', 'Education', 'Resume'] as const
   const currentStepLabel = stepLabels[step]
@@ -199,6 +271,12 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
 
   const validateBasics = (): boolean => {
     const next: Record<string, string> = {}
+    const phoneDigits = normalizePhoneDigits(profilePhone)
+    if (!phoneDigits) {
+      next.phone = 'Phone number is required'
+    } else if (!/^\d{10}$/.test(phoneDigits)) {
+      next.phone = 'Phone number must be exactly 10 digits'
+    }
     if (isBlank(dob)) {
       next.dob = 'Date of birth is required'
     } else {
@@ -223,6 +301,13 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
 
   const validateEducation = (): boolean => {
     const next: Record<string, string> = {}
+    if (institutionEditable) {
+      if (isBlank(collegeId) || isBlank(institution)) {
+        next.institution = 'Please select your college or institution'
+      }
+    } else if (isBlank(institution)) {
+      next.institution = 'Institution is required'
+    }
     if (isBlank(degree)) next.degree = 'Degree is required'
     if (isBlank(branch)) next.branch = 'Branch is required'
     if (isBlank(graduationYear)) {
@@ -349,10 +434,13 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
 
     try {
       setSubmitting(true)
+      const phoneDigits = normalizePhoneDigits(profilePhone)
       const profilePatch: Partial<StudentProfile> & {
         graduation_year?: number
         unlock_via_quick_apply?: boolean
+        college_id?: string
       } = {
+        phone: phoneDigits,
         dob,
         gender,
         city: city || undefined,
@@ -362,6 +450,14 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
         branch: branch.trim(),
         graduation_year: Number(graduationYear),
         unlock_via_quick_apply: true,
+      }
+      if (institutionEditable) {
+        if (institution.trim()) {
+          profilePatch.institution = institution.trim()
+        }
+        if (collegeId.trim()) {
+          profilePatch.college_id = collegeId.trim()
+        }
       }
       await profileService.updateProfile(profilePatch)
       clearQuickAccountSetupPending()
@@ -403,7 +499,7 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
       <div className="flex min-h-full items-end justify-center p-0 sm:items-center sm:p-4">
         <div
           className="fixed inset-0 bg-gray-900/55 backdrop-blur-[1px]"
-          onClick={onClose}
+          onClick={isMandatory ? undefined : onClose}
           aria-hidden="true"
         />
 
@@ -429,14 +525,16 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
                   Finish a few details so you can apply to jobs seamlessly.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {!isMandatory && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
 
             <div className="mt-4 flex items-center gap-3">
@@ -470,7 +568,7 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
                         Contact info
                       </h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                        Name, email, and phone come from signup. Add date of birth, gender, and
+                        Confirm your mobile number, then add date of birth, gender, and
                         location.
                       </p>
                     </div>
@@ -508,16 +606,31 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                        Mobile phone
+                      <label
+                        htmlFor="quick-setup-phone"
+                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+                      >
+                        Mobile phone <span className="text-red-500">*</span>
                       </label>
                       <input
+                        id="quick-setup-phone"
                         type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        maxLength={10}
                         value={profilePhone}
-                        readOnly
-                        placeholder="Not set"
-                        className={fieldControlClass(undefined, true)}
+                        placeholder="Enter 10 digit phone number (e.g. 9876543210)"
+                        onChange={(e) => {
+                          setProfilePhone(normalizePhoneDigits(e.target.value))
+                          setFieldErrors((prev) => ({ ...prev, phone: '' }))
+                        }}
+                        className={fieldControlClass(fieldErrors.phone)}
+                        aria-invalid={Boolean(fieldErrors.phone)}
+                        aria-required
                       />
+                      {fieldErrors.phone && (
+                        <p className="mt-1 text-xs text-red-500">{fieldErrors.phone}</p>
+                      )}
                     </div>
 
                     <div>
@@ -593,25 +706,63 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
                         Education
                       </h3>
                       <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                        Institution is set at registration. Complete degree, branch, and graduation
-                        year.
+                        {institutionEditable
+                          ? 'Search and select your institution, then complete degree, branch, and graduation year.'
+                          : 'Institution is set at registration. Complete degree, branch, and graduation year.'}
                       </p>
                     </div>
 
                     <div className={fieldGridClass}>
-                      <div className={fieldCellClass}>
-                        <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
-                          Institution <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={institution}
-                          readOnly
-                          disabled
-                          placeholder="Not set"
-                          className={fieldControlClass(undefined, true)}
-                        />
-                        <p className="invisible mt-1 min-h-[1rem] text-xs">placeholder</p>
+                      <div
+                        className={
+                          institutionEditable
+                            ? 'flex min-w-0 w-full max-w-full flex-col overflow-visible'
+                            : fieldCellClass
+                        }
+                      >
+                        {institutionEditable ? (
+                          <>
+                            <AsyncSearchableSelect
+                              label="Institution *"
+                              placeholder="Search for your college..."
+                              searchPlaceholder="Type to search..."
+                              error={Boolean(fieldErrors.institution)}
+                              fetchOptions={fetchCollegeOptions}
+                              portal
+                              onChange={(value, option) => {
+                                setCollegeId((value as string) || '')
+                                setInstitution(option?.label || '')
+                                setFieldErrors((prev) => ({
+                                  ...prev,
+                                  institution: '',
+                                }))
+                              }}
+                              value={collegeId}
+                            />
+                            {fieldErrors.institution && (
+                              <p className="mt-1 text-xs text-red-500">
+                                {fieldErrors.institution}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <label className="mb-1.5 block text-sm font-medium text-teal-700 dark:text-teal-300">
+                              Institution <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={institution}
+                              readOnly
+                              disabled
+                              placeholder="Not set"
+                              className={fieldControlClass(undefined, true)}
+                            />
+                            <p className="invisible mt-1 min-h-[1rem] text-xs">
+                              placeholder
+                            </p>
+                          </>
+                        )}
                       </div>
 
                       <div className={fieldCellClass}>
@@ -705,7 +856,7 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
                           }}
                           className={selectClass(fieldErrors.graduation_year)}
                         >
-                          <option value="">Select graduation year</option>
+                          <option value="">Select year</option>
                           {graduationYearOptions.map((year) => (
                             <option key={year} value={String(year)}>
                               {year}
@@ -722,9 +873,12 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
                         </p>
                       </div>
                     </div>
-                    <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Institution is set during registration and cannot be changed here.
-                    </p>
+
+                    {!institutionEditable && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Institution is set during registration and cannot be changed here.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -869,15 +1023,19 @@ export function QuickAccountSetupModal({ onClose, onComplete }: QuickAccountSetu
           </div>
 
           <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 sm:px-5">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40"
-              onClick={step === 0 ? onClose : goBack}
-              disabled={submitting}
-            >
-              {step === 0 ? 'Remind me later' : 'Back'}
-            </Button>
+            {step === 0 && isMandatory ? (
+              <div className="h-10 min-w-[100px]" aria-hidden="true" />
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                onClick={step === 0 ? onClose : goBack}
+                disabled={submitting}
+              >
+                {step === 0 ? 'Remind me later' : 'Back'}
+              </Button>
+            )}
 
             {step < 2 ? (
               <Button

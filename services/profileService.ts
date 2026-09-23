@@ -70,6 +70,9 @@ export interface ProfileUpdateData {
     country?: string
     state?: string
     city?: string
+    /** First-time institution set (Google Quick Account Setup) */
+    college_id?: string
+    university_id?: string
     tenth_grade_percentage?: number
     twelfth_grade_percentage?: number
     btech_cgpa?: number
