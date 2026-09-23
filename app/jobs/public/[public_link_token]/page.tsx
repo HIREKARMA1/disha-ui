@@ -407,6 +407,21 @@ export default function PublicJobPage() {
         }
     }
 
+    const handleCampusDriveInterestFromQuickApply = (
+        status?: 'pending' | 'accepted' | 'rejected'
+    ) => {
+        if (!job) return
+        if (status) {
+            setJob((prev: any) =>
+                prev ? { ...prev, campus_drive_request_status: status } : prev
+            )
+        }
+        if (status === 'accepted') {
+            setHasAcceptedCampusDriveRequest(true)
+        }
+        setShowQuickApplyModal(false)
+    }
+
     const getSalaryDisplay = () => formatSalaryRange(job?.salary_min, job?.salary_max, 'Not disclosed')
 
     const formatExperience = () => {
@@ -1059,6 +1074,7 @@ export default function PublicJobPage() {
                             }
                         })()
                     }}
+                    onCampusDriveInterestSubmitted={handleCampusDriveInterestFromQuickApply}
                 />
             )}
 
