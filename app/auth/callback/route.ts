@@ -20,27 +20,29 @@ function getRequestOrigin(request: NextRequest): string {
 
 /**
  * Supabase Google OAuth PKCE callback.
- * Establishes a temporary Supabase session only — does NOT write DISHA JWT tokens.
+ * Completes the PKCE exchange, then hands off to a client page that bridges
+ * the Supabase session into DISHA JWT auth (localStorage). Does not write DISHA tokens.
  */
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')
   const origin = getRequestOrigin(request)
-
-  // Match existing student post-login default; honor safe `redirect` from OAuth start.
-  const redirectParam = url.searchParams.get('redirect')
-  const successPath = isSafeAuthRedirectPath(redirectParam)
-    ? redirectParam
-    : '/dashboard/student'
-
   const errorUrl = `${origin}/auth/error`
 
   if (!code) {
     return NextResponse.redirect(`${errorUrl}?reason=missing_code`)
   }
 
+  // After PKCE, browser completes DISHA token exchange (localStorage-based auth).
+  const completeParams = new URLSearchParams({ type: 'student' })
+  const redirectParam = url.searchParams.get('redirect')
+  if (isSafeAuthRedirectPath(redirectParam)) {
+    completeParams.set('redirect', redirectParam)
+  }
+  const completePath = `/auth/google-complete?${completeParams.toString()}`
+
   try {
-    let response = NextResponse.redirect(`${origin}${successPath}`)
+    let response = NextResponse.redirect(`${origin}${completePath}`)
 
     const supabase = createSupabaseRouteClient({
       getAll() {
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value)
         })
-        response = NextResponse.redirect(`${origin}${successPath}`)
+        response = NextResponse.redirect(`${origin}${completePath}`)
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options)
         })

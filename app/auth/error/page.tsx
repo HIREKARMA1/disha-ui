@@ -14,9 +14,25 @@ function AuthErrorContent() {
   const detail =
     reason === 'missing_code'
       ? 'The sign-in request was incomplete.'
-      : reason === 'exchange_failed'
+      : reason === 'exchange_failed' || reason === 'callback_error'
         ? 'We could not verify your Google sign-in.'
-        : 'Something went wrong during Google sign-in.'
+        : reason === 'supabase_session_missing' || reason === 'missing_session'
+          ? 'Your Google session expired. Please try again.'
+          : reason === 'supabase_session_error'
+            ? 'We could not read your Google session. Please try again.'
+            : reason === 'supabase_token_missing'
+              ? 'Your Google session was incomplete. Please try again.'
+              : reason === 'google_auth_unauthorized' || reason === 'disha_unauthorized'
+                ? 'Google sign-in could not be verified.'
+                : reason === 'google_auth_forbidden' || reason === 'disha_forbidden'
+                  ? 'This account cannot sign in with Google right now.'
+                  : reason === 'google_auth_conflict' || reason === 'disha_conflict'
+                    ? 'This Google account cannot be linked to your existing profile.'
+                    : reason === 'google_auth_timeout'
+                      ? 'Google sign-in took too long. Please try again.'
+                      : reason === 'google_auth_failed' || reason === 'disha_exchange_failed'
+                        ? 'We could not complete Google sign-in with DISHA.'
+                        : 'Something went wrong during Google sign-in.'
 
   return (
     <div className="mx-auto w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">

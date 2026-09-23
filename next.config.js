@@ -36,6 +36,11 @@ const nextConfig = {
         hostname: "disha-ui.s3.ap-south-1.amazonaws.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
     ],
   },
   async rewrites() {

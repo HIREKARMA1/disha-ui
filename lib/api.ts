@@ -220,6 +220,23 @@ class ApiClient {
     return response.data;
   }
 
+  /**
+   * Exchange a Supabase Auth access token for DISHA JWTs (student Google Sign-In).
+   * Uses a standalone axios call so a prior DISHA Bearer is never attached.
+   */
+  async loginWithSupabaseGoogle(supabaseAccessToken: string): Promise<TokenResponse> {
+    const response: AxiosResponse<TokenResponse> = await axios.post(
+      `${config.api.fullUrl}/auth/supabase/google`,
+      { access_token: supabaseAccessToken },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  }
+
   // Helper method to set auth tokens
   setAuthTokens(accessToken: string, refreshToken: string): void {
     persistAuthTokens(accessToken, refreshToken);
