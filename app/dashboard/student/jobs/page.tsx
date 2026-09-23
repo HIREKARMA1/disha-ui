@@ -959,6 +959,25 @@ function JobOpportunitiesPageContent() {
         }
     }
 
+    const handleCampusDriveInterestFromQuickApply = (
+        status?: 'pending' | 'accepted' | 'rejected'
+    ) => {
+        if (!currentApplicationJob) return
+        const jobId = currentApplicationJob.id
+        if (status) {
+            setJobs((prev) =>
+                prev.map((j) =>
+                    j.id === jobId ? { ...j, campus_drive_request_status: status } : j
+                )
+            )
+        }
+        if (status === 'accepted') {
+            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+        }
+        setShowQuickApplyModal(false)
+        setCurrentApplicationJob(null)
+    }
+
     const handleQuickApplySuccess = () => {
         if (!currentApplicationJob) return
         const jobId = currentApplicationJob.id
@@ -1782,6 +1801,7 @@ function JobOpportunitiesPageContent() {
                         setCurrentApplicationJob(null)
                     }}
                     onSuccess={handleQuickApplySuccess}
+                    onCampusDriveInterestSubmitted={handleCampusDriveInterestFromQuickApply}
                 />
             )}
 
