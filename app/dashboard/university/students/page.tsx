@@ -36,8 +36,6 @@ export default function UniversityStudents() {
     const [coursesOffered, setCoursesOffered] = useState<string | null>(null)
     const [profileBranches, setProfileBranches] = useState<string | null>(null)
 
-    const [showFilters, setShowFilters] = useState(false)
-
     const fetchStudents = async () => {
         setIsLoading(true)
         setError(null)
@@ -257,7 +255,7 @@ export default function UniversityStudents() {
                     ]}
                 />
 
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
                     <button
                         onClick={() => setShowCreateModal(true)}
                         className="inline-flex items-center px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
@@ -281,7 +279,7 @@ export default function UniversityStudents() {
                     </button>
                 </div>
 
-                <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
                     <UniversityStatCard
                         label="Total Students"
                         value={students.length}
@@ -289,6 +287,7 @@ export default function UniversityStudents() {
                         icon={Users}
                         accent="blue"
                         index={0}
+                        compact
                     />
                     <UniversityStatCard
                         label="Active Students"
@@ -297,6 +296,7 @@ export default function UniversityStudents() {
                         icon={UserPlus}
                         accent="green"
                         index={1}
+                        compact
                     />
                     <UniversityStatCard
                         label="Placed Students"
@@ -305,6 +305,7 @@ export default function UniversityStudents() {
                         icon={GraduationCap}
                         accent="purple"
                         index={2}
+                        compact
                     />
                     <UniversityStatCard
                         label="Departments"
@@ -313,6 +314,7 @@ export default function UniversityStudents() {
                         icon={TrendingUp}
                         accent="orange"
                         index={3}
+                        compact
                     />
                 </div>
 
@@ -358,8 +360,6 @@ export default function UniversityStudents() {
                     degrees={degrees}
                     selectedDegree={selectedDegree}
                     onDegreeChange={handleDegreeChange}
-                    showFilters={showFilters}
-                    setShowFilters={setShowFilters}
                     onClearFilters={clearFilters}
                     onAddStudent={() => setShowCreateModal(true)}
                     onBulkUpload={() => setShowBulkUploadModal(true)}

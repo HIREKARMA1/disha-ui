@@ -46,7 +46,6 @@ export default function AdminCollegeStudentsPage() {
     const [selectedBranch, setSelectedBranch] = useState('all')
     const [selectedYear, setSelectedYear] = useState('all')
     const [selectedDegree, setSelectedDegree] = useState('all')
-    const [showFilters, setShowFilters] = useState(false)
 
     const fetchStudents = useCallback(async () => {
         if (!collegeId) return
@@ -295,8 +294,6 @@ export default function AdminCollegeStudentsPage() {
                     degrees={degrees}
                     selectedDegree={selectedDegree}
                     onDegreeChange={handleDegreeChange}
-                    showFilters={showFilters}
-                    setShowFilters={setShowFilters}
                     onClearFilters={clearFilters}
                 />
 
