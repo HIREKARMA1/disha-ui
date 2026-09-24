@@ -377,16 +377,6 @@ export function JobCard({
                                 <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">
                                     {displayJobTitle(typeof job.title === 'string' ? job.title : String(job.title || ''))}
                                 </h3>
-                                {selected && (
-                                    <span
-                                        className={cn(
-                                            'inline-flex items-center rounded border border-primary-200 bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-700 dark:border-primary-700/50 dark:bg-primary-900/40 dark:text-primary-200',
-                                            compactMobile && 'hidden sm:inline-flex'
-                                        )}
-                                    >
-                                        Selected
-                                    </span>
-                                )}
                                 <span className="inline-flex items-center rounded border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-600 dark:text-gray-300">
                                     {getJobTypeLabel(jobType)}
                                 </span>
