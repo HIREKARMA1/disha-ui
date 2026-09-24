@@ -10,6 +10,7 @@ export const config = {
   },
   
   // App Configuration
+  // Prefer NEXT_PUBLIC_APP_URL; APP_URL / VERCEL_URL also work via next.config.js mapping.
   app: {
     name: process.env.NEXT_PUBLIC_APP_NAME || 'HireKarma',
     url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
@@ -50,10 +51,21 @@ export const config = {
       '',
   },
 
-  /** Supabase (student Google OAuth identity only — DISHA JWT remains the app session). */
+  /**
+   * Supabase student Google OAuth (publishable URL + key — safe in the browser).
+   * Set on Vercel as SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY (no NEXT_PUBLIC_).
+   * next.config.js maps those into NEXT_PUBLIC_* for the client bundle.
+   * Legacy NEXT_PUBLIC_SUPABASE_* names still work.
+   */
   supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
+    url:
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      process.env.SUPABASE_URL ||
+      '',
+    publishableKey:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.SUPABASE_PUBLISHABLE_KEY ||
+      '',
   },
   
   // Environment
