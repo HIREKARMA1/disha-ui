@@ -26,6 +26,7 @@ import {
     ClipboardList,
     Headphones,
     School,
+    FileCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -111,6 +112,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/campus-drive-requests',
                 icon: School,
                 description: 'Student interest requests',
+            },
+            {
+                label: 'Offer Letters',
+                href: '/dashboard/admin/offer-letters',
+                icon: FileCheck,
+                description: 'Upload & manage offer letters',
             },
             {
                 label: 'Events',
