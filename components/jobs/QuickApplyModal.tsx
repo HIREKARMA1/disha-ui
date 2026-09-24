@@ -12,9 +12,18 @@ import { apiClient } from '@/lib/api'
 import { clearPendingJobApplication } from '@/lib/pendingJobApplication'
 import {
   APPLY_SUCCESS_MESSAGE,
+  CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   defaultApplyPayload,
+  getApplyErrorMessage,
+  isCampusDriveNotForUniversityMessage,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
+import {
+  resolveCampusDriveInterestOutcome,
+  submitCampusDriveInterest,
+  toastCampusDriveRequestStatus,
+} from '@/lib/campusDriveInterest'
+import type { CampusDriveRequestStatus } from '@/types/campusDriveRequest'
 import { extractErrorDetail } from '@/lib/profileCompletion'
 import { DEGREE_OPTIONS, getBranchesForDegrees, resolveCanonicalDegree } from '@/lib/academicHierarchy'
 import { cn } from '@/lib/utils'
@@ -33,6 +42,8 @@ interface QuickApplyModalProps {
   job: QuickApplyJobInfo
   onClose: () => void
   onSuccess: () => void
+  /** Fired after Still I'm Interested succeeds so parents can update request status. */
+  onCampusDriveInterestSubmitted?: (status?: CampusDriveRequestStatus) => void
   /** @deprecated Always opens as LinkedIn-style centered modal */
   variant?: 'modal' | 'panel'
 }
@@ -71,11 +82,18 @@ function buildGraduationYearOptions(selected?: number | null): number[] {
   return years
 }
 
-export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProps) {
+export function QuickApplyModal({
+  job,
+  onClose,
+  onSuccess,
+  onCampusDriveInterestSubmitted,
+}: QuickApplyModalProps) {
   const [step, setStep] = useState<StepId>(0)
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [uploadingResume, setUploadingResume] = useState(false)
+  const [campusDriveBlocked, setCampusDriveBlocked] = useState(false)
+  const [interestSubmitting, setInterestSubmitting] = useState(false)
 
   const [profileName, setProfileName] = useState('')
   const [profileEmail, setProfileEmail] = useState('')
@@ -448,9 +466,42 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
       toast.success(APPLY_SUCCESS_MESSAGE)
       onSuccess()
     } catch (error: unknown) {
+      if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
+        setCampusDriveBlocked(true)
+        return
+      }
       toastApplyError(error)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleStillInterested = async () => {
+    if (interestSubmitting) return
+    setInterestSubmitting(true)
+    try {
+      const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
+      if (outcome === 'pending' || outcome === 'rejected') {
+        toastCampusDriveRequestStatus(outcome)
+        clearPendingJobApplication()
+        onCampusDriveInterestSubmitted?.(outcome)
+        onClose()
+        return
+      }
+      if (outcome === 'accepted') {
+        clearPendingJobApplication()
+        onCampusDriveInterestSubmitted?.('accepted')
+        onClose()
+        return
+      }
+      const result = await submitCampusDriveInterest(job.id)
+      if (result.ok) {
+        clearPendingJobApplication()
+        onCampusDriveInterestSubmitted?.(result.status)
+        onClose()
+      }
+    } finally {
+      setInterestSubmitting(false)
     }
   }
 
@@ -480,7 +531,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
       <div className="flex min-h-full items-end justify-center p-0 sm:items-center sm:p-4">
         <div
           className="fixed inset-0 bg-gray-900/55 backdrop-blur-[1px]"
-          onClick={onClose}
+          onClick={interestSubmitting ? undefined : onClose}
           aria-hidden="true"
         />
 
@@ -504,7 +555,7 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
                   id="quick-apply-title"
                   className="text-lg font-semibold text-gray-900 dark:text-white"
                 >
-                  Apply to {companyLabel}
+                  {campusDriveBlocked ? companyLabel : `Apply to ${companyLabel}`}
                 </h2>
                 <p className="mt-0.5 truncate text-sm text-gray-600 dark:text-gray-300">
                   {job.title}
@@ -525,32 +576,41 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                disabled={interestSubmitting}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="mt-4 flex items-center gap-3">
-              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
-                <div
-                  className="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <span className="shrink-0 text-xs font-semibold tabular-nums text-gray-600 dark:text-gray-300">
-                {progressPercent}%
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Step {step + 1} of {stepLabels.length} · {currentStepLabel}
-            </p>
+            {!campusDriveBlocked && (
+              <>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <span className="shrink-0 text-xs font-semibold tabular-nums text-gray-600 dark:text-gray-300">
+                    {progressPercent}%
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Step {step + 1} of {stepLabels.length} · {currentStepLabel}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Body */}
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-            {loadingProfile ? (
+            {campusDriveBlocked ? (
+              <p className="text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg">
+                {CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE}
+              </p>
+            ) : loadingProfile ? (
               <div className="flex items-center justify-center py-16 text-sm text-gray-500">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Loading your details…
@@ -1088,44 +1148,75 @@ export function QuickApplyModal({ job, onClose, onSuccess }: QuickApplyModalProp
 
           {/* Footer */}
           <div className="flex shrink-0 items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 dark:border-white/10 sm:px-5">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40"
-              onClick={step === 0 ? onClose : goBack}
-              disabled={submitting}
-            >
-              {step === 0 ? 'Cancel' : 'Back'}
-            </Button>
-
-            {step < 2 ? (
-              <Button
-                type="button"
-                onClick={goNext}
-                disabled={loadingProfile || uploadingResume}
-                className="h-10 min-w-[100px] rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-500"
-              >
-                Next
-              </Button>
+            {campusDriveBlocked ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-lg"
+                  onClick={onClose}
+                  disabled={interestSubmitting}
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void handleStillInterested()}
+                  disabled={interestSubmitting}
+                  className="h-10 min-w-[160px] rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-500"
+                >
+                  {interestSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending…
+                    </>
+                  ) : (
+                    "Still I'm Interested"
+                  )}
+                </Button>
+              </>
             ) : (
-              <Button
-                type="button"
-                onClick={() => void handleSubmit()}
-                disabled={loadingProfile || submitting || uploadingResume}
-                className="h-10 min-w-[140px] rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-500"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting…
-                  </>
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                  onClick={step === 0 ? onClose : goBack}
+                  disabled={submitting}
+                >
+                  {step === 0 ? 'Cancel' : 'Back'}
+                </Button>
+
+                {step < 2 ? (
+                  <Button
+                    type="button"
+                    onClick={goNext}
+                    disabled={loadingProfile || uploadingResume}
+                    className="h-10 min-w-[100px] rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-500"
+                  >
+                    Next
+                  </Button>
                 ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Submit
-                  </>
+                  <Button
+                    type="button"
+                    onClick={() => void handleSubmit()}
+                    disabled={loadingProfile || submitting || uploadingResume}
+                    className="h-10 min-w-[140px] rounded-full bg-blue-600 px-6 font-semibold text-white hover:bg-blue-500"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting…
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Submit
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
+              </>
             )}
           </div>
         </div>
