@@ -14,7 +14,7 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   const { url, publishableKey } = config.supabase
   if (!url || !publishableKey) {
     throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'
+      'Missing Supabase config. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_*).'
     )
   }
 
