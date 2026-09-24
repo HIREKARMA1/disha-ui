@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
     Search,
     Filter,
@@ -38,8 +37,6 @@ interface StudentManagementHeaderProps {
     degrees: string[]
     selectedDegree: string
     onDegreeChange: (value: string) => void
-    showFilters: boolean
-    setShowFilters: (show: boolean) => void
     onClearFilters: () => void
     onAddStudent?: () => void
     onBulkUpload?: () => void
@@ -64,8 +61,6 @@ export function StudentManagementHeader({
     degrees,
     selectedDegree,
     onDegreeChange,
-    showFilters,
-    setShowFilters,
     onClearFilters,
     onAddStudent,
     onBulkUpload,
@@ -102,7 +97,6 @@ export function StudentManagementHeader({
         onBranchChange(draftBranch)
         onYearChange(draftYear)
         onIncludeArchivedChange(draftArchived)
-        setShowFilters(true)
     }
 
     const clearSheet = () => {
@@ -148,14 +142,6 @@ export function StudentManagementHeader({
                                 Bulk Upload
                             </Button>
                         )}
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowFilters(!showFilters)}
-                            className="hidden h-11 items-center gap-2 rounded-xl border-gray-200 dark:border-white/10 lg:flex"
-                        >
-                            <Filter className="h-4 w-4" />
-                            {showFilters ? 'Hide' : 'Show'} Filters
-                        </Button>
                         <MobileFilterBottomSheet
                             open={sheetOpen}
                             onOpenChange={(open) => {
@@ -256,126 +242,117 @@ export function StudentManagementHeader({
                     </div>
                 </div>
 
-                <AnimatePresence>
-                    {showFilters && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="hidden overflow-hidden border-t border-gray-200 pt-4 dark:border-white/[0.06] lg:grid lg:grid-cols-5 lg:gap-4"
+                <div className="hidden overflow-hidden border-t border-gray-200 pt-4 dark:border-white/[0.06] lg:grid lg:grid-cols-5 lg:gap-4">
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Status
+                        </label>
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => onFilterChange(e.target.value)}
+                            className={selectClass}
                         >
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Status
-                                </label>
-                                <select
-                                    value={filterStatus}
-                                    onChange={(e) => onFilterChange(e.target.value)}
-                                    className={selectClass}
-                                >
-                                    <option value="all">All Statuses</option>
-                                    <option value="placed">Placed</option>
-                                    <option value="unplaced">Unplaced</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="pending">Pending</option>
-                                </select>
-                            </div>
+                            <option value="all">All Statuses</option>
+                            <option value="placed">Placed</option>
+                            <option value="unplaced">Unplaced</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
 
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Degree
-                                </label>
-                                <div className="relative">
-                                    <GraduationCap className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <select
-                                        value={selectedDegree}
-                                        onChange={(e) => onDegreeChange(e.target.value)}
-                                        className={`${selectClass} pl-10`}
-                                    >
-                                        <option value="all">All Degrees</option>
-                                        {degrees.map((degree) => (
-                                            <option key={degree} value={degree}>
-                                                {getDegreeLabel(degree)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Degree
+                        </label>
+                        <div className="relative">
+                            <GraduationCap className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={selectedDegree}
+                                onChange={(e) => onDegreeChange(e.target.value)}
+                                className={`${selectClass} pl-10`}
+                            >
+                                <option value="all">All Degrees</option>
+                                {degrees.map((degree) => (
+                                    <option key={degree} value={degree}>
+                                        {getDegreeLabel(degree)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Branch
-                                </label>
-                                <div className="relative">
-                                    <BookOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <select
-                                        value={selectedBranch}
-                                        onChange={(e) => onBranchChange(e.target.value)}
-                                        className={`${selectClass} pl-10`}
-                                    >
-                                        <option value="all">All Branches</option>
-                                        {branches.map((branch) => (
-                                            <option key={branch} value={branch}>
-                                                {branch}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Branch
+                        </label>
+                        <div className="relative">
+                            <BookOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={selectedBranch}
+                                onChange={(e) => onBranchChange(e.target.value)}
+                                className={`${selectClass} pl-10`}
+                            >
+                                <option value="all">All Branches</option>
+                                {branches.map((branch) => (
+                                    <option key={branch} value={branch}>
+                                        {branch}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Year
-                                </label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <select
-                                        value={selectedYear}
-                                        onChange={(e) => onYearChange(e.target.value)}
-                                        className={`${selectClass} pl-10`}
-                                    >
-                                        <option value="all">All Years</option>
-                                        {years.map((year) => (
-                                            <option key={year} value={year}>
-                                                {year}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Year
+                        </label>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={selectedYear}
+                                onChange={(e) => onYearChange(e.target.value)}
+                                className={`${selectClass} pl-10`}
+                            >
+                                <option value="all">All Years</option>
+                                {years.map((year) => (
+                                    <option key={year} value={year}>
+                                        {year}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    View
-                                </label>
-                                <div className="relative">
-                                    <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <select
-                                        value={includeArchived ? 'archived' : 'active'}
-                                        onChange={(e) =>
-                                            onIncludeArchivedChange(e.target.value === 'archived')
-                                        }
-                                        className={`${selectClass} pl-10`}
-                                    >
-                                        <option value="active">Active Students</option>
-                                        <option value="archived">Archived Students</option>
-                                    </select>
-                                </div>
-                            </div>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            View
+                        </label>
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={includeArchived ? 'archived' : 'active'}
+                                onChange={(e) =>
+                                    onIncludeArchivedChange(e.target.value === 'archived')
+                                }
+                                className={`${selectClass} pl-10`}
+                            >
+                                <option value="active">Active Students</option>
+                                <option value="archived">Archived Students</option>
+                            </select>
+                        </div>
+                    </div>
 
-                            <div className="mt-2 flex justify-end lg:col-span-5">
-                                <Button
-                                    variant="outline"
-                                    onClick={onClearFilters}
-                                    className="border-gray-200 px-6 transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:hover:border-gray-600"
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Clear All
-                                </Button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    <div className="mt-2 flex justify-end lg:col-span-5">
+                        <Button
+                            variant="outline"
+                            onClick={onClearFilters}
+                            className="border-gray-200 px-6 transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:hover:border-gray-600"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Clear All
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     )
