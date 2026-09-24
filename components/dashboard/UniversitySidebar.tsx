@@ -17,6 +17,7 @@ import {
     Settings,
     MoreHorizontal,
     Headphones,
+    FileCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -70,6 +71,12 @@ const navItems: NavItem[] = [
         href: '/dashboard/university/applications',
         icon: FileText,
         description: 'Track student applications',
+    },
+    {
+        label: 'Offer Letters',
+        href: '/dashboard/university/offer-letters',
+        icon: FileCheck,
+        description: 'Your university offer letters',
     },
     {
         label: 'Analytics',
