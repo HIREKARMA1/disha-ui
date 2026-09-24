@@ -11,11 +11,14 @@ interface CampusDriveInterestModalProps {
   onStillInterested: () => void
   isSubmitting?: boolean
   message?: string
+  /** Default keeps Campus Drive copy; Premium flow uses "I'm Still Interested". */
+  confirmLabel?: string
 }
 
 /**
- * Shown when a student is blocked by campus-drive university eligibility.
- * Close → dismiss only. Still I'm Interested → create admin request.
+ * Shown when a student is blocked by campus-drive university eligibility
+ * or Premium Users public-job access. Close → dismiss only.
+ * Still Interested → create admin Job Request.
  */
 export function CampusDriveInterestModal({
   isOpen,
@@ -23,6 +26,7 @@ export function CampusDriveInterestModal({
   onStillInterested,
   isSubmitting = false,
   message = CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
+  confirmLabel = "Still I'm Interested",
 }: CampusDriveInterestModalProps) {
   if (!isOpen) return null
 
@@ -84,7 +88,7 @@ export function CampusDriveInterestModal({
                   Sending…
                 </>
               ) : (
-                "Still I'm Interested"
+                confirmLabel
               )}
             </Button>
           </div>

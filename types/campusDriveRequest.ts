@@ -1,10 +1,12 @@
 export type CampusDriveRequestStatus = 'pending' | 'accepted' | 'rejected'
+export type CampusDriveRequestType = 'campus_drive' | 'premium'
 
 export interface CampusDriveRequestStudentStatus {
   exists: boolean
   id?: string | null
   job_id: string
   status?: CampusDriveRequestStatus | null
+  request_type?: CampusDriveRequestType | null
   requested_at?: string | null
 }
 
@@ -14,6 +16,7 @@ export interface CampusDriveRequest {
   university_id?: string | null
   job_id: string
   status: CampusDriveRequestStatus
+  request_type?: CampusDriveRequestType | string | null
   requested_at: string
   reviewed_at?: string | null
   reviewed_by?: string | null

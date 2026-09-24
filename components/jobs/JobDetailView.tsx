@@ -43,7 +43,6 @@ import {
   clearAutoApplyQueryParams,
   getPassoutBatchApplyEligibility,
   getUniversityApplyEligibility,
-  isCampusDriveNotForUniversityMessage,
   shouldAutoApplyForJob,
 } from '@/lib/jobApplicationMessages'
 import {
@@ -51,6 +50,10 @@ import {
   submitCampusDriveInterest,
   toastCampusDriveRequestStatus,
   getCampusDriveRequestApplyOverride,
+  getJobInterestModalCopy,
+  resolveJobInterestModalKind,
+  isJobInterestGateMessage,
+  type JobInterestModalKind,
 } from '@/lib/campusDriveInterest'
 import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import type { Job } from '@/components/jobs/AllJobs'
@@ -84,6 +87,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [studentBatch, setStudentBatch] = useState<string | null>(null)
   const [studentProfileLoaded, setStudentProfileLoaded] = useState(false)
   const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+  const [interestModalKind, setInterestModalKind] = useState<JobInterestModalKind>('campus_drive')
   const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
   const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
 
@@ -206,7 +210,13 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       if (!universityEligibility.canApply) {
         const reason =
           universityEligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
-        if (isCampusDriveNotForUniversityMessage(reason)) {
+        if (isJobInterestGateMessage(reason)) {
+          const kind = resolveJobInterestModalKind({
+            isPublic: job.is_public,
+            publicAccessLevel: job.public_access_level,
+            isCampusDrive: Boolean(job.is_campus_drive),
+            reason,
+          })
           const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
           if (outcome === 'accepted') {
             setHasAcceptedCampusDriveRequest(true)
@@ -220,10 +230,11 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
             setJob((prev) =>
               prev ? { ...prev, campus_drive_request_status: outcome } : prev
             )
-            toastCampusDriveRequestStatus(outcome)
+            toastCampusDriveRequestStatus(outcome, kind)
             return
           }
           if (outcome === 'show_interest_modal') {
+            setInterestModalKind(kind)
             setShowCampusDriveInterestModal(true)
             return
           }
@@ -285,7 +296,14 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
       job.campus_drive_request_status
     )
     if (requestOverride === 'pending' || requestOverride === 'rejected') {
-      toastCampusDriveRequestStatus(requestOverride)
+      toastCampusDriveRequestStatus(
+        requestOverride,
+        resolveJobInterestModalKind({
+          isPublic: job.is_public,
+          publicAccessLevel: job.public_access_level,
+          isCampusDrive: Boolean(job.is_campus_drive),
+        })
+      )
       return
     }
     if (!job.can_apply) {
@@ -305,7 +323,13 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     })
     if (!universityEligibility.canApply) {
       const reason = universityEligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
-      if (isCampusDriveNotForUniversityMessage(reason)) {
+      if (isJobInterestGateMessage(reason)) {
+        const kind = resolveJobInterestModalKind({
+          isPublic: job.is_public,
+          publicAccessLevel: job.public_access_level,
+          isCampusDrive: Boolean(job.is_campus_drive),
+          reason,
+        })
         const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
         if (outcome === 'accepted') {
           setHasAcceptedCampusDriveRequest(true)
@@ -316,9 +340,10 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           setJob((prev) =>
             prev ? { ...prev, campus_drive_request_status: outcome } : prev
           )
-          toastCampusDriveRequestStatus(outcome)
+          toastCampusDriveRequestStatus(outcome, kind)
           return
         } else if (outcome === 'show_interest_modal') {
+          setInterestModalKind(kind)
           setShowCampusDriveInterestModal(true)
           return
         } else {
@@ -506,6 +531,11 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
                   <span className="rounded-md bg-emerald-500/30 px-2 py-0.5 text-xs font-semibold">
                     {job.status || 'active'}
                   </span>
+                  {job.is_public && job.public_access_level === 'premium' && (
+                    <span className="rounded-md bg-amber-500/30 px-2 py-0.5 text-xs font-semibold">
+                      Premium Users
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{job.title}</h1>
                 <p className="mt-1 text-white/90">{companyName}</p>
@@ -752,6 +782,8 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
         }}
         onStillInterested={handleCampusDriveStillInterested}
         isSubmitting={campusDriveInterestSubmitting}
+        message={getJobInterestModalCopy(interestModalKind).message}
+        confirmLabel={getJobInterestModalCopy(interestModalKind).confirmLabel}
       />
 
       <ShareJobModal

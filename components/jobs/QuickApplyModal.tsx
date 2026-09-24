@@ -12,16 +12,18 @@ import { apiClient } from '@/lib/api'
 import { clearPendingJobApplication } from '@/lib/pendingJobApplication'
 import {
   APPLY_SUCCESS_MESSAGE,
-  CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   defaultApplyPayload,
   getApplyErrorMessage,
-  isCampusDriveNotForUniversityMessage,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import {
   resolveCampusDriveInterestOutcome,
   submitCampusDriveInterest,
   toastCampusDriveRequestStatus,
+  getJobInterestModalCopy,
+  resolveJobInterestModalKind,
+  isJobInterestGateMessage,
+  type JobInterestModalKind,
 } from '@/lib/campusDriveInterest'
 import type { CampusDriveRequestStatus } from '@/types/campusDriveRequest'
 import { extractErrorDetail } from '@/lib/profileCompletion'
@@ -36,6 +38,9 @@ export interface QuickApplyJobInfo {
   company_logo?: string
   location?: string | string[]
   job_type?: string
+  is_public?: boolean | null
+  public_access_level?: string | null
+  is_campus_drive?: boolean | null
 }
 
 interface QuickApplyModalProps {
@@ -93,6 +98,7 @@ export function QuickApplyModal({
   const [submitting, setSubmitting] = useState(false)
   const [uploadingResume, setUploadingResume] = useState(false)
   const [campusDriveBlocked, setCampusDriveBlocked] = useState(false)
+  const [interestModalKind, setInterestModalKind] = useState<JobInterestModalKind>('campus_drive')
   const [interestSubmitting, setInterestSubmitting] = useState(false)
 
   const [profileName, setProfileName] = useState('')
@@ -466,7 +472,16 @@ export function QuickApplyModal({
       toast.success(APPLY_SUCCESS_MESSAGE)
       onSuccess()
     } catch (error: unknown) {
-      if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
+      const applyErrorMessage = getApplyErrorMessage(error)
+      if (isJobInterestGateMessage(applyErrorMessage)) {
+        setInterestModalKind(
+          resolveJobInterestModalKind({
+            isPublic: job.is_public,
+            publicAccessLevel: job.public_access_level,
+            isCampusDrive: Boolean(job.is_campus_drive),
+            reason: applyErrorMessage,
+          })
+        )
         setCampusDriveBlocked(true)
         return
       }
@@ -482,7 +497,7 @@ export function QuickApplyModal({
     try {
       const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
       if (outcome === 'pending' || outcome === 'rejected') {
-        toastCampusDriveRequestStatus(outcome)
+        toastCampusDriveRequestStatus(outcome, interestModalKind)
         clearPendingJobApplication()
         onCampusDriveInterestSubmitted?.(outcome)
         onClose()
@@ -608,7 +623,7 @@ export function QuickApplyModal({
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             {campusDriveBlocked ? (
               <p className="text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg">
-                {CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE}
+                {getJobInterestModalCopy(interestModalKind).message}
               </p>
             ) : loadingProfile ? (
               <div className="flex items-center justify-center py-16 text-sm text-gray-500">
@@ -1171,7 +1186,7 @@ export function QuickApplyModal({
                       Sending…
                     </>
                   ) : (
-                    "Still I'm Interested"
+                    getJobInterestModalCopy(interestModalKind).confirmLabel
                   )}
                 </Button>
               </>

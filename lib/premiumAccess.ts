@@ -20,6 +20,14 @@ const LEGACY_PREMIUM_SNIPPETS = [
 export function isPremiumRequiredError(message: string | null | undefined): boolean {
   if (!message) return false
   const lower = message.toLowerCase()
+  // Interest-request modal copy must not open the Support Premium modal.
+  if (
+    lower.includes('premium users only') ||
+    lower.includes("i'm still interested") ||
+    lower.includes('im still interested')
+  ) {
+    return false
+  }
   if (
     lower.includes('premium') &&
     (lower.includes('apply') || lower.includes('access') || lower.includes('user'))
