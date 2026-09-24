@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, type FormEvent } from 'react'
 import { Search, Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +27,8 @@ import {
 } from '@/components/jobs/JobsFilterFields'
 
 type CategoryChip = 'recommended' | 'all' | 'open' | 'closed' | 'unapproved'
+
+const JOBS_PER_PAGE_OPTIONS = [6, 12, 24, 48] as const
 
 interface UniversityJob {
     id: string
@@ -115,6 +117,8 @@ function UniversityJobsPageContent() {
         total: 0,
         total_pages: 0
     })
+    const [isPageSizeDropdownOpen, setIsPageSizeDropdownOpen] = useState(false)
+    const pageSizeDropdownRef = useRef<HTMLDivElement>(null)
     const [selectedJob, setSelectedJob] = useState<UniversityJob | null>(null)
     const [completeJobData, setCompleteJobData] = useState<any>(null)
     const [loadingJobDetails, setLoadingJobDetails] = useState(false)
@@ -377,6 +381,34 @@ function UniversityJobsPageContent() {
     const handlePageChange = (page: number) => {
         setPagination(prev => ({ ...prev, page }))
     }
+
+    const handleJobsPerPageChange = (limit: number) => {
+        setPagination((prev) => ({
+            ...prev,
+            limit,
+            page: 1,
+            total_pages: Math.max(1, Math.ceil(filteredJobs.length / limit) || 0),
+        }))
+        setIsPageSizeDropdownOpen(false)
+    }
+
+    useEffect(() => {
+        if (!isPageSizeDropdownOpen) return
+
+        const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+            const root = pageSizeDropdownRef.current
+            if (root && !root.contains(event.target as Node)) {
+                setIsPageSizeDropdownOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handlePointerDown)
+        document.addEventListener('touchstart', handlePointerDown)
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown)
+            document.removeEventListener('touchstart', handlePointerDown)
+        }
+    }, [isPageSizeDropdownOpen])
 
     const activeFilterCount = useMemo(() => {
         let count = Object.values(filters).filter(Boolean).length
@@ -659,58 +691,97 @@ function UniversityJobsPageContent() {
                             </Button>
                         </form>
 
-                        <div className="mt-2 -mx-0.5 overflow-x-auto px-0.5 scrollbar-none sm:mt-3">
-                            <div className="flex min-w-max gap-1 sm:gap-1.5">
-                                {(
-                                    [
-                                        { value: 'recommended', label: 'Recommended' },
-                                        { value: 'all', label: 'All Jobs' },
-                                        { value: 'open', label: 'Open' },
-                                        { value: 'closed', label: 'Closed' },
-                                        { value: 'unapproved', label: 'Un Approved' },
-                                    ] as const
-                                ).map((tab) => {
-                                    const isActive = categoryChip === tab.value
-                                    return (
-                                        <button
-                                            key={tab.value}
-                                            type="button"
-                                            onClick={() => handleCategoryChange(tab.value)}
-                                            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-sm ${
-                                                isActive
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10'
-                                            }`}
-                                        >
-                                            {tab.label}
-                                        </button>
-                                    )
-                                })}
-                                <div className="ml-1 hidden items-center gap-1 border-l border-gray-200 pl-2 dark:border-white/10 lg:flex">
+                        <div className="mt-2 flex flex-col gap-2 sm:mt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                            <div className="-mx-0.5 overflow-x-auto px-0.5 scrollbar-none">
+                                <div className="flex min-w-max gap-1 sm:gap-1.5">
                                     {(
                                         [
-                                            { value: 'all', label: 'Any time' },
-                                            { value: '24h', label: '24h' },
-                                            { value: '7d', label: '7d' },
-                                            { value: '30d', label: '30d' },
+                                            { value: 'recommended', label: 'Recommended' },
+                                            { value: 'all', label: 'All Jobs' },
+                                            { value: 'open', label: 'Open' },
+                                            { value: 'closed', label: 'Closed' },
+                                            { value: 'unapproved', label: 'Un Approved' },
                                         ] as const
                                     ).map((tab) => {
-                                        const active = datePostedFilter === tab.value
+                                        const isActive = categoryChip === tab.value
                                         return (
                                             <button
-                                                key={`date-${tab.value}`}
+                                                key={tab.value}
                                                 type="button"
-                                                onClick={() => handleDesktopDateChange(tab.value)}
-                                                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-all sm:px-3 sm:py-1.5 sm:text-xs ${
-                                                    active
-                                                        ? 'border border-violet-500/30 bg-violet-500/15 text-violet-300'
-                                                        : 'border border-transparent text-gray-500 hover:border-gray-200 dark:text-gray-400 dark:hover:border-white/10'
+                                                onClick={() => handleCategoryChange(tab.value)}
+                                                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-sm ${
+                                                    isActive
+                                                        ? 'bg-blue-600 text-white shadow-sm'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10'
                                                 }`}
                                             >
                                                 {tab.label}
                                             </button>
                                         )
                                     })}
+                                    <div className="ml-1 hidden items-center gap-1 border-l border-gray-200 pl-2 dark:border-white/10 lg:flex">
+                                        {(
+                                            [
+                                                { value: 'all', label: 'Any time' },
+                                                { value: '24h', label: '24h' },
+                                                { value: '7d', label: '7d' },
+                                                { value: '30d', label: '30d' },
+                                            ] as const
+                                        ).map((tab) => {
+                                            const active = datePostedFilter === tab.value
+                                            return (
+                                                <button
+                                                    key={`date-${tab.value}`}
+                                                    type="button"
+                                                    onClick={() => handleDesktopDateChange(tab.value)}
+                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-all sm:px-3 sm:py-1.5 sm:text-xs ${
+                                                        active
+                                                            ? 'border border-violet-500/30 bg-violet-500/15 text-violet-300'
+                                                            : 'border border-transparent text-gray-500 hover:border-gray-200 dark:text-gray-400 dark:hover:border-white/10'
+                                                    }`}
+                                                >
+                                                    {tab.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
+                                <label className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                    Jobs per page:
+                                </label>
+                                <div className="relative" ref={pageSizeDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPageSizeDropdownOpen((open) => !open)}
+                                        className="flex h-8 min-w-[72px] items-center justify-between rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/10 dark:bg-[#0f1219] dark:text-white sm:h-9"
+                                        aria-label="Jobs per page"
+                                    >
+                                        <span>{pagination.limit}</span>
+                                        <svg className="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    {isPageSizeDropdownOpen && (
+                                        <div className="absolute right-0 top-full z-20 mt-1 min-w-[80px] rounded-lg border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-[#151b2b]">
+                                            {JOBS_PER_PAGE_OPTIONS.map((value) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => handleJobsPerPageChange(value)}
+                                                    className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-white/10 ${
+                                                        pagination.limit === value
+                                                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                                                            : 'text-gray-900 dark:text-white'
+                                                    }`}
+                                                >
+                                                    {value}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

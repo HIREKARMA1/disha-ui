@@ -86,7 +86,7 @@ export function UniversityDashboardStats({
                 })}
             </div>
 
-            <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full items-stretch">
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 w-full items-stretch">
                 {cards.map((stat, index) => (
                     <UniversityStatCard
                         key={stat.label}
@@ -97,6 +97,7 @@ export function UniversityDashboardStats({
                         accent={stat.accent}
                         index={index}
                         isLoading={isLoading}
+                        compact
                     />
                 ))}
             </div>
