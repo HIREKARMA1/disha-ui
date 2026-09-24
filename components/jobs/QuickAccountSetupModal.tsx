@@ -211,9 +211,12 @@ export function QuickAccountSetupModal({
         const existingInstitution = (profile.institution || '').trim()
         setInstitution(existingInstitution)
         setCollegeId(profile.college_id || '')
-        // Email/password registration always sets institution; Google new students do not.
+        // Email/password registration sets institution + university_id.
+        // Google students may have institution text without university_id — allow
+        // re-select so college_id can complete the portal link.
         const needsInstitution = !existingInstitution
-        setInstitutionEditable(needsInstitution)
+        const needsUniversityLink = !profile.university_id
+        setInstitutionEditable(needsInstitution || needsUniversityLink)
         if (mandatoryProp !== true) {
           setMandatoryFromProfile(needsInstitution)
         }
