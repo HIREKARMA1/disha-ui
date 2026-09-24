@@ -29,6 +29,10 @@ import { AsyncSearchableSelect, AsyncSelectOption } from '@/components/ui/async-
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { LoginBrandPanel } from '@/components/auth/LoginBrandPanel'
+import {
+    StudentGoogleAuthButton,
+    StudentGoogleAuthDivider,
+} from '@/components/auth/StudentGoogleAuthButton'
 import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
@@ -1041,6 +1045,21 @@ function RegisterPageContent() {
                                                     Send OTP
                                                 </Button>
                                             </form>
+
+                                            {selectedUserType === 'student' && (
+                                                <>
+                                                    <StudentGoogleAuthDivider />
+                                                    <StudentGoogleAuthButton
+                                                        label="Sign up with Google"
+                                                        redirectPath={
+                                                            searchParams.get('redirect') ||
+                                                            (typeof window !== 'undefined'
+                                                                ? localStorage.getItem('redirect_after_login')
+                                                                : null)
+                                                        }
+                                                    />
+                                                </>
+                                            )}
 
                                             <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
                                                 Already have an account?{' '}

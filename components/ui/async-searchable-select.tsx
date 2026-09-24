@@ -1,6 +1,7 @@
-"use client"
+'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, Check, Search, Loader2 } from 'lucide-react'
 
 export interface AsyncSelectOption {
@@ -20,6 +21,12 @@ interface AsyncSearchableSelectProps {
     debounceMs?: number
     error?: boolean
     helperText?: string
+    /**
+     * Render the results panel via document portal with fixed positioning.
+     * Use inside overflow-clipped modals (e.g. Quick Account Setup) so the
+     * dropdown is not clipped. Registration leaves this unset (inline absolute).
+     */
+    portal?: boolean
 }
 
 // Simple debounce hook implementation if not available
@@ -36,6 +43,8 @@ function useDebounceValue<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
+type PanelPosition = { top: number; left: number; width: number }
+
 export function AsyncSearchableSelect({
     fetchOptions,
     value,
@@ -47,19 +56,23 @@ export function AsyncSearchableSelect({
     searchPlaceholder = "Type to search...",
     debounceMs = 500,
     error = false,
-    helperText
+    helperText,
+    portal = false,
 }: AsyncSearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [options, setOptions] = useState<AsyncSelectOption[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedLabel, setSelectedLabel] = useState('')
     const [persistedSelectedOption, setPersistedSelectedOption] = useState<AsyncSelectOption | null>(null)
+    const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null)
+    const [mounted, setMounted] = useState(false)
 
     // Use debounced search term to trigger API calls
     const debouncedSearchTerm = useDebounceValue(searchTerm, debounceMs)
 
-    const dropdownRef = useRef<HTMLDivElement>(null)
+    const rootRef = useRef<HTMLDivElement>(null)
+    const triggerRef = useRef<HTMLButtonElement>(null)
+    const panelRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
 
     const fetchData = useCallback(async (term: string) => {
@@ -74,6 +87,10 @@ export function AsyncSearchableSelect({
             setIsLoading(false)
         }
     }, [fetchOptions])
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Initial fetch to populate options when opened
     useEffect(() => {
@@ -90,11 +107,39 @@ export function AsyncSearchableSelect({
         }
     }, [value, options])
 
+    const updatePanelPosition = useCallback(() => {
+        if (!portal || !isOpen || !triggerRef.current) return
+        const rect = triggerRef.current.getBoundingClientRect()
+        setPanelPosition({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+        })
+    }, [portal, isOpen])
+
+    useLayoutEffect(() => {
+        if (!portal || !isOpen) {
+            setPanelPosition(null)
+            return
+        }
+        updatePanelPosition()
+        const onReposition = () => updatePanelPosition()
+        window.addEventListener('resize', onReposition)
+        // Capture scroll from modal content + page
+        window.addEventListener('scroll', onReposition, true)
+        return () => {
+            window.removeEventListener('resize', onReposition)
+            window.removeEventListener('scroll', onReposition, true)
+        }
+    }, [portal, isOpen, updatePanelPosition])
 
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            const target = event.target as Node
+            const inRoot = rootRef.current?.contains(target)
+            const inPanel = panelRef.current?.contains(target)
+            if (!inRoot && !inPanel) {
                 setIsOpen(false)
             }
         }
@@ -105,24 +150,19 @@ export function AsyncSearchableSelect({
         }
     }, [])
 
-    // Focus input when dropdown opens
+    // Focus search input when dropdown opens (after portal mounts)
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus()
-        }
-    }, [isOpen])
+        if (!isOpen) return
+        const id = window.setTimeout(() => {
+            inputRef.current?.focus()
+        }, 0)
+        return () => window.clearTimeout(id)
+    }, [isOpen, panelPosition])
 
     const handleSelect = (option: AsyncSelectOption) => {
         onChange(option.value, option)
         setPersistedSelectedOption(option)
         setIsOpen(false)
-        setSearchTerm('')
-    }
-
-    const handleClear = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        onChange('')
-        setPersistedSelectedOption(null)
         setSearchTerm('')
     }
 
@@ -132,8 +172,98 @@ export function AsyncSearchableSelect({
         }
     }
 
+    const panelClassName =
+        'bg-white dark:bg-slate-950 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100'
+
+    const panelContent = (
+        <>
+            {/* Search input */}
+            <div className="p-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-900 sticky top-0 z-10">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        placeholder={searchPlaceholder}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-slate-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    />
+                    {isLoading && (
+                        <div className="absolute right-2.5 top-2.5">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary-500" />
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Options */}
+            <div className="overflow-y-auto flex-1 max-h-48 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
+                {options.length > 0 ? (
+                    <div className="p-1 space-y-0.5">
+                        {options.map((option) => {
+                            const isSelected = value === option.value
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => handleSelect(option)}
+                                    className={`
+                                        w-full px-2 py-1.5 text-left text-sm flex items-center justify-between rounded-sm
+                                        ${isSelected
+                                            ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-300 font-medium'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900'
+                                        }
+                                    `}
+                                >
+                                    <span className="truncate mr-2">{option.label}</span>
+                                    {isSelected && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
+                                </button>
+                            )
+                        })}
+                    </div>
+                ) : (
+                    <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        {isLoading ? 'Searching...' : 'No options found'}
+                    </div>
+                )}
+            </div>
+        </>
+    )
+
+    const inlinePanel =
+        isOpen && !portal ? (
+            <div className={`absolute z-50 w-full mt-1 ${panelClassName}`}>
+                {panelContent}
+            </div>
+        ) : null
+
+    const portaledPanel =
+        portal &&
+        isOpen &&
+        mounted &&
+        panelPosition &&
+        typeof document !== 'undefined'
+            ? createPortal(
+                  <div
+                      ref={panelRef}
+                      style={{
+                          position: 'fixed',
+                          top: panelPosition.top,
+                          left: panelPosition.left,
+                          width: panelPosition.width,
+                      }}
+                      className={`z-[300] ${panelClassName}`}
+                      role="listbox"
+                  >
+                      {panelContent}
+                  </div>,
+                  document.body
+              )
+            : null
+
     return (
-        <div className={`relative ${className}`} ref={dropdownRef}>
+        <div className={`relative ${className}`} ref={rootRef}>
             {label && (
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {label}
@@ -142,6 +272,7 @@ export function AsyncSearchableSelect({
 
             <div className="relative">
                 <button
+                    ref={triggerRef}
                     type="button"
                     onClick={handleDropdownToggle}
                     disabled={disabled}
@@ -166,63 +297,8 @@ export function AsyncSearchableSelect({
                     </span>
                 </button>
 
-
-
-                {isOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-950 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
-                        {/* Search input */}
-                        <div className="p-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-900 sticky top-0 z-10">
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    placeholder={searchPlaceholder}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-slate-950 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                                />
-                                {isLoading && (
-                                    <div className="absolute right-2.5 top-2.5">
-                                        <Loader2 className="h-4 w-4 animate-spin text-primary-500" />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Options */}
-                        <div className="overflow-y-auto flex-1 max-h-48 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-800">
-                            {options.length > 0 ? (
-                                <div className="p-1 space-y-0.5">
-                                    {options.map((option) => {
-                                        const isSelected = value === option.value
-                                        return (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                onClick={() => handleSelect(option)}
-                                                className={`
-                                                    w-full px-2 py-1.5 text-left text-sm flex items-center justify-between rounded-sm
-                                                    ${isSelected
-                                                        ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-300 font-medium'
-                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900'
-                                                    }
-                                                `}
-                                            >
-                                                <span className="truncate mr-2">{option.label}</span>
-                                                {isSelected && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    {isLoading ? 'Searching...' : 'No options found'}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                {inlinePanel}
+                {portaledPanel}
             </div>
             {helperText && (
                 <p className={`mt-1 text-sm ${error ? 'text-red-500' : 'text-gray-500'}`}>

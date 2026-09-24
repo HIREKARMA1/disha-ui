@@ -67,6 +67,11 @@ export interface LoginRequest {
   user_type: UserType;
 }
 
+/** Body for POST /auth/supabase/google — Supabase access token only. */
+export interface SupabaseGoogleAuthRequest {
+  access_token: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
