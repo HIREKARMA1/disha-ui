@@ -610,7 +610,7 @@ export function QuickAccountSetupModal({
                         htmlFor="quick-setup-phone"
                         className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                       >
-                        Mobile phone <span className="text-red-500">*</span>
+                        Phone Number <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="quick-setup-phone"
