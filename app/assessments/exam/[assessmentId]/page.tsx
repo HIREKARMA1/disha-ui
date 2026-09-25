@@ -11,6 +11,8 @@ import {
   type PublicExamBrief,
   type StudentExamEligibility,
 } from '@/components/assessments/StudentExamInstructions'
+import { QuickAccountSetupModal } from '@/components/jobs/QuickAccountSetupModal'
+import { isQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
 import { buildAuthPath } from '@/lib/authLinks'
 
 export default function StudentExamEntryPage() {
@@ -25,6 +27,7 @@ export default function StudentExamEntryPage() {
   const [starting, setStarting] = useState(false)
   const [eligibility, setEligibility] = useState<StudentExamEligibility | null>(null)
   const [eligibilityLoading, setEligibilityLoading] = useState(true)
+  const [showQuickSetup, setShowQuickSetup] = useState(false)
 
   const examPath = `/assessments/exam/${assessmentId}`
   const loginUrl = useMemo(
@@ -35,6 +38,13 @@ export default function StudentExamEntryPage() {
     () => buildAuthPath('/auth/register', { type: 'student', redirect: examPath }),
     [examPath]
   )
+
+  useEffect(() => {
+    if (authLoading) return
+    if (isAuthenticated && user?.user_type === 'student' && isQuickAccountSetupPending()) {
+      setShowQuickSetup(true)
+    }
+  }, [authLoading, isAuthenticated, user?.user_type])
 
   const loadExam = useCallback(async (silent = false) => {
     if (!assessmentId) return
@@ -86,6 +96,11 @@ export default function StudentExamEntryPage() {
 
   const handleStartExam = async () => {
     if (!user || user.user_type !== 'student' || !exam || eligibility?.can_start === false) return
+    if (isQuickAccountSetupPending() || showQuickSetup) {
+      setShowQuickSetup(true)
+      setStartError('Please complete account setup before starting the exam.')
+      return
+    }
     setStartError(null)
     setStarting(true)
     try {
@@ -124,9 +139,22 @@ export default function StudentExamEntryPage() {
     }
   }
 
+  const handleQuickSetupComplete = () => {
+    setShowQuickSetup(false)
+    setStartError(null)
+    void loadExam(true)
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       <Navbar variant="solid" />
+
+      {showQuickSetup && (
+        <QuickAccountSetupModal
+          onClose={() => setShowQuickSetup(false)}
+          onComplete={handleQuickSetupComplete}
+        />
+      )}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-gray-600 dark:text-gray-400 pt-20">

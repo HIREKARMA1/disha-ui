@@ -13,7 +13,7 @@ export const config = {
   // Prefer NEXT_PUBLIC_APP_URL; APP_URL / VERCEL_URL also work via next.config.js mapping.
   app: {
     name: process.env.NEXT_PUBLIC_APP_NAME || 'HireKarma',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
   },
   
   // Feature Flags
