@@ -6,6 +6,10 @@ import { apiClient } from '@/lib/api'
 import { getSupabaseBrowserClient, isSafeAuthRedirectPath } from '@/lib/supabaseClient'
 import { useAuth } from '@/hooks/useAuth'
 import { markQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
+import {
+  isStudentExamRedirectPath,
+  normalizeAppRedirectPath,
+} from '@/lib/assessmentLinks'
 import { profileService } from '@/services/profileService'
 import type { TokenResponse } from '@/types/auth'
 
@@ -200,9 +204,14 @@ function GoogleCompleteContent() {
           needsQuickAccountSetup ? { skipEventPopup: true } : undefined
         )
 
-        // Incomplete Google students: same as register — land on dashboard so the
-        // existing modal mounts (layout only shows it on the main student dashboard).
+        // Incomplete Google students: Quick Account Setup. Prefer exam/mock-test link.
         if (needsQuickAccountSetup) {
+          let examRedirect =
+            redirectFromQuery ||
+            (typeof window !== 'undefined'
+              ? localStorage.getItem('redirect_after_login')
+              : null)
+
           if (typeof window !== 'undefined') {
             try {
               localStorage.removeItem('redirect_after_login')
@@ -211,6 +220,16 @@ function GoogleCompleteContent() {
             }
           }
           if (!isActive()) return
+
+          if (examRedirect && isStudentExamRedirectPath(examRedirect)) {
+            const examPath = normalizeAppRedirectPath(examRedirect)
+            console.info('[GoogleComplete] redirecting to exam for Quick Account Setup', {
+              examPath,
+            })
+            router.replace(examPath)
+            return
+          }
+
           console.info('[GoogleComplete] redirecting to dashboard for Quick Account Setup')
           router.replace('/dashboard/student')
           return

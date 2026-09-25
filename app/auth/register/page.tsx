@@ -42,6 +42,10 @@ import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
 import { markQuickAccountSetupPending } from '@/lib/quickAccountSetupStorage'
+import {
+    isStudentExamRedirectPath,
+    normalizeAppRedirectPath,
+} from '@/lib/assessmentLinks'
 
 // Union type for all possible form data
 type FormData = {
@@ -462,9 +466,22 @@ function RegisterPageContent() {
                     isNewStudent ? { skipEventPopup: true } : undefined
                 )
 
-                // New students: Quick Account Setup on dashboard (keep pending job / redirect in storage)
+                // New students: Quick Account Setup. Prefer exam/mock-test link over dashboard.
                 if (isNewStudent) {
                     markQuickAccountSetupPending()
+                    let redirectUrl =
+                        searchParams.get('redirect') ||
+                        (typeof window !== 'undefined'
+                            ? localStorage.getItem('redirect_after_login')
+                            : null)
+                    if (redirectUrl && isStudentExamRedirectPath(redirectUrl)) {
+                        const examPath = normalizeAppRedirectPath(redirectUrl)
+                        if (typeof window !== 'undefined') {
+                            localStorage.removeItem('redirect_after_login')
+                        }
+                        router.push(examPath)
+                        return
+                    }
                     router.push('/dashboard/student')
                     return
                 }
