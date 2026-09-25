@@ -186,7 +186,7 @@ export function OfferLetterBulkUploadModal({
                   Bulk upload offer letters
                 </h2>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  Import up to 50 rows from a CSV with public Drive links.
+                  Import up to 50 rows from a CSV with public Drive links. Offer letters must be PDF, DOC, DOCX, or PNG.
                 </p>
               </div>
               <button
@@ -206,7 +206,7 @@ export function OfferLetterBulkUploadModal({
                     student_name, company_name, college_name, passout_year,
                     offer_letter_url
                   </code>
-                  . Drive links must be set to &quot;Anyone with the link&quot;.
+                  . Supported file formats: PDF, DOC, DOCX, or PNG. Drive links must be set to &quot;Anyone with the link&quot;.
                 </p>
                 <button
                   type="button"
