@@ -27,6 +27,7 @@ import {
     Headphones,
     School,
     FileCheck,
+    ShieldCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -106,6 +107,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/jobs',
                 icon: Briefcase,
                 description: 'Manage job postings',
+            },
+            {
+                label: 'University Approval',
+                href: '/dashboard/admin/university-approval',
+                icon: ShieldCheck,
+                description: 'Approve university-assigned jobs',
             },
             {
                 label: 'Job Requests',

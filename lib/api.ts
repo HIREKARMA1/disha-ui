@@ -481,6 +481,30 @@ class ApiClient {
     return response.data;
   }
 
+  async getUniversityApprovalsAdmin(params: {
+    status?: string
+    search?: string
+    skip?: number
+    limit?: number
+  } = {}): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admins/university-approvals', { params });
+    return response.data;
+  }
+
+  async approveUniversityJobAdmin(jobId: string, universityId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admins/jobs/${jobId}/universities/${universityId}/approve`
+    );
+    return response.data;
+  }
+
+  async rejectUniversityJobAdmin(jobId: string, universityId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admins/jobs/${jobId}/universities/${universityId}/reject`
+    );
+    return response.data;
+  }
+
   async updateJobAdmin(jobId: string, jobData: any): Promise<any> {
     const response: AxiosResponse = await this.client.put(`/admins/jobs/${jobId}`, jobData);
     return response.data;
