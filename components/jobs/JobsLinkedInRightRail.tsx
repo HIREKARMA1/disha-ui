@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 import type { QuickApplyJobInfo } from '@/components/jobs/QuickApplyModal'
+import { getCampusDriveRequestApplyOverride } from '@/lib/campusDriveInterest'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { displayJobTitle } from '@/lib/jobSkillMatch'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,7 @@ export type JobsRightRailJob = QuickApplyJobInfo & {
   company_name?: string
   corporate_name?: string
   application_status?: string
+  campus_drive_request_status?: string | null
   can_apply?: boolean
   description?: string
   match_score?: number
@@ -134,46 +136,68 @@ export function JobsLinkedInRightRail({
               </div>
 
               <div className="mt-3 flex flex-col gap-1.5">
-                {job.application_status === 'applied' ? (
-                  <Button
-                    disabled
-                    size="sm"
-                    className="h-9 w-full rounded-md bg-primary-600 text-xs font-semibold text-white shadow-none"
-                  >
-                    <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-                    Already Applied
-                  </Button>
-                ) : isLoggedIn ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={onStartQuickApply}
-                    disabled={job.can_apply === false || isApplying}
-                    className="h-9 w-full rounded-md bg-primary-600 text-xs font-semibold text-white shadow-none hover:bg-primary-700"
-                  >
-                    {isApplying ? (
-                      <>
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        Applying…
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="mr-1.5 h-3.5 w-3.5" />
-                        Quick Apply
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={onGuestAuth}
-                    className="h-9 w-full rounded-md bg-primary-600 text-xs font-semibold text-white shadow-none hover:bg-primary-700"
-                  >
-                    <Zap className="mr-1.5 h-3.5 w-3.5" />
-                    Sign in to Apply
-                  </Button>
-                )}
+                {(() => {
+                  const requestOverride = getCampusDriveRequestApplyOverride(
+                    job.campus_drive_request_status
+                  )
+                  if (job.application_status === 'applied') {
+                    return (
+                      <Button
+                        disabled
+                        size="sm"
+                        className="h-9 w-full rounded-md bg-primary-600 text-xs font-semibold text-white shadow-none"
+                      >
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                        Already Applied
+                      </Button>
+                    )
+                  }
+                  if (requestOverride === 'pending' || requestOverride === 'rejected') {
+                    return (
+                      <Button
+                        disabled
+                        size="sm"
+                        className="h-9 w-full cursor-not-allowed rounded-md bg-gray-300 text-xs font-semibold text-white shadow-none dark:bg-gray-600"
+                      >
+                        {requestOverride === 'pending' ? 'Pending' : 'Rejected'}
+                      </Button>
+                    )
+                  }
+                  if (isLoggedIn) {
+                    return (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={onStartQuickApply}
+                        disabled={job.can_apply === false || isApplying}
+                        className="h-9 w-full rounded-md bg-primary-600 text-xs font-semibold text-white shadow-none hover:bg-primary-700"
+                      >
+                        {isApplying ? (
+                          <>
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            Applying…
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="mr-1.5 h-3.5 w-3.5" />
+                            Quick Apply
+                          </>
+                        )}
+                      </Button>
+                    )
+                  }
+                  return (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={onGuestAuth}
+                      className="h-9 w-full rounded-md bg-primary-600 text-xs font-semibold text-white shadow-none hover:bg-primary-700"
+                    >
+                      <Zap className="mr-1.5 h-3.5 w-3.5" />
+                      Sign in to Apply
+                    </Button>
+                  )
+                })()}
                 <Button
                   variant="outline"
                   size="sm"

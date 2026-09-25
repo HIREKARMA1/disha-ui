@@ -38,15 +38,21 @@ export const CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE =
   'Your request to apply for this campus drive was rejected.'
 export const CAMPUS_DRIVE_REQUEST_SENT_MESSAGE =
   'Your request has been sent to the admin. This job will be automatically applied if your request is approved.'
+export const PREMIUM_JOB_INTEREST_TITLE = 'Premium Job Opportunity'
+export const PREMIUM_JOB_INTEREST_MESSAGE =
+  'This job is exclusively available to Premium Users. If you would still like to apply, you can submit a request to the admin for consideration.'
+export const PREMIUM_JOB_REQUEST_REJECTED_MESSAGE =
+  'Your request to apply for this premium job was rejected.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
 export const PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE =
   'Not eligible — graduation batch does not meet the job requirements'
 
 /**
- * Client-side apply eligibility for university assignment.
+ * Client-side apply eligibility for university assignment / premium public jobs.
  * Jobs stay visible publicly; once universities are assigned, only those may apply.
  * Public-for-all with no assignments remains open to any student.
- * Accepted Campus Drive Requests unlock apply for that specific job only.
+ * Premium public (public_access_level=premium) requires an accepted Job Request.
+ * Accepted Campus Drive / Premium Job Requests unlock apply for that specific job only.
  */
 export function getUniversityApplyEligibility(options: {
   isPublic?: boolean | null
@@ -61,10 +67,19 @@ export function getUniversityApplyEligibility(options: {
   const isPublicForAll = Boolean(
     options.isPublic && options.publicAccessLevel === 'all'
   )
+  const isPremiumPublic = Boolean(
+    options.isPublic && options.publicAccessLevel === 'premium'
+  )
 
   if (assignments.length === 0) {
     if (isPublicForAll) {
       return { canApply: true, reason: null }
+    }
+    if (isPremiumPublic) {
+      if (options.hasAcceptedCampusDriveRequest) {
+        return { canApply: true, reason: null }
+      }
+      return { canApply: false, reason: PREMIUM_JOB_INTEREST_MESSAGE }
     }
     return { canApply: false, reason: JOB_NOT_AVAILABLE_MESSAGE }
   }
@@ -97,6 +112,37 @@ export function isCampusDriveNotForUniversityMessage(
 ): boolean {
   if (!message) return false
   return message.toLowerCase().includes('campus drive no longer belongs')
+}
+
+export function isPremiumJobInterestMessage(
+  message: string | null | undefined
+): boolean {
+  if (!message) return false
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('premium users only') ||
+    lower.includes('exclusively available to premium') ||
+    lower.includes('available exclusively to premium') ||
+    lower.includes("i'm still interested") ||
+    lower.includes('im still interested')
+  )
+}
+
+/** True when Apply should open the Job Request interest modal instead of applying. */
+export function isJobInterestGateMessage(
+  message: string | null | undefined
+): boolean {
+  return (
+    isCampusDriveNotForUniversityMessage(message) ||
+    isPremiumJobInterestMessage(message)
+  )
+}
+
+export function isPremiumPublicJob(options: {
+  isPublic?: boolean | null
+  publicAccessLevel?: string | null
+}): boolean {
+  return Boolean(options.isPublic && options.publicAccessLevel === 'premium')
 }
 
 /**
@@ -197,6 +243,9 @@ export function normalizeApplyErrorMessage(raw: string | null | undefined): stri
   }
   if (raw.toLowerCase().includes('campus drive no longer belongs')) {
     return CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
+  }
+  if (isPremiumJobInterestMessage(raw)) {
+    return PREMIUM_JOB_INTEREST_MESSAGE
   }
   if (
     raw.toLowerCase().includes('targeted batch') ||

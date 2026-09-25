@@ -29,7 +29,6 @@ import {
   PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE,
   getUniversityApplyEligibility,
   getPassoutBatchApplyEligibility,
-  isCampusDriveNotForUniversityMessage,
 } from '@/lib/jobApplicationMessages'
 import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 import {
@@ -37,6 +36,10 @@ import {
   submitCampusDriveInterest,
   toastCampusDriveRequestStatus,
   getCampusDriveRequestApplyOverride,
+  getJobInterestModalCopy,
+  resolveJobInterestModalKind,
+  isJobInterestGateMessage,
+  type JobInterestModalKind,
 } from '@/lib/campusDriveInterest'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 
@@ -170,6 +173,7 @@ function JobOpportunitiesPageContent() {
     const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [currentApplicationJob, setCurrentApplicationJob] = useState<Job | null>(null)
     const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+    const [interestModalKind, setInterestModalKind] = useState<JobInterestModalKind>('campus_drive')
     const [campusDriveInterestJobId, setCampusDriveInterestJobId] = useState<string | null>(null)
     const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
     const [acceptedCampusDriveJobs, setAcceptedCampusDriveJobs] = useState<Set<string>>(new Set())
@@ -853,7 +857,14 @@ function JobOpportunitiesPageContent() {
             job.campus_drive_request_status
         )
         if (requestOverride === 'pending' || requestOverride === 'rejected') {
-            toastCampusDriveRequestStatus(requestOverride)
+            toastCampusDriveRequestStatus(
+                requestOverride,
+                resolveJobInterestModalKind({
+                    isPublic: job.is_public,
+                    publicAccessLevel: job.public_access_level,
+                    isCampusDrive: Boolean(job.is_campus_drive),
+                })
+            )
             return
         }
 
@@ -868,14 +879,20 @@ function JobOpportunitiesPageContent() {
             assignedUniversityIds: job.assigned_university_ids,
             isAuthenticatedStudent: true,
             studentUniversityId: studentProfile?.university_id,
-            isCampusDrive: true,
+            isCampusDrive: Boolean(job.is_campus_drive),
             hasAcceptedCampusDriveRequest:
                 acceptedCampusDriveJobs.has(job.id) ||
                 job.campus_drive_request_status === 'accepted',
         })
         if (!eligibility.canApply) {
             const reason = eligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
-            if (isCampusDriveNotForUniversityMessage(reason)) {
+            if (isJobInterestGateMessage(reason)) {
+                const kind = resolveJobInterestModalKind({
+                    isPublic: job.is_public,
+                    publicAccessLevel: job.public_access_level,
+                    isCampusDrive: Boolean(job.is_campus_drive),
+                    reason,
+                })
                 const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
                 if (outcome === 'accepted') {
                     setAcceptedCampusDriveJobs((prev) => new Set(prev).add(job.id))
@@ -895,9 +912,10 @@ function JobOpportunitiesPageContent() {
                                 : j
                         )
                     )
-                    toastCampusDriveRequestStatus(outcome)
+                    toastCampusDriveRequestStatus(outcome, kind)
                     return
                 } else if (outcome === 'show_interest_modal') {
+                    setInterestModalKind(kind)
                     setCampusDriveInterestJobId(job.id)
                     setShowCampusDriveInterestModal(true)
                     return
@@ -1819,6 +1837,9 @@ function JobOpportunitiesPageContent() {
                 }}
                 onStillInterested={handleCampusDriveStillInterested}
                 isSubmitting={campusDriveInterestSubmitting}
+                message={getJobInterestModalCopy(interestModalKind).message}
+                confirmLabel={getJobInterestModalCopy(interestModalKind).confirmLabel}
+                title={getJobInterestModalCopy(interestModalKind).title}
             />
 
         </StudentDashboardLayout>

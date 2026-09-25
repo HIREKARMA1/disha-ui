@@ -15,7 +15,6 @@ import {
     clearAutoApplyQueryParams,
     getUniversityApplyEligibility,
     getPassoutBatchApplyEligibility,
-    isCampusDriveNotForUniversityMessage,
     resumePendingJobApplication,
     shouldAutoApplyForJob,
 } from '@/lib/jobApplicationMessages'
@@ -26,6 +25,10 @@ import {
     submitCampusDriveInterest,
     toastCampusDriveRequestStatus,
     getCampusDriveRequestApplyOverride,
+    getJobInterestModalCopy,
+    resolveJobInterestModalKind,
+    isJobInterestGateMessage,
+    type JobInterestModalKind,
 } from '@/lib/campusDriveInterest'
 import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import { campusDriveRequestService } from '@/services/campusDriveRequestService'
@@ -122,6 +125,7 @@ export default function PublicJobPage() {
     const [showShareDropdown, setShowShareDropdown] = useState(false)
     const [showPremiumModal, setShowPremiumModal] = useState(false)
     const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+    const [interestModalKind, setInterestModalKind] = useState<JobInterestModalKind>('campus_drive')
     const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
     const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
     const autoApplyAttempted = useRef(false)
@@ -349,7 +353,14 @@ export default function PublicJobPage() {
         if (hasApplied) return
 
         if (requestApplyOverride === 'pending' || requestApplyOverride === 'rejected') {
-            toastCampusDriveRequestStatus(requestApplyOverride)
+            toastCampusDriveRequestStatus(
+                requestApplyOverride,
+                resolveJobInterestModalKind({
+                    isPublic: job?.is_public,
+                    publicAccessLevel: job?.public_access_level,
+                    isCampusDrive: Boolean(job?.is_campus_drive),
+                })
+            )
             return
         }
 
@@ -357,7 +368,13 @@ export default function PublicJobPage() {
         const eligibility = canStudentApply()
         if (!eligibility.canApply) {
             const reason = eligibility.reason || 'You are not eligible to apply for this job'
-            if (isCampusDriveNotForUniversityMessage(reason) && job) {
+            if (isJobInterestGateMessage(reason) && job) {
+                const kind = resolveJobInterestModalKind({
+                    isPublic: job.is_public,
+                    publicAccessLevel: job.public_access_level,
+                    isCampusDrive: Boolean(job.is_campus_drive),
+                    reason,
+                })
                 const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
                 if (outcome === 'accepted') {
                     setHasAcceptedCampusDriveRequest(true)
@@ -371,10 +388,11 @@ export default function PublicJobPage() {
                     setJob((prev: any) =>
                         prev ? { ...prev, campus_drive_request_status: outcome } : prev
                     )
-                    toastCampusDriveRequestStatus(outcome)
+                    toastCampusDriveRequestStatus(outcome, kind)
                     return
                 }
                 if (outcome === 'show_interest_modal') {
+                    setInterestModalKind(kind)
                     setShowCampusDriveInterestModal(true)
                     return
                 }
@@ -1091,6 +1109,9 @@ export default function PublicJobPage() {
                 }}
                 onStillInterested={handleCampusDriveStillInterested}
                 isSubmitting={campusDriveInterestSubmitting}
+                message={getJobInterestModalCopy(interestModalKind).message}
+                confirmLabel={getJobInterestModalCopy(interestModalKind).confirmLabel}
+                title={getJobInterestModalCopy(interestModalKind).title}
             />
         </div>
     )
