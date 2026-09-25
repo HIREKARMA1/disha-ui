@@ -10,6 +10,7 @@ export interface MobileBottomNavItem {
   shortLabel?: string
   active: boolean
   onNavigate?: () => void
+  openInNewTab?: boolean
 }
 
 export interface MobileBottomNavProps {
@@ -47,9 +48,12 @@ export function MobileBottomNav({
             key={item.href}
             href={item.href}
             onClick={() => {
-              if (!item.active) item.onNavigate?.()
+              if (!item.active && !item.openInNewTab) item.onNavigate?.()
             }}
             aria-current={item.active ? "page" : undefined}
+            {...(item.openInNewTab
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
             className={cn(
               "relative flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 transition-colors",
               item.active

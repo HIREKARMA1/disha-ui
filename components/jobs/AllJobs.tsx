@@ -150,6 +150,8 @@ const CATEGORY_CHIPS: readonly { value: CategoryChip; label: string }[] = [
     { value: 'saved', label: 'Saved' },
 ]
 
+const JOBS_PER_PAGE_OPTIONS = [6, 12, 24, 48] as const
+
 const MAX_SEARCH_SUGGESTIONS = 8
 
 const JOB_SEARCH_SUGGESTIONS: readonly string[] = [
@@ -502,6 +504,8 @@ export function AllJobs() {
         total: 0,
         total_pages: 0,
     })
+    const [pageSizeDropdownOpen, setPageSizeDropdownOpen] = useState(false)
+    const pageSizeDropdownRef = useRef<HTMLDivElement>(null)
 
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
     const [showQuickApplyModal, setShowQuickApplyModal] = useState(false)
@@ -645,6 +649,7 @@ export function AllJobs() {
                 datePostedFilter?: DatePostedFilter
                 jobStatusFilter?: JobStatusFilter
                 categoryChip?: CategoryChip
+                limit?: number
             }
         ) => {
             const activeSearch = override?.searchTerm ?? searchTerm
@@ -652,7 +657,7 @@ export function AllJobs() {
             const activeDate = override?.datePostedFilter ?? datePostedFilter
             const activeStatus = override?.jobStatusFilter ?? jobStatusFilter
             const activeCategory = override?.categoryChip ?? categoryChip
-            const pageSize = pagination.limit
+            const pageSize = override?.limit ?? pagination.limit
             const requestId = ++fetchIdRef.current
 
             const buildParams = (pageNum: number, limit: number) => {
@@ -1118,6 +1123,45 @@ export function AllJobs() {
         void fetchJobs(page)
     }
 
+    const handleItemsPerPageChange = (newLimit: number) => {
+        const limit = Math.max(1, newLimit)
+        setPagination((prev) => {
+            const total = prev.total
+            const totalPages =
+                total > 0 ? Math.max(1, Math.ceil(total / limit)) : 0
+            return {
+                ...prev,
+                page: 1,
+                limit,
+                total_pages: totalPages,
+            }
+        })
+        syncUrl({
+            searchTerm,
+            filters,
+            datePostedFilter,
+            jobStatusFilter,
+            categoryChip,
+            page: 1,
+        })
+        setPageSizeDropdownOpen(false)
+        if (!useClientPagination) {
+            void fetchJobs(1, { limit })
+        }
+    }
+
+    useEffect(() => {
+        const onPointerDown = (event: MouseEvent) => {
+            const root = pageSizeDropdownRef.current
+            if (!root) return
+            if (!root.contains(event.target as Node)) {
+                setPageSizeDropdownOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', onPointerDown)
+        return () => document.removeEventListener('mousedown', onPointerDown)
+    }, [])
+
     // After login/register from Quick Apply on /jobs: gate campus-drive, then open Quick Apply
     useEffect(() => {
         if (pendingApplyOpened.current || !isLoggedIn || !studentProfileLoaded || loading || displayJobs.length === 0) return
@@ -1508,7 +1552,7 @@ export function AllJobs() {
                     <div className="mb-3 rounded-xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] sm:mb-3 sm:p-3.5 lg:mb-4">
                         <form
                             onSubmit={handleSearch}
-                            className="flex gap-2"
+                            className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
                         >
                             <div ref={searchBoxRef} className="relative min-w-0 flex-1">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 sm:h-4 sm:w-4" />
@@ -1564,53 +1608,103 @@ export function AllJobs() {
                                     </ul>
                                 )}
                             </div>
-                            <MobileFilterBottomSheet
-                                open={filterSheetOpen}
-                                onOpenChange={(open) => {
-                                    if (open) openFilterSheet()
-                                    else setFilterSheetOpen(false)
-                                }}
-                                activeCount={activeFilterCount}
-                                onClear={clearFilters}
-                                onApply={applySheetFilters}
-                                clearLabel="Clear Filters"
-                            >
-                                <JobsFilterFields
-                                    filters={draftFilters}
-                                    datePosted={draftDatePosted}
-                                    onFilterChange={handleDraftFilterChange}
-                                    onDatePostedChange={setDraftDatePosted}
-                                    dense
-                                    namePrefix="jobs-sheet"
-                                />
-                            </MobileFilterBottomSheet>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    setDesktopFilterOpen((open) => !open)
-                                    if (!desktopFilterOpen) setShowApplyFormInPanel(false)
-                                }}
-                                className={`hidden h-10 shrink-0 rounded-full px-4 font-medium shadow-none lg:inline-flex ${
-                                    desktopFilterOpen
-                                        ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-600 dark:bg-primary-950/40 dark:text-primary-200'
-                                        : 'border-gray-200'
-                                }`}
-                            >
-                                <Filter className="mr-2 h-4 w-4" />
-                                Filter
-                                {activeFilterCount > 0 ? (
-                                    <span className="ml-1.5 rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                                        {activeFilterCount}
-                                    </span>
-                                ) : null}
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="hidden h-10 shrink-0 rounded-full bg-primary-600 px-5 font-semibold text-white shadow-none transition-colors hover:bg-primary-700 sm:inline-flex"
-                            >
-                                Search
-                            </Button>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <label className="whitespace-nowrap text-xs text-gray-600 dark:text-gray-400 sm:text-sm">
+                                    Jobs per page:
+                                </label>
+                                <div className="relative" ref={pageSizeDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPageSizeDropdownOpen((open) => !open)}
+                                        className="flex min-w-[80px] items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white sm:px-4"
+                                        aria-haspopup="listbox"
+                                        aria-expanded={pageSizeDropdownOpen}
+                                    >
+                                        <span>{pagination.limit}</span>
+                                        <svg
+                                            className="ml-2 h-4 w-4 text-gray-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            aria-hidden
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M19 9l-7 7-7-7"
+                                            />
+                                        </svg>
+                                    </button>
+                                    {pageSizeDropdownOpen && (
+                                        <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                                            {JOBS_PER_PAGE_OPTIONS.map((value) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => handleItemsPerPageChange(value)}
+                                                    className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                                                        pagination.limit === value
+                                                            ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
+                                                            : 'text-gray-900 dark:text-white'
+                                                    }`}
+                                                >
+                                                    {value}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <MobileFilterBottomSheet
+                                    open={filterSheetOpen}
+                                    onOpenChange={(open) => {
+                                        if (open) openFilterSheet()
+                                        else setFilterSheetOpen(false)
+                                    }}
+                                    activeCount={activeFilterCount}
+                                    onClear={clearFilters}
+                                    onApply={applySheetFilters}
+                                    clearLabel="Clear Filters"
+                                >
+                                    <JobsFilterFields
+                                        filters={draftFilters}
+                                        datePosted={draftDatePosted}
+                                        onFilterChange={handleDraftFilterChange}
+                                        onDatePostedChange={setDraftDatePosted}
+                                        dense
+                                        namePrefix="jobs-sheet"
+                                    />
+                                </MobileFilterBottomSheet>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setDesktopFilterOpen((open) => !open)
+                                        if (!desktopFilterOpen) setShowApplyFormInPanel(false)
+                                    }}
+                                    className={`hidden h-10 shrink-0 rounded-full px-4 font-medium shadow-none lg:inline-flex ${
+                                        desktopFilterOpen
+                                            ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-600 dark:bg-primary-950/40 dark:text-primary-200'
+                                            : 'border-gray-200'
+                                    }`}
+                                >
+                                    <Filter className="mr-2 h-4 w-4" />
+                                    Filter
+                                    {activeFilterCount > 0 ? (
+                                        <span className="ml-1.5 rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                            {activeFilterCount}
+                                        </span>
+                                    ) : null}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="hidden h-10 shrink-0 rounded-full bg-primary-600 px-5 font-semibold text-white shadow-none transition-colors hover:bg-primary-700 sm:inline-flex"
+                                >
+                                    Search
+                                </Button>
+                            </div>
                         </form>
 
                         {/* Category tabs */}
@@ -1663,6 +1757,41 @@ export function AllJobs() {
                             </div>
                         </div>
                     </div>
+
+                    {(loading || pagination.total > 0 || displayJobs.length > 0) && (
+                        <div className="mb-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] sm:mb-4 sm:p-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                                <div className="text-sm text-gray-600 dark:text-gray-300">
+                                    {loading ? (
+                                        <span className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin text-primary-500" />
+                                            Loading jobs...
+                                        </span>
+                                    ) : pagination.total > 0 ? (
+                                        <span className="flex items-center gap-2">
+                                            📊{' '}
+                                            <span className="font-semibold text-primary-600 dark:text-primary-400">
+                                                Showing{' '}
+                                                {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                                                {Math.min(
+                                                    pagination.page * pagination.limit,
+                                                    pagination.total
+                                                )}{' '}
+                                                of {pagination.total} jobs
+                                            </span>
+                                        </span>
+                                    ) : null}
+                                </div>
+                                {pagination.total > 0 && (
+                                    <div className="text-xs font-medium text-primary-500 dark:text-primary-400">
+                                        📄 Page {pagination.page} of{' '}
+                                        {Math.max(1, pagination.total_pages)} • {pagination.limit}{' '}
+                                        jobs per page
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Mobile: Open now strip (desktop uses right rail) */}
                     {!loading && railOpenJobs.length > 0 && (
