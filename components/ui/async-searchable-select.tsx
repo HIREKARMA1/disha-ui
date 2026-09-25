@@ -43,6 +43,28 @@ function useDebounceValue<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
+/** 0 = name starts with query, 1 = a word starts with query, 2 = contains, 3 = other */
+function matchRank(label: string, term: string): number {
+    const name = label.toLowerCase()
+    const query = term.trim().toLowerCase()
+    if (!query) return 0
+    if (name.startsWith(query)) return 0
+    const words = name.split(/[^a-z0-9]+/).filter(Boolean)
+    if (words.some((word) => word.startsWith(query))) return 1
+    if (name.includes(query)) return 2
+    return 3
+}
+
+function sortByRelevance(options: AsyncSelectOption[], term: string): AsyncSelectOption[] {
+    const query = term.trim()
+    if (!query) return options
+    return [...options].sort((a, b) => {
+        const rankDiff = matchRank(a.label, query) - matchRank(b.label, query)
+        if (rankDiff !== 0) return rankDiff
+        return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+    })
+}
+
 type PanelPosition = { top: number; left: number; width: number }
 
 export function AsyncSearchableSelect({
@@ -54,7 +76,7 @@ export function AsyncSearchableSelect({
     disabled = false,
     className = "",
     searchPlaceholder = "Type to search...",
-    debounceMs = 500,
+    debounceMs = 300,
     error = false,
     helperText,
     portal = false,
@@ -74,30 +96,40 @@ export function AsyncSearchableSelect({
     const triggerRef = useRef<HTMLButtonElement>(null)
     const panelRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const fetchOptionsRef = useRef(fetchOptions)
+    const requestIdRef = useRef(0)
 
-    const fetchData = useCallback(async (term: string) => {
-        setIsLoading(true)
-        try {
-            const results = await fetchOptions(term)
-            setOptions(results)
-        } catch (error) {
-            console.error("Failed to fetch options", error)
-            setOptions([])
-        } finally {
-            setIsLoading(false)
-        }
+    useEffect(() => {
+        fetchOptionsRef.current = fetchOptions
     }, [fetchOptions])
 
     useEffect(() => {
         setMounted(true)
     }, [])
 
-    // Initial fetch to populate options when opened
+    // Fetch on the debounced term only. Ignore slower responses from an older query.
     useEffect(() => {
-        if (isOpen) {
-            fetchData(debouncedSearchTerm)
-        }
-    }, [debouncedSearchTerm, isOpen, fetchData])
+        if (!isOpen) return
+
+        const requestId = ++requestIdRef.current
+        const term = debouncedSearchTerm
+        setIsLoading(true)
+
+        fetchOptionsRef.current(term)
+            .then((results) => {
+                if (requestId !== requestIdRef.current) return
+                setOptions(sortByRelevance(results, term))
+            })
+            .catch((error) => {
+                if (requestId !== requestIdRef.current) return
+                console.error("Failed to fetch options", error)
+                setOptions([])
+            })
+            .finally(() => {
+                if (requestId !== requestIdRef.current) return
+                setIsLoading(false)
+            })
+    }, [debouncedSearchTerm, isOpen])
 
     // Keep track of the selected option object separately to preserve label
     useEffect(() => {
