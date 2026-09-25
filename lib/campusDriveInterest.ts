@@ -6,8 +6,13 @@ import {
   CAMPUS_DRIVE_REQUEST_PENDING_MESSAGE,
   CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE,
   CAMPUS_DRIVE_REQUEST_SENT_MESSAGE,
+  PREMIUM_JOB_INTEREST_MESSAGE,
+  PREMIUM_JOB_INTEREST_TITLE,
+  PREMIUM_JOB_REQUEST_REJECTED_MESSAGE,
   getApplyErrorMessage,
-  isCampusDriveNotForUniversityMessage,
+  isJobInterestGateMessage,
+  isPremiumJobInterestMessage,
+  isPremiumPublicJob,
 } from '@/lib/jobApplicationMessages'
 
 export type CampusDriveInterestOutcome =
@@ -18,8 +23,47 @@ export type CampusDriveInterestOutcome =
   | 'accepted'
   | 'error'
 
+export type JobInterestModalKind = 'campus_drive' | 'premium'
+
+export function getJobInterestModalCopy(kind: JobInterestModalKind): {
+  title?: string
+  message: string
+  confirmLabel: string
+} {
+  if (kind === 'premium') {
+    return {
+      title: PREMIUM_JOB_INTEREST_TITLE,
+      message: PREMIUM_JOB_INTEREST_MESSAGE,
+      confirmLabel: "I'm Still Interested",
+    }
+  }
+  return {
+    message: CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
+    confirmLabel: "Still I'm Interested",
+  }
+}
+
+export function resolveJobInterestModalKind(options: {
+  isPublic?: boolean | null
+  publicAccessLevel?: string | null
+  isCampusDrive?: boolean | null
+  reason?: string | null
+}): JobInterestModalKind {
+  if (isPremiumJobInterestMessage(options.reason)) return 'premium'
+  if (
+    isPremiumPublicJob({
+      isPublic: options.isPublic,
+      publicAccessLevel: options.publicAccessLevel,
+    }) &&
+    !options.isCampusDrive
+  ) {
+    return 'premium'
+  }
+  return 'campus_drive'
+}
+
 /**
- * Apply-button override from campus-drive request status.
+ * Apply-button override from campus-drive / premium job request status.
  * Application status always wins when present (priority 1–2 → Applied).
  */
 export function getCampusDriveRequestApplyOverride(
@@ -31,7 +75,7 @@ export function getCampusDriveRequestApplyOverride(
 }
 
 /**
- * Resolve how a non-eligible campus-drive apply should be handled for this student+job.
+ * Resolve how a non-eligible campus-drive / premium apply should be handled for this student+job.
  */
 export async function resolveCampusDriveInterestOutcome(
   jobId: string
@@ -60,12 +104,17 @@ export async function resolveCampusDriveInterestOutcome(
 }
 
 export function toastCampusDriveRequestStatus(
-  outcome: CampusDriveInterestOutcome
+  outcome: CampusDriveInterestOutcome,
+  kind: JobInterestModalKind = 'campus_drive'
 ): void {
   if (outcome === 'pending') {
     toast(CAMPUS_DRIVE_REQUEST_PENDING_MESSAGE)
   } else if (outcome === 'rejected') {
-    toast.error(CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE)
+    toast.error(
+      kind === 'premium'
+        ? PREMIUM_JOB_REQUEST_REJECTED_MESSAGE
+        : CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE
+    )
   }
 }
 
@@ -82,7 +131,11 @@ export async function submitCampusDriveInterest(jobId: string): Promise<{
     } else if (status === 'accepted') {
       toast.success('Your request was already accepted. You can apply for this job.')
     } else if (status === 'rejected') {
-      toast.error(CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE)
+      toast.error(
+        created.request_type === 'premium'
+          ? PREMIUM_JOB_REQUEST_REJECTED_MESSAGE
+          : CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE
+      )
     } else {
       toast.success(CAMPUS_DRIVE_REQUEST_SENT_MESSAGE)
     }
@@ -96,7 +149,13 @@ export async function submitCampusDriveInterest(jobId: string): Promise<{
 
 export function shouldOpenCampusDriveInterestFromApplyError(error: unknown): boolean {
   const message = getApplyErrorMessage(error)
-  return isCampusDriveNotForUniversityMessage(message)
+  return isJobInterestGateMessage(message)
 }
 
-export { CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE }
+export {
+  CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
+  PREMIUM_JOB_INTEREST_MESSAGE,
+  PREMIUM_JOB_INTEREST_TITLE,
+  isJobInterestGateMessage,
+  isPremiumJobInterestMessage,
+}

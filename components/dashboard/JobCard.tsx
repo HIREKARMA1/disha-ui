@@ -41,6 +41,8 @@ interface Job {
     industry?: string
     selection_process?: string
     is_campus_drive?: boolean
+    is_public?: boolean | null
+    public_access_level?: string | null
     campus_drive_date?: string
     views_count: number
     applications_count: number
@@ -394,6 +396,16 @@ export function JobCard({
                                         )}
                                     >
                                         Campus Drive
+                                    </span>
+                                )}
+                                {job.is_public && job.public_access_level === 'premium' && (
+                                    <span
+                                        className={cn(
+                                            'inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-300',
+                                            compactMobile && 'hidden sm:inline-flex'
+                                        )}
+                                    >
+                                        Premium Users
                                     </span>
                                 )}
                             </div>

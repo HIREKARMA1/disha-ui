@@ -177,7 +177,7 @@ export function CampusDriveRequestList() {
     <div className="space-y-6">
       <AdminPageHero
         title="Job Requests"
-        subtitle="Review student interest requests for campus drives outside their university assignment."
+        subtitle="Review student interest requests for campus drives and Premium Users jobs."
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
@@ -229,7 +229,7 @@ export function CampusDriveRequestList() {
                   'Phone',
                   'University',
                   'Job',
-                  'Campus Drive',
+                  'Request Type',
                   'Requested Time',
                   'Status',
                   'Actions',
@@ -275,7 +275,9 @@ export function CampusDriveRequestList() {
                       {item.job_title || '—'}
                     </td>
                     <td className="max-w-[160px] truncate px-3 py-3 text-sm text-gray-600 dark:text-gray-300">
-                      {item.campus_drive_label || item.company_name || '—'}
+                      {item.request_type === 'premium'
+                        ? 'Premium Users'
+                        : item.campus_drive_label || item.company_name || 'Campus Drive'}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {formatDate(item.requested_at)}
@@ -342,7 +344,11 @@ export function CampusDriveRequestList() {
         onClose={() => setRejectTarget(null)}
         onConfirm={handleRejectConfirm}
         title="Reject request?"
-        message="The student will remain ineligible for this campus drive and cannot submit another request for the same job."
+        message={
+          rejectTarget?.request_type === 'premium'
+            ? 'The student will remain ineligible for this Premium Users job and cannot submit another request for the same job.'
+            : 'The student will remain ineligible for this campus drive and cannot submit another request for the same job.'
+        }
         confirmText="Reject"
         cancelText="Cancel"
         variant="danger"

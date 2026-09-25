@@ -44,7 +44,6 @@ import {
   getPassoutBatchApplyEligibility,
   clearAutoApplyQueryParams,
   getUniversityApplyEligibility,
-  isCampusDriveNotForUniversityMessage,
   toastApplyError,
 } from '@/lib/jobApplicationMessages'
 import {
@@ -52,6 +51,10 @@ import {
   submitCampusDriveInterest,
   toastCampusDriveRequestStatus,
   getCampusDriveRequestApplyOverride,
+  getJobInterestModalCopy,
+  resolveJobInterestModalKind,
+  isJobInterestGateMessage,
+  type JobInterestModalKind,
 } from '@/lib/campusDriveInterest'
 import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestModal'
 import { getSavedJobIds, SAVED_JOBS_EVENT } from '@/lib/savedJobs'
@@ -514,6 +517,7 @@ export function AllJobs() {
     const [showSkillsNudge, setShowSkillsNudge] = useState(false)
     const [applyingJobId, setApplyingJobId] = useState<string | null>(null)
     const [showCampusDriveInterestModal, setShowCampusDriveInterestModal] = useState(false)
+    const [interestModalKind, setInterestModalKind] = useState<JobInterestModalKind>('campus_drive')
     const [campusDriveInterestJobId, setCampusDriveInterestJobId] = useState<string | null>(null)
     const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
     const [acceptedCampusDriveJobs, setAcceptedCampusDriveJobs] = useState<Set<string>>(new Set())
@@ -1258,6 +1262,21 @@ export function AllJobs() {
         return () => window.clearTimeout(t)
     }, [displayJobs, loading, scrollJobCardIntoView])
 
+    /** Keep JobCard + rail in sync with Job Request status (jobs list renders from jobsPool). */
+    const patchJobRequestStatus = (
+        jobId: string,
+        status: 'pending' | 'accepted' | 'rejected'
+    ) => {
+        const patch = (job: Job): Job =>
+            job.id === jobId ? { ...job, campus_drive_request_status: status } : job
+        setJobs((prev) => prev.map(patch))
+        setJobsPool((prev) => prev.map(patch))
+        setSelectedJob((prev) => (prev && prev.id === jobId ? patch(prev) : prev))
+        if (status === 'accepted') {
+            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+        }
+    }
+
     /** Sync eligibility checks (no async campus-drive resolution). */
     const assertCanStartApply = (job: Job): boolean => {
         if (job.application_status === 'applied') {
@@ -1268,7 +1287,14 @@ export function AllJobs() {
             job.campus_drive_request_status
         )
         if (requestOverride === 'pending' || requestOverride === 'rejected') {
-            toastCampusDriveRequestStatus(requestOverride)
+            toastCampusDriveRequestStatus(
+                requestOverride,
+                resolveJobInterestModalKind({
+                    isPublic: job.is_public,
+                    publicAccessLevel: job.public_access_level,
+                    isCampusDrive: Boolean(job.is_campus_drive),
+                })
+            )
             return false
         }
 
@@ -1308,35 +1334,30 @@ export function AllJobs() {
 
         const reason =
             universityEligibility.reason || CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE
-        if (!isCampusDriveNotForUniversityMessage(reason)) {
+        if (!isJobInterestGateMessage(reason)) {
             toast.error(reason)
             return false
         }
 
+        const kind = resolveJobInterestModalKind({
+            isPublic: job.is_public,
+            publicAccessLevel: job.public_access_level,
+            isCampusDrive: Boolean(job.is_campus_drive),
+            reason,
+        })
+
         const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
         if (outcome === 'accepted') {
-            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(job.id))
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.id === job.id
-                        ? { ...j, campus_drive_request_status: 'accepted' }
-                        : j
-                )
-            )
+            patchJobRequestStatus(job.id, 'accepted')
             return true
         }
         if (outcome === 'pending' || outcome === 'rejected') {
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.id === job.id
-                        ? { ...j, campus_drive_request_status: outcome }
-                        : j
-                )
-            )
-            toastCampusDriveRequestStatus(outcome)
+            patchJobRequestStatus(job.id, outcome)
+            toastCampusDriveRequestStatus(outcome, kind)
             return false
         }
         if (outcome === 'show_interest_modal') {
+            setInterestModalKind(kind)
             setCampusDriveInterestJobId(job.id)
             setShowCampusDriveInterestModal(true)
             return false
@@ -1408,14 +1429,22 @@ export function AllJobs() {
             void maybeShowSkillsNudge()
             void fetchJobs(pagination.page)
         } catch (error: unknown) {
-            if (isCampusDriveNotForUniversityMessage(getApplyErrorMessage(error))) {
+            const applyErrorMessage = getApplyErrorMessage(error)
+            if (isJobInterestGateMessage(applyErrorMessage)) {
+                const kind = resolveJobInterestModalKind({
+                    isPublic: job.is_public,
+                    publicAccessLevel: job.public_access_level,
+                    isCampusDrive: Boolean(job.is_campus_drive),
+                    reason: applyErrorMessage,
+                })
                 const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
                 if (outcome === 'pending' || outcome === 'rejected') {
-                    toastCampusDriveRequestStatus(outcome)
+                    toastCampusDriveRequestStatus(outcome, kind)
                 } else if (outcome === 'accepted') {
                     setAcceptedCampusDriveJobs((prev) => new Set(prev).add(job.id))
                     toastApplyError(error)
                 } else {
+                    setInterestModalKind(kind)
                     setCampusDriveInterestJobId(job.id)
                     setShowCampusDriveInterestModal(true)
                 }
@@ -1437,16 +1466,7 @@ export function AllJobs() {
                 setShowCampusDriveInterestModal(false)
                 setCampusDriveInterestJobId(null)
                 if (result.status) {
-                    setJobs((prev) =>
-                        prev.map((j) =>
-                            j.id === jobId
-                                ? { ...j, campus_drive_request_status: result.status }
-                                : j
-                        )
-                    )
-                }
-                if (result.status === 'accepted') {
-                    setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+                    patchJobRequestStatus(jobId, result.status)
                 }
             }
         } finally {
@@ -1460,14 +1480,7 @@ export function AllJobs() {
         if (!selectedJob) return
         const jobId = selectedJob.id
         if (status) {
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.id === jobId ? { ...j, campus_drive_request_status: status } : j
-                )
-            )
-        }
-        if (status === 'accepted') {
-            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+            patchJobRequestStatus(jobId, status)
         }
         setShowQuickApplyModal(false)
         setApplyingJobId(null)
@@ -2071,6 +2084,9 @@ export function AllJobs() {
                 }}
                 onStillInterested={handleCampusDriveStillInterested}
                 isSubmitting={campusDriveInterestSubmitting}
+                message={getJobInterestModalCopy(interestModalKind).message}
+                confirmLabel={getJobInterestModalCopy(interestModalKind).confirmLabel}
+                title={getJobInterestModalCopy(interestModalKind).title}
             />
         </div>
     )

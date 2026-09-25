@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, X } from 'lucide-react'
+import { Crown, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE } from '@/lib/jobApplicationMessages'
 
@@ -10,21 +10,31 @@ interface CampusDriveInterestModalProps {
   onClose: () => void
   onStillInterested: () => void
   isSubmitting?: boolean
+  /** Optional title — used by Premium Users layout; Campus Drive omits this. */
+  title?: string
   message?: string
+  /** Default keeps Campus Drive copy; Premium flow uses "I'm Still Interested". */
+  confirmLabel?: string
 }
 
 /**
- * Shown when a student is blocked by campus-drive university eligibility.
- * Close → dismiss only. Still I'm Interested → create admin request.
+ * Shared interest modal for Campus Drive and Premium Users Job Requests.
+ * Close → dismiss only. Still Interested → create admin Job Request.
+ * Campus Drive: message-only body (unchanged).
+ * Premium: title + description + subtle crown indicator.
  */
 export function CampusDriveInterestModal({
   isOpen,
   onClose,
   onStillInterested,
   isSubmitting = false,
+  title,
   message = CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
+  confirmLabel = "Still I'm Interested",
 }: CampusDriveInterestModalProps) {
   if (!isOpen) return null
+
+  const isPremiumLayout = Boolean(title)
 
   return (
     <AnimatePresence>
@@ -43,7 +53,8 @@ export function CampusDriveInterestModal({
           className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-[#151b2b] sm:p-6"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="campus-drive-interest-title"
+          aria-labelledby="job-interest-modal-title"
+          aria-describedby={isPremiumLayout ? 'job-interest-modal-desc' : undefined}
         >
           <button
             type="button"
@@ -55,12 +66,32 @@ export function CampusDriveInterestModal({
             <X className="h-4 w-4" />
           </button>
 
-          <h2
-            id="campus-drive-interest-title"
-            className="pr-8 text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg"
-          >
-            {message}
-          </h2>
+          {isPremiumLayout ? (
+            <div className="pr-8">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                <Crown className="h-5 w-5" aria-hidden />
+              </div>
+              <h2
+                id="job-interest-modal-title"
+                className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white sm:text-xl"
+              >
+                {title}
+              </h2>
+              <p
+                id="job-interest-modal-desc"
+                className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300"
+              >
+                {message}
+              </p>
+            </div>
+          ) : (
+            <h2
+              id="job-interest-modal-title"
+              className="pr-8 text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg"
+            >
+              {message}
+            </h2>
+          )}
 
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
@@ -84,7 +115,7 @@ export function CampusDriveInterestModal({
                   Sending…
                 </>
               ) : (
-                "Still I'm Interested"
+                confirmLabel
               )}
             </Button>
           </div>
