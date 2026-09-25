@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Briefcase, CheckCircle2, Eye, FileText, Loader2, MapPin, Trash2, X, Zap } from 'lucide-react'
+import { Briefcase, CheckCircle2, Crown, Eye, FileText, Loader2, MapPin, Trash2, X, Zap } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
@@ -622,9 +622,29 @@ export function QuickApplyModal({
           {/* Body */}
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             {campusDriveBlocked ? (
-              <p className="text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg">
-                {getJobInterestModalCopy(interestModalKind).message}
-              </p>
+              (() => {
+                const copy = getJobInterestModalCopy(interestModalKind)
+                if (copy.title) {
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                        <Crown className="h-5 w-5" aria-hidden />
+                      </div>
+                      <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
+                        {copy.title}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                        {copy.message}
+                      </p>
+                    </div>
+                  )
+                }
+                return (
+                  <p className="text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg">
+                    {copy.message}
+                  </p>
+                )
+              })()
             ) : loadingProfile ? (
               <div className="flex items-center justify-center py-16 text-sm text-gray-500">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />

@@ -23,6 +23,8 @@ export function isPremiumRequiredError(message: string | null | undefined): bool
   // Interest-request modal copy must not open the Support Premium modal.
   if (
     lower.includes('premium users only') ||
+    lower.includes('exclusively available to premium') ||
+    lower.includes('available exclusively to premium') ||
     lower.includes("i'm still interested") ||
     lower.includes('im still interested')
   ) {

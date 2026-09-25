@@ -7,6 +7,7 @@ import {
   CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE,
   CAMPUS_DRIVE_REQUEST_SENT_MESSAGE,
   PREMIUM_JOB_INTEREST_MESSAGE,
+  PREMIUM_JOB_INTEREST_TITLE,
   PREMIUM_JOB_REQUEST_REJECTED_MESSAGE,
   getApplyErrorMessage,
   isJobInterestGateMessage,
@@ -25,11 +26,13 @@ export type CampusDriveInterestOutcome =
 export type JobInterestModalKind = 'campus_drive' | 'premium'
 
 export function getJobInterestModalCopy(kind: JobInterestModalKind): {
+  title?: string
   message: string
   confirmLabel: string
 } {
   if (kind === 'premium') {
     return {
+      title: PREMIUM_JOB_INTEREST_TITLE,
       message: PREMIUM_JOB_INTEREST_MESSAGE,
       confirmLabel: "I'm Still Interested",
     }
@@ -152,6 +155,7 @@ export function shouldOpenCampusDriveInterestFromApplyError(error: unknown): boo
 export {
   CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   PREMIUM_JOB_INTEREST_MESSAGE,
+  PREMIUM_JOB_INTEREST_TITLE,
   isJobInterestGateMessage,
   isPremiumJobInterestMessage,
 }

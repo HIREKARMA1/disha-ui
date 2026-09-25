@@ -38,8 +38,9 @@ export const CAMPUS_DRIVE_REQUEST_REJECTED_MESSAGE =
   'Your request to apply for this campus drive was rejected.'
 export const CAMPUS_DRIVE_REQUEST_SENT_MESSAGE =
   'Your request has been sent to the admin. This job will be automatically applied if your request is approved.'
+export const PREMIUM_JOB_INTEREST_TITLE = 'Premium Job Opportunity'
 export const PREMIUM_JOB_INTEREST_MESSAGE =
-  "This job is for premium users only. If you still want to apply, click on 'I'm Still Interested'."
+  'This job is exclusively available to Premium Users. If you would still like to apply, you can submit a request to the admin for consideration.'
 export const PREMIUM_JOB_REQUEST_REJECTED_MESSAGE =
   'Your request to apply for this premium job was rejected.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
@@ -120,6 +121,8 @@ export function isPremiumJobInterestMessage(
   const lower = message.toLowerCase()
   return (
     lower.includes('premium users only') ||
+    lower.includes('exclusively available to premium') ||
+    lower.includes('available exclusively to premium') ||
     lower.includes("i'm still interested") ||
     lower.includes('im still interested')
   )

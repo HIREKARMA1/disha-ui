@@ -1957,6 +1957,7 @@ export function AllJobs() {
                 isSubmitting={campusDriveInterestSubmitting}
                 message={getJobInterestModalCopy(interestModalKind).message}
                 confirmLabel={getJobInterestModalCopy(interestModalKind).confirmLabel}
+                title={getJobInterestModalCopy(interestModalKind).title}
             />
         </div>
     )
