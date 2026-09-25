@@ -1218,6 +1218,21 @@ export function AllJobs() {
         return () => window.clearTimeout(t)
     }, [displayJobs, loading, scrollJobCardIntoView])
 
+    /** Keep JobCard + rail in sync with Job Request status (jobs list renders from jobsPool). */
+    const patchJobRequestStatus = (
+        jobId: string,
+        status: 'pending' | 'accepted' | 'rejected'
+    ) => {
+        const patch = (job: Job): Job =>
+            job.id === jobId ? { ...job, campus_drive_request_status: status } : job
+        setJobs((prev) => prev.map(patch))
+        setJobsPool((prev) => prev.map(patch))
+        setSelectedJob((prev) => (prev && prev.id === jobId ? patch(prev) : prev))
+        if (status === 'accepted') {
+            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+        }
+    }
+
     /** Sync eligibility checks (no async campus-drive resolution). */
     const assertCanStartApply = (job: Job): boolean => {
         if (job.application_status === 'applied') {
@@ -1289,24 +1304,11 @@ export function AllJobs() {
 
         const { outcome } = await resolveCampusDriveInterestOutcome(job.id)
         if (outcome === 'accepted') {
-            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(job.id))
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.id === job.id
-                        ? { ...j, campus_drive_request_status: 'accepted' }
-                        : j
-                )
-            )
+            patchJobRequestStatus(job.id, 'accepted')
             return true
         }
         if (outcome === 'pending' || outcome === 'rejected') {
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.id === job.id
-                        ? { ...j, campus_drive_request_status: outcome }
-                        : j
-                )
-            )
+            patchJobRequestStatus(job.id, outcome)
             toastCampusDriveRequestStatus(outcome, kind)
             return false
         }
@@ -1420,16 +1422,7 @@ export function AllJobs() {
                 setShowCampusDriveInterestModal(false)
                 setCampusDriveInterestJobId(null)
                 if (result.status) {
-                    setJobs((prev) =>
-                        prev.map((j) =>
-                            j.id === jobId
-                                ? { ...j, campus_drive_request_status: result.status }
-                                : j
-                        )
-                    )
-                }
-                if (result.status === 'accepted') {
-                    setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+                    patchJobRequestStatus(jobId, result.status)
                 }
             }
         } finally {
@@ -1443,14 +1436,7 @@ export function AllJobs() {
         if (!selectedJob) return
         const jobId = selectedJob.id
         if (status) {
-            setJobs((prev) =>
-                prev.map((j) =>
-                    j.id === jobId ? { ...j, campus_drive_request_status: status } : j
-                )
-            )
-        }
-        if (status === 'accepted') {
-            setAcceptedCampusDriveJobs((prev) => new Set(prev).add(jobId))
+            patchJobRequestStatus(jobId, status)
         }
         setShowQuickApplyModal(false)
         setApplyingJobId(null)
