@@ -9,6 +9,11 @@ import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
+import {
+  OtpChannelPicker,
+  otpSentToast,
+  type OtpChannel,
+} from '@/components/auth/OtpChannelPicker'
 
 type ForgotStep = 'idle' | 'email' | 'otp' | 'password' | 'success'
 
@@ -100,6 +105,7 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotErrors, setForgotErrors] = useState<string[]>([])
+  const [otpChannel, setOtpChannel] = useState<OtpChannel>('email')
 
   const otpRateLimit = useOtpRateLimit({
     purpose: 'password_reset',
@@ -195,11 +201,12 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
       const response = await apiClient.requestPasswordResetOtp({
         email: targetEmail,
         user_type: 'student',
+        channel: otpChannel,
       })
       setForgotEmail(targetEmail)
       setForgotStep('otp')
       otpRateLimit.handleSendSuccess(response.rate_limit, targetEmail)
-      toast.success('OTP has been sent to your email.')
+      toast.success(otpSentToast(otpChannel))
     } catch (error: unknown) {
       otpRateLimit.handleSendError(error)
       const message = getErrorMessage(error, 'Failed to send OTP. Please try again.')
@@ -223,13 +230,14 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
       const response = await apiClient.requestPasswordResetOtp({
         email: forgotEmail,
         user_type: 'student',
+        channel: otpChannel,
       })
       otpRateLimit.handleSendSuccess(response.rate_limit, forgotEmail)
       if (!response.rate_limit) {
         await otpRateLimit.refreshStatus()
       }
       setOtp('')
-      toast.success('OTP has been sent to your email.')
+      toast.success(otpSentToast(otpChannel, true))
     } catch (error: unknown) {
       otpRateLimit.handleSendError(error)
       toast.error(getErrorMessage(error, 'Failed to resend OTP. Please try again.'))
@@ -399,7 +407,7 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Forgot Password?</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Reset your password using OTP sent to your registered email.
+                Reset your password using an OTP sent to your email or WhatsApp.
               </p>
             </div>
           </div>
@@ -433,12 +441,23 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
                     readOnly={!!registeredEmail}
                   />
                 </div>
-                {registeredEmail && (
+                {registeredEmail && otpChannel === 'email' && (
                   <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                     OTP will be sent to your registered student email.
                   </p>
                 )}
               </div>
+
+              <OtpChannelPicker
+                value={otpChannel}
+                onChange={setOtpChannel}
+                disabled={forgotLoading}
+              />
+              {otpChannel === 'whatsapp' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  The code is sent to the WhatsApp number saved on your account.
+                </p>
+              )}
 
               {forgotErrors.length > 0 && (
                 <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 space-y-1">
@@ -476,7 +495,14 @@ export function StudentPersonalSecurity({ email }: StudentPersonalSecurityProps)
           {forgotStep === 'otp' && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Enter the 6-digit OTP sent to <span className="font-medium text-gray-900 dark:text-white">{maskedEmail}</span>.
+                {otpChannel === 'whatsapp' ? (
+                  <>Enter the 6-digit OTP sent to the WhatsApp number on your account.</>
+                ) : (
+                  <>
+                    Enter the 6-digit OTP sent to{' '}
+                    <span className="font-medium text-gray-900 dark:text-white">{maskedEmail}</span>.
+                  </>
+                )}
               </p>
               <div>
                 <label htmlFor="reset-otp" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

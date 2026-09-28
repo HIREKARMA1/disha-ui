@@ -17,6 +17,11 @@ import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
+import {
+    OtpChannelPicker,
+    otpSentToast,
+    type OtpChannel,
+} from '@/components/auth/OtpChannelPicker'
 import { clearPasswordResetSession } from '@/lib/password-reset-session'
 import { UserType } from '@/types/auth'
 import { buildAuthPath, parseRegisterUserType } from '@/lib/authLinks'
@@ -73,6 +78,7 @@ function ForgotPasswordPageContent() {
     const [otp, setOtp] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [otpChannel, setOtpChannel] = useState<OtpChannel>('email')
 
     const otpRateLimit = useOtpRateLimit({
         purpose: 'password_reset',
@@ -130,6 +136,7 @@ function ForgotPasswordPageContent() {
             const response = await apiClient.requestPasswordResetOtp({
                 email: data.email,
                 user_type: userType,
+                channel: otpChannel,
             })
 
             console.log('OTP API Response:', response)
@@ -137,7 +144,7 @@ function ForgotPasswordPageContent() {
             setEmail(data.email)
             setCurrentStep('otp')
             otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
-            toast.success('OTP sent to your email address')
+            toast.success(otpSentToast(otpChannel))
         } catch (error: unknown) {
             otpRateLimit.handleSendError(error)
             toast.error(getErrorMessage(error, 'Failed to send OTP. Please try again.'))
@@ -160,6 +167,7 @@ function ForgotPasswordPageContent() {
             const response = await apiClient.requestPasswordResetOtp({
                 email,
                 user_type: userType,
+                channel: otpChannel,
             })
 
             otpRateLimit.handleSendSuccess(response.rate_limit, email)
@@ -168,7 +176,7 @@ function ForgotPasswordPageContent() {
             }
             otpForm.reset()
             setOtp('')
-            toast.success('OTP resent to your email address')
+            toast.success(otpSentToast(otpChannel, true))
         } catch (error: unknown) {
             otpRateLimit.handleSendError(error)
             toast.error(getErrorMessage(error, 'Failed to resend OTP. Please try again.'))
@@ -249,7 +257,7 @@ function ForgotPasswordPageContent() {
                                 Reset Password
                             </h1>
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                {currentStep === 'email' && 'Enter your email to receive a verification code'}
+                                {currentStep === 'email' && 'Enter your email and choose where to receive the verification code'}
                                 {currentStep === 'password' && 'Create a new secure password'}
                             </p>
                         </div>
@@ -295,6 +303,17 @@ function ForgotPasswordPageContent() {
                                                 </p>
                                             )}
                                         </div>
+
+                                        <OtpChannelPicker
+                                            value={otpChannel}
+                                            onChange={setOtpChannel}
+                                            disabled={isLoading}
+                                        />
+                                        {otpChannel === 'whatsapp' && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                The code is sent to the WhatsApp number saved on this account.
+                                            </p>
+                                        )}
 
                                         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                                             <p className="text-sm text-blue-800 dark:text-blue-300">
@@ -342,7 +361,9 @@ function ForgotPasswordPageContent() {
                                             Reset Password
                                         </h2>
                                         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-                                            We've sent a 6-digit verification code to
+                                            {otpChannel === 'whatsapp'
+                                                ? 'We sent a 6-digit verification code to the WhatsApp number on this account'
+                                                : 'We sent a 6-digit verification code to'}
                                         </p>
                                         <div className="w-full max-w-full px-2 sm:px-0">
                                             <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800 w-full sm:w-auto max-w-full">
