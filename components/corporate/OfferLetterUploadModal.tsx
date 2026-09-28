@@ -24,15 +24,26 @@ export function OfferLetterUploadModal({
     const [error, setError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+        'image/webp',
+        'image/gif',
+    ]
+    const allowedExtensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'gif']
     const maxSize = 10 * 1024 * 1024 // 10MB
 
     const handleFileSelect = (file: File) => {
         setError(null)
 
         // Validate file type
-        if (!allowedTypes.includes(file.type)) {
-            setError('Please select a PDF, DOC, or DOCX file.')
+        const extension = file.name.split('.').pop()?.toLowerCase() || ''
+        if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
+            setError('Please select a PDF, DOC, DOCX, PNG, JPG, WEBP, or GIF file.')
             return
         }
 
@@ -160,7 +171,7 @@ export function OfferLetterUploadModal({
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept=".pdf,.doc,.docx"
+                                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif"
                                         onChange={handleFileInputChange}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         disabled={isSubmitting}
@@ -201,7 +212,7 @@ export function OfferLetterUploadModal({
                                                 </p>
                                             </div>
                                             <p className="text-xs text-gray-400 dark:text-gray-500">
-                                                PDF, DOC, DOCX up to 10MB
+                                                PDF, DOC, DOCX, PNG, JPG, WEBP, or GIF up to 10MB
                                             </p>
                                         </div>
                                     )}
@@ -221,7 +232,7 @@ export function OfferLetterUploadModal({
                                         File Requirements:
                                     </h4>
                                     <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                                        <li>• Supported formats: PDF, DOC, DOCX</li>
+                                        <li>• Supported formats: PDF, DOC, DOCX, PNG, JPG, WEBP, GIF</li>
                                         <li>• Maximum file size: 10MB</li>
                                         <li>• File will be stored securely and shared with the candidate</li>
                                     </ul>
