@@ -133,11 +133,16 @@ class ApiClient {
   // Email OTP for signup
   async sendEmailOtp(
     email: string,
-    name?: string
+    name?: string,
+    options?: { channel?: 'email' | 'whatsapp'; phone?: string }
   ): Promise<{ message: string; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
+    const channel = options?.channel ?? 'email'
+    const phone = options?.phone?.trim()
     const response: AxiosResponse = await this.client.post('/auth/send-email-otp', {
       email,
+      channel,
       ...(name?.trim() ? { name: name.trim() } : {}),
+      ...(channel === 'whatsapp' && phone ? { phone } : {}),
     });
     return response.data;
   }
@@ -154,6 +159,7 @@ class ApiClient {
   async requestPasswordResetOtp(payload: {
     email: string;
     user_type: string;
+    channel?: 'email' | 'whatsapp';
   }): Promise<{ message: string; success: boolean; rate_limit?: import('@/lib/otp-rate-limit').OtpRateLimitStatus }> {
     const response: AxiosResponse = await this.client.post('/auth/password-reset/request', payload);
     return response.data;
