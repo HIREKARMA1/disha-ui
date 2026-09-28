@@ -37,6 +37,11 @@ import { apiClient } from '@/lib/api'
 import { getErrorMessage } from '@/lib/error-handler'
 import { useOtpRateLimit } from '@/hooks/useOtpRateLimit'
 import { OtpStatusSection } from '@/components/auth/OtpStatusSection'
+import {
+    OtpChannelPicker,
+    otpSentToast,
+    type OtpChannel,
+} from '@/components/auth/OtpChannelPicker'
 import { cn } from '@/lib/utils'
 import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
@@ -282,6 +287,7 @@ function RegisterPageContent() {
     const [currentStep, setCurrentStep] = useState<'form' | 'otp'>('form')
     const [formData, setFormData] = useState<FormData | null>(null)
     const [otp, setOtp] = useState('')
+    const [otpChannel, setOtpChannel] = useState<OtpChannel>('email')
 
     const otpRateLimit = useOtpRateLimit({
         purpose: 'signup',
@@ -378,16 +384,26 @@ function RegisterPageContent() {
 
     const SelectedIcon = userTypeIcons[selectedUserType as keyof typeof userTypeIcons] || User
 
+    const signupPhone = (data: FormData) => ('phone' in data ? data.phone?.trim() : '') || ''
+
     const onSubmit = async (data: FormData) => {
+        const phone = signupPhone(data)
+        if (otpChannel === 'whatsapp' && !/^\d{10}$/.test(phone)) {
+            toast.error('Enter a 10-digit phone number to receive the OTP on WhatsApp.')
+            return
+        }
         if (!otpRateLimit.beginSend()) return
 
         setIsLoading(true)
         try {
-            const response = await apiClient.sendEmailOtp(data.email, getSignupDisplayName(data))
+            const response = await apiClient.sendEmailOtp(data.email, getSignupDisplayName(data), {
+                channel: otpChannel,
+                phone,
+            })
             setFormData(data)
             setCurrentStep('otp')
             otpRateLimit.handleSendSuccess(response.rate_limit, data.email)
-            toast.success('OTP sent to your email address')
+            toast.success(otpSentToast(otpChannel))
         } catch (error: unknown) {
             console.error('Send OTP error:', error)
             otpRateLimit.handleSendError(error)
@@ -405,10 +421,11 @@ function RegisterPageContent() {
         try {
             const response = await apiClient.sendEmailOtp(
                 formData.email,
-                getSignupDisplayName(formData)
+                getSignupDisplayName(formData),
+                { channel: otpChannel, phone: signupPhone(formData) }
             )
             otpRateLimit.handleSendSuccess(response.rate_limit, formData.email)
-            toast.success('OTP resent to your email address')
+            toast.success(otpSentToast(otpChannel, true))
         } catch (error: unknown) {
             console.error('Resend OTP error:', error)
             otpRateLimit.handleSendError(error)
@@ -1054,6 +1071,12 @@ function RegisterPageContent() {
                                                     )}
                                                 </div>
 
+                                                <OtpChannelPicker
+                                                    value={otpChannel}
+                                                    onChange={setOtpChannel}
+                                                    disabled={isLoading}
+                                                />
+
                                                 <Button
                                                     type="submit"
                                                     className="h-11 w-full rounded-xl bg-primary-600 text-base font-semibold hover:bg-primary-700"
@@ -1096,10 +1119,12 @@ function RegisterPageContent() {
                                                 </span>
                                                 <div>
                                                     <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-                                                        Verify email
+                                                        Verify your code
                                                     </h1>
                                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                        Enter the 6-digit code we sent
+                                                        {otpChannel === 'whatsapp'
+                                                            ? 'Enter the 6-digit code we sent on WhatsApp'
+                                                            : 'Enter the 6-digit code we sent to your email'}
                                                     </p>
                                                 </div>
                                             </div>
