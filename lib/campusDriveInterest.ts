@@ -1,6 +1,8 @@
 import { toast } from 'react-hot-toast'
 import { campusDriveRequestService } from '@/services/campusDriveRequestService'
 import type { CampusDriveRequestStatus } from '@/types/campusDriveRequest'
+import { isProfileCompletionError } from '@/lib/profileCompletion'
+import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 import {
   CAMPUS_DRIVE_NOT_FOR_UNIVERSITY_MESSAGE,
   CAMPUS_DRIVE_REQUEST_PENDING_MESSAGE,
@@ -142,6 +144,10 @@ export async function submitCampusDriveInterest(jobId: string): Promise<{
     return { ok: true, status }
   } catch (error: unknown) {
     const message = getApplyErrorMessage(error) || 'Failed to send request. Please try again.'
+    if (isProfileCompletionError(message)) {
+      showProfileCompletionToast()
+      return { ok: false, message }
+    }
     toast.error(message)
     return { ok: false, message }
   }
