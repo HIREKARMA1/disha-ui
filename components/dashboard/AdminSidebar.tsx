@@ -11,6 +11,7 @@ import {
     Settings,
     BarChart3,
     Calendar,
+    Presentation,
     FileText,
     X,
     LogOut,
@@ -131,6 +132,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/events',
                 icon: Calendar,
                 description: 'Manage events',
+            },
+            {
+                label: 'Campus Drive',
+                href: '/dashboard/admin/campus-drives',
+                icon: Presentation,
+                description: 'Manage campus drive programs',
             },
             {
                 label: 'Practice Tests',
