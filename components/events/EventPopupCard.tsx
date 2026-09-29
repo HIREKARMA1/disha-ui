@@ -22,6 +22,7 @@ import {
   buildEventRegisterRedirect,
   storePendingEventRegistration,
 } from '@/lib/pendingEventRegistration'
+import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 
 interface EventPopupCardProps {
   event: ContestEventListItem
@@ -63,8 +64,11 @@ function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCar
     : null
   const typeLabel = modeLabel(event.mode)
   const location = locationLabel(event)
-  const description =
-    event.short_description?.trim() || event.subtitle?.trim() || null
+  const descriptionHtml =
+    (event.short_description?.trim()
+      ? sanitizeEventDescriptionHtml(event.short_description, '')
+      : '') ||
+    (event.subtitle?.trim() ? sanitizeEventDescriptionHtml(event.subtitle, '') : '')
   const { isAuthenticated } = useAuth()
   const { openLoginModal } = useAuthLoginModal()
 
@@ -145,10 +149,11 @@ function EventPopupCardComponent({ event, onNavigate, className }: EventPopupCar
           {event.title}
         </h3>
 
-        {description && (
-          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-            {description}
-          </p>
+        {descriptionHtml && (
+          <div
+            className="event-description-html mt-1.5 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400 [&_p]:my-0 [&_p]:inline"
+            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+          />
         )}
 
         <dl className="mt-2.5 grid grid-cols-2 gap-1.5 text-xs text-gray-700 dark:text-gray-300">

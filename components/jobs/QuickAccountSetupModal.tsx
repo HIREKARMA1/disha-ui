@@ -88,6 +88,7 @@ export function QuickAccountSetupModal({
   const [uploadingResume, setUploadingResume] = useState(false)
 
   const [profileName, setProfileName] = useState('')
+  const [nameEditable, setNameEditable] = useState(false)
   const [profileEmail, setProfileEmail] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
 
@@ -199,7 +200,6 @@ export function QuickAccountSetupModal({
         ])
         if (cancelled) return
 
-        setProfileName(profile.name || '')
         setProfileEmail(profile.email || '')
         setProfilePhone(normalizePhoneDigits(profile.phone || ''))
         setDob(profile.dob ? String(profile.dob).slice(0, 10) : '')
@@ -217,6 +217,15 @@ export function QuickAccountSetupModal({
         // college, so the search stays required when institution is empty.
         const needsInstitution = !existingInstitution
         setInstitutionEditable(needsInstitution)
+        // Google signup stores the account name on the profile. Quick Account
+        // Setup must not copy it into the Name field.
+        if (needsInstitution) {
+          setProfileName('')
+          setNameEditable(true)
+        } else {
+          setProfileName(profile.name || '')
+          setNameEditable(false)
+        }
         if (mandatoryProp !== true) {
           setMandatoryFromProfile(needsInstitution)
         }
@@ -274,6 +283,9 @@ export function QuickAccountSetupModal({
 
   const validateBasics = (): boolean => {
     const next: Record<string, string> = {}
+    if (nameEditable && isBlank(profileName)) {
+      next.name = 'Name is required'
+    }
     const phoneDigits = normalizePhoneDigits(profilePhone)
     if (!phoneDigits) {
       next.phone = 'Phone number is required'
@@ -454,6 +466,9 @@ export function QuickAccountSetupModal({
         graduation_year: Number(graduationYear),
         unlock_via_quick_apply: true,
       }
+      if (nameEditable) {
+        profilePatch.name = profileName.trim()
+      }
       if (institutionEditable) {
         if (institution.trim()) {
           profilePatch.institution = institution.trim()
@@ -577,22 +592,48 @@ export function QuickAccountSetupModal({
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                        Name
-                      </label>
-                      <div
-                        className={cn(
-                          fieldControlClass(undefined, true),
-                          'flex items-center gap-2.5 py-0'
-                        )}
+                      <label
+                        htmlFor="quick-setup-name"
+                        className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
                       >
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
-                          {(profileName || 'S').charAt(0).toUpperCase()}
+                        Name
+                        {nameEditable && <span className="text-red-500"> *</span>}
+                      </label>
+                      {nameEditable ? (
+                        <>
+                          <input
+                            id="quick-setup-name"
+                            type="text"
+                            autoComplete="name"
+                            value={profileName}
+                            placeholder="Enter your name"
+                            onChange={(e) => {
+                              setProfileName(e.target.value)
+                              setFieldErrors((prev) => ({ ...prev, name: '' }))
+                            }}
+                            className={fieldControlClass(fieldErrors.name)}
+                            aria-invalid={Boolean(fieldErrors.name)}
+                            aria-required
+                          />
+                          {fieldErrors.name && (
+                            <p className="mt-1 text-xs text-red-500">{fieldErrors.name}</p>
+                          )}
+                        </>
+                      ) : (
+                        <div
+                          className={cn(
+                            fieldControlClass(undefined, true),
+                            'flex items-center gap-2.5 py-0'
+                          )}
+                        >
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                            {(profileName || 'S').charAt(0).toUpperCase()}
+                          </div>
+                          <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+                            {profileName || 'Student'}
+                          </p>
                         </div>
-                        <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-700 dark:text-gray-200">
-                          {profileName || 'Student'}
-                        </p>
-                      </div>
+                      )}
                     </div>
 
                     <div>

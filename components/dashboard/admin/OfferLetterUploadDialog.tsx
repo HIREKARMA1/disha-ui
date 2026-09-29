@@ -35,7 +35,13 @@ const ALLOWED_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/gif',
 ]
+const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'gif']
 const MAX_SIZE = 10 * 1024 * 1024
 
 function buildYearOptions() {
@@ -100,8 +106,9 @@ export function OfferLetterUploadDialog({
 
   const handleFileSelect = (file: File) => {
     setError(null)
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('Please select a PDF, DOC, or DOCX file.')
+    const extension = file.name.split('.').pop()?.toLowerCase() || ''
+    if (!ALLOWED_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.includes(extension)) {
+      setError('Please select a PDF, DOC, DOCX, PNG, JPG, WEBP, or GIF file.')
       return
     }
     if (file.size > MAX_SIZE) {
@@ -336,7 +343,7 @@ export function OfferLetterUploadDialog({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp,image/gif"
                     className="hidden"
                     onChange={(e) => {
                       const files = e.target.files
@@ -358,7 +365,7 @@ export function OfferLetterUploadDialog({
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Drag & drop or click to upload
                       </p>
-                      <p className="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+                      <p className="text-xs text-gray-500">PDF, DOC, DOCX, PNG, JPG, WEBP, or GIF up to 10MB</p>
                     </div>
                   )}
                 </div>
