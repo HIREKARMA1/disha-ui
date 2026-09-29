@@ -1449,6 +1449,16 @@ class ApiClient {
     const response: AxiosResponse = await this.client.delete(`/admin/licenses/${licenseId}`);
     return response.data;
   }
+
+  async getPartnerBrandingStats(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/branding-logos/stats');
+    return response.data;
+  }
+
+  async getPartnerBrandingLogos(params?: { status?: string; visible?: boolean; page?: number; page_size?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/branding-logos', { params });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
