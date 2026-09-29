@@ -5,6 +5,7 @@ import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 import type { CampusDriveDetail } from '@/types/campusDrive'
 import { CATEGORY_LABELS } from '@/types/contestEvent'
 import { CampusDriveSelectedJobs } from '@/components/campus-drives/CampusDriveSelectedJobs'
+import { EventFaqAccordion } from '@/components/events/EventFaqAccordion'
 
 function RichBlock({ html }: { html?: string | null }) {
   if (!html) return null
@@ -159,16 +160,9 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
       )}
 
       {drive.faqs?.length > 0 && (
-        <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
-          <h2 className="mb-3 text-lg font-semibold">FAQs</h2>
-          <div className="space-y-4">
-            {drive.faqs.map((faq) => (
-              <div key={faq.id || faq.question}>
-                <h3 className="font-medium">{faq.question}</h3>
-                <RichBlock html={faq.answer} />
-              </div>
-            ))}
-          </div>
+        <section>
+          <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">FAQs</h2>
+          <EventFaqAccordion faqs={drive.faqs} />
         </section>
       )}
 
