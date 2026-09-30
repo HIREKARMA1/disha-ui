@@ -195,7 +195,7 @@ export function CampusDriveSelectedJobs({ jobs }: { jobs?: Job[] | null }) {
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-6">
       <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-        <Briefcase className="h-5 w-5" /> Selected Jobs
+        <Briefcase className="h-5 w-5" /> Campus Drive Jobs
       </h2>
       {cardJobs.length ? (
         <div className="grid grid-cols-1 gap-3.5">
