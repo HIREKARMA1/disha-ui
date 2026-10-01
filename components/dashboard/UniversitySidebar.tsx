@@ -18,6 +18,7 @@ import {
     MoreHorizontal,
     Headphones,
     FileCheck,
+    Presentation,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -59,6 +60,12 @@ const navItems: NavItem[] = [
         href: '/dashboard/university/jobs',
         icon: Briefcase,
         description: 'Browse and manage job opportunities',
+    },
+    {
+        label: 'Campus Drives',
+        href: '/campus-drives',
+        icon: Presentation,
+        description: 'Published campus programs',
     },
     {
         label: 'Practice Tests',

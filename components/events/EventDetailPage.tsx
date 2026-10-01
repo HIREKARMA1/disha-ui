@@ -10,10 +10,11 @@ import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventDetail } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import { isPortalEventCompleted, isEventEndedForFeedback } from '@/lib/eventsPortalConfig'
+import { EventFaqAccordion } from '@/components/events/EventFaqAccordion'
 import { EventFeedbackSection } from '@/components/events/EventFeedbackSection'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
-  Mail, Phone, Globe, MapPin, ChevronDown, ChevronUp, CheckCircle,
+  Mail, Phone, Globe, MapPin, CheckCircle,
   Share2, Briefcase, Target, Video, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -124,7 +125,6 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   const [joining, setJoining] = useState(false)
   const [nowTick, setNowTick] = useState(() => Date.now())
   const [activeSection, setActiveSection] = useState('description')
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const autoRegisterAttempted = useRef(false)
 
@@ -995,27 +995,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
             <section id="faq" ref={(el) => { sectionRefs.current['faq'] = el }} className="scroll-mt-36">
               <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white md:mb-4 md:text-xl">FAQs</h2>
               {event.faqs.length > 0 ? (
-                <div className="space-y-2">
-                  {event.faqs.map((faq, i) => (
-                    <div key={faq.id || i} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
-                      <button
-                        className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/30 md:p-5"
-                        onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-                      >
-                        <span className="pr-4 font-medium text-gray-900 dark:text-white">{faq.question}</span>
-                        {expandedFaq === i ? <ChevronUp className="h-4 w-4 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 flex-shrink-0" />}
-                      </button>
-                      {expandedFaq === i && (
-                        <div
-                          className="event-description-html prose prose-sm dark:prose-invert border-t border-gray-100 px-4 pb-4 pt-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeEventDescriptionHtml(faq.answer, ''),
-                          }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <EventFaqAccordion faqs={event.faqs} />
               ) : (
                 <p className="text-gray-500 dark:text-gray-400">No FAQs available yet.</p>
               )}
