@@ -3,6 +3,7 @@ import type { EventCategory, FAQItem, RewardItem, RoundItem, VisibilitySettings 
 
 export type CampusDriveMode = 'online' | 'offline'
 export type CampusDrivePublicationStatus = 'draft' | 'published'
+export type CampusDriveListingStatus = 'active' | 'inactive' | 'hidden'
 
 export interface CampusDriveJobSummary {
   id: string
@@ -29,6 +30,7 @@ export interface CampusDriveListItem {
   mode?: string | null
   venue?: string | null
   publication_status?: string | null
+  listing_status?: CampusDriveListingStatus | string | null
   registration_status?: string | null
   registration_start_date?: string | null
   registration_end_date?: string | null
@@ -94,6 +96,7 @@ export interface CampusDriveWritePayload {
   support_phone?: string
   support_content?: string | null
   visibility?: VisibilitySettings
+  listing_status?: CampusDriveListingStatus
   event_link?: string | null
   faqs?: FAQItem[]
   rounds?: RoundItem[]

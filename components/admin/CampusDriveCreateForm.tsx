@@ -14,7 +14,7 @@ import { CampusDriveJobPicker } from '@/components/admin/CampusDriveJobPicker'
 import { campusDriveService, apiErrorMessage } from '@/services/campusDriveService'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import type { FAQItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
-import type { CampusDriveJobSummary, CampusDriveMode, CampusDriveWritePayload } from '@/types/campusDrive'
+import type { CampusDriveJobSummary, CampusDriveListingStatus, CampusDriveMode, CampusDriveWritePayload } from '@/types/campusDrive'
 import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
 import { utcIsoToDatetimeLocal } from '@/lib/datetime'
 import { toast } from 'react-hot-toast'
@@ -41,6 +41,7 @@ interface FormState {
   event_start_date: string
   event_end_date: string
   visibility: VisibilitySettings
+  listing_status: CampusDriveListingStatus
   eligibility: string
   about_organizer: string
   support_email: string
@@ -73,6 +74,7 @@ const emptyForm = (): FormState => ({
   event_start_date: '',
   event_end_date: '',
   visibility: { student: true, corporate: false, university: false, public: true },
+  listing_status: 'active',
   eligibility: '',
   about_organizer: '',
   support_email: '',
@@ -169,6 +171,10 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           event_link: drive.event_link || '',
           ...dates,
           visibility: drive.visibility,
+          listing_status:
+            drive.listing_status === 'inactive' || drive.listing_status === 'hidden'
+              ? drive.listing_status
+              : 'active',
           eligibility: drive.eligibility || '',
           about_organizer: drive.about_organizer || '',
           support_email: drive.support_email || '',
@@ -311,6 +317,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
       event_start_date: new Date(form.event_start_date).toISOString(),
       event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : null,
       visibility: form.visibility,
+      listing_status: form.listing_status,
       eligibility: normalizeRichTextHtml(form.eligibility) || null,
       about_organizer: normalizeRichTextHtml(form.about_organizer) || null,
       support_email: textOrNull(form.support_email),
@@ -385,6 +392,41 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           {driveId ? 'Edit Campus Drive' : 'Create Campus Drive'}
         </h1>
         <p className="text-sm text-gray-500">{published ? 'Published' : 'Draft'}</p>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <p className="text-sm font-medium text-gray-900 dark:text-white">Student access</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(
+            [
+              ['active', 'Active'],
+              ['inactive', 'Inactive'],
+              ['hidden', 'Hide'],
+            ] as const
+          ).map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={form.listing_status === value ? 'default' : 'outline'}
+              onClick={() =>
+                update(
+                  'listing_status',
+                  form.listing_status === value ? (value === 'active' ? 'inactive' : 'active') : value,
+                )
+              }
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          {form.listing_status === 'inactive'
+            ? 'Hidden from students, the same way an inactive job is hidden.'
+            : form.listing_status === 'hidden'
+              ? 'Students can open the details. The register button is hidden, so they cannot apply.'
+              : 'Students can view this campus drive and register.'}
+        </p>
       </div>
 
       <Card>
