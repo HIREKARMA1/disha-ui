@@ -166,7 +166,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
         </section>
       )}
 
-      <CampusDriveSelectedJobs jobs={drive.jobs} />
+      <CampusDriveSelectedJobs jobs={drive.jobs} hideApply={drive.listing_status === 'hidden'} />
     </div>
   )
 }

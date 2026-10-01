@@ -56,7 +56,13 @@ function toCardJob(job: Job): Job {
   }
 }
 
-export function CampusDriveSelectedJobs({ jobs }: { jobs?: Job[] | null }) {
+export function CampusDriveSelectedJobs({
+  jobs,
+  hideApply = false,
+}: {
+  jobs?: Job[] | null
+  hideApply?: boolean
+}) {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
   const { openLoginModal } = useAuthLoginModal()
@@ -94,6 +100,7 @@ export function CampusDriveSelectedJobs({ jobs }: { jobs?: Job[] | null }) {
   }
 
   const handleApply = async (job: Job) => {
+    if (hideApply) return
     if (!apiClient.getAccessToken()) {
       openLoginModal({
         redirect: prepareGuestApplyForLogin(job.id, getJobDetailPath(job)),
@@ -206,6 +213,7 @@ export function CampusDriveSelectedJobs({ jobs }: { jobs?: Job[] | null }) {
               cardIndex={index}
               compactMobile
               onViewDescription={() => router.push(getJobDetailPath(job))}
+              hideApply={hideApply}
               onApply={() => void handleApply(job)}
             />
           ))}
