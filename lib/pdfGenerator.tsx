@@ -9,10 +9,10 @@ import { formatSalaryRange } from './currency'
 // Noto Sans does not include Mathematical Alphanumeric Symbols (e.g. 𝗔);
 // those are rendered via canvas using browser fonts (see needsUnicodeGlyphFallback).
 let pdfFontsRegistered = false
-function ensurePdfFontsRegistered() {
+
+/** Register Noto Sans once. Browser downloads pass an origin URL; the email PDF uses file paths. */
+export function registerPdfFonts(base: string) {
   if (pdfFontsRegistered) return
-  const base =
-    typeof window !== 'undefined' ? `${window.location.origin}/fonts` : '/fonts'
   Font.register({
     family: 'NotoSans',
     fonts: [
@@ -21,6 +21,17 @@ function ensurePdfFontsRegistered() {
     ],
   })
   pdfFontsRegistered = true
+}
+
+function ensurePdfFontsRegistered() {
+  const base =
+    typeof window !== 'undefined' ? `${window.location.origin}/fonts` : '/fonts'
+  registerPdfFonts(base)
+}
+
+export type JobDescriptionPdfAssets = {
+  logoDataUrl?: string | null
+  hirekarmaLogoDataUrl?: string | null
 }
 
 /**
@@ -775,12 +786,22 @@ const JobDescriptionDocument = ({
 }
 
 export class JobDescriptionPDFGenerator {
-  async generatePDF(job: JobData, corporateProfile?: CorporateProfile): Promise<Blob> {
-    try {
-      ensurePdfFontsRegistered()
+  /**
+   * Build the same job-description document used by the browser download.
+   * When assets are passed (email/server), image bytes are already loaded and the browser canvas path is skipped.
+   */
+  async buildDocument(
+    job: JobData,
+    corporateProfile?: CorporateProfile,
+    assets?: JobDescriptionPdfAssets
+  ) {
+    ensurePdfFontsRegistered()
 
+    let logoDataUrl: string | null = assets?.logoDataUrl ?? null
+    let hirekarmaLogoDataUrl: string | null = assets?.hirekarmaLogoDataUrl ?? null
+
+    if (!assets) {
       // Prefer corporate profile logo; fall back to logo already on the job payload
-      let logoDataUrl: string | null = null
       const logoSource = resolveCompanyLogo(job, corporateProfile)
       if (logoSource) {
         try {
@@ -791,45 +812,45 @@ export class JobDescriptionPDFGenerator {
       }
 
       // Load Hirekarma logo
-      let hirekarmaLogoDataUrl: string | null = null
       try {
-        // Get the base URL from window location or use config
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
         const hirekarmaLogoPath = `${baseUrl}/images/HKlogoblack.png`
         hirekarmaLogoDataUrl = await this.loadImageAsDataUrl(hirekarmaLogoPath)
       } catch (error) {
         console.warn('Could not load Hirekarma logo:', error)
       }
+    }
 
-      // Preserve original company name string; rasterize only when Noto Sans lacks glyphs
-      let companyNameImageUrl: string | null = null
-      const resolvedName = resolveCompanyName(job, corporateProfile)
-      if (resolvedName && needsUnicodeGlyphFallback(resolvedName)) {
-        try {
-          companyNameImageUrl = renderUnicodeTextToDataUrl(resolvedName, {
-            fontSize: 14,
-            fontWeight: 'bold',
-            color: '#2d3748',
-          }) || null
-        } catch (error) {
-          console.warn('Could not rasterize Unicode company name for PDF:', error)
-        }
+    // Preserve original company name string; rasterize only when Noto Sans lacks glyphs
+    let companyNameImageUrl: string | null = null
+    const resolvedName = resolveCompanyName(job, corporateProfile)
+    if (resolvedName && needsUnicodeGlyphFallback(resolvedName) && typeof document !== 'undefined') {
+      try {
+        companyNameImageUrl = renderUnicodeTextToDataUrl(resolvedName, {
+          fontSize: 14,
+          fontWeight: 'bold',
+          color: '#2d3748',
+        }) || null
+      } catch (error) {
+        console.warn('Could not rasterize Unicode company name for PDF:', error)
       }
+    }
 
-      // Create the PDF document
-      const doc = (
-        <JobDescriptionDocument
-          job={job}
-          corporateProfile={corporateProfile}
-          logoUrl={logoDataUrl}
-          hirekarmaLogoUrl={hirekarmaLogoDataUrl}
-          companyNameImageUrl={companyNameImageUrl}
-        />
-      )
+    return (
+      <JobDescriptionDocument
+        job={job}
+        corporateProfile={corporateProfile}
+        logoUrl={logoDataUrl}
+        hirekarmaLogoUrl={hirekarmaLogoDataUrl}
+        companyNameImageUrl={companyNameImageUrl}
+      />
+    )
+  }
 
-      // Generate PDF blob using react-pdf
+  async generatePDF(job: JobData, corporateProfile?: CorporateProfile): Promise<Blob> {
+    try {
+      const doc = await this.buildDocument(job, corporateProfile)
       const blob = await pdf(doc).toBlob()
-      
       return blob
     } catch (error) {
       console.error('Error generating PDF:', error)
