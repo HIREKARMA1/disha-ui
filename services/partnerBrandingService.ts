@@ -1,6 +1,8 @@
 import { apiClient } from '@/lib/api'
 import { config } from '@/lib/config'
 
+export type PartnerBrandingListingStatus = 'active' | 'inactive' | 'hidden'
+
 export type PartnerBrandingAdminItem = {
   id: string
   corporate_id: string
@@ -11,6 +13,7 @@ export type PartnerBrandingAdminItem = {
   status: string
   rejection_reason?: string
   visible: boolean
+  listing_status: PartnerBrandingListingStatus
   sort_order?: number
   created_at: string
   updated_at: string
@@ -18,9 +21,13 @@ export type PartnerBrandingAdminItem = {
 
 export type PartnerBrandingStats = {
   pending: number
-  approved_visible: number
   rejected: number
-  approved_hidden: number
+  approved_total: number
+  active: number
+  inactive: number
+  hidden: number
+  approved_visible?: number
+  approved_hidden?: number
 }
 
 export type PublicBrandingLogo = {
@@ -45,11 +52,19 @@ class PartnerBrandingService {
   async list(params?: {
     status?: string
     visible?: boolean
+    listing_status?: PartnerBrandingListingStatus
     page?: number
     page_size?: number
   }): Promise<{ items: PartnerBrandingAdminItem[]; total: number }> {
     const res = await apiClient.client.get('/admin/branding-logos', { params })
-    return res.data
+    const data = res.data
+    return {
+      ...data,
+      items: (data.items || []).map((item: PartnerBrandingAdminItem) => ({
+        ...item,
+        listing_status: normalizeListingStatus(item),
+      })),
+    }
   }
 
   async approve(id: string): Promise<void> {
@@ -64,6 +79,14 @@ class PartnerBrandingService {
     await apiClient.client.patch(`/admin/branding-logos/${id}/visibility`, { visible })
   }
 
+  async setListingStatus(id: string, listing_status: PartnerBrandingListingStatus): Promise<void> {
+    await apiClient.client.patch(`/admin/branding-logos/${id}/listing-status`, { listing_status })
+  }
+
+  async delete(id: string): Promise<void> {
+    await apiClient.client.delete(`/admin/branding-logos/${id}`)
+  }
+
   async getPublicLogos(): Promise<PublicBrandingLogo[]> {
     const url = `${config.api.fullUrl}/public/branding-logos`
     const res = await fetch(url, { cache: 'no-store' })
@@ -76,6 +99,12 @@ class PartnerBrandingService {
     const res = await apiClient.client.get('/corporates/branding-status')
     return res.data
   }
+}
+
+function normalizeListingStatus(item: PartnerBrandingAdminItem): PartnerBrandingListingStatus {
+  const raw = item.listing_status || (item.visible ? 'active' : 'hidden')
+  if (raw === 'inactive' || raw === 'hidden') return raw
+  return 'active'
 }
 
 export const partnerBrandingService = new PartnerBrandingService()
