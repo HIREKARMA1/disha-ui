@@ -156,7 +156,7 @@ export function PartnerLogoCard({
                         Set to Active
                       </button>
                     )}
-                    {listing !== 'inactive' && (
+                    {listing !== 'inactive' && listing !== 'hidden' && (
                       <button
                         type="button"
                         disabled={busy}
@@ -165,17 +165,6 @@ export function PartnerLogoCard({
                       >
                         <ToggleLeft className="h-4 w-4" />
                         Set to Inactive
-                      </button>
-                    )}
-                    {listing !== 'hidden' && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => closeAnd(() => onSetListingStatus('hidden'))}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
-                      >
-                        <EyeOff className="h-4 w-4" />
-                        Set to Hide
                       </button>
                     )}
                   </>
