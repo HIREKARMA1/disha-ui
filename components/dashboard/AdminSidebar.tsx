@@ -29,6 +29,7 @@ import {
     School,
     FileCheck,
     ShieldCheck,
+    ImageIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -102,6 +103,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/corporates',
                 icon: Building2,
                 description: 'Manage corporates',
+            },
+            {
+                label: 'Partner logos',
+                href: '/dashboard/admin/partner-logos',
+                icon: ImageIcon,
+                description: 'Homepage branding review',
             },
             {
                 label: 'Jobs',

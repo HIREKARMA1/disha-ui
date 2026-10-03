@@ -50,6 +50,7 @@ import { toApiDatePosted, type DatePostedFilter } from '@/components/jobs/JobsFi
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { cn } from '@/lib/utils'
 import companyData from '@/data/company.json'
+import { partnerBrandingService } from '@/services/partnerBrandingService'
 
 export type OpportunityTab = 'all' | 'jobs' | 'events'
 
@@ -448,10 +449,43 @@ export default function OpportunityHub() {
     }
   }, [exploreOpen, closeExplorePanel])
 
-  const companies = useMemo(
-    () => ((companyData as { conpanies?: { id: number; name: string; logo: string }[] }).conpanies || []).slice(0, 24),
+  const legacyCompanies = useMemo(
+    () => (companyData as { conpanies?: { id: number; name: string; logo: string }[] }).conpanies || [],
     []
   )
+
+  const [approvedLogos, setApprovedLogos] = useState<{ id: string; name: string; logo: string }[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    partnerBrandingService
+      .getPublicLogos()
+      .then((logos) => {
+        if (!cancelled) setApprovedLogos(logos)
+      })
+      .catch(() => {
+        if (!cancelled) setApprovedLogos([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const companies = useMemo(() => {
+    const seen = new Set<string>()
+    const merged: { id: string | number; name: string; logo: string }[] = []
+    for (const item of approvedLogos) {
+      if (!item.logo || seen.has(item.logo)) continue
+      seen.add(item.logo)
+      merged.push({ id: item.id, name: item.name, logo: item.logo })
+    }
+    for (const item of legacyCompanies) {
+      if (!item.logo || seen.has(item.logo)) continue
+      seen.add(item.logo)
+      merged.push({ id: item.id, name: item.name, logo: item.logo })
+    }
+    return merged.slice(0, 48)
+  }, [approvedLogos, legacyCompanies])
 
   const isBrowseHome =
     tab === 'all' &&
