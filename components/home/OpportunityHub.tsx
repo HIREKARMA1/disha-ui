@@ -40,7 +40,6 @@ import {
 import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
 import placedStudentsData from '@/data/placed-students.json'
 import { HubWhyDisha } from '@/components/home/HubWhyDisha'
-import { getFeaturedBlogs } from '@/data/blogs'
 import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { contestEventService } from '@/services/contestEventService'
 import { apiClient } from '@/lib/api'
@@ -107,12 +106,6 @@ const CATEGORY_TILE_TONES: Record<
     iconWrap: 'bg-orange-50/60 shadow-none ring-1 ring-orange-100/80 dark:bg-[rgba(245,128,32,0.18)] dark:text-[#FB923C] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
-  blogs: {
-    idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
-    active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
-    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80 dark:bg-[rgba(139,92,246,0.18)] dark:text-[#A78BFA] dark:ring-0',
-    glow: 'group-hover:shadow-sm',
-  },
   faq: {
     idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
     active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
@@ -159,7 +152,6 @@ const CATEGORY_TILES: QuickPill[] = [
   { id: 'jobs', label: 'Jobs', kind: 'scroll', sectionId: 'hub-jobs', tab: 'all', icon: Briefcase },
   { id: 'events', label: 'Events', kind: 'scroll', sectionId: 'hub-events', tab: 'all', icon: Calendar },
   { id: 'mock_tests', label: 'Mock Test', kind: 'scroll', tab: 'all', icon: Brain },
-  { id: 'blogs', label: 'Blogs', kind: 'scroll', sectionId: 'hub-blogs', tab: 'all', icon: Newspaper },
   {
     id: 'placed_students',
     label: 'Placed Students',
@@ -390,7 +382,6 @@ export default function OpportunityHub() {
   /** True while pointer is over search + Explore (survives layout-shift scroll events). */
   const exploreHoveringRef = useRef(false)
 
-  const featuredBlogs = useMemo(() => getFeaturedBlogs(3), [])
 
   const showExplore = exploreOpen && !searchInput.trim()
 
@@ -593,10 +584,6 @@ export default function OpportunityHub() {
     }
     if (pill.id === 'mock_tests') {
       router.push('/mock-tests')
-      return
-    }
-    if (pill.id === 'blogs') {
-      router.push('/blogs')
       return
     }
     if (pill.id === 'contact') {
@@ -912,7 +899,7 @@ export default function OpportunityHub() {
             </div>
             <div
               ref={categoryScrollerRef}
-              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible 2xl:gap-4"
+              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-9 md:gap-3.5 md:overflow-visible 2xl:gap-4"
             >
               {CATEGORY_TILES.map((tile, i) => {
                 const active = activeQuickPillId === tile.id
@@ -949,9 +936,7 @@ export default function OpportunityHub() {
                             ? '#3B82F6'
                             : tile.id === 'events'
                               ? '#F97316'
-                              : tile.id === 'blogs'
-                                ? '#0EA5E9'
-                                : tile.id === 'faq'
+                              : tile.id === 'faq'
                                   ? '#8B5CF6'
                                   : tile.id === 'placed_students'
                                     ? '#10B981'
@@ -1077,80 +1062,6 @@ export default function OpportunityHub() {
                       ))}
                     </div>
                   )}
-                </section>
-
-                <section id="hub-blogs" className="scroll-mt-28">
-                  <HubSectionHeader
-                    title="Blogs"
-                    viewAllHref="/blogs"
-                    viewAllLabel="View all"
-                    subtitle="Career guides written for students — jobs, skills, placement & hiring trends."
-                  />
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                    {featuredBlogs[0] && (
-                      <Link
-                        href={`/blogs/${featuredBlogs[0].slug}`}
-                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/80 via-white to-sky-50/50 p-5 sm:p-6 lg:col-span-5 dark:border-primary-900/40 dark:from-primary-950/40 dark:via-gray-900 dark:to-sky-950/20"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="rounded-md bg-primary-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                              Featured
-                            </span>
-                            <span className="text-[11px] font-medium text-primary-700/80 dark:text-primary-300">
-                              {featuredBlogs[0].category}
-                            </span>
-                          </div>
-                          <h3 className="mt-3 text-lg font-bold leading-snug tracking-tight text-gray-900 group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300 sm:text-xl">
-                            {featuredBlogs[0].title}
-                          </h3>
-                          <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                            {featuredBlogs[0].metaDescription}
-                          </p>
-                        </div>
-                        <div className="mt-5 flex items-center justify-between gap-3">
-                          <span className="text-xs font-medium text-gray-400">
-                            {featuredBlogs[0].readTime}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600">
-                            Read article
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                          </span>
-                        </div>
-                      </Link>
-                    )}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-7 lg:grid-cols-1">
-                      {featuredBlogs.slice(1, 3).map((post, i) => (
-                        <Link
-                          key={post.slug}
-                          href={`/blogs/${post.slug}`}
-                          className="group flex h-full gap-4 rounded-2xl border border-gray-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] sm:p-5"
-                        >
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold text-primary-600 ring-1 ring-slate-100 dark:bg-gray-800 dark:ring-gray-700">
-                            {String(i + 2).padStart(2, '0')}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-[11px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                                {post.category}
-                              </span>
-                              <span className="text-[11px] text-gray-400">{post.readTime}</span>
-                            </span>
-                            <span className="mt-1.5 block text-[15px] font-semibold leading-snug text-gray-900 group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
-                              {post.title}
-                            </span>
-                            <span className="mt-1.5 line-clamp-2 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-                              {post.metaDescription}
-                            </span>
-                            <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-600">
-                              Read more
-                              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                            </span>
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
                 </section>
 
                 <HubPlacedStudents
