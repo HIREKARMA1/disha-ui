@@ -39,7 +39,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-3 py-4 sm:px-4 sm:py-6">
       <div className="overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800">
-        <div className="relative aspect-[16/9] max-h-[320px] w-full">
+        <div className="relative aspect-[16/9] w-full">
           {drive.banner_url ? (
             <img src={drive.banner_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
@@ -158,6 +158,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           <RichBlock html={drive.support_content} />
         </section>
       )}
+      
+      <CampusDriveSelectedJobs jobs={drive.jobs} hideApply={drive.listing_status === 'hidden'} />
 
       {drive.faqs?.length > 0 && (
         <section>
@@ -165,8 +167,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           <EventFaqAccordion faqs={drive.faqs} />
         </section>
       )}
-
-      <CampusDriveSelectedJobs jobs={drive.jobs} hideApply={drive.listing_status === 'hidden'} />
+      
     </div>
   )
 }
