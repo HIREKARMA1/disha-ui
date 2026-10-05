@@ -46,6 +46,26 @@ class CampusDriveService {
     return response.data
   }
 
+  async assignUniversity(id: string, universityId: string) {
+    const response = await apiClient.client.post(
+      `/campus-drives/${id}/assign-university`,
+      null,
+      {
+        params: {
+          university_id: universityId,
+        },
+      },
+    )
+    return response.data
+  }
+
+  async notify(id: string) {
+    const response = await apiClient.client.post(
+      `/campus-drives/${id}/notify`,
+    )
+    return response.data
+  }
+
   async remove(id: string): Promise<void> {
     await apiClient.client.delete(`/campus-drives/${id}`)
   }
