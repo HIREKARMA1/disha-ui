@@ -31,20 +31,35 @@ export async function generateJobDescriptionPdfBuffer(
   job: JobPdfInput,
   corporateProfile?: CorporatePdfInput
 ): Promise<Buffer> {
-  const fontsDir = path.join(process.cwd(), 'public', 'fonts')
-  registerPdfFonts(fontsDir.replace(/\\/g, '/'))
+  try {
+    const fontsDir = path.join(process.cwd(), 'public', 'fonts')
+    if (fs.existsSync(fontsDir)) {
+      registerPdfFonts(fontsDir.replace(/\\/g, '/'))
+    }
+  } catch (error) {
+    console.warn('Could not register PDF fonts on server:', error)
+  }
 
-  const hirekarmaPath = path.join(process.cwd(), 'public', 'images', 'HKlogoblack.png')
-  const hirekarmaBytes = fs.readFileSync(hirekarmaPath)
+  let hirekarmaLogoDataUrl: string | null = null
+  try {
+    const hirekarmaPath = path.join(process.cwd(), 'public', 'images', 'HKlogoblack.png')
+    if (fs.existsSync(hirekarmaPath)) {
+      const hirekarmaBytes = fs.readFileSync(hirekarmaPath)
+      hirekarmaLogoDataUrl = `data:image/png;base64,${hirekarmaBytes.toString('base64')}`
+    }
+  } catch (error) {
+    console.warn('Could not load HKlogoblack.png for server PDF:', error)
+  }
+
   const assets: JobDescriptionPdfAssets = {
-    hirekarmaLogoDataUrl: `data:image/png;base64,${hirekarmaBytes.toString('base64')}`,
+    hirekarmaLogoDataUrl,
     logoDataUrl: null,
   }
 
   const logoSource = corporateProfile?.company_logo || job.company_logo
   if (typeof logoSource === 'string' && logoSource.startsWith('data:')) {
     assets.logoDataUrl = logoSource
-  } else if (logoSource && /^https?:\/\//i.test(logoSource)) {
+  } else if (typeof logoSource === 'string' && /^https?:\/\//i.test(logoSource)) {
     try {
       assets.logoDataUrl = await fetchImageAsDataUrl(logoSource)
     } catch (error) {

@@ -59,6 +59,7 @@ function renderUnicodeTextToDataUrl(
   text: string,
   options: { fontSize?: number; fontWeight?: string | number; color?: string } = {}
 ): string {
+  if (typeof document === 'undefined') return ''
   const fontSize = options.fontSize ?? 14
   const fontWeight = options.fontWeight ?? 'bold'
   const color = options.color ?? '#2d3748'
@@ -932,6 +933,9 @@ export class JobDescriptionPDFGenerator {
       try {
         return await fetchImageAsBlob(imageUrl)
       } catch {
+        if (typeof window === 'undefined') {
+          return imageUrl
+        }
         console.log('🔄 Trying direct image loading as final fallback...')
         return await new Promise<string>((resolve, reject) => {
           const img = new window.Image()
@@ -973,6 +977,10 @@ export class JobDescriptionPDFGenerator {
 
   /** Convert SVG (and other non-raster) data URLs to PNG for @react-pdf. */
   private ensureRasterDataUrl(dataUrl: string): Promise<string> {
+    if (typeof window === 'undefined') {
+      return Promise.resolve(dataUrl)
+    }
+
     const isSvg =
       dataUrl.startsWith('data:image/svg') ||
       dataUrl.startsWith('data:image/svg+xml') ||
