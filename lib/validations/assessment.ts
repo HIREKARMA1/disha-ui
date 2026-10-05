@@ -106,6 +106,7 @@ export const assessmentFormSchema = z
       start_time: z.string().min(1, "Start time is required"),
       end_time: z.string().min(1, "End time is required"),
     }),
+    screen_sharing_required: z.boolean().optional().default(false),
     rounds: z
       .array(roundSchema)
       .min(MIN_ROUNDS, `At least ${MIN_ROUNDS} rounds are required`),

@@ -8,6 +8,11 @@ import { useExamFullscreen, exitExamFullscreen } from '@/hooks/useExamFullscreen
 import { useExamCamera } from '@/hooks/useExamCamera';
 import { useProctorSnapshots } from '@/hooks/useProctorSnapshots';
 import {
+  useScreenRecording,
+  type ScreenRecordingChunk,
+  type ScreenRecordingLifecycleEvent,
+} from '@/hooks/useScreenRecording';
+import {
   Loader2,
   AlertTriangle,
   AlertCircle,
@@ -19,14 +24,21 @@ import {
   VideoOff,
   Volume2,
   Mic,
+  Monitor,
+  CheckCircle2,
   List,
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CodingWorkspace } from '@/components/assessments/CodingWorkspace';
 import { detectExamDevice } from '@/lib/examDevice';
+import {
+  createProctoringEventReporter,
+  type ProctoringEventReporter,
+} from '@/lib/proctoringEvents';
 
 type Phase = 'camera' | 'exam' | 'round_break' | 'warning' | 'ending';
+type ScreenShareStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'unsupported' | 'ended';
 
 type ExamQuestion = {
   id: string;
@@ -68,6 +80,27 @@ function cameraStatusLabel(status: string): string {
     default:
       return 'Camera off';
   }
+}
+
+function screenShareStatusLabel(status: ScreenShareStatus): string {
+  switch (status) {
+    case 'active':
+      return 'Screen sharing on';
+    case 'requesting':
+      return 'Waiting for selection…';
+    case 'denied':
+      return 'Screen sharing blocked';
+    case 'unsupported':
+      return 'Not supported';
+    case 'ended':
+      return 'Screen sharing stopped';
+    default:
+      return 'Screen sharing off';
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function splitTime(seconds: number | null) {
@@ -213,6 +246,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
   const [fullscreenWarningShown, setFullscreenWarningShown] = useState(false);
+  const [warningReason, setWarningReason] = useState<'fullscreen' | 'screen_share' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState<ConfirmModal>(null);
   const [audioPlayed, setAudioPlayed] = useState(false);
@@ -220,6 +254,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [codingBusy, setCodingBusy] = useState(false);
+  const [screenShareStatus, setScreenShareStatus] = useState<ScreenShareStatus>('idle');
+  const [screenShareError, setScreenShareError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const isLiveTranscribingRef = useRef(false);
   const endingRef = useRef(false);
@@ -229,7 +265,36 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const flushSnapshotsRef = useRef<() => Promise<void>>(async () => {});
   const timeWarn5ShownRef = useRef(false);
   const timeWarn1ShownRef = useRef(false);
+  const phaseRef = useRef<Phase>(phase);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const screenTrackRef = useRef<MediaStreamTrack | null>(null);
+  const screenShareStopExpectedRef = useRef(false);
+  const screenShareEverActiveRef = useRef(false);
+  const screenShareWarningShownRef = useRef(false);
+  const proctoringReporterRef = useRef<ProctoringEventReporter | null>(null);
+  const screenRecordingStartedAtRef = useRef<string | null>(null);
+  const screenRecordingInitializedRef = useRef(false);
+  const screenRecordingInitPromiseRef = useRef<Promise<void> | null>(null);
+  const screenRecordingPendingUploadsRef = useRef<Set<Promise<void>>>(new Set());
+  const screenRecordingFailedChunksRef = useRef(0);
+  const screenRecordingFinalizedRef = useRef(false);
+  const stopScreenRecordingRef = useRef<() => void>(() => {});
   answersRef.current = answers;
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    if (!assessmentId || !attemptId) return;
+    const reporter = createProctoringEventReporter({ assessmentId, attemptId });
+    proctoringReporterRef.current = reporter;
+    return () => {
+      void reporter.flush();
+      reporter.destroy();
+      proctoringReporterRef.current = null;
+    };
+  }, [assessmentId, attemptId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -252,6 +317,98 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     autoEnter: true,
     active: examActive,
   });
+
+  const requiresScreenShare = Boolean(session?.screen_sharing_required);
+  const isScreenShareActive = screenShareStatus === 'active' && Boolean(screenStreamRef.current?.active);
+
+  const stopScreenShare = useCallback((resetStatus = true) => {
+    screenShareStopExpectedRef.current = true;
+    screenStreamRef.current?.getTracks().forEach((track) => track.stop());
+    screenStreamRef.current = null;
+    screenTrackRef.current = null;
+    if (resetStatus) {
+      setScreenShareStatus('idle');
+      setScreenShareError(null);
+    }
+    window.setTimeout(() => {
+      screenShareStopExpectedRef.current = false;
+    }, 0);
+  }, []);
+
+  const requestScreenShare = useCallback(async (): Promise<boolean> => {
+    setScreenShareError(null);
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+      setScreenShareStatus('unsupported');
+      setScreenShareError(
+        'Screen sharing is not supported in this browser. Use a recent Chrome or Edge browser on a laptop or desktop.'
+      );
+      return false;
+    }
+
+    setScreenShareStatus('requesting');
+    try {
+      stopScreenShare(false);
+      screenShareStopExpectedRef.current = false;
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'monitor' },
+        audio: false,
+      });
+      const track = stream.getVideoTracks()[0];
+      if (!track) {
+        stream.getTracks().forEach((t) => t.stop());
+        setScreenShareStatus('denied');
+        setScreenShareError('No screen was selected. Please choose your entire screen and try again.');
+        return false;
+      }
+
+      const displaySurface = track.getSettings?.().displaySurface;
+      if (displaySurface && displaySurface !== 'monitor') {
+        stream.getTracks().forEach((t) => t.stop());
+        setScreenShareStatus('denied');
+        setScreenShareError('Please select Entire Screen, not only a browser tab or window, then try again.');
+        return false;
+      }
+
+      screenStreamRef.current = stream;
+      screenTrackRef.current = track;
+      track.addEventListener('ended', () => {
+        if (screenShareStopExpectedRef.current) return;
+        screenStreamRef.current = null;
+        screenTrackRef.current = null;
+        setScreenShareStatus('ended');
+        setScreenShareError('Screen sharing has stopped. Share your entire screen again to continue.');
+        proctoringReporterRef.current?.report(
+          'SCREEN_SHARE_STOPPED',
+          { phase: phaseRef.current },
+          { priority: true }
+        );
+        if (phaseRef.current !== 'camera' && phaseRef.current !== 'ending') {
+          toast.error('Screen sharing has stopped.');
+        }
+      });
+      const restarted = screenShareEverActiveRef.current;
+      screenShareEverActiveRef.current = true;
+      proctoringReporterRef.current?.report(
+        restarted ? 'SCREEN_SHARE_RESTARTED' : 'SCREEN_SHARE_STARTED',
+        { phase: phaseRef.current }
+      );
+      setScreenShareStatus('active');
+      return true;
+    } catch (err: unknown) {
+      const name = (err as { name?: string })?.name ?? '';
+      setScreenShareStatus(name === 'NotAllowedError' ? 'denied' : 'denied');
+      setScreenShareError(
+        name === 'NotAllowedError'
+          ? 'Screen sharing was denied. Click Share entire screen and select your entire screen in the browser prompt.'
+          : 'Could not start screen sharing. Please select your entire screen and try again.'
+      );
+      return false;
+    }
+  }, [stopScreenShare]);
+
+  useEffect(() => {
+    return () => stopScreenShare(false);
+  }, [stopScreenShare]);
 
   const examEndMs = useMemo(() => {
     if (!session?.ends_at) return null;
@@ -282,6 +439,11 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       );
     });
   }, [session, allQuestions]);
+  const requiredMicrophone = needsMicrophone || requiresScreenShare;
+  const cameraReady = isCameraActive;
+  const microphoneReady = !requiredMicrophone || micReady;
+  const screenShareReady = !requiresScreenShare || isScreenShareActive;
+  const allRequiredPermissionsReady = cameraReady && microphoneReady && screenShareReady;
 
   const roundNumbers = useMemo(() => {
     const nums = Array.from(new Set(allQuestions.map((q) => q.round_number))).sort(
@@ -336,6 +498,158 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       }));
   }, [allQuestions]);
 
+  const ensureScreenRecordingInitialized = useCallback(
+    async (startedAt?: string) => {
+      if (!requiresScreenShare) return;
+      if (screenRecordingInitializedRef.current) return;
+
+      if (!screenRecordingInitPromiseRef.current) {
+        const recordingStartedAt =
+          screenRecordingStartedAtRef.current ||
+          startedAt ||
+          new Date().toISOString();
+        screenRecordingStartedAtRef.current = recordingStartedAt;
+        screenRecordingInitPromiseRef.current = apiClient
+          .initializeAssessmentScreenRecording(assessmentId, attemptId, {
+            started_at: recordingStartedAt,
+          })
+          .then(() => {
+            screenRecordingInitializedRef.current = true;
+          })
+          .catch((error) => {
+            screenRecordingInitPromiseRef.current = null;
+            throw error;
+          });
+      }
+
+      await screenRecordingInitPromiseRef.current;
+    },
+    [assessmentId, attemptId, requiresScreenShare]
+  );
+
+  const waitForScreenRecordingUploads = useCallback(async (timeoutMs = 10000) => {
+    const started = Date.now();
+    while (screenRecordingPendingUploadsRef.current.size > 0) {
+      const pending = Array.from(screenRecordingPendingUploadsRef.current);
+      await Promise.race([
+        Promise.allSettled(pending),
+        sleep(250),
+      ]);
+      if (Date.now() - started >= timeoutMs) break;
+    }
+  }, []);
+
+  const uploadScreenRecordingChunk = useCallback(
+    async (chunk: ScreenRecordingChunk) => {
+      await ensureScreenRecordingInitialized(chunk.startedAt);
+
+      const durationSeconds = Math.max(
+        0,
+        Math.round(
+          (new Date(chunk.endedAt).getTime() -
+            new Date(chunk.startedAt).getTime()) /
+            1000
+        )
+      );
+      const contentType = chunk.mimeType || chunk.blob.type || 'video/webm';
+      const baseContentType = contentType.split(';')[0].trim() || 'video/webm';
+      let lastError: unknown = null;
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          // Attempt 1: Direct presigned S3 upload
+          try {
+            const upload =
+              await apiClient.createAssessmentScreenRecordingChunkUpload(
+                assessmentId,
+                attemptId,
+                {
+                  chunk_index: chunk.sequence,
+                  content_type: contentType,
+                  size_bytes: chunk.blob.size,
+                  started_at: chunk.startedAt,
+                  ended_at: chunk.endedAt,
+                  duration: durationSeconds,
+                }
+              );
+
+            if (!upload.already_uploaded) {
+              const response = await fetch(upload.upload_url, {
+                method: upload.method || 'PUT',
+                headers: upload.headers || { 'Content-Type': baseContentType },
+                body: chunk.blob,
+              });
+              if (!response.ok) {
+                throw new Error(`S3 upload failed with status ${response.status}`);
+              }
+            }
+
+            await apiClient.completeAssessmentScreenRecordingChunkUpload(
+              assessmentId,
+              attemptId,
+              upload.recording_id,
+              {
+                chunk_index: chunk.sequence,
+                size_bytes: chunk.blob.size,
+                ended_at: chunk.endedAt,
+                duration: durationSeconds,
+              }
+            );
+            return;
+          } catch (directS3Err) {
+            console.warn(
+              `Direct S3 chunk upload failed for chunk ${chunk.sequence}, attempting direct server fallback:`,
+              directS3Err
+            );
+            // Attempt 2: Fallback to direct backend upload via multipart server API
+            await apiClient.uploadAssessmentScreenRecordingChunkDirect(
+              assessmentId,
+              attemptId,
+              chunk.blob,
+              {
+                chunk_index: chunk.sequence,
+                content_type: contentType,
+                started_at: chunk.startedAt,
+                ended_at: chunk.endedAt,
+                duration: durationSeconds,
+              }
+            );
+            return;
+          }
+        } catch (error) {
+          lastError = error;
+          if (attempt < 3) {
+            await sleep(750 * attempt);
+          }
+        }
+      }
+
+      screenRecordingFailedChunksRef.current += 1;
+      throw lastError instanceof Error
+        ? lastError
+        : new Error('Could not upload screen recording chunk.');
+    },
+    [assessmentId, attemptId, ensureScreenRecordingInitialized]
+  );
+
+  const finalizeScreenRecordingUploads = useCallback(
+    async (status: 'COMPLETED' | 'FAILED' = 'COMPLETED') => {
+      if (!requiresScreenShare || screenRecordingFinalizedRef.current) return;
+      screenRecordingFinalizedRef.current = true;
+      try {
+        await waitForScreenRecordingUploads(10000);
+        await apiClient.finalizeAssessmentScreenRecording(assessmentId, attemptId, {
+          ended_at: new Date().toISOString(),
+          status:
+            screenRecordingFailedChunksRef.current > 0 ? 'FAILED' : status,
+        });
+      } catch (error) {
+        console.warn('Could not finalize screen recording metadata', error);
+      }
+    },
+    [assessmentId, attemptId, requiresScreenShare, waitForScreenRecordingUploads]
+  );
+
   const finishAndGoHome = useCallback(
     async (mode: 'submit' | 'auto' | 'disqualify', reason?: string) => {
       if (endingRef.current) return;
@@ -358,9 +672,20 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       setSubmitting(true);
       setPhase('ending');
       try {
+        if (requiresScreenShare) {
+          stopScreenRecordingRef.current();
+          await sleep(250);
+          await waitForScreenRecordingUploads(8000);
+        }
         // Capture any remaining proctoring shots for the current round before submit
         try {
           await flushSnapshotsRef.current();
+        } catch {
+          /* non-blocking */
+        }
+        // Deliver any queued proctoring events before the attempt is finalized
+        try {
+          await proctoringReporterRef.current?.flush();
         } catch {
           /* non-blocking */
         }
@@ -384,13 +709,27 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         endingRef.current = false;
         setPhase('exam');
       } finally {
+        await finalizeScreenRecordingUploads(
+          mode === 'disqualify' ? 'FAILED' : 'COMPLETED'
+        );
         setSubmitting(false);
+        stopScreenShare(false);
         stopCamera();
         await exitExamFullscreen();
         router.replace('/dashboard/student');
       }
     },
-    [assessmentId, attemptId, buildAnswerPayload, router, stopCamera]
+    [
+      assessmentId,
+      attemptId,
+      buildAnswerPayload,
+      finalizeScreenRecordingUploads,
+      requiresScreenShare,
+      router,
+      stopCamera,
+      stopScreenShare,
+      waitForScreenRecordingUploads,
+    ]
   );
 
   const onUploadSnapshot = useCallback(
@@ -405,6 +744,86 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     },
     [assessmentId, attemptId]
   );
+
+  const handleScreenRecordingChunk = useCallback(
+    async (chunk: ScreenRecordingChunk) => {
+      if (!requiresScreenShare) return;
+      const uploadPromise = uploadScreenRecordingChunk(chunk);
+      screenRecordingPendingUploadsRef.current.add(uploadPromise);
+      try {
+        await uploadPromise;
+      } finally {
+        screenRecordingPendingUploadsRef.current.delete(uploadPromise);
+      }
+    },
+    [requiresScreenShare, uploadScreenRecordingChunk]
+  );
+
+  const handleScreenRecordingLifecycle = useCallback(
+    (event: ScreenRecordingLifecycleEvent, details?: Record<string, unknown>) => {
+      if (event === 'started') {
+        const startedAt = new Date().toISOString();
+        screenRecordingStartedAtRef.current = startedAt;
+        void ensureScreenRecordingInitialized(startedAt).catch((error) => {
+          toast.error(
+            error?.response?.data?.detail ||
+              error?.message ||
+              'Could not initialize screen recording uploads.'
+          );
+        });
+        console.info('Assessment screen recording started', {
+          assessmentId,
+          attemptId,
+          ...details,
+        });
+        return;
+      }
+      if (event === 'stopped') {
+        console.info('Assessment screen recording stopped', {
+          assessmentId,
+          attemptId,
+          ...details,
+        });
+        return;
+      }
+      if (event === 'screen_stopped') {
+        console.warn('Assessment screen sharing stopped', { assessmentId, attemptId });
+        return;
+      }
+      if (event === 'offline') {
+        toast.error('Network connection appears offline. Your screen recording will continue locally for now.');
+        return;
+      }
+      if (event === 'online') {
+        toast.success('Network connection restored.');
+        return;
+      }
+      if (event === 'unsupported') {
+        toast.error('Screen recording is not supported in this browser.');
+        return;
+      }
+      if (event === 'error') {
+        const message =
+          typeof details?.message === 'string'
+            ? details.message
+            : 'Screen recording encountered an error.';
+        toast.error(message);
+      }
+    },
+    [assessmentId, attemptId, ensureScreenRecordingInitialized]
+  );
+
+  const screenRecording = useScreenRecording({
+    active: requiresScreenShare && examActive,
+    stream: requiresScreenShare && screenShareStatus === 'active' ? screenStreamRef.current : null,
+    chunkMs: 8000,
+    onChunk: handleScreenRecordingChunk,
+    onLifecycleEvent: handleScreenRecordingLifecycle,
+  });
+
+  useEffect(() => {
+    stopScreenRecordingRef.current = screenRecording.stopRecording;
+  }, [screenRecording.stopRecording]);
 
   const { flushRemaining } = useProctorSnapshots({
     attemptId,
@@ -496,22 +915,44 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     if (phase !== 'exam' && phase !== 'warning' && phase !== 'round_break') return;
     if (isFullscreen) {
       wasFullscreenRef.current = true;
-      if (phase === 'warning') setPhase('exam');
       return;
     }
     if (!wasFullscreenRef.current) return;
     if (!fullscreenWarningShown) {
       setFullscreenWarningShown(true);
+      setWarningReason('fullscreen');
       setPhase('warning');
+      proctoringReporterRef.current?.report('FULLSCREEN_EXIT', {
+        phase: phaseRef.current,
+      });
     } else if (phase === 'exam' || phase === 'round_break') {
+      proctoringReporterRef.current?.report(
+        'FULLSCREEN_EXIT',
+        { phase: phaseRef.current, repeated: true },
+        { priority: true }
+      );
       void finishAndGoHome('disqualify', 'FULLSCREEN_EXIT');
     }
   }, [isFullscreen, phase, fullscreenWarningShown, finishAndGoHome]);
 
   useEffect(() => {
+    if (phase !== 'warning') return;
+    if (!isFullscreen) return;
+    // Never resume into the exam while a mandatory screen share is stopped.
+    if (requiresScreenShare && screenShareStatus !== 'active') return;
+    setWarningReason(null);
+    setPhase('exam');
+  }, [phase, isFullscreen, requiresScreenShare, screenShareStatus]);
+
+  useEffect(() => {
     if (phase !== 'exam' && phase !== 'round_break') return;
     const onVis = () => {
       if (document.hidden) {
+        proctoringReporterRef.current?.report(
+          'TAB_SWITCH',
+          { visibilityState: document.visibilityState },
+          { priority: true }
+        );
         void finishAndGoHome('disqualify', 'TAB_SWITCH');
       }
     };
@@ -519,9 +960,64 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [phase, finishAndGoHome]);
 
+  useEffect(() => {
+    if (!requiresScreenShare) return;
+    if (screenShareStatus !== 'ended') return;
+    if (phase !== 'exam' && phase !== 'warning' && phase !== 'round_break') return;
+    // First stop: warn and allow the candidate to re-share their screen.
+    // A second stop disqualifies. (The initial stop event itself is reported
+    // by the track 'ended' handler.)
+    if (!screenShareWarningShownRef.current) {
+      screenShareWarningShownRef.current = true;
+      setWarningReason('screen_share');
+      setPhase('warning');
+      return;
+    }
+    proctoringReporterRef.current?.report(
+      'SCREEN_SHARE_STOPPED',
+      { phase: phaseRef.current, repeated: true },
+      { priority: true }
+    );
+    void finishAndGoHome('disqualify', 'SCREEN_SHARE_STOPPED');
+  }, [finishAndGoHome, phase, requiresScreenShare, screenShareStatus]);
+
+  useEffect(() => {
+    if (!examActive) return;
+    const onBlur = () => {
+      proctoringReporterRef.current?.report('WINDOW_BLUR', {
+        visibilityState: document.visibilityState,
+        fullscreen: Boolean(document.fullscreenElement),
+      });
+    };
+    window.addEventListener('blur', onBlur);
+    return () => window.removeEventListener('blur', onBlur);
+  }, [examActive]);
+
+  useEffect(() => {
+    if (!examActive) return;
+    const onOffline = () =>
+      proctoringReporterRef.current?.report('NETWORK_DISCONNECTED', { online: false });
+    const onOnline = () =>
+      proctoringReporterRef.current?.report('NETWORK_RECONNECTED', { online: true });
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+    return () => {
+      window.removeEventListener('offline', onOffline);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [examActive]);
+
   const beginExam = async () => {
-    const ok = await startCamera({ audio: needsMicrophone });
+    if (!allRequiredPermissionsReady) {
+      toast.error('Complete the required permission checklist before starting.');
+      return;
+    }
+    const ok = await startCamera({ audio: requiredMicrophone });
     if (!ok) return;
+    if (requiresScreenShare && !isScreenShareActive) {
+      toast.error('Screen sharing is required before starting this assessment.');
+      return;
+    }
     await enterFullscreen();
     setPhase('exam');
   };
@@ -831,10 +1327,16 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             </div>
             <div>
               <h1 className="font-bold text-gray-900 text-lg mb-1">
-                {needsMicrophone ? 'Camera and microphone required' : 'Camera required'}
+                {requiresScreenShare
+                  ? 'Camera, microphone, and screen sharing required'
+                  : needsMicrophone
+                    ? 'Camera and microphone required'
+                    : 'Camera required'}
               </h1>
               <p className="text-sm text-gray-600 leading-relaxed">
-                {needsMicrophone
+                {requiresScreenShare
+                  ? 'Your webcam and microphone must be enabled, and you must share your entire screen before the assessment starts. When the browser prompt appears, choose Entire Screen rather than a tab or window. Browser permission dialogs cannot be skipped.'
+                  : needsMicrophone
                   ? 'Your webcam must stay on for the entire assessment, and microphone access is needed for soft-skills speaking questions. Enable both before you begin so permission prompts do not interrupt fullscreen. Snapshots are taken silently during the exam.'
                   : 'Your webcam must stay on for the entire assessment. Enable the camera before you begin; it will remain active through every round. Snapshots are taken silently during the exam.'}
               </p>
@@ -848,44 +1350,138 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
-            <p className="text-xs text-gray-600">
-              Status:{' '}
-              <span className="font-semibold text-gray-900">{cameraStatusLabel(cameraStatus)}</span>
-              {needsMicrophone && isCameraActive && (
-                <span className="ml-2 font-semibold text-gray-900">
-                  · Mic: {micReady ? 'ready' : 'needed'}
-                </span>
-              )}
-            </p>
-            {(!isCameraActive || (needsMicrophone && !micReady)) && (
-              <button
-                type="button"
-                onClick={() => void startCamera({ audio: needsMicrophone })}
-                disabled={cameraStatus === 'requesting'}
-                className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 shadow-sm"
-              >
-                {cameraStatus === 'requesting' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Enabling…
-                  </>
-                ) : (
-                  <>
-                    <Video className="w-4 h-4" />
-                    {needsMicrophone ? 'Enable camera & mic' : 'Enable camera'}
-                  </>
+          {requiresScreenShare ? (
+            <div className="space-y-4 pt-1">
+              <div className="rounded-xl border border-amber-100 bg-white/80 divide-y divide-amber-100">
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <Video className="h-4 w-4 text-amber-700" />
+                    Camera
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${cameraReady ? 'text-green-700' : 'text-gray-500'}`}>
+                    {cameraReady ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                    {cameraReady ? 'Ready' : cameraStatusLabel(cameraStatus)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <Mic className="h-4 w-4 text-amber-700" />
+                    Microphone
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${microphoneReady ? 'text-green-700' : 'text-gray-500'}`}>
+                    {microphoneReady ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                    {microphoneReady ? 'Ready' : 'Needed'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <Monitor className="h-4 w-4 text-amber-700" />
+                    Screen Share
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${screenShareReady ? 'text-green-700' : 'text-gray-500'}`}>
+                    {screenShareReady ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                    {screenShareReady ? 'Ready' : screenShareStatusLabel(screenShareStatus)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(!cameraReady || !microphoneReady) && (
+                  <button
+                    type="button"
+                    onClick={() => void startCamera({ audio: true })}
+                    disabled={cameraStatus === 'requesting'}
+                    className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 shadow-sm"
+                  >
+                    {cameraStatus === 'requesting' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Enabling…
+                      </>
+                    ) : (
+                      <>
+                        <Video className="w-4 h-4" />
+                        Enable camera & mic
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
-            )}
-          </div>
+                {!screenShareReady && (
+                  <button
+                    type="button"
+                    onClick={() => void requestScreenShare()}
+                    disabled={screenShareStatus === 'requesting'}
+                    className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 shadow-sm"
+                  >
+                    {screenShareStatus === 'requesting' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Waiting…
+                      </>
+                    ) : (
+                      <>
+                        <Monitor className="w-4 h-4" />
+                        Share entire screen
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-600 bg-white/70 border border-amber-100 rounded-lg px-3 py-2">
+                In the browser screen-share dialog, select <strong>Entire Screen</strong>, then click Share.
+                If you choose only a tab or window, you will be asked to retry.
+                The browser-side recording starts after you click <strong>Start Assessment</strong> and runs in short chunks.
+                Current recorder status: <strong>{screenRecording.status}</strong>.
+              </p>
+
+              {screenShareError && (
+                <p className="text-sm text-red-600 flex items-start gap-2 pt-2 border-t border-red-100">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  {screenShareError}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+              <p className="text-xs text-gray-600">
+                Status:{' '}
+                <span className="font-semibold text-gray-900">{cameraStatusLabel(cameraStatus)}</span>
+                {needsMicrophone && isCameraActive && (
+                  <span className="ml-2 font-semibold text-gray-900">
+                    · Mic: {micReady ? 'ready' : 'needed'}
+                  </span>
+                )}
+              </p>
+              {(!isCameraActive || (needsMicrophone && !micReady)) && (
+                <button
+                  type="button"
+                  onClick={() => void startCamera({ audio: needsMicrophone })}
+                  disabled={cameraStatus === 'requesting'}
+                  className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-60 shadow-sm"
+                >
+                  {cameraStatus === 'requesting' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enabling…
+                    </>
+                  ) : (
+                    <>
+                      <Video className="w-4 h-4" />
+                      {needsMicrophone ? 'Enable camera & mic' : 'Enable camera'}
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
 
           {(cameraStatus === 'denied' ||
             cameraStatus === 'unavailable' ||
             cameraStatus === 'lost') && (
             <p className="text-sm text-red-600 flex items-start gap-2 pt-2 border-t border-red-100">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              {needsMicrophone
+              {requiredMicrophone
                 ? 'Check site permissions for camera and microphone, and ensure no other app is using them.'
                 : 'Check site permissions and ensure no other app is using the camera.'}
             </p>
@@ -894,10 +1490,10 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           <button
             type="button"
             onClick={() => void beginExam()}
-            disabled={!isCameraActive || (needsMicrophone && !micReady)}
+            disabled={!allRequiredPermissionsReady}
             className="w-full inline-flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
-            Start exam in fullscreen
+            {requiresScreenShare ? 'Start Assessment' : 'Start exam in fullscreen'}
           </button>
 
           <p className="text-xs text-gray-500 text-center">
@@ -910,24 +1506,38 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   }
 
   if (phase === 'warning') {
+    const isScreenShareWarning = warningReason === 'screen_share';
     return (
       <div className="min-h-screen flex items-center justify-center bg-black/70 p-6">
         <div className="max-w-md w-full bg-white rounded-2xl p-8 space-y-4 shadow-xl">
           <div className="flex items-center gap-2 text-amber-700">
             <AlertTriangle className="h-6 w-6" />
-            <h2 className="text-lg font-semibold">Stay in fullscreen</h2>
+            <h2 className="text-lg font-semibold">
+              {isScreenShareWarning ? 'Screen sharing stopped' : 'Stay in fullscreen'}
+            </h2>
           </div>
           <p className="text-sm text-gray-700">
-            Do not exit fullscreen. If you leave fullscreen again or switch tabs, you will be
-            disqualified and the exam will be submitted automatically.
+            {isScreenShareWarning
+              ? 'Your screen is no longer being shared. Re-share your entire screen to continue. If screen sharing stops again, you will be disqualified and the exam will be submitted automatically.'
+              : 'Do not exit fullscreen. If you leave fullscreen again or switch tabs, you will be disqualified and the exam will be submitted automatically.'}
           </p>
-          <Button
-            type="button"
-            className="w-full bg-[#2563EB] hover:bg-blue-700"
-            onClick={() => void enterFullscreen()}
-          >
-            Resume fullscreen
-          </Button>
+          {isScreenShareWarning ? (
+            <Button
+              type="button"
+              className="w-full bg-[#2563EB] hover:bg-blue-700"
+              onClick={() => void requestScreenShare()}
+            >
+              Re-share screen
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="w-full bg-[#2563EB] hover:bg-blue-700"
+              onClick={() => void enterFullscreen()}
+            >
+              Resume fullscreen
+            </Button>
+          )}
         </div>
       </div>
     );
