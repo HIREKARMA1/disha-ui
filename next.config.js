@@ -23,6 +23,10 @@ const appUrl =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ["@react-pdf/renderer"],
+  experimental: {
+    serverComponentsExternalPackages: ["@react-pdf/renderer"],
+  },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabasePublishableKey,
@@ -36,6 +40,7 @@ const nextConfig = {
         __dirname,
         "node_modules/nextjs-toploader/dist/index.js"
       ),
+      canvas: false,
     };
     return config;
   },
