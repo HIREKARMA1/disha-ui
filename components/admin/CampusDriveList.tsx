@@ -11,6 +11,7 @@ import type { CampusDriveListItem } from '@/types/campusDrive'
 import { REGISTRATION_STATUS_LABELS } from '@/types/campusDrive'
 import { CATEGORY_LABELS, EVENT_CATEGORIES } from '@/types/contestEvent'
 import { toast } from 'react-hot-toast'
+import { AssignCampusDriveUniversityModal } from './AssignCampusDriveUniversityModal'
 
 function formatDate(value?: string | null) {
   if (!value) return '—'
@@ -27,6 +28,8 @@ export function CampusDriveList() {
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total_pages: 1, total_count: 0, has_next: false, has_prev: false })
   const [busy, setBusy] = useState<string | null>(null)
+  const [showAssignUniversityModal, setShowAssignUniversityModal] = useState(false)
+  const [campusDriveToAssign, setCampusDriveToAssign] = useState<CampusDriveListItem | null>(null)
 
   const load = useCallback(async (nextPage = 1) => {
     setLoading(true)
@@ -61,13 +64,17 @@ export function CampusDriveList() {
     void load(1)
   }, [load])
 
-  const run = async (id: string, action: 'publish' | 'unpublish' | 'delete') => {
+  const run = async (
+    id: string,
+    action: 'publish' | 'unpublish' | 'delete' | 'notify',
+  ) => {
     if (action === 'delete' && !window.confirm('Delete this campus drive?')) return
     setBusy(`${id}-${action}`)
     try {
       if (action === 'publish') await campusDriveService.publish(id)
       if (action === 'unpublish') await campusDriveService.unpublish(id)
       if (action === 'delete') await campusDriveService.remove(id)
+      if (action === 'notify') await campusDriveService.notify(id)
       toast.success(action === 'delete' ? 'Campus Drive deleted' : action === 'publish' ? 'Campus Drive published' : 'Campus Drive moved to draft')
       await load(page)
     } catch (err) {
@@ -173,12 +180,32 @@ export function CampusDriveList() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link href={`/dashboard/admin/campus-drives/${item.id}`}><Button size="sm" variant="outline">View</Button></Link>
                     <Link href={`/dashboard/admin/campus-drives/${item.id}/edit`}><Button size="sm" variant="outline">Edit</Button></Link>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setCampusDriveToAssign(item)
+                        setShowAssignUniversityModal(true)
+                      }}
+                    >
+                      Assign University
+                    </Button>
+
                     {item.publication_status === 'published' ? (
                       <Button size="sm" variant="outline" disabled={busy === `${item.id}-unpublish`} onClick={() => void run(item.id, 'unpublish')}>Unpublish</Button>
                     ) : (
                       <Button size="sm" disabled={busy === `${item.id}-publish`} onClick={() => void run(item.id, 'publish')}>Publish</Button>
                     )}
                     <Button size="sm" variant="ghost" className="text-red-600" disabled={busy === `${item.id}-delete`} onClick={() => void run(item.id, 'delete')}>Delete</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy === `${item.id}-notify`}
+                      onClick={() => void run(item.id, 'notify')}
+                    >
+                      Notify
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -186,6 +213,18 @@ export function CampusDriveList() {
           ))}
         </div>
       )}
+
+      <AssignCampusDriveUniversityModal
+        isOpen={showAssignUniversityModal}
+        onClose={() => {
+          setShowAssignUniversityModal(false)
+          setCampusDriveToAssign(null)
+        }}
+        campusDrive={campusDriveToAssign}
+        onAssigned={() => {
+          void load(page)
+        }}
+      />
 
       {pagination.total_pages > 1 && (
         <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 sm:flex-row dark:border-gray-700 dark:bg-gray-800">

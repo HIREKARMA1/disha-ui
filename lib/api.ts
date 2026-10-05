@@ -454,6 +454,13 @@ class ApiClient {
     return response.data;
   }
 
+  async getAssignedUniversitiesForCampusDrive(campusDriveId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/campus-drives/${campusDriveId}/assigned-universities`,
+    )
+    return response.data
+  }
+
   async getAppliedStudentsAdmin(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/applied-students`);
     return response.data;
