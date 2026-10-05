@@ -35,8 +35,12 @@ export async function POST(request: NextRequest) {
         'Content-Disposition': 'attachment; filename="job_description.pdf"',
       },
     })
-  } catch (error) {
-    console.error('Failed to generate job description PDF', error)
-    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Failed to generate job description PDF:', error)
+    const message = error instanceof Error ? error.message : String(error)
+    return NextResponse.json(
+      { error: `Failed to generate PDF: ${message}` },
+      { status: 500 }
+    )
   }
 }
