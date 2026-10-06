@@ -3,7 +3,6 @@ import path from 'path'
 import { renderToBuffer } from '@react-pdf/renderer'
 import {
   JobDescriptionPDFGenerator,
-  registerPdfFonts,
   type JobDescriptionPdfAssets,
 } from '@/lib/pdfGenerator'
 
@@ -27,25 +26,28 @@ async function fetchImageAsDataUrl(imageUrl: string): Promise<string> {
  * Render the existing job-description PDF outside the browser for the university assignment email.
  * Uses JobDescriptionPDFGenerator.buildDocument — the same document as the download button.
  */
+function publicAppOrigin(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+  ).replace(/\/$/, '')
+}
+
 export async function generateJobDescriptionPdfBuffer(
   job: JobPdfInput,
   corporateProfile?: CorporatePdfInput
 ): Promise<Buffer> {
-  try {
-    const fontsDir = path.join(process.cwd(), 'public', 'fonts')
-    if (fs.existsSync(fontsDir)) {
-      registerPdfFonts(fontsDir.replace(/\\/g, '/'))
-    }
-  } catch (error) {
-    console.warn('Could not register PDF fonts on server:', error)
-  }
-
   let hirekarmaLogoDataUrl: string | null = null
   try {
     const hirekarmaPath = path.join(process.cwd(), 'public', 'images', 'HKlogoblack.png')
     if (fs.existsSync(hirekarmaPath)) {
       const hirekarmaBytes = fs.readFileSync(hirekarmaPath)
       hirekarmaLogoDataUrl = `data:image/png;base64,${hirekarmaBytes.toString('base64')}`
+    } else {
+      const origin = publicAppOrigin()
+      if (origin) {
+        hirekarmaLogoDataUrl = await fetchImageAsDataUrl(`${origin}/images/HKlogoblack.png`)
+      }
     }
   } catch (error) {
     console.warn('Could not load HKlogoblack.png for server PDF:', error)
@@ -69,5 +71,11 @@ export async function generateJobDescriptionPdfBuffer(
 
   const generator = new JobDescriptionPDFGenerator()
   const document = await generator.buildDocument(job, corporateProfile, assets)
-  return renderToBuffer(document)
+  try {
+    return await renderToBuffer(document)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('renderToBuffer failed for job description PDF:', message, error)
+    throw error
+  }
 }
