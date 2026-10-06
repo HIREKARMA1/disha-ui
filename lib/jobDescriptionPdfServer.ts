@@ -1,10 +1,44 @@
 import fs from 'fs'
 import path from 'path'
 import { renderToBuffer } from '@react-pdf/renderer'
+import { Font } from '@react-pdf/renderer'
 import {
   JobDescriptionPDFGenerator,
+  registerPdfFonts,
   type JobDescriptionPdfAssets,
 } from '@/lib/pdfGenerator'
+
+let serverPdfFontsReady = false
+
+/** Server-only: disk fonts first, then hosted /fonts (standalone deploys). */
+function ensureServerPdfFonts() {
+  if (serverPdfFontsReady) return
+
+  const regular = path.join(process.cwd(), 'public', 'fonts', 'NotoSans-Regular.ttf')
+  const bold = path.join(process.cwd(), 'public', 'fonts', 'NotoSans-Bold.ttf')
+  if (fs.existsSync(regular) && fs.existsSync(bold)) {
+    Font.register({
+      family: 'NotoSans',
+      fonts: [
+        { src: regular, fontWeight: 'normal' },
+        { src: bold, fontWeight: 'bold' },
+      ],
+    })
+    serverPdfFontsReady = true
+    return
+  }
+
+  const origin = publicAppOrigin()
+  if (origin) {
+    registerPdfFonts(`${origin}/fonts`)
+    serverPdfFontsReady = true
+    return
+  }
+
+  throw new Error(
+    'PDF fonts unavailable: public/fonts not on disk and NEXT_PUBLIC_APP_URL is not set'
+  )
+}
 
 type JobPdfInput = Parameters<JobDescriptionPDFGenerator['buildDocument']>[0]
 type CorporatePdfInput = Parameters<JobDescriptionPDFGenerator['buildDocument']>[1]
@@ -37,6 +71,8 @@ export async function generateJobDescriptionPdfBuffer(
   job: JobPdfInput,
   corporateProfile?: CorporatePdfInput
 ): Promise<Buffer> {
+  ensureServerPdfFonts()
+
   let hirekarmaLogoDataUrl: string | null = null
   try {
     const hirekarmaPath = path.join(process.cwd(), 'public', 'images', 'HKlogoblack.png')

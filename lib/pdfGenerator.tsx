@@ -29,45 +29,6 @@ function ensurePdfFontsRegistered() {
   registerPdfFonts(base)
 }
 
-/** Node/server PDF: local public/fonts first, then hosted /fonts URLs (standalone deploys). */
-export function ensureServerPdfFonts() {
-  if (pdfFontsRegistered) return
-  if (typeof window !== 'undefined') {
-    ensurePdfFontsRegistered()
-    return
-  }
-
-  const fs = require('fs') as typeof import('fs')
-  const path = require('path') as typeof import('path')
-  const regular = path.join(process.cwd(), 'public', 'fonts', 'NotoSans-Regular.ttf')
-  const bold = path.join(process.cwd(), 'public', 'fonts', 'NotoSans-Bold.ttf')
-  if (fs.existsSync(regular) && fs.existsSync(bold)) {
-    Font.register({
-      family: 'NotoSans',
-      fonts: [
-        { src: regular, fontWeight: 'normal' },
-        { src: bold, fontWeight: 'bold' },
-      ],
-    })
-    pdfFontsRegistered = true
-    return
-  }
-
-  const appUrl = (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
-  ).replace(/\/$/, '')
-
-  if (appUrl) {
-    registerPdfFonts(`${appUrl}/fonts`)
-    return
-  }
-
-  throw new Error(
-    'PDF fonts unavailable: public/fonts not on disk and NEXT_PUBLIC_APP_URL is not set'
-  )
-}
-
 export type JobDescriptionPdfAssets = {
   logoDataUrl?: string | null
   hirekarmaLogoDataUrl?: string | null
@@ -835,9 +796,8 @@ export class JobDescriptionPDFGenerator {
     corporateProfile?: CorporateProfile,
     assets?: JobDescriptionPdfAssets
   ) {
-    if (typeof window === 'undefined') {
-      ensureServerPdfFonts()
-    } else {
+    // Server email/API path registers fonts in jobDescriptionPdfServer before buildDocument.
+    if (typeof window !== 'undefined' || !assets) {
       ensurePdfFontsRegistered()
     }
 
