@@ -26,6 +26,7 @@ export interface CampusDriveListItem {
   short_description?: string | null
   banner_url?: string | null
   organizer_logo_url?: string | null
+  organizer_name?: string | null
   category?: string | null
   mode?: string | null
   venue?: string | null

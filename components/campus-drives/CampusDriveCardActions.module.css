@@ -1,0 +1,73 @@
+.dtActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 8px;
+  min-width: 0;
+}
+
+.dtActionsSingle {
+  grid-template-columns: 1fr;
+}
+
+.dtActions button,
+.dtActions a {
+  min-width: 0;
+  min-height: 44px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 11px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
+@media (max-width: 340px) {
+  .dtActions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dtView {
+  background: #fff;
+  color: #1b52a4;
+  border: 1.5px solid #1b52a4;
+}
+
+.dtView:hover {
+  background: #1b52a4;
+  color: #fff;
+}
+
+.dtRegister {
+  background: #1b52a4;
+  color: #fff;
+  border: 1.5px solid #1b52a4;
+}
+
+.dtRegister:hover:not(:disabled) {
+  background: #2468c4;
+  border-color: #2468c4;
+}
+
+.dtRegister:disabled {
+  background: #fff;
+  color: #5f6c84;
+  border-color: #e3e8f0;
+  cursor: not-allowed;
+}
+
+.dtActions a:focus-visible,
+.dtActions button:focus-visible {
+  outline: 3px solid #fec40d;
+  outline-offset: 2px;
+}
