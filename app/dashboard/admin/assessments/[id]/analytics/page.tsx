@@ -34,6 +34,8 @@ import {
     resolveSnapshotUrl,
 } from '@/lib/proctoringSnapshots'
 import { formatExamDeviceLabel } from '@/lib/examDevice'
+import { ScreenRecordingReview } from '@/components/admin/assessments/ScreenRecordingReview'
+import { AttemptReviewSection } from '@/components/admin/assessments/AttemptReviewSection'
 
 export default function AssessmentAnalyticsPage() {
     const params = useParams()
@@ -638,6 +640,14 @@ export default function AssessmentAnalyticsPage() {
                         setSelectedAttempt(null)
                         setIsModalOpen(false)
                     }}
+                    onReviewUpdated={(attemptId, meta) => {
+                        setAttempts((prev) =>
+                            prev.map((a) => (a.id === attemptId ? { ...a, ...meta } : a))
+                        )
+                        setSelectedAttempt((prev: any) =>
+                            prev?.id === attemptId ? { ...prev, ...meta } : prev
+                        )
+                    }}
                 />
             </div>
         </AdminDashboardLayout>
@@ -652,6 +662,7 @@ function AttemptDetailsModal({
     assessmentId,
     onReportUpdated,
     onAttemptDeleted,
+    onReviewUpdated,
 }: {
     isOpen: boolean
     onClose: () => void
@@ -674,6 +685,16 @@ function AttemptDetailsModal({
         }
     ) => void
     onAttemptDeleted?: (attemptId: string) => void
+    onReviewUpdated?: (
+        attemptId: string,
+        meta: {
+            review_status: string
+            review_remark?: string | null
+            reviewed_by?: string | null
+            reviewed_at?: string | null
+            status?: string | null
+        }
+    ) => void
 }) {
     const [proctoring, setProctoring] = useState<any>(null)
     const [loadingProctoring, setLoadingProctoring] = useState(false)
@@ -990,10 +1011,25 @@ function AttemptDetailsModal({
                         )}
                     </div>
 
+                    {/* Screen recording review (only when enabled for the assessment) */}
+                    <ScreenRecordingReview
+                        assessmentId={assessmentId}
+                        attemptId={attempt.id}
+                        enabled={Boolean(assessment?.screen_sharing_required)}
+                        examDurationMinutes={assessment?.total_duration_minutes}
+                    />
+
+                    {/* Manual review: can override PASS → FAIL with a reason */}
+                    <AttemptReviewSection
+                        assessmentId={assessmentId}
+                        attemptId={attempt.id}
+                        attempt={attempt}
+                        onReviewUpdated={onReviewUpdated}
+                    />
+
                     {/* Round-wise Breakdown */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Round-wise Scores</h3>
-
                         {rounds.length > 0 ? rounds.map((round: any, idx: number) => (
                             <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
                                 {/* Round Header */}
