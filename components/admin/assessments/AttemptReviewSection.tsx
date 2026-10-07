@@ -51,9 +51,14 @@ export function AttemptReviewSection({
             review_remark?: string | null
             reviewed_by?: string | null
             reviewed_at?: string | null
+            status?: string | null
         }
     ) => void
 }) {
+    const attemptStatus = String(attempt?.status || '').toUpperCase()
+    const alreadyFailed =
+        attemptStatus === 'FAILED' || attemptStatus === 'DISQUALIFIED'
+
     const savedStatus: ReviewStatus = ['PENDING', 'PASS', 'FAIL', 'DISQUALIFIED'].includes(
         attempt?.review_status
     )
@@ -77,11 +82,60 @@ export function AttemptReviewSection({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [attemptId])
 
+    // Already failed/disqualified — review not required; show read-only note if any.
+    if (alreadyFailed && savedStatus === 'PENDING') {
+        return (
+            <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                    Manual review
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    This attempt is already {attemptStatus === 'DISQUALIFIED' ? 'disqualified' : 'failed'}.
+                    Manual review is not required.
+                </p>
+            </div>
+        )
+    }
+
+    if (alreadyFailed) {
+        return (
+            <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                    Manual review
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    This attempt is already {attemptStatus === 'DISQUALIFIED' ? 'disqualified' : 'failed'}.
+                    Manual review is not required.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${BADGE_CLASSES[savedStatus]}`}
+                    >
+                        {savedStatus}
+                    </span>
+                    {savedRemark && (
+                        <span className="text-gray-600 dark:text-gray-300">{savedRemark}</span>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
     const isDirty = status !== savedStatus || remark !== savedRemark
     const previouslyReviewed = savedStatus !== 'PENDING'
+    const remarkRequired = status === 'FAIL' || status === 'DISQUALIFIED'
+    const canSave =
+        isDirty &&
+        !saving &&
+        (!remarkRequired || Boolean(remark.trim()))
 
     const handleSave = async () => {
-        if (!isDirty || saving) return
+        if (!canSave) return
+
+        if (remarkRequired && !remark.trim()) {
+            setError('A reason is required when marking Fail or Disqualified.')
+            return
+        }
 
         if (previouslyReviewed) {
             const ok = window.confirm(
@@ -106,6 +160,7 @@ export function AttemptReviewSection({
                 review_remark: data?.review_remark ?? (remark.trim() || null),
                 reviewed_by: data?.reviewed_by ?? null,
                 reviewed_at: data?.reviewed_at ?? null,
+                status: data?.status ?? undefined,
             })
             setJustSaved(true)
         } catch (err: any) {
@@ -123,10 +178,8 @@ export function AttemptReviewSection({
                 Manual review
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Final review decision for this candidate. This is separate from the
-                automatically calculated score and status shown above. Proctoring events
-                and recordings are indicators only — they never change the result by
-                themselves.
+                Review this candidate after checking proctoring evidence. Marking Fail or
+                Disqualified updates the attempt result and requires a reason.
             </p>
 
             {previouslyReviewed && (
@@ -167,14 +220,18 @@ export function AttemptReviewSection({
             </div>
 
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Review remark
+                Review remark{remarkRequired ? ' (required)' : ''}
             </label>
             <textarea
                 value={remark}
                 onChange={(e) => setRemark(e.target.value)}
                 rows={3}
                 maxLength={2000}
-                placeholder="Optional — note the reason for the decision (max 2000 characters)"
+                placeholder={
+                    remarkRequired
+                        ? 'Required — explain why this attempt is failed or disqualified'
+                        : 'Optional — note the reason for the decision (max 2000 characters)'
+                }
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
             <p className="text-xs text-gray-400 mt-1 text-right">{remark.length}/2000</p>
@@ -184,7 +241,7 @@ export function AttemptReviewSection({
             )}
 
             <div className="flex items-center gap-3 mt-3">
-                <Button onClick={handleSave} disabled={!isDirty || saving}>
+                <Button onClick={handleSave} disabled={!canSave}>
                     {saving ? (
                         <span className="flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />

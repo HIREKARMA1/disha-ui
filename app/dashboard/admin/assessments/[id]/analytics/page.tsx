@@ -692,6 +692,7 @@ function AttemptDetailsModal({
             review_remark?: string | null
             reviewed_by?: string | null
             reviewed_at?: string | null
+            status?: string | null
         }
     ) => void
 }) {
@@ -1015,9 +1016,10 @@ function AttemptDetailsModal({
                         assessmentId={assessmentId}
                         attemptId={attempt.id}
                         enabled={Boolean(assessment?.screen_sharing_required)}
+                        examDurationMinutes={assessment?.total_duration_minutes}
                     />
 
-                    {/* Final manual review (decision kept separate from auto score) */}
+                    {/* Manual review: can override PASS → FAIL with a reason */}
                     <AttemptReviewSection
                         assessmentId={assessmentId}
                         attemptId={attempt.id}

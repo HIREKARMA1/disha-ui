@@ -310,8 +310,16 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  const { videoRef, getVideoElement, startCamera, stopCamera, isCameraActive, status: cameraStatus, micReady } =
-    useExamCamera();
+  const {
+    videoRef,
+    captureVideoRef,
+    getVideoElement,
+    startCamera,
+    stopCamera,
+    isCameraActive,
+    status: cameraStatus,
+    micReady,
+  } = useExamCamera();
   const examActive = phase === 'exam' || phase === 'warning' || phase === 'round_break';
   const { isFullscreen, enterFullscreen } = useExamFullscreen({
     autoEnter: true,
@@ -413,6 +421,22 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const examEndMs = useMemo(() => {
     if (!session?.ends_at) return null;
     return new Date(session.ends_at).getTime();
+  }, [session]);
+
+  /** Full exam length for screen-recording segments (max 4 clips = duration/4 each). */
+  const examDurationMs = useMemo(() => {
+    if (
+      typeof session?.total_duration_minutes === 'number' &&
+      session.total_duration_minutes > 0
+    ) {
+      return session.total_duration_minutes * 60 * 1000;
+    }
+    if (session?.started_at && session?.ends_at) {
+      const ms =
+        new Date(session.ends_at).getTime() - new Date(session.started_at).getTime();
+      if (ms > 0) return ms;
+    }
+    return 60 * 60 * 1000;
   }, [session]);
 
   /** Soft-skills listening/speaking need mic primed before fullscreen. */
@@ -574,6 +598,25 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               );
 
             if (!upload.already_uploaded) {
+              const isAbsoluteUrl = /^https?:\/\//i.test(upload.upload_url || '');
+              // Relative/API upload URLs require auth — never fetch them bare
+              // (causes 403 Not authenticated + Next proxy ECONNRESET).
+              if (!isAbsoluteUrl) {
+                await apiClient.uploadAssessmentScreenRecordingChunkDirect(
+                  assessmentId,
+                  attemptId,
+                  chunk.blob,
+                  {
+                    chunk_index: chunk.sequence,
+                    content_type: contentType,
+                    started_at: chunk.startedAt,
+                    ended_at: chunk.endedAt,
+                    duration: durationSeconds,
+                  }
+                );
+                return;
+              }
+
               const response = await fetch(upload.upload_url, {
                 method: upload.method || 'PUT',
                 headers: upload.headers || { 'Content-Type': baseContentType },
@@ -582,6 +625,19 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               if (!response.ok) {
                 throw new Error(`S3 upload failed with status ${response.status}`);
               }
+
+              await apiClient.completeAssessmentScreenRecordingChunkUpload(
+                assessmentId,
+                attemptId,
+                upload.recording_id,
+                {
+                  chunk_index: chunk.sequence,
+                  size_bytes: chunk.blob.size,
+                  ended_at: chunk.endedAt,
+                  duration: durationSeconds,
+                }
+              );
+              return;
             }
 
             await apiClient.completeAssessmentScreenRecordingChunkUpload(
@@ -669,6 +725,12 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       }
 
       endingRef.current = true;
+      // Flush snapshots while the capture video is still mounted / stream active
+      try {
+        await flushSnapshotsRef.current();
+      } catch {
+        /* non-blocking */
+      }
       setSubmitting(true);
       setPhase('ending');
       try {
@@ -676,12 +738,6 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           stopScreenRecordingRef.current();
           await sleep(250);
           await waitForScreenRecordingUploads(8000);
-        }
-        // Capture any remaining proctoring shots for the current round before submit
-        try {
-          await flushSnapshotsRef.current();
-        } catch {
-          /* non-blocking */
         }
         // Deliver any queued proctoring events before the attempt is finalized
         try {
@@ -816,7 +872,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const screenRecording = useScreenRecording({
     active: requiresScreenShare && examActive,
     stream: requiresScreenShare && screenShareStatus === 'active' ? screenStreamRef.current : null,
-    chunkMs: 8000,
+    examDurationMs,
     onChunk: handleScreenRecordingChunk,
     onLifecycleEvent: handleScreenRecordingLifecycle,
   });
@@ -1287,6 +1343,17 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     void finishAndGoHome('submit');
   };
 
+  const captureSurface = (
+    <video
+      ref={captureVideoRef}
+      autoPlay
+      playsInline
+      muted
+      aria-hidden
+      className="pointer-events-none fixed left-0 top-0 h-px w-px opacity-0"
+    />
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -1298,6 +1365,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   if (phase === 'camera') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+        {captureSurface}
         <div className="max-w-lg w-full rounded-2xl border border-amber-200 bg-amber-50 shadow-lg p-6 space-y-5">
           <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden border border-gray-700 mx-auto max-w-[320px]">
             <video
@@ -1509,6 +1577,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     const isScreenShareWarning = warningReason === 'screen_share';
     return (
       <div className="min-h-screen flex items-center justify-center bg-black/70 p-6">
+        {captureSurface}
         <div className="max-w-md w-full bg-white rounded-2xl p-8 space-y-4 shadow-xl">
           <div className="flex items-center gap-2 text-amber-700">
             <AlertTriangle className="h-6 w-6" />
@@ -1549,6 +1618,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     const nextType = nextQs[0]?.round_type || 'next';
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+        {captureSurface}
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 space-y-5 text-center">
           <h2 className="text-2xl font-bold text-gray-900">
             Round {roundIdx + 1} of {totalRounds} complete
@@ -1612,6 +1682,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
       onCut={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
+      {captureSurface}
       <div className="relative z-20 flex h-14 sm:h-16 shrink-0 items-center justify-between bg-[#2563EB] px-3 sm:px-6 text-white shadow-md">
         <div className="min-w-0">
           <h1 className="truncate text-base sm:text-xl font-bold">
@@ -1648,6 +1719,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
               <video
                 ref={videoRef}
                 className="h-full w-full object-cover -scale-x-100"
+                autoPlay
                 playsInline
                 muted
               />
@@ -2116,6 +2188,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                   <video
                     ref={isLgUp ? videoRef : undefined}
                     className="h-full w-full object-cover -scale-x-100"
+                    autoPlay
                     playsInline
                     muted
                   />
