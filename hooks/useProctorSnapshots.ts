@@ -119,9 +119,20 @@ export function useProctorSnapshots(options: {
   const captureSlot = useCallback(
     async (slot: number, round: number): Promise<boolean> => {
       const video = getVideoRef.current();
-      if (!video) return false;
+      if (!video) {
+        console.warn('Proctor snapshot skipped: no video element', { slot, round });
+        return false;
+      }
       const blob = await captureVideoFrame(video);
-      if (!blob) return false;
+      if (!blob) {
+        console.warn('Proctor snapshot skipped: frame not ready', {
+          slot,
+          round,
+          readyState: video.readyState,
+          videoWidth: video.videoWidth,
+        });
+        return false;
+      }
       await onUploadRef.current(slot, blob, round);
       return true;
     },

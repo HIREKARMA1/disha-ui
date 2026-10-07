@@ -1244,6 +1244,110 @@ class ApiClient {
     return response.data;
   }
 
+  async initializeAssessmentScreenRecording(
+    assessmentId: string,
+    attemptId: string,
+    body: { started_at?: string | null } = {}
+  ): Promise<{ assessment_id: string; attempt_id: string; upload_prefix: string; screen_sharing_required: boolean }> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/screen-recording/init`,
+      body
+    );
+    return response.data;
+  }
+
+  async createAssessmentScreenRecordingChunkUpload(
+    assessmentId: string,
+    attemptId: string,
+    body: {
+      chunk_index: number;
+      content_type: string;
+      size_bytes: number;
+      started_at?: string | null;
+      ended_at?: string | null;
+      duration?: number | null;
+    }
+  ): Promise<{
+    recording_id: string;
+    chunk_index: number;
+    s3_key: string;
+    upload_url: string;
+    method: string;
+    headers: Record<string, string>;
+    expires_in: number;
+    status: string;
+    already_uploaded?: boolean;
+  }> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/screen-recording/chunks/presign`,
+      body
+    );
+    return response.data;
+  }
+
+  async completeAssessmentScreenRecordingChunkUpload(
+    assessmentId: string,
+    attemptId: string,
+    recordingId: string,
+    body: {
+      chunk_index?: number;
+      size_bytes?: number;
+      ended_at?: string | null;
+      duration?: number | null;
+    }
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/screen-recording/chunks/${recordingId}/complete`,
+      body
+    );
+    return response.data;
+  }
+
+  async uploadAssessmentScreenRecordingChunkDirect(
+    assessmentId: string,
+    attemptId: string,
+    blob: Blob,
+    meta: {
+      chunk_index: number;
+      content_type: string;
+      started_at?: string | null;
+      ended_at?: string | null;
+      duration?: number | null;
+    }
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', blob, `chunk_${meta.chunk_index}.webm`);
+    formData.append('chunk_index', String(meta.chunk_index));
+    formData.append('content_type', meta.content_type || 'video/webm');
+    if (meta.started_at) formData.append('started_at', meta.started_at);
+    if (meta.ended_at) formData.append('ended_at', meta.ended_at);
+    if (meta.duration !== undefined && meta.duration !== null) {
+      formData.append('duration', String(meta.duration));
+    }
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/screen-recording/chunks/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  }
+
+  async finalizeAssessmentScreenRecording(
+    assessmentId: string,
+    attemptId: string,
+    body: { ended_at?: string | null; duration?: number | null; status?: 'COMPLETED' | 'FAILED' } = {}
+  ): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/assessments/${assessmentId}/attempts/${attemptId}/screen-recording/finalize`,
+      body
+    );
+    return response.data;
+  }
+
   // Coding question bank
   async listCodingQuestions(params: Record<string, any> = {}): Promise<any> {
     const response: AxiosResponse = await this.client.get('/admin/coding-questions', { params });
