@@ -305,7 +305,7 @@ export function HubPromoStrip() {
   )
 }
 
-type LogoItem = { id: number; name: string; logo: string }
+type LogoItem = { id: string | number; name: string; logo: string }
 
 type PlacedStudent = {
   name: string

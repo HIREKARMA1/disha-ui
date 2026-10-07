@@ -120,14 +120,9 @@ export function CampusDriveRequestList() {
         setRequests((prev) => prev.map((r) => (r.id === item.id ? updated : r)))
       }
     } catch (err: unknown) {
-      const detail =
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { detail?: unknown } } }).response?.data
-          ?.detail !== 'undefined'
-          ? (err as { response: { data: { detail: unknown } } }).response.data.detail
-          : undefined
+      const data = (err as { response?: { data?: { detail?: unknown; error?: unknown } } })
+        .response?.data
+      const detail = data?.detail ?? data?.error
       const message =
         typeof detail === 'string'
           ? detail

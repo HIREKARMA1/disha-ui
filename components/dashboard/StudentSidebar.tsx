@@ -15,6 +15,7 @@ import {
     // Brain, // used by hidden Practice nav item
     ClipboardList,
     Calendar,
+    Presentation,
     MoreHorizontal,
     Headphones,
 } from 'lucide-react'
@@ -105,6 +106,13 @@ const navItems: NavItem[] = [
         href: '/events',
         icon: Calendar,
         description: 'Workshops & events',
+        openInNewTab: true,
+    },
+    {
+        label: 'Campus Drives',
+        href: '/campus-drives',
+        icon: Presentation,
+        description: 'Published campus programs',
         openInNewTab: true,
     },
     // Temporarily hidden from Student navigation — keep for easy re-enable

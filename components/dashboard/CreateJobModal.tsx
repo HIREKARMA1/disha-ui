@@ -540,21 +540,21 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-3 pt-3 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:p-4"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+                    className="flex min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-800 max-h-[calc(100dvh-7.75rem-env(safe-area-inset-bottom))] lg:max-h-[90vh]"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-b border-primary-200 dark:border-primary-700 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="shrink-0 border-b border-primary-200 bg-gradient-to-r from-primary-50 to-primary-100 p-4 dark:border-primary-700 dark:from-primary-900/20 dark:to-primary-800/20 lg:p-6">
+                        <div className="flex items-start justify-between gap-3 lg:items-center">
+                            <div className="min-w-0">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white lg:text-2xl">
                                     Create New Job Posting 💼
                                 </h2>
                                 <p className="text-gray-600 dark:text-gray-300 mt-1">
@@ -565,7 +565,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                 variant="ghost"
                                 size="sm"
                                 onClick={onClose}
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                className="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
@@ -573,7 +573,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                     </div>
 
                     {/* Form */}
-                    <form ref={formRef} onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden lg:block lg:max-h-[calc(90vh-140px)] lg:flex-none lg:overflow-y-auto lg:p-6">
+                        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:max-h-none lg:overflow-visible lg:p-0">
                         <div className="space-y-6">
                             {/* Basic Information */}
                             <div className="space-y-4">
@@ -1350,13 +1351,14 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                             </div>
 
                         </div>
+                        </div>
 
                         {/* Footer */}
-                        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <Button type="button" variant="outline" onClick={onClose}>
+                        <div className="flex shrink-0 flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:justify-end sm:gap-3 sm:px-6 lg:mt-8 lg:bg-transparent lg:px-0 lg:pb-0 lg:pt-6 lg:dark:bg-transparent">
+                            <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isLoading}>
+                            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                                 {isLoading ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

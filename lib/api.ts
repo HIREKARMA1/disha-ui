@@ -454,6 +454,13 @@ class ApiClient {
     return response.data;
   }
 
+  async getAssignedUniversitiesForCampusDrive(campusDriveId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.get(
+      `/campus-drives/${campusDriveId}/assigned-universities`,
+    )
+    return response.data
+  }
+
   async getAppliedStudentsAdmin(jobId: string): Promise<any> {
     const response: AxiosResponse = await this.client.get(`/admins/jobs/${jobId}/applied-students`);
     return response.data;
@@ -1551,6 +1558,16 @@ class ApiClient {
 
   async deleteLicense(licenseId: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admin/licenses/${licenseId}`);
+    return response.data;
+  }
+
+  async getPartnerBrandingStats(): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/branding-logos/stats');
+    return response.data;
+  }
+
+  async getPartnerBrandingLogos(params?: { status?: string; visible?: boolean; page?: number; page_size?: number }): Promise<any> {
+    const response: AxiosResponse = await this.client.get('/admin/branding-logos', { params });
     return response.data;
   }
 }
