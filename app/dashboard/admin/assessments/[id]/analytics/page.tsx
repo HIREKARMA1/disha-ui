@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
-import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw } from 'lucide-react'
+import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import {
     exportAnalyticsToCSV,
@@ -632,6 +633,11 @@ export default function AssessmentAnalyticsPage() {
                                 : prev
                         )
                     }}
+                    onAttemptDeleted={(attemptId) => {
+                        setAttempts((prev) => prev.filter((a) => a.id !== attemptId))
+                        setSelectedAttempt(null)
+                        setIsModalOpen(false)
+                    }}
                 />
             </div>
         </AdminDashboardLayout>
@@ -645,6 +651,7 @@ function AttemptDetailsModal({
     assessment,
     assessmentId,
     onReportUpdated,
+    onAttemptDeleted,
 }: {
     isOpen: boolean
     onClose: () => void
@@ -666,6 +673,7 @@ function AttemptDetailsModal({
             }
         }
     ) => void
+    onAttemptDeleted?: (attemptId: string) => void
 }) {
     const [proctoring, setProctoring] = useState<any>(null)
     const [loadingProctoring, setLoadingProctoring] = useState(false)
@@ -680,6 +688,9 @@ function AttemptDetailsModal({
     const [generatingReport, setGeneratingReport] = useState(false)
     const [downloadingReport, setDownloadingReport] = useState(false)
     const [reportError, setReportError] = useState<string | null>(null)
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+    const [deletingAttempt, setDeletingAttempt] = useState(false)
+    const [deleteError, setDeleteError] = useState<string | null>(null)
 
     useEffect(() => {
         if (!isOpen || !attempt?.id) {
@@ -802,6 +813,27 @@ function AttemptDetailsModal({
             setReportError(message)
         } finally {
             setDownloadingReport(false)
+        }
+    }
+
+    const handleDeleteAttempt = async () => {
+        if (!attempt?.id) return
+        setDeletingAttempt(true)
+        setDeleteError(null)
+        try {
+            await apiClient.delete(
+                `/admin/assessments/${assessmentId}/attempts/${attempt.id}`
+            )
+            onAttemptDeleted?.(attempt.id)
+        } catch (err: any) {
+            const detail =
+                err?.response?.data?.detail ||
+                err?.message ||
+                'Failed to delete attempt'
+            setDeleteError(typeof detail === 'string' ? detail : 'Failed to delete attempt')
+            throw err
+        } finally {
+            setDeletingAttempt(false)
         }
     }
 
@@ -1127,39 +1159,86 @@ function AttemptDetailsModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-wrap items-center justify-end gap-2">
-                    {evaluated && (
-                        <>
-                            <Button
-                                variant="outline"
-                                onClick={() => void handleGenerateReport()}
-                                disabled={generatingReport || downloadingReport}
-                                className="gap-2"
-                            >
-                                {generatingReport ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Brain className="h-4 w-4" />
-                                )}
-                                {hasReport ? 'Regenerate Report' : 'Generate Detailed Report'}
-                            </Button>
-                            <Button
-                                onClick={() => void handleDownloadReport()}
-                                disabled={!hasReport || generatingReport || downloadingReport}
-                                className="gap-2"
-                            >
-                                {downloadingReport ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Download className="h-4 w-4" />
-                                )}
-                                Download Detailed PDF
-                            </Button>
-                        </>
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2">
+                    {deleteError && (
+                        <p className="text-sm text-red-600 dark:text-red-400">{deleteError}</p>
                     )}
-                    <Button variant="outline" onClick={onClose}>Close Report</Button>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteConfirmOpen(true)}
+                            disabled={
+                                deletingAttempt || generatingReport || downloadingReport
+                            }
+                            className="shrink-0 w-full sm:w-auto gap-2 text-red-700 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950/40"
+                        >
+                            {deletingAttempt ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="h-4 w-4" />
+                            )}
+                            Delete Attempt
+                        </Button>
+                        <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2 min-w-0 sm:flex-1">
+                            {evaluated && (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => void handleGenerateReport()}
+                                        disabled={generatingReport || downloadingReport || deletingAttempt}
+                                        className="gap-2 whitespace-nowrap"
+                                    >
+                                        {generatingReport ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Brain className="h-4 w-4" />
+                                        )}
+                                        {hasReport ? 'Regenerate Report' : 'Generate Detailed Report'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => void handleDownloadReport()}
+                                        disabled={
+                                            !hasReport ||
+                                            generatingReport ||
+                                            downloadingReport ||
+                                            deletingAttempt
+                                        }
+                                        className="gap-2 whitespace-nowrap"
+                                    >
+                                        {downloadingReport ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Download className="h-4 w-4" />
+                                        )}
+                                        Download Detailed PDF
+                                    </Button>
+                                </>
+                            )}
+                            <Button variant="outline" size="sm" className="whitespace-nowrap" onClick={onClose}>
+                                Close Report
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={deleteConfirmOpen}
+                onClose={() => {
+                    setDeleteConfirmOpen(false)
+                    setDeleteError(null)
+                }}
+                onConfirm={handleDeleteAttempt}
+                title="Delete Attempt?"
+                message="This removes this student's attempt from analytics and lets them take the exam again. This cannot be undone."
+                confirmText="Delete Attempt"
+                isLoading={deletingAttempt}
+                variant="danger"
+            />
         </div>
     )
 }
