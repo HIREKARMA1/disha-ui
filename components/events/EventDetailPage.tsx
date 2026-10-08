@@ -653,7 +653,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-gray-50 dark:bg-gray-900">
       <DishaTopBar searchPlaceholder="Search events, jobs, resources…" />
 
       {/* ========== MOBILE HERO (< md) ========== */}
@@ -697,7 +697,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
             </div>
 
             {isPostponed && event.postponed_reason && (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              <div className="mt-3 break-words rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 [overflow-wrap:anywhere] dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
                 <strong>Postponement notice:</strong> {event.postponed_reason}
               </div>
             )}

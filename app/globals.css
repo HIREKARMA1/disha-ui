@@ -432,6 +432,12 @@ html, body {
 }
 
 /* Public event description rendering */
+.event-description-html {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+
 .event-description-html ul {
   list-style: disc;
   padding-left: 1.25rem;
