@@ -1,15 +1,7 @@
 {
   "functions": {
     "app/api/internal/job-description-pdf/route.js": {
-      "maxDuration": 60,
-      "includeFiles": [
-        "node_modules/@react-pdf/**",
-        "node_modules/pdfkit/**",
-        "node_modules/tsx/**",
-        "scripts/render-job-description-pdf.ts",
-        "lib/jobDescriptionPdfCore.ts",
-        "lib/pdfGenerator.tsx"
-      ]
+      "maxDuration": 60
     }
   }
 }
