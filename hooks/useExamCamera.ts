@@ -17,7 +17,9 @@ export type StartCameraOptions = {
 };
 
 export function useExamCamera() {
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+  /** Always-mounted capture surface used by proctoring snapshots (independent of UI phase). */
+  const captureVideoRefInternal = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const micReadyRef = useRef(false);
   const [status, setStatus] = useState<ExamCameraStatus>('idle');
@@ -37,16 +39,32 @@ export function useExamCamera() {
     }
     if (video.srcObject !== stream) video.srcObject = stream;
     video.muted = true;
+    video.playsInline = true;
     try {
       await video.play();
-    } catch {
-      /* autoplay */
+    } catch (err) {
+      console.warn('Exam camera video.play() failed', err);
     }
   }, []);
 
+  const rebindAllVideos = useCallback(async () => {
+    await Promise.all([
+      bindStreamToVideo(captureVideoRefInternal.current),
+      bindStreamToVideo(previewVideoRef.current),
+    ]);
+  }, [bindStreamToVideo]);
+
+  const captureVideoRef: RefCallback<HTMLVideoElement> = useCallback(
+    (node) => {
+      captureVideoRefInternal.current = node;
+      void bindStreamToVideo(node);
+    },
+    [bindStreamToVideo]
+  );
+
   const videoRef: RefCallback<HTMLVideoElement> = useCallback(
     (node) => {
-      videoElementRef.current = node;
+      previewVideoRef.current = node;
       void bindStreamToVideo(node);
     },
     [bindStreamToVideo]
@@ -55,7 +73,8 @@ export function useExamCamera() {
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    if (videoElementRef.current) videoElementRef.current.srcObject = null;
+    if (captureVideoRefInternal.current) captureVideoRefInternal.current.srcObject = null;
+    if (previewVideoRef.current) previewVideoRef.current.srcObject = null;
     setStatus('idle');
     markMicReady(false);
   }, [markMicReady]);
@@ -80,7 +99,7 @@ export function useExamCamera() {
             return false;
           }
         }
-        await bindStreamToVideo(videoElementRef.current);
+        await rebindAllVideos();
         return true;
       }
 
@@ -114,7 +133,7 @@ export function useExamCamera() {
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) videoTrack.onended = () => setStatus('lost');
         setStatus('active');
-        await bindStreamToVideo(videoElementRef.current);
+        await rebindAllVideos();
         return true;
       } catch (err: unknown) {
         const name = (err as { name?: string })?.name ?? '';
@@ -137,13 +156,18 @@ export function useExamCamera() {
         return false;
       }
     },
-    [status, bindStreamToVideo, markMicReady],
+    [status, rebindAllVideos, markMicReady],
   );
 
-  const getVideoElement = useCallback(() => videoElementRef.current, []);
+  /** Prefer the persistent capture surface; fall back to visible preview. */
+  const getVideoElement = useCallback(
+    () => captureVideoRefInternal.current || previewVideoRef.current,
+    []
+  );
 
   return {
     videoRef,
+    captureVideoRef,
     getVideoElement,
     status,
     startCamera,

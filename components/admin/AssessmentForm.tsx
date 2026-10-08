@@ -13,6 +13,7 @@ import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { EventImageUpload } from "@/components/admin/EventImageUpload";
 import { apiClient } from "@/lib/api";
 import { toast } from "react-hot-toast";
+import { Switch } from "@/components/ui/switch";
 
 interface AssessmentFormProps {
   initialData?: any;
@@ -46,6 +47,7 @@ export function AssessmentForm({
     // instructions: "", // Moved to metadata
     total_duration_minutes: 0,
     auto_submit_on_timeout: true,
+    screen_sharing_required: false,
     time_window: {
       start_time: "",
       end_time: "",
@@ -138,6 +140,7 @@ export function AssessmentForm({
       assessment_name: formData.assessment_name,
       mode: effectiveMode,
       time_window: formData.time_window,
+      screen_sharing_required: Boolean(formData.screen_sharing_required),
       rounds: formData.rounds,
     });
     const newErrors = mapAssessmentFormErrors(result);
@@ -197,6 +200,7 @@ export function AssessmentForm({
         time_window: normalizeAssessmentTimeWindow(formData.time_window),
         total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
         auto_submit_on_timeout: formData.auto_submit_on_timeout,
+        screen_sharing_required: Boolean(formData.screen_sharing_required),
         rounds: roundsPayload,
         description: formData.metadata.description ?? "",
         instructions: formData.metadata.instructions ?? "",
@@ -214,6 +218,7 @@ export function AssessmentForm({
       time_window: normalizeAssessmentTimeWindow(formData.time_window),
       total_duration_minutes: calculatedDuration > 0 ? calculatedDuration : 60,
       auto_submit_on_timeout: formData.auto_submit_on_timeout,
+      screen_sharing_required: Boolean(formData.screen_sharing_required),
       rounds: formData.rounds,
       metadata: {
         ...formData.metadata,
@@ -350,6 +355,48 @@ export function AssessmentForm({
               />
             </div>
           )}
+
+          <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-4 dark:border-gray-700 dark:bg-gray-700/30">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Settings size={18} />
+                </div>
+                <div>
+                  <label
+                    htmlFor="screen_sharing_required"
+                    className="text-sm font-semibold text-gray-900 dark:text-white cursor-pointer"
+                  >
+                    Screen Sharing
+                  </label>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                    {formData.screen_sharing_required
+                      ? "ON: candidates must share their screen during the assessment."
+                      : "OFF: assessment works exactly as it currently does."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 self-start sm:self-center">
+                <span
+                  className={`text-xs font-semibold ${
+                    formData.screen_sharing_required
+                      ? "text-indigo-700 dark:text-indigo-300"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`}
+                >
+                  {formData.screen_sharing_required ? "ON" : "OFF"}
+                </span>
+                <Switch
+                  id="screen_sharing_required"
+                  checked={Boolean(formData.screen_sharing_required)}
+                  onCheckedChange={(checked) =>
+                    handleChange("screen_sharing_required", checked)
+                  }
+                  aria-label="Toggle screen sharing requirement"
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Auto-submit */}
           {/* <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
