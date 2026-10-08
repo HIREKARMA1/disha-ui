@@ -24,7 +24,14 @@ const appUrl =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
+    // Keep @react-pdf on the bundled fork (@react-pdf/pdfkit), not upstream pdfkit (Vercel NFT misses standard-fonts).
     serverComponentsExternalPackages: ["@react-pdf/renderer"],
+    outputFileTracingIncludes: {
+      "/api/internal/job-description-pdf": [
+        "./node_modules/@react-pdf/pdfkit/lib/**/*",
+        "./node_modules/pdfkit/js/standard-fonts/**/*",
+      ],
+    },
   },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
@@ -40,6 +47,10 @@ const nextConfig = {
         "node_modules/nextjs-toploader/dist/index.js"
       ),
       canvas: false,
+      pdfkit: path.join(
+        __dirname,
+        "node_modules/@react-pdf/pdfkit/lib/pdfkit.js"
+      ),
     };
     return config;
   },

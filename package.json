@@ -47,6 +47,7 @@
     "next": "14.0.4",
     "next-themes": "^0.2.1",
     "nextjs-toploader": "^3.9.17",
+    "pdfkit": "0.20.2",
     "postcss": "^8.4.32",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -78,6 +79,8 @@
     "jest-environment-jsdom": "^29.5.0"
   },
   "overrides": {
-    "@react-pdf/image": "3.0.4"
+    "@react-pdf/image": "3.0.4",
+    "@react-pdf/font": "4.0.8",
+    "@react-pdf/pdfkit": "5.1.1"
   }
 }
