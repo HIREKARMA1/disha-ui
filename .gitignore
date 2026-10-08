@@ -185,11 +185,6 @@ docker-compose*
 .circleci/
 azure-pipelines.yml
 
-# Package managers
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
 # Misc
 *.pem
 *.key

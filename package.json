@@ -24,7 +24,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-switch": "^1.2.6",
-    "@react-pdf/renderer": "^4.3.1",
+    "@react-pdf/renderer": "4.5.1",
     "@reduxjs/toolkit": "^2.12.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.1",
@@ -81,6 +81,10 @@
   "overrides": {
     "@react-pdf/image": "3.0.4",
     "@react-pdf/font": "4.0.8",
-    "@react-pdf/pdfkit": "5.1.1"
+    "@react-pdf/pdfkit": "5.1.1",
+    "@react-pdf/renderer": {
+      "@react-pdf/font": "4.0.8",
+      "@react-pdf/pdfkit": "5.1.1"
+    }
   }
 }
