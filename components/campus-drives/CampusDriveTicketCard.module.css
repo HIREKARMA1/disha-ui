@@ -1,8 +1,25 @@
 .campusDriveGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   align-items: stretch;
+  justify-items: stretch;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .campusDriveGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .campusDriveGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
 }
 
 .dt {
@@ -16,9 +33,9 @@
   --line: #e3e8f0;
   box-sizing: border-box;
   width: 100%;
-  max-width: 360px;
+  max-width: none;
   height: 100%;
-  margin-inline: auto;
+  margin-inline: 0;
   display: flex;
   flex-direction: column;
   background: #fff;

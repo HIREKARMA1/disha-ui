@@ -22,7 +22,10 @@ const sora = Sora({
   weight: ['400', '500', '600', '700'],
 })
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+
 export const metadata: Metadata = {
+    metadataBase: new URL(appUrl),
     title: 'Hire Karma - It all depends upon your karma',
     description: 'Connect with opportunities that match your skills and aspirations',
     icons: {

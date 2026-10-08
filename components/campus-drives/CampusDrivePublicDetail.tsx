@@ -24,9 +24,9 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
   }, [slug])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      <DishaTopBar searchPlaceholder="Search campus drives, jobs, events…" />
-      <main className="flex-1">
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-gray-50 dark:bg-gray-900">
+      <DishaTopBar showSearch={false} />
+      <main className="min-w-0 flex-1">
         {loading ? (
           <div className="flex justify-center py-24"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : missing || !drive ? (
