@@ -587,7 +587,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
                           )}
                         </div>
 
-                        <div>
+                        <div className="j-main">
                           <h3>{job.title}</h3>
                           <span className="chip">{job.type}</span>
                           <span className="chip blue">{job.tag}</span>
@@ -915,12 +915,20 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           min-height: 100vh;
           padding-bottom: 60px;
+          max-width: 100%;
+          overflow-x: clip;
         }
 
         .page {
           max-width: 1120px;
+          width: 100%;
           margin: 0 auto;
           padding: 24px 20px 0;
+          box-sizing: border-box;
+        }
+
+        .layout main {
+          min-width: 0;
         }
 
         .card {
@@ -997,6 +1005,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           letter-spacing: -0.02em;
           font-weight: 800;
           color: var(--ink);
+          overflow-wrap: anywhere;
         }
 
         .org {
@@ -1032,6 +1041,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           color: #2c3a4f;
           font-size: 14.5px;
           line-height: 1.6;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .facts {
@@ -1194,6 +1205,13 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           border-color: #b7ebcf;
         }
 
+        .notice span {
+          min-width: 0;
+          flex: 1 1 200px;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
         /* Jobs */
         .joblist {
           display: grid;
@@ -1216,6 +1234,11 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           grid-template-columns: 56px minmax(0, 1fr) auto;
           gap: 14px;
           align-items: start;
+        }
+
+        .j-main {
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .j-logo {
@@ -1473,6 +1496,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           border-top: 1px solid var(--line);
           padding-top: 10px;
           margin-top: 4px;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         /* Content cards */
@@ -1485,6 +1510,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           color: #2c3a4f;
           font-size: 14.5px;
           line-height: 1.6;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .block p:last-child {
@@ -1801,11 +1828,28 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           .page {
             padding: 18px 14px 0;
           }
+          .title,
+          .job,
+          .block {
+            padding: 16px 14px;
+          }
           .t-top {
             align-items: flex-start;
           }
           .title h1 {
             font-size: 20px;
+          }
+          .facts {
+            grid-template-columns: 1fr;
+          }
+          .fact b {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+          }
+          .actions .btn {
+            flex: 1 1 100%;
+            max-width: 100%;
           }
           .j-row {
             grid-template-columns: 48px minmax(0, 1fr);
@@ -1820,6 +1864,13 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 8px;
+            width: 100%;
+          }
+          .j-btns {
+            flex-wrap: wrap !important;
+            width: 100%;
+            justify-content: flex-start !important;
           }
           .detail {
             grid-template-columns: 1fr;

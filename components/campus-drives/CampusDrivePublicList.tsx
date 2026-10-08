@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
-import { Input } from '@/components/ui/input'
 import {
   CampusDriveTicketCard,
   type CampusDriveCardStatus,
@@ -73,41 +72,38 @@ function PublicCampusDriveCard({ item }: { item: CampusDriveListItem }) {
 
 export function CampusDrivePublicList() {
   const [items, setItems] = useState<CampusDriveListItem[]>([])
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const handle = window.setTimeout(() => {
-      setLoading(true)
-      campusDriveService
-        .listPublic({ search: search || undefined, limit: 24 })
-        .then((result) => setItems(result.campus_drives))
-        .catch(() => setItems([]))
-        .finally(() => setLoading(false))
-    }, 250)
-    return () => window.clearTimeout(handle)
-  }, [search])
+    let active = true
+    setLoading(true)
+    campusDriveService
+      .listPublic({ limit: 24 })
+      .then((result) => {
+        if (active) setItems(result.campus_drives)
+      })
+      .catch(() => {
+        if (active) setItems([])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      <DishaTopBar searchPlaceholder="Search campus drives, jobs, events…" />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-6 sm:px-4">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Campus Drives</h1>
-            <p className="text-sm text-gray-500">
-              Published programs you can open, with their selected jobs.
-            </p>
-          </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
-              className="pl-9"
-            />
-          </div>
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-gray-50 dark:bg-gray-900">
+      <DishaTopBar showSearch={false} />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-8">
+        <div className="mb-5 sm:mb-6">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+            Campus Drives
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+            Published programs you can open, with their selected jobs.
+          </p>
         </div>
         {loading ? (
           <div className="flex justify-center py-16">
