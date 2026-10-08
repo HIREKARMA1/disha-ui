@@ -3,7 +3,7 @@
  * stdout: application/pdf bytes
  * Used by the API when it needs the same job-description PDF the site downloads.
  */
-import { generateJobDescriptionPdfBuffer } from '../lib/jobDescriptionPdfServer'
+import { generateJobDescriptionPdfBufferInProcess } from '../lib/jobDescriptionPdfCore'
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = []
@@ -21,7 +21,7 @@ async function main() {
   if (!body.job.description) {
     body.job.description = ' '
   }
-  const pdf = await generateJobDescriptionPdfBuffer(body.job, body.corporateProfile)
+  const pdf = await generateJobDescriptionPdfBufferInProcess(body.job, body.corporateProfile)
   if (!pdf.subarray(0, 5).toString().startsWith('%PDF')) {
     throw new Error('Generator did not return a PDF')
   }

@@ -24,13 +24,19 @@ const appUrl =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // Bundle @react-pdf in the route (webpack pdfkit alias). If upstream pdfkit is nested, trace standard-fonts too.
+    // Must stay external: bundling @react-pdf breaks React reconciler (Component is not a constructor on Vercel).
+    serverComponentsExternalPackages: [
+      "@react-pdf/renderer",
+      "@react-pdf/font",
+      "@react-pdf/pdfkit",
+      "@react-pdf/layout",
+      "@react-pdf/render",
+      "@react-pdf/reconciler",
+    ],
     outputFileTracingIncludes: {
       "/api/internal/job-description-pdf": [
-        "./node_modules/@react-pdf/pdfkit/lib/**/*",
-        "./node_modules/pdfkit/js/standard-fonts/**/*",
-        "./node_modules/@react-pdf/renderer/node_modules/pdfkit/js/standard-fonts/**/*",
-        "./node_modules/@react-pdf/font/node_modules/pdfkit/js/standard-fonts/**/*",
+        "./node_modules/@react-pdf/**/*",
+        "./node_modules/pdfkit/**/*",
       ],
     },
   },
