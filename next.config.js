@@ -23,7 +23,6 @@ const appUrl =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["@react-pdf/renderer"],
   experimental: {
     serverComponentsExternalPackages: ["@react-pdf/renderer"],
   },
@@ -80,10 +79,11 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_API_BASE_URL;
     const apiVersion = process.env.NEXT_PUBLIC_API_VERSION || "v1";
 
+    // Proxy only backend REST (/api/v1). Keep Next.js routes like /api/internal/* on the UI app.
     return [
       {
-        source: "/api/:path*",
-        destination: `${apiBaseUrl}/api/:path*`,
+        source: "/api/v1/:path*",
+        destination: `${apiBaseUrl}/api/v1/:path*`,
       },
       {
         source: "/uploads/:path*",

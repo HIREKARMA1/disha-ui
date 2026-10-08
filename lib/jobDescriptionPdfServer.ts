@@ -1,11 +1,44 @@
 import fs from 'fs'
 import path from 'path'
 import { renderToBuffer } from '@react-pdf/renderer'
+import { Font } from '@react-pdf/renderer'
 import {
   JobDescriptionPDFGenerator,
   registerPdfFonts,
   type JobDescriptionPdfAssets,
 } from '@/lib/pdfGenerator'
+
+let serverPdfFontsReady = false
+
+/** Server-only: disk fonts first, then hosted /fonts (standalone deploys). */
+function ensureServerPdfFonts() {
+  if (serverPdfFontsReady) return
+
+  const regular = path.join(process.cwd(), 'public', 'fonts', 'NotoSans-Regular.ttf')
+  const bold = path.join(process.cwd(), 'public', 'fonts', 'NotoSans-Bold.ttf')
+  if (fs.existsSync(regular) && fs.existsSync(bold)) {
+    Font.register({
+      family: 'NotoSans',
+      fonts: [
+        { src: regular, fontWeight: 'normal' },
+        { src: bold, fontWeight: 'bold' },
+      ],
+    })
+    serverPdfFontsReady = true
+    return
+  }
+
+  const origin = publicAppOrigin()
+  if (origin) {
+    registerPdfFonts(`${origin}/fonts`)
+    serverPdfFontsReady = true
+    return
+  }
+
+  throw new Error(
+    'PDF fonts unavailable: public/fonts not on disk and NEXT_PUBLIC_APP_URL is not set'
+  )
+}
 
 type JobPdfInput = Parameters<JobDescriptionPDFGenerator['buildDocument']>[0]
 type CorporatePdfInput = Parameters<JobDescriptionPDFGenerator['buildDocument']>[1]
@@ -27,18 +60,18 @@ async function fetchImageAsDataUrl(imageUrl: string): Promise<string> {
  * Render the existing job-description PDF outside the browser for the university assignment email.
  * Uses JobDescriptionPDFGenerator.buildDocument — the same document as the download button.
  */
+function publicAppOrigin(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+  ).replace(/\/$/, '')
+}
+
 export async function generateJobDescriptionPdfBuffer(
   job: JobPdfInput,
   corporateProfile?: CorporatePdfInput
 ): Promise<Buffer> {
-  try {
-    const fontsDir = path.join(process.cwd(), 'public', 'fonts')
-    if (fs.existsSync(fontsDir)) {
-      registerPdfFonts(fontsDir.replace(/\\/g, '/'))
-    }
-  } catch (error) {
-    console.warn('Could not register PDF fonts on server:', error)
-  }
+  ensureServerPdfFonts()
 
   let hirekarmaLogoDataUrl: string | null = null
   try {
@@ -46,6 +79,11 @@ export async function generateJobDescriptionPdfBuffer(
     if (fs.existsSync(hirekarmaPath)) {
       const hirekarmaBytes = fs.readFileSync(hirekarmaPath)
       hirekarmaLogoDataUrl = `data:image/png;base64,${hirekarmaBytes.toString('base64')}`
+    } else {
+      const origin = publicAppOrigin()
+      if (origin) {
+        hirekarmaLogoDataUrl = await fetchImageAsDataUrl(`${origin}/images/HKlogoblack.png`)
+      }
     }
   } catch (error) {
     console.warn('Could not load HKlogoblack.png for server PDF:', error)
@@ -69,5 +107,11 @@ export async function generateJobDescriptionPdfBuffer(
 
   const generator = new JobDescriptionPDFGenerator()
   const document = await generator.buildDocument(job, corporateProfile, assets)
-  return renderToBuffer(document)
+  try {
+    return await renderToBuffer(document)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('renderToBuffer failed for job description PDF:', message, error)
+    throw error
+  }
 }

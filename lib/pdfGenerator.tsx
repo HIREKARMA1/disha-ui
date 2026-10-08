@@ -796,7 +796,10 @@ export class JobDescriptionPDFGenerator {
     corporateProfile?: CorporateProfile,
     assets?: JobDescriptionPdfAssets
   ) {
-    ensurePdfFontsRegistered()
+    // Server email/API path registers fonts in jobDescriptionPdfServer before buildDocument.
+    if (typeof window !== 'undefined' || !assets) {
+      ensurePdfFontsRegistered()
+    }
 
     let logoDataUrl: string | null = assets?.logoDataUrl ?? null
     let hirekarmaLogoDataUrl: string | null = assets?.hirekarmaLogoDataUrl ?? null
