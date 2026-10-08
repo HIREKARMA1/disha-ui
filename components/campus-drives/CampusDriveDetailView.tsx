@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { CampusDriveDetail } from '@/types/campusDrive'
 import type { Job } from '@/components/jobs/AllJobs'
 import { getJobDetailPath } from '@/lib/jobSlug'
+import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 
 interface ParsedJob {
   id: string
@@ -95,9 +96,16 @@ function parseListItems(value: unknown): string[] {
     return value.map(cleanText).filter(Boolean)
   }
   if (typeof value === 'string') {
+    if (/<\/?[a-z][\s\S]*>/i.test(value)) {
+      return value
+        .split(/<\/p>|<\/li>/i)
+        .map((s) => cleanText(s))
+        .filter((s) => s.length > 2)
+    }
     return value
       .split(/\r?\n|•|;/)
       .map((s) => s.replace(/^[-*•\d.]+\s*/, '').trim())
+      .map((s) => cleanText(s))
       .filter((s) => s.length > 2)
   }
   return []
@@ -229,17 +237,20 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
     }, 0)
   }, [parsedJobs])
 
-  // Eligibility List
-  const eligibilityList: string[] = useMemo(() => {
-    const raw = parseListItems(drive.eligibility)
-    if (raw.length > 0) return raw
-    return [
-      'BBA, MBA, B.Tech, MCA, and BCA candidates',
-      'Freshers and candidates with 0-2 years of experience',
-      'Candidates must meet the eligibility requirements of the respective role',
-      'Open to candidates available for the recruitment drive',
-    ]
-  }, [drive])
+  const defaultEligibilityItems = [
+    'BBA, MBA, B.Tech, MCA, and BCA candidates',
+    'Freshers and candidates with 0-2 years of experience',
+    'Candidates must meet the eligibility requirements of the respective role',
+    'Open to candidates available for the recruitment drive',
+  ]
+
+  const eligibilityHtml = useMemo(() => {
+    const raw = (drive.eligibility || '').trim()
+    if (!raw) return ''
+    return sanitizeEventDescriptionHtml(raw, '')
+  }, [drive.eligibility])
+
+  const hasCustomEligibility = Boolean(eligibilityHtml)
 
   // Selection Rounds
   const selectionRounds: { title: string; desc: string }[] = useMemo(() => {
@@ -758,19 +769,26 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
                 </p>
               </div>
 
-              {eligibilityList.length > 0 ? (
+              {hasCustomEligibility || defaultEligibilityItems.length > 0 ? (
                 <div className="card block" style={{ marginTop: '14px' }}>
                   <h2>Eligibility</h2>
-                  <ul className="tick">
-                    {eligibilityList.map((x, i) => (
-                      <li key={i}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="m5 12 5 5 9-10" />
-                        </svg>
-                        <span>{x}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {hasCustomEligibility ? (
+                    <div
+                      className="event-description-html eligibility-html"
+                      dangerouslySetInnerHTML={{ __html: eligibilityHtml }}
+                    />
+                  ) : (
+                    <ul className="tick">
+                      {defaultEligibilityItems.map((x, i) => (
+                        <li key={i}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="m5 12 5 5 9-10" />
+                          </svg>
+                          <span>{x}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ) : null}
             </section>
@@ -1488,6 +1506,20 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
         }
 
         .block p:last-child {
+          margin-bottom: 0;
+        }
+
+        .eligibility-html {
+          color: #2c3a4f;
+          font-size: 14.5px;
+          line-height: 1.6;
+        }
+
+        .eligibility-html p {
+          margin: 0 0 10px;
+        }
+
+        .eligibility-html p:last-child {
           margin-bottom: 0;
         }
 
