@@ -43,7 +43,7 @@ const GUEST_NAV: NavLink[] = [
   { label: 'Opportunities', href: '/', icon: Home },
   { label: 'Jobs', href: '/jobs', icon: Briefcase, openInNewTab: true },
   { label: 'Events', href: '/events', icon: Calendar, openInNewTab: true },
-  { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
+  { label: 'Practice Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
   { label: 'Support', href: '/contact', icon: Headphones },
 ]
@@ -66,7 +66,7 @@ const STUDENT_TOOLS: NavLink[] = [
   { label: 'Resume Builder', href: '/dashboard/student/resume-builder', icon: FileText },
   { label: 'Career Align', href: '/dashboard/student/career-align', icon: Target },
   { label: 'Practice', href: '/dashboard/student/practice', icon: Brain },
-  { label: 'Mock Tests', href: '/dashboard/student/mock-tests', icon: ClipboardList },
+  { label: 'Practice Tests', href: '/dashboard/student/mock-tests', icon: ClipboardList },
   { label: 'Library', href: '/dashboard/student/library', icon: Library },
   { label: 'Video Search', href: '/dashboard/student/video-search', icon: Search },
 ]

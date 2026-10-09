@@ -38,7 +38,7 @@ export function AssessmentForm({
   variant = "assessment",
 }: AssessmentFormProps) {
   const isMockTest = variant === "mock-test";
-  const entityLabel = isMockTest ? "Mock Test" : "Assessment";
+  const entityLabel = isMockTest ? "Practice Test" : "Assessment";
 
   const defaultValues = {
     assessment_name: "",
@@ -279,7 +279,7 @@ export function AssessmentForm({
                 onChange={(e) => handleChange("assessment_name", e.target.value)}
                 placeholder={
                   isMockTest
-                    ? "e.g., Full Stack Developer Mock Test"
+                    ? "e.g., Full Stack Developer Practice Test"
                     : "e.g., Full Stack Developer Assessment"
                 }
                 className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/40 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 ${errors.assessment_name ? "border-red-500 bg-red-50/10 dark:bg-red-900/10" : "border-gray-200 dark:border-gray-700"
@@ -346,7 +346,7 @@ export function AssessmentForm({
             <div>
               <EventImageUpload
                 label="Background Image"
-                hint="Optional. Shown on the student Mock Test page. JPG, PNG, or WEBP up to 5MB."
+                hint="Optional. Shown on the student Practice Test page. JPG, PNG, or WEBP up to 5MB."
                 value={formData.background_image_url || ""}
                 onChange={(url) => handleChange("background_image_url", url)}
                 onUpload={handleBackgroundUpload}

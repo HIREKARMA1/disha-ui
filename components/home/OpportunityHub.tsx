@@ -40,6 +40,7 @@ import {
 import { HubSidebarDesktop, HubSidebarDrawer } from '@/components/home/HubSidebar'
 import placedStudentsData from '@/data/placed-students.json'
 import { HubWhyDisha } from '@/components/home/HubWhyDisha'
+import { HubTopPerformersSection } from '@/components/home/HubTopPerformersSection'
 import { getFeaturedBlogs } from '@/data/blogs'
 import { CategoryIcon } from '@/components/home/CategoryIcons'
 import { contestEventService } from '@/services/contestEventService'
@@ -158,7 +159,14 @@ const CATEGORY_TILES: QuickPill[] = [
   { id: 'all', label: 'All', kind: 'scroll', sectionId: 'hub-top', tab: 'all', icon: Sparkles },
   { id: 'jobs', label: 'Jobs', kind: 'scroll', sectionId: 'hub-jobs', tab: 'all', icon: Briefcase },
   { id: 'events', label: 'Events', kind: 'scroll', sectionId: 'hub-events', tab: 'all', icon: Calendar },
-  { id: 'mock_tests', label: 'Mock Test', kind: 'scroll', tab: 'all', icon: Brain },
+  {
+    id: 'mock_tests',
+    label: 'Practice Test',
+    kind: 'scroll',
+    sectionId: 'hub-top-performers',
+    tab: 'all',
+    icon: Brain,
+  },
   { id: 'blogs', label: 'Blogs', kind: 'scroll', sectionId: 'hub-blogs', tab: 'all', icon: Newspaper },
   {
     id: 'placed_students',
@@ -230,7 +238,7 @@ const EXPLORE_ITEMS: ExploreItem[] = [
   },
   {
     id: 'mock_tests',
-    label: 'Mock Tests',
+    label: 'Practice Tests',
     kind: 'link',
     href: '/mock-tests',
     icon: ClipboardList,
@@ -589,10 +597,6 @@ export default function OpportunityHub() {
     }
     if (pill.id === 'events') {
       window.open('/events', '_blank', 'noopener,noreferrer')
-      return
-    }
-    if (pill.id === 'mock_tests') {
-      router.push('/mock-tests')
       return
     }
     if (pill.id === 'blogs') {
@@ -1078,6 +1082,8 @@ export default function OpportunityHub() {
                     </div>
                   )}
                 </section>
+
+                <HubTopPerformersSection />
 
                 <section id="hub-blogs" className="scroll-mt-28">
                   <HubSectionHeader

@@ -91,7 +91,7 @@ const sampleQuestions = [
 const liveShortcuts = [
   {
     href: '/dashboard/student/mock-tests',
-    title: 'Mock Tests',
+    title: 'Practice Tests',
     copy: 'Full exams are live — start one now.',
     icon: GraduationCap,
   },
@@ -174,7 +174,7 @@ export function PracticeComingSoon() {
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400 sm:text-base">
               We are rebuilding assessments, coding rounds, and skill reports. Try a sample question below,
-              explore what is launching, and keep going with Mock Tests in the meantime.
+              explore what is launching, and keep going with Practice Tests in the meantime.
             </p>
             <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
               <Button onClick={toggleNotify} variant={notifyOn ? 'success' : 'default'} className="h-11 w-full rounded-full sm:h-10 sm:w-auto">
@@ -183,7 +183,7 @@ export function PracticeComingSoon() {
               </Button>
               <Button asChild variant="outline" className="h-11 w-full rounded-full sm:h-10 sm:w-auto">
                 <Link href="/dashboard/student/mock-tests">
-                  Take a mock test
+                  Take a practice test
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -283,8 +283,8 @@ export function PracticeComingSoon() {
             </p>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               {score === sampleQuestions.length
-                ? 'Perfect — you are ready for a full mock test.'
-                : 'Nice start. Take a mock test to keep the streak going.'}
+                ? 'Perfect — you are ready for a full practice test.'
+                : 'Nice start. Take a practice test to keep the streak going.'}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Button onClick={resetQuiz} variant="outline" className="rounded-full">
@@ -292,7 +292,7 @@ export function PracticeComingSoon() {
                 Try again
               </Button>
               <Button asChild className="rounded-full">
-                <Link href="/dashboard/student/mock-tests">Go to Mock Tests</Link>
+                <Link href="/dashboard/student/mock-tests">Go to Practice Tests</Link>
               </Button>
             </div>
           </div>

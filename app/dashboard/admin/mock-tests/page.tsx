@@ -52,7 +52,7 @@ export default function MockTestsPage() {
       setMockTests(data || [])
     } catch (err: any) {
       console.error('Failed to fetch mock tests:', err)
-      setError(err.message || 'Failed to load mock tests')
+      setError(err.message || 'Failed to load practice tests')
     } finally {
       setIsLoading(false)
     }
@@ -79,7 +79,7 @@ export default function MockTestsPage() {
       await apiClient.deleteMockTest(id)
       fetchMockTests()
     } catch (err) {
-      alert('Failed to delete mock test')
+      alert('Failed to delete practice test')
     }
   }
 
@@ -102,11 +102,11 @@ export default function MockTestsPage() {
     <AdminDashboardLayout>
       <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
         <AdminPageHero
-          title="Mock Tests"
+          title="Practice Tests"
           subtitle="Create practice exams published to every student on Disha."
           chips={[
             {
-              label: `${mockTests.length} Mock Tests`,
+              label: `${mockTests.length} Practice Tests`,
               tone: 'purple',
               icon: <FileText className="w-3.5 h-3.5" />,
             },
@@ -115,7 +115,7 @@ export default function MockTestsPage() {
             <Link href="/dashboard/admin/mock-tests/create">
               <Button className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 px-6 text-white shadow-md shadow-blue-500/20 transition-all hover:opacity-95 sm:w-auto">
                 <Plus size={20} strokeWidth={2.5} />
-                <span className="font-semibold">Create Mock Test</span>
+                <span className="font-semibold">Create Practice Test</span>
               </Button>
             </Link>
           }
@@ -126,11 +126,11 @@ export default function MockTestsPage() {
             <div className="relative min-w-0 flex-1">
               <input
                 type="text"
-                placeholder="Search mock tests..."
+                placeholder="Search practice tests..."
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                 className={cn(adminInput, 'py-2.5 pl-10 pr-4 text-sm')}
-                aria-label="Search mock tests"
+                aria-label="Search practice tests"
               />
               <svg
                 className="absolute left-3.5 top-3 h-5 w-5 text-gray-400 dark:text-gray-500"

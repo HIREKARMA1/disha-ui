@@ -51,7 +51,7 @@ export default function EditMockTestPage() {
                 setInitialData(formattedData);
             } catch (err: any) {
                 console.error('Failed to fetch mock test:', err);
-                setError(err.message || 'Failed to load mock test');
+                setError(err.message || 'Failed to load practice test');
             } finally {
                 setIsLoading(false);
             }
@@ -69,7 +69,7 @@ export default function EditMockTestPage() {
             router.push('/dashboard/admin/mock-tests')
         } catch (err: any) {
             console.error('Failed to update mock test:', err)
-            setError(err.message || 'Failed to update mock test')
+            setError(err.message || 'Failed to update practice test')
         } finally {
             setIsSubmitting(false)
         }
@@ -81,7 +81,7 @@ export default function EditMockTestPage() {
                 <div className="flex h-[calc(100vh-200px)] items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
                         <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-                        <p className="text-gray-500 font-medium">Loading mock test details...</p>
+                        <p className="text-gray-500 font-medium">Loading practice test details...</p>
                     </div>
                 </div>
             </AdminDashboardLayout>
@@ -109,13 +109,13 @@ export default function EditMockTestPage() {
                     <div>
                         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
                             <Link href="/dashboard/admin/mock-tests" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                Mock Tests
+                                Practice Tests
                             </Link>
                             <span>/</span>
                             <span className="text-gray-900 dark:text-white font-medium">Edit Configuration</span>
                         </div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {initialData?.assessment_name || 'Edit Mock Test'}
+                            {initialData?.assessment_name || 'Edit Practice Test'}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                             {initialData?.disha_assessment_id} • Update configuration and rounds

@@ -184,7 +184,7 @@ export default function MockTestAnalyticsPage() {
             setExporting(true)
             const exportData = await buildExportData()
             if (!exportData) return
-            const name = assessmentDetails.assessment_name || 'Mock Test'
+            const name = assessmentDetails.assessment_name || 'Practice Test'
             if (format === 'pdf') {
                 await exportAnalyticsToPDF(exportData, name)
             } else {
@@ -258,7 +258,7 @@ export default function MockTestAnalyticsPage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex-1">
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-2">
-                                {assessmentDetails?.assessment_name || 'Mock Test'} Analytics 📊
+                                {assessmentDetails?.assessment_name || 'Practice Test'} Analytics 📊
                             </h1>
                             <p className="text-gray-600 dark:text-gray-300 text-lg mb-3">
                                 Detailed insights and student performance records ✨
@@ -312,7 +312,7 @@ export default function MockTestAnalyticsPage() {
                                             const updated = await apiClient.publishMockTestResults(assessmentId)
                                             setAssessmentDetails(updated)
                                             setPublishResultsMessage(
-                                                'Results are now visible to students who completed this mock test.'
+                                                'Results are now visible to students who completed this practice test.'
                                             )
                                         } catch (err: any) {
                                             setPublishResultsMessage(
@@ -341,7 +341,7 @@ export default function MockTestAnalyticsPage() {
 
                 {totalQuestions > 0 && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        This mock test has <strong>{totalQuestions}</strong> questions across{' '}
+                        This practice test has <strong>{totalQuestions}</strong> questions across{' '}
                         {assessmentDetails?.rounds?.length ?? 0} round(s).
                     </p>
                 )}
@@ -541,7 +541,7 @@ export default function MockTestAnalyticsPage() {
                                 </div>
                                 <p className="text-gray-900 font-medium">No results found</p>
                                 <p className="text-gray-500 text-sm mt-1">
-                                    {attempts.length === 0 ? "No student has attempted this mock test yet." : "No results match your filters."}
+                                    {attempts.length === 0 ? "No student has attempted this practice test yet." : "No results match your filters."}
                                 </p>
                             </div>
                         ) : (
@@ -961,12 +961,12 @@ function AttemptDetailsModal({
                     {/* Proctoring photos */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                            Photos captured during mock test
+                            Photos captured during practice test
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                             Identity verification snapshots — 4 photos per round
                             {assessment?.rounds?.length
-                                ? ` (up to ${(assessment.rounds.length || 1) * 4} for this mock test)`
+                                ? ` (up to ${(assessment.rounds.length || 1) * 4} for this practice test)`
                                 : ''}
                             . Remaining shots for a round are captured when that round is submitted.
                         </p>
