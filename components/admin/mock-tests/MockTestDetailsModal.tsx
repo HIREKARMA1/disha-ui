@@ -50,7 +50,7 @@ export function MockTestDetailsModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Mock Test Details"
+            title="Practice Test Details"
             maxWidth="2xl"
         >
             <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
@@ -109,7 +109,7 @@ export function MockTestDetailsModal({
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Type</span>
                         </div>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                            Mock Test
+                            Practice Test
                         </p>
                     </div>
 

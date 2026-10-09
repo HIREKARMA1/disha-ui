@@ -27,7 +27,7 @@ export default function CreateMockTestPage() {
     } catch (err: any) {
       console.error('Failed to create mock test:', err)
       setError(
-        err?.response?.data?.detail || err?.message || 'Failed to create mock test'
+        err?.response?.data?.detail || err?.message || 'Failed to create practice test'
       )
     } finally {
       setIsSubmitting(false)
@@ -42,16 +42,16 @@ export default function CreateMockTestPage() {
           <div>
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
               <Link href="/dashboard/admin/mock-tests" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                Mock Tests
+                Practice Tests
               </Link>
               <span>/</span>
-              <span className="text-gray-900 dark:text-white font-medium">Create Mock Test</span>
+              <span className="text-gray-900 dark:text-white font-medium">Create Practice Test</span>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Create New Mock Test
+              Create New Practice Test
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Configure mock test details, rounds, and settings.
+              Configure practice test details, rounds, and settings.
             </p>
           </div>
         </div>

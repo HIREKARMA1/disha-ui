@@ -282,7 +282,7 @@ export default function MockTestDetailPage() {
         }
       } catch (err: any) {
         console.error("Failed to fetch mock test:", err);
-        setError(err.message || "Failed to load mock test");
+        setError(err.message || "Failed to load practice test");
       } finally {
         setIsLoading(false);
       }
@@ -604,7 +604,7 @@ export default function MockTestDetailPage() {
       setQuestionsError(null);
       await fetchQuestions(response.id, response.rounds || []);
     } catch (err: any) {
-      setError(getErrorMessage(err, "Failed to publish mock test"));
+      setError(getErrorMessage(err, "Failed to publish practice test"));
     } finally {
       setIsPublishing(false);
     }
@@ -617,7 +617,7 @@ export default function MockTestDetailPage() {
       const response = await apiClient.unpublishMockTest(mockTestId);
       setMockTest(response);
     } catch (err: any) {
-      setError(getErrorMessage(err, "Failed to unpublish mock test"));
+      setError(getErrorMessage(err, "Failed to unpublish practice test"));
     } finally {
       setIsUnpublishing(false);
     }
@@ -664,7 +664,7 @@ export default function MockTestDetailPage() {
             <h3 className="text-lg font-medium text-yellow-900 mb-2">
               Not Found
             </h3>
-            <p className="text-yellow-700">Mock test not found</p>
+            <p className="text-yellow-700">Practice test not found</p>
           </div>
         </div>
       </AdminDashboardLayout>
@@ -705,11 +705,11 @@ export default function MockTestDetailPage() {
         {mockTest.status !== "ACTIVE" && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 px-4 py-4">
             <p className="font-semibold text-amber-900 dark:text-amber-100">
-              This Mock Test is a draft
+              This Practice Test is a draft
             </p>
             <p className="text-sm text-amber-800 dark:text-amber-200 mt-0.5">
               Students cannot see it until you publish. Use{" "}
-              <strong>Publish Mock Test</strong> in the actions below to make it
+              <strong>Publish Practice Test</strong> in the actions below to make it
               available to all Disha students.
             </p>
           </div>
@@ -728,7 +728,7 @@ export default function MockTestDetailPage() {
                 {mockTest.assessment_name}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Mock Test ID: {mockTest.disha_assessment_id}
+                Practice Test ID: {mockTest.disha_assessment_id}
               </p>
             </div>
           </div>
@@ -746,7 +746,7 @@ export default function MockTestDetailPage() {
                 variant="outline"
                 className="border-amber-300 text-amber-700 hover:bg-amber-50"
               >
-                {isUnpublishing ? "Unpublishing..." : "Unpublish Mock Test"}
+                {isUnpublishing ? "Unpublishing..." : "Unpublish Practice Test"}
               </Button>
             ) : (
               <Button
@@ -754,7 +754,7 @@ export default function MockTestDetailPage() {
                 disabled={isPublishing}
                 className="bg-green-600 hover:bg-green-700"
               >
-                {isPublishing ? "Publishing..." : "Publish Mock Test"}
+                {isPublishing ? "Publishing..." : "Publish Practice Test"}
               </Button>
             )}
           </div>
@@ -794,7 +794,7 @@ export default function MockTestDetailPage() {
           <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-4">
             <p className="text-gray-600 dark:text-gray-400 text-sm">Type</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-              Mock Test
+              Practice Test
             </p>
           </div>
           <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-sm p-4">
