@@ -1,16 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Montserrat } from 'next/font/google'
-
 import { CampusDriveCardActions } from '@/components/campus-drives/CampusDriveCardActions'
+import { montserrat } from '@/lib/fonts/montserrat'
 
 import styles from './CampusDriveTicketCard.module.css'
-
-const montserrat = Montserrat({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-})
 
 export type CampusDriveCardStatus = 'live' | 'open' | 'closed'
 
