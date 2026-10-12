@@ -98,6 +98,10 @@
   background: var(--green);
 }
 
+.dtTagUpcoming {
+  background: #b45309;
+}
+
 .dtRow {
   display: grid;
   grid-template-columns: 64px 1fr;

@@ -27,30 +27,26 @@ function modeLabel(mode?: string | null) {
   return null
 }
 
-function programStatus(item: CampusDriveListItem): CampusDriveCardStatus {
-  const now = Date.now()
-  const start = Date.parse(item.event_start_date)
-  const end = item.event_end_date ? Date.parse(item.event_end_date) : NaN
-  if (Number.isFinite(end) && end < now) return 'closed'
-  if (
-    Number.isFinite(start) &&
-    start <= now &&
-    (!Number.isFinite(end) || end >= now)
-  ) {
-    return 'live'
-  }
-  if (item.registration_status === 'closed') return 'closed'
-  return 'open'
+function localDay(value: string | number | Date) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return NaN
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 }
 
 function driveGroup(item: CampusDriveListItem): DriveGroup {
-  const status = programStatus(item)
-  if (status === 'closed') return 'closed'
-  const start = Date.parse(item.event_start_date)
-  const registration = item.registration_status
-  if (registration === 'not_started' || registration === 'not_set') return 'upcoming'
-  if (registration === 'open' || status === 'live') return 'open'
-  if (Number.isFinite(start) && start > Date.now()) return 'upcoming'
+  const now = new Date()
+  const today = localDay(now)
+  const startDay = localDay(item.event_start_date)
+  const end = item.event_end_date ? Date.parse(item.event_end_date) : NaN
+  if (Number.isFinite(end) && end < now.getTime()) return 'closed'
+  if (Number.isFinite(startDay) && startDay > today) return 'upcoming'
+  return 'open'
+}
+
+function programStatus(item: CampusDriveListItem): CampusDriveCardStatus {
+  const group = driveGroup(item)
+  if (group === 'closed') return 'closed'
+  if (group === 'upcoming') return 'upcoming'
   return 'open'
 }
 
@@ -424,7 +420,7 @@ export function CampusDrivePublicList() {
                           Open now
                         </h2>
                         <p className={styles['cd-sec-hint']}>
-                          Registrations are open. Register before the date.
+                          These drives are open today. Register while they are available.
                         </p>
                       </div>
                     </div>
@@ -441,10 +437,11 @@ export function CampusDrivePublicList() {
                     <div className={styles['cd-sec-head']}>
                       <div>
                         <h2 className={styles['cd-sec-title']}>
+                          <span className={`${styles['cd-dot']} ${styles['cd-dot-upcoming']}`} aria-hidden />
                           Upcoming
                         </h2>
                         <p className={styles['cd-sec-hint']}>
-                          These drives are not open for registration yet.
+                          These drives start on a later date. You can view the details until then.
                         </p>
                       </div>
                     </div>
