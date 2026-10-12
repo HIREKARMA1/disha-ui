@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft,
   Banknote,
   Briefcase,
   Building2,
   Calendar,
   CheckCircle,
-  Download,
+  Clock,
+  // Download,
   ExternalLink,
   Globe,
   Loader2,
@@ -510,14 +510,6 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           <span className="truncate font-medium text-gray-900 dark:text-white">{job.title}</span>
         </nav>
 
-        <button
-          type="button"
-          onClick={() => router.push('/jobs')}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-500"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Jobs
-        </button>
-
         {/* Hero */}
         <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-white/10 dark:bg-[#151b2b]">
           <div className="bg-gradient-to-r from-primary-600/90 to-secondary-500/90 px-5 py-8 sm:px-8">
@@ -574,6 +566,25 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
             <Meta icon={MapPin} label="Location" value={locationLabel} />
           </div>
 
+          {(job.ctc_with_probation?.trim() || job.ctc_after_probation?.trim()) && (
+            <div className="grid gap-3 border-b border-gray-100 px-5 py-4 dark:border-white/10 sm:grid-cols-2 sm:px-6">
+              {job.ctc_with_probation?.trim() && (
+                <Meta
+                  icon={Banknote}
+                  label="Stipend during probation"
+                  value={job.ctc_with_probation.trim()}
+                />
+              )}
+              {job.ctc_after_probation?.trim() && (
+                <Meta
+                  icon={Clock}
+                  label="Probation time"
+                  value={job.ctc_after_probation.trim()}
+                />
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 p-5 sm:p-6">
             <Button
               onClick={handleApply}
@@ -583,12 +594,14 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               <CheckCircle className="mr-2 h-4 w-4" />
               {applyLabel}
             </Button>
+            {/* Download PDF hidden on the public job page.
             {canDownloadPdf && (
               <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloadingPDF}>
                 <Download className="mr-2 h-4 w-4" />
                 {isDownloadingPDF ? 'Generating…' : 'Download PDF'}
               </Button>
             )}
+            */}
             <Button variant="outline" onClick={handleShare}>
               <Share2 className="mr-2 h-4 w-4" /> Share
             </Button>

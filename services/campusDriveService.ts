@@ -92,7 +92,7 @@ export function apiErrorMessage(err: unknown, fallback: string) {
       support_email: 'Support Email',
       organizer_phone: 'Organizer Phone',
       support_phone: 'Support Phone',
-      event_link: 'Event Link',
+      event_link: 'Website URL',
       event_start_date: 'Campus Drive Start',
       event_end_date: 'Campus Drive End',
       registration_start_date: 'Registration Start',

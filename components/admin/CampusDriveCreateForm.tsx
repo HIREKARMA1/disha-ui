@@ -15,6 +15,7 @@ import { campusDriveService, apiErrorMessage } from '@/services/campusDriveServi
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import type { FAQItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
 import type { CampusDriveJobSummary, CampusDriveListingStatus, CampusDriveMode, CampusDriveWritePayload } from '@/types/campusDrive'
+import { campusDriveModeValue } from '@/lib/utils/campusDriveMode'
 import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
 import { utcIsoToDatetimeLocal } from '@/lib/datetime'
 import { toast } from 'react-hot-toast'
@@ -67,7 +68,7 @@ const emptyForm = (): FormState => ({
   organizer_email: '',
   organizer_phone: '',
   venue: '',
-  mode: 'online',
+  mode: 'virtual',
   event_link: '',
   registration_start_date: '',
   registration_end_date: '',
@@ -167,7 +168,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           organizer_email: drive.organizer_email || '',
           organizer_phone: sanitizePhoneInput(drive.organizer_phone || ''),
           venue: drive.venue || '',
-          mode: drive.mode === 'offline' ? 'offline' : 'online',
+          mode: campusDriveModeValue(drive.mode) || 'virtual',
           event_link: drive.event_link || '',
           ...dates,
           visibility: drive.visibility,
@@ -247,12 +248,12 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
       toast.error('Registration end cannot be earlier than registration start')
       return false
     }
-    if (form.mode === 'online' && !form.event_link.trim()) {
-      toast.error('Online campus drives need a meeting link before they can be saved')
+    if (!form.event_link.trim()) {
+      toast.error('Website URL is required')
       return false
     }
-    if (form.event_link.trim() && !/^https?:\/\/.+/i.test(form.event_link.trim())) {
-      toast.error('Event link must be a valid http or https URL')
+    if (!/^https?:\/\/.+/i.test(form.event_link.trim())) {
+      toast.error('Website URL must be a valid http or https URL')
       return false
     }
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -512,23 +513,21 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
               value={form.mode}
               onValueChange={(value) => update('mode', value as CampusDriveMode)}
               options={[
-                { value: 'online', label: 'Online' },
-                { value: 'offline', label: 'Offline' },
+                { value: 'virtual', label: 'Virtual' },
+                { value: 'oncampus', label: 'Oncampus' },
+                { value: 'walking', label: 'Walking' },
               ]}
             />
           </div>
           <div className="md:col-span-2">
-            <label className="text-sm font-medium">Event Link{form.mode === 'online' ? ' *' : ''}</label>
+            <label className="text-sm font-medium">Website URL *</label>
             <Input
               type="url"
+              required
               value={form.event_link}
               onChange={(e) => update('event_link', e.target.value)}
-              placeholder="https://meet.google.com/..."
+              placeholder="https://example.com"
             />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              For online campus drives, add the Google Meet, Microsoft Teams, Zoom, or other meeting link before saving.
-              The link is optional for offline campus drives.
-            </p>
           </div>
         </CardContent>
       </Card>

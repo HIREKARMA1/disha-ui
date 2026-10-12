@@ -154,10 +154,10 @@ export function JobAdditionalInfo({
           )}
         </InfoCard>
 
-        <InfoCard icon={Clock} label="Job Type/Timing">
+        <InfoCard icon={Clock} label="Job Mode/Type">
           <div className="space-y-0.5">
-            <p>Job Type: {formatWorkMode(modeOfWork, remoteWork)}</p>
-            <p>Job Timing: {formatJobTiming(jobType)}</p>
+            <p>Job Mode: {formatWorkMode(modeOfWork, remoteWork)}</p>
+            <p>Job Type: {formatJobTiming(jobType)}</p>
           </div>
         </InfoCard>
       </div>
