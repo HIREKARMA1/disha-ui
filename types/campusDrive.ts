@@ -1,7 +1,7 @@
 import type { Job } from '@/components/jobs/AllJobs'
 import type { EventCategory, FAQItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
 
-export type CampusDriveMode = 'online' | 'offline'
+export type CampusDriveMode = 'virtual' | 'oncampus' | 'walking'
 export type CampusDrivePublicationStatus = 'draft' | 'published'
 export type CampusDriveListingStatus = 'active' | 'inactive' | 'hidden'
 

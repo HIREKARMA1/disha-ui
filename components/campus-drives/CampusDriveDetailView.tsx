@@ -11,6 +11,8 @@ import type { Job } from '@/components/jobs/AllJobs'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 import { CompanyLogo } from '@/components/campus-drives/CompanyLogo'
+import { ShareJobModal } from '@/components/jobs/ShareJobModal'
+import { campusDriveModeLabel, campusDriveVenueFallback } from '@/lib/utils/campusDriveMode'
 
 interface ParsedJob {
   id: string
@@ -131,9 +133,11 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
   const title = drive.title || 'Campus Recruitment Drive'
   const organizer = drive.organizer_name || 'Organizer'
   const logoUrl = drive.organizer_logo_url || ''
+  const [shareOpen, setShareOpen] = useState(false)
+  const driveSharePath = `/campus-drives/${encodeURIComponent(drive.slug || drive.id)}`
   const categoryLabel = drive.category ? cleanText(drive.category).replace(/_/g, ' ') : 'Campus Drive'
-  const modeLabel = drive.mode ? (drive.mode.toLowerCase() === 'online' ? 'Online' : drive.mode.toLowerCase() === 'hybrid' ? 'Hybrid' : 'Offline') : 'Offline'
-  const venue = drive.venue || (drive.mode?.toLowerCase() === 'online' ? 'Online' : 'Main Campus')
+  const modeLabel = campusDriveModeLabel(drive.mode) || 'Oncampus'
+  const venue = drive.venue || campusDriveVenueFallback(drive.mode)
   const rawWebsite = (drive.organizer_website || drive.event_link || '').trim()
   const website = rawWebsite && !/^https?:\/\//i.test(rawWebsite) ? `https://${rawWebsite}` : rawWebsite
 
@@ -391,15 +395,8 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
     })
   }, [regStartDate, regEndDate, startDate, endDate, applyByFormatted, driveDateFormatted])
 
-  const handleShare = async () => {
-    try {
-      if (typeof window !== 'undefined') {
-        await navigator.clipboard.writeText(window.location.href)
-        showToast('Link copied to clipboard')
-      }
-    } catch {
-      showToast('Copy the page URL to share')
-    }
+  const handleShare = () => {
+    setShareOpen(true)
   }
 
   const handleToggleSaveJob = (id: string) => {
@@ -537,7 +534,7 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
                 </button>
                 {website ? (
                   <a className="btn" href={website} target="_blank" rel="noopener noreferrer">
-                    Visit website
+                    Visit Company Website
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
                   </a>
                 ) : null}
@@ -557,7 +554,7 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
                 Rounds
               </button>
               <button type="button" role="tab" aria-selected={activeTab === 'rewards'} className={activeTab === 'rewards' ? 'on' : ''} onClick={() => setActiveTab('rewards')}>
-                Rewards
+                Perks & Benefits
               </button>
               <button type="button" role="tab" aria-selected={activeTab === 'faq'} className={activeTab === 'faq' ? 'on' : ''} onClick={() => setActiveTab('faq')}>
                 FAQs
@@ -816,7 +813,7 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
             {/* 7. Rewards Section */}
             {activeTab === 'rewards' && rewardsList.length > 0 ? (
               <section id="rewards">
-                <h2>Rewards</h2>
+                <h2>Perks & Benefits</h2>
                 <div className="rewards">
                   {rewardsList.map((rw, i) => (
                     <div key={i} className="card reward">
@@ -2022,6 +2019,9 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
         }
 
         @media (max-width: 620px) {
+          aside {
+            order: 0;
+          }
           .page {
             padding: 18px 14px 0;
           }
@@ -2086,6 +2086,18 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
           }
         }
       `}</style>
+      <ShareJobModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        shareUrl={driveSharePath}
+        shareKind="drive"
+        job={{
+          id: String(drive.id),
+          title,
+          company_name: organizer,
+          company_logo: logoUrl || null,
+        }}
+      />
     </div>
   )
 }

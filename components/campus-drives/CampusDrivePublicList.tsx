@@ -14,6 +14,7 @@ import {
   driveCardCompanyLine,
   driveCardLocationProps,
 } from '@/lib/utils/driveCardDisplay'
+import { campusDriveModeLabel, campusDriveModeValue } from '@/lib/utils/campusDriveMode'
 import styles from './CampusDrivePublicList.module.css'
 
 type DriveGroup = 'open' | 'upcoming' | 'closed'
@@ -21,10 +22,7 @@ type DriveTab = 'all' | DriveGroup
 type DriveSort = 'soonest' | 'latest'
 
 function modeLabel(mode?: string | null) {
-  if (mode === 'online') return 'Online'
-  if (mode === 'offline') return 'Offline'
-  if (mode === 'hybrid') return 'Hybrid'
-  return null
+  return campusDriveModeLabel(mode)
 }
 
 function localDay(value: string | number | Date) {
@@ -288,7 +286,7 @@ export function CampusDrivePublicList() {
 
   const filtered = useMemo(() => {
     const matched = mode
-      ? items.filter((item) => (item.mode || '').toLowerCase() === mode)
+      ? items.filter((item) => campusDriveModeValue(item.mode) === mode)
       : items
     const direction = sort === 'latest' ? -1 : 1
     return [...matched].sort((a, b) => {
@@ -379,8 +377,9 @@ export function CampusDrivePublicList() {
                   onChange={setMode}
                   options={[
                     { value: '', label: 'All' },
-                    { value: 'online', label: 'Online' },
-                    { value: 'offline', label: 'Offline' },
+                    { value: 'virtual', label: 'Virtual' },
+                    { value: 'oncampus', label: 'Oncampus' },
+                    { value: 'walking', label: 'Walking' },
                   ]}
                 />
                 <FilterMenu
