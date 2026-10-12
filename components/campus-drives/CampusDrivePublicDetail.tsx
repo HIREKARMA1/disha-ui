@@ -36,7 +36,7 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
             <Link href="/campus-drives" className="mt-4 inline-block text-primary-600 underline">Back to campus drives</Link>
           </div>
         ) : (
-          <CampusDriveDetailView drive={drive} />
+          <CampusDriveDetailView drive={drive} wide />
         )}
       </main>
       <Footer />

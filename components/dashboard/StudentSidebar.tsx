@@ -63,12 +63,13 @@ const navItems: NavItem[] = [
         mobilePrimary: true,
         openInNewTab: true,
     },
-    {
-        label: 'Campus Drive',
-        href: '/dashboard/student/jobs',
-        icon: Search,
-        description: 'Campus opportunities',
-    },
+    // Temporarily hidden from Student navigation — keep for easy re-enable
+    // {
+    //     label: 'Campus Drive',
+    //     href: '/dashboard/student/jobs',
+    //     icon: Search,
+    //     description: 'Campus opportunities',
+    // },
     {
         label: 'Applications',
         href: '/dashboard/student/applications',
