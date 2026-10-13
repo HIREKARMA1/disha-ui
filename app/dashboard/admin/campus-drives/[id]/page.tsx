@@ -26,6 +26,7 @@ export default function AdminCampusDriveViewPage({ params }: { params: { id: str
       <div className="mb-4 flex flex-wrap gap-2">
         <Link href="/dashboard/admin/campus-drives"><Button variant="outline" size="sm">Back</Button></Link>
         <Link href={`/dashboard/admin/campus-drives/${params.id}/edit`}><Button size="sm">Edit</Button></Link>
+        <Link href={`/dashboard/admin/campus-drives/${params.id}/analytics`}><Button size="sm" variant="outline">Analytics</Button></Link>
         {drive?.publication_status === 'published' && drive.slug && (
           <Link href={`/campus-drives/${drive.slug}`}><Button variant="outline" size="sm">Public page</Button></Link>
         )}

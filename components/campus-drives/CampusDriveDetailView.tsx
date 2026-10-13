@@ -114,7 +114,22 @@ function parseListItems(value: unknown): string[] {
   return []
 }
 
-export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDriveDetail; wide?: boolean }) {
+export interface CampusDriveRegisterState {
+  isRegistered: boolean
+  registering: boolean
+  onRegister: () => void
+  showRegisterAction: boolean
+}
+
+export function CampusDriveDetailView({
+  drive,
+  wide = false,
+  registerState,
+}: {
+  drive: CampusDriveDetail
+  wide?: boolean
+  registerState?: CampusDriveRegisterState
+}) {
   const router = useRouter()
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set())
@@ -147,10 +162,15 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
   const regStartDate = drive.registration_start_date
   const regEndDate = drive.registration_end_date
 
-  const deadlineDate = regEndDate ? new Date(regEndDate) : null
-  const isDeadlineValid = deadlineDate && !Number.isNaN(deadlineDate.getTime())
-  const isExpired = isDeadlineValid ? new Date() > deadlineDate : drive.listing_status === 'hidden'
-  const isOpen = !isExpired
+  const registrationPhase: 'open' | 'closed' | 'soon' = useMemo(() => {
+    if ((drive.listing_status ?? 'active') === 'hidden') return 'closed'
+    const rs = drive.registration_status
+    if (rs === 'closed') return 'closed'
+    if (rs === 'not_started') return 'soon'
+    return 'open'
+  }, [drive.listing_status, drive.registration_status])
+
+  const isOpen = registrationPhase === 'open'
 
   const driveDateFormatted = useMemo(() => {
     if (startDate && endDate && startDate !== endDate) {
@@ -303,6 +323,11 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
     ]
   }, [drive, organizer, parsedJobs])
 
+  const associatedCorporates = useMemo(() => {
+    const list = drive.corporates ?? []
+    return list.filter((item) => item?.id && item?.company_name)
+  }, [drive.corporates])
+
   // FAQs List
   const faqsList = useMemo(() => {
     const raw = drive.faqs
@@ -425,12 +450,6 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
   const nowMs = Date.now()
   const regStartMs = regStartDate ? Date.parse(regStartDate) : NaN
   const regEndMs = regEndDate ? Date.parse(regEndDate) : NaN
-  const registrationPhase: 'open' | 'closed' | 'soon' =
-    (Number.isFinite(regEndMs) && nowMs > regEndMs) || !isOpen
-      ? 'closed'
-      : Number.isFinite(regStartMs) && nowMs < regStartMs
-        ? 'soon'
-        : 'open'
   const daysLeft = Number.isFinite(regEndMs)
     ? Math.max(0, Math.ceil((regEndMs - nowMs) / 86400000))
     : null
@@ -526,9 +545,42 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
 
               {/* Action Buttons */}
               <div className="actions">
-                <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
-                  View open roles
-                </button>
+                {registerState?.showRegisterAction ? (
+                  registerState.isRegistered ? (
+                    <button type="button" className="btn primary" disabled>
+                      <Check className="h-4 w-4" aria-hidden />
+                      Registered
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      disabled={
+                        registerState.registering ||
+                        registrationPhase !== 'open' ||
+                        registerState.isRegistered
+                      }
+                      onClick={registerState.onRegister}
+                    >
+                      {registerState.registering
+                        ? 'Registering...'
+                        : registrationPhase === 'soon'
+                          ? 'Registration opens soon'
+                          : registrationPhase === 'closed'
+                            ? 'Registration closed'
+                            : 'Register'}
+                    </button>
+                  )
+                ) : (
+                  <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
+                    View open roles
+                  </button>
+                )}
+                {registerState?.showRegisterAction ? (
+                  <button type="button" className="btn" onClick={() => setActiveTab('jobs')}>
+                    View open roles
+                  </button>
+                ) : null}
                 <button type="button" className="btn" onClick={handleShare}>
                   Share drive
                 </button>
@@ -546,6 +598,15 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
             <nav className="tabs" aria-label="Page sections" role="tablist">
               <button type="button" role="tab" aria-selected={activeTab === 'jobs'} className={activeTab === 'jobs' ? 'on' : ''} onClick={() => setActiveTab('jobs')}>
                 Jobs <em>{parsedJobs.length}</em>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'corporates'}
+                className={activeTab === 'corporates' ? 'on' : ''}
+                onClick={() => setActiveTab('corporates')}
+              >
+                Corporates <em>{associatedCorporates.length}</em>
               </button>
               <button type="button" role="tab" aria-selected={activeTab === 'overview'} className={activeTab === 'overview' ? 'on' : ''} onClick={() => setActiveTab('overview')}>
                 Overview
@@ -793,6 +854,32 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
             </section>
             ) : null}
 
+            {activeTab === 'corporates' ? (
+              <section id="corporates">
+                <h2>Corporates</h2>
+                {associatedCorporates.length === 0 ? (
+                  <div className="card block">
+                    <p className="corp-empty">No corporates are associated with this campus drive yet.</p>
+                  </div>
+                ) : (
+                  <div className="corporates">
+                    {associatedCorporates.map((corporate) => (
+                      <article key={corporate.id} className="card corporate">
+                        <div className="corp-logo">
+                          {corporate.company_logo ? (
+                            <img src={corporate.company_logo} alt={`${corporate.company_name} logo`} />
+                          ) : (
+                            <div className="logo-placeholder">{corporate.company_name.charAt(0).toUpperCase()}</div>
+                          )}
+                        </div>
+                        <h3>{corporate.company_name}</h3>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
+
             {activeTab === 'rounds' && selectionRounds.length > 0 ? (
               <section id="rounds">
                 <div className="card block">
@@ -879,14 +966,52 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
               <div className="reg-track" aria-hidden>
                 <span style={{ width: `${registrationProgress}%` }} />
               </div>
-              <button
-                type="button"
-                className="btn primary apply-main"
-                disabled={registrationPhase === 'closed'}
-                onClick={() => setActiveTab('jobs')}
-              >
-                {registrationPhase === 'closed' ? 'Registration closed' : 'View open roles'}
-              </button>
+              {registerState?.showRegisterAction ? (
+                registerState.isRegistered ? (
+                  <button type="button" className="btn primary apply-main" disabled>
+                    <Check className="h-4 w-4" aria-hidden />
+                    Registered
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn primary apply-main"
+                    disabled={
+                      registerState.registering ||
+                      registrationPhase !== 'open' ||
+                      registerState.isRegistered
+                    }
+                    onClick={registerState.onRegister}
+                  >
+                    {registerState.registering
+                      ? 'Registering...'
+                      : registrationPhase === 'soon'
+                        ? 'Registration opens soon'
+                        : registrationPhase === 'closed'
+                          ? 'Registration closed'
+                          : 'Register'}
+                  </button>
+                )
+              ) : (
+                <button
+                  type="button"
+                  className="btn primary apply-main"
+                  disabled={registrationPhase === 'closed'}
+                  onClick={() => setActiveTab('jobs')}
+                >
+                  {registrationPhase === 'closed' ? 'Registration closed' : 'View open roles'}
+                </button>
+              )}
+              {registerState?.showRegisterAction && !registerState.isRegistered ? (
+                <button
+                  type="button"
+                  className="btn apply-main"
+                  style={{ marginTop: '0.5rem' }}
+                  onClick={() => setActiveTab('jobs')}
+                >
+                  View open roles
+                </button>
+              ) : null}
             </div>
             <div className="card side">
               <h3>Key dates</h3>
@@ -919,6 +1044,12 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
                     </a>
                   </div>
                 ) : null}
+                <div>
+                  <span>Corporates</span>
+                  {associatedCorporates.length === 0
+                    ? 'None assigned'
+                    : `${associatedCorporates.length} associated`}
+                </div>
               </div>
             </div>
           </aside>
@@ -1662,6 +1793,77 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
           line-height: 1.5;
         }
 
+        .corporates {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .corporate {
+          min-height: 220px;
+          padding: 20px 18px 18px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          text-align: center;
+          gap: 14px;
+        }
+
+        .corporate h3 {
+          margin: 0;
+          width: 100%;
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--ink);
+          line-height: 1.4;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .corp-logo {
+          width: min(100%, 168px);
+          height: 108px;
+          border-radius: 16px;
+          border: 1px solid var(--line);
+          background: #f8fafc;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          padding: 12px;
+          box-sizing: border-box;
+        }
+
+        .corp-logo img {
+          display: block;
+          max-width: 100%;
+          max-height: 100%;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          object-position: center center;
+        }
+
+        .corp-logo .logo-placeholder {
+          font-size: 2rem;
+          font-weight: 800;
+          color: var(--navy);
+          background: var(--cyan-soft);
+          width: 100%;
+          height: 100%;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+        }
+
+        .corp-empty {
+          margin: 0;
+          font-size: 14px;
+          color: var(--muted);
+          line-height: 1.5;
+        }
+
         .rewards {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -2009,6 +2211,14 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
           }
         }
 
+        @media (min-width: 1024px) {
+          .corp-logo {
+            width: 168px;
+            height: 112px;
+            padding: 14px;
+          }
+        }
+
         @media (max-width: 900px) {
           .facts {
             grid-template-columns: 1fr 1fr;
@@ -2016,9 +2226,33 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
           .rewards {
             grid-template-columns: 1fr;
           }
+          .corporates {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 14px;
+          }
+          .corp-logo {
+            width: min(100%, 152px);
+            height: 100px;
+          }
         }
 
         @media (max-width: 620px) {
+          .corporates {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .corporate {
+            min-height: 200px;
+            padding: 18px 16px;
+          }
+          .corp-logo {
+            width: min(100%, 168px);
+            height: 96px;
+            padding: 10px;
+          }
+          .corporate h3 {
+            font-size: 15px;
+          }
           aside {
             order: 0;
           }

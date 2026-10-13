@@ -101,6 +101,7 @@ export interface CorporateListItem {
   bio?: string
   profile_picture?: string
   description?: string
+  company_logo?: string
 }
 
 export interface CorporateListResponse {
@@ -152,6 +153,7 @@ export interface CreateCorporateRequest {
   company_type?: string
   founded_year?: number
   description?: string
+  company_logo?: string
 }
 
 export interface CreateCorporateResponse {
@@ -175,6 +177,7 @@ export interface UpdateCorporateRequest {
   founded_year?: number
   description?: string
   status?: string
+  company_logo?: string
 }
 
 export interface ArchiveCorporateRequest {

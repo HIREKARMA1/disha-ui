@@ -1,9 +1,12 @@
 import { apiClient } from '@/lib/api'
 import type {
+  CampusDriveAnalytics,
   CampusDriveDetail,
   CampusDriveListResponse,
+  CampusDriveStatistics,
   CampusDriveWritePayload,
 } from '@/types/campusDrive'
+import type { EventAnalyticsUsersParams, EventAnalyticsUsersResponse } from '@/types/contestEvent'
 
 class CampusDriveService {
   async listAdmin(params: Record<string, unknown> = {}): Promise<CampusDriveListResponse> {
@@ -23,6 +26,13 @@ class CampusDriveService {
 
   async getPublic(slug: string): Promise<CampusDriveDetail> {
     const response = await apiClient.client.get(`/campus-drives/public/${encodeURIComponent(slug)}`)
+    return response.data
+  }
+
+  async registerForCampusDrive(slug: string) {
+    const response = await apiClient.client.post(
+      `/campus-drives/public/${encodeURIComponent(slug)}/register`,
+    )
     return response.data
   }
 
@@ -68,6 +78,36 @@ class CampusDriveService {
 
   async remove(id: string): Promise<void> {
     await apiClient.client.delete(`/campus-drives/${id}`)
+  }
+
+  async getStatistics(months = 6): Promise<CampusDriveStatistics> {
+    const response = await apiClient.client.get('/campus-drives/statistics', { params: { months } })
+    return response.data
+  }
+
+  async getAnalytics(id: string): Promise<CampusDriveAnalytics> {
+    const response = await apiClient.client.get(`/campus-drives/${id}/analytics`)
+    return response.data
+  }
+
+  async getAnalyticsUsers(
+    driveId: string,
+    params: EventAnalyticsUsersParams = {},
+  ): Promise<EventAnalyticsUsersResponse> {
+    const response = await apiClient.client.get(`/campus-drives/${driveId}/analytics/users`, { params })
+    return response.data
+  }
+
+  async exportAnalyticsUsers(
+    driveId: string,
+    format: 'csv' | 'excel' | 'pdf',
+    params: EventAnalyticsUsersParams = {},
+  ): Promise<Blob> {
+    const response = await apiClient.client.get(`/campus-drives/${driveId}/analytics/users/export`, {
+      params: { ...params, format },
+      responseType: 'blob',
+    })
+    return response.data
   }
 
   async uploadFile(file: File, fileType: 'banner' | 'logo'): Promise<{ file_url: string }> {

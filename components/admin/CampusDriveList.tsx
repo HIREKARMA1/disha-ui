@@ -91,9 +91,14 @@ export function CampusDriveList() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Campus Drive</h1>
           <p className="text-sm text-gray-500">Create and publish campus drive programs with selected jobs.</p>
         </div>
-        <Link href="/dashboard/admin/campus-drives/create">
-          <Button><Plus className="mr-2 h-4 w-4" /> Create Campus Drive</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard/admin/campus-drives/statistics">
+            <Button variant="outline">Statistics</Button>
+          </Link>
+          <Link href="/dashboard/admin/campus-drives/create">
+            <Button><Plus className="mr-2 h-4 w-4" /> Create Campus Drive</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 md:grid-cols-5">
@@ -180,6 +185,7 @@ export function CampusDriveList() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link href={`/dashboard/admin/campus-drives/${item.id}`}><Button size="sm" variant="outline">View</Button></Link>
                     <Link href={`/dashboard/admin/campus-drives/${item.id}/edit`}><Button size="sm" variant="outline">Edit</Button></Link>
+                    <Link href={`/dashboard/admin/campus-drives/${item.id}/analytics`}><Button size="sm" variant="outline">Analytics</Button></Link>
 
                     <Button
                       size="sm"
