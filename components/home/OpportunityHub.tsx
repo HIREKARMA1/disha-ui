@@ -240,7 +240,7 @@ const EXPLORE_ITEMS: ExploreItem[] = [
     id: 'mock_tests',
     label: 'Practice Tests',
     kind: 'link',
-    href: '/mock-tests',
+    href: '/practice-tests',
     icon: ClipboardList,
   },
   {
@@ -599,6 +599,10 @@ export default function OpportunityHub() {
       window.open('/events', '_blank', 'noopener,noreferrer')
       return
     }
+    if (pill.id === 'mock_tests') {
+      window.open('/practice-tests', '_blank', 'noopener,noreferrer')
+      return
+    }
     if (pill.id === 'blogs') {
       router.push('/blogs')
       return
@@ -683,6 +687,10 @@ export default function OpportunityHub() {
     }
     if (item.id === 'practice' && user?.user_type === 'student') {
       router.push('/dashboard/student/practice')
+      return
+    }
+    if (item.id === 'mock_tests') {
+      window.open('/practice-tests', '_blank', 'noopener,noreferrer')
       return
     }
     router.push(item.href)

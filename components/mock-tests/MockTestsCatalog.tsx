@@ -22,7 +22,6 @@ import {
   Trophy,
   X,
   BarChart3,
-  Medal,
 } from 'lucide-react'
 
 interface StudentMockTest {
@@ -163,17 +162,17 @@ export function MockTestsCatalog() {
   ]
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-8 pb-8">
+    <div className="mx-auto min-w-0 max-w-[1600px] space-y-8 pb-8">
       <div className="relative overflow-hidden rounded-2xl border border-primary-200/60 shadow-lg dark:border-primary-800/40">
         {bannerImage ? (
-          <div className="relative min-h-[160px] sm:min-h-[200px]">
+          <div className="relative min-h-[180px] bg-primary-950/40 sm:min-h-[220px]">
             <img
               src={bannerImage}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover object-center"
+              className="absolute inset-0 h-full w-full object-contain object-center sm:object-[center_right]"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-950/85 via-primary-900/70 to-primary-800/40" />
-            <div className="relative z-10 px-6 py-10 sm:px-10 sm:py-12">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary-950/92 via-primary-900/75 to-primary-900/20 sm:via-primary-900/55 sm:to-transparent" />
+            <div className="relative z-10 flex min-h-[180px] flex-col justify-center px-6 py-8 sm:min-h-[220px] sm:px-10 sm:py-10">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary-200">
                 <Sparkles className="h-3.5 w-3.5" />
                 Disha Learning
@@ -204,16 +203,7 @@ export function MockTestsCatalog() {
         )}
       </div>
 
-      <section aria-labelledby="top-performers-heading" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Medal className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <h2
-            id="top-performers-heading"
-            className="text-xl font-bold tracking-tight text-gray-900 dark:text-white"
-          >
-            Top Performers
-          </h2>
-        </div>
+      <section aria-labelledby="top-performers-heading" className="min-w-0">
         <TopPerformersShowcase
           highlights={highlights}
           isLoading={isLoading}

@@ -79,7 +79,7 @@ export function TopPerformersShowcase({
             key={i}
             className={cn(
               'h-44 shrink-0 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800',
-              isLanding ? 'md:h-52 w-full md:w-auto' : 'w-[min(85vw,300px)]'
+              isLanding ? 'md:h-52 w-full md:w-auto' : 'w-[min(100%,300px)] sm:w-[300px]'
             )}
           />
         ))}
@@ -109,9 +109,13 @@ export function TopPerformersShowcase({
   }
 
   const displayItems = isLanding ? published.slice(0, 6) : highlights
+  const showCarouselNav = displayItems.length > 1 && !isLanding
+
+  const catalogCardWidth =
+    'w-[min(100%,300px)] max-w-full shrink-0 snap-start sm:w-[300px]'
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('min-w-0 space-y-4', className)}>
       {isLanding ? (
         <div className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 via-white to-primary-50/40 p-5 shadow-sm dark:border-amber-900/40 dark:from-amber-950/30 dark:via-[#141A29] dark:to-primary-950/20 sm:p-6">
           <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10" />
@@ -134,42 +138,53 @@ export function TopPerformersShowcase({
             </Button>
           </div>
         </div>
-      ) : null}
-
-      <div className="flex items-center justify-end gap-1">
-        {displayItems.length > 1 && !isLanding ? (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => scrollCarousel(-1)}
-              aria-label="Scroll left"
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Medal className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <h2
+              id="top-performers-heading"
+              className="text-xl font-bold tracking-tight text-gray-900 dark:text-white"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => scrollCarousel(1)}
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </>
-        ) : null}
-      </div>
+              Top Performers
+            </h2>
+          </div>
+          {showCarouselNav ? (
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                onClick={() => scrollCarousel(-1)}
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                onClick={() => scrollCarousel(1)}
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
 
-      <div
-        ref={carouselRef}
-        className={cn(
-          'flex gap-4 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-          isLanding && 'md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible'
-        )}
-      >
+      <div className={cn('min-w-0', !isLanding && 'overflow-hidden')}>
+        <div
+          ref={carouselRef}
+          className={cn(
+            'flex gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            !isLanding && 'snap-x snap-mandatory scroll-px-0',
+            isLanding && 'md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible'
+          )}
+        >
         {displayItems.map((item, index) => {
           const performer = item.top_performer
           const scoreLabel = performer ? formatPerformerScore(performer) : null
@@ -189,7 +204,7 @@ export function TopPerformersShowcase({
                 rank > 3 && 'border-gray-200 dark:border-[#1A2233]',
                 interactive &&
                   'cursor-pointer hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:border-primary-600',
-                isLanding ? 'w-full shrink-0 md:shrink' : 'w-[min(88vw,320px)] shrink-0'
+                isLanding ? 'w-full shrink-0 md:shrink' : 'h-full w-full'
               )}
             >
               {item.background_image_url ? (
@@ -242,7 +257,7 @@ export function TopPerformersShowcase({
 
           if (!interactive) {
             return (
-              <div key={item.mock_test_id} className="contents">
+              <div key={item.mock_test_id} className={cn(!isLanding && catalogCardWidth)}>
                 {card}
               </div>
             )
@@ -253,12 +268,16 @@ export function TopPerformersShowcase({
               key={item.mock_test_id}
               type="button"
               onClick={() => onSelectTest?.(item.mock_test_id)}
-              className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-2xl"
+              className={cn(
+                'text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-2xl',
+                !isLanding && catalogCardWidth
+              )}
             >
               {card}
             </button>
           )
         })}
+        </div>
       </div>
     </div>
   )
