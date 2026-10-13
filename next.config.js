@@ -37,6 +37,8 @@ const nextConfig = {
       "/api/internal/job-description-pdf": [
         "./node_modules/@react-pdf/**/*",
         "./node_modules/pdfkit/**/*",
+        "./public/fonts/**/*",
+        "./public/images/HKlogoblack.png",
       ],
     },
   },
