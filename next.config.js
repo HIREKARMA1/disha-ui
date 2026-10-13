@@ -23,6 +23,23 @@ const appUrl =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    // Must stay external: bundling @react-pdf breaks React reconciler (Component is not a constructor on Vercel).
+    serverComponentsExternalPackages: [
+      "@react-pdf/renderer",
+      "@react-pdf/font",
+      "@react-pdf/pdfkit",
+      "@react-pdf/layout",
+      "@react-pdf/render",
+      "@react-pdf/reconciler",
+    ],
+    outputFileTracingIncludes: {
+      "/api/internal/job-description-pdf": [
+        "./node_modules/@react-pdf/**/*",
+        "./node_modules/pdfkit/**/*",
+      ],
+    },
+  },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabasePublishableKey,
@@ -35,6 +52,11 @@ const nextConfig = {
       "nextjs-toploader": path.join(
         __dirname,
         "node_modules/nextjs-toploader/dist/index.js"
+      ),
+      canvas: false,
+      pdfkit: path.join(
+        __dirname,
+        "node_modules/@react-pdf/pdfkit/lib/pdfkit.js"
       ),
     };
     return config;
@@ -75,10 +97,15 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_API_BASE_URL;
     const apiVersion = process.env.NEXT_PUBLIC_API_VERSION || "v1";
 
+    // Proxy only backend REST (/api/v1). Keep Next.js routes like /api/internal/* on the UI app.
     return [
       {
-        source: "/api/:path*",
-        destination: `${apiBaseUrl}/api/:path*`,
+        source: "/api/v1/:path*",
+        destination: `${apiBaseUrl}/api/v1/:path*`,
+      },
+      {
+        source: "/uploads/:path*",
+        destination: `${apiBaseUrl}/uploads/:path*`,
       },
     ];
   },

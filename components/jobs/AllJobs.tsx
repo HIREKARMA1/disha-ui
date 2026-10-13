@@ -1560,7 +1560,7 @@ export function AllJobs() {
             </div>
 
             <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start lg:gap-4">
-                <div className="min-w-0 overflow-x-visible lg:overflow-x-clip">
+                <div className="min-w-0 overflow-x-clip">
                     {/* Search + mobile filter */}
                     <div className="mb-3 rounded-xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-[#1A2233] dark:bg-[#141A29] sm:mb-3 sm:p-3.5 lg:mb-4">
                         <form

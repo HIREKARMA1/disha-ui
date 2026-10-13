@@ -22,6 +22,12 @@ import { StudentExamLinkSection } from "@/components/admin/assessments/StudentEx
 import { CodingQuestionAssignPanel } from "@/components/admin/assessments/CodingQuestionAssignPanel";
 import { AdminAssignedCodingQuestions } from "@/components/admin/assessments/AdminAssignedCodingQuestions";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import {
+  buildReplenishFeedback,
+  sanitizeReplenishDisplayMessage,
+  type ReplenishFeedback,
+} from "@/lib/replenishQuestionsFeedback";
+import { ReplenishFeedbackBanner } from "@/components/admin/ReplenishFeedbackBanner";
 
 interface MockTest {
   id: string;
@@ -51,6 +57,10 @@ interface MockTestStats {
 
 const getErrorMessage = (error: any, fallback: string) => {
   return error?.response?.data?.detail || error?.message || fallback;
+};
+
+type FetchQuestionsOptions = {
+  keepStatusMessages?: boolean;
 };
 
 const getExpectedQuestionCount = (round: any, questionRound?: any) => {
@@ -182,6 +192,8 @@ export default function MockTestDetailPage() {
   >(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [replenishing, setReplenishing] = useState(false);
+  const [replenishFeedback, setReplenishFeedback] =
+    useState<ReplenishFeedback | null>(null);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(
     null,
   );
@@ -253,22 +265,10 @@ export default function MockTestDetailPage() {
             );
             if (loaded === 0 && expected > 0) {
               const res = await apiClient.fillMockTestQuestions(mockTestRes.id);
-              const added = res.added ?? res.total_questions_added ?? 0;
-              if (added === 0 && res.cohere_error) {
-                setQuestionsError(
-                  `Question generation failed: ${res.cohere_error}. Click "Replenish AI Questions Only" after fixing Cohere, or add questions manually.`,
-                );
-              } else if (added === 0) {
-                setQuestionsError(
-                  res.message ||
-                    "No AI questions were generated. Click Replenish AI Questions Only or add questions manually.",
-                );
-              } else {
-                setQuestionActionMessage(
-                  res.message || `Generated ${added} questions.`,
-                );
-              }
-              await fetchQuestions(mockTestRes.id, mockTestRes.rounds || []);
+              await fetchQuestions(mockTestRes.id, mockTestRes.rounds || [], {
+                keepStatusMessages: true,
+              });
+              setReplenishFeedback(buildReplenishFeedback(res));
             }
           } catch (genErr) {
             console.error("Auto-replenish after create failed:", genErr);
@@ -303,10 +303,16 @@ export default function MockTestDetailPage() {
     }
   }, []);
 
-  const fetchQuestions = async (mockTestKey: string, roundsHint: any[] = []) => {
+  const fetchQuestions = async (
+    mockTestKey: string,
+    roundsHint: any[] = [],
+    options?: FetchQuestionsOptions,
+  ) => {
     try {
       setLoadingQuestions(true);
-      setQuestionsError(null);
+      if (!options?.keepStatusMessages) {
+        setQuestionsError(null);
+      }
       // Prefer grouped legacy-compatible endpoint
       let data: any;
       try {
@@ -568,32 +574,20 @@ export default function MockTestDetailPage() {
 
     try {
       setReplenishing(true);
-      setQuestionActionMessage(null);
-      setQuestionsError(null);
+      setReplenishFeedback(null);
       const res = await apiClient.fillMockTestQuestions(mockTestId);
-      const added = res.added ?? res.total_questions_added ?? 0;
-      const stillMissingAi = res.still_missing_ai ?? res.still_missing ?? 0;
-      const stillMissingManual = res.still_missing_manual ?? 0;
-      const serverMessage =
-        res.message || `AI questions replenished. Added: ${added}.`;
-      const displayMessage = res.cohere_error
-        ? `${serverMessage} (${res.cohere_error})`
-        : serverMessage;
-
-      if (stillMissingAi > 0 && added === 0) {
-        setQuestionsError(displayMessage);
-        setQuestionActionMessage(null);
-      } else if (stillMissingAi > 0 || stillMissingManual > 0) {
-        setQuestionActionMessage(displayMessage);
-        setQuestionsError(null);
-      } else {
-        setQuestionActionMessage(displayMessage);
-        setQuestionsError(null);
-      }
-      fetchQuestions(mockTestId, mockTest?.rounds || []);
+      await fetchQuestions(mockTestId, mockTest?.rounds || [], {
+        keepStatusMessages: true,
+      });
+      setReplenishFeedback(buildReplenishFeedback(res));
     } catch (error) {
       console.error("Error replenishing questions:", error);
-      setQuestionsError(getErrorMessage(error, "Error replenishing questions"));
+      setReplenishFeedback({
+        type: "error",
+        text: sanitizeReplenishDisplayMessage(
+          getErrorMessage(error, "Error replenishing questions"),
+        ),
+      });
     } finally {
       setReplenishing(false);
     }
@@ -890,14 +884,19 @@ export default function MockTestDetailPage() {
               </div>
             </div>
 
+            <ReplenishFeedbackBanner
+              feedback={replenishFeedback}
+              onDismiss={() => setReplenishFeedback(null)}
+            />
+
             {questionActionMessage && (
-              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-200">
                 {questionActionMessage}
               </div>
             )}
 
             {questionsError && (
-              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                 {questionsError}
               </div>
             )}

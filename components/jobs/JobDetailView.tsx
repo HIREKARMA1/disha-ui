@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft,
   Banknote,
   Briefcase,
   Building2,
   Calendar,
   CheckCircle,
-  Download,
+  Clock,
+  // Download,
   ExternalLink,
   Globe,
   Loader2,
@@ -468,7 +468,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
+      <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[#F5F7FB] dark:bg-[#0a0c14]">
         <DishaTopBar showSearch={false} />
         <div className="flex flex-grow items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
@@ -479,7 +479,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
 
   if (!job || error) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
+      <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[#F5F7FB] dark:bg-[#0a0c14]">
         <DishaTopBar showSearch={false} />
         <div className="flex flex-grow flex-col items-center justify-center gap-3 px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Job not found</h1>
@@ -495,7 +495,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const skills = Array.isArray(job.skills_required) ? job.skills_required : []
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[#F5F7FB] dark:bg-[#0a0c14]">
       <DishaTopBar showSearch={false} />
 
       <div className="mx-auto w-full max-w-6xl flex-grow px-4 pb-28 pt-6 sm:px-6 lg:px-8">
@@ -509,14 +509,6 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
           <span>/</span>
           <span className="truncate font-medium text-gray-900 dark:text-white">{job.title}</span>
         </nav>
-
-        <button
-          type="button"
-          onClick={() => router.push('/jobs')}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-500"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Jobs
-        </button>
 
         {/* Hero */}
         <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-white/10 dark:bg-[#151b2b]">
@@ -574,6 +566,25 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
             <Meta icon={MapPin} label="Location" value={locationLabel} />
           </div>
 
+          {(job.ctc_with_probation?.trim() || job.ctc_after_probation?.trim()) && (
+            <div className="grid gap-3 border-b border-gray-100 px-5 py-4 dark:border-white/10 sm:grid-cols-2 sm:px-6">
+              {job.ctc_with_probation?.trim() && (
+                <Meta
+                  icon={Banknote}
+                  label="Stipend during probation"
+                  value={job.ctc_with_probation.trim()}
+                />
+              )}
+              {job.ctc_after_probation?.trim() && (
+                <Meta
+                  icon={Clock}
+                  label="Probation time"
+                  value={job.ctc_after_probation.trim()}
+                />
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 p-5 sm:p-6">
             <Button
               onClick={handleApply}
@@ -583,20 +594,22 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               <CheckCircle className="mr-2 h-4 w-4" />
               {applyLabel}
             </Button>
+            {/* Download PDF hidden on the public job page.
             {canDownloadPdf && (
               <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloadingPDF}>
                 <Download className="mr-2 h-4 w-4" />
                 {isDownloadingPDF ? 'Generating…' : 'Download PDF'}
               </Button>
             )}
+            */}
             <Button variant="outline" onClick={handleShare}>
               <Share2 className="mr-2 h-4 w-4" /> Share
             </Button>
           </div>
         </section>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="space-y-6">
+        <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0 space-y-6">
             {skills.length > 0 && (
               <Section title="Skills">
                 <div className="flex flex-wrap gap-2">
@@ -806,13 +819,15 @@ function Meta({
   value: string
 }) {
   return (
-    <div className="flex items-start gap-2.5">
-      <div className="mt-0.5 rounded-lg bg-primary-50 p-2 dark:bg-primary-900/30">
+    <div className="flex min-w-0 items-start gap-2.5">
+      <div className="mt-0.5 shrink-0 rounded-lg bg-primary-50 p-2 dark:bg-primary-900/30">
         <Icon className="h-4 w-4 text-primary-600 dark:text-primary-400" />
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm font-semibold text-gray-900 dark:text-white">{value}</p>
+        <p className="break-words text-sm font-semibold text-gray-900 [overflow-wrap:anywhere] dark:text-white">
+          {value}
+        </p>
       </div>
     </div>
   )
@@ -829,7 +844,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Prose({ text }: { text: string }) {
   return (
-    <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+    <div className="max-w-full whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700 [overflow-wrap:anywhere] dark:text-gray-300">
       {text}
     </div>
   )

@@ -47,6 +47,7 @@ export interface PublicExamBrief {
   total_duration_minutes: number
   total_questions: number
   round_count: number
+  screen_sharing_required?: boolean
   rounds: Array<{
     id: string
     round_number: number

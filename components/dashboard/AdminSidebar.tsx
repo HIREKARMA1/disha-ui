@@ -11,6 +11,7 @@ import {
     Settings,
     BarChart3,
     Calendar,
+    Presentation,
     FileText,
     X,
     LogOut,
@@ -28,6 +29,7 @@ import {
     School,
     FileCheck,
     ShieldCheck,
+    ImageIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -103,6 +105,12 @@ const navSections: NavSection[] = [
                 description: 'Manage corporates',
             },
             {
+                label: 'Partner logos',
+                href: '/dashboard/admin/partner-logos',
+                icon: ImageIcon,
+                description: 'Homepage branding review',
+            },
+            {
                 label: 'Jobs',
                 href: '/dashboard/admin/jobs',
                 icon: Briefcase,
@@ -131,6 +139,12 @@ const navSections: NavSection[] = [
                 href: '/dashboard/admin/events',
                 icon: Calendar,
                 description: 'Manage events',
+            },
+            {
+                label: 'Campus Drive',
+                href: '/dashboard/admin/campus-drives',
+                icon: Presentation,
+                description: 'Manage campus drive programs',
             },
             {
                 label: 'Practice Tests',

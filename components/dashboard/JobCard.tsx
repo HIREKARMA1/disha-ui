@@ -86,6 +86,8 @@ interface JobCardProps {
     onSelect?: () => void
     /** Quieter layout on small screens (hide secondary badges) */
     compactMobile?: boolean
+    /** Keep View and remove Apply, used when a campus drive hides registration. */
+    hideApply?: boolean
 }
 
 export function JobCard({
@@ -99,6 +101,7 @@ export function JobCard({
     selected = false,
     onSelect,
     compactMobile = false,
+    hideApply = false,
 }: JobCardProps) {
     const { isSaved, toggle: toggleSaved } = useSavedJobs(job?.id)
     const [showShareModal, setShowShareModal] = useState(false)
@@ -523,6 +526,7 @@ export function JobCard({
                                 <Eye className="mr-1 h-3.5 w-3.5" />
                                 View
                             </Button>
+                            {!hideApply && (
                             <Button
                                 onClick={onApply}
                                 disabled={!canApply() || isApplying}
@@ -546,6 +550,7 @@ export function JobCard({
                                     applyButtonLabel()
                                 )}
                             </Button>
+                            )}
                         </div>
                     </div>
 

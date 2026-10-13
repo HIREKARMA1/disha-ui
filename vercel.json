@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/internal/job-description-pdf/route.js": {
+      "maxDuration": 60
+    }
+  }
+}

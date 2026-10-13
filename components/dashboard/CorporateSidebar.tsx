@@ -18,6 +18,7 @@ import {
     Layers,
     MoreHorizontal,
     Headphones,
+    Presentation,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -53,6 +54,12 @@ const navItems: NavItem[] = [
         href: '/dashboard/corporate/jobs',
         icon: Briefcase,
         description: 'Manage job postings',
+    },
+    {
+        label: 'Campus Drives',
+        href: '/campus-drives',
+        icon: Presentation,
+        description: 'Published campus programs',
     },
     {
         label: 'Applications',

@@ -15,6 +15,7 @@ import {
     // Brain, // used by hidden Practice nav item
     ClipboardList,
     Calendar,
+    Presentation,
     MoreHorizontal,
     Headphones,
 } from 'lucide-react'
@@ -62,12 +63,13 @@ const navItems: NavItem[] = [
         mobilePrimary: true,
         openInNewTab: true,
     },
-    {
-        label: 'Campus Drive',
-        href: '/dashboard/student/jobs',
-        icon: Search,
-        description: 'Campus opportunities',
-    },
+    // Temporarily hidden from Student navigation — keep for easy re-enable
+    // {
+    //     label: 'Campus Drive',
+    //     href: '/dashboard/student/jobs',
+    //     icon: Search,
+    //     description: 'Campus opportunities',
+    // },
     {
         label: 'Applications',
         href: '/dashboard/student/applications',
@@ -105,6 +107,13 @@ const navItems: NavItem[] = [
         href: '/events',
         icon: Calendar,
         description: 'Workshops & events',
+        openInNewTab: true,
+    },
+    {
+        label: 'Campus Drives',
+        href: '/campus-drives',
+        icon: Presentation,
+        description: 'Published campus programs',
         openInNewTab: true,
     },
     // Temporarily hidden from Student navigation — keep for easy re-enable

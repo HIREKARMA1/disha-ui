@@ -44,6 +44,10 @@ import {
     buildDocumentList,
 } from '@/components/corporate/CorporateProfileEditors'
 import { parseCorpExtMeta } from '@/lib/corporateProfileMeta'
+import {
+    partnerBrandingService,
+    type CorporateBrandingStatus,
+} from '@/services/partnerBrandingService'
 
 export function CorporateProfile() {
     const [profile, setProfile] = useState<CorporateProfile | null>(null)
@@ -57,6 +61,7 @@ export function CorporateProfile() {
         imageUrl: '',
         altText: '',
     })
+    const [brandingStatus, setBrandingStatus] = useState<CorporateBrandingStatus | null>(null)
 
     const profileSections = [
         {
@@ -86,6 +91,12 @@ export function CorporateProfile() {
             setError(null)
             const profileData = await corporateProfileService.getProfile()
             setProfile(profileData)
+            try {
+                const status = await partnerBrandingService.getCorporateBrandingStatus()
+                setBrandingStatus(status)
+            } catch {
+                setBrandingStatus(null)
+            }
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -100,6 +111,12 @@ export function CorporateProfile() {
             const updatedProfile = await corporateProfileService.updateProfile(formData)
             setProfile(updatedProfile)
             setEditing(null)
+            try {
+                const status = await partnerBrandingService.getCorporateBrandingStatus()
+                setBrandingStatus(status)
+            } catch {
+                /* ignore */
+            }
             const sectionName = profileSections.find((s) => s.id === sectionId)?.title || 'Profile'
             toast.success(`${sectionName} updated successfully!`)
         } catch (err: any) {
@@ -192,9 +209,15 @@ export function CorporateProfile() {
         </button>
     )
 
-    const handleSectionSaved = (updated: CorporateProfile) => {
+    const handleSectionSaved = async (updated: CorporateProfile) => {
         setProfile(updated)
         setEditing(null)
+        try {
+            const status = await partnerBrandingService.getCorporateBrandingStatus()
+            setBrandingStatus(status)
+        } catch {
+            /* ignore */
+        }
     }
 
     const documentList = buildDocumentList(profile, extMeta.documents)
@@ -292,6 +315,33 @@ export function CorporateProfile() {
                                 </button>
                             )}
                         </div>
+                        {profile.company_logo && brandingStatus && brandingStatus.homepage_status !== 'none' && (
+                            <div className="flex-1 min-w-0 space-y-1.5 text-sm">
+                                <p className="text-gray-600 dark:text-gray-400">
+                                    <span className="font-medium text-gray-900 dark:text-white">Profile logo:</span> saved
+                                    for jobs and your company page.
+                                </p>
+                                <p className="flex flex-wrap items-center gap-2">
+                                  <span className="font-medium text-gray-900 dark:text-white">Homepage partners strip:</span>
+                                  {brandingStatus.visible_on_homepage ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 text-xs font-semibold">
+                                      <CheckCircle className="w-3 h-3" /> Live
+                                    </span>
+                                  ) : brandingStatus.homepage_status === 'pending' ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-xs font-semibold">
+                                      Pending admin review
+                                    </span>
+                                  ) : brandingStatus.homepage_status === 'rejected' ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-xs font-semibold">
+                                      <AlertCircle className="w-3 h-3" /> Not approved
+                                    </span>
+                                  ) : null}
+                                </p>
+                                {brandingStatus.homepage_status === 'rejected' && brandingStatus.rejection_reason && (
+                                  <p className="text-xs text-red-600 dark:text-red-400">{brandingStatus.rejection_reason}</p>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex-1 min-w-0 text-center sm:text-left">
                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">

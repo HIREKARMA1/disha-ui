@@ -34,7 +34,7 @@ function JobsPageContent() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
+        <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[#F5F7FB] dark:bg-[#0a0c14]">
             <DishaTopBar showSearch={false} />
             <div className="container mx-auto max-w-[1600px] flex-grow px-4 py-8 pb-24 sm:px-6 lg:px-8">
                 <AllJobs />

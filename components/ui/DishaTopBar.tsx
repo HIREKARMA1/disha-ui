@@ -60,22 +60,43 @@ export function DishaTopBar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full border-b border-gray-200 bg-white',
+        'sticky top-0 z-50 w-full max-w-[100vw] border-b border-gray-200 bg-white',
         'dark:border-[#1A2233] dark:bg-[rgba(10,13,20,0.85)] dark:backdrop-blur-[10px]'
       )}
     >
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-4 lg:h-14 lg:flex-nowrap lg:gap-4 lg:px-6 lg:py-0">
-        <BrandLogo href="/" priority compact className="shrink-0" />
+      <div
+        className={cn(
+          'mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6',
+          showSearch
+            ? cn(
+                'grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2 gap-y-2 py-2',
+                'lg:flex lg:h-14 lg:flex-nowrap lg:items-center lg:gap-4 lg:py-0'
+              )
+            : 'flex h-12 min-w-0 items-center justify-between gap-2 py-2 sm:h-14 sm:gap-3 lg:h-14 lg:py-0'
+        )}
+      >
+        <BrandLogo
+          href="/"
+          priority
+          compact
+          className={cn(
+            'shrink-0',
+            showSearch && 'col-start-1 row-start-1 justify-self-start lg:order-1'
+          )}
+        />
 
         {showSearch ? (
-          <div className="order-3 min-w-0 w-full lg:order-none lg:flex-1">{searchField}</div>
+          <>
+            <div className="col-start-2 row-start-1 justify-self-end lg:order-3 lg:shrink-0">
+              <DishaAuthActions />
+            </div>
+            <div className="col-span-2 row-start-2 min-w-0 w-full lg:order-2 lg:col-auto lg:row-auto lg:max-w-xl lg:flex-1 lg:px-2 xl:max-w-2xl">
+              {searchField}
+            </div>
+          </>
         ) : (
-          <div className="hidden min-w-0 flex-1 lg:block" />
-        )}
-
-        <div className="ml-auto">
           <DishaAuthActions />
-        </div>
+        )}
       </div>
     </header>
   )
