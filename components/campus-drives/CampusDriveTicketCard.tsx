@@ -6,7 +6,7 @@ import { montserrat } from '@/lib/fonts/montserrat'
 
 import styles from './CampusDriveTicketCard.module.css'
 
-export type CampusDriveCardStatus = 'live' | 'open' | 'closed'
+export type CampusDriveCardStatus = 'live' | 'open' | 'upcoming' | 'closed'
 
 function driveDateParts(iso?: string) {
   if (!iso?.trim()) return null
@@ -77,7 +77,10 @@ export function CampusDriveTicketCard({
   const showImg = Boolean(imageSrc?.trim()) && !imgFailed
   const dateParts = driveDateParts(dateIso)
   const isOpen = status === 'live' || status === 'open'
+  const isUpcoming = status === 'upcoming'
   const registerDisabled = status === 'closed'
+  const tagLabel = isUpcoming ? 'UPCOMING' : isOpen ? 'OPEN' : 'CLOSED'
+  const tagClass = isUpcoming ? styles.dtTagUpcoming : isOpen ? styles.dtTagOpen : ''
 
   const dateAria = dateParts
     ? `Drive date ${dateParts.day} ${dateParts.month} ${dateParts.year}`
@@ -106,8 +109,8 @@ export function CampusDriveTicketCard({
           </div>
         )}
         {status ? (
-          <span className={`${styles.dtTag} ${isOpen ? styles.dtTagOpen : ''}`}>
-            {isOpen ? 'OPEN' : 'CLOSED'}
+          <span className={`${styles.dtTag} ${tagClass}`}>
+            {tagLabel}
           </span>
         ) : null}
       </div>

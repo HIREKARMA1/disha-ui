@@ -21,6 +21,10 @@ interface ShareJobModalProps {
   isOpen: boolean
   onClose: () => void
   job: ShareJobModalJob | null
+  /** Public page to share. Defaults to the job detail URL. */
+  shareUrl?: string
+  /** Wording in the shared message. Defaults to a job opportunity. */
+  shareKind?: 'job' | 'drive'
 }
 
 function getAbsoluteJobUrl(job: ShareJobModalJob): string {
@@ -59,7 +63,21 @@ function LinkedInIcon({ className }: { className?: string }) {
  * Share Job popup for students — X, WhatsApp, LinkedIn, Email, Copy Link.
  * Portaled to document.body to avoid card hover/re-render flicker.
  */
-export function ShareJobModal({ isOpen, onClose, job }: ShareJobModalProps) {
+function resolveShareUrl(job: ShareJobModalJob, shareUrl?: string) {
+  if (!shareUrl) return getAbsoluteJobUrl(job)
+  if (/^https?:\/\//i.test(shareUrl)) return shareUrl
+  const path = shareUrl.startsWith('/') ? shareUrl : `/${shareUrl}`
+  if (typeof window !== 'undefined') return `${window.location.origin}${path}`
+  return path
+}
+
+export function ShareJobModal({
+  isOpen,
+  onClose,
+  job,
+  shareUrl: shareUrlOverride,
+  shareKind = 'job',
+}: ShareJobModalProps) {
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
   const onCloseRef = useRef(onClose)
@@ -112,9 +130,12 @@ export function ShareJobModal({ isOpen, onClose, job }: ShareJobModalProps) {
     (job?.corporate_name && String(job.corporate_name)) ||
     'Company'
 
-  const shareUrl = job ? getAbsoluteJobUrl(job) : ''
-  const shareTitle = job?.title || 'Job opportunity'
-  const shareText = `Check out this job opportunity: ${shareTitle} at ${companyName}`
+  const shareUrl = job ? resolveShareUrl(job, shareUrlOverride) : ''
+  const shareTitle = job?.title || (shareKind === 'drive' ? 'Campus drive' : 'Job opportunity')
+  const shareText =
+    shareKind === 'drive'
+      ? `Check out this campus drive: ${shareTitle} at ${companyName}`
+      : `Check out this job opportunity: ${shareTitle} at ${companyName}`
 
   const openExternal = useCallback((url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer')

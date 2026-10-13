@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowUpRight, Eye, Check } from 'lucide-react'
@@ -10,6 +10,9 @@ import type { CampusDriveDetail } from '@/types/campusDrive'
 import type { Job } from '@/components/jobs/AllJobs'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
+import { CompanyLogo } from '@/components/campus-drives/CompanyLogo'
+import { ShareJobModal } from '@/components/jobs/ShareJobModal'
+import { campusDriveModeLabel, campusDriveVenueFallback } from '@/lib/utils/campusDriveMode'
 
 interface ParsedJob {
   id: string
@@ -111,7 +114,7 @@ function parseListItems(value: unknown): string[] {
   return []
 }
 
-export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
+export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDriveDetail; wide?: boolean }) {
   const router = useRouter()
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set())
@@ -129,12 +132,14 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
   // Core metadata
   const title = drive.title || 'Campus Recruitment Drive'
   const organizer = drive.organizer_name || 'Organizer'
-  const bannerUrl = drive.banner_url || ''
   const logoUrl = drive.organizer_logo_url || ''
+  const [shareOpen, setShareOpen] = useState(false)
+  const driveSharePath = `/campus-drives/${encodeURIComponent(drive.slug || drive.id)}`
   const categoryLabel = drive.category ? cleanText(drive.category).replace(/_/g, ' ') : 'Campus Drive'
-  const modeLabel = drive.mode ? (drive.mode.toLowerCase() === 'online' ? 'Online' : drive.mode.toLowerCase() === 'hybrid' ? 'Hybrid' : 'Offline') : 'Offline'
-  const venue = drive.venue || (drive.mode?.toLowerCase() === 'online' ? 'Online' : 'Main Campus')
-  const website = drive.organizer_website || drive.event_link || ''
+  const modeLabel = campusDriveModeLabel(drive.mode) || 'Oncampus'
+  const venue = drive.venue || campusDriveVenueFallback(drive.mode)
+  const rawWebsite = (drive.organizer_website || drive.event_link || '').trim()
+  const website = rawWebsite && !/^https?:\/\//i.test(rawWebsite) ? `https://${rawWebsite}` : rawWebsite
 
   // Dates
   const startDate = drive.event_start_date
@@ -390,37 +395,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
     })
   }, [regStartDate, regEndDate, startDate, endDate, applyByFormatted, driveDateFormatted])
 
-  // Scrollspy
-  useEffect(() => {
-    const sectionIds = ['jobs', 'overview', 'rounds', 'rewards', 'faq', 'about']
-    const handleScroll = () => {
-      const scrollY = window.scrollY
-      for (const id of sectionIds) {
-        const el = document.getElementById(id)
-        if (el) {
-          const top = el.offsetTop - 120
-          const height = el.offsetHeight
-          if (scrollY >= top && scrollY < top + height) {
-            setActiveTab(id)
-            break
-          }
-        }
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const handleShare = async () => {
-    try {
-      if (typeof window !== 'undefined') {
-        await navigator.clipboard.writeText(window.location.href)
-        showToast('Link copied to clipboard')
-      }
-    } catch {
-      showToast('Copy the page URL to share')
-    }
+  const handleShare = () => {
+    setShareOpen(true)
   }
 
   const handleToggleSaveJob = (id: string) => {
@@ -446,6 +422,31 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
     }, 400)
   }
 
+  const nowMs = Date.now()
+  const regStartMs = regStartDate ? Date.parse(regStartDate) : NaN
+  const regEndMs = regEndDate ? Date.parse(regEndDate) : NaN
+  const registrationPhase: 'open' | 'closed' | 'soon' =
+    (Number.isFinite(regEndMs) && nowMs > regEndMs) || !isOpen
+      ? 'closed'
+      : Number.isFinite(regStartMs) && nowMs < regStartMs
+        ? 'soon'
+        : 'open'
+  const daysLeft = Number.isFinite(regEndMs)
+    ? Math.max(0, Math.ceil((regEndMs - nowMs) / 86400000))
+    : null
+  const registrationProgress =
+    Number.isFinite(regStartMs) && Number.isFinite(regEndMs) && regEndMs > regStartMs
+      ? Math.min(100, Math.max(0, ((nowMs - regStartMs) / (regEndMs - regStartMs)) * 100))
+      : registrationPhase === 'closed'
+        ? 100
+        : 0
+  const registrationLabel =
+    registrationPhase === 'closed'
+      ? 'Registration closed'
+      : registrationPhase === 'soon'
+        ? 'Registration opens soon'
+        : 'Registration open'
+
   const summaryText = cleanText(drive.short_description || drive.subtitle) ||
     `${organizer} is conducting a campus recruitment drive for multiple opportunities. Register before ${applyByFormatted} to participate.`
   const longDescription = cleanText(drive.long_description || drive.short_description)
@@ -453,19 +454,14 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
 
   return (
     <div className="campus-drive-page">
-      <div className="page">
-        <div className="layout">
+      <div className={wide ? 'page page-wide' : 'page'}>
+        <div className={wide ? 'layout layout-wide' : 'layout'}>
           <main>
             {/* 2. Main Title Card */}
             <header className="card title">
+              <div className="title-body">
               <div className="t-top">
-                <div className="logo">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={`${organizer} logo`} />
-                  ) : (
-                    <div className="logo-placeholder">{organizer.charAt(0)}</div>
-                  )}
-                </div>
+                <CompanyLogo src={logoUrl || undefined} name={organizer} />
                 <div className="t-meta">
                   <h1>{title}</h1>
                   <p className="org">Hosted by {organizer}</p>
@@ -530,46 +526,48 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
 
               {/* Action Buttons */}
               <div className="actions">
-                <a className="btn primary" href="#jobs">
+                <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
                   View open roles
-                </a>
+                </button>
                 <button type="button" className="btn" onClick={handleShare}>
                   Share drive
                 </button>
                 {website ? (
                   <a className="btn" href={website} target="_blank" rel="noopener noreferrer">
-                    Visit {website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '')}
-                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    Visit Company Website
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
                   </a>
                 ) : null}
+              </div>
               </div>
             </header>
 
             {/* 3. Sticky Navigation Tabs */}
-            <nav className="tabs" aria-label="Page sections">
-              <a href="#jobs" className={activeTab === 'jobs' ? 'on' : ''}>
+            <nav className="tabs" aria-label="Page sections" role="tablist">
+              <button type="button" role="tab" aria-selected={activeTab === 'jobs'} className={activeTab === 'jobs' ? 'on' : ''} onClick={() => setActiveTab('jobs')}>
                 Jobs <em>{parsedJobs.length}</em>
-              </a>
-              <a href="#overview" className={activeTab === 'overview' ? 'on' : ''}>
+              </button>
+              <button type="button" role="tab" aria-selected={activeTab === 'overview'} className={activeTab === 'overview' ? 'on' : ''} onClick={() => setActiveTab('overview')}>
                 Overview
-              </a>
-              <a href="#rounds" className={activeTab === 'rounds' ? 'on' : ''}>
+              </button>
+              <button type="button" role="tab" aria-selected={activeTab === 'rounds'} className={activeTab === 'rounds' ? 'on' : ''} onClick={() => setActiveTab('rounds')}>
                 Rounds
-              </a>
-              <a href="#rewards" className={activeTab === 'rewards' ? 'on' : ''}>
-                Rewards
-              </a>
-              <a href="#faq" className={activeTab === 'faq' ? 'on' : ''}>
+              </button>
+              <button type="button" role="tab" aria-selected={activeTab === 'rewards'} className={activeTab === 'rewards' ? 'on' : ''} onClick={() => setActiveTab('rewards')}>
+                Perks & Benefits
+              </button>
+              <button type="button" role="tab" aria-selected={activeTab === 'faq'} className={activeTab === 'faq' ? 'on' : ''} onClick={() => setActiveTab('faq')}>
                 FAQs
-              </a>
+              </button>
               {aboutOrganizerText ? (
-                <a href="#about" className={activeTab === 'about' ? 'on' : ''}>
+                <button type="button" role="tab" aria-selected={activeTab === 'about'} className={activeTab === 'about' ? 'on' : ''} onClick={() => setActiveTab('about')}>
                   About
-                </a>
+                </button>
               ) : null}
             </nav>
 
             {/* 4. Jobs Section (FIRST) */}
+            {activeTab === 'jobs' ? (
             <section id="jobs">
               <h2>Campus drive jobs</h2>
 
@@ -756,9 +754,10 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
                 })}
               </div>
             </section>
+            ) : null}
 
-            {/* 5. Overview Section */}
-            <section id="overview">
+            {activeTab === 'overview' ? (
+            <section id="overview" className="stack">
               <div className="card block">
                 <h2>Description</h2>
                 <p>
@@ -770,7 +769,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
               </div>
 
               {hasCustomEligibility || defaultEligibilityItems.length > 0 ? (
-                <div className="card block" style={{ marginTop: '14px' }}>
+                <div className="card block">
                   <h2>Eligibility</h2>
                   {hasCustomEligibility ? (
                     <div
@@ -792,9 +791,9 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
                 </div>
               ) : null}
             </section>
+            ) : null}
 
-            {/* 6. Selection Rounds Section */}
-            {selectionRounds.length > 0 ? (
+            {activeTab === 'rounds' && selectionRounds.length > 0 ? (
               <section id="rounds">
                 <div className="card block">
                   <h2>Selection rounds</h2>
@@ -802,10 +801,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
                     {selectionRounds.map((r, i) => (
                       <li key={i}>
                         <b>{i + 1}</b>
-                        <div>
-                          <strong>{r.title}</strong>
-                          <span>{r.desc}</span>
-                        </div>
+                        <strong>{r.title}</strong>
+                        <span>{r.desc}</span>
                       </li>
                     ))}
                   </ol>
@@ -814,9 +811,9 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
             ) : null}
 
             {/* 7. Rewards Section */}
-            {rewardsList.length > 0 ? (
+            {activeTab === 'rewards' && rewardsList.length > 0 ? (
               <section id="rewards">
-                <h2>Rewards</h2>
+                <h2>Perks & Benefits</h2>
                 <div className="rewards">
                   {rewardsList.map((rw, i) => (
                     <div key={i} className="card reward">
@@ -830,7 +827,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
             ) : null}
 
             {/* 8. FAQs Section */}
-            {faqsList.length > 0 ? (
+            {activeTab === 'faq' && faqsList.length > 0 ? (
               <section id="faq">
                 <h2>FAQs</h2>
                 <div className="faq-list">
@@ -850,7 +847,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
             ) : null}
 
             {/* 9. About Organizer Section */}
-            {aboutOrganizerText ? (
+            {activeTab === 'about' && aboutOrganizerText ? (
               <section id="about">
                 <div className="card block">
                   <h2>About the organizer</h2>
@@ -868,6 +865,29 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
 
           {/* 10. Sticky Sidebar */}
           <aside>
+            <div className="card side apply-card">
+              <div className={`reg-pill ${registrationPhase}`}>
+                <span className="reg-dot" aria-hidden />
+                {registrationLabel}
+              </div>
+              {daysLeft !== null && registrationPhase !== 'closed' ? (
+                <div className="days-left">
+                  <strong>{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</strong>
+                  <span>to register · closes {applyByFormatted}</span>
+                </div>
+              ) : null}
+              <div className="reg-track" aria-hidden>
+                <span style={{ width: `${registrationProgress}%` }} />
+              </div>
+              <button
+                type="button"
+                className="btn primary apply-main"
+                disabled={registrationPhase === 'closed'}
+                onClick={() => setActiveTab('jobs')}
+              >
+                {registrationPhase === 'closed' ? 'Registration closed' : 'View open roles'}
+              </button>
+            </div>
             <div className="card side">
               <h3>Key dates</h3>
               <ul className="tl">
@@ -938,11 +958,15 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
         }
 
         .page {
-          max-width: 1120px;
+          max-width: 1280px;
           width: 100%;
           margin: 0 auto;
-          padding: 24px 20px 0;
+          padding: 24px 16px 0;
           box-sizing: border-box;
+        }
+
+        .page-wide {
+          max-width: 1480px;
         }
 
         .layout main {
@@ -965,14 +989,19 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
 
         .layout {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 316px;
-          gap: 20px;
+          grid-template-columns: 1fr;
+          gap: 32px;
           align-items: start;
         }
 
         /* Title card */
         .title {
-          padding: 22px;
+          padding: 0;
+          overflow: hidden;
+        }
+
+        .title-body {
+          padding: 28px;
         }
 
         .t-top {
@@ -985,13 +1014,17 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           width: 76px;
           height: 76px;
           flex: none;
-          border: 1px solid var(--line);
+          border: 4px solid #fff;
           border-radius: 16px;
           overflow: hidden;
           background: #fff;
+          box-shadow: 0 8px 18px rgba(15, 35, 64, 0.12);
           display: flex;
           align-items: center;
           justify-content: center;
+          margin-top: -26px;
+          position: relative;
+          z-index: 1;
         }
 
         .logo img {
@@ -1159,7 +1192,7 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
         /* Tabs */
         .tabs {
           position: sticky;
-          top: env(safe-area-inset-top, 0px);
+          top: 64px;
           z-index: 20;
           background: rgba(246, 248, 251, 0.94);
           backdrop-filter: blur(8px);
@@ -1170,18 +1203,26 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           overflow-x: auto;
         }
 
-        .tabs a {
+        .tabs button {
           padding: 13px 14px;
           font-size: 14px;
           font-weight: 600;
           color: var(--muted);
-          text-decoration: none;
-          border-bottom: 2px solid transparent;
+          background: none;
+          border: none;
+          border-bottom: 3px solid transparent;
+          font-family: inherit;
+          cursor: pointer;
           white-space: nowrap;
           transition: color 0.15s, border-color 0.15s;
         }
 
-        .tabs a.on {
+        .tabs button:focus-visible {
+          outline: 2px solid var(--cyan);
+          outline-offset: 2px;
+        }
+
+        .tabs button.on {
           color: var(--navy);
           border-color: var(--navy);
         }
@@ -1198,6 +1239,12 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
 
         section {
           padding-top: 22px;
+          scroll-margin-top: 128px;
+        }
+
+        .stack {
+          display: grid;
+          gap: 20px;
         }
 
         /* Notice */
@@ -1555,7 +1602,8 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           padding: 0;
           list-style: none;
           display: grid;
-          gap: 8px;
+          grid-template-columns: 1fr;
+          gap: 14px 40px;
         }
 
         .tick li {
@@ -1576,32 +1624,16 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           margin: 0;
           padding: 0;
           list-style: none;
+          display: grid;
+          gap: 24px;
         }
 
         .steps li {
-          display: grid;
-          grid-template-columns: 30px 1fr;
-          gap: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
           position: relative;
-          padding-bottom: 18px;
-        }
-
-        .steps li:last-child {
-          padding-bottom: 0;
-        }
-
-        .steps li::before {
-          content: '';
-          position: absolute;
-          left: 14px;
-          top: 30px;
-          bottom: 2px;
-          width: 2px;
-          background: var(--line);
-        }
-
-        .steps li:last-child::before {
-          display: none;
+          min-width: 0;
         }
 
         .steps b {
@@ -1715,10 +1747,93 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
 
         /* Sidebar */
         aside {
-          position: sticky;
-          top: 76px;
+          position: static;
+          display: grid;
+          gap: 20px;
+          order: -1;
+        }
+
+        .apply-card {
           display: grid;
           gap: 14px;
+        }
+
+        .reg-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          width: fit-content;
+          border-radius: 999px;
+          padding: 4px 10px;
+          font-size: 12.5px;
+          font-weight: 700;
+        }
+
+        .reg-pill.open {
+          background: var(--green-soft);
+          color: var(--green);
+        }
+
+        .reg-pill.soon {
+          background: var(--amber-soft);
+          color: var(--amber);
+        }
+
+        .reg-pill.closed {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+
+        .reg-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+
+        .reg-pill.open .reg-dot {
+          animation: regPulse 1.6s ease-out infinite;
+        }
+
+        @keyframes regPulse {
+          0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
+          100% { box-shadow: 0 0 0 8px rgba(22, 163, 74, 0); }
+        }
+
+        .days-left strong {
+          display: block;
+          font-size: 22px;
+          font-weight: 800;
+          color: var(--ink);
+          line-height: 1.2;
+        }
+
+        .days-left span {
+          color: var(--muted);
+          font-size: 13px;
+        }
+
+        .reg-track {
+          height: 8px;
+          border-radius: 999px;
+          background: #e8edf3;
+          overflow: hidden;
+        }
+
+        .reg-track span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: var(--navy);
+        }
+
+        .apply-main {
+          width: 100%;
+        }
+
+        .btn:focus-visible {
+          outline: 2px solid var(--cyan);
+          outline-offset: 2px;
         }
 
         .side {
@@ -1841,13 +1956,60 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
           transform: translate(-50%, 0);
         }
 
-        @media (max-width: 900px) {
+        @media (min-width: 640px) {
+          .page {
+            padding-left: 24px;
+            padding-right: 24px;
+          }
+          .tick {
+            grid-template-columns: 1fr 1fr;
+          }
+          .steps {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .page {
+            padding-left: 40px;
+            padding-right: 40px;
+          }
           .layout {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr) 360px;
+          }
+          .layout-wide {
+            grid-template-columns: minmax(0, 1fr) 380px;
           }
           aside {
-            position: static;
+            position: sticky;
+            top: 96px;
+            align-self: start;
+            order: 0;
           }
+        }
+
+        @media (min-width: 1280px) {
+          .layout-wide {
+            gap: 40px;
+          }
+        }
+
+        @media (min-width: 1280px) {
+          .steps {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+          }
+          .steps li:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 14px;
+            left: 42px;
+            right: -12px;
+            height: 2px;
+            background: #e2e8f0;
+          }
+        }
+
+        @media (max-width: 900px) {
           .facts {
             grid-template-columns: 1fr 1fr;
           }
@@ -1857,10 +2019,17 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
         }
 
         @media (max-width: 620px) {
+          aside {
+            order: 0;
+          }
           .page {
             padding: 18px 14px 0;
           }
-          .title,
+          .page-wide {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+          .title-body,
           .job,
           .block {
             padding: 16px 14px;
@@ -1912,10 +2081,23 @@ export function CampusDriveDetailView({ drive }: { drive: CampusDriveDetail }) {
         @media (prefers-reduced-motion: reduce) {
           * {
             transition: none !important;
+            animation: none !important;
             scroll-behavior: auto !important;
           }
         }
       `}</style>
+      <ShareJobModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        shareUrl={driveSharePath}
+        shareKind="drive"
+        job={{
+          id: String(drive.id),
+          title,
+          company_name: organizer,
+          company_logo: logoUrl || null,
+        }}
+      />
     </div>
   )
 }
