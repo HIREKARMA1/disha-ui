@@ -262,11 +262,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
       toast.error('Registration end cannot be earlier than registration start')
       return false
     }
-    if (!form.event_link.trim()) {
-      toast.error('Website URL is required')
-      return false
-    }
-    if (!/^https?:\/\/.+/i.test(form.event_link.trim())) {
+    if (form.event_link.trim() && !/^https?:\/\/.+/i.test(form.event_link.trim())) {
       toast.error('Website URL must be a valid http or https URL')
       return false
     }
@@ -533,15 +529,14 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
               options={[
                 { value: 'virtual', label: 'Virtual' },
                 { value: 'oncampus', label: 'Oncampus' },
-                { value: 'walking', label: 'Walking' },
+                { value: 'walking', label: 'Walkin' },
               ]}
             />
           </div>
           <div className="md:col-span-2">
-            <label className="text-sm font-medium">Website URL *</label>
+            <label className="text-sm font-medium">Website URL</label>
             <Input
               type="url"
-              required
               value={form.event_link}
               onChange={(e) => update('event_link', e.target.value)}
               placeholder="https://example.com"
