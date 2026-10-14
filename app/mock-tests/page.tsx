@@ -35,8 +35,8 @@ function MockTestsPageContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F7FB] dark:bg-[#0a0c14]">
-      <DishaTopBar searchPlaceholder="Search mock tests, jobs, events…" />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-[1600px] pb-24 flex-grow overflow-x-hidden">
+      <DishaTopBar searchPlaceholder="Search practice tests, jobs, events…" />
+      <div className="container mx-auto min-w-0 max-w-[1600px] flex-grow px-4 py-8 pb-24 sm:px-6 lg:px-8">
         <MockTestsCatalog />
       </div>
       <Footer />
