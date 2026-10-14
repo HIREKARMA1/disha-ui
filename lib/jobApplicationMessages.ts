@@ -10,6 +10,7 @@ import {
 } from '@/lib/profileCompletion'
 import { showProfileCompletionToast } from '@/lib/showProfileCompletionToast'
 import { showPremiumRequiredToast } from '@/lib/showPremiumRequiredToast'
+import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import {
   PREMIUM_REQUIRED_MESSAGE,
   PREMIUM_REQUIRED_ASSISTANCE,
@@ -45,7 +46,7 @@ export const PREMIUM_JOB_REQUEST_REJECTED_MESSAGE =
   'Your request to apply for this premium job was rejected.'
 export const JOB_NOT_AVAILABLE_MESSAGE = 'This job is not available for applications.'
 export const PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE =
-  'Not eligible — graduation batch does not meet the job requirements'
+  'Open only to selected batches. Add your graduation year in Profile.'
 
 /**
  * Client-side apply eligibility for university assignment / premium public jobs.
@@ -195,7 +196,47 @@ export function getPassoutBatchApplyEligibility(options: {
     return { canApply: true, reason: null }
   }
 
-  return { canApply: false, reason: PASSOUT_BATCH_NOT_ELIGIBLE_MESSAGE }
+  return {
+    canApply: false,
+    reason: passoutBatchToast(targeted, profileYearLabel(options)),
+  }
+}
+
+function profileYearLabel(options: {
+  studentGraduationYear?: number | string | null
+  studentBatch?: string | null
+}): string | null {
+  if (
+    options.studentGraduationYear !== null &&
+    options.studentGraduationYear !== undefined &&
+    String(options.studentGraduationYear).trim()
+  ) {
+    return formatPassoutBatchLabel(String(options.studentGraduationYear))
+  }
+  if (options.studentBatch && String(options.studentBatch).trim()) {
+    return formatPassoutBatchLabel(String(options.studentBatch))
+  }
+  return null
+}
+
+function passoutBatchToast(targeted: string[], profileYear: string | null): string {
+  const years = [...targeted].sort((a, b) => {
+    const aYear = Number(a)
+    const bYear = Number(b)
+    if (Number.isFinite(aYear) && Number.isFinite(bYear)) return aYear - bYear
+    return a.localeCompare(b)
+  })
+  const labels = years.map((year) => formatPassoutBatchLabel(year))
+  const openTo =
+    labels.length === 1
+      ? `the ${labels[0]} batch`
+      : labels.length === 2
+        ? `the ${labels[0]} and ${labels[1]} batches`
+        : `the ${labels.slice(0, -1).join(', ')}, and ${labels[labels.length - 1]} batches`
+  if (!profileYear) {
+    return `Open only to ${openTo}. Add your graduation year in Profile.`
+  }
+  return `Open only to ${openTo}. Your profile year is ${profileYear}.`
 }
 
 export function isAlreadyAppliedError(message: string | null | undefined): boolean {
@@ -246,6 +287,9 @@ export function normalizeApplyErrorMessage(raw: string | null | undefined): stri
   }
   if (isPremiumJobInterestMessage(raw)) {
     return PREMIUM_JOB_INTEREST_MESSAGE
+  }
+  if (raw.toLowerCase().startsWith('open only to')) {
+    return raw
   }
   if (
     raw.toLowerCase().includes('targeted batch') ||
