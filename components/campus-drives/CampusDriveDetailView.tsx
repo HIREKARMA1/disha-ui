@@ -526,9 +526,9 @@ export function CampusDriveDetailView({ drive, wide = false }: { drive: CampusDr
 
               {/* Action Buttons */}
               <div className="actions">
-                <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
+                {/* <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
                   View open roles
-                </button>
+                </button> */}
                 <button type="button" className="btn" onClick={handleShare}>
                   Share drive
                 </button>

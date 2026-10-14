@@ -143,10 +143,10 @@ export function JobAdditionalInfo({
           {hasSalary ? (
             <div className="space-y-0.5">
               {salaryMin != null && !Number.isNaN(Number(salaryMin)) && (
-                <p>Min Salary: {formatAmountINR(salaryMin)} /Year</p>
+                <p>Min Salary: {formatAmountINR(salaryMin)}{/* /Year */}</p>
               )}
               {salaryMax != null && !Number.isNaN(Number(salaryMax)) && (
-                <p>Max Salary: {formatAmountINR(salaryMax)} /Year</p>
+                <p>Max Salary: {formatAmountINR(salaryMax)}{/* /Year */}</p>
               )}
             </div>
           ) : (
