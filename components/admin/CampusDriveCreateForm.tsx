@@ -11,10 +11,17 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
 import { CampusDriveJobPicker } from '@/components/admin/CampusDriveJobPicker'
+import { CampusDriveCorporateSection } from '@/components/admin/CampusDriveCorporateSection'
 import { campusDriveService, apiErrorMessage } from '@/services/campusDriveService'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import type { FAQItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
-import type { CampusDriveJobSummary, CampusDriveListingStatus, CampusDriveMode, CampusDriveWritePayload } from '@/types/campusDrive'
+import type {
+  CampusDriveCorporateSummary,
+  CampusDriveJobSummary,
+  CampusDriveListingStatus,
+  CampusDriveMode,
+  CampusDriveWritePayload,
+} from '@/types/campusDrive'
 import { campusDriveModeValue } from '@/lib/utils/campusDriveMode'
 import { normalizeRichTextHtml } from '@/lib/sanitizeHtml'
 import { utcIsoToDatetimeLocal } from '@/lib/datetime'
@@ -52,6 +59,7 @@ interface FormState {
   rounds: RoundItem[]
   rewards: RewardItem[]
   jobs: CampusDriveJobSummary[]
+  corporates: CampusDriveCorporateSummary[]
 }
 
 const emptyForm = (): FormState => ({
@@ -85,6 +93,7 @@ const emptyForm = (): FormState => ({
   rounds: [],
   rewards: [],
   jobs: [],
+  corporates: [],
 })
 
 function parseLocal(value: string) {
@@ -196,6 +205,11 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
             salary_currency: job.salary_currency,
             slug: job.slug,
           })),
+          corporates: (drive.corporates || []).map((corporate) => ({
+            id: corporate.id,
+            company_name: corporate.company_name,
+            company_logo: corporate.company_logo || null,
+          })),
         })
       })
       .catch(() => toast.error('Failed to load campus drive'))
@@ -248,11 +262,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
       toast.error('Registration end cannot be earlier than registration start')
       return false
     }
-    if (!form.event_link.trim()) {
-      toast.error('Website URL is required')
-      return false
-    }
-    if (!/^https?:\/\/.+/i.test(form.event_link.trim())) {
+    if (form.event_link.trim() && !/^https?:\/\/.+/i.test(form.event_link.trim())) {
       toast.error('Website URL must be a valid http or https URL')
       return false
     }
@@ -293,6 +303,9 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
   const buildPayload = (): CampusDriveWritePayload => {
     const textOrNull = (value: string) => value.trim() || null
     const ids = form.jobs.map((job) => job.id).filter((id, index, all) => all.indexOf(id) === index)
+    const corporateIds = form.corporates
+      .map((corporate) => corporate.id)
+      .filter((id, index, all) => all.indexOf(id) === index)
     return {
       title: form.title.trim(),
       slug: form.slug.trim() || undefined,
@@ -340,6 +353,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
         sort_order: index,
       })),
       job_ids: ids,
+      corporate_ids: corporateIds,
     }
   }
 
@@ -515,15 +529,14 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
               options={[
                 { value: 'virtual', label: 'Virtual' },
                 { value: 'oncampus', label: 'Oncampus' },
-                { value: 'walking', label: 'Walking' },
+                { value: 'walking', label: 'Walkin' },
               ]}
             />
           </div>
           <div className="md:col-span-2">
-            <label className="text-sm font-medium">Website URL *</label>
+            <label className="text-sm font-medium">Website URL</label>
             <Input
               type="url"
-              required
               value={form.event_link}
               onChange={(e) => update('event_link', e.target.value)}
               placeholder="https://example.com"
@@ -719,6 +732,11 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           ))}
         </CardContent>
       </Card>
+
+      <CampusDriveCorporateSection
+        selected={form.corporates}
+        onChange={(corporates) => update('corporates', corporates)}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

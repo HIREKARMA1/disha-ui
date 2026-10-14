@@ -91,6 +91,57 @@ export class CorporateManagementService {
   }
 
   /**
+   * Create a corporate from Campus Drive admin flow (name + logo).
+   * The admin create API requires email and phone; we generate a unique onboarding email
+   * and a placeholder phone, then attach the uploaded logo via profile update.
+   */
+  async createCorporateWithLogo(companyName: string, logoUrl: string): Promise<CorporateListItem> {
+    const trimmed = companyName.trim()
+    if (!trimmed) {
+      throw new Error('Corporate name is required')
+    }
+    if (!logoUrl.trim()) {
+      throw new Error('Corporate logo is required')
+    }
+
+    const existing = await this.getCorporates(false)
+    const duplicate = existing.corporates.find(
+      (item) => item.company_name.trim().toLowerCase() === trimmed.toLowerCase() && !item.is_archived,
+    )
+    if (duplicate) {
+      throw new Error('A corporate with this name already exists. Select it from the list instead.')
+    }
+
+    const slug = trimmed
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40)
+    const unique = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : String(Date.now())
+    const email = `campus-drive.${slug || 'corp'}.${unique}@onboarding.disha.local`
+    const phone = '9999999999'
+
+    const created = await this.createCorporate({
+      company_name: trimmed,
+      email,
+      phone,
+    })
+    await this.updateCorporate(created.corporate_id, { company_logo: logoUrl })
+
+    return {
+      id: created.corporate_id,
+      company_name: trimmed,
+      email: created.email,
+      phone,
+      verified: false,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      is_archived: false,
+      company_logo: logoUrl,
+    }
+  }
+
+  /**
    * Update corporate profile
    */
   async updateCorporate(corporateId: string, data: UpdateCorporateRequest): Promise<CorporateProfile> {

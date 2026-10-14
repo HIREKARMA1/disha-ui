@@ -5,6 +5,12 @@ export type CampusDriveMode = 'virtual' | 'oncampus' | 'walking'
 export type CampusDrivePublicationStatus = 'draft' | 'published'
 export type CampusDriveListingStatus = 'active' | 'inactive' | 'hidden'
 
+export interface CampusDriveCorporateSummary {
+  id: string
+  company_name: string
+  company_logo?: string | null
+}
+
 export interface CampusDriveJobSummary {
   id: string
   title: string
@@ -40,6 +46,8 @@ export interface CampusDriveListItem {
   visibility_labels?: string[]
   job_count: number
   created_at?: string | null
+  is_registered?: boolean
+  registration_is_open?: boolean
 }
 
 export interface CampusDriveDetail extends CampusDriveListItem {
@@ -59,6 +67,7 @@ export interface CampusDriveDetail extends CampusDriveListItem {
   rounds: RoundItem[]
   rewards: RewardItem[]
   jobs: Job[]
+  corporates?: CampusDriveCorporateSummary[]
   updated_at?: string | null
 }
 
@@ -103,6 +112,58 @@ export interface CampusDriveWritePayload {
   rounds?: RoundItem[]
   rewards?: RewardItem[]
   job_ids?: string[]
+  corporate_ids?: string[]
+}
+
+export interface CampusDriveStatistics {
+  total_campus_drives: number
+  published_count: number
+  draft_count: number
+  upcoming_count: number
+  completed_count: number
+  total_jobs: number
+  total_university_assignments: number
+  total_interest_requests: number
+  drives_by_category: Record<string, number>
+  drives_by_publication_status: Record<string, number>
+  creation_trends: Array<{ month: string; count: number }>
+  top_drives: Array<{ id: string; title: string; job_count: number }>
+}
+
+export interface CampusDriveAnalyticsAvailability {
+  total_views: boolean
+  unique_visitors: boolean
+  registrations: boolean
+  dropouts: boolean
+  completed: boolean
+  certificates_issued: boolean
+  feedback: boolean
+  attendance: boolean
+  daily_page_views: boolean
+}
+
+export interface CampusDriveDailyRegistrationRow {
+  date: string
+  views?: number | null
+  registrations: number
+  interest_requests?: number
+}
+
+export interface CampusDriveAnalytics {
+  campus_drive_id: string
+  title: string
+  publication_status: string
+  availability: CampusDriveAnalyticsAvailability
+  total_views?: number | null
+  unique_visitors?: number | null
+  registrations?: number | null
+  dropouts?: number | null
+  completed?: number | null
+  certificates_issued?: number | null
+  daily_registrations: CampusDriveDailyRegistrationRow[]
+  top_universities: Array<{ name: string; count: number }>
+  top_branches: Array<{ name: string; count: number }>
+  top_locations: Array<{ name: string; count: number }>
 }
 
 export const REGISTRATION_STATUS_LABELS: Record<string, string> = {
