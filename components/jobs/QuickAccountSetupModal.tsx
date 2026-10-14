@@ -71,7 +71,7 @@ interface QuickAccountSetupModalProps {
   onClose: () => void
   onComplete: () => void
   /**
-   * When true, modal cannot be dismissed (no X, Remind me later, backdrop, Escape).
+   * When true, modal cannot be dismissed (no X, Skip, backdrop, Escape).
    * Prefer auto-detect from missing institution (Google new students).
    */
   mandatory?: boolean
@@ -1077,7 +1077,7 @@ export function QuickAccountSetupModal({
                 onClick={step === 0 ? onClose : goBack}
                 disabled={submitting}
               >
-                {step === 0 ? 'Remind me later' : 'Back'}
+                {step === 0 ? 'Skip' : 'Back'}
               </Button>
             )}
 

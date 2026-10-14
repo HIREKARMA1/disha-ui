@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 
 const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-const MAX_SIZE = 5 * 1024 * 1024
+const DEFAULT_MAX_SIZE_MB = 5
 
 interface EventImageUploadProps {
   label: string
@@ -18,6 +18,7 @@ interface EventImageUploadProps {
   onUpload: (file: File) => Promise<void>
   uploading?: boolean
   aspect?: 'banner' | 'logo'
+  maxSizeMb?: number
 }
 
 export function EventImageUpload({
@@ -28,16 +29,18 @@ export function EventImageUpload({
   onUpload,
   uploading = false,
   aspect = 'banner',
+  maxSizeMb = DEFAULT_MAX_SIZE_MB,
 }: EventImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const maxBytes = maxSizeMb * 1024 * 1024
 
   const handleFile = async (file: File) => {
     const type = file.type.toLowerCase()
     if (!ACCEPTED.includes(type) && !file.name.match(/\.(jpe?g|png|webp)$/i)) {
       throw new Error('Only JPG, JPEG, PNG, and WEBP files are allowed')
     }
-    if (file.size > MAX_SIZE) {
-      throw new Error('File size must be less than 5MB')
+    if (file.size > maxBytes) {
+      throw new Error(`File size must be ${maxSizeMb}MB or less`)
     }
     await onUpload(file)
   }
@@ -84,7 +87,7 @@ export function EventImageUpload({
             <>
               <ImageIcon className="w-8 h-8" />
               <span className="text-xs font-medium">Click to upload</span>
-              <span className="text-[10px]">JPG, PNG, WEBP · Max 5MB</span>
+              <span className="text-[10px]">JPG, PNG, WEBP · Max {maxSizeMb}MB</span>
             </>
           )}
         </button>
