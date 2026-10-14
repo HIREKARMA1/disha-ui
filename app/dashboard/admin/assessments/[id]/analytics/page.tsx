@@ -41,7 +41,6 @@ export default function AssessmentAnalyticsPage() {
     const params = useParams()
     const router = useRouter()
     const assessmentId = params.id as string
-
     const [attempts, setAttempts] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
