@@ -545,42 +545,9 @@ export function CampusDriveDetailView({
 
               {/* Action Buttons */}
               <div className="actions">
-                {registerState?.showRegisterAction ? (
-                  registerState.isRegistered ? (
-                    <button type="button" className="btn primary" disabled>
-                      <Check className="h-4 w-4" aria-hidden />
-                      Registered
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn primary"
-                      disabled={
-                        registerState.registering ||
-                        registrationPhase !== 'open' ||
-                        registerState.isRegistered
-                      }
-                      onClick={registerState.onRegister}
-                    >
-                      {registerState.registering
-                        ? 'Registering...'
-                        : registrationPhase === 'soon'
-                          ? 'Registration opens soon'
-                          : registrationPhase === 'closed'
-                            ? 'Registration closed'
-                            : 'Register'}
-                    </button>
-                  )
-                ) : (
-                  <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
-                    View open roles
-                  </button>
-                )}
-                {registerState?.showRegisterAction ? (
-                  <button type="button" className="btn" onClick={() => setActiveTab('jobs')}>
-                    View open roles
-                  </button>
-                ) : null}
+                {/* <button type="button" className="btn primary" onClick={() => setActiveTab('jobs')}>
+                  View open roles
+                </button> */}
                 <button type="button" className="btn" onClick={handleShare}>
                   Share drive
                 </button>

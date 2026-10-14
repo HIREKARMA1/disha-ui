@@ -18,6 +18,7 @@ import {
   LogIn,
   Newspaper,
   Brain,
+  Presentation,
   Search,
   Target,
   User,
@@ -43,6 +44,8 @@ const GUEST_NAV: NavLink[] = [
   { label: 'Opportunities', href: '/', icon: Home },
   { label: 'Jobs', href: '/jobs', icon: Briefcase, openInNewTab: true },
   { label: 'Events', href: '/events', icon: Calendar, openInNewTab: true },
+  { label: 'Campus Drive', href: '/campus-drives', icon: Presentation, openInNewTab: true },
+  { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Practice Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Blogs', href: '/blogs', icon: Newspaper },
   { label: 'Support', href: '/contact', icon: Headphones },
@@ -60,7 +63,7 @@ const GUEST_STUDENT_TOOLS: NavLink[] = [
 const STUDENT_TOOLS: NavLink[] = [
   { label: 'Dashboard', href: '/dashboard/student', icon: LayoutDashboard },
   { label: 'Profile', href: '/dashboard/student/profile', icon: User },
-  { label: 'Campus Drive', href: '/dashboard/student/jobs', icon: Search },
+  { label: 'Jobs', href: '/dashboard/student/jobs', icon: Briefcase },
   { label: 'Applications', href: '/dashboard/student/applications', icon: ClipboardList },
   { label: 'Resume Builder', href: '/dashboard/student/resume-builder', icon: FileText },
   { label: 'Career Align', href: '/dashboard/student/career-align', icon: Target },
@@ -291,7 +294,7 @@ export function HubSidebarDesktop() {
           )}
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <HubSidebarNav collapsed={collapsed} />
       </div>
     </motion.aside>
@@ -316,7 +319,7 @@ export function HubSidebarDrawer({
         onClick={onClose}
       />
       <div className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col bg-[#f4f6f8] shadow-xl dark:bg-[#0F1420]">
-        <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4 dark:border-[#1A2233]">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 px-4 dark:border-[#1A2233]">
           <BrandLogo href="/" />
           <button
             type="button"
@@ -327,7 +330,9 @@ export function HubSidebarDrawer({
             <X className="h-5 w-5" />
           </button>
         </div>
-        <HubSidebarNav onNavigate={onClose} />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <HubSidebarNav onNavigate={onClose} />
+        </div>
       </div>
     </div>
   )

@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Brain,
   Code2,
+  Presentation,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -218,9 +219,8 @@ const EXPLORE_ITEMS: ExploreItem[] = [
     id: 'campus_drive',
     label: 'Campus Drive',
     kind: 'link',
-    href: '/dashboard/student/jobs',
-    icon: Search,
-    auth: true,
+    href: '/campus-drives',
+    icon: Presentation,
   },
   {
     id: 'hackathon',
