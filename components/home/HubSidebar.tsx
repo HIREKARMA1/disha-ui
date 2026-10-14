@@ -21,7 +21,6 @@ import {
   Target,
   User,
   X,
-  Newspaper,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
@@ -44,7 +43,6 @@ const GUEST_NAV: NavLink[] = [
   { label: 'Jobs', href: '/jobs', icon: Briefcase, openInNewTab: true },
   { label: 'Events', href: '/events', icon: Calendar, openInNewTab: true },
   { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
-  { label: 'Blogs', href: '/blogs', icon: Newspaper },
   { label: 'Support', href: '/contact', icon: Headphones },
 ]
 
@@ -54,7 +52,6 @@ const GUEST_STUDENT_TOOLS: NavLink[] = [
   { label: 'Resume Builder', href: '/dashboard/student/resume-builder', icon: FileText },
   { label: 'Career Align', href: '/dashboard/student/career-align', icon: Target },
   { label: 'Library', href: '/dashboard/student/library', icon: Library },
-  { label: 'Applications', href: '/dashboard/student/applications', icon: ClipboardList },
 ]
 
 /** Shown after login (students on the hub). */
@@ -91,7 +88,7 @@ function NavGroup({
   const pathname = usePathname()
 
   return (
-    <div className={cn('mb-4', collapsed && 'mb-2')}>
+    <div className={cn('mb-2', collapsed && 'mb-1.5')}>
       {!collapsed && title && (
         <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-[#5B6684] dark:tracking-[0.06em]">
           {title}
@@ -107,7 +104,7 @@ function NavGroup({
           const Icon = item.icon
           const className = cn(
             'flex w-full items-center rounded-lg text-left text-sm transition-colors',
-            collapsed ? 'justify-center px-2 py-2.5' : 'gap-2.5 px-3 py-2',
+            collapsed ? 'justify-center px-2 py-2' : 'gap-2.5 px-3 py-1.5',
             active
               ? "relative bg-gray-200/80 font-semibold text-gray-900 dark:bg-[rgba(0,162,229,0.12)] dark:text-[#5FCBF5] dark:before:absolute dark:before:left-[-8px] dark:before:top-1/2 dark:before:h-[18px] dark:before:w-[3px] dark:before:-translate-y-1/2 dark:before:rounded-r-sm dark:before:bg-[#00A2E5] dark:before:content-['']"
               : 'text-gray-700 hover:bg-gray-200/60 dark:text-[#93A0BD] dark:hover:bg-[#141A29] dark:hover:text-[#F4F6FA]'
@@ -167,12 +164,7 @@ export function HubSidebarNav({
   const showStudentTools = isAuthenticated && user?.user_type === 'student'
 
   return (
-    <nav
-      className={cn(
-        'flex h-full flex-col overflow-y-auto py-3',
-        collapsed ? 'px-1.5' : 'px-2'
-      )}
-    >
+    <nav className={cn('flex h-full flex-col py-2', collapsed ? 'px-1.5' : 'px-2')}>
       <NavGroup
         title=""
         items={GUEST_NAV}
@@ -220,9 +212,9 @@ export function HubSidebarNav({
           }}
           title={collapsed ? 'Login / Sign up' : undefined}
           className={cn(
-            'mt-auto flex items-center justify-center gap-2 rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700',
+            'mt-auto flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700',
             'dark:bg-gradient-to-br dark:from-[#24B4F0] dark:to-[#0C79A8] dark:text-[#04141C] dark:shadow-[0_4px_14px_rgba(0,162,229,0.25)] dark:hover:brightness-110 dark:hover:bg-transparent',
-            collapsed ? 'mx-1 mb-2 p-2.5' : 'mx-2 px-3 py-2.5'
+            collapsed ? 'mx-1 mb-1 p-2' : 'mx-2 mb-1 px-3 py-2'
           )}
         >
           <LogIn className="h-4 w-4 shrink-0" />
