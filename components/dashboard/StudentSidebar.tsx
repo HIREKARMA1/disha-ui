@@ -97,10 +97,10 @@ const navItems: NavItem[] = [
     //     description: 'Tests & assessments',
     // },
     {
-        label: 'Mock Tests',
+        label: 'Practice Tests',
         href: '/dashboard/student/mock-tests',
         icon: ClipboardList,
-        description: 'Published mock tests',
+        description: 'Published practice tests',
     },
     {
         label: 'Events',

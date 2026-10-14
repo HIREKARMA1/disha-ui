@@ -1,0 +1,358 @@
+"use client"
+
+import { useRef, useState } from 'react'
+import Link from 'next/link'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ChevronLeft, ChevronRight, Crown, Medal, Sparkles, Trophy, User } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import {
+  formatPerformerScore,
+  publishedHighlights,
+  type TopPerformerHighlight,
+} from '@/components/mock-tests/topPerformerUtils'
+
+type TopPerformersShowcaseProps = {
+  highlights: TopPerformerHighlight[]
+  isLoading?: boolean
+  variant?: 'catalog' | 'landing'
+  onSelectTest?: (mockTestId: string) => void
+  className?: string
+}
+
+function StudentProfileAvatar({
+  name,
+  photoUrl,
+  rank,
+}: {
+  name: string
+  photoUrl?: string | null
+  rank: number
+}) {
+  const [failed, setFailed] = useState(false)
+  const src = photoUrl?.trim()
+  const showPhoto = Boolean(src) && !failed
+  const ring =
+    rank === 1
+      ? 'ring-amber-300'
+      : rank === 2
+        ? 'ring-slate-300'
+        : rank === 3
+          ? 'ring-orange-300'
+          : 'ring-gray-200 dark:ring-gray-600'
+
+  return (
+    <span
+      className={cn(
+        'flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 dark:bg-gray-800',
+        ring
+      )}
+    >
+      {showPhoto ? (
+        <img
+          src={src}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <User className="h-6 w-6 text-gray-400" aria-hidden />
+      )}
+      <span className="sr-only">{name}</span>
+    </span>
+  )
+}
+
+function PerformerAvatar({ name, rank }: { name: string; rank: number }) {
+  const initial = (name.trim()[0] || '?').toUpperCase()
+  const rankStyles =
+    rank === 1
+      ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white ring-2 ring-amber-200/80'
+      : rank === 2
+        ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-white ring-2 ring-slate-200/80'
+        : rank === 3
+          ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white ring-2 ring-orange-200/80'
+          : 'bg-gradient-to-br from-primary-500 to-violet-600 text-white ring-2 ring-primary-200/60'
+
+  return (
+    <span
+      className={cn(
+        'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-md',
+        rankStyles
+      )}
+      aria-hidden
+    >
+      {rank === 1 ? <Crown className="h-5 w-5" /> : initial}
+    </span>
+  )
+}
+
+export function TopPerformersShowcase({
+  highlights,
+  isLoading = false,
+  variant = 'catalog',
+  onSelectTest,
+  className,
+}: TopPerformersShowcaseProps) {
+  const carouselRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  const isLanding = variant === 'landing'
+  const published = publishedHighlights(highlights)
+
+  const scrollCarousel = (dir: 1 | -1) => {
+    const el = carouselRef.current
+    if (!el) return
+    el.scrollBy({
+      left: dir * Math.min(el.clientWidth * 0.85, 360),
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          'flex gap-4 overflow-hidden',
+          isLanding && 'md:grid md:grid-cols-3 md:overflow-visible',
+          className
+        )}
+      >
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={cn(
+              'h-44 shrink-0 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800',
+              isLanding ? 'md:h-52 w-full md:w-auto' : 'w-[min(100%,300px)] sm:w-[300px]'
+            )}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  if (published.length === 0) {
+    return (
+      <div
+        className={cn(
+          'rounded-2xl border border-dashed border-gray-200 bg-white/60 px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-900/30',
+          className
+        )}
+      >
+        <Medal className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
+        <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Top performers will appear here after practice test results are published.
+        </p>
+        {isLanding ? (
+          <Button asChild variant="outline" className="mt-4">
+            <Link href="/mock-tests">Explore Practice Tests</Link>
+          </Button>
+        ) : null}
+      </div>
+    )
+  }
+
+  const displayItems = isLanding ? published.slice(0, 6) : highlights
+  const showCarouselNav = displayItems.length > 1 && !isLanding
+
+  const catalogCardWidth =
+    'w-[min(100%,300px)] max-w-full shrink-0 snap-start sm:w-[300px]'
+
+  return (
+    <div className={cn('min-w-0 space-y-4', className)}>
+      {isLanding ? (
+        <div className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 via-white to-primary-50/40 p-5 shadow-sm dark:border-amber-900/40 dark:from-amber-950/30 dark:via-[#141A29] dark:to-primary-950/20 sm:p-6">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10" />
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                Practice Test Champions
+              </p>
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-2xl">
+                Top Performers
+              </h3>
+              <p className="mt-1 max-w-xl text-sm text-gray-600 dark:text-gray-400">
+                Students leading the board on published practice tests — real scores from live
+                assessments.
+              </p>
+            </div>
+            <Button asChild className="shrink-0 bg-primary-600 hover:bg-primary-700">
+              <Link href="/mock-tests">View Practice Tests</Link>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Medal className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <h2
+              id="top-performers-heading"
+              className="text-xl font-bold tracking-tight text-gray-900 dark:text-white"
+            >
+              Top Performers
+            </h2>
+          </div>
+          {showCarouselNav ? (
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                onClick={() => scrollCarousel(-1)}
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+                onClick={() => scrollCarousel(1)}
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      <div className={cn('min-w-0', !isLanding && 'overflow-hidden')}>
+        <div
+          ref={carouselRef}
+          className={cn(
+            'flex gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            !isLanding && 'snap-x snap-mandatory scroll-px-0',
+            isLanding && 'md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible'
+          )}
+        >
+        {displayItems.map((item, index) => {
+          const performer = item.top_performer
+          const scoreLabel = performer ? formatPerformerScore(performer) : null
+          const rank = performer?.rank ?? 1
+          const interactive = item.results_published && Boolean(onSelectTest)
+
+          const card = (
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.3 }}
+              className={cn(
+                'group relative flex h-full min-h-[168px] flex-col overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all duration-200 dark:bg-[#141A29]',
+                rank === 1 && 'border-amber-300/80 ring-1 ring-amber-200/50 dark:border-amber-700/50',
+                rank === 2 && 'border-slate-200 dark:border-slate-600/60',
+                rank === 3 && 'border-orange-200/80 dark:border-orange-800/50',
+                rank > 3 && 'border-gray-200 dark:border-[#1A2233]',
+                interactive &&
+                  'cursor-pointer hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:border-primary-600',
+                isLanding ? 'w-full shrink-0 md:shrink' : 'h-full w-full'
+              )}
+            >
+              {isLanding && item.background_image_url ? (
+                <div className="relative h-20 overflow-hidden">
+                  <img
+                    src={item.background_image_url}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover object-center opacity-90 transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  {rank === 1 ? (
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                      <Trophy className="h-3 w-3" />
+                      #1
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="flex flex-1 flex-col p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">
+                    {item.assessment_name}
+                  </p>
+                  {!isLanding && rank <= 3 ? (
+                    <span
+                      className={cn(
+                        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                        rank === 1 && 'bg-amber-500 text-white',
+                        rank === 2 && 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100',
+                        rank === 3 && 'bg-orange-200 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200'
+                      )}
+                    >
+                      {rank === 1 ? <Trophy className="h-3 w-3" /> : null}
+                      #{rank}
+                    </span>
+                  ) : null}
+                </div>
+
+                {item.results_published && performer ? (
+                  <div className="mt-3 flex items-center gap-3">
+                    {isLanding ? (
+                      <PerformerAvatar name={performer.student_name} rank={rank} />
+                    ) : (
+                      <StudentProfileAvatar
+                        name={performer.student_name}
+                        photoUrl={performer.profile_picture}
+                        rank={rank}
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate text-sm font-semibold text-gray-900 dark:text-white"
+                        title={performer.student_name}
+                      >
+                        {performer.student_name}
+                      </p>
+                      {!isLanding ? (
+                        <p
+                          className="truncate text-xs text-gray-500 dark:text-gray-400"
+                          title={performer.university_name?.trim() || 'University not provided'}
+                        >
+                          {performer.university_name?.trim() || 'University not provided'}
+                        </p>
+                      ) : null}
+                      {scoreLabel ? (
+                        <p className="text-sm tabular-nums text-gray-600 dark:text-gray-400">
+                          {scoreLabel}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    Results not published yet
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )
+
+          if (!interactive) {
+            return (
+              <div key={item.mock_test_id} className={cn(!isLanding && catalogCardWidth)}>
+                {card}
+              </div>
+            )
+          }
+
+          return (
+            <button
+              key={item.mock_test_id}
+              type="button"
+              onClick={() => onSelectTest?.(item.mock_test_id)}
+              className={cn(
+                'text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-2xl',
+                !isLanding && catalogCardWidth
+              )}
+            >
+              {card}
+            </button>
+          )
+        })}
+        </div>
+      </div>
+    </div>
+  )
+}

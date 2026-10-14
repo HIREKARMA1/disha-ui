@@ -93,7 +93,7 @@ export function Footer() {
                             </li>
                             <li>
                                 <Link href="/mock-tests" className={footerLinkClass}>
-                                    Mock Tests
+                                    Practice Tests
                                 </Link>
                             </li>
                             <li>
