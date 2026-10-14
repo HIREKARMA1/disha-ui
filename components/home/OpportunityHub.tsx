@@ -706,6 +706,7 @@ export default function OpportunityHub() {
 
   const jobsToShow = tab === 'all' ? jobs.slice(0, 12) : jobs
   const eventsToShow = tab === 'all' ? events.slice(0, 12) : events
+  const featuredBlogs = getFeaturedBlogs(3)
 
   const mixedFeed = useMemo(() => {
     const items: Array<

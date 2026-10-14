@@ -16,6 +16,7 @@ import {
   Library,
   LayoutDashboard,
   LogIn,
+  Newspaper,
   Brain,
   Search,
   Target,
