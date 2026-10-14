@@ -26,6 +26,7 @@ import {
   Mic,
   Monitor,
   CheckCircle2,
+  Clock,
   List,
   X,
 } from 'lucide-react';
@@ -229,6 +230,81 @@ function isMcqType(q: ExamQuestion | undefined): boolean {
   return opts.length > 0 || resolveQuestionType(q) === 'mcq';
 }
 
+type RoundTimeSlot = {
+  roundNumber: number;
+  startMs: number;
+  endMs: number;
+  durationMs: number;
+};
+
+function buildRoundSchedule(
+  rounds: any[] | undefined,
+  roundNumbers: number[],
+  startedAtMs: number | null,
+  examEndMs: number | null
+): Map<number, RoundTimeSlot> {
+  const map = new Map<number, RoundTimeSlot>();
+  const startMs = startedAtMs ?? Date.now();
+  const sessionRounds = Array.isArray(rounds)
+    ? [...rounds].sort(
+        (a, b) => Number(a.round_number) - Number(b.round_number)
+      )
+    : [];
+  const capEnd = (endMs: number) =>
+    examEndMs != null ? Math.min(endMs, examEndMs) : endMs;
+
+  let cursor = startMs;
+  if (sessionRounds.length > 0) {
+    for (const r of sessionRounds) {
+      const rn = Number(r.round_number);
+      const mins = Number(r.duration_minutes);
+      const durationMs =
+        Number.isFinite(mins) && mins > 0 ? mins * 60 * 1000 : 10 * 60 * 1000;
+      const slotStart = cursor;
+      const slotEnd = capEnd(slotStart + durationMs);
+      map.set(rn, {
+        roundNumber: rn,
+        startMs: slotStart,
+        endMs: slotEnd,
+        durationMs: Math.max(slotEnd - slotStart, 0),
+      });
+      cursor = slotEnd;
+    }
+    return map;
+  }
+
+  const n = Math.max(roundNumbers.length, 1);
+  const totalMs =
+    examEndMs != null
+      ? Math.max(examEndMs - startMs, n * 60_000)
+      : n * 10 * 60 * 1000;
+  const slice = totalMs / n;
+  roundNumbers.forEach((rn, i) => {
+    const slotStart = startMs + i * slice;
+    const slotEnd = capEnd(slotStart + slice);
+    map.set(rn, {
+      roundNumber: rn,
+      startMs: slotStart,
+      endMs: slotEnd,
+      durationMs: Math.max(slotEnd - slotStart, 0),
+    });
+  });
+  return map;
+}
+
+function resolveRoundIndexForNow(
+  roundNumbers: number[],
+  schedule: Map<number, RoundTimeSlot>,
+  nowMs: number
+): number {
+  if (roundNumbers.length === 0) return 0;
+  for (let i = 0; i < roundNumbers.length; i += 1) {
+    const slot = schedule.get(roundNumbers[i]);
+    if (!slot || nowMs < slot.endMs) return i;
+  }
+  return roundNumbers.length - 1;
+}
+
 export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('camera');
@@ -265,6 +341,9 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   const flushSnapshotsRef = useRef<() => Promise<void>>(async () => {});
   const timeWarn5ShownRef = useRef(false);
   const timeWarn1ShownRef = useRef(false);
+  const roundExpiryHandledRef = useRef<number | null>(null);
+  const onRoundTimeExpiredRef = useRef<() => void>(() => {});
+  const resumePhaseAfterWarningRef = useRef<Phase>('exam');
   const phaseRef = useRef<Phase>(phase);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -505,6 +584,29 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     }
     return 10 * 60 * 1000;
   }, [session, currentRoundNumber, examEndMs, totalRounds, roundIdx]);
+
+  const startedAtMs = useMemo(() => {
+    if (!session?.started_at) return null;
+    const ms = new Date(session.started_at).getTime();
+    return Number.isFinite(ms) ? ms : null;
+  }, [session]);
+
+  const roundSchedule = useMemo(
+    () =>
+      buildRoundSchedule(
+        session?.rounds,
+        roundNumbers,
+        startedAtMs,
+        examEndMs
+      ),
+    [session, roundNumbers, startedAtMs, examEndMs]
+  );
+
+  const currentRoundEndMs = useMemo(() => {
+    const slot = roundSchedule.get(currentRoundNumber);
+    if (slot?.endMs) return slot.endMs;
+    return examEndMs;
+  }, [roundSchedule, currentRoundNumber, examEndMs]);
 
   const buildAnswerPayload = useCallback(() => {
     const codingIds = new Set(
@@ -905,11 +1007,23 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         const ends = new Date(start.ends_at).getTime();
         timeWarn5ShownRef.current = false;
         timeWarn1ShownRef.current = false;
-        setSecondsLeft(Math.max(0, Math.floor((ends - Date.now()) / 1000)));
         const qs = await apiClient.getAssessmentExamQuestions(assessmentId, attemptId);
         if (cancelled) return;
         const sorted = sortQuestions(Array.isArray(qs) ? qs : []);
         setAllQuestions(sorted);
+        const nums = Array.from(
+          new Set(sorted.map((q) => q.round_number))
+        ).sort((a, b) => a - b);
+        const startedMs = start.started_at
+          ? new Date(start.started_at).getTime()
+          : Date.now();
+        const schedule = buildRoundSchedule(start.rounds, nums, startedMs, ends);
+        const idx = resolveRoundIndexForNow(nums, schedule, Date.now());
+        setRoundIdx(idx);
+        const slot = schedule.get(nums[idx]);
+        setSecondsLeft(
+          Math.max(0, Math.floor(((slot?.endMs ?? ends) - Date.now()) / 1000))
+        );
         const initialAnswers: Record<string, any> = {};
         sorted.forEach((q: ExamQuestion) => {
           if (q.coding_submitted) {
@@ -921,8 +1035,9 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         if (Object.keys(initialAnswers).length) {
           setAnswers(initialAnswers);
         }
-        if (sorted[0]) {
-          setVisitedIds(new Set([sorted[0].id]));
+        const firstOfRound = sorted.find((q) => q.round_number === nums[idx]);
+        if (firstOfRound) {
+          setVisitedIds(new Set([firstOfRound.id]));
         }
       } catch (e: any) {
         toast.error(e?.response?.data?.detail || 'Could not start exam');
@@ -937,35 +1052,56 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
   }, [assessmentId, attemptId, router]);
 
   useEffect(() => {
-    if (phase !== 'exam') return;
-    const id = window.setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          void finishAndGoHome('auto');
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
+    roundExpiryHandledRef.current = null;
+    timeWarn5ShownRef.current = false;
+    timeWarn1ShownRef.current = false;
+  }, [roundIdx]);
+
+  useEffect(() => {
+    if (phase !== 'exam' && phase !== 'warning' && phase !== 'round_break') return;
+    const tick = () => {
+      const endMs = currentRoundEndMs ?? examEndMs;
+      if (!endMs) return;
+      const roundRemaining = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+      const examRemaining =
+        examEndMs != null
+          ? Math.max(0, Math.floor((examEndMs - Date.now()) / 1000))
+          : roundRemaining;
+      const remaining = Math.min(roundRemaining, examRemaining);
+      setSecondsLeft(remaining);
+      if (remaining <= 0) {
+        onRoundTimeExpiredRef.current();
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [phase, finishAndGoHome]);
+  }, [phase, currentRoundEndMs, examEndMs]);
 
   useEffect(() => {
     if (phase !== 'exam') return;
     if (secondsLeft <= 0) return;
 
+    const lastRound = roundIdx >= totalRounds - 1;
     if (secondsLeft <= 300 && !timeWarn5ShownRef.current) {
       timeWarn5ShownRef.current = true;
-      toast('5 min to end the exam.', { duration: 5000 });
+      toast(
+        lastRound
+          ? '5 min to end the exam.'
+          : '5 min left in this round.',
+        { duration: 5000 }
+      );
     }
     if (secondsLeft <= 60 && !timeWarn1ShownRef.current) {
       timeWarn1ShownRef.current = true;
       toast.error(
-        'Submit your exam now — otherwise it will automatically submit.',
-        { duration: 5000 },
+        lastRound
+          ? 'Submit your exam now — otherwise it will automatically submit.'
+          : 'This round will end in 1 minute. The next round starts when time is up.',
+        { duration: 5000 }
       );
     }
-  }, [phase, secondsLeft]);
+  }, [phase, secondsLeft, roundIdx, totalRounds]);
 
   useEffect(() => {
     if (phase !== 'exam' && phase !== 'warning' && phase !== 'round_break') return;
@@ -975,6 +1111,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     }
     if (!wasFullscreenRef.current) return;
     if (!fullscreenWarningShown) {
+      resumePhaseAfterWarningRef.current =
+        phaseRef.current === 'round_break' ? 'round_break' : 'exam';
       setFullscreenWarningShown(true);
       setWarningReason('fullscreen');
       setPhase('warning');
@@ -997,7 +1135,9 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     // Never resume into the exam while a mandatory screen share is stopped.
     if (requiresScreenShare && screenShareStatus !== 'active') return;
     setWarningReason(null);
-    setPhase('exam');
+    setPhase(
+      resumePhaseAfterWarningRef.current === 'round_break' ? 'round_break' : 'exam'
+    );
   }, [phase, isFullscreen, requiresScreenShare, screenShareStatus]);
 
   useEffect(() => {
@@ -1024,6 +1164,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     // A second stop disqualifies. (The initial stop event itself is reported
     // by the track 'ended' handler.)
     if (!screenShareWarningShownRef.current) {
+      resumePhaseAfterWarningRef.current =
+        phaseRef.current === 'round_break' ? 'round_break' : 'exam';
       screenShareWarningShownRef.current = true;
       setWarningReason('screen_share');
       setPhase('warning');
@@ -1078,9 +1220,18 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     setPhase('exam');
   };
 
-  const startNextRound = () => {
+  const startNextRound = (opts?: { force?: boolean }) => {
     const nextRound = roundIdx + 1;
     if (nextRound >= totalRounds) return;
+    if (examEndMs != null && Date.now() >= examEndMs) {
+      void finishAndGoHome('auto');
+      return;
+    }
+    const remainingMs = (currentRoundEndMs ?? 0) - Date.now();
+    if (!opts?.force && remainingMs > 1000) {
+      setPhase('round_break');
+      return;
+    }
     setRoundIdx(nextRound);
     setCurrentIdx(0);
     const nextRoundNum = roundNumbers[nextRound];
@@ -1092,6 +1243,24 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     toast.success(`Starting Round ${nextRound + 1} of ${totalRounds}`);
   };
 
+  onRoundTimeExpiredRef.current = () => {
+    if (endingRef.current) return;
+    if (roundExpiryHandledRef.current === roundIdx) return;
+    roundExpiryHandledRef.current = roundIdx;
+    if (examEndMs != null && Date.now() >= examEndMs) {
+      void finishAndGoHome('auto');
+      return;
+    }
+    if (hasMoreRounds) {
+      if (phaseRef.current === 'exam' || phaseRef.current === 'warning') {
+        toast('Time is up for this round.', { duration: 4000 });
+      }
+      startNextRound({ force: true });
+      return;
+    }
+    void finishAndGoHome('auto');
+  };
+
   const goToRoundBreakOrStay = () => {
     void (async () => {
       try {
@@ -1100,6 +1269,15 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         /* non-blocking */
       }
       if (hasMoreRounds) {
+        if (examEndMs != null && Date.now() >= examEndMs) {
+          void finishAndGoHome('auto');
+          return;
+        }
+        const remainingMs = (currentRoundEndMs ?? 0) - Date.now();
+        if (remainingMs <= 1000) {
+          startNextRound({ force: true });
+          return;
+        }
         setPhase('round_break');
         return;
       }
@@ -1616,6 +1794,8 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
     const nextRoundNum = roundNumbers[roundIdx + 1];
     const nextQs = allQuestions.filter((q) => q.round_number === nextRoundNum);
     const nextType = nextQs[0]?.round_type || 'next';
+    const wait = splitTime(secondsLeft);
+    const canStartNext = secondsLeft <= 0;
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
         {captureSurface}
@@ -1631,12 +1811,33 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
             Next: <strong>Round {roundIdx + 2} of {totalRounds}</strong>
             {nextType ? ` — ${nextType}` : ''} ({nextQs.length} questions)
           </p>
+          {canStartNext ? (
+            <p className="text-sm text-gray-600">
+              This round&apos;s time has ended. You can start the next round now.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                The next round unlocks only after this round&apos;s full time ends.
+                Please wait.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-[#2563EB]">
+                <Clock className="h-5 w-5" />
+                <span className="font-mono text-3xl font-bold tracking-wide">
+                  {wait.hours}:{wait.minutes}:{wait.seconds}
+                </span>
+              </div>
+            </div>
+          )}
           <Button
             type="button"
-            className="w-full bg-[#2563EB] hover:bg-blue-700"
-            onClick={startNextRound}
+            className="w-full bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => startNextRound()}
+            disabled={!canStartNext}
           >
-            Start Round {roundIdx + 2}
+            {canStartNext
+              ? `Start Round ${roundIdx + 2}`
+              : `Waiting for Round ${roundIdx + 1} time to end`}
           </Button>
         </div>
       </div>
@@ -1729,7 +1930,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-600">
-              Time left
+              {totalRounds > 1 ? 'Round time left' : 'Time left'}
             </div>
             <div className="font-mono text-base font-bold leading-tight text-gray-900">
               {t.hours}:{t.minutes}:{t.seconds}
@@ -2197,7 +2398,9 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
                 )}
               </div>
               <div className="flex-1 text-center">
-                <div className="mb-1 text-lg font-bold text-gray-900">Time Left</div>
+                <div className="mb-1 text-lg font-bold text-gray-900">
+                  {totalRounds > 1 ? 'Round Time Left' : 'Time Left'}
+                </div>
                 <div className="flex items-start justify-center gap-2">
                   <div className="flex flex-col items-center">
                     <div className="text-2xl font-bold leading-none text-black">{t.hours}</div>
@@ -2443,23 +2646,29 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
           >
             <h2 id="exam-confirm-title" className="text-lg font-bold text-gray-900">
               {confirmModal.kind === 'round'
-                ? 'Continue to the next round?'
+                ? 'Submit this round?'
                 : 'Submit the exam now?'}
             </h2>
             <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
               {confirmModal.kind === 'round' ? (
-                confirmModal.unanswered > 0 ? (
+                <>
+                  {confirmModal.unanswered > 0 ? (
+                    <p>
+                      This round has{' '}
+                      <strong>
+                        {confirmModal.unanswered} unanswered question
+                        {confirmModal.unanswered > 1 ? 's' : ''}
+                      </strong>
+                      .
+                    </p>
+                  ) : (
+                    <p>You are about to submit this round.</p>
+                  )}
                   <p>
-                    This round has{' '}
-                    <strong>
-                      {confirmModal.unanswered} unanswered question
-                      {confirmModal.unanswered > 1 ? 's' : ''}
-                    </strong>
-                    . Continue to the next round anyway?
+                    The next round will not start until this round&apos;s
+                    remaining time ends.
                   </p>
-                ) : (
-                  <p>You are about to leave this round and start the next one.</p>
-                )
+                </>
               ) : (
                 <>
                   {(confirmModal.codingUnsubmitted ?? 0) > 0 && (
