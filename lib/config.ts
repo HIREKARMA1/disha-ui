@@ -8,14 +8,14 @@ export const config = {
     version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
     fullUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/${process.env.NEXT_PUBLIC_API_VERSION || 'v1'}`,
   },
-  
+
   // App Configuration
   // Prefer NEXT_PUBLIC_APP_URL; APP_URL / VERCEL_URL also work via next.config.js mapping.
   app: {
     name: process.env.NEXT_PUBLIC_APP_NAME || 'HireKarma',
     url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
   },
-  
+
   // Feature Flags
   features: {
     analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
@@ -34,7 +34,7 @@ export const config = {
   // Prefer env; fall back to public HireKarma support number (same as footer).
   whatsapp: {
     number:
-      process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ||
+      process.env.NEXT_WHATSAPP_NUMBER ||
       process.env.NEXT_PUBLIC_SUPPORT_PHONE ||
       '15554503532',
     message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi',
@@ -67,7 +67,7 @@ export const config = {
       process.env.SUPABASE_PUBLISHABLE_KEY ||
       '',
   },
-  
+
   // Environment
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production',
@@ -81,14 +81,14 @@ export function validateEnvironment() {
   const requiredVars = [
     'NEXT_PUBLIC_API_BASE_URL',
   ];
-  
+
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
+
   if (missingVars.length > 0) {
     console.warn('Missing environment variables:', missingVars);
     console.warn('Using default values. Check your .env.local file.');
   }
-  
+
   return missingVars.length === 0;
 }
 
