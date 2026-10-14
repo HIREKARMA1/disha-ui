@@ -36,13 +36,13 @@ export const config = {
     number:
       process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ||
       process.env.NEXT_PUBLIC_SUPPORT_PHONE ||
-      '919124364764',
+      '15554503532',
     message: process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE || 'Hi',
   },
 
   /** Public support phone (display). Digits-only variant lives in whatsapp.number. */
   support: {
-    phoneDisplay: process.env.NEXT_PUBLIC_SUPPORT_PHONE_DISPLAY || '+91 91243 64764',
+    phoneDisplay: process.env.NEXT_PUBLIC_SUPPORT_PHONE_DISPLAY || '+1 (555) 450-3532',
   },
 
   googleMaps: {
