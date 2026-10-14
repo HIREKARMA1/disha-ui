@@ -34,10 +34,10 @@ export const config = {
   // Prefer env; fall back to public HireKarma support number (same as footer).
   whatsapp: {
     number:
-      process.env.NEXT_WHATSAPP_NUMBER ||
+      process.env.WHATSAPP_NUMBER ||
       process.env.NEXT_PUBLIC_SUPPORT_PHONE ||
       '15554503532',
-    message: process.env.NEXT_WHATSAPP_MESSAGE || 'Hi',
+    message: process.env.WHATSAPP_MESSAGE || 'Hi',
   },
 
   /** Public support phone (display). Digits-only variant lives in whatsapp.number. */
