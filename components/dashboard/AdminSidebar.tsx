@@ -12,6 +12,7 @@ import {
     BarChart3,
     Calendar,
     Presentation,
+    Newspaper,
     FileText,
     X,
     LogOut,
@@ -147,7 +148,13 @@ const navSections: NavSection[] = [
                 description: 'Manage campus drive programs',
             },
             {
-                label: 'Practice Modules',
+                label: 'Blogs',
+                href: '/dashboard/admin/blogs',
+                icon: Newspaper,
+                description: 'Manage HireKarma resource blogs',
+            },
+            {
+                label: 'Practice Tests',
                 href: '/dashboard/admin/practice',
                 icon: Brain,
                 description: 'Tests & questions',

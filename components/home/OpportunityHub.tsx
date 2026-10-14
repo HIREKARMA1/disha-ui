@@ -108,12 +108,6 @@ const CATEGORY_TILE_TONES: Record<
     iconWrap: 'bg-orange-50/60 shadow-none ring-1 ring-orange-100/80 dark:bg-[rgba(245,128,32,0.18)] dark:text-[#FB923C] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
-  blogs: {
-    idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
-    active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
-    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80 dark:bg-[rgba(139,92,246,0.18)] dark:text-[#A78BFA] dark:ring-0',
-    glow: 'group-hover:shadow-sm',
-  },
   faq: {
     idle: 'border-slate-200/80 bg-white hover:border-violet-200 hover:bg-violet-50/25',
     active: 'border-violet-300 bg-violet-50/40 shadow-sm ring-1 ring-violet-200/60',
@@ -398,7 +392,6 @@ export default function OpportunityHub() {
   /** True while pointer is over search + Explore (survives layout-shift scroll events). */
   const exploreHoveringRef = useRef(false)
 
-  const featuredBlogs = useMemo(() => getFeaturedBlogs(3), [])
 
   const showExplore = exploreOpen && !searchInput.trim()
 
@@ -601,10 +594,6 @@ export default function OpportunityHub() {
     }
     if (pill.id === 'mock_tests') {
       window.open('/practice-tests', '_blank', 'noopener,noreferrer')
-      return
-    }
-    if (pill.id === 'blogs') {
-      router.push('/blogs')
       return
     }
     if (pill.id === 'contact') {
@@ -924,7 +913,7 @@ export default function OpportunityHub() {
             </div>
             <div
               ref={categoryScrollerRef}
-              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-10 md:gap-3.5 md:overflow-visible 2xl:gap-4"
+              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-9 md:gap-3.5 md:overflow-visible 2xl:gap-4"
             >
               {CATEGORY_TILES.map((tile, i) => {
                 const active = activeQuickPillId === tile.id
@@ -961,9 +950,7 @@ export default function OpportunityHub() {
                             ? '#3B82F6'
                             : tile.id === 'events'
                               ? '#F97316'
-                              : tile.id === 'blogs'
-                                ? '#0EA5E9'
-                                : tile.id === 'faq'
+                              : tile.id === 'faq'
                                   ? '#8B5CF6'
                                   : tile.id === 'placed_students'
                                     ? '#10B981'

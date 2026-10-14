@@ -23,7 +23,7 @@ const MAPS_EMBED_URL =
   'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3739.9763807315003!2d85.8203458793457!3d20.383863700000006!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a19096e0259fc7f%3A0x7ad66a4df8112eda!2sHireKarma%20Private%20Limited!5e0!3m2!1sen!2sin!4v1789020372578!5m2!1sen!2sin'
 
 const WHATSAPP_QR_IMAGE =
-  'https://disha-ui.s3.ap-south-1.amazonaws.com/new-disha/My_QR_Code_1-1024.jpeg'
+  'https://disha-ui.s3.ap-south-1.amazonaws.com/Disha-whatsapp-support/qr-code.png'
 
 const WHATSAPP_STEPS = [
   'Send "Hi" on WhatsApp.',
