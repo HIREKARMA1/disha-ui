@@ -13,6 +13,7 @@ export function PracticeTestSubpageLayout({
   backHref = '/dashboard/student/mock-tests',
   backLabel = 'Back to Practice Tests',
   actions,
+  wide = false,
   children,
 }: {
   title: string
@@ -21,12 +22,13 @@ export function PracticeTestSubpageLayout({
   backHref?: string
   backLabel?: string
   actions?: ReactNode
+  wide?: boolean
   children: ReactNode
 }) {
   const router = useRouter()
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-10">
+    <div className={wide ? 'mx-auto max-w-5xl space-y-6 pb-10' : 'mx-auto max-w-3xl space-y-6 pb-10'}>
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" size="sm" className="rounded-xl" onClick={() => router.push(backHref)}>
           <ArrowLeft className="mr-2 h-4 w-4" />

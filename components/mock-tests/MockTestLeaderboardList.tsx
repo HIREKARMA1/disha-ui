@@ -1,6 +1,7 @@
 "use client"
 
-import { Crown, Medal, Trophy } from 'lucide-react'
+import { useState } from 'react'
+import { Crown, Medal, Trophy, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface LeaderboardEntry {
@@ -10,6 +11,8 @@ export interface LeaderboardEntry {
   max_score?: number | null
   percentage?: number | null
   status?: string | null
+  profile_picture?: string | null
+  university_name?: string | null
 }
 
 function formatScore(entry: LeaderboardEntry): string {
@@ -27,6 +30,116 @@ function formatScore(entry: LeaderboardEntry): string {
     return `${entry.percentage.toFixed(1)}%`
   }
   return '—'
+}
+
+function formatPercentage(entry: LeaderboardEntry): string {
+  if (typeof entry.percentage === 'number') return `${entry.percentage.toFixed(1)}%`
+  return '—'
+}
+
+function institutionLabel(entry: LeaderboardEntry): string {
+  return entry.university_name?.trim() || 'University not provided'
+}
+
+function StudentAvatar({
+  name,
+  photoUrl,
+}: {
+  name: string
+  photoUrl?: string | null
+}) {
+  const [failed, setFailed] = useState(false)
+  const src = photoUrl?.trim()
+  const showPhoto = Boolean(src) && !failed
+
+  return (
+    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+      {showPhoto ? (
+        <img
+          src={src}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <User className="h-5 w-5 text-gray-400" aria-hidden />
+      )}
+      <span className="sr-only">{name}</span>
+    </span>
+  )
+}
+
+function rankRowClass(rank: number): string {
+  if (rank === 1) return 'bg-amber-50/80 dark:bg-amber-950/20'
+  if (rank === 2) return 'bg-slate-50/80 dark:bg-slate-900/30'
+  if (rank === 3) return 'bg-orange-50/70 dark:bg-orange-950/20'
+  return ''
+}
+
+function RankedLeaderboard({ entries }: { entries: LeaderboardEntry[] }) {
+  const ranked = [...entries].sort((a, b) => a.rank - b.rank)
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-[#1A2233] dark:bg-[#141A29]">
+      <div className="hidden grid-cols-[4.5rem_minmax(0,1.4fr)_minmax(0,1.2fr)_6rem_6.5rem] gap-3 border-b border-gray-100 bg-gray-50/80 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:bg-gray-900/40 dark:text-gray-400 md:grid md:px-5">
+        <span>Rank</span>
+        <span>Student</span>
+        <span>University / College</span>
+        <span className="text-right">Score</span>
+        <span className="text-right">Percentage</span>
+      </div>
+
+      <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+        {ranked.map((entry) => {
+          const college = institutionLabel(entry)
+          return (
+            <li
+              key={`${entry.rank}-${entry.student_name}`}
+              className={cn('px-4 py-3.5 sm:px-5', rankRowClass(entry.rank))}
+            >
+              <div className="flex items-center gap-3 md:hidden">
+                <RankBadge rank={entry.rank} />
+                <StudentAvatar name={entry.student_name} photoUrl={entry.profile_picture} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-white" title={entry.student_name}>
+                    {entry.student_name}
+                  </p>
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400" title={college}>
+                    {college}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                    {formatScore(entry)}
+                    <span className="ml-2 font-medium text-gray-500 dark:text-gray-400">
+                      {formatPercentage(entry)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="hidden grid-cols-[4.5rem_minmax(0,1.4fr)_minmax(0,1.2fr)_6rem_6.5rem] items-center gap-3 md:grid">
+                <RankBadge rank={entry.rank} />
+                <div className="flex min-w-0 items-center gap-3">
+                  <StudentAvatar name={entry.student_name} photoUrl={entry.profile_picture} />
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-white" title={entry.student_name}>
+                    {entry.student_name}
+                  </p>
+                </div>
+                <p className="truncate text-sm text-gray-600 dark:text-gray-300" title={college}>
+                  {college}
+                </p>
+                <p className="text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                  {formatScore(entry)}
+                </p>
+                <p className="text-right text-sm font-semibold tabular-nums text-gray-700 dark:text-gray-200">
+                  {formatPercentage(entry)}
+                </p>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
 }
 
 function RankBadge({ rank }: { rank: number }) {
@@ -62,9 +175,11 @@ function RankBadge({ rank }: { rank: number }) {
 export function MockTestLeaderboardList({
   entries,
   emptyMessage = 'No ranked results yet.',
+  layout = 'podium',
 }: {
   entries: LeaderboardEntry[]
   emptyMessage?: string
+  layout?: 'podium' | 'ranked'
 }) {
   if (!entries.length) {
     return (
@@ -73,6 +188,10 @@ export function MockTestLeaderboardList({
         <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{emptyMessage}</p>
       </div>
     )
+  }
+
+  if (layout === 'ranked') {
+    return <RankedLeaderboard entries={entries} />
   }
 
   const topThree = entries.filter((e) => e.rank <= 3)

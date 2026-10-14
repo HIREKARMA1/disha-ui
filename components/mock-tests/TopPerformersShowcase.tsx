@@ -1,9 +1,9 @@
 "use client"
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Crown, Medal, Sparkles, Trophy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Crown, Medal, Sparkles, Trophy, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -18,6 +18,49 @@ type TopPerformersShowcaseProps = {
   variant?: 'catalog' | 'landing'
   onSelectTest?: (mockTestId: string) => void
   className?: string
+}
+
+function StudentProfileAvatar({
+  name,
+  photoUrl,
+  rank,
+}: {
+  name: string
+  photoUrl?: string | null
+  rank: number
+}) {
+  const [failed, setFailed] = useState(false)
+  const src = photoUrl?.trim()
+  const showPhoto = Boolean(src) && !failed
+  const ring =
+    rank === 1
+      ? 'ring-amber-300'
+      : rank === 2
+        ? 'ring-slate-300'
+        : rank === 3
+          ? 'ring-orange-300'
+          : 'ring-gray-200 dark:ring-gray-600'
+
+  return (
+    <span
+      className={cn(
+        'flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 ring-2 dark:bg-gray-800',
+        ring
+      )}
+    >
+      {showPhoto ? (
+        <img
+          src={src}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <User className="h-6 w-6 text-gray-400" aria-hidden />
+      )}
+      <span className="sr-only">{name}</span>
+    </span>
+  )
 }
 
 function PerformerAvatar({ name, rank }: { name: string; rank: number }) {
@@ -207,7 +250,7 @@ export function TopPerformersShowcase({
                 isLanding ? 'w-full shrink-0 md:shrink' : 'h-full w-full'
               )}
             >
-              {item.background_image_url ? (
+              {isLanding && item.background_image_url ? (
                 <div className="relative h-20 overflow-hidden">
                   <img
                     src={item.background_image_url}
@@ -225,20 +268,51 @@ export function TopPerformersShowcase({
               ) : null}
 
               <div className="flex flex-1 flex-col p-4">
-                <p className="line-clamp-2 text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
-                  Practice Test
-                </p>
-                <p className="mt-1 line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">
-                  {item.assessment_name}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-white">
+                    {item.assessment_name}
+                  </p>
+                  {!isLanding && rank <= 3 ? (
+                    <span
+                      className={cn(
+                        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                        rank === 1 && 'bg-amber-500 text-white',
+                        rank === 2 && 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100',
+                        rank === 3 && 'bg-orange-200 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200'
+                      )}
+                    >
+                      {rank === 1 ? <Trophy className="h-3 w-3" /> : null}
+                      #{rank}
+                    </span>
+                  ) : null}
+                </div>
 
                 {item.results_published && performer ? (
-                  <div className="mt-4 flex items-center gap-3">
-                    <PerformerAvatar name={performer.student_name} rank={rank} />
+                  <div className="mt-3 flex items-center gap-3">
+                    {isLanding ? (
+                      <PerformerAvatar name={performer.student_name} rank={rank} />
+                    ) : (
+                      <StudentProfileAvatar
+                        name={performer.student_name}
+                        photoUrl={performer.profile_picture}
+                        rank={rank}
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                      <p
+                        className="truncate text-sm font-semibold text-gray-900 dark:text-white"
+                        title={performer.student_name}
+                      >
                         {performer.student_name}
                       </p>
+                      {!isLanding ? (
+                        <p
+                          className="truncate text-xs text-gray-500 dark:text-gray-400"
+                          title={performer.university_name?.trim() || 'University not provided'}
+                        >
+                          {performer.university_name?.trim() || 'University not provided'}
+                        </p>
+                      ) : null}
                       {scoreLabel ? (
                         <p className="text-sm tabular-nums text-gray-600 dark:text-gray-400">
                           {scoreLabel}
@@ -247,7 +321,7 @@ export function TopPerformersShowcase({
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
                     Results not published yet
                   </p>
                 )}

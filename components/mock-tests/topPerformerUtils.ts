@@ -9,6 +9,8 @@ export interface TopPerformerHighlight {
     total_score?: number | null
     max_score?: number | null
     percentage?: number | null
+    profile_picture?: string | null
+    university_name?: string | null
   } | null
 }
 

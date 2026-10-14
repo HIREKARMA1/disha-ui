@@ -49,6 +49,7 @@ export default function StudentMockTestLeaderboardPage() {
         title={`${title} — Leaderboard`}
         subtitle="Top 10 performers for this practice test."
         icon={<Trophy className="h-7 w-7 text-amber-600 dark:text-amber-400" />}
+        wide
       >
         {loading ? (
           <div className="flex h-48 items-center justify-center">
@@ -60,6 +61,7 @@ export default function StudentMockTestLeaderboardPage() {
           <MockTestLeaderboardList
             entries={entries}
             emptyMessage="No ranked results yet for this practice test."
+            layout="ranked"
           />
         )}
       </PracticeTestSubpageLayout>
