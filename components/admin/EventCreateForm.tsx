@@ -6,7 +6,7 @@ import { Save, Loader2, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AdminFieldSelect } from '@/components/admin/AdminFieldSelect'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { contestEventService } from '@/services/contestEventService'
@@ -55,6 +55,24 @@ function isNoneVisibility(visibility?: {
     !visibility?.public
   )
 }
+
+const MODE_OPTIONS = [
+  { value: 'online', label: 'Online' },
+  { value: 'offline', label: 'Offline' },
+  { value: 'hybrid', label: 'Hybrid' },
+]
+
+const PRIZE_TYPE_OPTIONS = [
+  { value: 'free', label: 'Free' },
+  { value: 'paid', label: 'Paid' },
+]
+
+const PUBLICATION_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'published', label: 'Published' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'archived', label: 'Archived' },
+]
 
 const defaultForm: ContestEventCreatePayload = {
   title: '',
@@ -427,12 +445,12 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             </div>
             <div>
               <label className="text-sm font-medium">Category</label>
-              <Select value={form.category} onValueChange={(v) => update('category', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {EVENT_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <AdminFieldSelect
+                value={form.category}
+                onValueChange={(v) => update('category', v)}
+                options={EVENT_CATEGORIES}
+                placeholder="Select category"
+              />
             </div>
           </div>
           <div>
@@ -472,14 +490,12 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           <div><label className="text-sm font-medium">Venue</label><Input value={form.venue || ''} onChange={(e) => update('venue', e.target.value)} /></div>
           <div>
             <label className="text-sm font-medium">Mode</label>
-            <Select value={form.mode} onValueChange={(v) => update('mode', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="online">Online</SelectItem>
-                <SelectItem value="offline">Offline</SelectItem>
-                <SelectItem value="hybrid">Hybrid</SelectItem>
-              </SelectContent>
-            </Select>
+            <AdminFieldSelect
+              value={form.mode}
+              onValueChange={(v) => update('mode', v)}
+              options={MODE_OPTIONS}
+              placeholder="Select mode"
+            />
           </div>
           <div className="md:col-span-2">
             <label className="text-sm font-medium">Event Link</label>
@@ -536,27 +552,23 @@ export function EventCreateForm({ eventId }: EventFormProps) {
           <div><label className="text-sm font-medium">Prize Pool</label><Input value={form.prize_pool || ''} onChange={(e) => update('prize_pool', e.target.value)} placeholder="₹5,00,000" /></div>
           <div>
             <label className="text-sm font-medium">Prize Type</label>
-            <Select value={form.prize_type} onValueChange={(v) => update('prize_type', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">Free</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-              </SelectContent>
-            </Select>
+            <AdminFieldSelect
+              value={form.prize_type}
+              onValueChange={(v) => update('prize_type', v)}
+              options={PRIZE_TYPE_OPTIONS}
+              placeholder="Select prize type"
+            />
           </div>
           <div><label className="text-sm font-medium">Registration Button Text</label><Input value={form.registration_button_text || ''} onChange={(e) => update('registration_button_text', e.target.value)} /></div>
           <div><label className="text-sm font-medium">Registration URL (optional)</label><Input value={form.registration_external_url || ''} onChange={(e) => update('registration_external_url', e.target.value)} /></div>
           <div>
             <label className="text-sm font-medium">Publication Status</label>
-            <Select value={form.publication_status} onValueChange={(v) => update('publication_status', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
+            <AdminFieldSelect
+              value={form.publication_status}
+              onValueChange={(v) => update('publication_status', v)}
+              options={PUBLICATION_STATUS_OPTIONS}
+              placeholder="Select status"
+            />
           </div>
         </CardContent>
       </Card>

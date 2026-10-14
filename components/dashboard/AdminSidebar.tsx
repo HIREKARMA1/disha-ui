@@ -160,10 +160,10 @@ const navSections: NavSection[] = [
                 description: 'Tests & questions',
             },
             {
-                label: 'Mock Tests',
+                label: 'Practice Tests',
                 href: '/dashboard/admin/mock-tests',
                 icon: ClipboardList,
-                description: 'Topic-based mock tests',
+                description: 'Topic-based practice tests',
             },
             {
                 label: 'Assessments',
