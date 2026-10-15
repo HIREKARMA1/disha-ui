@@ -110,7 +110,7 @@ class CampusDriveService {
     return response.data
   }
 
-  async uploadFile(file: File, fileType: 'banner' | 'logo'): Promise<{ file_url: string }> {
+  async uploadFile(file: File, fileType: 'banner' | 'logo' | 'gallery'): Promise<{ file_url: string }> {
     const formData = new FormData()
     formData.append('file', file)
     const response = await apiClient.client.post(`/campus-drives/upload?file_type=${fileType}`, formData, {

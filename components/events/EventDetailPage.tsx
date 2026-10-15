@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
@@ -11,6 +11,7 @@ import type { ContestEventDetail } from '@/types/contestEvent'
 import { CONTEST_STATUS_LABELS, CATEGORY_LABELS } from '@/types/contestEvent'
 import { isPortalEventCompleted, isEventEndedForFeedback } from '@/lib/eventsPortalConfig'
 import { EventFaqAccordion } from '@/components/events/EventFaqAccordion'
+import { PhotoGallerySection } from '@/components/gallery/PhotoGallerySection'
 import { EventFeedbackSection } from '@/components/events/EventFeedbackSection'
 import {
   Loader2, Users, Trophy, Building2, Clock, Calendar,
@@ -39,6 +40,8 @@ const SECTIONS = [
   { id: 'results', label: 'Results', shortLabel: 'Results' },
   { id: 'support', label: 'Support', shortLabel: 'Support' },
 ]
+
+const GALLERY_SECTION = { id: 'gallery', label: 'Gallery', shortLabel: 'Gallery' }
 
 function formatEventDate(value?: string | null) {
   if (!value) return null
@@ -349,10 +352,19 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
     void handleRegister()
   }, [event, authLoading, registering, slug, handleRegister])
 
+  const pageSections = useMemo(() => {
+    const hasGallery = Boolean(event?.gallery?.some((photo) => photo.image_url))
+    if (!hasGallery) return SECTIONS
+    const next = [...SECTIONS]
+    const index = next.findIndex((section) => section.id === 'faq')
+    next.splice(index < 0 ? next.length : index, 0, GALLERY_SECTION)
+    return next
+  }, [event])
+
   // Hash navigation on load
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
-    if (hash && (hash === 'feedback' || SECTIONS.find(s => s.id === hash))) {
+    if (hash && (hash === 'feedback' || pageSections.find(s => s.id === hash))) {
       setTimeout(() => {
         const el = sectionRefs.current[hash] || document.getElementById(hash)
         if (el) {
@@ -360,7 +372,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
         }
       }, 500)
     }
-  }, [event])
+  }, [event, pageSections])
 
   // Intersection observer for active section
   useEffect(() => {
@@ -375,12 +387,12 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       },
       { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
     )
-    SECTIONS.forEach(({ id }) => {
+    pageSections.forEach(({ id }) => {
       const el = sectionRefs.current[id]
       if (el) observer.observe(el)
     })
     return () => observer.disconnect()
-  }, [event])
+  }, [event, pageSections])
 
   const scrollToSection = useCallback((id: string) => {
     const el = sectionRefs.current[id]
@@ -842,7 +854,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       <div className="sticky top-16 z-30 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
         <div className="container mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="scrollbar-hide flex gap-1 overflow-x-auto py-2">
-            {SECTIONS.map(({ id, label, shortLabel }) => (
+            {pageSections.map(({ id, label, shortLabel }) => (
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
@@ -956,6 +968,13 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
                 <p className="text-gray-500 dark:text-gray-400">Reward details will be announced soon.</p>
               )}
             </section>
+
+            <PhotoGallerySection
+              photos={event.gallery}
+              sectionId="gallery"
+              sectionRef={(el) => { sectionRefs.current['gallery'] = el }}
+              className="scroll-mt-36"
+            />
 
             {isEventEndedForFeedback(event) && user ? (
               <EventFeedbackSection slug={slug} isRegistered={Boolean(event.is_registered)} />
