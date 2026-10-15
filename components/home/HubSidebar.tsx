@@ -16,7 +16,6 @@ import {
   Library,
   LayoutDashboard,
   LogIn,
-  Newspaper,
   Brain,
   Presentation,
   Search,
@@ -47,7 +46,6 @@ const GUEST_NAV: NavLink[] = [
   { label: 'Campus Drive', href: '/campus-drives', icon: Presentation, openInNewTab: true },
   { label: 'Mock Tests', href: '/mock-tests', icon: ClipboardList },
   { label: 'Practice Tests', href: '/mock-tests', icon: ClipboardList },
-  { label: 'Blogs', href: '/blogs', icon: Newspaper },
   { label: 'Support', href: '/contact', icon: Headphones },
 ]
 
