@@ -506,6 +506,7 @@ export function BulkEmailManagement() {
                                         <SelectItem value="unverified">Unverified</SelectItem>
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="below_75_profile">Below 75% Profile</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
