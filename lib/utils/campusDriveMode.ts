@@ -10,7 +10,7 @@ export function campusDriveModeValue(mode?: string | null): CampusDriveModeValue
   const value = (mode || '').trim().toLowerCase()
   if (value === 'virtual' || value === 'online') return 'virtual'
   if (value === 'oncampus' || value === 'offline') return 'oncampus'
-  if (value === 'walking') return 'walking'
+  if (value === 'walking' || value === 'walkin') return 'walking'
   return ''
 }
 

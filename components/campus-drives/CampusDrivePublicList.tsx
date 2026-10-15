@@ -52,7 +52,7 @@ function PublicCampusDriveCard({ item }: { item: CampusDriveListItem }) {
   const slug = item.slug?.trim()
   const detailHref = slug ? `/campus-drives/${encodeURIComponent(slug)}` : '/campus-drives'
   const applyHref = slug
-    ? `/campus-drives/${encodeURIComponent(slug)}?register=1`
+    ? `/campus-drives/${encodeURIComponent(slug)}?register=1&action=register`
     : detailHref
   const company = driveCardCompanyLine({
     title: item.title,

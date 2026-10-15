@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Modal } from '@/components/ui/modal'
 import { StudentProfileModal } from '@/components/dashboard/StudentProfileModal'
 import { contestEventService } from '@/services/contestEventService'
+import { campusDriveService } from '@/services/campusDriveService'
 import { apiClient } from '@/lib/api'
 import type {
   EventAnalyticsUsersParams,
@@ -33,7 +34,8 @@ import type { StudentListItem } from '@/types/university'
 import { cn, getInitials } from '@/lib/utils'
 
 interface RegisteredUsersAnalyticsProps {
-  eventId: string
+  eventId?: string
+  driveId?: string
 }
 
 const PAGE_SIZES = [10, 25, 50, 100] as const
@@ -108,7 +110,7 @@ const headerText = 'font-medium text-gray-700 dark:text-gray-200'
 const labelText = 'text-xs text-gray-600 dark:text-gray-300'
 const mutedText = 'text-sm text-gray-600 dark:text-gray-300'
 
-export function RegisteredUsersAnalytics({ eventId }: RegisteredUsersAnalyticsProps) {
+export function RegisteredUsersAnalytics({ eventId, driveId }: RegisteredUsersAnalyticsProps) {
   const [data, setData] = useState<EventAnalyticsUsersResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState<string | null>(null)
@@ -190,7 +192,9 @@ export function RegisteredUsersAnalytics({ eventId }: RegisteredUsersAnalyticsPr
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await contestEventService.getAnalyticsUsers(eventId, queryParams)
+      const result = driveId
+        ? await campusDriveService.getAnalyticsUsers(driveId, queryParams)
+        : await contestEventService.getAnalyticsUsers(eventId!, queryParams)
       setData(result)
     } catch {
       toast.error('Failed to load registered users')
@@ -198,7 +202,7 @@ export function RegisteredUsersAnalytics({ eventId }: RegisteredUsersAnalyticsPr
     } finally {
       setLoading(false)
     }
-  }, [eventId, queryParams])
+  }, [driveId, eventId, queryParams])
 
   useEffect(() => {
     fetchUsers()
@@ -226,11 +230,15 @@ export function RegisteredUsersAnalytics({ eventId }: RegisteredUsersAnalyticsPr
   const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
     setExporting(format)
     try {
-      const blob = await contestEventService.exportAnalyticsUsers(eventId, format, queryParams)
+      const blob = driveId
+        ? await campusDriveService.exportAnalyticsUsers(driveId, format, queryParams)
+        : await contestEventService.exportAnalyticsUsers(eventId!, format, queryParams)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `event-${eventId}-registered-users.${format === 'excel' ? 'xlsx' : format}`
+      a.download = driveId
+        ? `campus-drive-${driveId}-registered-users.${format === 'excel' ? 'xlsx' : format}`
+        : `event-${eventId}-registered-users.${format === 'excel' ? 'xlsx' : format}`
       a.click()
       URL.revokeObjectURL(url)
       toast.success(`${format.toUpperCase()} exported`)
@@ -299,7 +307,12 @@ export function RegisteredUsersAnalytics({ eventId }: RegisteredUsersAnalyticsPr
           <div>
             <CardTitle>Registered Users</CardTitle>
             <p className={cn(mutedText, 'mt-1')}>
-              {data ? `${data.total.toLocaleString()} registered user${data.total === 1 ? '' : 's'}` : 'Loading…'}
+              {driveId
+                ? 'Students who applied to jobs in this campus drive.'
+                : null}
+              {data
+                ? `${driveId ? ' ' : ''}${data.total.toLocaleString()} registered user${data.total === 1 ? '' : 's'}`
+                : ' Loading…'}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
