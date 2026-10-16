@@ -91,6 +91,7 @@ interface UniversityJob {
     company_description?: string
     contact_person?: string
     contact_designation?: string
+    brochure_url?: string
 }
 
 interface UniversityJobsResponse {

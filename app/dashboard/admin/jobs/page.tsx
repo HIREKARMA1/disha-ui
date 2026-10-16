@@ -66,6 +66,7 @@ interface Job {
     is_public?: boolean
     public_link_token?: string
     public_access_level?: 'premium' | 'all'
+    brochure_url?: string | null
 }
 
 import { useRouter } from 'next/navigation'
@@ -168,8 +169,14 @@ export default function AdminJobsPage() {
         }))
     }, [filteredJobs.length, pagination.limit])
 
-    const handleJobUpdated = () => {
-        fetchJobs() // Refresh the jobs list
+    const handleJobUpdated = (updatedJob?: Job) => {
+        if (updatedJob) {
+            setJobs(currentJobs => currentJobs.map(currentJob =>
+                currentJob.id === updatedJob.id ? { ...currentJob, ...updatedJob } : currentJob
+            ))
+            return
+        }
+        fetchJobs()
     }
 
     const handleViewJob = (job: Job) => {

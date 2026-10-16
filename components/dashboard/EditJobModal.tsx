@@ -78,7 +78,7 @@ interface Job {
 interface EditJobModalProps {
     isOpen: boolean
     onClose: () => void
-    onJobUpdated: () => void
+    onJobUpdated: (updatedJob?: Job) => void
     job: Job | null
     isAdmin?: boolean // Add prop to indicate if this is admin context
     isUniversity?: boolean // Add prop to indicate if this is university context
@@ -791,7 +791,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             })
 
             toast.success('Job updated successfully!')
-            onJobUpdated()
+            onJobUpdated(response)
             onClose()
         } catch (error: any) {
             // Log detailed error information
