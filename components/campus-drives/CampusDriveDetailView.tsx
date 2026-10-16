@@ -13,6 +13,7 @@ import { sanitizeEventDescriptionHtml } from '@/lib/sanitizeHtml'
 import { CompanyLogo } from '@/components/campus-drives/CompanyLogo'
 import { ShareJobModal } from '@/components/jobs/ShareJobModal'
 import { campusDriveModeLabel, campusDriveVenueFallback } from '@/lib/utils/campusDriveMode'
+import { PhotoGallerySection } from '@/components/gallery/PhotoGallerySection'
 
 interface ParsedJob {
   id: string
@@ -328,6 +329,11 @@ export function CampusDriveDetailView({
     return list.filter((item) => item?.id && item?.company_name)
   }, [drive.corporates])
 
+  const galleryPhotos = useMemo(
+    () => (drive.gallery || []).filter((photo) => Boolean(photo.image_url)),
+    [drive.gallery]
+  )
+
   // FAQs List
   const faqsList = useMemo(() => {
     const raw = drive.faqs
@@ -584,6 +590,11 @@ export function CampusDriveDetailView({
               <button type="button" role="tab" aria-selected={activeTab === 'rewards'} className={activeTab === 'rewards' ? 'on' : ''} onClick={() => setActiveTab('rewards')}>
                 Perks & Benefits
               </button>
+              {galleryPhotos.length > 0 ? (
+                <button type="button" role="tab" aria-selected={activeTab === 'gallery'} className={activeTab === 'gallery' ? 'on' : ''} onClick={() => setActiveTab('gallery')}>
+                  Gallery
+                </button>
+              ) : null}
               <button type="button" role="tab" aria-selected={activeTab === 'faq'} className={activeTab === 'faq' ? 'on' : ''} onClick={() => setActiveTab('faq')}>
                 FAQs
               </button>
@@ -878,6 +889,10 @@ export function CampusDriveDetailView({
                   ))}
                 </div>
               </section>
+            ) : null}
+
+            {activeTab === 'gallery' ? (
+              <PhotoGallerySection photos={galleryPhotos} sectionId="gallery" />
             ) : null}
 
             {/* 8. FAQs Section */}

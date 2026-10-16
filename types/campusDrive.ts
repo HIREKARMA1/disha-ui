@@ -1,5 +1,5 @@
 import type { Job } from '@/components/jobs/AllJobs'
-import type { EventCategory, FAQItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
+import type { EventCategory, FAQItem, GalleryItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
 
 export type CampusDriveMode = 'virtual' | 'oncampus' | 'walking'
 export type CampusDrivePublicationStatus = 'draft' | 'published'
@@ -66,6 +66,7 @@ export interface CampusDriveDetail extends CampusDriveListItem {
   faqs: FAQItem[]
   rounds: RoundItem[]
   rewards: RewardItem[]
+  gallery?: GalleryItem[]
   jobs: Job[]
   corporates?: CampusDriveCorporateSummary[]
   updated_at?: string | null
@@ -111,6 +112,7 @@ export interface CampusDriveWritePayload {
   faqs?: FAQItem[]
   rounds?: RoundItem[]
   rewards?: RewardItem[]
+  gallery?: GalleryItem[]
   job_ids?: string[]
   corporate_ids?: string[]
 }

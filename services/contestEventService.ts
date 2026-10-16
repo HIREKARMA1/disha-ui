@@ -225,7 +225,7 @@ export class ContestEventService {
     return response.data
   }
 
-  async uploadFile(file: File, fileType: 'banner' | 'logo' | 'document'): Promise<{ file_url: string }> {
+  async uploadFile(file: File, fileType: 'banner' | 'logo' | 'gallery' | 'document'): Promise<{ file_url: string }> {
     const formData = new FormData()
     formData.append('file', file)
     const response = await apiClient.client.post(`/events/contests/upload?file_type=${fileType}`, formData, {

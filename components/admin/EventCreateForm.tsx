@@ -15,6 +15,7 @@ import { eventRequestService } from '@/services/eventRequestService'
 import type { ContestEventCreatePayload, ContestEventUpdatePayload } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
+import { PhotoGalleryField } from '@/components/gallery/PhotoGalleryField'
 import {
   EventAdvertisementSection,
   adFromApi,
@@ -108,6 +109,7 @@ const defaultForm: ContestEventCreatePayload = {
   faqs: [],
   rounds: [],
   rewards: [],
+  gallery: [],
 }
 
 export function EventCreateForm({ eventId }: EventFormProps) {
@@ -200,6 +202,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
             faqs: event.faqs,
             rounds: event.rounds,
             rewards: event.rewards,
+            gallery: event.gallery || [],
           })
 
           const ads = adList.advertisements || []
@@ -821,6 +824,15 @@ export function EventCreateForm({ eventId }: EventFormProps) {
         onChange={setRightAd}
         uploading={uploading === 'right_ad'}
         onUploadingChange={(busy) => setUploading(busy ? 'right_ad' : null)}
+      />
+
+      <PhotoGalleryField
+        photos={form.gallery || []}
+        onChange={(gallery) => update('gallery', gallery)}
+        uploadFile={async (file) => {
+          const result = await contestEventService.uploadFile(file, 'gallery')
+          return result.file_url
+        }}
       />
 
       <div className="flex justify-end">

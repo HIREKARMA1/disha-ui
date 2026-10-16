@@ -34,6 +34,11 @@ import {
 } from '@/lib/proctoringSnapshots'
 import { formatExamDeviceLabel } from '@/lib/examDevice'
 
+function contactOrNotProvided(value?: string | null) {
+    const text = typeof value === 'string' ? value.trim() : ''
+    return text || 'Not provided'
+}
+
 export default function MockTestAnalyticsPage() {
     const params = useParams()
     const router = useRouter()
@@ -549,6 +554,8 @@ export default function MockTestAnalyticsPage() {
                                 <thead className="bg-gray-50/50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-400 font-medium text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                                     <tr>
                                         <th className="px-6 py-4">Student Name</th>
+                                        <th className="px-6 py-4">Email Address</th>
+                                        <th className="px-6 py-4">Phone Number</th>
                                         <th className="px-6 py-4">Device</th>
                                         <th className="px-6 py-4">Status</th>
                                         <th className="px-6 py-4">Score</th>
@@ -570,6 +577,16 @@ export default function MockTestAnalyticsPage() {
                                                     </div>
                                                     <span>{attempt.student_name || "Unknown Student"}</span>
                                                 </div>
+                                            </td>
+
+                                            <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-[220px]">
+                                                <span className="block truncate" title={contactOrNotProvided(attempt.email || attempt.student_profile?.email)}>
+                                                    {contactOrNotProvided(attempt.email || attempt.student_profile?.email)}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                                {contactOrNotProvided(attempt.student_profile?.phone)}
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
