@@ -5,6 +5,7 @@ import { Navbar } from '@/components/ui/navbar'
 import { AdminEventSidebar } from './AdminEventSidebar'
 import { LoadingOverlay } from '@/components/dashboard/LoadingOverlay'
 import { useAuth } from '@/hooks/useAuth'
+import { canUseExecutiveModule } from '@/lib/executiveModules'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -18,7 +19,7 @@ export function AdminEventLayout({ children }: AdminEventLayoutProps) {
     const router = useRouter()
 
     useEffect(() => {
-        if (!isLoading && user?.user_type !== 'admin') {
+        if (!isLoading && !canUseExecutiveModule(user, 'event')) {
             router.push('/dashboard')
         }
     }, [user, isLoading, router])
@@ -27,7 +28,7 @@ export function AdminEventLayout({ children }: AdminEventLayoutProps) {
         return <LoadingOverlay />
     }
 
-    if (user?.user_type !== 'admin') {
+    if (!canUseExecutiveModule(user, 'event')) {
         return null
     }
 

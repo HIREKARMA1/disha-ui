@@ -63,7 +63,7 @@ export function AdminEventCard({
               src={event.banner_url}
               alt=""
               loading="lazy"
-              className="h-full w-full object-contain object-center"
+              className="h-full w-full object-cover object-center"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600 to-secondary-500">

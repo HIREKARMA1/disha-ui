@@ -6,13 +6,14 @@ import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayou
 import { BulkWhatsAppManagement } from '@/components/dashboard/admin/bulk-whatsapp/BulkWhatsAppManagement'
 import { LoadingOverlay } from '@/components/dashboard/LoadingOverlay'
 import { useAuth } from '@/hooks/useAuth'
+import { canUseExecutiveModule } from '@/lib/executiveModules'
 
 export default function AdminBulkWhatsAppPage() {
     const { user, isLoading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
-        if (!isLoading && user?.user_type !== 'admin') {
+        if (!isLoading && !canUseExecutiveModule(user, 'bulk_whatsapp')) {
             router.push('/dashboard')
         }
     }, [user, isLoading, router])
@@ -21,7 +22,7 @@ export default function AdminBulkWhatsAppPage() {
         return <LoadingOverlay />
     }
 
-    if (user?.user_type !== 'admin') {
+    if (!canUseExecutiveModule(user, 'bulk_whatsapp')) {
         return null
     }
 

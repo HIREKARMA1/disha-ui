@@ -9,6 +9,7 @@ import { navItemIsActive } from '@/lib/adminNav'
 import { AdminPageHero } from '@/components/admin/ui/AdminPageHero'
 import { adminActiveNav, adminCard } from '@/components/admin/ui/admin-theme'
 import { cn } from '@/lib/utils'
+import { executivePathForAdminPath } from '@/lib/executiveModules'
 
 const SUB_NAV_ITEMS = [
   { label: 'All Events', href: '/dashboard/admin/events', icon: List },
@@ -19,6 +20,7 @@ const SUB_NAV_ITEMS = [
 ] as const
 
 function eventSubNavIsActive(pathname: string, href: string) {
+  pathname = pathname.replace(/^\/dashboard\/executive(?=\/|$)/, '/dashboard/admin')
   if (href === '/dashboard/admin/events') {
     return (
       pathname === href ||
@@ -34,6 +36,10 @@ function eventSubNavIsActive(pathname: string, href: string) {
 }
 
 export function EventManagementHero() {
+  const pathname = usePathname()
+  const createEventHref = pathname.startsWith('/dashboard/executive/')
+    ? executivePathForAdminPath('/dashboard/admin/events/create')
+    : '/dashboard/admin/events/create'
   return (
     <AdminPageHero
       title="Event Management"
@@ -44,7 +50,7 @@ export function EventManagementHero() {
         { label: 'Analytics', tone: 'teal', icon: <BarChart3 className="w-3.5 h-3.5" /> },
       ]}
       actions={
-        <Link href="/dashboard/admin/events/create" className="shrink-0">
+        <Link href={createEventHref} className="shrink-0">
           <Button className="bg-gradient-to-r from-blue-500 to-violet-600 text-white shadow-md shadow-blue-500/20 hover:opacity-95">
             <Plus className="mr-2 h-4 w-4" />
             Create Event
@@ -57,6 +63,7 @@ export function EventManagementHero() {
 
 export function EventManagementSubNav() {
   const pathname = usePathname()
+  const executive = pathname.startsWith('/dashboard/executive/')
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -66,7 +73,7 @@ export function EventManagementSubNav() {
         return (
           <motion.div key={item.href} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
             <Link
-              href={item.href}
+              href={executive ? executivePathForAdminPath(item.href) : item.href}
               className={cn(
                 'flex items-center gap-3 rounded-[18px] border p-4 transition-all duration-200',
                 isActive

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import HomePageClient from '@/components/home/HomePageClient'
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://disha.hirekarma.in'
@@ -35,6 +36,14 @@ export const metadata: Metadata = {
   },
 }
 
-export default function HomePage() {
+export default function HomePage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>
+}) {
+  if (searchParams?.type === 'executive') {
+    redirect('/auth/login?type=executive')
+  }
+
   return <HomePageClient />
 }

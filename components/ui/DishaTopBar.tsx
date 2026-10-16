@@ -11,9 +11,12 @@ import { cn } from '@/lib/utils'
 export function DishaTopBar({
   searchPlaceholder = 'Search opportunities, events, resources…',
   showSearch = true,
+  eventDetail = false,
 }: {
   searchPlaceholder?: string
   showSearch?: boolean
+  /** Balanced desktop spacing for the event detail page header. */
+  eventDetail?: boolean
 }) {
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -70,7 +73,8 @@ export function DishaTopBar({
           showSearch
             ? cn(
                 'grid grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-center gap-x-2 gap-y-2 py-2',
-                'lg:flex lg:h-14 lg:flex-nowrap lg:items-center lg:gap-4 lg:py-0'
+                'lg:flex lg:h-14 lg:flex-nowrap lg:items-center lg:gap-4 lg:py-0',
+                eventDetail && 'lg:h-16 lg:gap-6'
               )
             : 'flex h-12 min-w-0 items-center justify-between gap-2 py-2 sm:h-14 sm:gap-3 lg:h-14 lg:py-0'
         )}
@@ -87,10 +91,13 @@ export function DishaTopBar({
 
         {showSearch ? (
           <>
-            <div className="col-start-2 row-start-1 justify-self-end lg:order-3 lg:shrink-0">
+            <div className={cn('col-start-2 row-start-1 justify-self-end lg:order-3 lg:shrink-0', eventDetail && 'lg:ml-auto')}>
               <DishaAuthActions />
             </div>
-            <div className="col-span-2 row-start-2 min-w-0 w-full lg:order-2 lg:col-auto lg:row-auto lg:max-w-xl lg:flex-1 lg:px-2 xl:max-w-2xl">
+            <div className={cn(
+              'col-span-2 row-start-2 min-w-0 w-full lg:order-2 lg:col-auto lg:row-auto lg:max-w-xl lg:flex-1 lg:px-2 xl:max-w-2xl',
+              eventDetail && 'lg:max-w-3xl xl:max-w-3xl'
+            )}>
               {searchField}
             </div>
           </>

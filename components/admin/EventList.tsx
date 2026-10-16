@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
 import Link from 'next/link'
 import {
-  Search, Plus, Loader2, Calendar, Activity, Megaphone, CheckCircle2, AlertCircle,
+  Search, Plus, Loader2, Calendar, Activity, Megaphone, CheckCircle2, AlertCircle, ChevronDown,
   ChevronLeft, ChevronRight, CalendarDays,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
@@ -23,6 +22,130 @@ import { toast } from 'react-hot-toast'
 
 const PAGE_LIMIT = 20
 const MAX_LIMIT = 100
+
+function EventFilterSelect({
+  value,
+  options,
+  onChange,
+  label,
+  className = 'h-10',
+  containerClassName = '',
+}: {
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (value: string) => void
+  label: string
+  className?: string
+  containerClassName?: string
+}) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const listboxId = useId()
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value))
+  const [open, setOpen] = useState(false)
+  const [opensUpward, setOpensUpward] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(selectedIndex)
+
+  useEffect(() => {
+    if (!open) return
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  const openMenu = () => {
+    const rect = rootRef.current?.getBoundingClientRect()
+    const menuHeight = Math.min(options.length * 40, 256)
+    const spaceBelow = rect ? window.innerHeight - rect.bottom : window.innerHeight
+    const spaceAbove = rect?.top ?? 0
+    setOpensUpward(spaceBelow < menuHeight && spaceAbove > spaceBelow)
+    setActiveIndex(selectedIndex)
+    setOpen(true)
+  }
+
+  const selectOption = (index: number) => {
+    const option = options[index]
+    if (option) onChange(option.value)
+    setActiveIndex(index)
+    setOpen(false)
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      if (!open) openMenu()
+      else setActiveIndex((index) => (index + 1) % options.length)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      if (!open) openMenu()
+      else setActiveIndex((index) => (index - 1 + options.length) % options.length)
+    } else if (event.key === 'Home' && open) {
+      event.preventDefault()
+      setActiveIndex(0)
+    } else if (event.key === 'End' && open) {
+      event.preventDefault()
+      setActiveIndex(options.length - 1)
+    } else if ((event.key === 'Enter' || event.key === ' ') && open) {
+      event.preventDefault()
+      selectOption(activeIndex)
+    } else if ((event.key === 'Enter' || event.key === ' ') && !open) {
+      event.preventDefault()
+      openMenu()
+    }
+  }
+
+  return (
+    <div ref={rootRef} className={`relative min-w-0 ${containerClassName}`}>
+      <button
+        type="button"
+        role="combobox"
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-activedescendant={open ? `${listboxId}-option-${activeIndex}` : undefined}
+        onClick={() => open ? setOpen(false) : openMenu()}
+        onKeyDown={handleKeyDown}
+        className={`flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-900 shadow-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white ${className}`}
+      >
+        <span className="truncate">{options[selectedIndex]?.label}</span>
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-150 dark:text-gray-400 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <div
+        id={listboxId}
+        role="listbox"
+        aria-label={label}
+        className={`absolute z-[60] w-full overflow-y-auto overscroll-contain rounded-md border border-gray-200 bg-white p-1 shadow-lg transition-[opacity,transform,max-height,visibility] duration-200 ease-out dark:border-gray-700 dark:bg-gray-800 ${opensUpward ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'} ${open ? 'visible max-h-64 translate-y-0 scale-100 opacity-100' : `invisible max-h-0 ${opensUpward ? 'translate-y-1' : '-translate-y-1'} scale-[0.98] opacity-0`}`}
+      >
+        {options.map((option, index) => (
+          <button
+            id={`${listboxId}-option-${index}`}
+            key={option.value}
+            type="button"
+            role="option"
+            aria-selected={option.value === value}
+            onMouseEnter={() => setActiveIndex(index)}
+            onClick={() => selectOption(index)}
+            style={{ transitionDelay: open ? `${Math.min(index * 18, 120)}ms` : '0ms' }}
+            className={`flex min-h-9 w-full items-center rounded px-2 text-left text-sm transition-[opacity,transform,background-color,color] duration-150 ease-out ${open ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'} ${index === activeIndex ? 'bg-primary-50 text-primary-800 dark:bg-primary-900/30 dark:text-primary-200' : 'text-gray-900 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700'}`}
+          >
+            <span className="truncate">{option.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 interface EventStats {
   total: number
@@ -240,8 +363,8 @@ export function EventList() {
 
       {/* Filters */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
-          <div className="relative md:col-span-2">
+        <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[minmax(14rem,2fr)_repeat(5,minmax(0,1fr))]">
+          <div className="relative min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               placeholder="Search events..."
@@ -250,77 +373,118 @@ export function EventList() {
               className="h-10 pl-9"
             />
           </div>
-          <Select value={filters.publication_status} onValueChange={(v) => setFilters((f) => ({ ...f, publication_status: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Type" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="live">Live</SelectItem>
-              <SelectItem value="postponed">Postponed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filters.category} onValueChange={(v) => setFilters((f) => ({ ...f, category: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {EVENT_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filters.registration} onValueChange={(v) => setFilters((f) => ({ ...f, registration: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Registration" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Registration</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="mt-3 flex justify-end">
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="h-9 w-44 text-sm"><SelectValue placeholder="Sort by" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="created_at">Created Date</SelectItem>
-              <SelectItem value="event_start_date">Event Date</SelectItem>
-              <SelectItem value="title">Title</SelectItem>
-            </SelectContent>
-          </Select>
+          <EventFilterSelect
+            label="Publication status"
+            value={filters.publication_status}
+            onChange={(value) => setFilters((f) => ({ ...f, publication_status: value }))}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'published', label: 'Published' },
+              { value: 'closed', label: 'Closed' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+          />
+          <EventFilterSelect
+            label="Event status"
+            value={filters.status}
+            onChange={(value) => setFilters((f) => ({ ...f, status: value }))}
+            options={[
+              { value: 'all', label: 'All Types' },
+              { value: 'open', label: 'Open' },
+              { value: 'upcoming', label: 'Upcoming' },
+              { value: 'live', label: 'Live' },
+              { value: 'postponed', label: 'Postponed' },
+              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'closed', label: 'Closed' },
+            ]}
+          />
+          <EventFilterSelect
+            label="Event category"
+            value={filters.category}
+            onChange={(value) => setFilters((f) => ({ ...f, category: value }))}
+            options={[
+              { value: 'all', label: 'All Categories' },
+              ...EVENT_CATEGORIES.map((category) => ({ value: category.value, label: category.label })),
+            ]}
+          />
+          <EventFilterSelect
+            label="Registration status"
+            value={filters.registration}
+            onChange={(value) => setFilters((f) => ({ ...f, registration: value }))}
+            options={[
+              { value: 'all', label: 'All Registration' },
+              { value: 'open', label: 'Open' },
+              { value: 'closed', label: 'Closed' },
+            ]}
+          />
+          <EventFilterSelect
+            label="Sort events"
+            value={sortBy}
+            onChange={setSortBy}
+            className="h-10"
+            options={[
+              { value: 'created_at', label: 'Created Date' },
+              { value: 'event_start_date', label: 'Event Date' },
+              { value: 'title', label: 'Title' },
+            ]}
+          />
         </div>
       </div>
 
       {/* Event cards */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-        </div>
-      ) : events.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="space-y-4">
-          {events.map((event) => (
-            <AdminEventCard
-              key={event.id}
-              event={event}
-              actionLoading={actionLoading}
-              onAction={handleAction}
-              onCancel={setCancelTarget}
-              onPostpone={setPostponeTarget}
-            />
-          ))}
-        </div>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {loading ? (
+          <motion.div
+            key="event-loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            className="flex justify-center py-16"
+          >
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          </motion.div>
+        ) : events.length === 0 ? (
+          <motion.div
+            key="event-empty"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <EmptyState />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="event-results"
+            layout
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: 'easeOut', layout: { duration: 0.24 } }}
+            className="space-y-4"
+          >
+            {events.map((event, index) => (
+              <motion.div
+                key={event.id}
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, delay: Math.min(index * 0.035, 0.18), ease: 'easeOut' }}
+              >
+                <AdminEventCard
+                  event={event}
+                  actionLoading={actionLoading}
+                  onAction={handleAction}
+                  onCancel={setCancelTarget}
+                  onPostpone={setPostponeTarget}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Pagination */}
       {pagination.total_pages > 1 && (
