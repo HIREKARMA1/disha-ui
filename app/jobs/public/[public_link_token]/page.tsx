@@ -36,6 +36,7 @@ import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import { profileService } from '@/services/profileService'
 import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
+import { downloadBrochureFile } from '@/lib/downloadFile'
 import {
     Loader2,
     AlertCircle,
@@ -48,6 +49,7 @@ import {
     Users,
     Share2,
     CheckCircle,
+    Download,
     ExternalLink,
     Globe,
     Mail,
@@ -59,6 +61,7 @@ import { PremiumAccessModal } from '@/components/ui/PremiumAccessModal'
 interface Job {
     id: string
     title: string
+    brochure_url?: string | null
     description: string
     requirements?: string
     responsibilities?: string
@@ -128,6 +131,7 @@ export default function PublicJobPage() {
     const [interestModalKind, setInterestModalKind] = useState<JobInterestModalKind>('campus_drive')
     const [campusDriveInterestSubmitting, setCampusDriveInterestSubmitting] = useState(false)
     const [hasAcceptedCampusDriveRequest, setHasAcceptedCampusDriveRequest] = useState(false)
+    const [isDownloadingBrochure, setIsDownloadingBrochure] = useState(false)
     const autoApplyAttempted = useRef(false)
 
     useEffect(() => {
@@ -509,6 +513,21 @@ export default function PublicJobPage() {
         setShowShareDropdown(false)
     }
 
+    const handleDownloadBrochure = async () => {
+        if (!job?.brochure_url) return
+        setIsDownloadingBrochure(true)
+        try {
+            const suggestedName = `${job.title || 'Job'}_Brochure.pdf`
+            await downloadBrochureFile(job.brochure_url, suggestedName)
+            toast.success('Brochure download started!')
+        } catch (err) {
+            console.error('Failed to download brochure:', err)
+            toast.error('Failed to download brochure. Please try again.')
+        } finally {
+            setIsDownloadingBrochure(false)
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -718,6 +737,22 @@ export default function PublicJobPage() {
                                                     : requestApplyOverride === 'rejected'
                                                         ? 'Rejected'
                                                         : 'Quick Apply'}
+                                            </Button>
+                                        )}
+
+                                        {job.brochure_url && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={handleDownloadBrochure}
+                                                disabled={isDownloadingBrochure}
+                                                className="w-full border-2 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
+                                            >
+                                                {isDownloadingBrochure ? (
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                ) : (
+                                                    <Download className="w-4 h-4 mr-2" />
+                                                )}
+                                                {isDownloadingBrochure ? 'Downloading…' : 'Download Brochure'}
                                             </Button>
                                         )}
 
