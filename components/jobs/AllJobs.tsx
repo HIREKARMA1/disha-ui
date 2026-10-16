@@ -128,6 +128,7 @@ export interface Job {
     slug?: string | null
     is_public?: boolean | null
     public_access_level?: string | null
+    brochure_url?: string | null
     assigned_university_ids?: string[] | null
 }
 

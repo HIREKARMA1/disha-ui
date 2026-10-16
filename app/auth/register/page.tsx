@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
@@ -294,6 +294,12 @@ function RegisterPageContent() {
         identifier: formData?.email ?? null,
         enabled: currentStep === 'otp' && !!formData?.email,
     })
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' })
+    }, [uiStep, currentStep, selectedUserType])
 
     // Redirect if user is already authenticated (but not if we have a redirect URL)
     useEffect(() => {
@@ -827,7 +833,13 @@ function RegisterPageContent() {
                 >
                     <LoginBrandPanel className="md:min-h-[560px]" />
 
-                    <div className="flex max-h-[min(90vh,720px)] flex-col justify-center overflow-y-auto p-6 sm:p-8 lg:p-10">
+                    <div
+                        ref={scrollContainerRef}
+                        className={cn(
+                            "flex max-h-[min(90vh,740px)] flex-col overflow-y-auto p-6 sm:p-8 lg:p-10",
+                            uiStep === 'identify' ? "justify-center" : "justify-start"
+                        )}
+                    >
                         <AnimatePresence mode="wait">
                             {uiStep === 'identify' ? (
                                 <motion.div

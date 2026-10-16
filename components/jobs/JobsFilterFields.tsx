@@ -175,11 +175,26 @@ function JobsFilterFieldsComponent({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">
-          Location
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            Location
+          </label>
+          <button
+            type="button"
+            onClick={() => onFilterChange("location", filters.location.trim().toLowerCase() === "pan india" ? "" : "Pan India")}
+            className={cn(
+              "text-[11px] font-medium px-2 py-0.5 rounded-full border transition-colors",
+              filters.location.trim().toLowerCase() === "pan india"
+                ? "bg-primary-500 text-white border-primary-500 dark:bg-primary-600"
+                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+            )}
+            title="Filter by Pan India jobs"
+          >
+            {filters.location.trim().toLowerCase() === "pan india" ? "✓ Pan India" : "Pan India"}
+          </button>
+        </div>
         <Input
-          placeholder="City, State"
+          placeholder="City, State, or Pan India"
           value={filters.location}
           onChange={(e) => onFilterChange("location", e.target.value)}
           className={cn(dense && "h-9 text-sm", "border-gray-200 dark:border-white/10")}
