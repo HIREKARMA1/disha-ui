@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { X, Building2, Mail, Phone, MapPin, Globe, User, Calendar, Briefcase, AlertCircle } from 'lucide-react'
 import { CreateCorporateRequest, CreateCorporateResponse } from '@/types/corporate'
 import { getErrorMessage } from '@/lib/error-handler'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface CreateCorporateModalProps {
     isOpen: boolean
@@ -320,18 +321,21 @@ export function CreateCorporateModal({
                                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Industry
                                             </label>
-                                            <select
-                                                value={formData.industry || ''}
-                                                onChange={(e) => handleInputChange('industry', e.target.value)}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            <Select
+                                                value={formData.industry || undefined}
+                                                onValueChange={(value) => handleInputChange('industry', value)}
                                             >
-                                                <option value="">Select industry</option>
-                                                {industries.map((industry) => (
-                                                    <option key={industry} value={industry}>
-                                                        {industry}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                <SelectTrigger className="w-full border-gray-300 bg-white px-3 text-base text-gray-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                                    <SelectValue placeholder="Select industry" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {industries.map((industry) => (
+                                                        <SelectItem key={industry} value={industry}>
+                                                            {industry}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                 </div>

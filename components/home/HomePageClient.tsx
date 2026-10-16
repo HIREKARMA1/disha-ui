@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import OpportunityHub from '@/components/home/OpportunityHub'
 
 /** Roles that should land on their dashboard instead of the opportunity hub. */
-const DASHBOARD_ROLES = new Set(['university', 'corporate', 'admin'])
+const DASHBOARD_ROLES = new Set(['university', 'corporate', 'admin', 'executive'])
 
 export default function HomePageClient() {
   const { user, isAuthenticated, isLoading } = useAuth()

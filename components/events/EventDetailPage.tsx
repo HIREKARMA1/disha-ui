@@ -454,7 +454,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
   if (!event) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        <DishaTopBar searchPlaceholder="Search events, jobs, resources…" />
+        <DishaTopBar searchPlaceholder="Search events, jobs, resources…" eventDetail />
         <div className="flex-grow flex items-center justify-center py-16">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Event Not Found</h1>
@@ -654,13 +654,13 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-gray-50 dark:bg-gray-900">
-      <DishaTopBar searchPlaceholder="Search events, jobs, resources…" />
+      <DishaTopBar searchPlaceholder="Search events, jobs, resources…" eventDetail />
 
       {/* ========== MOBILE HERO (< md) ========== */}
       <div className="md:hidden pt-3">
         {/* 1. Full-width banner */}
         <div className="px-3">
-          <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm aspect-[16/9] max-h-[210px]">
+          <div className="relative h-[clamp(10rem,45vw,15rem)] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
             {event.banner_url ? (
               <img
                 src={event.banner_url}
@@ -775,8 +775,8 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       {/* ========== DESKTOP / TABLET HERO (md+) ========== */}
       <div className="relative hidden pt-4 md:block">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Full-width 16:9 banner — cover + center on desktop */}
-          <div className="relative w-full aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
+          {/* Bounded responsive hero banner; uploaded images fill the section. */}
+          <div className="relative h-[clamp(18rem,30vw,28rem)] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
             {event.banner_url ? (
               <img
                 src={event.banner_url}

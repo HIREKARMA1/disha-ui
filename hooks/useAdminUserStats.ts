@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { userManagementService } from '@/services/userManagementService'
 import { AdminUserStats } from '@/types/admin'
 import { AdminUserStatsResponse } from '@/types/userManagement'
@@ -15,6 +16,7 @@ const EMPTY_TYPE_COUNTS: Record<AdminManagedUserType, number> = {
 }
 
 export function useAdminUserStats() {
+    const { user } = useAuth()
     const [userStats, setUserStats] = useState<AdminUserStats | null>(null)
     const [typeCounts, setTypeCounts] = useState<Record<AdminManagedUserType, number>>(EMPTY_TYPE_COUNTS)
     const [rawStats, setRawStats] = useState<AdminUserStatsResponse | null>(null)
@@ -22,6 +24,10 @@ export function useAdminUserStats() {
     const [error, setError] = useState<string | null>(null)
 
     const refetch = useCallback(async () => {
+        if (user?.user_type !== 'admin') {
+            setIsLoading(false)
+            return
+        }
         setIsLoading(true)
         setError(null)
 
@@ -36,7 +42,7 @@ export function useAdminUserStats() {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [user?.user_type])
 
     useEffect(() => {
         refetch()

@@ -101,6 +101,12 @@ const nextConfig = {
 
     // Proxy only backend REST (/api/v1). Keep Next.js routes like /api/internal/* on the UI app.
     return [
+      // Executive URLs render the existing Admin module pages through the
+      // shared routes; the Admin dashboard layout keeps Executive URLs scoped.
+      {
+        source: "/dashboard/executive/:path+",
+        destination: "/dashboard/admin/:path+",
+      },
       {
         source: "/api/v1/:path*",
         destination: `${apiBaseUrl}/api/v1/:path*`,

@@ -1,6 +1,6 @@
 import type { UserType } from '@/types/auth'
 
-export const AUTH_USER_TYPES = ['student', 'corporate', 'university', 'admin'] as const
+export const AUTH_USER_TYPES = ['student', 'corporate', 'university', 'admin', 'executive'] as const
 export const REGISTER_USER_TYPES = ['student', 'corporate', 'university'] as const
 
 export type AuthPage = '/auth/login' | '/auth/register' | '/auth/forgot-password'

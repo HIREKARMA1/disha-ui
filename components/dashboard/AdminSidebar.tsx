@@ -41,6 +41,11 @@ import { adminProfileService } from '@/services/adminProfileService'
 import { navItemIsActive } from '@/lib/adminNav'
 import { adminActiveNav, adminBadgeAdmin, adminSidebar } from '@/components/admin/ui/admin-theme'
 import { cn } from '@/lib/utils'
+import { EXECUTIVE_MODULES as EXECUTIVE_MODULE_LINKS, executiveHasModule, executiveModuleForPath, executivePathForAdminPath } from '@/lib/executiveModules'
+import { apiClient } from '@/lib/api'
+import { setUserData } from '@/lib/authSession'
+import { setCredentials } from '@/store/auth/authSlice'
+import { useAppDispatch } from '@/store/hooks'
 
 interface NavItem {
     label: string
@@ -248,6 +253,23 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
     const [isMobileViewport, setIsMobileViewport] = useState(false)
     const pathname = usePathname()
     const { user, logout } = useAuth()
+    const dispatch = useAppDispatch()
+    const isExecutive = user?.user_type === 'executive' && user.role === 'executive'
+    const visibleNavSections = isExecutive
+        ? navSections.map((section) => ({
+            ...section,
+            items: section.items.filter((item) => {
+                const module = executiveModuleForPath(item.href)
+                return Boolean(module && executiveHasModule(user, module))
+            }).map((item) => ({ ...item, href: executivePathForAdminPath(item.href) })),
+        })).filter((section) => section.items.length > 0)
+        : navSections
+    const visibleMobileQuickLinks = isExecutive
+        ? EXECUTIVE_MODULE_LINKS.filter(({ key }) => executiveHasModule(user, key))
+            .map(({ href }) => allNavItems.find((item) => item.href === href))
+            .map((item) => item ? { ...item, href: executivePathForAdminPath(item.href) } : undefined)
+            .filter((item): item is NavItem => Boolean(item))
+        : mobileQuickLinks
     const desktopNavRef = useRef<HTMLDivElement>(null)
     const { startLoading } = useLoading()
 
@@ -275,6 +297,61 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
         fetchProfile()
     }, [user])
 
+    // Executive permissions can be edited by an Admin while the Executive is
+    // signed in elsewhere. Refresh them from the server so removed modules
+    // disappear from both desktop and mobile navigation without requiring a
+    // fresh login.
+    useEffect(() => {
+        if (!isExecutive || !user) return
+        let active = true
+        let syncing = false
+
+        const syncExecutivePermissions = async () => {
+            if (syncing || document.visibilityState === 'hidden') return
+            syncing = true
+            try {
+                const response = await apiClient.client.get('/auth/me')
+                if (!active) return
+                const latest = response.data
+                if (
+                    latest?.user_type !== 'executive' ||
+                    latest?.role !== 'executive' ||
+                    String(latest?.id) !== String(user.id)
+                ) {
+                    logout()
+                    return
+                }
+
+                const latestUser = {
+                    ...user,
+                    name: latest.name ?? user.name,
+                    permissions: latest.permissions ?? { modules: [] },
+                }
+                const previousModules = [...(user.permissions?.modules ?? [])].sort()
+                const latestModules = [...(latestUser.permissions.modules ?? [])].sort()
+                if (JSON.stringify(previousModules) !== JSON.stringify(latestModules)) {
+                    setUserData(latestUser)
+                    dispatch(setCredentials(latestUser))
+                }
+            } catch (error: any) {
+                if (active && error?.response?.status === 403) logout()
+            } finally {
+                syncing = false
+            }
+        }
+
+        void syncExecutivePermissions()
+        const interval = window.setInterval(() => void syncExecutivePermissions(), 15000)
+        window.addEventListener('focus', syncExecutivePermissions)
+        document.addEventListener('visibilitychange', syncExecutivePermissions)
+        return () => {
+            active = false
+            window.clearInterval(interval)
+            window.removeEventListener('focus', syncExecutivePermissions)
+            document.removeEventListener('visibilitychange', syncExecutivePermissions)
+        }
+    }, [dispatch, isExecutive, logout, user])
+
     useEffect(() => {
         if (!desktopNavRef.current) return
         const activeItem = desktopNavRef.current.querySelector('[data-sidebar-item="active"]')
@@ -299,7 +376,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
     const getDisplayName = () => {
         if (profileData?.name && profileData.name.trim()) return profileData.name
         if (user?.name && user.name.trim() && !user.name.includes('@')) return user.name
-        return 'Admin'
+        return isExecutive ? 'Executive' : 'Admin'
     }
 
     const getDisplayEmail = () => profileData?.email || user?.email || 'admin@hirekarma.com'
@@ -370,7 +447,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
 
     const NavSections = ({ onNavigate, compact = false }: { onNavigate?: () => void; compact?: boolean }) => (
         <>
-            {navSections.map((section) => (
+            {visibleNavSections.map((section) => (
                 <div key={section.title} className="mb-3">
                     <p className="px-3.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                         {section.title}
@@ -414,7 +491,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                             {getDisplayName()}
                         </p>
-                        <span className={adminBadgeAdmin}>Admin</span>
+                        <span className={adminBadgeAdmin}>{isExecutive ? 'Executive' : 'Admin'}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                         {getDisplayEmail()}
@@ -473,7 +550,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
                         >
                             <div className="flex justify-around items-center px-1 py-2">
-                                {mobileQuickLinks.map((item) => {
+                                {visibleMobileQuickLinks.slice(0, 4).map((item) => {
                                     const active = navItemIsActive(pathname || '', item.href)
                                     return (
                                         <Link
@@ -543,7 +620,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/[0.06] bg-gradient-to-r from-blue-500 to-violet-600 flex-shrink-0">
                                 <div className="flex items-center gap-2">
                                     <Shield className="w-5 h-5 text-white" />
-                                    <h2 className="text-lg font-semibold text-white">Admin Menu</h2>
+                                    <h2 className="text-lg font-semibold text-white">{isExecutive ? 'Executive Menu' : 'Admin Menu'}</h2>
                                 </div>
                                 <button
                                     onClick={closeMobileMenu}
