@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
 import Link from 'next/link'
 import {
   Search, Plus, Loader2, Calendar, Activity, Megaphone, CheckCircle2, AlertCircle,
-  ChevronLeft, ChevronRight, CalendarDays,
+  ChevronLeft, ChevronRight, CalendarDays, ChevronDown,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { contestEventService } from '@/services/contestEventService'
 import type { ContestEventListItem } from '@/types/contestEvent'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
@@ -23,6 +22,134 @@ import { toast } from 'react-hot-toast'
 
 const PAGE_LIMIT = 20
 const MAX_LIMIT = 100
+
+function FilterSelect({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+  label: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [opensUp, setOpensUp] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const optionRefs = useRef<(HTMLDivElement | null)[]>([])
+  const listId = useId()
+
+  useEffect(() => {
+    if (!open) return
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  }, [open])
+
+  const toggleOpen = () => {
+    if (open) {
+      setOpen(false)
+      return
+    }
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (rect) {
+      const menuHeight = Math.min(256, options.length * 36 + 8)
+      const spaceBelow = window.innerHeight - rect.bottom
+      setOpensUp(spaceBelow < menuHeight && rect.top > spaceBelow)
+    }
+    setOpen(true)
+  }
+
+  const focusOption = (index: number) => {
+    const normalizedIndex = (index + options.length) % options.length
+    optionRefs.current[normalizedIndex]?.focus({ preventScroll: true })
+  }
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listId}
+        onClick={toggleOpen}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            if (!open) toggleOpen()
+            requestAnimationFrame(() => {
+              const selectedIndex = options.findIndex((option) => option.value === value)
+              focusOption(selectedIndex >= 0 ? selectedIndex : 0)
+            })
+          } else if (event.key === 'Escape' && open) {
+            event.preventDefault()
+            setOpen(false)
+          }
+        }}
+        className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+      >
+        <span className="truncate">{options.find((option) => option.value === value)?.label}</span>
+        <ChevronDown aria-hidden="true" className={`ml-2 h-4 w-4 shrink-0 text-gray-500 transition-transform duration-150 ease-out ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <div
+        id={listId}
+        role="listbox"
+        aria-label={label}
+        aria-hidden={!open}
+        className={`absolute left-0 z-50 max-h-64 w-full overflow-y-auto rounded-md border border-gray-200 bg-white p-1 shadow-lg transition-[opacity,transform] duration-150 ease-out dark:border-gray-700 dark:bg-gray-800 ${opensUp ? 'bottom-full origin-bottom mb-1' : 'top-full origin-top mt-1'} ${open ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-[0.98] opacity-0'}`}
+        style={{ maxHeight: 'min(16rem, 40vh)' }}
+      >
+        {options.map((option, index) => (
+          <div
+            key={option.value}
+            ref={(node) => { optionRefs.current[index] = node }}
+            role="option"
+            aria-selected={value === option.value}
+            tabIndex={open ? 0 : -1}
+            onClick={() => {
+              onChange(option.value)
+              setOpen(false)
+              triggerRef.current?.focus({ preventScroll: true })
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                focusOption(index + 1)
+              } else if (event.key === 'ArrowUp') {
+                event.preventDefault()
+                focusOption(index - 1)
+              } else if (event.key === 'Home') {
+                event.preventDefault()
+                focusOption(0)
+              } else if (event.key === 'End') {
+                event.preventDefault()
+                focusOption(options.length - 1)
+              } else if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onChange(option.value)
+                setOpen(false)
+                triggerRef.current?.focus({ preventScroll: true })
+              } else if (event.key === 'Escape') {
+                event.preventDefault()
+                setOpen(false)
+                triggerRef.current?.focus({ preventScroll: true })
+              }
+            }}
+            className={`flex min-h-9 cursor-pointer items-center rounded-sm px-3 py-1.5 text-sm outline-none transition-colors focus:bg-gray-100 hover:bg-gray-100 dark:focus:bg-gray-700 dark:hover:bg-gray-700 ${value === option.value ? 'font-medium text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100'}`}
+          >
+            {option.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 interface EventStats {
   total: number
@@ -85,6 +212,7 @@ export function EventList() {
   const [events, setEvents] = useState<ContestEventListItem[]>([])
   const [stats, setStats] = useState<EventStats>({ total: 0, upcoming: 0, live: 0, completed: 0, cancelled: 0 })
   const [loading, setLoading] = useState(true)
+  const [hasLoadedEvents, setHasLoadedEvents] = useState(false)
   const [statsLoading, setStatsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({
@@ -99,7 +227,6 @@ export function EventList() {
   const [cancelTarget, setCancelTarget] = useState<ContestEventListItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ContestEventListItem | null>(null)
   const [postponeTarget, setPostponeTarget] = useState<ContestEventListItem | null>(null)
-
   const fetchStats = useCallback(async () => {
     setStatsLoading(true)
     try {
@@ -163,6 +290,7 @@ export function EventList() {
       setEvents([])
     } finally {
       setLoading(false)
+      setHasLoadedEvents(true)
     }
   }, [search, filters, sortBy])
 
@@ -240,8 +368,8 @@ export function EventList() {
 
       {/* Filters */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
-          <div className="relative md:col-span-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-7">
+          <div className="relative sm:col-span-2 2xl:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               placeholder="Search events..."
@@ -250,77 +378,116 @@ export function EventList() {
               className="h-10 pl-9"
             />
           </div>
-          <Select value={filters.publication_status} onValueChange={(v) => setFilters((f) => ({ ...f, publication_status: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Type" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="live">Live</SelectItem>
-              <SelectItem value="postponed">Postponed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filters.category} onValueChange={(v) => setFilters((f) => ({ ...f, category: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {EVENT_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filters.registration} onValueChange={(v) => setFilters((f) => ({ ...f, registration: v }))}>
-            <SelectTrigger className="h-10"><SelectValue placeholder="Registration" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Registration</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="mt-3 flex justify-end">
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="h-9 w-44 text-sm"><SelectValue placeholder="Sort by" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="created_at">Created Date</SelectItem>
-              <SelectItem value="event_start_date">Event Date</SelectItem>
-              <SelectItem value="title">Title</SelectItem>
-            </SelectContent>
-          </Select>
+          <FilterSelect
+            label="Filter by publication status"
+            value={filters.publication_status}
+            onChange={(value) => setFilters((f) => ({ ...f, publication_status: value }))}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'published', label: 'Published' },
+              { value: 'closed', label: 'Closed' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+          />
+          <FilterSelect
+            label="Filter by event type"
+            value={filters.status}
+            onChange={(value) => setFilters((f) => ({ ...f, status: value }))}
+            options={[
+              { value: 'all', label: 'All Types' },
+              { value: 'open', label: 'Open' },
+              { value: 'upcoming', label: 'Upcoming' },
+              { value: 'live', label: 'Live' },
+              { value: 'postponed', label: 'Postponed' },
+              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'closed', label: 'Closed' },
+            ]}
+          />
+          <FilterSelect
+            label="Filter by category"
+            value={filters.category}
+            onChange={(value) => setFilters((f) => ({ ...f, category: value }))}
+            options={[
+              { value: 'all', label: 'All Categories' },
+              ...EVENT_CATEGORIES.map((category) => ({ value: category.value, label: category.label })),
+            ]}
+          />
+          <FilterSelect
+            label="Filter by registration status"
+            value={filters.registration}
+            onChange={(value) => setFilters((f) => ({ ...f, registration: value }))}
+            options={[
+              { value: 'all', label: 'All Registration' },
+              { value: 'open', label: 'Registration Open' },
+              { value: 'closed', label: 'Registration Closed' },
+            ]}
+          />
+          <FilterSelect
+            label="Sort events"
+            value={sortBy}
+            onChange={setSortBy}
+            options={[
+              { value: 'created_at', label: 'Created Date' },
+              { value: 'event_start_date', label: 'Event Date' },
+              { value: 'title', label: 'Title' },
+            ]}
+          />
         </div>
       </div>
 
       {/* Event cards */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-        </div>
-      ) : events.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="space-y-4">
-          {events.map((event) => (
-            <AdminEventCard
-              key={event.id}
-              event={event}
-              actionLoading={actionLoading}
-              onAction={handleAction}
-              onCancel={setCancelTarget}
-              onPostpone={setPostponeTarget}
-            />
-          ))}
-        </div>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {loading && !hasLoadedEvents ? (
+          <motion.div key="initial-event-load" className="flex justify-center py-16" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          </motion.div>
+        ) : events.length > 0 ? (
+          <motion.div
+            key="event-results"
+            className="relative"
+            animate={{ opacity: loading ? 0.68 : 1 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            aria-busy={loading}
+          >
+            {loading && (
+              <div className="absolute -top-3 right-2 z-10 flex items-center gap-2 rounded-full bg-white/95 px-3 py-1 text-xs text-gray-500 shadow-sm dark:bg-gray-800/95 dark:text-gray-300" role="status">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-500" />
+                Updating events
+              </div>
+            )}
+            <div className="space-y-4">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {events.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    layout="position"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0, transition: { duration: 0.22, delay: Math.min(index * 0.025, 0.2), ease: 'easeOut' } }}
+                    exit={{ opacity: 0, y: -6, transition: { duration: 0.14, ease: 'easeIn' } }}
+                  >
+                    <AdminEventCard
+                      event={event}
+                      actionLoading={actionLoading}
+                      onAction={handleAction}
+                      onCancel={setCancelTarget}
+                      onPostpone={setPostponeTarget}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        ) : loading ? (
+          <motion.div key="empty-event-load" className="flex justify-center py-16" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          </motion.div>
+        ) : (
+          <motion.div key="empty-event-results" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
+            <EmptyState />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Pagination */}
       {pagination.total_pages > 1 && (

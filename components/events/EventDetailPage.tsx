@@ -660,7 +660,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       <div className="md:hidden pt-3">
         {/* 1. Full-width banner */}
         <div className="px-3">
-          <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm aspect-[16/9] max-h-[210px]">
+          <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-sm aspect-[16/7] max-h-[210px]">
             {event.banner_url ? (
               <img
                 src={event.banner_url}
@@ -776,7 +776,7 @@ export function EventDetailPage({ slug }: EventDetailPageProps) {
       <div className="relative hidden pt-4 md:block">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Full-width 16:9 banner — cover + center on desktop */}
-          <div className="relative w-full aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
+          <div className="relative w-full aspect-[16/7] max-h-[560px] overflow-hidden rounded-2xl bg-gray-100 shadow-sm dark:bg-gray-800">
             {event.banner_url ? (
               <img
                 src={event.banner_url}

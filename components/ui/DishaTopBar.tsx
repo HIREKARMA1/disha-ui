@@ -87,10 +87,10 @@ export function DishaTopBar({
 
         {showSearch ? (
           <>
-            <div className="col-start-2 row-start-1 justify-self-end lg:order-3 lg:shrink-0">
+            <div className="col-start-2 row-start-1 justify-self-end lg:order-3 lg:ml-auto lg:shrink-0">
               <DishaAuthActions />
             </div>
-            <div className="col-span-2 row-start-2 min-w-0 w-full lg:order-2 lg:col-auto lg:row-auto lg:max-w-xl lg:flex-1 lg:px-2 xl:max-w-2xl">
+            <div className="col-span-2 row-start-2 min-w-0 w-full lg:order-2 lg:col-auto lg:row-auto lg:max-w-none lg:flex-1 lg:px-2 xl:max-w-none">
               {searchField}
             </div>
           </>

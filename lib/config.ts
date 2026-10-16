@@ -4,9 +4,9 @@
 export const config = {
   // API Configuration
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001',
     version: process.env.NEXT_PUBLIC_API_VERSION || 'v1',
-    fullUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/${process.env.NEXT_PUBLIC_API_VERSION || 'v1'}`,
+    fullUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001'}/api/${process.env.NEXT_PUBLIC_API_VERSION || 'v1'}`,
   },
 
   // App Configuration

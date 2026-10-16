@@ -175,10 +175,10 @@ export function Footer() {
                                     <dt className="pt-0.5 font-medium text-gray-900 dark:text-white">Contact</dt>
                                     <dd>
                                         <a
-                                            href={`tel:+${config.whatsapp.number}`}
+                                            href="tel:+919124364764"
                                             className="text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400"
                                         >
-                                            {config.support.phoneDisplay}
+                                            +91 91243 64764
                                         </a>
                                     </dd>
                                     <dt className="pt-0.5 font-medium text-gray-900 dark:text-white">Location</dt>

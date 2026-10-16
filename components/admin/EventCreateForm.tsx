@@ -412,7 +412,7 @@ export function EventCreateForm({ eventId }: EventFormProps) {
         <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <EventImageUpload
             label="Background Banner Image"
-            hint="Used on event details hero. Recommended ratio 16:9."
+            hint="Displayed in a 16:7 frame and automatically cropped to fill. Recommended image ratio: 16:7."
             value={form.banner_url}
             onChange={(url) => update('banner_url', url)}
             onUpload={async (file) => handleUpload(file, 'banner', 'banner_url')}

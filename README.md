@@ -71,7 +71,7 @@ Based on the HireKarma logo:
    Create a `.env.local` file in the root directory:
 
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:8000
+   NEXT_PUBLIC_API_URL=http://localhost:8001
    NEXT_PUBLIC_APP_NAME=HireKarma
    ```
 
