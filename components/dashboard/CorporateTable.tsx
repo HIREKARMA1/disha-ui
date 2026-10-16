@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
     MoreVertical,
@@ -43,6 +43,16 @@ interface CorporateTableProps {
 
 type SortField = 'company_name' | 'email' | 'phone' | 'industry' | 'verified' | 'status' | 'total_jobs' | 'created_at'
 type SortDirection = 'asc' | 'desc' | null
+type PageItem = number | 'ellipsis-left' | 'ellipsis-right'
+
+function getPageItems(currentPage: number, totalPages: number): PageItem[] {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1)
+    if (currentPage <= 2) return [1, 2, 3, 'ellipsis-right', totalPages]
+    if (currentPage >= totalPages - 1) {
+        return [1, 'ellipsis-left', totalPages - 2, totalPages - 1, totalPages]
+    }
+    return [1, 'ellipsis-left', currentPage - 1, currentPage, currentPage + 1, 'ellipsis-right', totalPages]
+}
 
 export function CorporateTable({
     corporates,
@@ -189,6 +199,12 @@ export function CorporateTable({
 
         return { sortedCorporates: sorted, totalPages, paginatedCorporates }
     }, [corporates, sortField, sortDirection, currentPage, itemsPerPage])
+
+    useEffect(() => {
+        setCurrentPage(page => Math.min(page, Math.max(totalPages, 1)))
+    }, [totalPages])
+
+    const pageItems = getPageItems(currentPage, totalPages)
 
     // Archive modal handlers
     const handleArchiveClick = (corporate: CorporateListItem) => {
@@ -549,71 +565,49 @@ export function CorporateTable({
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1 flex justify-between sm:hidden">
+                    <div className="bg-white dark:bg-gray-800 px-3 py-4 border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                        <div className="flex min-w-0 flex-col items-center gap-3 lg:flex-row lg:justify-between">
+                            <p className="text-center text-xs text-gray-700 dark:text-gray-300 sm:text-sm lg:text-left">
+                                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>{' '}
+                                to <span className="font-medium">{Math.min(currentPage * itemsPerPage, corporates.length)}</span>{' '}
+                                of <span className="font-medium">{corporates.length}</span> results
+                            </p>
+                            <nav aria-label="Corporate pages" className="flex max-w-full flex-wrap items-center justify-center gap-1">
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    aria-label="Previous page"
+                                    onClick={() => setCurrentPage(page => Math.max(page - 1, 1))}
                                     disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex h-9 items-center rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 sm:px-3 sm:text-sm"
                                 >
-                                    Previous
+                                    <span className="sm:hidden" aria-hidden="true">‹</span>
+                                    <span className="hidden sm:inline">Previous</span>
                                 </button>
+                                {pageItems.map((item, index) => item === 'ellipsis-left' || item === 'ellipsis-right' ? (
+                                    <span key={item} aria-hidden="true" className="inline-flex h-9 min-w-5 items-center justify-center text-sm text-gray-500 dark:text-gray-400">…</span>
+                                ) : (
+                                    <button
+                                        key={`${item}-${index}`}
+                                        aria-current={item === currentPage ? 'page' : undefined}
+                                        aria-label={`Page ${item}`}
+                                        onClick={() => setCurrentPage(item)}
+                                        className={`inline-flex h-9 min-w-8 items-center justify-center rounded-md border px-2 text-sm font-medium sm:min-w-9 ${item === currentPage
+                                            ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-500 dark:bg-primary-900/20 dark:text-primary-300'
+                                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        {item}
+                                    </button>
+                                ))}
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    aria-label="Next page"
+                                    onClick={() => setCurrentPage(page => Math.min(page + 1, totalPages))}
                                     disabled={currentPage === totalPages}
-                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex h-9 items-center rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 sm:px-3 sm:text-sm"
                                 >
-                                    Next
+                                    <span className="sm:hidden" aria-hidden="true">›</span>
+                                    <span className="hidden sm:inline">Next</span>
                                 </button>
-                            </div>
-                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        Showing{' '}
-                                        <span className="font-medium">
-                                            {(currentPage - 1) * itemsPerPage + 1}
-                                        </span>{' '}
-                                        to{' '}
-                                        <span className="font-medium">
-                                            {Math.min(currentPage * itemsPerPage, corporates.length)}
-                                        </span>{' '}
-                                        of{' '}
-                                        <span className="font-medium">{corporates.length}</span>{' '}
-                                        results
-                                    </p>
-                                </div>
-                                <div>
-                                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Previous
-                                        </button>
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                            <button
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
-                                                    ? 'z-10 bg-primary-50 dark:bg-primary-900/20 border-primary-500 text-primary-600 dark:text-primary-400'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                    }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                            disabled={currentPage === totalPages}
-                                            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Next
-                                        </button>
-                                    </nav>
-                                </div>
-                            </div>
+                            </nav>
                         </div>
                     </div>
                 )}

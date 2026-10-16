@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayout'
 import { AdminJobCard } from '@/components/admin/AdminJobCard'
-import { EditJobModal } from '@/components/dashboard/EditJobModal'
+import { EditJobModal, type EditJobUpdateResult } from '@/components/dashboard/EditJobModal'
 import { DeleteConfirmationModal } from '@/components/dashboard/DeleteConfirmationModal'
 import { JobDescriptionModal } from '@/components/dashboard/JobDescriptionModal'
 import { AssignUniversityModal } from '@/components/admin/AssignUniversityModal'
@@ -66,6 +66,7 @@ interface Job {
     is_public?: boolean
     public_link_token?: string
     public_access_level?: 'premium' | 'all'
+    brochure_url?: string | null
 }
 
 import { useRouter } from 'next/navigation'
@@ -168,8 +169,15 @@ export default function AdminJobsPage() {
         }))
     }, [filteredJobs.length, pagination.limit])
 
-    const handleJobUpdated = () => {
-        fetchJobs() // Refresh the jobs list
+    const handleJobUpdated = (updatedJob?: EditJobUpdateResult) => {
+        if (updatedJob) {
+            setJobs(currentJobs => currentJobs.map(currentJob =>
+                currentJob.id === updatedJob.id
+                    ? { ...currentJob, brochure_url: updatedJob.brochure_url ?? currentJob.brochure_url }
+                    : currentJob
+            ))
+        }
+        fetchJobs()
     }
 
     const handleViewJob = (job: Job) => {

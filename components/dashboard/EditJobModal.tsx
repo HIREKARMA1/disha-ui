@@ -72,13 +72,18 @@ interface Job {
     company_description?: string
     contact_person?: string
     contact_designation?: string
-    brochure_url?: string
+    brochure_url?: string | null
+}
+
+export interface EditJobUpdateResult {
+    id: string
+    brochure_url?: string | null
 }
 
 interface EditJobModalProps {
     isOpen: boolean
     onClose: () => void
-    onJobUpdated: () => void
+    onJobUpdated: (updatedJob?: EditJobUpdateResult) => void
     job: Job | null
     isAdmin?: boolean // Add prop to indicate if this is admin context
     isUniversity?: boolean // Add prop to indicate if this is university context
@@ -791,7 +796,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
             })
 
             toast.success('Job updated successfully!')
-            onJobUpdated()
+            onJobUpdated(response)
             onClose()
         } catch (error: any) {
             // Log detailed error information
