@@ -42,7 +42,7 @@ import { buildAuthPath, parseAuthUserType } from '@/lib/authLinks'
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(1, 'Password is required'),
-    user_type: z.enum(['student', 'corporate', 'university', 'admin'] as const),
+    user_type: z.enum(['student', 'corporate', 'university', 'admin', 'executive'] as const),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -74,6 +74,7 @@ const userTypeIcons = {
     corporate: Building2,
     university: GraduationCap,
     admin: Shield,
+    executive: Shield,
 }
 
 const userTypeLabels: Record<UserType, string> = {
@@ -81,6 +82,7 @@ const userTypeLabels: Record<UserType, string> = {
     corporate: 'Corporate',
     university: 'University',
     admin: 'Admin',
+    executive: 'Executive',
 }
 
 export default function LoginPage() {
@@ -194,7 +196,7 @@ function LoginPageContent() {
     }
 
     const handleBackToIdentify = () => {
-        if (selectedUserType === 'admin') return
+        if (selectedUserType === 'admin' || selectedUserType === 'executive') return
         setStep('identify')
         router.replace(
             buildAuthPath('/auth/login', {
@@ -224,6 +226,8 @@ function LoginPageContent() {
                     email: data.email,
                     user_type: data.user_type,
                     name: data.email,
+                    role: response.role,
+                    permissions: response.permissions,
                 },
                 response.access_token,
                 response.refresh_token
@@ -256,6 +260,9 @@ function LoginPageContent() {
                     break
                 case 'admin':
                     router.push('/dashboard/admin')
+                    break
+                case 'executive':
+                    router.push('/dashboard/executive')
                     break
                 default:
                     router.push('/dashboard')
@@ -364,7 +371,7 @@ function LoginPageContent() {
                                 exit={{ opacity: 0, y: -8 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                {selectedUserType !== 'admin' && (
+                                {selectedUserType !== 'admin' && selectedUserType !== 'executive' && (
                                     <button
                                         type="button"
                                         onClick={handleBackToIdentify}
@@ -474,7 +481,7 @@ function LoginPageContent() {
                                             />
                                         </div>
 
-                                        {selectedUserType !== 'admin' && (
+                                        {selectedUserType !== 'admin' && selectedUserType !== 'executive' && (
                                             <Link
                                                 href={buildAuthPath('/auth/forgot-password', { type: selectedUserType })}
                                                 className="self-start text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 sm:self-auto"
@@ -510,7 +517,7 @@ function LoginPageContent() {
                                     </>
                                 )}
 
-                                {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
+                                {selectedUserType !== 'admin' && selectedUserType !== 'executive' && selectedUserType !== 'university' && (
                                     <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
                                         No account?{' '}
                                         <Link
@@ -522,9 +529,9 @@ function LoginPageContent() {
                                     </p>
                                 )}
 
-                                {selectedUserType === 'admin' && (
+                                {(selectedUserType === 'admin' || selectedUserType === 'executive') && (
                                     <p className="mt-5 text-center text-sm italic text-gray-500 dark:text-gray-400">
-                                        Admin accounts are created by authorized personnel only
+                                        {selectedUserType === 'executive' ? 'Executive accounts are created by authorized personnel only' : 'Admin accounts are created by authorized personnel only'}
                                     </p>
                                 )}
                             </motion.div>

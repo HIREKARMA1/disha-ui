@@ -1,4 +1,4 @@
-export type UserType = 'student' | 'corporate' | 'university' | 'admin';
+export type UserType = 'student' | 'corporate' | 'university' | 'admin' | 'executive';
 // Admin type included for login functionality - admin accounts must be created manually
 
 export interface StudentRegisterRequest {
@@ -78,6 +78,8 @@ export interface TokenResponse {
   token_type: string;
   user_type?: UserType;
   user_id?: string;
+  role?: string;
+  permissions?: { modules?: string[] };
   name?: string;
 }
 

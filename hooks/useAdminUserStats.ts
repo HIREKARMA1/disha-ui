@@ -7,6 +7,7 @@ import {
     mapUserStatsToAdminUserStats,
     mapUserStatsToTypeCounts,
 } from '@/utils/userStatsMappers'
+import { useAuth } from '@/hooks/useAuth'
 
 const EMPTY_TYPE_COUNTS: Record<AdminManagedUserType, number> = {
     student: 0,
@@ -15,6 +16,7 @@ const EMPTY_TYPE_COUNTS: Record<AdminManagedUserType, number> = {
 }
 
 export function useAdminUserStats() {
+    const { user } = useAuth()
     const [userStats, setUserStats] = useState<AdminUserStats | null>(null)
     const [typeCounts, setTypeCounts] = useState<Record<AdminManagedUserType, number>>(EMPTY_TYPE_COUNTS)
     const [rawStats, setRawStats] = useState<AdminUserStatsResponse | null>(null)
@@ -39,8 +41,12 @@ export function useAdminUserStats() {
     }, [])
 
     useEffect(() => {
-        refetch()
-    }, [refetch])
+        if (user?.user_type === 'admin' && user.role !== 'executive') {
+            refetch()
+        } else {
+            setIsLoading(false)
+        }
+    }, [refetch, user])
 
     return {
         userStats,

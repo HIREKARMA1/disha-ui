@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -34,9 +35,13 @@ export function AuthLoginModalProvider({ children }: { children: ReactNode }) {
   const [skipIdentify, setSkipIdentify] = useState(false)
 
   const openLoginModal = useCallback((options?: OpenLoginModalOptions) => {
+    const isExecutiveEntryLink =
+      typeof window !== 'undefined' &&
+      window.location.pathname === '/' &&
+      new URLSearchParams(window.location.search).get('type') === 'executive'
     setRedirect(options?.redirect)
-    setPreferredType(options?.preferredType)
-    setSkipIdentify(Boolean(options?.skipIdentify))
+    setPreferredType(isExecutiveEntryLink ? 'executive' : options?.preferredType)
+    setSkipIdentify(isExecutiveEntryLink || Boolean(options?.skipIdentify))
     if (options?.redirect && typeof window !== 'undefined') {
       try {
         localStorage.setItem('redirect_after_login', options.redirect)
@@ -49,6 +54,19 @@ export function AuthLoginModalProvider({ children }: { children: ReactNode }) {
 
   const closeLoginModal = useCallback(() => {
     setOpen(false)
+  }, [])
+
+  // The public landing page uses the shared sign-in modal. Honor the
+  // privileged internal-link entry point before any generic Sign In click
+  // can open the role picker.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (window.location.pathname !== '/' || params.get('type') !== 'executive') return
+    setRedirect(undefined)
+    setPreferredType('executive')
+    setSkipIdentify(true)
+    setOpen(true)
   }, [])
 
   const value = useMemo(

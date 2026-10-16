@@ -41,7 +41,7 @@ import { buildAuthPath, parseAuthUserType, replaceTypeInCurrentUrl } from '@/lib
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
-  user_type: z.enum(['student', 'corporate', 'university', 'admin'] as const),
+  user_type: z.enum(['student', 'corporate', 'university', 'admin', 'executive'] as const),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -73,6 +73,7 @@ const userTypeIcons = {
   corporate: Building2,
   university: GraduationCap,
   admin: Shield,
+  executive: Shield,
 }
 
 const userTypeLabels: Record<UserType, string> = {
@@ -80,6 +81,7 @@ const userTypeLabels: Record<UserType, string> = {
   corporate: 'Corporate',
   university: 'University',
   admin: 'Admin',
+  executive: 'Executive',
 }
 
 export type AuthLoginModalProps = {
@@ -124,12 +126,12 @@ export function AuthLoginModal({
       typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('type') : null
     )
     const type =
-      skipIdentify && preferredType && ['student', 'corporate', 'university', 'admin'].includes(preferredType)
+      skipIdentify && preferredType && ['student', 'corporate', 'university', 'admin', 'executive'].includes(preferredType)
         ? preferredType
         : urlType
     setShowPassword(false)
     setTermsAndPrivacyAccepted(false)
-    if (type === 'admin' || skipIdentify) {
+    if (type === 'admin' || type === 'executive' || skipIdentify) {
       const nextType = type || preferredType || 'student'
       setSelectedUserType(nextType)
       setValue('user_type', nextType)
@@ -211,6 +213,9 @@ export function AuthLoginModal({
       case 'admin':
         router.push('/dashboard/admin')
         break
+      case 'executive':
+        router.push('/dashboard/executive')
+        break
       default:
         router.push('/dashboard')
     }
@@ -232,6 +237,8 @@ export function AuthLoginModal({
           email: data.email,
           user_type: data.user_type,
           name: data.email,
+          role: response.role,
+          permissions: response.permissions,
         },
         response.access_token,
         response.refresh_token
@@ -356,7 +363,7 @@ export function AuthLoginModal({
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {selectedUserType !== 'admin' && !skipIdentify && (
+                      {selectedUserType !== 'admin' && selectedUserType !== 'executive' && !skipIdentify && (
                         <button
                           type="button"
                           onClick={() => {
@@ -471,7 +478,7 @@ export function AuthLoginModal({
                               }
                             />
                           </div>
-                          {selectedUserType !== 'admin' && (
+                          {selectedUserType !== 'admin' && selectedUserType !== 'executive' && (
                             <Link
                               href={buildAuthPath('/auth/forgot-password', { type: selectedUserType })}
                               className="self-start text-sm font-semibold text-primary-600 dark:text-primary-400 sm:self-auto"
@@ -487,7 +494,7 @@ export function AuthLoginModal({
                           className="h-11 w-full rounded-xl bg-primary-600 text-base font-semibold hover:bg-primary-700"
                           loading={isLoading}
                         >
-                          Sign In
+                          {selectedUserType === 'executive' ? 'Login' : 'Sign In'}
                         </Button>
                       </form>
 
@@ -508,7 +515,7 @@ export function AuthLoginModal({
                         </>
                       )}
 
-                      {selectedUserType !== 'admin' && selectedUserType !== 'university' && (
+                      {selectedUserType !== 'admin' && selectedUserType !== 'executive' && selectedUserType !== 'university' && (
                         <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
                           No account?{' '}
                           <Link

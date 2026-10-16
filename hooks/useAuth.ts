@@ -55,7 +55,7 @@ export function useAuth() {
     (_redirectPath: string = '/dashboard') => {
       if (isLoading) return false
       if (isAuthenticated && user) {
-        router.push(`/dashboard/${user.user_type}`)
+        router.push(user.role === 'executive' ? '/dashboard/executive' : `/dashboard/${user.user_type}`)
         return true
       }
       return false

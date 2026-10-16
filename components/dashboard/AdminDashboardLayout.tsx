@@ -37,7 +37,7 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
     const [jobStats, setJobStats] = useState<AdminJobStats>(EMPTY_JOB_STATS)
     const [isJobStatsLoading, setIsJobStatsLoading] = useState(false)
 
-    const isAdmin = user?.user_type === 'admin'
+    const isAdmin = user?.user_type === 'admin' && user?.role !== 'executive'
     const isLoading = isAdmin && (isUserStatsLoading || isJobStatsLoading)
     const error = isAdmin ? userStatsError : null
 

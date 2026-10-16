@@ -262,7 +262,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
 
     useEffect(() => {
         const fetchProfile = async () => {
-            if (user?.user_type === 'admin') {
+            if (user?.user_type === 'admin' && user.role !== 'executive') {
                 try {
                     const data = await adminProfileService.getProfile()
                     setProfileData(data)
@@ -368,9 +368,22 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
         )
     }
 
+    const executiveModules: Record<string, string> = {
+        '/dashboard/admin/corporates': 'corporate', '/dashboard/admin/partner-logos': 'partner_logo',
+        '/dashboard/admin/jobs': 'jobs', '/dashboard/admin/university-approval': 'university_approval',
+        '/dashboard/admin/campus-drive-requests': 'job_request', '/dashboard/admin/events': 'event',
+        '/dashboard/admin/campus-drives': 'campus_drive', '/dashboard/admin/blogs': 'blogs',
+        '/dashboard/admin/bulk-email': 'bulk_mail', '/dashboard/admin/bulk-whatsapp': 'bulk_whatsapp',
+        '/dashboard/admin/support': 'support',
+    }
+    const visibleSections = user?.role === 'executive'
+        ? navSections.map((section) => ({ ...section, items: section.items.filter((item) =>
+            item.href === '/dashboard/admin' || (user.permissions?.modules || []).includes(executiveModules[item.href])
+        ).map((item) => item.href === '/dashboard/admin' ? { ...item, href: '/dashboard/executive' } : item) })).filter((section) => section.items.length)
+        : navSections
     const NavSections = ({ onNavigate, compact = false }: { onNavigate?: () => void; compact?: boolean }) => (
         <>
-            {navSections.map((section) => (
+            {visibleSections.map((section) => (
                 <div key={section.title} className="mb-3">
                     <p className="px-3.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                         {section.title}
@@ -414,7 +427,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                             {getDisplayName()}
                         </p>
-                        <span className={adminBadgeAdmin}>Admin</span>
+                        <span className={adminBadgeAdmin}>{user?.role === 'executive' ? 'Executive' : 'Admin'}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                         {getDisplayEmail()}
