@@ -69,6 +69,7 @@ interface Job {
     expiration_date?: string
     ctc_with_probation?: string
     ctc_after_probation?: string
+    brochure_url?: string
 }
 
 export default function CorporateJobsPage() {

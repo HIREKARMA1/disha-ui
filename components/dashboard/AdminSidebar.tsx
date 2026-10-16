@@ -159,7 +159,7 @@ const navSections: NavSection[] = [
                 description: 'Manage HireKarma resource blogs',
             },
             {
-                label: 'Practice Tests',
+                label: 'Practice Module',
                 href: '/dashboard/admin/practice',
                 icon: Brain,
                 description: 'Tests & questions',

@@ -77,6 +77,13 @@ export interface DocumentItem {
   sort_order?: number
 }
 
+export interface GalleryItem {
+  id?: string
+  image_url: string
+  caption?: string
+  sort_order?: number
+}
+
 export interface ResultItem {
   id?: string
   title: string
@@ -163,6 +170,7 @@ export interface ContestEventDetail extends ContestEventListItem {
   documents: DocumentItem[]
   results: ResultItem[]
   sections: SectionItem[]
+  gallery?: GalleryItem[]
   updated_at?: string
   is_cancelled?: boolean
   is_postponed?: boolean
@@ -225,6 +233,7 @@ export interface ContestEventCreatePayload {
   documents?: DocumentItem[]
   results?: ResultItem[]
   sections?: SectionItem[]
+  gallery?: GalleryItem[]
 }
 
 export type ContestEventUpdatePayload = Partial<

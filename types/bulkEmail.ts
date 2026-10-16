@@ -1,5 +1,11 @@
 export type BulkEmailCategory = 'all' | 'student' | 'corporate' | 'university' | 'none'
-export type BulkEmailStatusFilter = 'all' | 'verified' | 'unverified' | 'active' | 'inactive'
+export type BulkEmailStatusFilter =
+    | 'all'
+    | 'verified'
+    | 'unverified'
+    | 'active'
+    | 'inactive'
+    | 'below_75_profile'
 
 export interface BulkEmailRecipient {
     name?: string | null

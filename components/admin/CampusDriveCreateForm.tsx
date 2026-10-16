@@ -10,11 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
+import { PhotoGalleryField } from '@/components/gallery/PhotoGalleryField'
 import { CampusDriveJobPicker } from '@/components/admin/CampusDriveJobPicker'
 import { CampusDriveCorporateSection } from '@/components/admin/CampusDriveCorporateSection'
 import { campusDriveService, apiErrorMessage } from '@/services/campusDriveService'
 import { EVENT_CATEGORIES } from '@/types/contestEvent'
-import type { FAQItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
+import type { FAQItem, GalleryItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
 import type {
   CampusDriveCorporateSummary,
   CampusDriveJobSummary,
@@ -58,6 +59,7 @@ interface FormState {
   faqs: FAQItem[]
   rounds: RoundItem[]
   rewards: RewardItem[]
+  gallery: GalleryItem[]
   jobs: CampusDriveJobSummary[]
   corporates: CampusDriveCorporateSummary[]
 }
@@ -92,6 +94,7 @@ const emptyForm = (): FormState => ({
   faqs: [],
   rounds: [],
   rewards: [],
+  gallery: [],
   jobs: [],
   corporates: [],
 })
@@ -193,6 +196,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           faqs: drive.faqs || [],
           rounds: drive.rounds || [],
           rewards: drive.rewards || [],
+          gallery: drive.gallery || [],
           jobs: (drive.jobs || []).map((job) => ({
             id: job.id,
             title: job.title,
@@ -352,6 +356,9 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
         description: normalizeRichTextHtml(reward.description) || undefined,
         sort_order: index,
       })),
+      gallery: form.gallery
+        .filter((photo) => photo.image_url)
+        .map((photo, index) => ({ ...photo, sort_order: index })),
       job_ids: ids,
       corporate_ids: corporateIds,
     }
@@ -770,6 +777,15 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           )}
         </CardContent>
       </Card>
+
+      <PhotoGalleryField
+        photos={form.gallery}
+        onChange={(gallery) => update('gallery', gallery)}
+        uploadFile={async (file) => {
+          const result = await campusDriveService.uploadFile(file, 'gallery')
+          return result.file_url
+        }}
+      />
 
       <div className="sticky bottom-24 z-30 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 lg:bottom-0">
         <Button type="button" variant="outline" onClick={() => router.push('/dashboard/admin/campus-drives')} disabled={saving}>

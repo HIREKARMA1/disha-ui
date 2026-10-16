@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building, FileText, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -72,6 +72,7 @@ interface Job {
     company_description?: string
     contact_person?: string
     contact_designation?: string
+    brochure_url?: string
 }
 
 interface EditJobModalProps {
@@ -128,6 +129,7 @@ interface JobFormData {
     company_description: string
     contact_person: string
     contact_designation: string
+    brochure_url: string
 }
 
 export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = false, isUniversity = false }: EditJobModalProps) {
@@ -161,6 +163,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
     const [uploadingLogo, setUploadingLogo] = useState(false)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
+    const [uploadingBrochure, setUploadingBrochure] = useState(false)
+    const [brochureName, setBrochureName] = useState<string>('')
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
         description: '',
@@ -205,7 +209,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         company_founded: '',
         company_description: '',
         contact_person: '',
-        contact_designation: ''
+        contact_designation: '',
+        brochure_url: ''
     })
 
     // Populate form data when job changes
@@ -380,8 +385,16 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 company_founded: job.company_founded !== null && job.company_founded !== undefined ? job.company_founded.toString() : '',
                 company_description: job.company_description || '',
                 contact_person: (job.contact_person && job.contact_person.trim()) || '',
-                contact_designation: (job.contact_designation && job.contact_designation.trim()) || ''
+                contact_designation: (job.contact_designation && job.contact_designation.trim()) || '',
+                brochure_url: job.brochure_url || ''
             })
+
+            if (job.brochure_url) {
+                const filename = job.brochure_url.split('/').pop() || 'Existing Brochure'
+                setBrochureName(filename)
+            } else {
+                setBrochureName('')
+            }
 
             setJobLocationLabel(locationArray[0] || locationArray.join(', ') || '')
 
@@ -429,6 +442,29 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         // Clear validation error for this field
         if (validationErrors[field]) {
             setValidationErrors(prev => ({ ...prev, [field]: '' }))
+        }
+    }
+
+    const isPanIndia = jobLocationLabel === 'Pan India' || (formData.location.length === 1 && formData.location[0] === 'Pan India')
+
+    const togglePanIndia = () => {
+        if (isPanIndia) {
+            setJobLocationLabel('')
+            setFormData(prev => ({
+                ...prev,
+                location: [],
+            }))
+        } else {
+            setJobLocationLabel('Pan India')
+            setFormData(prev => ({
+                ...prev,
+                location: ['Pan India'],
+            }))
+            setValidationErrors(prev => {
+                const next = { ...prev }
+                delete next.location
+                return next
+            })
         }
     }
 
@@ -482,6 +518,47 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (logoPreview) {
             URL.revokeObjectURL(logoPreview)
         }
+    }
+
+    const handleBrochureUpload = async (file: File) => {
+        setUploadingBrochure(true)
+        try {
+            if (file.size > 15 * 1024 * 1024) {
+                toast.error('File size must be less than 15MB')
+                setUploadingBrochure(false)
+                return
+            }
+
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/webp'
+            ]
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please upload a valid brochure file (PDF, Word doc, or image)')
+                setUploadingBrochure(false)
+                return
+            }
+
+            const result = await apiClient.uploadJobBrochure(file)
+            handleInputChange('brochure_url', result.file_url)
+            setBrochureName(file.name)
+            toast.success('Job brochure uploaded successfully!')
+        } catch (error: any) {
+            console.error('Brochure upload error:', error)
+            toast.error(error.response?.data?.detail || 'Failed to upload brochure. Please try again.')
+        } finally {
+            setUploadingBrochure(false)
+        }
+    }
+
+    const handleBrochureRemove = () => {
+        handleInputChange('brochure_url', '')
+        setBrochureName('')
     }
 
     const availableBranchOptions = useMemo(() => {
@@ -672,7 +749,8 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 company_founded: isUniversity && formData.company_founded ? parseInt(formData.company_founded) : null,
                 company_description: isUniversity ? (formData.company_description || null) : null,
                 contact_person: isUniversity ? (formData.contact_person || null) : null,
-                contact_designation: isUniversity ? (formData.contact_designation || null) : null
+                contact_designation: isUniversity ? (formData.contact_designation || null) : null,
+                brochure_url: formData.brochure_url?.trim() || null
             }
 
             // Log the job update request with focus on number_of_openings
@@ -1131,14 +1209,30 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Job Location *
-                                        </label>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Job Location <span className="text-red-500">*</span>
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={togglePanIndia}
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full transition-all duration-200 border ${
+                                                    isPanIndia
+                                                        ? 'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/25 dark:bg-primary-600'
+                                                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-750'
+                                                }`}
+                                                title="Set location to Pan India (Hiring across all India)"
+                                            >
+                                                <Globe className="w-3.5 h-3.5" />
+                                                {isPanIndia ? '✓ Pan India' : 'Pan India'}
+                                            </button>
+                                        </div>
                                         <GoogleLocationAutocomplete
                                             value={jobLocationLabel || formData.location[0] || ''}
-                                            placeholder="Search for city, town, or locality"
+                                            placeholder={isPanIndia ? 'Pan India' : 'Search for city, town, or locality'}
                                             mode="locality"
                                             required
+                                            allowFreeText
                                             error={validationErrors.location}
                                             onChange={(place) => {
                                                 const label = place.locality || place.city || place.formattedAddress
@@ -1614,6 +1708,72 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         {validationErrors.campus_drive_date && (
                                             <p className="text-red-500 text-sm mt-1">{validationErrors.campus_drive_date}</p>
                                         )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Job Brochure Section (Optional) */}
+                            <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700/80 dark:bg-gray-800/40">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-primary-500" />
+                                        Job Brochure
+                                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 px-2 py-0.5 rounded-full">
+                                            Optional
+                                        </span>
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Upload or update the company/job brochure (PDF, Word docs, or images, max 15MB).
+                                </p>
+
+                                <FileUpload
+                                    onFileSelect={handleBrochureUpload}
+                                    onFileRemove={handleBrochureRemove}
+                                    currentFile={formData.brochure_url || null}
+                                    type="any"
+                                    maxSize={15}
+                                    disabled={uploadingBrochure}
+                                    placeholder="Click to upload or drag & drop brochure (PDF, DOC, DOCX, images up to 15MB)"
+                                    acceptedTypes={[
+                                        'application/pdf',
+                                        'application/msword',
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'image/jpeg',
+                                        'image/jpg',
+                                        'image/png',
+                                        'image/webp'
+                                    ]}
+                                    className="w-full"
+                                />
+                                {uploadingBrochure && (
+                                    <p className="text-xs text-primary-600 dark:text-primary-400">
+                                        Uploading brochure (up to 15MB)...
+                                    </p>
+                                )}
+                                {formData.brochure_url && !uploadingBrochure && (
+                                    <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5 text-xs text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <FileText className="h-4 w-4 shrink-0" />
+                                            <span className="truncate">{brochureName || 'Current brochure attached'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <a
+                                                href={formData.brochure_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="font-semibold text-emerald-700 underline hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200"
+                                            >
+                                                View Current
+                                            </a>
+                                            <button
+                                                type="button"
+                                                onClick={handleBrochureRemove}
+                                                className="text-red-500 hover:text-red-700 dark:hover:text-red-400 underline font-medium"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building } from 'lucide-react'
+import { X, Plus, Trash2, Calendar, MapPin, IndianRupee, Users, Briefcase, Clock, Building, FileText, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -72,6 +72,7 @@ interface JobFormData {
     company_description: string
     contact_person: string
     contact_designation: string
+    brochure_url: string
 }
 
 export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corporate' }: CreateJobModalProps) {
@@ -130,6 +131,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
     }
     const [uploadingLogo, setUploadingLogo] = useState(false)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
+    const [uploadingBrochure, setUploadingBrochure] = useState(false)
+    const [brochureName, setBrochureName] = useState<string>('')
     const [formData, setFormData] = useState<JobFormData>({
         title: '',
         description: '',
@@ -174,8 +177,32 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         company_founded: '',
         company_description: '',
         contact_person: '',
-        contact_designation: ''
+        contact_designation: '',
+        brochure_url: ''
     })
+
+    const isPanIndia = jobLocationLabel === 'Pan India' || (formData.location.length === 1 && formData.location[0] === 'Pan India')
+
+    const togglePanIndia = () => {
+        if (isPanIndia) {
+            setJobLocationLabel('')
+            setFormData(prev => ({
+                ...prev,
+                location: [],
+            }))
+        } else {
+            setJobLocationLabel('Pan India')
+            setFormData(prev => ({
+                ...prev,
+                location: ['Pan India'],
+            }))
+            setValidationErrors(prev => {
+                const next = { ...prev }
+                delete next.location
+                return next
+            })
+        }
+    }
 
     const handleInputChange = (field: keyof JobFormData, value: string | boolean | string[]) => {
         console.log('📝 handleInputChange called:', { field, value })
@@ -326,6 +353,47 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         }
     }
 
+    const handleBrochureUpload = async (file: File) => {
+        setUploadingBrochure(true)
+        try {
+            if (file.size > 15 * 1024 * 1024) {
+                toast.error('File size must be less than 15MB')
+                setUploadingBrochure(false)
+                return
+            }
+
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/webp'
+            ]
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please upload a valid brochure file (PDF, Word doc, or image)')
+                setUploadingBrochure(false)
+                return
+            }
+
+            const result = await apiClient.uploadJobBrochure(file)
+            handleInputChange('brochure_url', result.file_url)
+            setBrochureName(file.name)
+            toast.success('Job brochure uploaded successfully!')
+        } catch (error: any) {
+            console.error('Brochure upload error:', error)
+            toast.error(error.response?.data?.detail || 'Failed to upload brochure. Please try again.')
+        } finally {
+            setUploadingBrochure(false)
+        }
+    }
+
+    const handleBrochureRemove = () => {
+        handleInputChange('brochure_url', '')
+        setBrochureName('')
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -432,7 +500,8 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: null,
                 ctc_with_probation: formData.ctc_with_probation || null,
-                ctc_after_probation: formData.ctc_after_probation || null
+                ctc_after_probation: formData.ctc_after_probation || null,
+                brochure_url: formData.brochure_url?.trim() || null
             }
 
             // Add company information fields for university-created jobs
@@ -516,8 +585,10 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 company_founded: '',
                 company_description: '',
                 contact_person: '',
-                contact_designation: ''
+                contact_designation: '',
+                brochure_url: ''
             })
+            setBrochureName('')
             // Reset logo preview
             if (logoPreview) {
                 URL.revokeObjectURL(logoPreview)
@@ -886,14 +957,30 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
 
                                 <div className="space-y-4">
                                     <div data-field="location">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Job Location *
-                                        </label>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Job Location <span className="text-red-500">*</span>
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={togglePanIndia}
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full transition-all duration-200 border ${
+                                                    isPanIndia
+                                                        ? 'bg-primary-500 text-white border-primary-500 shadow-sm shadow-primary-500/25 dark:bg-primary-600'
+                                                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-750'
+                                                }`}
+                                                title="Set location to Pan India (Hiring across all India)"
+                                            >
+                                                <Globe className="w-3.5 h-3.5" />
+                                                {isPanIndia ? '✓ Pan India' : 'Pan India'}
+                                            </button>
+                                        </div>
                                         <GoogleLocationAutocomplete
                                             value={jobLocationLabel || formData.location[0] || ''}
-                                            placeholder="Search for company, building, address, city, town, or locality"
+                                            placeholder={isPanIndia ? 'Pan India' : 'Search for company, building, address, city, town, or locality'}
                                             mode="all"
                                             required
+                                            allowFreeText
                                             error={validationErrors.location}
                                             onChange={(place) => {
                                                 const label = place.formattedAddress
@@ -1348,6 +1435,63 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         rows={2}
                                     />
                                 </div>
+                            </div>
+
+                            {/* Job Brochure Section (Optional) */}
+                            <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700/80 dark:bg-gray-800/40">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-primary-500" />
+                                        Job Brochure
+                                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 bg-gray-200/60 dark:bg-gray-700/60 px-2 py-0.5 rounded-full">
+                                            Optional
+                                        </span>
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Upload a company or job brochure for candidates to view and download (PDF, Word docs, or images, max 15MB).
+                                </p>
+
+                                <FileUpload
+                                    onFileSelect={handleBrochureUpload}
+                                    onFileRemove={handleBrochureRemove}
+                                    currentFile={formData.brochure_url || null}
+                                    type="any"
+                                    maxSize={15}
+                                    disabled={uploadingBrochure}
+                                    placeholder="Click to upload or drag & drop brochure (PDF, DOC, DOCX, images up to 15MB)"
+                                    acceptedTypes={[
+                                        'application/pdf',
+                                        'application/msword',
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'image/jpeg',
+                                        'image/jpg',
+                                        'image/png',
+                                        'image/webp'
+                                    ]}
+                                    className="w-full"
+                                />
+                                {uploadingBrochure && (
+                                    <p className="text-xs text-primary-600 dark:text-primary-400">
+                                        Uploading brochure (up to 15MB)...
+                                    </p>
+                                )}
+                                {formData.brochure_url && !uploadingBrochure && (
+                                    <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5 text-xs text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <FileText className="h-4 w-4 shrink-0" />
+                                            <span className="truncate">{brochureName || 'Brochure attached'}</span>
+                                        </div>
+                                        <a
+                                            href={formData.brochure_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="ml-2 font-semibold text-emerald-700 underline hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200 shrink-0"
+                                        >
+                                            View Brochure
+                                        </a>
+                                    </div>
+                                )}
                             </div>
 
                         </div>

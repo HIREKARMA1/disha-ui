@@ -870,9 +870,22 @@ class ApiClient {
         'Content-Type': 'multipart/form-data',
       },
     });
-    // The endpoint returns {file_url, message}, but we only need file_url for consistency
     return { file_url: response.data.file_url };
   }
+
+  // Upload job or company brochure (PDF/DOC/Image up to 15MB)
+  async uploadJobBrochure(file: File): Promise<{ file_url: string; file_name?: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response: AxiosResponse = await this.client.post('/jobs/upload-brochure', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
 
   // Generic HTTP methods to support direct usage
   async get(url: string, config?: any): Promise<any> {
