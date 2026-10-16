@@ -6,6 +6,11 @@ import { useAuth } from '@/hooks/useAuth'
 import { buildAuthPath } from '@/lib/authLinks'
 import { executiveHasModule, executiveModuleForPath, executivePathForAdminPath } from '@/lib/executiveModules'
 
+function normalizeAdminRole(role?: string) {
+  const normalized = (role || 'admin').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  return normalized === 'superadmin' ? 'super_admin' : normalized
+}
+
 export default function AdminSectionLayout({
   children,
 }: {
@@ -43,7 +48,7 @@ export default function AdminSectionLayout({
       router.replace(pathname.replace(/^\/dashboard\/executive(?=\/|$)/, '/dashboard/admin'))
       return
     }
-    if (user.user_type !== 'admin' || !['admin', 'super_admin'].includes(user.role || 'admin')) {
+    if (user.user_type !== 'admin' || !['admin', 'super_admin'].includes(normalizeAdminRole(user.role))) {
       router.replace(
         buildAuthPath('/auth/login', {
           type: 'admin',
