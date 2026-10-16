@@ -10,8 +10,9 @@ import {
   Calendar,
   CheckCircle,
   Clock,
-  // Download,
+  Download,
   ExternalLink,
+  FileText,
   Globe,
   Loader2,
   MapPin,
@@ -31,6 +32,7 @@ import { PostQuickApplySkillsNudgeDialog } from '@/components/jobs/PostQuickAppl
 import { apiClient } from '@/lib/api'
 import { formatSalaryRange } from '@/lib/currency'
 import { downloadJobDescriptionPDF } from '@/lib/pdfGenerator'
+import { downloadBrochureFile } from '@/lib/downloadFile'
 import { useAuth } from '@/hooks/useAuth'
 import { getJobDetailPath } from '@/lib/jobSlug'
 import { profileService } from '@/services/profileService'
@@ -82,6 +84,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
   const [showShareModal, setShowShareModal] = useState(false)
   const closeShareModal = useCallback(() => setShowShareModal(false), [])
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
+  const [isDownloadingBrochure, setIsDownloadingBrochure] = useState(false)
   const [studentUniversityId, setStudentUniversityId] = useState<string | null>(null)
   const [studentGraduationYear, setStudentGraduationYear] = useState<number | null>(null)
   const [studentBatch, setStudentBatch] = useState<string | null>(null)
@@ -466,6 +469,21 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
     }
   }
 
+  const handleDownloadBrochure = async () => {
+    if (!job?.brochure_url) return
+    setIsDownloadingBrochure(true)
+    try {
+      const suggestedName = `${job.title || 'Job'}_Brochure.pdf`
+      await downloadBrochureFile(job.brochure_url, suggestedName)
+      toast.success('Brochure download started!')
+    } catch (err) {
+      console.error('Failed to download brochure:', err)
+      toast.error('Failed to download brochure. Please try again.')
+    } finally {
+      setIsDownloadingBrochure(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip bg-[#F5F7FB] dark:bg-[#0a0c14]">
@@ -594,6 +612,20 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               <CheckCircle className="mr-2 h-4 w-4" />
               {applyLabel}
             </Button>
+            {job.brochure_url && (
+              <Button
+                variant="outline"
+                onClick={handleDownloadBrochure}
+                disabled={isDownloadingBrochure}
+              >
+                {isDownloadingBrochure ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {isDownloadingBrochure ? 'Downloading…' : 'Download Brochure'}
+              </Button>
+            )}
             {/* Download PDF hidden on the public job page.
             {canDownloadPdf && (
               <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloadingPDF}>
@@ -665,6 +697,31 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
             {job.selection_process && (
               <Section title="Application Process">
                 <Prose text={job.selection_process} />
+              </Section>
+            )}
+
+            {job.brochure_url && (
+              <Section title="Job Brochure">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50/40 p-4 dark:border-primary-800/40 dark:bg-primary-950/20">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">Company Brochure & Guidelines</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Official document attached to this opportunity</p>
+                    </div>
+                  </div>
+                  <a
+                    href={job.brochure_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 shrink-0"
+                  >
+                    View Brochure
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </div>
               </Section>
             )}
 
