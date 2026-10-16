@@ -6,13 +6,14 @@ import { AdminDashboardLayout } from '@/components/dashboard/AdminDashboardLayou
 import { BulkEmailManagement } from '@/components/dashboard/admin/bulk-email/BulkEmailManagement'
 import { LoadingOverlay } from '@/components/dashboard/LoadingOverlay'
 import { useAuth } from '@/hooks/useAuth'
+import { canUseExecutiveModule } from '@/lib/executiveModules'
 
 export default function AdminBulkEmailPage() {
     const { user, isLoading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
-        if (!isLoading && user?.user_type !== 'admin') {
+        if (!isLoading && !canUseExecutiveModule(user, 'bulk_mail')) {
             router.push('/dashboard')
         }
     }, [user, isLoading, router])
@@ -21,7 +22,7 @@ export default function AdminBulkEmailPage() {
         return <LoadingOverlay />
     }
 
-    if (user?.user_type !== 'admin') {
+    if (!canUseExecutiveModule(user, 'bulk_mail')) {
         return null
     }
 

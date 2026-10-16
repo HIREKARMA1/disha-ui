@@ -5,6 +5,8 @@ export interface AuthUser {
   email: string
   user_type: UserType
   name?: string
+  role?: string
+  permissions?: { modules?: string[] }
 }
 
 export const ACCESS_TOKEN_KEY = 'access_token'
