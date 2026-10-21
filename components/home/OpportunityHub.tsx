@@ -102,6 +102,12 @@ const CATEGORY_TILE_TONES: Record<
     iconWrap: 'bg-blue-50/60 shadow-none ring-1 ring-blue-100/80 dark:bg-[rgba(37,99,235,0.18)] dark:text-[#60A5FA] dark:ring-0',
     glow: 'group-hover:shadow-sm',
   },
+  campus_drive: {
+    idle: 'border-slate-200/80 bg-white hover:border-sky-200 hover:bg-sky-50/25',
+    active: 'border-sky-300 bg-sky-50/40 shadow-sm ring-1 ring-sky-200/60',
+    iconWrap: 'bg-sky-50/60 shadow-none ring-1 ring-sky-100/80 dark:bg-[rgba(14,165,233,0.18)] dark:text-[#38BDF8] dark:ring-0',
+    glow: 'group-hover:shadow-sm',
+  },
   events: {
     idle: 'border-slate-200/80 bg-white hover:border-orange-200 hover:bg-orange-50/25',
     active: 'border-orange-300 bg-orange-50/40 shadow-sm ring-1 ring-orange-200/60',
@@ -152,6 +158,14 @@ const DEFAULT_TILE_TONE = CATEGORY_TILE_TONES.all
 const CATEGORY_TILES: QuickPill[] = [
   { id: 'all', label: 'All', kind: 'scroll', sectionId: 'hub-top', tab: 'all', icon: Sparkles },
   { id: 'jobs', label: 'Jobs', kind: 'scroll', sectionId: 'hub-jobs', tab: 'all', icon: Briefcase },
+  {
+    id: 'campus_drive',
+    label: 'Campus Drive',
+    kind: 'scroll',
+    sectionId: 'hub-top',
+    tab: 'all',
+    icon: Presentation,
+  },
   { id: 'events', label: 'Events', kind: 'scroll', sectionId: 'hub-events', tab: 'all', icon: Calendar },
   {
     id: 'mock_tests',
@@ -591,7 +605,11 @@ export default function OpportunityHub() {
       return
     }
     if (pill.id === 'mock_tests') {
-      window.open('/practice-tests', '_blank', 'noopener,noreferrer')
+      router.push('/practice-tests')
+      return
+    }
+    if (pill.id === 'campus_drive') {
+      router.push('/campus-drives')
       return
     }
     if (pill.id === 'contact') {
@@ -911,7 +929,7 @@ export default function OpportunityHub() {
             </div>
             <div
               ref={categoryScrollerRef}
-              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 lg:grid-cols-9 md:gap-3.5 md:overflow-visible 2xl:gap-4"
+              className="-mx-3 flex gap-2.5 overflow-x-auto overscroll-x-contain px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:gap-3 sm:px-0 md:grid md:grid-cols-5 md:gap-3.5 md:overflow-visible 2xl:grid-cols-10 2xl:gap-4"
             >
               {CATEGORY_TILES.map((tile, i) => {
                 const active = activeQuickPillId === tile.id
@@ -946,6 +964,8 @@ export default function OpportunityHub() {
                         background:
                           tile.id === 'jobs'
                             ? '#3B82F6'
+                            : tile.id === 'campus_drive'
+                              ? '#0EA5E9'
                             : tile.id === 'events'
                               ? '#F97316'
                               : tile.id === 'faq'

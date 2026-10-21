@@ -37,6 +37,7 @@ import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { buildAuthPath, parseAuthUserType, replaceTypeInCurrentUrl } from '@/lib/authLinks'
+import { resolveSafeAuthRedirect } from '@/lib/supabaseClient'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -183,23 +184,24 @@ export function AuthLoginModal({
   }
 
   const resolveAfterLogin = (userType: UserType) => {
-    let next =
-      redirectPath ||
-      (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+    const stored =
+      typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null
+    const next = resolveSafeAuthRedirect(redirectPath || stored)
 
-    if (next) {
-      next = decodeURIComponent(next)
+    if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('redirect_after_login')
       } catch {
         /* ignore */
       }
-      onClose()
+    }
+
+    onClose()
+    if (next) {
       router.push(next)
       return
     }
 
-    onClose()
     switch (userType) {
       case 'student':
         router.push('/dashboard/student')

@@ -34,6 +34,18 @@ export function isSafeAuthRedirectPath(path: string | null | undefined): path is
   return true
 }
 
+/** Decode a stored login return path and keep it only when it stays on this app. */
+export function resolveSafeAuthRedirect(path: string | null | undefined): string | null {
+  if (!path) return null
+  let next = path.trim()
+  try {
+    next = decodeURIComponent(next)
+  } catch {
+    // Keep the raw value and let the safety check reject it if needed.
+  }
+  return isSafeAuthRedirectPath(next) ? next : null
+}
+
 /** OAuth redirect target after Google sign-in (must match Supabase redirect allow-list). */
 export function getSupabaseAuthCallbackUrl(redirectPath?: string | null): string {
   const base = config.app.url.replace(/\/$/, '')
