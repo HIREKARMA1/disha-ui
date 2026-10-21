@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
+import { buildPracticeTestInstructionPath } from '@/lib/assessmentLinks'
 import { TopPerformersShowcase } from '@/components/mock-tests/TopPerformersShowcase'
 import type { TopPerformerHighlight } from '@/components/mock-tests/topPerformerUtils'
 import {
@@ -43,7 +44,7 @@ const hubCardClass =
 export function MockTestsCatalog() {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth()
   const { openLoginModal } = useAuthLoginModal()
   const isStudent = isAuthenticated && user?.user_type === 'student'
 
@@ -89,8 +90,9 @@ export function MockTestsCatalog() {
   }
 
   const handleStart = (mockTestId: string) => {
-    const startPath = `/assessments/exam/${mockTestId}`
-    if (!isStudent) {
+    const startPath = buildPracticeTestInstructionPath(mockTestId)
+    if (!startPath || authLoading) return
+    if (!isAuthenticated) {
       openLoginModal({
         redirect: startPath,
         preferredType: 'student',
@@ -255,7 +257,7 @@ export function MockTestsCatalog() {
                   ) : null}
                   <Button
                     onClick={() => handleStart(test.id)}
-                    disabled={startingId === test.id}
+                    disabled={startingId === test.id || authLoading}
                     className="w-full rounded-xl bg-gradient-to-r from-primary-600 to-violet-600 text-white shadow-md hover:opacity-95 focus-visible:ring-primary-500"
                   >
                     {startingId === test.id ? (

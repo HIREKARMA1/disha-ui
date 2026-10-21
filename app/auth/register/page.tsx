@@ -51,6 +51,7 @@ import {
     isStudentExamRedirectPath,
     normalizeAppRedirectPath,
 } from '@/lib/assessmentLinks'
+import { isSafeAuthRedirectPath, resolveSafeAuthRedirect } from '@/lib/supabaseClient'
 
 // Union type for all possible form data
 type FormData = {
@@ -502,8 +503,10 @@ function RegisterPageContent() {
                         if (typeof window !== 'undefined') {
                             localStorage.removeItem('redirect_after_login')
                         }
-                        router.push(examPath)
-                        return
+                        if (isSafeAuthRedirectPath(examPath)) {
+                            router.push(examPath)
+                            return
+                        }
                     }
                     router.push('/dashboard/student')
                     return
@@ -525,17 +528,12 @@ function RegisterPageContent() {
                     }
                 }
 
-                if (redirectUrl) {
-                    // Decode the redirect URL
-                    redirectUrl = decodeURIComponent(redirectUrl)
-                    console.log('Redirecting to:', redirectUrl) // Debug log
-
-                    // Clear the stored redirect URL
-                    if (typeof window !== 'undefined') {
-                        localStorage.removeItem('redirect_after_login')
-                    }
-                    // Use router.push for client-side navigation
-                    router.push(redirectUrl)
+                const safeRedirect = resolveSafeAuthRedirect(redirectUrl)
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('redirect_after_login')
+                }
+                if (safeRedirect) {
+                    router.push(safeRedirect)
                     return
                 }
 

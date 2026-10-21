@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { ChevronLeft, ChevronRight, Filter, Loader2 } from 'lucide-react'
 import { DishaTopBar } from '@/components/ui/DishaTopBar'
 import { Footer } from '@/components/ui/footer'
@@ -9,6 +9,14 @@ import {
   type CampusDriveCardStatus,
 } from '@/components/campus-drives/CampusDriveTicketCard'
 import { campusDriveService } from '@/services/campusDriveService'
+import { useAuth } from '@/hooks/useAuth'
+import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
+import {
+  buildCampusDriveDetailPath,
+  buildSafeCampusDriveRegisterRedirect,
+  clearPendingCampusDriveRegistration,
+  storePendingCampusDriveRegistration,
+} from '@/lib/pendingCampusDriveRegistration'
 import type { CampusDriveListItem } from '@/types/campusDrive'
 import {
   driveCardCompanyLine,
@@ -49,11 +57,42 @@ function programStatus(item: CampusDriveListItem): CampusDriveCardStatus {
 }
 
 function PublicCampusDriveCard({ item }: { item: CampusDriveListItem }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { openLoginModal } = useAuthLoginModal()
   const slug = item.slug?.trim()
-  const detailHref = slug ? `/campus-drives/${encodeURIComponent(slug)}` : '/campus-drives'
-  const applyHref = slug
-    ? `/campus-drives/${encodeURIComponent(slug)}?register=1&action=register`
-    : detailHref
+  const detailPath = buildCampusDriveDetailPath(slug)
+  const detailHref = detailPath || '/campus-drives'
+  const applyHref = buildSafeCampusDriveRegisterRedirect(slug, item.id) || detailHref
+
+  const promptLoginToView = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (authLoading) {
+      event.preventDefault()
+      return
+    }
+    if (isAuthenticated || !detailPath) return
+    event.preventDefault()
+    clearPendingCampusDriveRegistration()
+    openLoginModal({
+      redirect: detailPath,
+      preferredType: 'student',
+    })
+  }
+
+  const promptLoginToRegister = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (authLoading) {
+      event.preventDefault()
+      return
+    }
+    if (isAuthenticated || !slug) return
+    event.preventDefault()
+    const redirectPath = buildSafeCampusDriveRegisterRedirect(slug, item.id)
+    if (!redirectPath) return
+    storePendingCampusDriveRegistration(slug, item.id)
+    openLoginModal({
+      redirect: redirectPath,
+      preferredType: 'student',
+    })
+  }
   const company = driveCardCompanyLine({
     title: item.title,
     organizerName: item.organizer_name,
@@ -75,6 +114,8 @@ function PublicCampusDriveCard({ item }: { item: CampusDriveListItem }) {
       detailHref={detailHref}
       applyHref={applyHref}
       showApply={(item.listing_status ?? 'active') !== 'hidden'}
+      onDetailClick={promptLoginToView}
+      onApplyClick={promptLoginToRegister}
     />
   )
 }

@@ -474,7 +474,10 @@ export function CampusDriveDetailView({
 
   const summaryText = cleanText(drive.short_description || drive.subtitle) ||
     `${organizer} is conducting a campus recruitment drive for multiple opportunities. Register before ${applyByFormatted} to participate.`
-  const longDescription = cleanText(drive.long_description || drive.short_description)
+  const descriptionHtml = sanitizeEventDescriptionHtml(
+    drive.long_description || drive.short_description,
+    ''
+  )
   const aboutOrganizerText = cleanText(drive.about_organizer)
 
   return (
@@ -799,12 +802,18 @@ export function CampusDriveDetailView({
             <section id="overview" className="stack">
               <div className="card block">
                 <h2>Description</h2>
-                <p>
-                  {longDescription ||
-                    `${organizer} is hosting a Campus Recruitment Drive offering multiple entry-level opportunities. Available roles include ${parsedJobs
+                {descriptionHtml ? (
+                  <div
+                    className="event-description-html eligibility-html description-html"
+                    dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                  />
+                ) : (
+                  <p>
+                    {`${organizer} is hosting a Campus Recruitment Drive offering multiple entry-level opportunities. Available roles include ${parsedJobs
                       .map((j) => j.title)
                       .join(', ')}. Candidates can apply online before ${applyByFormatted}.`}
-                </p>
+                  </p>
+                )}
               </div>
 
               {hasCustomEligibility || defaultEligibilityItems.length > 0 ? (
@@ -1708,6 +1717,55 @@ export function CampusDriveDetailView({
 
         .eligibility-html p:last-child {
           margin-bottom: 0;
+        }
+
+        .description-html :global(h1),
+        .description-html :global(h2),
+        .description-html :global(h3) {
+          font-weight: 700;
+          line-height: 1.3;
+          color: var(--ink);
+          margin: 12px 0 6px;
+        }
+
+        .description-html :global(h1) { font-size: 1.6em; }
+        .description-html :global(h2) { font-size: 1.35em; }
+        .description-html :global(h3) { font-size: 1.15em; }
+
+        .description-html :global(h1:first-child),
+        .description-html :global(h2:first-child),
+        .description-html :global(h3:first-child),
+        .description-html :global(p:first-child) {
+          margin-top: 0;
+        }
+
+        .description-html :global(ul),
+        .description-html :global(ol) {
+          margin: 0.35rem 0 0.75rem;
+          padding-left: 1.25rem;
+        }
+
+        .description-html :global(ul) { list-style: disc; }
+        .description-html :global(ol) { list-style: decimal; }
+
+        .description-html :global(li) {
+          margin: 0.2rem 0;
+        }
+
+        .description-html :global(a) {
+          color: #2563eb;
+          text-decoration: underline;
+          overflow-wrap: anywhere;
+        }
+
+        .description-html :global(.ql-align-center) { text-align: center; }
+        .description-html :global(.ql-align-right) { text-align: right; }
+        .description-html :global(.ql-align-justify) { text-align: justify; }
+
+        .description-html :global(img) {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5rem;
         }
 
         .tick {

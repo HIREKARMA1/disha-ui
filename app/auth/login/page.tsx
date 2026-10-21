@@ -38,6 +38,7 @@ import { UserType } from '@/types/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { buildAuthPath, parseAuthUserType } from '@/lib/authLinks'
+import { resolveSafeAuthRedirect } from '@/lib/supabaseClient'
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -235,15 +236,16 @@ function LoginPageContent() {
 
             toast.success('Login successful!')
 
-            let redirectUrl =
+            const redirectUrl = resolveSafeAuthRedirect(
                 searchParams.get('redirect') ||
-                (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+                    (typeof window !== 'undefined' ? localStorage.getItem('redirect_after_login') : null)
+            )
+
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('redirect_after_login')
+            }
 
             if (redirectUrl) {
-                redirectUrl = decodeURIComponent(redirectUrl)
-                if (typeof window !== 'undefined') {
-                    localStorage.removeItem('redirect_after_login')
-                }
                 router.push(redirectUrl)
                 return
             }

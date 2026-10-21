@@ -2,6 +2,8 @@
  * Persist intended campus drive registration across login redirects.
  */
 
+import { resolveSafeAuthRedirect } from '@/lib/supabaseClient'
+
 const STORAGE_KEY = 'pending_campus_drive_registration'
 const MAX_AGE_MS = 30 * 60 * 1000
 
@@ -63,4 +65,22 @@ export function buildCampusDriveRegisterRedirect(slug: string, driveId?: string)
   params.set('action', 'register')
   if (driveId) params.set('driveId', driveId)
   return `/campus-drives/${encodeURIComponent(slug)}?${params.toString()}`
+}
+
+/** Login return path that resumes registration for one drive. */
+export function buildSafeCampusDriveRegisterRedirect(
+  slug: string | null | undefined,
+  driveId?: string | null
+): string | null {
+  if (!buildCampusDriveDetailPath(slug)) return null
+  const id = (driveId || '').trim()
+  if (id && !/^[A-Za-z0-9_-]+$/.test(id)) return null
+  return resolveSafeAuthRedirect(buildCampusDriveRegisterRedirect(slug!.trim(), id || undefined))
+}
+
+/** Detail page for one published drive. Rejects slugs that could change the path. */
+export function buildCampusDriveDetailPath(slug: string | null | undefined): string | null {
+  const value = (slug || '').trim()
+  if (!value || value.includes('..') || /[\\/?#]/.test(value)) return null
+  return resolveSafeAuthRedirect(`/campus-drives/${encodeURIComponent(value)}`)
 }
