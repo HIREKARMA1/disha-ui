@@ -15,7 +15,7 @@ import type { CampusDriveDetail } from '@/types/campusDrive'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthLoginModal } from '@/contexts/AuthLoginModalContext'
 import {
-  buildCampusDriveRegisterRedirect,
+  buildSafeCampusDriveRegisterRedirect,
   clearPendingCampusDriveRegistration,
   peekPendingCampusDriveRegistration,
   storePendingCampusDriveRegistration,
@@ -53,20 +53,27 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
     (drive?.listing_status ?? 'active') !== 'hidden' &&
     Boolean(drive?.registration_is_open)
 
+  const promptLogin = useCallback(() => {
+    if (!drive) return
+    const redirectPath = buildSafeCampusDriveRegisterRedirect(slug, drive.id)
+    if (!redirectPath) return
+    autoRegisterAttempted.current = false
+    storePendingCampusDriveRegistration(slug, drive.id)
+    openLoginModal({
+      redirect: redirectPath,
+      preferredType: 'student',
+    })
+  }, [drive, openLoginModal, slug])
+
   const handleRegister = useCallback(async () => {
     if (!drive) return
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
     if (!token) {
-      const redirectPath = buildCampusDriveRegisterRedirect(slug, drive.id)
-      storePendingCampusDriveRegistration(slug, drive.id)
-      localStorage.setItem('redirect_after_login', redirectPath)
-      openLoginModal({
-        redirect: redirectPath,
-        preferredType: 'student',
-      })
+      promptLogin()
       return
     }
     if (user && user.user_type && user.user_type !== 'student') {
+      clearPendingCampusDriveRegistration()
       toast.error('Only student accounts can register for campus drives.')
       return
     }
@@ -111,43 +118,57 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
         return
       }
       if (status === 401) {
-        const redirectPath = buildCampusDriveRegisterRedirect(slug, drive.id)
-        storePendingCampusDriveRegistration(slug, drive.id)
-        localStorage.setItem('redirect_after_login', redirectPath)
-        openLoginModal({
-          redirect: redirectPath,
-          preferredType: 'student',
-        })
+        promptLogin()
         return
       }
+      clearPendingCampusDriveRegistration()
       toast.error(msg)
     } finally {
       setRegistering(false)
     }
-  }, [drive, slug, user, openLoginModal])
+  }, [drive, promptLogin, slug, user])
 
   useEffect(() => {
     if (!drive || authLoading || registering || autoRegisterAttempted.current) return
-    if (typeof window === 'undefined') return
+    if (!isAuthenticated || typeof window === 'undefined') return
 
     const params = new URLSearchParams(window.location.search)
-    const pending = peekPendingCampusDriveRegistration()
-    const wantsRegister =
-      (params.get('register') === '1' &&
-        (params.get('action') === 'register' || !params.get('action'))) ||
-      (pending?.slug === slug && pending.action === 'register')
+    const urlDriveId = params.get('driveId')
+    const urlWantsRegister =
+      params.get('register') === '1' &&
+      (params.get('action') === 'register' || !params.get('action')) &&
+      (!urlDriveId || urlDriveId === drive.id)
 
-    if (!wantsRegister) return
-    if (drive.is_registered) {
-      clearPendingCampusDriveRegistration()
-      autoRegisterAttempted.current = true
+    const pending = peekPendingCampusDriveRegistration()
+    const pendingMatchesDrive =
+      pending?.action === 'register' &&
+      pending.slug === slug &&
+      (!pending.driveId || pending.driveId === drive.id)
+
+    // The login return URL carries the register action. A leftover pending record
+    // without that URL must not register the student on a later visit.
+    if (!urlWantsRegister) {
+      if (pendingMatchesDrive) clearPendingCampusDriveRegistration()
       return
     }
-    if (!isAuthenticated) return
 
     autoRegisterAttempted.current = true
+    clearPendingCampusDriveRegistration()
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('register') || url.searchParams.has('action') || url.searchParams.has('driveId')) {
+      url.searchParams.delete('register')
+      url.searchParams.delete('action')
+      url.searchParams.delete('driveId')
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    }
+
+    if (drive.is_registered) {
+      toast.success('You are already registered for this campus drive.')
+      return
+    }
+
     void handleRegister()
-  }, [drive, authLoading, registering, slug, isAuthenticated, handleRegister])
+  }, [drive, authLoading, registering, isAuthenticated, handleRegister, slug])
 
   const registerState: CampusDriveRegisterState | undefined = drive
     ? {

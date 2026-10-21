@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { CampusDriveCardActions } from '@/components/campus-drives/CampusDriveCardActions'
 import { montserrat } from '@/lib/fonts/montserrat'
 
@@ -58,6 +58,8 @@ export function CampusDriveTicketCard({
   detailHref,
   applyHref,
   showApply = true,
+  onDetailClick,
+  onApplyClick,
 }: {
   brandName?: string
   title: string
@@ -72,6 +74,8 @@ export function CampusDriveTicketCard({
   detailHref: string
   applyHref: string
   showApply?: boolean
+  onDetailClick?: (event: MouseEvent<HTMLAnchorElement>) => void
+  onApplyClick?: (event: MouseEvent<HTMLAnchorElement>) => void
 }) {
   const [imgFailed, setImgFailed] = useState(false)
   const showImg = Boolean(imageSrc?.trim()) && !imgFailed
@@ -165,6 +169,8 @@ export function CampusDriveTicketCard({
           applyHref={applyHref}
           showApply={showApply}
           registerDisabled={registerDisabled}
+          onDetailClick={onDetailClick}
+          onApplyClick={onApplyClick}
         />
       </div>
     </article>

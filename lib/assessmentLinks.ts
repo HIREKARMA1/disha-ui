@@ -1,4 +1,5 @@
 import { config } from '@/lib/config'
+import { isSafeAuthRedirectPath } from '@/lib/supabaseClient'
 
 /**
  * Absolute URL students open to sign in (if needed) and start the exam on Disha.
@@ -36,4 +37,12 @@ export function isStudentExamRedirectPath(redirect: string | null | undefined): 
   if (!redirect) return false
   const path = normalizeAppRedirectPath(redirect)
   return path.startsWith('/assessments/exam/')
+}
+
+/** Instruction page for a public practice test. Rejects ids that could change the path. */
+export function buildPracticeTestInstructionPath(testId: string | null | undefined): string | null {
+  const id = (testId || '').trim()
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) return null
+  const path = `/assessments/exam/${id}`
+  return isSafeAuthRedirectPath(path) ? path : null
 }

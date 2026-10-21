@@ -55,6 +55,13 @@ function DarkCategoryGlyph({ id, className }: { id: string; className?: string }
           <path {...p} d="M3 10h18M8 3v4M16 3v4" />
         </svg>
       )
+    case 'campus_drive':
+      return (
+        <svg viewBox="0 0 24 24" className={wrap} aria-hidden>
+          <rect {...p} x="3" y="4" width="18" height="12" rx="2" />
+          <path {...p} d="M12 16v3M8 20h8" />
+        </svg>
+      )
     case 'mock_tests':
       return (
         <svg viewBox="0 0 24 24" className={wrap} aria-hidden>
@@ -188,6 +195,15 @@ export function CategoryIcon({
             <circle cx="31" cy="30" r="2.5" fill={D.ink} />
             <circle cx="17" cy="36" r="2.5" fill={D.yellow} />
             <circle cx="24" cy="36" r="2.5" fill={D.yellow} />
+          </svg>
+        )
+      case 'campus_drive':
+        return (
+          <svg viewBox="0 0 48 48" fill="none" className={wrap} aria-hidden>
+            <rect x="8" y="8" width="32" height="22" rx="3" fill={D.navy} />
+            <rect x="12" y="12" width="24" height="14" rx="2" fill={D.cyan} />
+            <path d="M24 30v6" stroke={D.navyDeep} strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M16 38h16" stroke={D.navyDeep} strokeWidth="2.5" strokeLinecap="round" />
           </svg>
         )
       case 'hackathon':
