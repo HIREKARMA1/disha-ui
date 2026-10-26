@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
@@ -73,8 +73,9 @@ interface ProfileSection {
 }
 
 export function StudentProfile() {
-    const { getToken } = useAuth()
+    const router = useRouter()
     const searchParams = useSearchParams()
+    const { getToken } = useAuth()
     const [profile, setProfile] = useState<StudentProfile | null>(null)
     const [uploadingResume, setUploadingResume] = useState(false)
     const [profileCompletion, setProfileCompletion] = useState<ProfileCompletionResponse | null>(null)
@@ -220,6 +221,10 @@ export function StudentProfile() {
             await FileUploadService.uploadResume(file, token)
             await loadProfile()
             toast.success('Resume uploaded successfully!')
+            const resumeReturn = searchParams.get('resume_return')
+            if (resumeReturn?.startsWith('/campus-drives/') && !resumeReturn.startsWith('//')) {
+                router.replace(resumeReturn)
+            }
         } catch (error: any) {
             toast.error(error?.message || 'Failed to upload resume')
         } finally {
