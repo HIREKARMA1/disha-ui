@@ -24,7 +24,14 @@ const textFields: Array<[string, string]> = [
   ['mode', 'Event mode'], ['organizer_name', 'Organizer'], ['contact_email', 'Contact email'], ['contact_phone', 'Contact phone'],
   ['cta_label', 'Primary action label'], ['cta_eyebrow', 'Registration banner eyebrow'], ['cta_heading', 'Registration banner heading'],
   ['cta_description', 'Registration banner description'], ['statistics', 'Statistics (e.g. vacancies)'],
+  ['gallery_eyebrow', 'Gallery eyebrow'], ['gallery_heading', 'Gallery heading'], ['gallery_description', 'Gallery description'],
 ]
+
+const defaultContent: Record<string, string> = {
+  gallery_eyebrow: 'The event experience',
+  gallery_heading: 'Moments from the Fair',
+  gallery_description: 'A glimpse of the people, ideas, and opportunities that bring this event together.',
+}
 
 type SplitDateTime = { date: string; time: string; zone: string; legacy: boolean }
 function splitDateTime(value: unknown): SplitDateTime {
@@ -97,7 +104,7 @@ export function JobFairEditor({ fairId }: { fairId?: string }) {
   const [id, setId] = useState(fairId)
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
-  const [content, setContent] = useState<Record<string, any>>({})
+  const [content, setContent] = useState<Record<string, any>>(defaultContent)
   const [sectionItems, setSectionItems] = useState<JobFairSectionState>({
     highlights: [], partners: [], testimonials: [], gallery: [], additional_sections: [],
   })
@@ -115,7 +122,7 @@ export function JobFairEditor({ fairId }: { fairId?: string }) {
     catch { throw new Error('Image upload failed') } finally { setUploading(false) }
   }
   const uploadHero = async (file: File) => updateContent('hero_image', await uploadImage(file))
-  useEffect(() => { if (!fairId) return; apiClient.client.get(`/job-fairs/admin`).then(({ data }) => { const fair = (data.job_fairs || []).find((item: Fair) => item.id === fairId); if (!fair) throw new Error('missing'); setId(fair.id); setTitle(fair.title); setSlug(fair.slug); setContent(fair.content || {}); setSectionItems(Object.fromEntries(arrayFields.map(key => [key, readItems(fair.content?.[key], key)])) as JobFairSectionState); setSelectedJobs(fair.jobs.filter((job: JobItem) => job.source === 'disha')); setManualJobs(fair.jobs.filter((job: JobItem) => job.source === 'manual') as ManualJob[]); }).catch(() => toast.error('Could not load this Job Fair')).finally(() => setLoaded(true)) }, [fairId])
+  useEffect(() => { if (!fairId) return; apiClient.client.get(`/job-fairs/admin`).then(({ data }) => { const fair = (data.job_fairs || []).find((item: Fair) => item.id === fairId); if (!fair) throw new Error('missing'); setId(fair.id); setTitle(fair.title); setSlug(fair.slug); setContent({ ...defaultContent, ...(fair.content || {}) }); setSectionItems(Object.fromEntries(arrayFields.map(key => [key, readItems(fair.content?.[key], key)])) as JobFairSectionState); setSelectedJobs(fair.jobs.filter((job: JobItem) => job.source === 'disha')); setManualJobs(fair.jobs.filter((job: JobItem) => job.source === 'manual') as ManualJob[]); }).catch(() => toast.error('Could not load this Job Fair')).finally(() => setLoaded(true)) }, [fairId])
   useEffect(() => { let active = true; const timer = setTimeout(() => { apiClient.client.get('/job-fairs/admin/jobs', { params: { search } }).then(({ data }) => { if (active) setSearchResults(data.jobs || []) }).catch(() => {}); }, 250); return () => { active = false; clearTimeout(timer) } }, [search])
   const updateContent = (key: string, value: string) => setContent(current => ({ ...current, [key]: value }))
   const updateUploadedItemImage = async (key: JobFairArrayField, editorKey: string, field: string, file: File) => {
@@ -160,7 +167,7 @@ export function JobFairEditor({ fairId }: { fairId?: string }) {
   return <AdminDashboardLayout><div className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
     <Link href="/dashboard/admin/job-fairs" className="inline-flex items-center gap-2 text-sm text-gray-600"><ArrowLeft className="h-4 w-4"/>All Job Fairs</Link>
     <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">{id ? 'Edit Job Fair' : 'Create Job Fair'}</h1><p className="text-sm text-gray-500">Configure the public page and its jobs together.</p></div><div className="flex gap-2">{id && <Link href={`/job-fairs/${slug}?preview=1&id=${id}`} target="_blank"><Button variant="outline">Preview</Button></Link>}<Button onClick={() => void save()} disabled={saving}><Save className="mr-2 h-4 w-4"/>{saving ? 'Saving…' : 'Save draft'}</Button></div></header>
-    <section className="grid gap-4 rounded-xl border bg-white p-5 md:grid-cols-2"><h2 className="md:col-span-2 text-lg font-semibold">Basic information and hero</h2><label className="space-y-1 text-sm font-semibold text-gray-800">Title<Input value={title} onChange={e => setTitle(e.target.value)} required/></label><label className="space-y-1 text-sm font-semibold text-gray-800">Public slug<Input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} placeholder="career-opportunities-fair" required/></label>
+    <section className="grid gap-4 rounded-xl border bg-white p-5 md:grid-cols-2"><h2 className="md:col-span-2 text-lg font-semibold">Basic information and hero</h2><label className="space-y-1 text-sm font-semibold text-gray-800">Title<Input value={title} onChange={e => { const value = e.target.value; setTitle(value); if (!id) setSlug(value.trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')) }} required/></label>
       <div className="space-y-1 text-sm font-semibold text-gray-800"><p>Short description</p><RichTextEditor value={content.short_description || ''} onChange={value => updateContent('short_description', value)} placeholder="A concise introduction to the Job Fair." minHeightClassName="min-h-[100px]"/></div>
       <div className="space-y-1 text-sm font-semibold text-gray-800"><p>Description</p><RichTextEditor value={content.description || ''} onChange={value => updateContent('description', value)} placeholder="More information about the event."/></div>
       <DateTimeField label="Event date and time" value={content.date_time} onChange={value => updateContent('date_time', value)}/>
