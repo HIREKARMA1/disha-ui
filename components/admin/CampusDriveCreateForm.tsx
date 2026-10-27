@@ -14,7 +14,6 @@ import { PhotoGalleryField } from '@/components/gallery/PhotoGalleryField'
 import { CampusDriveJobPicker } from '@/components/admin/CampusDriveJobPicker'
 import { CampusDriveCorporateSection } from '@/components/admin/CampusDriveCorporateSection'
 import { campusDriveService, apiErrorMessage } from '@/services/campusDriveService'
-import { EVENT_CATEGORIES } from '@/types/contestEvent'
 import type { FAQItem, GalleryItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
 import type {
   CampusDriveCorporateSummary,
@@ -67,7 +66,7 @@ interface FormState {
 const emptyForm = (): FormState => ({
   title: '',
   slug: '',
-  category: 'technology',
+  category: '',
   subtitle: '',
   short_description: '',
   long_description: '',
@@ -169,7 +168,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
         setForm({
           title: drive.title || '',
           slug: drive.slug || '',
-          category: drive.category || 'technology',
+          category: drive.category || '',
           subtitle: drive.subtitle || '',
           short_description: drive.short_description || '',
           long_description: drive.long_description || '',
@@ -489,11 +488,7 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
             </div>
             <div>
               <label className="text-sm font-medium">Category</label>
-              <CampusDriveFieldSelect
-                value={form.category}
-                onValueChange={(value) => update('category', value)}
-                options={EVENT_CATEGORIES}
-              />
+              <Input value={form.category} onChange={(e) => update('category', e.target.value)} placeholder="Enter a category (optional)" />
             </div>
           </div>
           <div>

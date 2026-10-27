@@ -26,6 +26,7 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true)
   const [missing, setMissing] = useState(false)
   const [registering, setRegistering] = useState(false)
+  const [resumeRequired, setResumeRequired] = useState(false)
   const autoRegisterAttempted = useRef(false)
   const { isAuthenticated, isLoading: authLoading, user } = useAuth()
   const { openLoginModal } = useAuthLoginModal()
@@ -82,6 +83,7 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
       toast.success('You are already registered for this campus drive.')
       return
     }
+    setResumeRequired(false)
     setRegistering(true)
     try {
       await campusDriveService.registerForCampusDrive(slug)
@@ -119,6 +121,11 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
       }
       if (status === 401) {
         promptLogin()
+        return
+      }
+      if (typeof msg === 'string' && msg.toLowerCase().includes('resume is required')) {
+        setResumeRequired(true)
+        toast.error('Add a resume to your profile before registering.')
         return
       }
       clearPendingCampusDriveRegistration()
@@ -170,10 +177,15 @@ export function CampusDrivePublicDetail({ slug }: { slug: string }) {
     void handleRegister()
   }, [drive, authLoading, registering, isAuthenticated, handleRegister, slug])
 
+  const resumeReturn = drive
+    ? `/campus-drives/${encodeURIComponent(slug)}?register=1&action=register&driveId=${encodeURIComponent(drive.id)}`
+    : ''
   const registerState: CampusDriveRegisterState | undefined = drive
     ? {
         isRegistered: Boolean(drive.is_registered),
         registering,
+        resumeRequired,
+        resumeHref: resumeReturn ? `/dashboard/student/profile?resume_return=${encodeURIComponent(resumeReturn)}` : undefined,
         onRegister: () => void handleRegister(),
         showRegisterAction,
       }

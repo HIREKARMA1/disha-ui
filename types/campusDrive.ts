@@ -1,5 +1,5 @@
 import type { Job } from '@/components/jobs/AllJobs'
-import type { EventCategory, FAQItem, GalleryItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
+import type { FAQItem, GalleryItem, RewardItem, RoundItem, VisibilitySettings } from '@/types/contestEvent'
 
 export type CampusDriveMode = 'virtual' | 'oncampus' | 'walking'
 export type CampusDrivePublicationStatus = 'draft' | 'published'
@@ -96,7 +96,7 @@ export interface CampusDriveWritePayload {
   organizer_phone?: string
   venue?: string
   mode?: CampusDriveMode
-  category?: EventCategory
+  category?: string | null
   registration_start_date?: string | null
   registration_end_date?: string | null
   event_start_date: string
