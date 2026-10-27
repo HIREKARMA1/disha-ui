@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from 'lucide-react'
 import { EventImageUpload } from '@/components/admin/EventImageUpload'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -42,9 +43,10 @@ export function JobFairContentSections({ items, uploading, onAdd, onRemove, onUp
   return <section className="space-y-4 rounded-xl border bg-white p-5">
     <div><h2 className="text-lg font-semibold">Page sections</h2><p className="text-sm text-gray-500">Add and edit the content shown on the public Job Fair page. Empty sections stay hidden.</p></div>
     <div className="grid gap-4 xl:grid-cols-2">
-      {section('highlights', 'Highlights', 'A title and description for each highlight.', 'Add Highlight', { title: '', description: '' }, (item, index) => <ItemCard key={item[JOB_FAIR_EDITOR_KEY]} title={`Highlight ${index + 1}`} onRemove={() => onRemove('highlights', item[JOB_FAIR_EDITOR_KEY])}>
-        <label className="space-y-1 text-sm">Title<Input required value={text(item, 'title')} onChange={e => onUpdate('highlights', item[JOB_FAIR_EDITOR_KEY], { title: e.target.value })}/></label>
-        <label className="space-y-1 text-sm md:col-span-2">Description<textarea className="min-h-20 w-full rounded-md border p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" value={text(item, 'description')} onChange={e => onUpdate('highlights', item[JOB_FAIR_EDITOR_KEY], { description: e.target.value })}/></label>
+      {section('highlights', 'Programs in Job Fair', 'Add multiple programs with a title, description, and their own uploaded image.', 'Add Program', { title: '', description: '', image: '' }, (item, index) => <ItemCard key={item[JOB_FAIR_EDITOR_KEY]} title={`Program ${index + 1}`} onRemove={() => onRemove('highlights', item[JOB_FAIR_EDITOR_KEY])}>
+        <label className="space-y-1 text-sm">Program title<Input required value={text(item, 'title')} onChange={e => onUpdate('highlights', item[JOB_FAIR_EDITOR_KEY], { title: e.target.value })}/></label>
+        <div className="space-y-1 text-sm md:col-span-2"><p>Description</p><RichTextEditor value={text(item, 'description')} onChange={value => onUpdate('highlights', item[JOB_FAIR_EDITOR_KEY], { description: value })} placeholder="Describe this program with formatting, lists, or links." minHeightClassName="min-h-[100px]"/></div>
+        <div className="md:col-span-2"><EventImageUpload label="Program image" aspect="wide" value={text(item, 'image')} onChange={value => onUpdate('highlights', item[JOB_FAIR_EDITOR_KEY], { image: value })} onUpload={async file => { await onUpload('highlights', item[JOB_FAIR_EDITOR_KEY], 'image', file) }} uploading={uploading}/></div>
       </ItemCard>)}
       {section('partners', 'Partners', 'Partner details and optional logo or website.', 'Add Partner', { name: '', logo: '', website: '' }, (item, index) => <ItemCard key={item[JOB_FAIR_EDITOR_KEY]} title={`Partner ${index + 1}`} onRemove={() => onRemove('partners', item[JOB_FAIR_EDITOR_KEY])}>
         <label className="space-y-1 text-sm">Partner name<Input required value={text(item, 'name')} onChange={e => onUpdate('partners', item[JOB_FAIR_EDITOR_KEY], { name: e.target.value })}/></label>
@@ -59,12 +61,12 @@ export function JobFairContentSections({ items, uploading, onAdd, onRemove, onUp
         <div className="md:col-span-2"><EventImageUpload label="Profile photo (optional)" aspect="logo" value={text(item, 'photo')} onChange={value => onUpdate('testimonials', item[JOB_FAIR_EDITOR_KEY], { photo: value })} onUpload={async file => { await onUpload('testimonials', item[JOB_FAIR_EDITOR_KEY], 'photo', file) }} uploading={uploading}/></div>
       </ItemCard>)}
       {section('gallery', 'Gallery', 'Add an image URL or upload an image with a caption.', 'Add Image', { image: '', title: '' }, (item, index) => <ItemCard key={item[JOB_FAIR_EDITOR_KEY]} title={`Image ${index + 1}`} onRemove={() => onRemove('gallery', item[JOB_FAIR_EDITOR_KEY])}>
-        <div className="md:col-span-2"><EventImageUpload label="Gallery image" value={text(item, 'image')} onChange={value => onUpdate('gallery', item[JOB_FAIR_EDITOR_KEY], { image: value })} onUpload={async file => { await onUpload('gallery', item[JOB_FAIR_EDITOR_KEY], 'image', file) }} uploading={uploading}/>{validImagePreview(text(item, 'image')) && <img src={text(item, 'image')} alt={text(item, 'title')} className="mt-3 max-h-48 rounded-lg border object-contain"/>}</div>
+        <div className="md:col-span-2"><EventImageUpload label="Gallery image" aspect="wide" value={text(item, 'image')} onChange={value => onUpdate('gallery', item[JOB_FAIR_EDITOR_KEY], { image: value })} onUpload={async file => { await onUpload('gallery', item[JOB_FAIR_EDITOR_KEY], 'image', file) }} uploading={uploading}/>{validImagePreview(text(item, 'image')) && <img src={text(item, 'image')} alt={text(item, 'title')} className="mt-3 max-h-48 rounded-lg border object-contain"/>}</div>
         <label className="space-y-1 text-sm md:col-span-2">Caption / alternative text<Input value={text(item, 'title')} onChange={e => onUpdate('gallery', item[JOB_FAIR_EDITOR_KEY], { title: e.target.value })}/></label>
       </ItemCard>)}
       {section('additional_sections', 'Additional Sections', 'Optional content blocks shown after the standard sections.', 'Add Section', { title: '', description: '' }, (item, index) => <ItemCard key={item[JOB_FAIR_EDITOR_KEY]} title={`Section ${index + 1}`} onRemove={() => onRemove('additional_sections', item[JOB_FAIR_EDITOR_KEY])}>
         <label className="space-y-1 text-sm md:col-span-2">Section heading<Input required value={text(item, 'title')} onChange={e => onUpdate('additional_sections', item[JOB_FAIR_EDITOR_KEY], { title: e.target.value })}/></label>
-        <label className="space-y-1 text-sm md:col-span-2">Section content<textarea className="min-h-24 w-full rounded-md border p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" value={text(item, 'description')} onChange={e => onUpdate('additional_sections', item[JOB_FAIR_EDITOR_KEY], { description: e.target.value })}/></label>
+        <div className="space-y-1 text-sm md:col-span-2"><p>Section content</p><RichTextEditor value={text(item, 'description')} onChange={value => onUpdate('additional_sections', item[JOB_FAIR_EDITOR_KEY], { description: value })} placeholder="Add formatted section content." minHeightClassName="min-h-[120px]"/></div>
       </ItemCard> , true)}
     </div>
   </section>
