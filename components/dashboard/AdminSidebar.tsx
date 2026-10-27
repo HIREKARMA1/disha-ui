@@ -123,6 +123,12 @@ const navSections: NavSection[] = [
                 description: 'Manage job postings',
             },
             {
+                label: 'Job Fairs',
+                href: '/dashboard/admin/job-fairs',
+                icon: Briefcase,
+                description: 'Manage Job Fair pages and jobs',
+            },
+            {
                 label: 'University Approval',
                 href: '/dashboard/admin/university-approval',
                 icon: ShieldCheck,

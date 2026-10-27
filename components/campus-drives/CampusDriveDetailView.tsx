@@ -118,6 +118,8 @@ function parseListItems(value: unknown): string[] {
 export interface CampusDriveRegisterState {
   isRegistered: boolean
   registering: boolean
+  resumeRequired?: boolean
+  resumeHref?: string
   onRegister: () => void
   showRegisterAction: boolean
 }
@@ -136,7 +138,7 @@ export function CampusDriveDetailView({
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set())
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('jobs')
+  const [activeTab, setActiveTab] = useState('overview')
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -572,6 +574,9 @@ export function CampusDriveDetailView({
 
             {/* 3. Sticky Navigation Tabs */}
             <nav className="tabs" aria-label="Page sections" role="tablist">
+              <button type="button" role="tab" aria-selected={activeTab === 'overview'} className={activeTab === 'overview' ? 'on' : ''} onClick={() => setActiveTab('overview')}>
+                Overview
+              </button>
               <button type="button" role="tab" aria-selected={activeTab === 'jobs'} className={activeTab === 'jobs' ? 'on' : ''} onClick={() => setActiveTab('jobs')}>
                 Jobs <em>{parsedJobs.length}</em>
               </button>
@@ -583,9 +588,6 @@ export function CampusDriveDetailView({
                 onClick={() => setActiveTab('corporates')}
               >
                 Corporates <em>{associatedCorporates.length}</em>
-              </button>
-              <button type="button" role="tab" aria-selected={activeTab === 'overview'} className={activeTab === 'overview' ? 'on' : ''} onClick={() => setActiveTab('overview')}>
-                Overview
               </button>
               <button type="button" role="tab" aria-selected={activeTab === 'rounds'} className={activeTab === 'rounds' ? 'on' : ''} onClick={() => setActiveTab('rounds')}>
                 Rounds
@@ -851,7 +853,7 @@ export function CampusDriveDetailView({
                 ) : (
                   <div className="corporates">
                     {associatedCorporates.map((corporate) => (
-                      <article key={corporate.id} className="card corporate">
+                      <Link key={corporate.id} href={`/corporates/${encodeURIComponent(corporate.id)}`} className="card corporate corporate-link">
                         <div className="corp-logo">
                           {corporate.company_logo ? (
                             <img src={corporate.company_logo} alt={`${corporate.company_name} logo`} />
@@ -860,7 +862,7 @@ export function CampusDriveDetailView({
                           )}
                         </div>
                         <h3>{corporate.company_name}</h3>
-                      </article>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -1002,6 +1004,14 @@ export function CampusDriveDetailView({
                 >
                   View open roles
                 </button>
+              ) : null}
+              {registerState?.resumeRequired ? (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+                  <p>Add a resume to your Disha profile to register for this Campus Drive.</p>
+                  <Link className="mt-2 inline-block font-semibold underline" href={registerState.resumeHref || '/dashboard/student/profile'}>
+                    Upload a resume
+                  </Link>
+                </div>
               ) : null}
             </div>
             <div className="card side">
@@ -1848,6 +1858,20 @@ export function CampusDriveDetailView({
           justify-content: flex-start;
           text-align: center;
           gap: 14px;
+        }
+
+        .corporate-link {
+          color: inherit;
+          text-decoration: none;
+          transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+        }
+
+        .corporate-link:hover,
+        .corporate-link:focus-visible {
+          transform: translateY(-2px);
+          border-color: var(--accent, #5b5bd6);
+          box-shadow: 0 10px 24px rgba(25, 35, 60, 0.12);
+          outline: none;
         }
 
         .corporate h3 {
