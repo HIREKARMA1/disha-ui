@@ -232,7 +232,7 @@ function RegistrationBanner({ fair, onRegister }: { fair: Fair; onRegister: () =
   const eyebrow = text(fair.content.cta_eyebrow) || 'Don’t miss out'
   const image = safeExternalUrl(fair.content.cta_image)
   return <section className="overflow-hidden bg-[#fff7e7]" aria-label="Register for the Job Fair"><div className={`mx-auto grid max-w-[1320px] items-center gap-4 px-4 py-5 sm:px-6 lg:px-8 ${image ? 'md:grid-cols-[.85fr_1.15fr]' : ''}`}>
-    {image && <img src={image} alt={heading} className="aspect-video w-full rounded-2xl object-contain"/>}
+    {image && <img src={image} alt={heading} className="aspect-video mix-blend-multiply w-full rounded-2xl object-contain"/>}
     <div className={image ? 'py-2 md:pl-4' : 'mx-auto w-full max-w-3xl py-2 text-center'}><p className="text-[9px] font-bold uppercase tracking-[.2em] text-teal-800">{eyebrow}</p><h2 className="mt-1 max-w-xl text-xl font-extrabold leading-tight tracking-tight text-[#101b30] sm:text-2xl">{heading}</h2><RichTextBlock value={description} className="mt-2 max-w-xl text-[11px] leading-5 text-slate-600"/><button type="button" onClick={onRegister} className="mt-3 inline-flex items-center rounded-full bg-black px-4 py-2 text-[10px] font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600 focus-visible:ring-offset-2">{text(fair.content.cta_label) || 'Register Now'}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></button></div>
   </div></section>
 }
