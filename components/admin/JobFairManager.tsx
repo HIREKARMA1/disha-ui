@@ -14,7 +14,7 @@ import { apiClient } from '@/lib/api'
 import { stripHtmlToPlainText } from '@/lib/sanitizeHtml'
 import { toast } from 'react-hot-toast'
 
-type ManualJob = { id?: string; title: string; company_name: string; company_logo?: string; description?: string; responsibilities?: string; requirements?: string; skills?: string[]; location?: string; job_type?: string; compensation?: string; experience_min?: number | null; experience_max?: number | null; vacancies?: number | null; application_deadline?: string | null }
+type ManualJob = { id?: string; title: string; company_name: string; company_logo?: string; description?: string; responsibilities?: string; requirements?: string; qualification?: string; age_limit?: string; gender?: string; skills?: string[]; location?: string; job_type?: string; compensation?: string; experience_min?: number | null; experience_max?: number | null; vacancies?: number | null; application_deadline?: string | null }
 type JobItem = { id: string; source: 'disha' | 'manual'; title: string; company_name: string; company_logo?: string; slug?: string; location?: string }
 type Fair = { id: string; title: string; slug: string; content: Record<string, any>; published: boolean; jobs: JobItem[]; registration_count?: number; manual_application_count?: number }
 
@@ -81,10 +81,48 @@ function publicUrlIsValid(value: unknown, allowLocalPath = false): boolean {
   } catch { return false }
 }
 
+function DeleteJobFairDialog({ fair, onClose, onDeleted }: { fair: Fair | null; onClose: () => void; onDeleted: () => void }) {
+  const [loading, setLoading] = useState(false)
+  if (!fair) return null
+  const confirmDelete = async () => {
+    setLoading(true)
+    try {
+      await apiClient.client.delete(`/job-fairs/admin/${fair.id}`)
+      toast.success('Job Fair deleted')
+      onDeleted()
+      onClose()
+    } catch (error: unknown) {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      toast.error(typeof detail === 'string' ? detail : 'Could not delete Job Fair')
+    } finally {
+      setLoading(false)
+    }
+  }
+  return <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="flex min-h-full items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50" onClick={loading ? undefined : onClose} aria-hidden="true"/>
+      <div className="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" role="dialog" aria-labelledby="delete-job-fair-title">
+        <h3 id="delete-job-fair-title" className="text-lg font-semibold text-gray-900">Delete Job Fair</h3>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">
+          Delete &quot;{fair.title}&quot;? This permanently removes the Job Fair page, manual jobs, registrations, and manual applications linked to it. Disha jobs attached to the fair will remain available.
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button variant="destructive" onClick={() => void confirmDelete()} disabled={loading}>
+            {loading ? 'Deleting…' : 'Confirm Delete'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 export function JobFairList() {
   const [fairs, setFairs] = useState<Fair[]>([])
   const [busy, setBusy] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState<Fair | null>(null)
   const reload = useCallback(async () => {
+    setBusy(true)
     try { const { data } = await apiClient.client.get('/job-fairs/admin'); setFairs(data.job_fairs || []) }
     catch { toast.error('Could not load Job Fairs') } finally { setBusy(false) }
   }, [])
@@ -95,7 +133,8 @@ export function JobFairList() {
   }
   return <AdminDashboardLayout><div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
     <header className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.18em] text-primary-600">Event management</p><h1 className="mt-1 text-2xl font-bold">Job Fairs</h1><p className="text-sm text-gray-500">Create and manage fairs, registrations, and job applications.</p></div><Link href="/dashboard/admin/job-fairs/new"><Button><Plus className="mr-2 h-4 w-4"/>Create Job Fair</Button></Link></header>
-    {busy ? <p>Loading…</p> : fairs.length ? <div className="grid gap-4">{fairs.map(fair => { const banner = typeof fair.content?.hero_image === 'string' ? fair.content.hero_image : ''; return <article key={fair.id} className="overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm"><div className="grid lg:grid-cols-[38%_62%]"><div className="relative aspect-video self-start overflow-hidden bg-gray-100">{banner ? <img src={banner} alt="" className="h-full w-full object-contain"/> : <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-600 to-teal-500"><Briefcase className="h-10 w-10 text-white/70"/></div>}</div><div className="flex min-w-0 flex-col p-4 md:p-5"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${fair.published ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{fair.published ? 'Published' : 'Draft'}</span><span className="text-xs text-gray-500">/{fair.slug}</span></div><h2 className="mt-2 text-xl font-bold text-gray-900">{fair.title}</h2><p className="mt-1 line-clamp-2 text-sm text-gray-500">{stripHtmlToPlainText(fair.content?.short_description) || stripHtmlToPlainText(fair.content?.subtitle) || 'Manage the public event page and participating opportunities.'}</p><div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600"><span className="inline-flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-primary-600"/>{fair.jobs?.length || 0} jobs</span><span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-primary-600"/>{fair.registration_count || 0} registered</span><span className="inline-flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-primary-600"/>{fair.manual_application_count || 0} manual applications</span></div><div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4 mt-4"><Link href={`/job-fairs/${fair.slug}`} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><Eye className="mr-1.5 h-4 w-4"/>View</Button></Link><Link href={`/dashboard/admin/job-fairs/${fair.id}/edit`}><Button variant="outline" size="sm"><Pencil className="mr-1.5 h-4 w-4"/>Edit</Button></Link><Button variant="outline" size="sm" onClick={() => void setPublished(fair, fair.published ? 'unpublish' : 'publish')}>{fair.published ? 'Unpublish' : 'Publish'}</Button><Link href={`/dashboard/admin/job-fairs/${fair.id}/analytics`}><Button variant="outline" size="sm"><BarChart3 className="mr-1.5 h-4 w-4"/>Analytics</Button></Link></div></div></div></article>})}</div> : <p className="rounded-xl border bg-white p-8 text-gray-500">No Job Fairs yet.</p>}
+    {busy ? <p>Loading…</p> : fairs.length ? <div className="grid gap-4">{fairs.map(fair => { const banner = typeof fair.content?.hero_image === 'string' ? fair.content.hero_image : ''; return <article key={fair.id} className="overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm"><div className="grid lg:grid-cols-[38%_62%]"><div className="relative aspect-video self-start overflow-hidden bg-gray-100">{banner ? <img src={banner} alt="" className="h-full w-full object-contain"/> : <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-600 to-teal-500"><Briefcase className="h-10 w-10 text-white/70"/></div>}</div><div className="flex min-w-0 flex-col p-4 md:p-5"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${fair.published ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{fair.published ? 'Published' : 'Draft'}</span><span className="text-xs text-gray-500">{fair.slug}</span></div><h2 className="mt-2 text-xl font-bold text-gray-900">{fair.title}</h2><p className="mt-1 line-clamp-2 text-sm text-gray-500">{stripHtmlToPlainText(fair.content?.short_description) || stripHtmlToPlainText(fair.content?.subtitle) || 'Manage the public event page and participating opportunities.'}</p><div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600"><span className="inline-flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-primary-600"/>{fair.jobs?.length || 0} jobs</span><span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-primary-600"/>{fair.registration_count || 0} registered</span><span className="inline-flex items-center gap-1.5"><Briefcase className="h-4 w-4 text-primary-600"/>{fair.manual_application_count || 0} manual applications</span></div><div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4 mt-4"><Link href={`/job-fairs/${fair.slug}`} target="_blank" rel="noopener noreferrer"><Button variant="outline" size="sm"><Eye className="mr-1.5 h-4 w-4"/>View</Button></Link><Link href={`/dashboard/admin/job-fairs/${fair.id}/edit`}><Button variant="outline" size="sm"><Pencil className="mr-1.5 h-4 w-4"/>Edit</Button></Link><Button variant="outline" size="sm" onClick={() => void setPublished(fair, fair.published ? 'unpublish' : 'publish')}>{fair.published ? 'Unpublish' : 'Publish'}</Button><Link href={`/dashboard/admin/job-fairs/${fair.id}/analytics`}><Button variant="outline" size="sm"><BarChart3 className="mr-1.5 h-4 w-4"/>Analytics</Button></Link><Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setDeleteTarget(fair)}><Trash2 className="mr-1.5 h-4 w-4"/>Delete</Button></div></div></div></article>})}</div> : <p className="rounded-xl border bg-white p-8 text-gray-500">No Job Fairs yet.</p>}
+    <DeleteJobFairDialog fair={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={() => void reload()}/>
   </div></AdminDashboardLayout>
 }
 
@@ -154,7 +193,7 @@ export function JobFairEditor({ fairId }: { fairId?: string }) {
     const registrationStart = datetimeValue(content.registration_start)
     const registrationEnd = datetimeValue(content.registration_end)
     if (registrationStart !== null && registrationEnd !== null && registrationEnd < registrationStart) { toast.error('Registration closes before it opens. Check the registration dates.'); return }
-    if (!publicUrlIsValid(content.logo, true) || !publicUrlIsValid(content.hero_image, true) || !publicUrlIsValid(content.cta_image, true) || !publicUrlIsValid(content.cta_url, true)) { toast.error('Logo, banner images, and action destinations must use valid HTTP or HTTPS URLs.'); return }
+    if (!publicUrlIsValid(content.logo, true) || !publicUrlIsValid(content.hero_image, true) || !publicUrlIsValid(content.cta_image, true) || !publicUrlIsValid(content.cta_url, true) || !publicUrlIsValid(content.chief_guest_photo, true)) { toast.error('Logo, banner images, chief guest photo, and action destinations must use valid HTTP or HTTPS URLs.'); return }
     const contentArrays = Object.fromEntries(arrayFields.map(key => [key, sectionItems[key].map(item => Object.fromEntries(Object.entries(item)))]))
     setSaving(true)
     try {
@@ -179,9 +218,37 @@ export function JobFairEditor({ fairId }: { fairId?: string }) {
       <div className="md:col-span-2"><EventImageUpload label="Hero / banner image" aspect="wide" value={content.hero_image} onChange={value => updateContent('hero_image', value)} onUpload={uploadHero} uploading={uploading}/></div>
       <div className="md:col-span-2"><EventImageUpload label="Don't miss out registration banner image" aspect="wide" value={content.cta_image || ''} onChange={value => updateContent('cta_image', value)} onUpload={async file => updateContent('cta_image', await uploadImage(file))} uploading={uploading}/></div>
     </section>
+    <section className="space-y-4 rounded-xl border bg-white p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Chief guest</h2>
+          <p className="text-sm text-gray-500">Optional speaker details shown on the public Job Fair page when a name is provided.</p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => setContent(current => ({
+          ...current,
+          chief_guest_name: '',
+          chief_guest_designation: '',
+          chief_guest_organization: '',
+          chief_guest_bio: '',
+          chief_guest_photo: '',
+        }))}>Clear chief guest</Button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="space-y-1 text-sm font-semibold text-gray-800">Chief guest name<Input value={content.chief_guest_name || ''} onChange={e => updateContent('chief_guest_name', e.target.value)} className="font-normal"/></label>
+        <label className="space-y-1 text-sm font-semibold text-gray-800">Designation / title<Input value={content.chief_guest_designation || ''} onChange={e => updateContent('chief_guest_designation', e.target.value)} className="font-normal"/></label>
+        <label className="space-y-1 text-sm font-semibold text-gray-800">Organization (optional)<Input value={content.chief_guest_organization || ''} onChange={e => updateContent('chief_guest_organization', e.target.value)} className="font-normal"/></label>
+        <div className="md:col-span-2 space-y-1 text-sm font-semibold text-gray-800">
+          <p>Short biography (optional)</p>
+          <RichTextEditor value={content.chief_guest_bio || ''} onChange={value => updateContent('chief_guest_bio', value)} placeholder="Introduce the chief guest in a few sentences." minHeightClassName="min-h-[100px]"/>
+        </div>
+        <div className="md:col-span-2">
+          <EventImageUpload label="Chief guest photo" aspect="banner" value={content.chief_guest_photo || ''} onChange={value => updateContent('chief_guest_photo', value)} onUpload={async file => updateContent('chief_guest_photo', await uploadImage(file))} uploading={uploading}/>
+        </div>
+      </div>
+    </section>
     <JobFairContentSections items={sectionItems} uploading={uploading} onAdd={addSectionItem} onRemove={removeSectionItem} onUpdate={updateSectionItem} onUpload={updateUploadedItemImage}/>
     <section className="space-y-4 rounded-xl border bg-white p-5"><div><h2 className="text-lg font-semibold">Existing Disha jobs</h2><p className="text-sm text-gray-500">Selection keeps the original Disha record and application flow.</p></div><div className="flex gap-2"><Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search active jobs"/><Button variant="outline" aria-label="Search"><Search className="h-4 w-4"/></Button></div><div className="max-h-52 space-y-1 overflow-auto">{searchResults.map(job => <label key={job.id} className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-gray-50"><input type="checkbox" checked={selectedJobs.some(row => row.id === job.id)} onChange={e => setSelectedJobs(current => e.target.checked ? [...current.filter(row => row.id !== job.id), job] : current.filter(row => row.id !== job.id))}/><span>{job.title} · {job.company_name}</span></label>)}</div><p className="text-sm">Selected: {selectedJobs.map(job => job.title).join(', ') || 'None'}</p></section>
-    <section className="space-y-4 rounded-xl border bg-white p-5"><div className="flex items-center justify-between"><div><h2 className="text-lg font-semibold">Manual Job Fair jobs</h2><p className="text-sm text-gray-500">These jobs have a separate application record and exemption policy.</p></div><Button variant="outline" onClick={() => setManualJobs(list => [...list, { title: '', company_name: '' }])}><Plus className="mr-2 h-4 w-4"/>Add job</Button></div>{manualJobs.map((job, index) => <div key={job.id || index} className="grid gap-3 rounded-lg border p-4 md:grid-cols-2"><label className="text-sm">Job title<Input value={job.title} onChange={e => updateManualJob(index, { title: e.target.value })}/></label><label className="text-sm">Company<Input value={job.company_name} onChange={e => updateManualJob(index, { company_name: e.target.value })}/></label><div><EventImageUpload label="Company logo" aspect="logo" value={job.company_logo || ''} onChange={value => updateManualJob(index, { company_logo: value })} onUpload={async file => updateManualJob(index, { company_logo: await uploadImage(file) })} uploading={uploading}/></div><label className="text-sm">Location<Input value={job.location || ''} onChange={e => updateManualJob(index, { location: e.target.value })}/></label><label className="text-sm">Job type<Input value={job.job_type || ''} onChange={e => updateManualJob(index, { job_type: e.target.value })}/></label><label className="text-sm">Compensation<Input value={job.compensation || ''} onChange={e => updateManualJob(index, { compensation: e.target.value })}/></label><label className="text-sm">Experience range (min–max)<div className="flex gap-2"><Input type="number" value={job.experience_min ?? ''} onChange={e => updateManualJob(index, { experience_min: e.target.value ? Number(e.target.value) : null })}/><Input type="number" value={job.experience_max ?? ''} onChange={e => updateManualJob(index, { experience_max: e.target.value ? Number(e.target.value) : null })}/></div></label><label className="text-sm">Vacancies<Input type="number" value={job.vacancies ?? ''} onChange={e => updateManualJob(index, { vacancies: e.target.value ? Number(e.target.value) : null })}/></label><label className="text-sm">Application deadline<Input type="date" value={job.application_deadline?.slice(0, 10) || ''} onChange={e => updateManualJob(index, { application_deadline: e.target.value || null })}/></label><label className="text-sm md:col-span-2">Skills (comma separated)<Input value={(job.skills || []).join(', ')} onChange={e => updateManualJob(index, { skills: e.target.value.split(',').map(skill => skill.trim()).filter(Boolean) })}/></label>{(['description', 'responsibilities', 'requirements'] as const).map(field => <div key={field} className="space-y-1 text-sm capitalize md:col-span-2"><p>{field === 'description' ? 'Job description' : field}</p><RichTextEditor value={job[field] || ''} onChange={value => updateManualJob(index, { [field]: value })} placeholder={`Add formatted ${field}.`} minHeightClassName="min-h-[120px]"/></div>)}<div className="md:col-span-2 flex justify-end"><Button variant="destructive" size="sm" onClick={() => setManualJobs(rows => rows.filter((_, i) => i !== index))}><Trash2 className="mr-2 h-4 w-4"/>Remove job</Button></div></div>)}</section>
+    <section className="space-y-4 rounded-xl border bg-white p-5"><div><h2 className="text-lg font-semibold">Manual Job Fair jobs</h2><p className="text-sm text-gray-500">These jobs have a separate application record and exemption policy.</p></div>{manualJobs.map((job, index) => <div key={job.id || index} className="grid gap-3 rounded-lg border p-4 md:grid-cols-2"><label className="text-sm">Job title<Input value={job.title} onChange={e => updateManualJob(index, { title: e.target.value })}/></label><label className="text-sm">Company<Input value={job.company_name} onChange={e => updateManualJob(index, { company_name: e.target.value })}/></label><div><EventImageUpload label="Company logo" aspect="logo" value={job.company_logo || ''} onChange={value => updateManualJob(index, { company_logo: value })} onUpload={async file => updateManualJob(index, { company_logo: await uploadImage(file) })} uploading={uploading}/></div><label className="text-sm">Location<Input value={job.location || ''} onChange={e => updateManualJob(index, { location: e.target.value })}/></label><label className="text-sm">Job type<Input value={job.job_type || ''} onChange={e => updateManualJob(index, { job_type: e.target.value })}/></label><label className="text-sm">Salary<Input value={job.compensation || ''} onChange={e => updateManualJob(index, { compensation: e.target.value })} placeholder="e.g. ₹6–8 LPA"/></label><label className="text-sm">Experience range (min–max)<div className="flex gap-2"><Input type="number" value={job.experience_min ?? ''} onChange={e => updateManualJob(index, { experience_min: e.target.value ? Number(e.target.value) : null })}/><Input type="number" value={job.experience_max ?? ''} onChange={e => updateManualJob(index, { experience_max: e.target.value ? Number(e.target.value) : null })}/></div></label><label className="text-sm">Qualification<Input value={job.qualification || ''} onChange={e => updateManualJob(index, { qualification: e.target.value })} placeholder="e.g. Bachelor's degree"/></label><label className="text-sm">Age limit<Input value={job.age_limit || ''} onChange={e => updateManualJob(index, { age_limit: e.target.value })} placeholder="e.g. 18–35 years"/></label><label className="text-sm">Gender<select value={job.gender || ''} onChange={e => updateManualJob(index, { gender: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="">Any / Not specified</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label><label className="text-sm">Vacancies<Input type="number" value={job.vacancies ?? ''} onChange={e => updateManualJob(index, { vacancies: e.target.value ? Number(e.target.value) : null })}/></label><label className="text-sm">Application deadline<Input type="date" value={job.application_deadline?.slice(0, 10) || ''} onChange={e => updateManualJob(index, { application_deadline: e.target.value || null })}/></label><label className="text-sm md:col-span-2">Skills (comma separated)<Input value={(job.skills || []).join(', ')} onChange={e => updateManualJob(index, { skills: e.target.value.split(',').map(skill => skill.trim()).filter(Boolean) })}/></label>{(['description', 'responsibilities', 'requirements'] as const).map(field => <div key={field} className="space-y-1 text-sm md:col-span-2"><p className="capitalize">{field === 'description' ? 'Job description' : field}</p><RichTextEditor value={job[field] || ''} onChange={value => updateManualJob(index, { [field]: value })} placeholder={`Add formatted ${field}.`} minHeightClassName="min-h-[120px]"/></div>)}<div className="md:col-span-2 flex justify-end"><Button variant="destructive" size="sm" onClick={() => setManualJobs(rows => rows.filter((_, i) => i !== index))}><Trash2 className="mr-2 h-4 w-4"/>Remove job</Button></div></div>)}<Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setManualJobs(list => [...list, { title: '', company_name: '' }])}><Plus className="mr-2 h-4 w-4"/>Add job</Button></section>
     <div className="flex justify-end"><Button onClick={() => void save()} disabled={saving}><Save className="mr-2 h-4 w-4"/>{saving ? 'Saving…' : 'Save Job Fair'}</Button></div>
   </div></AdminDashboardLayout>
 }

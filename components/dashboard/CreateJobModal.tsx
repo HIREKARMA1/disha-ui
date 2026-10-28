@@ -19,6 +19,7 @@ import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutoco
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
+import { JOB_GENDER_OPTIONS, jobGenderToApi } from '@/lib/jobGender'
 
 interface CreateJobModalProps {
     isOpen: boolean
@@ -54,6 +55,7 @@ interface JobFormData {
     number_of_openings: string
     perks_and_benefits: string
     eligibility_criteria: string
+    gender: string
     education_degree: string[]
     education_branch: string[]
     passout_batches: string[]
@@ -160,6 +162,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         number_of_openings: '',
         perks_and_benefits: '',
         eligibility_criteria: '',
+        gender: '',
         education_degree: [],
         education_branch: [],
         passout_batches: [],
@@ -494,6 +497,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
                 perks_and_benefits: formData.perks_and_benefits || null,
                 eligibility_criteria: formData.eligibility_criteria || null,
+                gender: jobGenderToApi(formData.gender),
                 education_degree: formData.education_degree.length > 0 ? formData.education_degree : null,
                 education_branch: formData.education_branch.length > 0 ? formData.education_branch : null,
                 passout_batches: formData.passout_batches.length > 0 ? formData.passout_batches : null,
@@ -568,6 +572,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 number_of_openings: '',
                 perks_and_benefits: '',
                 eligibility_criteria: '',
+                gender: '',
                 education_degree: [],
                 education_branch: [],
                 passout_batches: [],
@@ -1398,6 +1403,22 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Select &quot;All Batches&quot; to allow every student to apply, or pick specific years.
                                     </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Gender
+                                    </label>
+                                    <Select value={formData.gender || 'any'} onValueChange={(value) => handleInputChange('gender', value === 'any' ? '' : value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Any Gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {JOB_GENDER_OPTIONS.map((option) => (
+                                                <SelectItem key={option.label} value={option.value || 'any'}>{option.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>

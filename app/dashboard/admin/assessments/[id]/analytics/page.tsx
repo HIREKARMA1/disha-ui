@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import { Loader2, Search, Filter, ArrowLeft, Download, Brain, Target, Users, Calendar, Clock, BarChart3, RefreshCw, Trash2 } from 'lucide-react'
@@ -21,6 +21,7 @@ import {
     formatAttemptScore,
     formatDisqualificationReason,
     formatPassFailDisplay,
+    filterAssessmentAttemptsBySearch,
     getAttemptMaxScore,
     getDisqualificationReason,
     getPassFailLabel,
@@ -83,12 +84,14 @@ export default function AssessmentAnalyticsPage() {
         }
     }
 
-    // Filter logic
-    const filteredAttempts = attempts.filter(attempt => {
-        const matchesSearch = attempt.student_id ? attempt.student_id.toLowerCase().includes(search.toLowerCase()) : false
-        const matchesStatus = filterStatus === 'ALL' || attempt.status === filterStatus
-        return matchesSearch && matchesStatus
-    })
+    const filteredAttempts = useMemo(() => {
+        const searched = filterAssessmentAttemptsBySearch(
+            attempts,
+            search,
+            assessmentDetails?.title ?? assessmentDetails?.name ?? null,
+        )
+        return searched.filter((attempt) => filterStatus === 'ALL' || attempt.status === filterStatus)
+    }, [attempts, search, filterStatus, assessmentDetails?.title, assessmentDetails?.name])
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -382,7 +385,7 @@ export default function AssessmentAnalyticsPage() {
                             <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search by Student Name or ID..."
+                                placeholder="Search by name, email, or student ID..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:outline-none"
