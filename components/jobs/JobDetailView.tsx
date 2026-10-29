@@ -61,6 +61,7 @@ import { CampusDriveInterestModal } from '@/components/jobs/CampusDriveInterestM
 import type { Job } from '@/components/jobs/AllJobs'
 import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
+import { formatJobGenderLabel } from '@/lib/jobGender'
 import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
 
 interface JobDetailViewProps {
@@ -582,6 +583,9 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
             />
             <Meta icon={Users} label="Openings" value={String(job.number_of_openings ?? '—')} />
             <Meta icon={MapPin} label="Location" value={locationLabel} />
+            {formatJobGenderLabel(job.gender) && (
+              <Meta icon={Users} label="Gender" value={formatJobGenderLabel(job.gender)!} />
+            )}
           </div>
 
           {(job.ctc_with_probation?.trim() || job.ctc_after_probation?.trim()) && (

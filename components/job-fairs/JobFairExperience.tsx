@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowRight, ArrowUpRight, Briefcase, CalendarDays, Check, ChevronDown, Filter, Globe2, MapPin, Menu, Quote, Sparkles, Users, X, UserRound, Instagram, Linkedin, Youtube, Facebook, Twitter } from 'lucide-react'
+import { formatAmountINR, formatSalaryRange } from '@/lib/currency'
 import { BrandLogo } from '@/components/ui/BrandLogo'
 import { DishaAuthActions } from '@/components/ui/DishaAuthActions'
 import { apiClient } from '@/lib/api'
@@ -19,7 +20,8 @@ type Job = {
   id: string; source: 'manual' | 'disha'; title: string; company_name: string; company_logo?: string
   location?: string; job_type?: string; compensation?: string; salary_min?: string; salary_max?: string
   experience_min?: number; experience_max?: number; slug?: string; description?: string
-  responsibilities?: string; requirements?: string; skills?: string[]; vacancies?: number; application_deadline?: string
+  responsibilities?: string; requirements?: string; qualification?: string; age_limit?: string; gender?: string
+  skills?: string[]; vacancies?: number; application_deadline?: string
 }
 type FairContent = Record<string, unknown> & {
   hero_heading?: string; highlighted_text?: string; subtitle?: string; short_description?: string; description?: string
@@ -27,6 +29,18 @@ type FairContent = Record<string, unknown> & {
   registration_start?: string; registration_end?: string; contact_email?: string; contact_phone?: string
   cta_label?: string; cta_url?: string; statistics?: string; highlights?: JsonItem[]; partners?: JsonItem[]
   testimonials?: JsonItem[]; gallery?: JsonItem[]; additional_sections?: JsonItem[]
+  chief_guest_name?: string; chief_guest_designation?: string; chief_guest_organization?: string
+  chief_guest_bio?: string; chief_guest_photo?: string
+}
+const REGISTER_BTN = 'inline-flex items-center justify-center rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+const REGISTER_BTN_LG = 'inline-flex min-h-[66px] items-center justify-center rounded-2xl bg-primary-600 px-5 py-3.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+const REGISTER_BTN_BANNER = 'mt-3 inline-flex items-center rounded-full bg-primary-600 px-4 py-2 text-[10px] font-bold text-white transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+const JF_META_ICON = 'text-primary-700'
+const JF_META_ICON_BG = 'bg-primary-50 text-primary-700'
+const APPLY_BTN = 'inline-flex w-full items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 active:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60'
+const VIEW_JOB_LINK = 'inline-flex items-center justify-center py-0.5 text-[10px] font-semibold text-primary-700 hover:text-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500'
+function chiefGuestConfigured(content?: FairContent): boolean {
+  return Boolean(text(content?.chief_guest_name).trim())
 }
 type Fair = { id: string; slug: string; title: string; content: FairContent; jobs: Job[]; published?: boolean }
 type ListingFair = { id: string; slug: string; title: string; short_description?: string; hero_image?: string }
@@ -42,10 +56,60 @@ function displayDate(value: unknown, includeTime = false): string {
     ? { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }
     : { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
 }
-function displaySalary(value: string): string {
-  const amount = Number(value)
-  return Number.isFinite(amount) ? new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(amount) : value
+function parseSalaryAmount(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const digits = trimmed.replace(/[^\d.]/g, '')
+  if (!digits) return null
+  const amount = Number(digits)
+  return Number.isFinite(amount) && amount > 0 ? amount : null
 }
+
+function dishaJobSalaryLabel(job: Job): string | null {
+  const custom = job.compensation?.trim()
+  if (custom) return custom
+  const minRaw = job.salary_min
+  const maxRaw = job.salary_max
+  const minNum = minRaw != null && minRaw !== '' ? Number(minRaw) : NaN
+  const maxNum = maxRaw != null && maxRaw !== '' ? Number(maxRaw) : NaN
+  const hasMin = Number.isFinite(minNum) && minNum > 0
+  const hasMax = Number.isFinite(maxNum) && maxNum > 0
+  if (!hasMin && !hasMax) return null
+  if (hasMin && hasMax && minNum > maxNum) {
+    return formatSalaryRange(maxNum, minNum, '') || null
+  }
+  return formatSalaryRange(hasMin ? minNum : null, hasMax ? maxNum : null, '') || null
+}
+
+function manualJobSalaryLabel(job: Job): string | null {
+  const raw = job.compensation?.trim()
+  if (!raw) return null
+  const plainNumeric = raw.replace(/[\s,₹]/g, '')
+  if (/^\d+$/.test(plainNumeric)) {
+    return formatAmountINR(plainNumeric)
+  }
+  const rangeParts = raw.split(/\s*[–-]\s*/)
+  if (rangeParts.length === 2) {
+    const left = parseSalaryAmount(rangeParts[0])
+    const right = parseSalaryAmount(rangeParts[1])
+    const hasLetters = /[a-zA-Z]/.test(raw.replace(/[₹,\d\s.–-]/g, ''))
+    if (left !== null && right !== null && !hasLetters) {
+      const low = Math.min(left, right)
+      const high = Math.max(left, right)
+      return formatSalaryRange(low, high, '') || null
+    }
+  }
+  const lone = parseSalaryAmount(raw)
+  if (lone !== null && !/[a-zA-Z]/.test(raw)) {
+    return formatAmountINR(lone)
+  }
+  return raw
+}
+
+function jobCardSalaryLabel(job: Job): string | null {
+  return job.source === 'disha' ? dishaJobSalaryLabel(job) : manualJobSalaryLabel(job)
+}
+
 function safeExternalUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null
   try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : null } catch { return null }
@@ -70,6 +134,7 @@ function EventHeader({ fair, sections = true, onRegister }: { fair?: Fair; secti
   const c = fair?.content
   const links = sections ? [
     ['Home', '#home'], ['Jobs', '#jobs'],
+    ...(chiefGuestConfigured(c) ? [['Chief Guest', '#chief-guest']] : []),
     ...(items(c?.highlights).length || items(c?.additional_sections).length ? [['Programs', '#programs']] : []),
     ...(items(c?.partners).length ? [['Partners', '#partners']] : []),
     ...(items(c?.testimonials).length ? [['Testimonials', '#testimonials']] : []),
@@ -81,9 +146,9 @@ function EventHeader({ fair, sections = true, onRegister }: { fair?: Fair; secti
     <div className="mx-auto flex h-[58px] max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
       <div className="flex min-w-0 items-center gap-3"><BrandLogo href="/job-fairs" compact priority/><span className="hidden h-7 w-px bg-slate-200 sm:block"/><span className="hidden max-w-40 truncate text-xs font-semibold text-slate-700 sm:block">{fair?.title || 'Career events'}</span></div>
       <nav className="hidden items-center gap-5 xl:flex" aria-label="Event navigation">{links.map(([label, href]) => <a key={href} href={href} className="text-[12px] font-medium text-slate-600 transition-colors hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">{label}</a>)}</nav>
-      <div className="flex items-center gap-2"><span className="hidden text-slate-600 sm:inline-flex"><UserRound className="h-4 w-4"/></span><div className="hidden sm:block"><DishaAuthActions/></div>{sections && onRegister ? <button type="button" onClick={onRegister} className="hidden rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:inline-flex">Register Now<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></button> : <a href={cta} className="hidden rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 sm:inline-flex">{sections ? (safeHref(c?.cta_url) ? 'Register Now' : 'Explore Jobs') : 'Explore Events'}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></a>}<button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 xl:hidden" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? <X className="h-5 w-5"/> : <Menu className="h-5 w-5"/>}</button></div>
+      <div className="flex items-center gap-2"><span className="hidden text-slate-600 sm:inline-flex"><UserRound className="h-4 w-4"/></span><div className="hidden sm:block"><DishaAuthActions/></div>{sections && onRegister ? <button type="button" onClick={onRegister} className={`hidden sm:inline-flex ${REGISTER_BTN}`}>Register Now<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></button> : <a href={cta} className={`hidden sm:inline-flex ${REGISTER_BTN}`}>{sections ? (safeHref(c?.cta_url) ? 'Register Now' : 'Explore Jobs') : 'Explore Events'}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></a>}<button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 xl:hidden" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? <X className="h-5 w-5"/> : <Menu className="h-5 w-5"/>}</button></div>
     </div>
-    {open && <nav className="border-t border-slate-100 bg-white px-4 py-3 shadow-lg lg:hidden" aria-label="Mobile event navigation"><div className="mx-auto grid max-w-7xl gap-1">{links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">{label}</a>)}{sections && onRegister ? <button type="button" onClick={() => { setOpen(false); onRegister() }} className="mt-1 rounded-lg bg-slate-950 px-3 py-3 text-left text-sm font-semibold text-white">Register Now<ArrowUpRight className="ml-2 inline h-4 w-4"/></button> : <a href={cta} onClick={() => setOpen(false)} className="mt-1 rounded-lg bg-slate-950 px-3 py-3 text-sm font-semibold text-white">{sections ? (safeHref(c?.cta_url) ? 'Register Now' : 'Explore Jobs') : 'Explore Events'}<ArrowUpRight className="ml-2 inline h-4 w-4"/></a>}<div className="mt-2 border-t border-slate-100 pt-2"><DishaAuthActions/></div></div></nav>}
+    {open && <nav className="border-t border-slate-100 bg-white px-4 py-3 shadow-lg lg:hidden" aria-label="Mobile event navigation"><div className="mx-auto grid max-w-7xl gap-1">{links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">{label}</a>)}{sections && onRegister ? <button type="button" onClick={() => { setOpen(false); onRegister() }} className={`mt-1 w-full px-3 py-3 text-left text-sm font-semibold ${REGISTER_BTN}`}>Register Now<ArrowUpRight className="ml-2 inline h-4 w-4"/></button> : <a href={cta} onClick={() => setOpen(false)} className={`mt-1 block px-3 py-3 text-sm font-semibold ${REGISTER_BTN}`}>{sections ? (safeHref(c?.cta_url) ? 'Register Now' : 'Explore Jobs') : 'Explore Events'}<ArrowUpRight className="ml-2 inline h-4 w-4"/></a>}<div className="mt-2 border-t border-slate-100 pt-2"><DishaAuthActions/></div></div></nav>}
   </header>
 }
 
@@ -115,7 +180,7 @@ function Layout({ children, fair, sections = true, onRegister }: { children: Rea
 }
 
 function SectionHeading({ eyebrow, title, subtitle }: { eyebrow?: string; title: string; subtitle?: string }) {
-  return <div className="mx-auto mb-6 max-w-2xl text-center sm:mb-8"><div className="mx-auto mb-4 flex w-16 items-center gap-1.5" aria-hidden="true"><span className="h-1 flex-1 rounded-full bg-teal-400"/><span className="h-1 w-5 rounded-full bg-amber-300"/></div>{eyebrow && <p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">{eyebrow}</p>}<h2 className="mt-2 font-[var(--font-sora)] text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{title}</h2>{subtitle && <p className="mt-3 text-base leading-7 text-slate-600">{subtitle}</p>}</div>
+  return <div className="mx-auto mb-6 max-w-2xl text-center sm:mb-8">{eyebrow && <p className="text-xs font-bold uppercase tracking-[.2em] text-teal-700">{eyebrow}</p>}<h2 className={`font-[var(--font-sora)] text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl ${eyebrow ? 'mt-2' : ''}`}>{title}</h2>{subtitle && <p className="mt-3 text-base leading-7 text-slate-600">{subtitle}</p>}</div>
 }
 
 function RichTextBlock({ value, className = '' }: { value: unknown; className?: string }) {
@@ -144,19 +209,43 @@ export function JobFairListing() {
   </main></Layout>
 }
 
-function JobVisual({ fair, jobsCount }: { fair: Fair; jobsCount: number }) {
+function JobVisual({ fair }: { fair: Fair; jobsCount?: number }) {
   const image = safeExternalUrl(fair.content.hero_image)
   const [imageFailed, setImageFailed] = useState(false)
   return <div className="relative mx-auto w-full max-w-[580px]">
-    <span aria-hidden="true" className="absolute right-[17%] top-[2%] z-10 h-7 w-7 rounded-full border-[5px] border-amber-400"/>
-    <span aria-hidden="true" className="absolute left-[4%] top-[42%] z-10 h-5 w-5 rotate-12 rounded-sm bg-teal-300"/>
-    <div className="absolute inset-x-[8%] bottom-[3%] top-[8%] rounded-[44%] bg-[#e8faf1]"/>
-    {image && !imageFailed ? <img src={image} alt={`People meeting recruiters at ${fair.title}`} onError={() => setImageFailed(true)} className="relative z-0 aspect-video w-full rounded-[1.75rem] object-contain"/> : <img src="/images/job-fair-hero.png" alt="Job seekers meeting recruiters at a career fair" className="relative z-0 aspect-video w-full rounded-[1.75rem] object-contain"/>}
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8%] bottom-[3%] top-[8%] z-0 rounded-[44%] bg-[#e8faf1]"/>
+    <span aria-hidden="true" className="pointer-events-none absolute -right-1 top-3 z-0 h-7 w-7 rounded-full border-[5px] border-amber-400"/>
+    {image && !imageFailed ? <img src={image} alt={`People meeting recruiters at ${fair.title}`} onError={() => setImageFailed(true)} className="relative z-10 aspect-video w-full rounded-[1.75rem] object-contain"/> : <img src="/images/job-fair-hero.png" alt="Job seekers meeting recruiters at a career fair" className="relative z-10 aspect-video w-full rounded-[1.75rem] object-contain"/>}
   </div>
 }
 
+function ChiefGuestSection({ content }: { content: FairContent }) {
+  if (!chiefGuestConfigured(content)) return null
+  const name = text(content.chief_guest_name)
+  const photo = safeExternalUrl(content.chief_guest_photo)
+  const designation = text(content.chief_guest_designation)
+  const organization = text(content.chief_guest_organization)
+  const bio = text(content.chief_guest_bio)
+  return <section id="chief-guest" className="scroll-mt-20 border-y border-slate-100 bg-white py-10 sm:py-12">
+    <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
+      <SectionHeading eyebrow="Honored guest" title="Chief Guest" subtitle="Meet the distinguished speaker joining this Job Fair."/>
+      <div className="mx-auto grid max-w-4xl items-center gap-8 rounded-[1.75rem] border border-slate-100 bg-[#fbfbf8] p-6 shadow-sm sm:p-8 md:grid-cols-[minmax(0,220px)_1fr]">
+        <div className="mx-auto w-full max-w-[220px]">
+          {photo ? <img src={photo} alt={name} className="aspect-[4/5] w-full rounded-2xl object-cover shadow-md"/> : <div className="grid aspect-[4/5] w-full place-items-center rounded-2xl bg-[#e8faf1] text-3xl font-bold text-teal-800">{initials(name)}</div>}
+        </div>
+        <div className="min-w-0 text-center md:text-left">
+          <h3 className="font-[var(--font-sora)] text-2xl font-bold tracking-tight text-[#101b30] sm:text-3xl">{name}</h3>
+          {designation && <p className="mt-2 text-base font-semibold text-teal-800">{designation}</p>}
+          {organization && <p className="mt-1 text-sm font-medium text-slate-600">{organization}</p>}
+          {bio && <RichTextBlock value={bio} className="mt-4 text-left text-sm leading-7 text-slate-700"/>}
+        </div>
+      </div>
+    </div>
+  </section>
+}
+
 function InfoPill({ icon: Icon, label, value }: { icon: typeof CalendarDays; label: string; value: string }) {
-  return <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-teal-800"><Icon className="h-5 w-5"/></span><span className="min-w-0"><span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</span><span className="block truncate text-sm font-semibold text-slate-800">{value}</span></span></div>
+  return <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm"><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${JF_META_ICON_BG}`}><Icon className="h-5 w-5"/></span><span className="min-w-0"><span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</span><span className="block truncate text-sm font-semibold text-slate-800">{value}</span></span></div>
 }
 
 function MissingImage({ children }: { children: React.ReactNode }) {
@@ -168,24 +257,26 @@ function JobCard({ job, fairSlug, onApply, applying, applied }: { job: Job; fair
   const logo = safeExternalUrl(job.company_logo)
   const detailPath = job.source === 'disha' ? getJobDetailPath({ id: job.id, slug: job.slug, title: job.title, company_name: job.company_name }) : null
   const viewPath = detailPath || `/job-fairs/${encodeURIComponent(fairSlug)}?view_job=${encodeURIComponent(job.id)}`
-  return <article className="group flex h-full flex-col rounded-xl border border-slate-200 bg-white p-3.5 shadow-[0_2px_8px_rgba(15,23,42,.04)] transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
-    <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-xl bg-[#f0faf3] text-teal-800"><LogoImage src={logo} name={job.company_name}/></div><div className="mt-2 min-h-[44px]"><h3 className="line-clamp-2 text-sm font-bold leading-5 text-slate-950">{job.title}</h3><p className="mt-0.5 text-[11px] font-medium text-slate-500">{job.company_name}</p></div>
-    <div className="mt-2 flex min-h-[22px] flex-wrap gap-1.5">{job.job_type && <span className="rounded-full bg-[#eaf8f1] px-2 py-0.5 text-[10px] font-semibold text-emerald-800">{job.job_type.replace(/_/g, ' ')}</span>}</div>
-    <div className="mt-2 min-h-[48px] space-y-1 text-[10px] leading-4 text-slate-500">{job.location && <p><MapPin className="mr-1 inline h-3 w-3 text-teal-700"/>{job.location}</p>}{job.experience_min != null && <p><Briefcase className="mr-1 inline h-3 w-3 text-teal-700"/>{job.experience_min}–{job.experience_max ?? job.experience_min} years experience</p>}</div>
-    {(job.compensation || job.salary_min || job.application_deadline) && <div className="mt-4 space-y-1 text-sm text-slate-600">{(job.compensation || job.salary_min) && <p className="font-semibold text-slate-800">{job.compensation || `₹${displaySalary(job.salary_min!)}${job.salary_max ? ` – ₹${displaySalary(job.salary_max)}` : '+'}`}</p>}{job.application_deadline && <p className="text-xs text-slate-500">Apply by {new Date(job.application_deadline).toLocaleDateString()}</p>}</div>}
-    <div className="mt-auto flex flex-col gap-1.5 pt-2"><button type="button" disabled={applying || applied} onClick={() => onApply(job)} className="inline-flex w-full items-center justify-center rounded-lg bg-slate-950 px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">{applying ? 'Applying…' : applied ? 'Applied' : 'Apply Now'}</button><a href={viewPath} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center py-0.5 text-[10px] font-semibold text-slate-700 hover:text-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600">View Job<ArrowRight className="ml-1 h-3 w-3"/></a></div>
+  const salaryLabel = jobCardSalaryLabel(job)
+  return <article className="group flex h-full flex-col rounded-xl border border-slate-200 bg-white p-3.5 shadow-[0_2px_8px_rgba(15,23,42,.04)] transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md">
+    <div className="flex min-h-20 items-center gap-2"><div className={`grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f0faf3] ${JF_META_ICON}`}><LogoImage src={logo} name={job.company_name}/></div></div><div className="mt-2 min-h-[44px]"><h3 className="line-clamp-2 text-sm font-bold leading-5 text-slate-950">{job.title}</h3><p className="mt-0.5 text-[11px] font-medium text-slate-500">{job.company_name}</p></div>
+    <div className="mt-2 flex min-h-[22px] flex-wrap gap-1.5">{job.job_type && <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-800">{job.job_type.replace(/_/g, ' ')}</span>}</div>
+    <div className="mt-2 min-h-[48px] space-y-1 text-[10px] leading-4 text-slate-500">{job.location && <p><MapPin className={`mr-1 inline h-3 w-3 ${JF_META_ICON}`}/>{job.location}</p>}{job.experience_min != null && <p><Briefcase className={`mr-1 inline h-3 w-3 ${JF_META_ICON}`}/>{job.experience_min}–{job.experience_max ?? job.experience_min} years experience</p>}</div>
+    {(salaryLabel || job.application_deadline) && <div className="mt-4 space-y-1 text-sm text-slate-600">{salaryLabel && <p className="font-semibold text-slate-800">{salaryLabel}</p>}{job.application_deadline && <p className="text-xs text-slate-500">Apply by {new Date(job.application_deadline).toLocaleDateString()}</p>}</div>}
+    <div className="mt-auto flex flex-col gap-1.5 pt-2"><button type="button" disabled={applying || applied} onClick={() => onApply(job)} className={APPLY_BTN}>{applying ? 'Applying…' : applied ? 'Applied' : 'Apply Now'}</button><a href={viewPath} target="_blank" rel="noopener noreferrer" className={VIEW_JOB_LINK}>View Job<ArrowRight className="ml-1 h-3 w-3"/></a></div>
   </article>
 }
 
 function ManualJobDetails({ fair, job, applying, applied, onApply, onRegister }: { fair: Fair; job: Job; applying: boolean; applied: boolean; onApply: () => void; onRegister: () => void }) {
   const logo = safeExternalUrl(job.company_logo)
+  const salaryLabel = jobCardSalaryLabel(job)
   return <Layout fair={fair} onRegister={onRegister}><main className="mx-auto min-h-[70vh] max-w-4xl px-4 py-10 sm:px-6">
     <Link href={`/job-fairs/${encodeURIComponent(fair.slug)}`} className="inline-flex items-center gap-2 text-sm font-semibold text-teal-800 hover:underline"><ArrowRight className="h-4 w-4 rotate-180"/>Back to {fair.title}</Link>
     <article className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
       <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 sm:flex-row sm:items-center">{logo ? <img src={logo} alt={`${job.company_name} logo`} className="h-20 w-20 rounded-xl bg-[#f0faf3] object-contain"/> : <div className="grid h-20 w-20 place-items-center rounded-xl bg-[#f0faf3] text-teal-800"><Briefcase className="h-8 w-8"/></div>}<div><p className="text-xs font-bold uppercase tracking-widest text-teal-700">Job Fair opportunity</p><h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">{job.title}</h1><p className="mt-1 text-slate-600">{job.company_name}</p></div></div>
-      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">{job.location && <span><MapPin className="mr-1 inline h-4 w-4 text-teal-700"/>{job.location}</span>}{job.job_type && <span>{job.job_type.replace(/_/g, ' ')}</span>}{job.experience_min != null && <span>{job.experience_min}–{job.experience_max ?? job.experience_min} years experience</span>}{job.compensation && <span className="font-semibold text-slate-900">{job.compensation}</span>}{job.application_deadline && <span>Apply by {new Date(job.application_deadline).toLocaleDateString()}</span>}</div>
-      <div className="mt-8 space-y-6">{job.description && <section><h2 className="text-lg font-bold">Job description</h2><RichTextBlock value={job.description} className="mt-2 leading-7 text-slate-700"/></section>}{job.responsibilities && <section><h2 className="text-lg font-bold">Responsibilities</h2><RichTextBlock value={job.responsibilities} className="mt-2 leading-7 text-slate-700"/></section>}{job.requirements && <section><h2 className="text-lg font-bold">Requirements</h2><RichTextBlock value={job.requirements} className="mt-2 leading-7 text-slate-700"/></section>}{job.skills?.length ? <section><h2 className="text-lg font-bold">Skills</h2><p className="mt-2 leading-7 text-slate-700">{job.skills.join(', ')}</p></section> : null}{!job.description && !job.responsibilities && !job.requirements && !job.skills?.length && <p className="text-slate-600">No additional job description was provided.</p>}</div>
-      <button type="button" disabled={applying || applied} onClick={onApply} className="mt-8 inline-flex min-w-40 items-center justify-center rounded-lg bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 disabled:opacity-60">{applying ? 'Applying…' : applied ? 'Applied' : 'Apply Now'}</button>
+      <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">{salaryLabel && <span className="font-semibold text-slate-800">{salaryLabel}</span>}{job.location && <span><MapPin className={`mr-1 inline h-4 w-4 ${JF_META_ICON}`}/>{job.location}</span>}{job.job_type && <span>{job.job_type.replace(/_/g, ' ')}</span>}{job.experience_min != null && <span>{job.experience_min}–{job.experience_max ?? job.experience_min} years experience</span>}{job.application_deadline && <span>Apply by {new Date(job.application_deadline).toLocaleDateString()}</span>}</div>
+      <div className="mt-8 space-y-6">{job.qualification && <section><h2 className="text-lg font-bold">Qualification</h2><RichTextBlock value={job.qualification} className="mt-2 leading-7 text-slate-700"/></section>}{job.age_limit && <section><h2 className="text-lg font-bold">Age limit</h2><p className="mt-2 leading-7 text-slate-700">{job.age_limit}</p></section>}{job.gender && <section><h2 className="text-lg font-bold">Gender</h2><p className="mt-2 leading-7 capitalize text-slate-700">{job.gender}</p></section>}{job.description && <section><h2 className="text-lg font-bold">Job description</h2><RichTextBlock value={job.description} className="mt-2 leading-7 text-slate-700"/></section>}{job.responsibilities && <section><h2 className="text-lg font-bold">Responsibilities</h2><RichTextBlock value={job.responsibilities} className="mt-2 leading-7 text-slate-700"/></section>}{job.requirements && <section><h2 className="text-lg font-bold">Requirements</h2><RichTextBlock value={job.requirements} className="mt-2 leading-7 text-slate-700"/></section>}{job.skills?.length ? <section><h2 className="text-lg font-bold">Skills</h2><p className="mt-2 leading-7 text-slate-700">{job.skills.join(', ')}</p></section> : null}{!job.description && !job.responsibilities && !job.requirements && !job.skills?.length && !job.qualification && !job.age_limit && !job.gender && <p className="text-slate-600">No additional job description was provided.</p>}</div>
+      <button type="button" disabled={applying || applied} onClick={onApply} className="mt-8 inline-flex min-w-40 items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 active:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60">{applying ? 'Applying…' : applied ? 'Applied' : 'Apply Now'}</button>
     </article>
   </main></Layout>
 }
@@ -233,7 +324,7 @@ function RegistrationBanner({ fair, onRegister }: { fair: Fair; onRegister: () =
   const image = safeExternalUrl(fair.content.cta_image)
   return <section className="overflow-hidden bg-[#fff7e7]" aria-label="Register for the Job Fair"><div className={`mx-auto grid max-w-[1320px] items-center gap-4 px-4 py-5 sm:px-6 lg:px-8 ${image ? 'md:grid-cols-[.85fr_1.15fr]' : ''}`}>
     {image && <img src={image} alt={heading} className="aspect-video mix-blend-multiply w-full rounded-2xl object-contain"/>}
-    <div className={image ? 'py-2 md:pl-4' : 'mx-auto w-full max-w-3xl py-2 text-center'}><p className="text-[9px] font-bold uppercase tracking-[.2em] text-teal-800">{eyebrow}</p><h2 className="mt-1 max-w-xl text-xl font-extrabold leading-tight tracking-tight text-[#101b30] sm:text-2xl">{heading}</h2><RichTextBlock value={description} className="mt-2 max-w-xl text-[11px] leading-5 text-slate-600"/><button type="button" onClick={onRegister} className="mt-3 inline-flex items-center rounded-full bg-black px-4 py-2 text-[10px] font-bold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600 focus-visible:ring-offset-2">{text(fair.content.cta_label) || 'Register Now'}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></button></div>
+    <div className={image ? 'py-2 md:pl-4' : 'mx-auto w-full max-w-3xl py-2 text-center'}><p className="text-[9px] font-bold uppercase tracking-[.2em] text-teal-800">{eyebrow}</p><h2 className="mt-1 max-w-xl text-xl font-extrabold leading-tight tracking-tight text-[#101b30] sm:text-2xl">{heading}</h2><RichTextBlock value={description} className="mt-2 max-w-xl text-[11px] leading-5 text-slate-600"/><button type="button" onClick={onRegister} className={REGISTER_BTN_BANNER}>{text(fair.content.cta_label) || 'Register Now'}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></button></div>
   </div></section>
 }
 
@@ -246,7 +337,7 @@ function EventInfo({ fair, onRegister }: { fair: Fair; onRegister: () => void })
   ] as const
   const available = info.filter(([, , value]) => value)
   if (!available.length) return null
-  return <section aria-label="Event information" className="relative z-10 mx-auto -mt-4 grid max-w-[1320px] grid-cols-1 gap-2.5 px-4 sm:grid-cols-2 sm:px-6 lg:-mt-7 lg:grid-cols-3 lg:px-8 xl:grid-cols-5">{available.map(([icon, label, value]) => <InfoPill key={label} icon={icon} label={label} value={value}/>)}<button type="button" onClick={onRegister} className="inline-flex min-h-[66px] items-center justify-center rounded-2xl bg-black px-5 py-3.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600 focus-visible:ring-offset-2">Register Now<ArrowRight className="ml-2 h-4 w-4"/></button></section>
+  return <section aria-label="Event information" className="relative z-10 mx-auto -mt-4 grid max-w-[1320px] grid-cols-1 gap-2.5 px-4 sm:grid-cols-2 sm:px-6 lg:-mt-7 lg:grid-cols-3 lg:px-8 xl:grid-cols-5">{available.map(([icon, label, value]) => <InfoPill key={label} icon={icon} label={label} value={value}/>)}<button type="button" onClick={onRegister} className={REGISTER_BTN_LG}>Register Now<ArrowRight className="ml-2 h-4 w-4"/></button></section>
 }
 
 export function JobFairDetails({ slug }: { slug: string }) {
@@ -344,16 +435,16 @@ export function JobFairDetails({ slug }: { slug: string }) {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_4%_20%,#e8faf1_0,transparent_32%),radial-gradient(ellipse_at_92%_10%,#fff6d7_0,transparent_26%)]"/>
         <div className="relative mx-auto grid max-w-[1320px] items-center gap-3 px-4 pb-8 pt-7 sm:px-6 sm:pb-10 lg:grid-cols-[.94fr_1.06fr] lg:gap-5 lg:px-8 lg:pb-8 lg:pt-5">
           <div className="relative z-10"><h1 className="mt-3 max-w-[570px] font-[var(--font-sora)] text-[2.45rem] font-extrabold leading-[1.02] tracking-[-.045em] text-[#101b30] sm:text-[3.2rem] lg:text-[3.35rem]">{heroTitle}<br/><span className="text-slate-950">{heroHighlight}</span></h1><p className="mt-2 text-sm font-semibold text-slate-800">{text(c.subtitle) || 'Your next opportunity is closer than you think.'}</p><RichTextBlock value={text(c.short_description) || 'Meet top employers, attend expert sessions, and take a big step toward your dream career.'} className="mt-1 max-w-[440px] text-[12px] leading-[1.45] text-slate-600"/>
-            <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void onRegister()} className="inline-flex items-center rounded-full bg-black px-4 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600 focus-visible:ring-offset-2">Register Now</button></div>
-            {stats.length > 0 && <div className="mt-4 grid max-w-[490px] grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">{stats.map(({ value, label, icon: Icon }) => <div key={label} className="flex min-w-0 items-center gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#e9f9f0] text-emerald-800"><Icon className="h-3.5 w-3.5"/></span><span className="min-w-0"><strong className="block text-[12px] leading-4 text-slate-900">{value}</strong><small className="block truncate text-[9px] leading-3 text-slate-500">{label}</small></span></div>)}</div>}
+            {stats.length > 0 && <div className="mt-4 grid max-w-[490px] grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">{stats.map(({ value, label, icon: Icon }) => <div key={label} className="flex min-w-0 items-center gap-2"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${JF_META_ICON_BG}`}><Icon className="h-3.5 w-3.5"/></span><span className="min-w-0"><strong className="block text-[12px] leading-4 text-slate-900">{value}</strong><small className="block truncate text-[9px] leading-3 text-slate-500">{label}</small></span></div>)}</div>}
           </div><JobVisual fair={fair} jobsCount={totalJobs}/>
         </div>
       </section>
       <EventInfo fair={fair} onRegister={() => void onRegister()}/>
+      <ChiefGuestSection content={c}/>
       <div className="mx-auto max-w-[1320px] space-y-8 px-4 pb-12 pt-7 sm:px-6 lg:space-y-9 lg:px-8">
         {c.description && <section aria-labelledby="about-event-heading" className="mx-auto w-full rounded-xl border border-slate-100 bg-white px-5 py-4 shadow-sm"><h2 id="about-event-heading" className="text-base font-bold text-teal-900">About the event</h2><RichTextBlock value={c.description} className="mt-3 border-t border-slate-100 pt-3 text-sm leading-6 text-slate-700"/></section>}
         <section id="jobs" className="scroll-mt-20">
-          <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-teal-700">Featured Jobs</p><h2 className="mt-2 text-2xl font-bold tracking-tight text-[#101b30] sm:text-[30px]">Explore Job Opportunities</h2><p className="mt-1 max-w-2xl text-[11px] leading-5 text-slate-600">Discover exciting job openings from companies participating in the fair.</p></div>{fair.jobs?.length > 0 && <div className="flex flex-col gap-3 sm:flex-row"><label className="relative"><span className="sr-only">Search jobs</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search job title, company…" className="h-9 w-full rounded-full border border-slate-200 bg-white px-3.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 sm:w-56"/></label><label className="relative"><span className="sr-only">Filter jobs by source</span><select value={source} onChange={event => setSource(event.target.value as 'all' | 'manual' | 'disha')} className="h-9 w-full appearance-none rounded-full border border-slate-200 bg-white pl-8 pr-7 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 sm:w-28"><option value="all">All Filters</option><option value="disha">Disha jobs</option><option value="manual">Event jobs</option></select><ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"/></label></div>}</div>
+          <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-primary-700">Featured Jobs</p><h2 className="mt-2 text-2xl font-bold tracking-tight text-[#101b30] sm:text-[30px]">Explore Job Opportunities</h2><p className="mt-1 max-w-2xl text-[11px] leading-5 text-slate-600">Discover exciting job openings from companies participating in the fair.</p></div>{fair.jobs?.length > 0 && <div className="flex flex-col gap-3 sm:flex-row"><label className="relative"><span className="sr-only">Search jobs</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search job title, company…" className="h-9 w-full rounded-full border border-slate-200 bg-white px-3.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:w-56"/></label><label className="relative"><span className="sr-only">Filter jobs by source</span><select value={source} onChange={event => setSource(event.target.value as 'all' | 'manual' | 'disha')} className="h-9 w-full appearance-none rounded-full border border-slate-200 bg-white pl-8 pr-7 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:w-28"><option value="all">All Filters</option><option value="disha">Disha jobs</option><option value="manual">Event jobs</option></select><ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"/></label></div>}</div>
           {filteredJobs.length ? <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">{filteredJobs.map(job => <JobCard key={`${job.source}-${job.id}`} job={job} fairSlug={slug} onApply={onApply} applying={applying === job.id} applied={applied.has(job.id)}/>)}</div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#fff8df] text-amber-800"><Briefcase className="h-7 w-7"/></div><h3 className="mt-4 text-lg font-semibold">{fair.jobs?.length ? 'No jobs match your search' : 'Opportunities are on the way'}</h3><p className="mt-2 text-sm text-slate-500">{fair.jobs?.length ? 'Try a different search or filter.' : 'There are no associated jobs for this fair yet.'}</p></div>}
         </section>
         <Highlights fair={fair} highlights={highlights}/>

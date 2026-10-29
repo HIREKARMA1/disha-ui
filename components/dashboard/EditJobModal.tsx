@@ -18,6 +18,7 @@ import { GoogleLocationAutocomplete } from '@/components/ui/GoogleLocationAutoco
 import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
+import { JOB_GENDER_OPTIONS, jobGenderFromApi, jobGenderToApi } from '@/lib/jobGender'
 
 interface Job {
     id: string
@@ -57,6 +58,7 @@ interface Job {
     number_of_openings?: number
     perks_and_benefits?: string
     eligibility_criteria?: string
+    gender?: string | null
     service_agreement_details?: string
     expiration_date?: string
     ctc_with_probation?: string
@@ -119,6 +121,7 @@ interface JobFormData {
     number_of_openings: string
     perks_and_benefits: string
     eligibility_criteria: string
+    gender: string
     service_agreement_details: string
     expiration_date: string
     ctc_with_probation: string
@@ -200,6 +203,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         number_of_openings: '',
         perks_and_benefits: '',
         eligibility_criteria: '',
+        gender: '',
         service_agreement_details: '',
         expiration_date: '',
         ctc_with_probation: '',
@@ -376,6 +380,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 number_of_openings: job.number_of_openings !== null && job.number_of_openings !== undefined ? job.number_of_openings.toString() : '',
                 perks_and_benefits: job.perks_and_benefits || '',
                 eligibility_criteria: job.eligibility_criteria || '',
+                gender: jobGenderFromApi(job.gender),
                 service_agreement_details: job.service_agreement_details || '',
                 expiration_date: job.expiration_date ? new Date(job.expiration_date).toISOString().slice(0, 10) : '',
                 ctc_with_probation: job.ctc_with_probation || '',
@@ -740,6 +745,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 number_of_openings: formData.number_of_openings && formData.number_of_openings.trim() !== '' ? parseInt(formData.number_of_openings) : null,
                 perks_and_benefits: formData.perks_and_benefits || null,
                 eligibility_criteria: formData.eligibility_criteria || null,
+                gender: jobGenderToApi(formData.gender),
                 service_agreement_details: formData.service_agreement_details || null,
                 expiration_date: formData.expiration_date ? formData.expiration_date : null,
                 ctc_with_probation: formData.ctc_with_probation || null,
@@ -1563,6 +1569,22 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         Select &quot;All Batches&quot; to allow every student to apply, or pick specific years.
                                     </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Gender
+                                    </label>
+                                    <Select value={formData.gender || 'any'} onValueChange={(value) => handleInputChange('gender', value === 'any' ? '' : value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Any Gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {JOB_GENDER_OPTIONS.map((option) => (
+                                                <SelectItem key={option.label} value={option.value || 'any'}>{option.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>

@@ -105,6 +105,7 @@ export interface Job {
     number_of_openings?: number
     perks_and_benefits?: string
     eligibility_criteria?: string
+    gender?: string | null
     service_agreement_details?: string
     expiration_date?: string
     ctc_with_probation?: string

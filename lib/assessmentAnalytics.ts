@@ -196,3 +196,32 @@ export function formatAttemptPercentage(attempt: AttemptLike): string {
   }
   return `${attempt.percentage.toFixed(1)}%`
 }
+
+export type AssessmentAttemptSearchRow = {
+  student_id?: string | null
+  student_name?: string | null
+  student_email?: string | null
+  email?: string | null
+}
+
+/** Case-insensitive partial match across student and assessment identifiers. */
+export function filterAssessmentAttemptsBySearch<T extends AssessmentAttemptSearchRow>(
+  attempts: T[],
+  rawQuery: string,
+  assessmentTitle?: string | null,
+): T[] {
+  const query = rawQuery.trim().toLowerCase()
+  if (!query) return attempts
+  return attempts.filter((attempt) => {
+    const values = [
+      attempt.student_name,
+      attempt.student_email,
+      attempt.email,
+      attempt.student_id,
+      assessmentTitle,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.toLowerCase())
+    return values.some((value) => value.includes(query))
+  })
+}
