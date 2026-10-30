@@ -505,6 +505,9 @@ export default function AssessmentAnalyticsPage() {
                                                         {attempt.student_name ? attempt.student_name.substring(0, 2).toUpperCase() : 'ST'}
                                                     </div>
                                                     <span>{attempt.student_name || "Unknown Student"}</span>
+                                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${attempt.audience === 'shortlisted' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                        {attempt.audience === 'shortlisted' ? 'Shortlisted' : 'DISHA'}
+                                                    </span>
                                                 </div>
                                             </td>
 
