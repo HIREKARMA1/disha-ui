@@ -13,9 +13,15 @@ export default function AssessmentExamTakePage() {
   const router = useRouter();
   const assessmentId = params.assessmentId as string;
   const attemptId = search.get('attempt') || '';
+  const slExam = search.get('sl_exam') || '';
   const { user, isAuthenticated, isLoading } = useAuth();
 
+  if (slExam && typeof window !== 'undefined') {
+    sessionStorage.setItem('disha_sl_exam_token', slExam);
+  }
+
   useEffect(() => {
+    if (slExam) return;
     if (isLoading) return;
     if (!isAuthenticated || user?.user_type !== 'student') {
       router.replace(
@@ -25,9 +31,9 @@ export default function AssessmentExamTakePage() {
         })
       );
     }
-  }, [isLoading, isAuthenticated, user, router, assessmentId, attemptId]);
+  }, [slExam, isLoading, isAuthenticated, user, router, assessmentId, attemptId]);
 
-  if (isLoading || !attemptId) {
+  if (!attemptId || (!slExam && isLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-blue-600" />

@@ -42,6 +42,13 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const requestUrl = `${config.url || ''}`;
+        const examToken = typeof window !== 'undefined'
+          ? window.sessionStorage.getItem('disha_sl_exam_token')
+          : null;
+        if (examToken && requestUrl.includes('/attempts/')) {
+          config.headers.Authorization = `Bearer ${examToken}`;
+          return config;
+        }
         const token = readAccessToken();
 
         // Expired access token: log out before the call (skip auth endpoints)
@@ -473,6 +480,11 @@ class ApiClient {
 
   async getShortlistedBatchesAdmin(): Promise<any[]> {
     const response: AxiosResponse = await this.client.get('/admins/shortlisted-batches');
+    return response.data.batches || [];
+  }
+
+  async getAssessmentAssignableBatches(): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get('/admins/assessment-shortlisted-batches');
     return response.data.batches || [];
   }
 
@@ -927,6 +939,61 @@ class ApiClient {
 
   async updateAssessment(id: string, data: any): Promise<any> {
     const response: AxiosResponse = await this.client.patch(`/admin/assessments/${id}`, data);
+    return response.data;
+  }
+
+  async setAssessmentAudience(
+    id: string,
+    data: { show_on_disha?: boolean; show_on_shortlisted?: boolean }
+  ): Promise<{ id: string; show_on_disha: boolean; show_on_shortlisted: boolean }> {
+    const token = readAccessToken();
+    const response = await fetch(`${config.api.fullUrl}/admin/assessments/${id}/audience`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      let detail = '';
+      try {
+        const payload = await response.json();
+        detail = typeof payload?.detail === 'string' ? payload.detail : '';
+      } catch {
+        detail = '';
+      }
+      throw new Error(detail || 'Could not update where this assessment is listed');
+    }
+    return response.json();
+  }
+
+  async getAssessmentShortlistedBatches(assessmentId: string): Promise<any[]> {
+    const response: AxiosResponse = await this.client.get(
+      `/admin/assessments/${assessmentId}/shortlisted-batches`
+    );
+    return response.data.batches || [];
+  }
+
+  async assignAssessmentShortlistedBatches(assessmentId: string, batchIds: string[]): Promise<any> {
+    const response: AxiosResponse = await this.client.post(
+      `/admin/assessments/${assessmentId}/shortlisted-batches`,
+      { batch_ids: batchIds }
+    );
+    return response.data;
+  }
+
+  async removeAssessmentShortlistedBatch(assessmentId: string, batchId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/assessments/${assessmentId}/shortlisted-batches/${batchId}`
+    );
+    return response.data;
+  }
+
+  async removeAssessmentFromShortlisted(assessmentId: string): Promise<any> {
+    const response: AxiosResponse = await this.client.delete(
+      `/admin/assessments/${assessmentId}/shortlisted-batches`
+    );
     return response.data;
   }
 

@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { AssessmentList } from '@/components/admin/AssessmentList'
 import { AssessmentDetailsModal } from '@/components/admin/assessments/AssessmentDetailsModal'
+import { AssignAssessmentBatchModal } from '@/components/admin/assessments/AssignAssessmentBatchModal'
 import { apiClient } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText } from 'lucide-react'
@@ -25,6 +26,8 @@ interface Assessment {
   created_at: string
   description?: string
   instructions?: string
+  show_on_disha?: boolean
+  show_on_shortlisted?: boolean
 }
 
 const selectClass = cn(adminInput, 'px-3 py-2.5 text-sm')
@@ -44,6 +47,7 @@ export default function AssessmentsPage() {
 
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [batchAssessment, setBatchAssessment] = useState<{ id: string; assessment_name: string } | null>(null)
 
   const activeFilterCount = useMemo(() => {
     let n = 0
@@ -78,6 +82,45 @@ export default function AssessmentsPage() {
     if (assessment) {
       setSelectedAssessment(assessment)
       setIsViewModalOpen(true)
+    }
+  }
+
+  const handleToggleAudience = async (id: string) => {
+    const current = assessments.find((item) => item.id === id)
+    if (!current) return
+    const nextOnDisha = current.show_on_disha === false
+    const nextOnShortlisted = current.show_on_shortlisted === true
+    setAssessments((prev) => prev.map((item) => (
+      item.id === id
+        ? { ...item, show_on_disha: nextOnDisha, show_on_shortlisted: nextOnShortlisted }
+        : item
+    )))
+    try {
+      const updated = await apiClient.setAssessmentAudience(id, {
+        show_on_disha: nextOnDisha,
+        show_on_shortlisted: nextOnShortlisted,
+      })
+      setAssessments((prev) => prev.map((item) => (
+        item.id === id
+          ? {
+              ...item,
+              show_on_disha: updated.show_on_disha,
+              show_on_shortlisted: updated.show_on_shortlisted,
+            }
+          : item
+      )))
+    } catch (err) {
+      setAssessments((prev) => prev.map((item) => (
+        item.id === id
+          ? {
+              ...item,
+              show_on_disha: current.show_on_disha !== false,
+              show_on_shortlisted: current.show_on_shortlisted === true,
+            }
+          : item
+      )))
+      const message = err instanceof Error ? err.message : 'Could not update where this assessment is listed'
+      alert(message)
     }
   }
 
@@ -254,6 +297,21 @@ export default function AssessmentsPage() {
           onEdit={handleEdit}
           onView={handleView}
           onDelete={handleDelete}
+          onToggleAudience={handleToggleAudience}
+          onAssignShortlisted={setBatchAssessment}
+        />
+
+        <AssignAssessmentBatchModal
+          isOpen={!!batchAssessment}
+          assessment={batchAssessment}
+          onClose={() => setBatchAssessment(null)}
+          onAssigned={(listedOnShortlisted) => {
+            if (!batchAssessment) return
+            const assignedId = batchAssessment.id
+            setAssessments((prev) => prev.map((item) => (
+              item.id === assignedId ? { ...item, show_on_shortlisted: listedOnShortlisted } : item
+            )))
+          }}
         />
 
         <AssessmentDetailsModal
