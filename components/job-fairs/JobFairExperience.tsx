@@ -419,23 +419,14 @@ export function JobFairDetails({ slug }: { slug: string }) {
   const viewJob = fair.jobs?.find(job => job.source === 'manual' && job.id === params.get('view_job'))
   if (viewJob) return <ManualJobDetails fair={fair} job={viewJob} applying={applying === viewJob.id} applied={applied.has(viewJob.id)} onApply={() => onApply(viewJob)} onRegister={() => void onRegister()}/>
   const totalJobs = fair.jobs?.length || 0
-  const dishaJobs = (fair.jobs || []).filter(job => job.source === 'disha').length
-  const manualJobs = (fair.jobs || []).filter(job => job.source === 'manual').length
   const heroTitle = text(c.hero_heading) || 'HireKarma Mega'
   const heroHighlight = text(c.highlighted_text) || 'Career & Job Fair 2026'
-  const stats = [
-    ...(totalJobs ? [{ value: String(totalJobs), label: 'Job Opportunities', icon: Briefcase }] : []),
-    ...(partners.length ? [{ value: String(partners.length), label: 'Hiring Partners', icon: Users }] : []),
-    ...(dishaJobs ? [{ value: String(dishaJobs), label: 'Disha Jobs', icon: Globe2 }] : []),
-    ...(manualJobs ? [{ value: String(manualJobs), label: 'Event Listings', icon: Sparkles }] : []),
-  ]
   return <Layout fair={fair} onRegister={() => void onRegister()}>
     <main>
       <section id="home" className="relative scroll-mt-16 overflow-hidden bg-white">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_4%_20%,#e8faf1_0,transparent_32%),radial-gradient(ellipse_at_92%_10%,#fff6d7_0,transparent_26%)]"/>
         <div className="relative mx-auto grid max-w-[1320px] items-center gap-3 px-4 pb-8 pt-7 sm:px-6 sm:pb-10 lg:grid-cols-[.94fr_1.06fr] lg:gap-5 lg:px-8 lg:pb-8 lg:pt-5">
           <div className="relative z-10"><h1 className="mt-3 max-w-[570px] font-[var(--font-sora)] text-[2.45rem] font-extrabold leading-[1.02] tracking-[-.045em] text-[#101b30] sm:text-[3.2rem] lg:text-[3.35rem]">{heroTitle}<br/><span className="text-slate-950">{heroHighlight}</span></h1><p className="mt-2 text-sm font-semibold text-slate-800">{text(c.subtitle) || 'Your next opportunity is closer than you think.'}</p><RichTextBlock value={text(c.short_description) || 'Meet top employers, attend expert sessions, and take a big step toward your dream career.'} className="mt-1 max-w-[440px] text-[12px] leading-[1.45] text-slate-600"/>
-            {stats.length > 0 && <div className="mt-4 grid max-w-[490px] grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">{stats.map(({ value, label, icon: Icon }) => <div key={label} className="flex min-w-0 items-center gap-2"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${JF_META_ICON_BG}`}><Icon className="h-3.5 w-3.5"/></span><span className="min-w-0"><strong className="block text-[12px] leading-4 text-slate-900">{value}</strong><small className="block truncate text-[9px] leading-3 text-slate-500">{label}</small></span></div>)}</div>}
           </div><JobVisual fair={fair} jobsCount={totalJobs}/>
         </div>
       </section>
