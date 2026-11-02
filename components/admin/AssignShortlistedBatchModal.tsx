@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Users, Search, Check, AlertCircle } from 'lucide-react'
+import { X, Users, Search, Check, AlertCircle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api'
@@ -41,6 +41,8 @@ export function AssignShortlistedBatchModal({
     const [selectedBatchIds, setSelectedBatchIds] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
+    const [loadError, setLoadError] = useState('')
+    const [isRemoving, setIsRemoving] = useState(false)
 
     useEffect(() => {
         if (isOpen && job) {
@@ -87,11 +89,13 @@ export function AssignShortlistedBatchModal({
     const fetchBatches = async () => {
         try {
             setIsLoading(true)
+            setLoadError('')
             const response = await apiClient.getShortlistedBatchesAdmin()
             setBatches(Array.isArray(response) ? response : [])
         } catch (error) {
             console.error('Failed to fetch Shortlisted batches:', error)
-            toast.error('Failed to load Shortlisted batches')
+            const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+            setLoadError(detail || 'Could not connect to Shortlisted. Check the service configuration and try again.')
             setBatches([])
         } finally {
             setIsLoading(false)
@@ -196,6 +200,22 @@ export function AssignShortlistedBatchModal({
         }
     }
 
+    const handleRemove = async (batchIds: string[]) => {
+        if (!job || batchIds.length === 0) return
+        try {
+            setIsRemoving(true)
+            await Promise.all(batchIds.map((id) => apiClient.removeJobFromShortlistedBatch(job.id, id)))
+            setAssignedBatches((current) => current.filter((batch) => !batchIds.includes(batch.id)))
+            toast.success(batchIds.length === 1 ? 'Batch assignment removed' : 'All batch assignments removed')
+            onAssigned()
+        } catch (error: unknown) {
+            const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+            toast.error(detail || 'Failed to remove batch assignment')
+        } finally {
+            setIsRemoving(false)
+        }
+    }
+
     const handleClose = () => {
         setSearchTerm('')
         setSelectedBatchIds(new Set())
@@ -287,9 +307,12 @@ export function AssignShortlistedBatchModal({
 
                         {assignedBatches.length > 0 && (
                             <div className="mb-6">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                                    Already Assigned Batches ({assignedBatches.length})
-                                </h4>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">Already Assigned Batches ({assignedBatches.length})</h4>
+                                    <Button variant="outline" size="sm" disabled={isRemoving} onClick={() => handleRemove(assignedBatches.map((batch) => batch.id))}>
+                                        <Trash2 className="mr-1 h-4 w-4" /> Remove All Assigned
+                                    </Button>
+                                </div>
                                 <div className="space-y-2">
                                     {assignedBatches.map((batch) => (
                                         <div
@@ -305,12 +328,12 @@ export function AssignShortlistedBatchModal({
                                                         {batch.name}
                                                     </h5>
                                                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                        Max {batch.max_seats} students
+                                                        ID: {batch.id} · Max {batch.max_seats} students
                                                     </p>
                                                 </div>
-                                                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                                                    <Check className="w-4 h-4 text-white" />
-                                                </div>
+                                                <Button variant="ghost" size="sm" disabled={isRemoving} aria-label={`Remove ${batch.name}`} onClick={() => handleRemove([batch.id])}>
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
@@ -327,6 +350,12 @@ export function AssignShortlistedBatchModal({
                         {isLoading ? (
                             <div className="flex items-center justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                            </div>
+                        ) : loadError ? (
+                            <div className="text-center py-8" role="alert">
+                                <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Could not load batches</h3>
+                                <p className="text-gray-600 dark:text-gray-400">{loadError}</p>
                             </div>
                         ) : filteredBatches.length > 0 ? (
                             <div className="space-y-2">
@@ -360,7 +389,7 @@ export function AssignShortlistedBatchModal({
                                                             {batch.name}
                                                         </h4>
                                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                            Max {batch.max_seats} students
+                                                            ID: {batch.id} · Max {batch.max_seats} students
                                                             {batch.source && ` • ${batch.source}`}
                                                         </p>
                                                     </div>
