@@ -489,6 +489,18 @@ class ApiClient {
     return response.data;
   }
 
+  async removeJobFromShortlistedBatch(jobId: string, shortlistedBatchId: string): Promise<void> {
+    await this.client.delete(`/admins/jobs/${jobId}/assigned-shortlisted-batches/${shortlistedBatchId}`);
+  }
+
+  async updateShortlistedApplicationStatus(jobId: string, applicationId: string, status: string): Promise<any> {
+    const response: AxiosResponse = await this.client.patch(
+      `/admins/jobs/${jobId}/shortlisted-applications/${applicationId}/status`,
+      { status }
+    );
+    return response.data;
+  }
+
   async unassignJobFromUniversity(jobId: string, universityId: string): Promise<any> {
     const response: AxiosResponse = await this.client.delete(`/admins/jobs/${jobId}/unassign-university/${universityId}`);
     return response.data;

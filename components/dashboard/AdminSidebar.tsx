@@ -123,6 +123,12 @@ const navSections: NavSection[] = [
                 description: 'Manage job postings',
             },
             {
+                label: 'Manage Shortlisted Jobs',
+                href: '/dashboard/admin/manage-shortlisted-jobs',
+                icon: Users,
+                description: 'Jobs assigned to Shortlisted cohorts',
+            },
+            {
                 label: 'Job Fairs',
                 href: '/dashboard/admin/job-fairs',
                 icon: Briefcase,
@@ -245,6 +251,7 @@ const mobileQuickLinks: NavItem[] = [
     allNavItems.find((i) => i.href === '/dashboard/admin/students')!,
     allNavItems.find((i) => i.href === '/dashboard/admin/jobs')!,
     allNavItems.find((i) => i.href === '/dashboard/admin/events')!,
+    allNavItems.find((i) => i.href === '/dashboard/admin/manage-shortlisted-jobs')!,
 ]
 
 interface AdminSidebarProps {
@@ -556,7 +563,7 @@ export function AdminSidebar({ className = '' }: AdminSidebarProps) {
                             style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
                         >
                             <div className="flex justify-around items-center px-1 py-2">
-                                {visibleMobileQuickLinks.slice(0, 4).map((item) => {
+                                {visibleMobileQuickLinks.slice(0, 5).map((item) => {
                                     const active = navItemIsActive(pathname || '', item.href)
                                     return (
                                         <Link
