@@ -59,7 +59,7 @@ export class AdminProfileService {
   }
 
   /**
-   * Upload admin profile picture
+   * Upload admin profile pictures
    */
   async uploadProfilePicture(file: File): Promise<FileUploadResponse> {
     try {
