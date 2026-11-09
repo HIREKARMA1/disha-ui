@@ -7,6 +7,7 @@ import {
   Download,
   FileText,
   Loader2,
+  Search,
   XCircle,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -153,18 +154,30 @@ export function CampusDriveRequestList() {
   const [rejectedCount, setRejectedCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<'all' | CampusDriveRequestStatus>('pending')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<CampusDriveRequest | null>(null)
   const [exporting, setExporting] = useState(false)
   const loadSeq = useRef(0)
 
-  const fetchRequests = useCallback(async (pageToLoad: number, filter: 'all' | CampusDriveRequestStatus) => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [searchTerm])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
+
+  const fetchRequests = useCallback(async (pageToLoad: number, filter: 'all' | CampusDriveRequestStatus, search: string) => {
     const seq = ++loadSeq.current
     setLoading(true)
     try {
       const result = await campusDriveRequestService.listAdmin({
         status: filter === 'all' ? undefined : filter,
+        search: search || undefined,
         skip: (pageToLoad - 1) * PAGE_SIZE,
         limit: PAGE_SIZE,
       })
@@ -201,8 +214,8 @@ export function CampusDriveRequestList() {
   }, [])
 
   useEffect(() => {
-    void fetchRequests(page, statusFilter)
-  }, [fetchRequests, page, statusFilter])
+    void fetchRequests(page, statusFilter, debouncedSearch)
+  }, [fetchRequests, page, statusFilter, debouncedSearch])
 
   const handleExport = async () => {
     setExporting(true)
@@ -213,6 +226,7 @@ export function CampusDriveRequestList() {
       do {
         const result = await campusDriveRequestService.listAdmin({
           status: statusFilter === 'all' ? undefined : statusFilter,
+          search: debouncedSearch || undefined,
           skip,
           limit: EXPORT_PAGE_SIZE,
         })
@@ -240,7 +254,7 @@ export function CampusDriveRequestList() {
     try {
       await campusDriveRequestService.accept(item.id)
       toast.success('Request accepted and application submitted')
-      await fetchRequests(page, statusFilter)
+      await fetchRequests(page, statusFilter, debouncedSearch)
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { detail?: unknown; error?: unknown } } })
         .response?.data
@@ -268,7 +282,7 @@ export function CampusDriveRequestList() {
       await campusDriveRequestService.reject(rejectTarget.id)
       toast.success('Request rejected')
       setRejectTarget(null)
-      await fetchRequests(page, statusFilter)
+      await fetchRequests(page, statusFilter, debouncedSearch)
     } catch {
       toast.error('Failed to reject request')
     } finally {
@@ -277,7 +291,7 @@ export function CampusDriveRequestList() {
   }
 
   const stats = [
-    { label: 'Total Requests', value: pendingCount + acceptedCount + rejectedCount, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { label: 'Total Leads', value: pendingCount + acceptedCount + rejectedCount, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Pending', value: pendingCount, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
     { label: 'Accepted', value: acceptedCount, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
     { label: 'Rejected', value: rejectedCount, icon: XCircle, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
@@ -287,7 +301,7 @@ export function CampusDriveRequestList() {
     <div className="space-y-6">
       <AdminPageHero
         title="Job Requests"
-        subtitle="Review student interest requests for campus drives and Premium Users jobs."
+        subtitle="Review unique student leads from campus drive and Premium Users interest requests."
         actions={
           <Button
             type="button"
@@ -326,25 +340,38 @@ export function CampusDriveRequestList() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((filter) => (
-          <button
-            key={filter.value}
-            type="button"
-            onClick={() => {
-              setStatusFilter(filter.value)
-              setPage(1)
-            }}
-            className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
-              statusFilter === filter.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-            )}
-          >
-            {filter.label}
-          </button>
-        ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => {
+                setStatusFilter(filter.value)
+                setPage(1)
+              }}
+              className={cn(
+                'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+                statusFilter === filter.value
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search student, email, phone, university, job..."
+            aria-label="Search job requests"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-[#151b2b] dark:text-white"
+          />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-[#151b2b]">
