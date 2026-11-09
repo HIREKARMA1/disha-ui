@@ -13,6 +13,8 @@ interface AssessmentListProps {
   onDelete: (id: string) => void;
   onView: (id: string) => void;
   onPublish?: (id: string) => void;
+  onToggleAudience?: (id: string) => void;
+  onAssignShortlisted?: (assessment: { id: string; assessment_name: string }) => void;
   loading: boolean;
 }
 
@@ -21,6 +23,8 @@ export function AssessmentList({
   onEdit,
   onDelete,
   onView,
+  onToggleAudience,
+  onAssignShortlisted,
   loading,
 }: AssessmentListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -66,6 +70,8 @@ export function AssessmentList({
             onEdit={onEdit}
             onDelete={() => setDeleteId(assessment.id)}
             onView={onView}
+            onToggleAudience={onToggleAudience}
+            onAssignShortlisted={onAssignShortlisted}
             onViewResults={() => window.location.href = `/dashboard/admin/assessments/${assessment.id}/analytics`}
           />
         ))}

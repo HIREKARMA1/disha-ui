@@ -10,6 +10,7 @@ import {
     Eye,
     FileText,
     CheckCircle2,
+    Check,
     Link2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,8 @@ interface AssessmentCardProps {
     onDelete: (id: string) => void;
     onView: (id: string) => void;
     onViewResults?: (id: string) => void;
+    onToggleAudience?: (id: string) => void;
+    onAssignShortlisted?: (assessment: { id: string; assessment_name: string }) => void;
     cardIndex?: number;
 }
 
@@ -32,6 +35,8 @@ export function AssessmentCard({
     onDelete,
     onView,
     onViewResults,
+    onToggleAudience,
+    onAssignShortlisted,
     cardIndex = 0
 }: AssessmentCardProps) {
     const [showDropdown, setShowDropdown] = useState(false)
@@ -132,6 +137,18 @@ export function AssessmentCard({
                         <p className="text-xs text-gray-500 dark:text-gray-300 font-mono mt-1 truncate">
                             {assessment.disha_assessment_id}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {assessment.show_on_disha !== false && (
+                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                    DISHA
+                                </span>
+                            )}
+                            {assessment.show_on_shortlisted === true && (
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                    Shortlisted
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* 3-dots dropdown menu */}
@@ -146,7 +163,7 @@ export function AssessmentCard({
                         </Button>
 
                         {showDropdown && (
-                            <div className="absolute right-0 top-9 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1">
+                            <div className="absolute right-0 top-9 z-50 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1">
                                     <div className="py-1">
                                         <button
                                             onClick={() => {
@@ -182,6 +199,37 @@ export function AssessmentCard({
                                                 Copy student exam link
                                             </button>
                                         )}
+
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.preventDefault()
+                                                event.stopPropagation()
+                                                onToggleAudience?.(assessment.id)
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                                        >
+                                            <Check className={cn('w-4 h-4', assessment.show_on_disha === false && 'invisible')} />
+                                            Assign to DISHA
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.preventDefault()
+                                                event.stopPropagation()
+                                                onAssignShortlisted?.({
+                                                    id: assessment.id,
+                                                    assessment_name: assessment.assessment_name,
+                                                })
+                                                setShowDropdown(false)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-2"
+                                        >
+                                            <Check className={cn('w-4 h-4', assessment.show_on_shortlisted !== true && 'invisible')} />
+                                            Assign to Shortlisted
+                                        </button>
 
                                         <button
                                             onClick={() => {
