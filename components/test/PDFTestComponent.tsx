@@ -31,6 +31,8 @@ const sampleJob = {
     industry: 'Technology',
     selection_process: 'Round 1: Online Test, Round 2: Technical Interview, Round 3: HR Round',
     campus_drive_date: '2025-03-15T09:00:00Z',
+    is_campus_drive: true,
+    hiring_mode: 'virtual',
     status: 'active',
     expiration_date: '2025-06-30T23:59:59Z',
     number_of_openings: 5,

@@ -14,6 +14,7 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
 import { getCampusDriveRequestApplyOverride } from '@/lib/campusDriveInterest'
+import { hiringModeLabel } from '@/lib/hiringMode'
 
 interface Job {
     id: string
@@ -45,6 +46,7 @@ interface Job {
     selection_process?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     views_count: number
     applications_count: number
     created_at: string
@@ -234,6 +236,8 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 industry: job.industry,
                 selection_process: job.selection_process,
                 campus_drive_date: job.campus_drive_date,
+                is_campus_drive: job.is_campus_drive,
+                hiring_mode: job.hiring_mode,
                 corporate_name: job.corporate_name,
                 corporate_id: job.corporate_id || undefined,
                 company_name: job.company_name,
@@ -247,6 +251,7 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 status: job.status,
                 ctc_with_probation: job.ctc_with_probation,
                 ctc_after_probation: job.ctc_after_probation,
+                company_description: job.company_description,
             }
 
             console.log('Corporate Profile being passed to PDF:', corporateProfile)
@@ -441,6 +446,11 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                         <p className="font-medium text-gray-900 dark:text-white">
                                             {getJobTypeLabel(job.job_type)}
                                         </p>
+                                        {hiringModeLabel(job.hiring_mode) && (
+                                            <p className="mt-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                                                {hiringModeLabel(job.hiring_mode)}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1051,6 +1061,11 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                                     <p className="text-blue-800 dark:text-blue-200 font-medium">
                                         Campus Drive Date: {formatDate(job.campus_drive_date)}
                                     </p>
+                                    {hiringModeLabel(job.hiring_mode) && (
+                                        <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                                            Hiring mode: {hiringModeLabel(job.hiring_mode)}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}

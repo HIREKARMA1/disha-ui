@@ -63,6 +63,7 @@ import { parseEducationField } from '@/lib/parseEducationField'
 import { formatPassoutBatchLabel } from '@/lib/passoutBatches'
 import { formatJobGenderLabel } from '@/lib/jobGender'
 import { shouldShowPostApplySkillsNudge } from '@/lib/profileCompletion'
+import { hiringModeLabel } from '@/lib/hiringMode'
 
 interface JobDetailViewProps {
   companySlug: string
@@ -547,6 +548,11 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
                       Premium Users
                     </span>
                   )}
+                  {hiringModeLabel(job.hiring_mode) && (
+                    <span className="rounded-md bg-white/20 px-2 py-0.5 text-xs font-semibold">
+                      {hiringModeLabel(job.hiring_mode)}
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{job.title}</h1>
                 <p className="mt-1 text-white/90">{companyName}</p>
@@ -738,6 +744,7 @@ export function JobDetailView({ companySlug, jobSlug, fallbackJobId }: JobDetail
               jobType={job.job_type}
               modeOfWork={job.mode_of_work}
               remoteWork={job.remote_work}
+              hiringMode={job.hiring_mode}
             />
 
             {related.length > 0 && (

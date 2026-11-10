@@ -92,6 +92,7 @@ export interface Job {
     selection_process?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     views_count: number
     applications_count: number
     created_at: string

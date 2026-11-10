@@ -6,6 +6,7 @@ import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CompanyLogo } from '@/components/jobs/CompanyLogo'
+import { hiringModeLabel } from '@/lib/hiringMode'
 import { apiClient } from '@/lib/api'
 import { useState, useEffect, useRef } from 'react'
 
@@ -43,6 +44,7 @@ interface UniversityJob {
     application_deadline?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     venue?: string
     max_students?: number
     skills_required?: string[]
@@ -220,6 +222,11 @@ export function UniversityJobCard({
                                 )}>
                                     {getJobTypeLabel(jobType)}
                                 </span>
+                                {hiringModeLabel(job.hiring_mode) && (
+                                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20">
+                                        {hiringModeLabel(job.hiring_mode)}
+                                    </span>
+                                )}
                             </div>
                             {companyDisplayName && (
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">
