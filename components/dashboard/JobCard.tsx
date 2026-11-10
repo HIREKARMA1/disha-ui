@@ -14,6 +14,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
 import { useSavedJobs } from '@/hooks/useSavedJobs'
 import { getCampusDriveRequestApplyOverride } from '@/lib/campusDriveInterest'
+import { hiringModeLabel } from '@/lib/hiringMode'
 
 interface Job {
     id: string
@@ -41,6 +42,7 @@ interface Job {
     industry?: string
     selection_process?: string
     is_campus_drive?: boolean
+    hiring_mode?: string
     is_public?: boolean | null
     public_access_level?: string | null
     campus_drive_date?: string
@@ -399,6 +401,16 @@ export function JobCard({
                                         )}
                                     >
                                         Campus Drive
+                                    </span>
+                                )}
+                                {hiringModeLabel(job.hiring_mode) && (
+                                    <span
+                                        className={cn(
+                                            'inline-flex items-center rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-700/40 dark:bg-indigo-950/40 dark:text-indigo-300',
+                                            compactMobile && 'hidden sm:inline-flex'
+                                        )}
+                                    >
+                                        {hiringModeLabel(job.hiring_mode)}
                                     </span>
                                 )}
                                 {job.is_public && job.public_access_level === 'premium' && (

@@ -19,6 +19,7 @@ import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
 import { JOB_GENDER_OPTIONS, jobGenderFromApi, jobGenderToApi } from '@/lib/jobGender'
+import { HIRING_MODE_OPTIONS, hiringModeValue } from '@/lib/hiringMode'
 
 interface Job {
     id: string
@@ -47,6 +48,7 @@ interface Job {
     selection_process?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     views_count: number
     applications_count: number
     created_at: string
@@ -116,6 +118,7 @@ interface JobFormData {
     selection_process: string
     is_campus_drive: boolean
     campus_drive_date: string
+    hiring_mode: string
     status: string
     // Additional fields
     number_of_openings: string
@@ -198,6 +201,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         selection_process: '',
         is_campus_drive: false,
         campus_drive_date: '',
+        hiring_mode: '',
         status: 'active',
         // Additional fields
         number_of_openings: '',
@@ -375,6 +379,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 selection_process: job.selection_process || '',
                 is_campus_drive: Boolean(job.is_campus_drive || job.campus_drive_date),
                 campus_drive_date: job.campus_drive_date ? new Date(job.campus_drive_date).toISOString().slice(0, 10) : '',
+                hiring_mode: hiringModeValue(job.hiring_mode),
                 status: job.status || 'active',
                 // Additional fields
                 number_of_openings: job.number_of_openings !== null && job.number_of_openings !== undefined ? job.number_of_openings.toString() : '',
@@ -659,6 +664,9 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
         if (formData.is_campus_drive && !formData.campus_drive_date) {
             errors.campus_drive_date = 'Campus drive date is required'
         }
+        if (!formData.hiring_mode) {
+            errors.hiring_mode = 'Hiring mode is required'
+        }
 
         // Validate company information for university-created jobs
         if (isUniversity && !formData.company_name.trim()) {
@@ -740,6 +748,7 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                 selection_process: formData.selection_process || null,
                 is_campus_drive: formData.is_campus_drive,
                 campus_drive_date: formData.is_campus_drive && formData.campus_drive_date ? formData.campus_drive_date : null,
+                hiring_mode: formData.hiring_mode,
                 status: formData.status,
                 // Additional fields
                 number_of_openings: formData.number_of_openings && formData.number_of_openings.trim() !== '' ? parseInt(formData.number_of_openings) : null,
@@ -1737,6 +1746,30 @@ export function EditJobModal({ isOpen, onClose, onJobUpdated, job, isAdmin = fal
                                         )}
                                     </div>
                                 )}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Hiring mode
+                                    </label>
+                                    <Select
+                                        value={formData.hiring_mode}
+                                        onValueChange={(value) => handleInputChange('hiring_mode', value)}
+                                    >
+                                        <SelectTrigger className={validationErrors.hiring_mode ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select hiring mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {HIRING_MODE_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {validationErrors.hiring_mode && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.hiring_mode}</p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Job Brochure Section (Optional) */}

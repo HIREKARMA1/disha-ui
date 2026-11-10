@@ -4,6 +4,7 @@ import { config } from './config'
 import { formatEducationFieldForDisplay, parseEducationField } from './parseEducationField'
 import { formatPassoutBatchLabel } from './passoutBatches'
 import { formatSalaryRange } from './currency'
+import { hiringModeLabel } from './hiringMode'
 
 // Unicode font so ₹ renders correctly (Helvetica maps it to ¹).
 // Noto Sans does not include Mathematical Alphanumeric Symbols (e.g. 𝗔);
@@ -128,6 +129,8 @@ interface JobData {
   industry?: string
   selection_process?: string
   campus_drive_date?: string
+  is_campus_drive?: boolean
+  hiring_mode?: string
   corporate_name?: string
   corporate_id?: string
   company_name?: string
@@ -141,6 +144,7 @@ interface JobData {
   ctc_after_probation?: string
   expiration_date?: string
   status?: string
+  company_description?: string
 }
 
 interface CorporateProfile {
@@ -160,37 +164,78 @@ interface CorporateProfile {
   address?: string
 }
 
+const NAVY = '#0F2744'
+const MUTED = '#5B6573'
+const TEXT = '#1F2937'
+const BORDER = '#E5E7EB'
+const TEAL = '#0F766E'
+const ORANGE = '#EA580C'
+
 // Define styles
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 80, // Space for header + extra space after page break
-    paddingBottom: 60, // Space for footer + extra space before page break
-    paddingHorizontal: 25,
-    fontSize: 12,
+    paddingTop: 78,
+    paddingBottom: 52,
+    paddingHorizontal: 28,
+    fontSize: 10,
     fontFamily: 'NotoSans',
+    color: TEXT,
   },
   header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 60,
-   marginBottom: 10,
-    backgroundColor: '#d4f4ff',
-    paddingHorizontal: 35,
-    paddingVertical: 20,
-    display: 'flex',
+    height: 68,
+    backgroundColor: NAVY,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexGrow: 1,
+    flexShrink: 1,
+    paddingRight: 12,
   },
   logo: {
-    width: 140,
-    height: 40,
+    width: 42,
+    height: 42,
     objectFit: 'contain',
+    backgroundColor: '#ffffff',
+  },
+  headerCompany: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  headerTagline: {
+    fontSize: 8,
+    color: '#D6DEE8',
+    marginTop: 2,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  headerRightLabel: {
+    fontSize: 8,
+    color: '#D6DEE8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  headerRightValue: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginTop: 2,
   },
   footerLogo: {
     width: 70,
-    height: 20,
+    height: 18,
     objectFit: 'contain',
   },
   footer: {
@@ -198,175 +243,257 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 50,
-    backgroundColor: '#d4f4ff',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    display: 'flex',
+    height: 42,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 28,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    fontSize: 10,
-    color: '#006b8f',
-    borderTop: '2 solid #b8e8f5',
+    fontSize: 8,
+    color: MUTED,
+    borderTop: `1 solid ${BORDER}`,
   },
   footerColumn: {
-    display: 'flex',
     flexDirection: 'column',
-    gap: 2,
   },
-  sectionTitle: {
-    backgroundColor: '#b8e8f5',
-    color: '#006b8f',
-    padding: '10',
-    fontSize: 16,
+  kicker: {
+    fontSize: 8,
+    letterSpacing: 1.2,
+    color: '#C2410C',
     fontWeight: 'bold',
-    marginTop: 4,
-    marginBottom: 12,
-    borderRadius: 5,
-    minPresenceAhead: 200, // Footer height (50) + section title height (~50) + minimum content space (~100)
-  },
-  content: {
-    marginBottom: 6,
-  },
-  infoGrid: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 0,
-    gap: 12,
-  },
-  infoItem: {
-    width: '48%',
-    fontSize: 11,
-    marginBottom: 8,
-    lineHeight: 1.6,
+    marginBottom: 4,
   },
   jobTitle: {
-    backgroundColor: '#b8e8f5',
-    color: '#006b8f',
-    padding: '10 15',
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 8,
-    borderRadius: 5,
-    textAlign: 'left',
-  },
-  textContent: {
-    fontSize: 11,
-    lineHeight: 1.6,
-    marginBottom: 0,
-    textAlign: 'justify',
-  },
-  companyName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    color: NAVY,
     marginBottom: 8,
   },
-  companyNameRow: {
-    display: 'flex',
+  pillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 4,
+    gap: 6,
+    marginBottom: 14,
   },
-  companyNameLabel: {
-    fontSize: 14,
+  pill: {
+    border: `1 solid ${BORDER}`,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    fontSize: 8,
+    color: MUTED,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    borderTop: `1 solid ${BORDER}`,
+    borderBottom: `1 solid ${BORDER}`,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  statCell: {
+    width: '25%',
+    paddingRight: 8,
+  },
+  statLabel: {
+    fontSize: 7,
+    color: MUTED,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  statValue: {
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#2d3748',
+    color: NAVY,
+  },
+  statHint: {
+    fontSize: 7,
+    color: MUTED,
+    marginTop: 1,
+  },
+  twoCol: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 14,
+  },
+  col: {
+    width: '48%',
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: NAVY,
+    marginBottom: 6,
+  },
+  bodyText: {
+    fontSize: 9,
+    lineHeight: 1.45,
+    color: TEXT,
+    textAlign: 'justify',
+  },
+  numberedRow: {
+    flexDirection: 'row',
+    marginBottom: 5,
+    paddingRight: 8,
+  },
+  numberedIndex: {
+    width: 18,
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: NAVY,
+  },
+  numberedText: {
+    flexGrow: 1,
+    flexShrink: 1,
+    fontSize: 9,
+    lineHeight: 1.4,
+    color: TEXT,
+  },
+  skillsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginBottom: 12,
+  },
+  skillPill: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    fontSize: 8,
+    color: TEXT,
+  },
+  applyBoxRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  applyBox: {
+    width: '48%',
+    borderRadius: 8,
+    padding: 10,
+    border: `1.5 solid ${TEAL}`,
+  },
+  campusBox: {
+    width: '48%',
+    borderRadius: 8,
+    padding: 10,
+    border: `1.5 solid ${ORANGE}`,
+  },
+  applyLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: TEAL,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  campusLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: ORANGE,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  applyValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: NAVY,
+  },
+  whoBox: {
+    backgroundColor: '#F8FAFC',
+    border: `1 solid ${BORDER}`,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
+  whoRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  whoLabel: {
+    width: '18%',
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: MUTED,
+  },
+  whoValue: {
+    width: '82%',
+    fontSize: 8,
+    color: TEXT,
   },
   companyNameImage: {
     height: 16,
-    maxWidth: 420,
+    maxWidth: 220,
     objectFit: 'contain',
   },
-  companyDescription: {
-    fontSize: 11,
-    lineHeight: 1.6,
-    marginBottom: 8,
-    textAlign: 'justify',
-  },
-  bulletList: {
-    marginBottom: 0,
-  },
-  bulletItem: {
-    fontSize: 11,
-    lineHeight: 1.5,
-    marginBottom: 4,
-    paddingLeft: 10,
-  },
-  skillsGrid: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 0,
-  },
-  skillItem: {
-    fontSize: 11,
-    width: '32%',
-    marginBottom: 6,
-  },
-  twoColumnContent: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 0,
-  },
-  twoColumnItem: {
-    width: '48%',
-    flexGrow: 0,
-    flexShrink: 0,
-    flexBasis: '48%',
-    marginBottom: 8,
-    paddingLeft: 10,
-  },
-  pageBreak: {
-    paddingTop: 20,
-    marginBottom: 20,
-  },
   sectionContainer: {
-    marginBottom: 4,
+    marginBottom: 10,
   },
 })
 
-// Header Component - appears on every page
-const PDFHeader = ({ logoUrl }: { logoUrl?: string | null }) => (
+const PDFHeader = ({
+  logoUrl,
+  companyName,
+  companyNameImageUrl,
+  tagline,
+  rightLabel,
+  rightValue,
+}: {
+  logoUrl?: string | null
+  companyName?: string
+  companyNameImageUrl?: string | null
+  tagline?: string
+  rightLabel?: string
+  rightValue?: string
+}) => (
   <View style={styles.header} fixed>
-    {logoUrl ? (
-      <Image src={logoUrl} style={styles.logo} />
-    ) : (
-      <View style={{ width: 140, height: 40, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ fontSize: 10, color: '#718096' }}>LOGO</Text>
+    <View style={styles.headerLeft}>
+      {logoUrl ? (
+        <Image src={logoUrl} style={styles.logo} />
+      ) : (
+        <View style={{ width: 42, height: 42, backgroundColor: '#1E3A5F', justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 7, color: '#D6DEE8' }}>LOGO</Text>
+        </View>
+      )}
+      <View>
+        {companyNameImageUrl ? (
+          <Image src={companyNameImageUrl} style={styles.companyNameImage} />
+        ) : (
+          <Text style={styles.headerCompany}>{companyName || 'Hiring Company'}</Text>
+        )}
+        {tagline ? <Text style={styles.headerTagline}>{tagline}</Text> : null}
+      </View>
+    </View>
+    {(rightLabel || rightValue) && (
+      <View style={styles.headerRight}>
+        {rightLabel ? <Text style={styles.headerRightLabel}>{rightLabel}</Text> : null}
+        {rightValue ? <Text style={styles.headerRightValue}>{rightValue}</Text> : null}
       </View>
     )}
   </View>
 )
 
-// Footer Component - appears on every page
 const PDFFooter = ({ hirekarmaLogoUrl }: { hirekarmaLogoUrl?: string | null }) => {
   const formatFooterDate = (date: Date): string => {
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const year = date.getFullYear()
-    return `${day}/${month}/${year}`
+    return `${day} ${date.toLocaleString('en-GB', { month: 'short' })} ${year}`
   }
 
   return (
     <View style={styles.footer} fixed>
-      <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text>Generated by <Text style={{ fontWeight: 'bold' }}>DISHA</Text> job portal powered by</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text>Generated by DISHA job portal powered by</Text>
         {hirekarmaLogoUrl ? (
           <Image src={hirekarmaLogoUrl} style={styles.footerLogo} />
         ) : (
-          <Text>Hire<Text style={{ color: '#00b8d4' }}>karma</Text></Text>
+          <Text style={{ fontWeight: 'bold', color: NAVY }}>Hirekarma</Text>
         )}
       </View>
       <View style={styles.footerColumn}>
-        <Text>Date- {formatFooterDate(new Date())}</Text>
+        <Text>Date: {formatFooterDate(new Date())}</Text>
       </View>
     </View>
   )
@@ -417,368 +544,198 @@ const parseCommaSeparated = (value: string | string[] | undefined): string => {
 }
 
 // Main PDF Document Component
-const JobDescriptionDocument = ({ 
-  job, 
-  corporateProfile, 
+const JobDescriptionDocument = ({
+  job,
+  corporateProfile,
   logoUrl,
   hirekarmaLogoUrl,
   companyNameImageUrl,
-}: { 
+}: {
   job: JobData
   corporateProfile?: CorporateProfile
   logoUrl?: string | null
   hirekarmaLogoUrl?: string | null
   companyNameImageUrl?: string | null
 }) => {
-  // Split requirements/responsibilities into lines
-  const requirementsList = job.requirements
-    ? job.requirements.split('\n').filter(line => line.trim())
-    : []
-  
-  const responsibilitiesList = job.responsibilities
-    ? job.responsibilities.split('\n').filter(line => line.trim())
-    : []
+  const clean = (line: string) => line.replace(/^[•\-\*\d\.\)\s]+/, '').trim()
+  const splitLines = (value?: string) =>
+    value ? value.split('\n').map((line) => clean(line)).filter(Boolean) : []
 
-  const perksList = job.perks_and_benefits
-    ? job.perks_and_benefits.split('\n').filter(line => line.trim())
-    : []
-
-  const eligibilityList = job.eligibility_criteria
-    ? job.eligibility_criteria.split('\n').filter(line => line.trim())
-    : []
-
-  const selectionProcessList = job.selection_process
-    ? job.selection_process.split('\n').filter(line => line.trim())
-    : []
-
-  const skillsCount = job.skills_required?.length || 0
-  const skillsPerColumn = skillsCount <= 1 ? 1 : skillsCount <= 2 ? 2 : 3
-
+  const responsibilitiesList = splitLines(job.responsibilities)
+  const perksList = splitLines(job.perks_and_benefits)
+  const eligibilityList = splitLines(job.eligibility_criteria)
+  const selectionProcessList = splitLines(job.selection_process)
   const resolvedName = resolveCompanyName(job, corporateProfile)
+  const hiringLabel = hiringModeLabel(job.hiring_mode)
+  const locationLabel = parseCommaSeparated(job.location)
+  const companyAbout =
+    corporateProfile?.description ||
+    job.company_description ||
+    (resolvedName
+      ? `${resolvedName} is hiring for this role.`
+      : 'Company details will be shared during the hiring process.')
+  const tagline = [corporateProfile?.industry || job.industry, corporateProfile?.company_type]
+    .filter(Boolean)
+    .join(' · ')
+  const isCampus = Boolean(job.is_campus_drive || job.campus_drive_date)
+  const headerRightLabel = isCampus ? 'Campus Drive' : hiringLabel || undefined
+  const headerRightValue =
+    isCampus && job.campus_drive_date ? formatDate(job.campus_drive_date) : undefined
+  const isFresher =
+    (job.experience_min === 0 || job.experience_min == null) &&
+    (job.experience_max == null || job.experience_max === 0)
+  const pills = [
+    formatJobType(job.job_type),
+    locationLabel,
+    hiringLabel,
+    isFresher ? 'Freshers welcome' : null,
+  ].filter(Boolean) as string[]
+
+  const educationLevel = parseCommaSeparated(job.education_level)
+  const educationDegree = parseCommaSeparated(job.education_degree)
+  const educationBranch = parseCommaSeparated(job.education_branch)
 
   return (
     <Document>
-      {/* Single Page component - react-pdf will automatically create new pages when content overflows */}
       <Page size="A4" style={styles.page}>
-        <PDFHeader logoUrl={logoUrl} />
+        <PDFHeader
+          logoUrl={logoUrl}
+          companyName={resolvedName}
+          companyNameImageUrl={companyNameImageUrl}
+          tagline={tagline || undefined}
+          rightLabel={headerRightLabel}
+          rightValue={headerRightValue}
+        />
         <PDFFooter hirekarmaLogoUrl={hirekarmaLogoUrl} />
-        
-        {/* About Company Section */}
-        {(resolvedName || corporateProfile?.description) && (
-          <View style={styles.content}>
-            {/* <Text style={styles.sectionTitle}>About Company</Text> */}
-            {resolvedName && (
-              companyNameImageUrl ? (
-                <View style={styles.companyNameRow}>
-                  <Text style={styles.companyNameLabel}>Company Name:</Text>
-                  <Image src={companyNameImageUrl} style={styles.companyNameImage} />
-                </View>
-              ) : (
-                <Text style={styles.companyName}>
-                  Company Name: {resolvedName}
-                </Text>
-              )
-            )}
-            {corporateProfile?.description && (
-              <Text style={styles.companyDescription}>
-                {corporateProfile.description}
-              </Text>
-            )}
-          </View>
-        )}
 
-        {/* Company Information Grid */}
-        {(corporateProfile?.industry || corporateProfile?.company_size || corporateProfile?.founded_year || corporateProfile?.website_url) && (
-          <View style={styles.content}>
-            <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 8 }}>Company Information:</Text>
-            <View style={styles.infoGrid}>
-              {corporateProfile?.industry && (
-                <View style={styles.infoItem}>
-                  <Text><Text style={{ fontWeight: 'bold' }}>Industry:</Text> {corporateProfile.industry}</Text>
-                </View>
-              )}
-              {corporateProfile?.company_size && (
-                <View style={styles.infoItem}>
-                  <Text><Text style={{ fontWeight: 'bold' }}>Company Size:</Text> {corporateProfile.company_size}</Text>
-                </View>
-              )}
-              {corporateProfile?.founded_year && (
-                <View style={styles.infoItem}>
-                  <Text><Text style={{ fontWeight: 'bold' }}>Founded:</Text> {corporateProfile.founded_year}</Text>
-                </View>
-              )}
-              {corporateProfile?.website_url && (
-                <View style={styles.infoItem}>
-                  <Text><Text style={{ fontWeight: 'bold' }}>Website:</Text> {corporateProfile.website_url}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Job Title */}
-        <View style={styles.content}>
-          <Text style={styles.jobTitle}>Job Role: {job.title}</Text>
+        <Text style={styles.kicker}>WE ARE HIRING</Text>
+        <Text style={styles.jobTitle}>{job.title}</Text>
+        <View style={styles.pillRow}>
+          {pills.map((pill) => (
+            <Text key={pill} style={styles.pill}>{pill}</Text>
+          ))}
         </View>
 
-        {/* Job Details Grid */}
-        <View style={styles.content}>
-          <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Position:</Text> {formatJobType(job.job_type)}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Location:</Text> {parseCommaSeparated(job.location)}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Salary:</Text> {formatSalaryRange(job.salary_min, job.salary_max)}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text><Text style={{ fontWeight: 'bold' }}>Experience:</Text> {formatExperience(job.experience_min, job.experience_max)}</Text>
-            </View>
+        <View style={styles.statsRow}>
+          <View style={styles.statCell}>
+            <Text style={styles.statLabel}>Salary</Text>
+            <Text style={styles.statValue}>{formatSalaryRange(job.salary_min, job.salary_max)}</Text>
+          </View>
+          <View style={styles.statCell}>
+            <Text style={styles.statLabel}>Probation stipend</Text>
+            <Text style={styles.statValue}>{job.ctc_with_probation || '—'}</Text>
+            {job.ctc_after_probation ? <Text style={styles.statHint}>{job.ctc_after_probation}</Text> : null}
+          </View>
+          <View style={styles.statCell}>
+            <Text style={styles.statLabel}>Experience</Text>
+            <Text style={styles.statValue}>{formatExperience(job.experience_min, job.experience_max)}</Text>
+          </View>
+          <View style={styles.statCell}>
+            <Text style={styles.statLabel}>Openings</Text>
+            <Text style={styles.statValue}>{job.number_of_openings != null ? String(job.number_of_openings) : '—'}</Text>
+            {job.travel_required ? <Text style={styles.statHint}>Travel required</Text> : <Text style={styles.statHint}>No travel required</Text>}
           </View>
         </View>
 
-        {/* Probation Salary Details */}
-        {(job.ctc_with_probation || job.ctc_after_probation) && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Probation Salary Details</Text>
-              <View style={styles.infoGrid}>
-              {job.ctc_with_probation && (
-                <View style={styles.infoItem}>
-                  <Text><Text style={{ fontWeight: 'bold' }}>Stipend During Probation:</Text> {job.ctc_with_probation}</Text>
-                </View>
-              )}
-              {job.ctc_after_probation && (
-                <View style={styles.infoItem}>
-                  <Text><Text style={{ fontWeight: 'bold' }}>Probation Time:</Text> {job.ctc_after_probation}</Text>
-                </View>
-              )}
-              </View>
-            </View>
+        <View style={styles.twoCol}>
+          <View style={styles.col}>
+            <Text style={styles.sectionTitle}>About the role</Text>
+            <Text style={styles.bodyText}>{job.description || 'Role details will be shared with shortlisted candidates.'}</Text>
           </View>
-        )}
-
-        {/* Job Description - This will automatically break across pages if content is too long */}
-        {job.description && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Job Description</Text>
-            </View>
-            <Text style={styles.textContent} wrap={true}>{job.description}</Text>
+          <View style={styles.col}>
+            <Text style={styles.sectionTitle}>About {resolvedName || 'the company'}</Text>
+            <Text style={styles.bodyText}>{companyAbout}</Text>
           </View>
-        )}
+        </View>
 
-        {/* Requirements */}
-        {requirementsList.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Requirements</Text>
-              {requirementsList.length > 0 && (
-                <Text style={styles.bulletItem} wrap={true}>
-                  • {requirementsList[0].replace(/^[•\-\*]\s*/, '').trim()}
-                </Text>
-              )}
-            </View>
-            {requirementsList.length > 1 && (
-              <View style={styles.bulletList}>
-                {requirementsList.slice(1).map((req, idx) => (
-                  <Text key={idx + 1} style={styles.bulletItem} wrap={true}>
-                    • {req.replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Required Skills */}
-        {job.skills_required && job.skills_required.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Required Skills:</Text>
-            </View>
-            <View style={styles.skillsGrid}>
-              {job.skills_required.map((skill, idx) => (
-                <Text key={idx} style={styles.skillItem} wrap={true}>• {skill}</Text>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Responsibilities */}
         {responsibilitiesList.length > 0 && (
           <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Responsibilities</Text>
-              {responsibilitiesList.length > 0 && (
-                <Text style={styles.bulletItem} wrap={true}>
-                  • {responsibilitiesList[0].replace(/^[•\-\*]\s*/, '').trim()}
-                </Text>
-              )}
-            </View>
-            {responsibilitiesList.length > 1 && (
-              <View style={styles.bulletList}>
-                {responsibilitiesList.slice(1).map((resp, idx) => (
-                  <Text key={idx + 1} style={styles.bulletItem} wrap={true}>
-                    • {resp.replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                ))}
+            <Text style={styles.sectionTitle}>Responsibilities</Text>
+            {responsibilitiesList.map((item, idx) => (
+              <View key={idx} style={styles.numberedRow}>
+                <Text style={styles.numberedIndex}>{String(idx + 1).padStart(2, '0')}</Text>
+                <Text style={styles.numberedText}>{item}</Text>
               </View>
-            )}
+            ))}
           </View>
         )}
 
-        {/* Education Requirements */}
-        {(job.education_level || job.education_degree || job.education_branch || job.passout_batches) && (
+        {job.skills_required && job.skills_required.length > 0 && (
           <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Education Requirements</Text>
-            </View>
-            <View style={styles.infoGrid}>
-              {job.education_level && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Education Level:</Text> {parseCommaSeparated(job.education_level)}</Text>
-                </View>
-              )}
-              {job.education_degree && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Degree:</Text> {parseCommaSeparated(job.education_degree)}</Text>
-                </View>
-              )}
-              {job.education_branch && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Branch:</Text> {parseCommaSeparated(job.education_branch)}</Text>
-                </View>
-              )}
-              {job.passout_batches && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Passout Batches:</Text> {parseEducationField(job.passout_batches).map(formatPassoutBatchLabel).join(', ')}</Text>
-                </View>
-              )}
+            <Text style={styles.sectionTitle}>Skills</Text>
+            <View style={styles.skillsWrap}>
+              {job.skills_required.map((skill) => (
+                <Text key={skill} style={styles.skillPill}>{skill}</Text>
+              ))}
             </View>
           </View>
         )}
 
-        {/* Additional Job Details */}
-        {(job.number_of_openings || job.remote_work !== undefined || job.onsite_office !== undefined || job.travel_required !== undefined) && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Additional Job Details</Text>
-            </View>
-            <View style={styles.infoGrid}>
-              {job.number_of_openings && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>No of Opening's:</Text> {job.number_of_openings}</Text>
-                </View>
-              )}
-              {job.remote_work !== undefined && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Remote Work:</Text> {job.remote_work ? 'Available' : 'Not Available'}</Text>
-                </View>
-              )}
-              {job.onsite_office !== undefined && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Onsite Office:</Text> {job.onsite_office ? 'Available' : 'Not Available'}</Text>
-                </View>
-              )}
-              {job.travel_required !== undefined && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Travel Required:</Text> {job.travel_required ? 'Yes' : 'No'}</Text>
-                </View>
-              )}
-            </View>
+        {(educationLevel || educationDegree || educationBranch || eligibilityList.length > 0) && (
+          <View style={styles.whoBox}>
+            <Text style={styles.sectionTitle}>Who can apply</Text>
+            {educationLevel ? (
+              <View style={styles.whoRow}>
+                <Text style={styles.whoLabel}>Level</Text>
+                <Text style={styles.whoValue}>{educationLevel}</Text>
+              </View>
+            ) : null}
+            {educationDegree ? (
+              <View style={styles.whoRow}>
+                <Text style={styles.whoLabel}>Degree</Text>
+                <Text style={styles.whoValue}>{educationDegree}</Text>
+              </View>
+            ) : null}
+            {educationBranch ? (
+              <View style={styles.whoRow}>
+                <Text style={styles.whoLabel}>Branch</Text>
+                <Text style={styles.whoValue}>{educationBranch}</Text>
+              </View>
+            ) : null}
+            {eligibilityList.map((item, idx) => (
+              <Text key={idx} style={styles.bodyText}>• {item}</Text>
+            ))}
           </View>
         )}
 
-        {/* Perks and Benefits */}
         {perksList.length > 0 && (
           <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Perks and Benefits</Text>
-            </View>
-            <View style={styles.twoColumnContent}>
-              {perksList.map((perk, idx) => (
-                <View key={idx} style={styles.twoColumnItem}>
-                  <Text style={{ fontSize: 11, lineHeight: 1.6 }} wrap={true}>
-                    • {perk.replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            <Text style={styles.sectionTitle}>Perks and benefits</Text>
+            {perksList.map((item, idx) => (
+              <View key={idx} style={styles.numberedRow}>
+                <Text style={styles.numberedIndex}>•</Text>
+                <Text style={styles.numberedText}>{item}</Text>
+              </View>
+            ))}
           </View>
         )}
 
-        {/* Eligibility Criteria */}
-        {eligibilityList.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Eligibility Criteria</Text>
-            </View>
-            <View style={styles.twoColumnContent}>
-              {eligibilityList.map((criteria, idx) => (
-                <View key={idx} style={styles.twoColumnItem}>
-                  <Text style={{ fontSize: 11, lineHeight: 1.6 }} wrap={true}>
-                    • {criteria.replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Selection Process */}
         {selectionProcessList.length > 0 && (
           <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Selection Process</Text>
-              {selectionProcessList.length > 0 && (
-                <Text style={styles.bulletItem} wrap={true}>
-                  • {selectionProcessList[0].replace(/^[•\-\*]\s*/, '').trim()}
-                </Text>
-              )}
-            </View>
-            {selectionProcessList.length > 1 && (
-              <View style={styles.bulletList}>
-                {selectionProcessList.slice(1).map((process, idx) => (
-                  <Text key={idx + 1} style={styles.bulletItem} wrap={true}>
-                    • {process.replace(/^[•\-\*]\s*/, '').trim()}
-                  </Text>
-                ))}
+            <Text style={styles.sectionTitle}>Selection process</Text>
+            {selectionProcessList.map((item, idx) => (
+              <View key={idx} style={styles.numberedRow}>
+                <Text style={styles.numberedIndex}>{String(idx + 1).padStart(2, '0')}</Text>
+                <Text style={styles.numberedText}>{item}</Text>
               </View>
-            )}
+            ))}
           </View>
         )}
 
-        {/* Service Agreement Details */}
-        {job.service_agreement_details && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Service Agreement Details</Text>
-            </View>
-            <Text style={styles.textContent} wrap={true}>{job.service_agreement_details}</Text>
-          </View>
-        )}
-
-        {/* Application Information */}
-        {(job.campus_drive_date || job.application_deadline) && (
-          <View style={styles.sectionContainer}>
-            <View wrap={false}>
-              <Text style={styles.sectionTitle} break={false}>Application Information</Text>
-            </View>
-            <View style={styles.infoGrid}>
-              {job.campus_drive_date && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Campus Drive:</Text> {formatDate(job.campus_drive_date)}</Text>
-                </View>
-              )}
-              {job.application_deadline && (
-                <View style={styles.infoItem}>
-                  <Text wrap={true}><Text style={{ fontWeight: 'bold' }}>Application Deadline:</Text> {formatDate(job.application_deadline)}</Text>
-                </View>
-              )}
-            </View>
+        {(job.application_deadline || job.campus_drive_date) && (
+          <View style={styles.applyBoxRow}>
+            {job.application_deadline ? (
+              <View style={styles.applyBox}>
+                <Text style={styles.applyLabel}>Apply by</Text>
+                <Text style={styles.applyValue}>{formatDate(job.application_deadline)}</Text>
+              </View>
+            ) : null}
+            {job.campus_drive_date ? (
+              <View style={styles.campusBox}>
+                <Text style={styles.campusLabel}>Campus drive</Text>
+                <Text style={styles.applyValue}>{formatDate(job.campus_drive_date)}</Text>
+              </View>
+            ) : null}
           </View>
         )}
       </Page>
@@ -831,9 +788,9 @@ export class JobDescriptionPDFGenerator {
     if (resolvedName && needsUnicodeGlyphFallback(resolvedName) && typeof document !== 'undefined') {
       try {
         companyNameImageUrl = renderUnicodeTextToDataUrl(resolvedName, {
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: 'bold',
-          color: '#2d3748',
+          color: '#ffffff',
         }) || null
       } catch (error) {
         console.warn('Could not rasterize Unicode company name for PDF:', error)

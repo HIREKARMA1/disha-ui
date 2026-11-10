@@ -1,6 +1,7 @@
 'use client'
 
-import { Banknote, Briefcase, Clock, MapPin, type LucideIcon } from 'lucide-react'
+import { Banknote, Briefcase, Clock, MapPin, Users, type LucideIcon } from 'lucide-react'
+import { hiringModeLabel } from '@/lib/hiringMode'
 import type { ReactNode } from 'react'
 import { formatAmountINR, formatSalaryRange } from '@/lib/currency'
 import { hasJobSalary } from '@/components/jobs/SalaryBadge'
@@ -15,6 +16,7 @@ interface JobAdditionalInfoProps {
   jobType?: string | null
   modeOfWork?: string | null
   remoteWork?: boolean
+  hiringMode?: string | null
 }
 
 function formatExperienceDetail(min?: number | null, max?: number | null): string {
@@ -120,7 +122,9 @@ export function JobAdditionalInfo({
   jobType,
   modeOfWork,
   remoteWork,
+  hiringMode,
 }: JobAdditionalInfoProps) {
+  const hiringLabel = hiringModeLabel(hiringMode)
   const hasSalary = hasJobSalary(salaryMin, salaryMax)
 
   return (
@@ -160,6 +164,12 @@ export function JobAdditionalInfo({
             <p>Job Type: {formatJobTiming(jobType)}</p>
           </div>
         </InfoCard>
+
+        {hiringLabel && (
+          <InfoCard icon={Users} label="Hiring Mode">
+            {hiringLabel}
+          </InfoCard>
+        )}
       </div>
     </section>
   )
