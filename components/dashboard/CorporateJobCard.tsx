@@ -19,6 +19,7 @@ import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
+import { hiringModeLabel } from '@/lib/hiringMode'
 
 interface Job {
     id: string
@@ -47,6 +48,7 @@ interface Job {
     selection_process?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     views_count: number
     applications_count: number
     created_at: string
@@ -337,6 +339,11 @@ export function CorporateJobCard({
                         <span className="px-2 py-0.5 text-[10px] md:text-xs font-medium rounded-full border border-gray-200 dark:border-white/15 text-gray-700 dark:text-gray-300">
                             {getJobTypeLabel(job.job_type)}
                         </span>
+                        {hiringModeLabel(job.hiring_mode) && (
+                            <span className="px-2 py-0.5 text-[10px] md:text-xs font-medium rounded-full bg-indigo-50 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300">
+                                {hiringModeLabel(job.hiring_mode)}
+                            </span>
+                        )}
                         <span
                             className={cn(
                                 'px-2 py-0.5 text-[10px] md:text-xs font-semibold rounded-full',

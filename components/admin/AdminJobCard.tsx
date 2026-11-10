@@ -6,6 +6,7 @@ import { formatSalaryRange } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useState, useEffect, useRef } from 'react'
+import { hiringModeLabel } from '@/lib/hiringMode'
 
 interface Job {
     id: string
@@ -34,6 +35,7 @@ interface Job {
     selection_process?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     views_count: number
     applications_count: number
     created_at: string
@@ -235,6 +237,11 @@ export function AdminJobCard({ job, onViewDescription, onEdit, onDelete, onStatu
                             {job.is_campus_drive && (
                                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
                                     Campus Drive
+                                </span>
+                            )}
+                            {hiringModeLabel(job.hiring_mode) && (
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400">
+                                    {hiringModeLabel(job.hiring_mode)}
                                 </span>
                             )}
                         </div>

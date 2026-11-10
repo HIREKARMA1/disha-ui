@@ -47,6 +47,7 @@ interface UniversityJob {
     application_deadline?: string
     is_campus_drive?: boolean
     campus_drive_date?: string
+    hiring_mode?: string
     venue?: string
     max_students?: number
     skills_required?: string[]

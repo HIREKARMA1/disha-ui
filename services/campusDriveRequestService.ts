@@ -20,6 +20,7 @@ export class CampusDriveRequestService {
 
   async listAdmin(params: {
     status?: string
+    search?: string
     skip?: number
     limit?: number
   } = {}): Promise<CampusDriveRequestListResponse> {

@@ -20,6 +20,7 @@ import { MultiSearchableSelect } from '@/components/ui/MultiSearchableSelect'
 import { filterBranchNamesForDegree } from '@/lib/academicHierarchy'
 import { getPassoutBatchOptions, normalizePassoutBatchSelection } from '@/lib/passoutBatches'
 import { JOB_GENDER_OPTIONS, jobGenderToApi } from '@/lib/jobGender'
+import { HIRING_MODE_OPTIONS } from '@/lib/hiringMode'
 
 interface CreateJobModalProps {
     isOpen: boolean
@@ -50,6 +51,7 @@ interface JobFormData {
     selection_process: string
     is_campus_drive: boolean
     campus_drive_date: string
+    hiring_mode: string
     status: string
     // New fields from JD template
     number_of_openings: string
@@ -157,6 +159,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         selection_process: '',
         is_campus_drive: userType === 'university',
         campus_drive_date: '',
+        hiring_mode: '',
         status: 'active',
         // New fields from JD template
         number_of_openings: '',
@@ -427,6 +430,9 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
         if (formData.is_campus_drive && !formData.campus_drive_date) {
             errors.campus_drive_date = 'Campus drive date is required'
         }
+        if (!formData.hiring_mode) {
+            errors.hiring_mode = 'Hiring mode is required'
+        }
 
         // Validate company information fields for university-created jobs
         if (userType === 'university') {
@@ -492,6 +498,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 selection_process: formData.selection_process || null,
                 is_campus_drive: formData.is_campus_drive,
                 campus_drive_date: formData.is_campus_drive && formData.campus_drive_date ? formData.campus_drive_date : null,
+                hiring_mode: formData.hiring_mode,
                 status: formData.status,
                 // New fields from JD template
                 number_of_openings: formData.number_of_openings ? parseInt(formData.number_of_openings) : null,
@@ -567,6 +574,7 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                 selection_process: '',
                 is_campus_drive: userType === 'university',
                 campus_drive_date: '',
+                hiring_mode: '',
                 status: 'active',
                 // New fields from JD template
                 number_of_openings: '',
@@ -1341,6 +1349,30 @@ export function CreateJobModal({ isOpen, onClose, onJobCreated, userType = 'corp
                                         )}
                                     </div>
                                 )}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Hiring mode
+                                    </label>
+                                    <Select
+                                        value={formData.hiring_mode}
+                                        onValueChange={(value) => handleInputChange('hiring_mode', value)}
+                                    >
+                                        <SelectTrigger className={validationErrors.hiring_mode ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select hiring mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {HIRING_MODE_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {validationErrors.hiring_mode && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.hiring_mode}</p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Additional Job Details */}
