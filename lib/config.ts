@@ -16,6 +16,16 @@ export const config = {
     url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
   },
 
+  /**
+   * Shortlisted student app — used after Shortlisted-assigned exams (`sl_exam`) finish
+   * so candidates return to Shortlisted instead of the Disha student dashboard.
+   */
+  shortlisted: {
+    frontendUrl:
+      process.env.NEXT_PUBLIC_SHORTLISTED_FRONTEND_URL ||
+      'http://localhost:3003',
+  },
+
   // Feature Flags
   features: {
     analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
