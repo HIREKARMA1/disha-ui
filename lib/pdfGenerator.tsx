@@ -171,12 +171,20 @@ const BORDER = '#E5E7EB'
 const TEAL = '#0F766E'
 const ORANGE = '#EA580C'
 
+/** Fixed chrome heights — page padding must fully clear these regions. */
+const HEADER_HEIGHT = 72
+const FOOTER_HEIGHT = 52
+const HEADER_BODY_GAP = 18
+const BODY_FOOTER_GAP = 36
+const PAGE_PAD_X = 28
+
 // Define styles
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 78,
-    paddingBottom: 52,
-    paddingHorizontal: 28,
+    // Reserve exclusive bands for fixed header/footer so body never paints into them.
+    paddingTop: HEADER_HEIGHT + HEADER_BODY_GAP,
+    paddingBottom: FOOTER_HEIGHT + BODY_FOOTER_GAP,
+    paddingHorizontal: PAGE_PAD_X,
     fontSize: 10,
     fontFamily: 'NotoSans',
     color: TEXT,
@@ -186,13 +194,14 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 68,
+    height: HEADER_HEIGHT,
     backgroundColor: NAVY,
-    paddingHorizontal: 28,
+    paddingHorizontal: PAGE_PAD_X,
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    overflow: 'hidden',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -201,25 +210,31 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     paddingRight: 12,
+    maxWidth: '70%',
   },
   logo: {
     width: 42,
     height: 42,
     objectFit: 'contain',
     backgroundColor: '#ffffff',
+    flexShrink: 0,
   },
   headerCompany: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#ffffff',
+    maxWidth: 260,
   },
   headerTagline: {
     fontSize: 8,
     color: '#D6DEE8',
     marginTop: 2,
+    maxWidth: 260,
   },
   headerRight: {
     alignItems: 'flex-end',
+    flexShrink: 0,
+    maxWidth: '28%',
   },
   headerRightLabel: {
     fontSize: 8,
@@ -228,7 +243,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   headerRightValue: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#ffffff',
     marginTop: 2,
@@ -243,25 +258,28 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 42,
+    height: FOOTER_HEIGHT,
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 28,
+    paddingHorizontal: PAGE_PAD_X,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     fontSize: 8,
     color: MUTED,
     borderTop: `1 solid ${BORDER}`,
+    overflow: 'hidden',
   },
   footerColumn: {
     flexDirection: 'column',
+    alignItems: 'flex-end',
   },
   kicker: {
     fontSize: 8,
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
     color: '#C2410C',
     fontWeight: 'bold',
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   jobTitle: {
     fontSize: 22,
@@ -311,14 +329,6 @@ const styles = StyleSheet.create({
     color: MUTED,
     marginTop: 1,
   },
-  twoCol: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 14,
-  },
-  col: {
-    width: '48%',
-  },
   sectionTitle: {
     fontSize: 11,
     fontWeight: 'bold',
@@ -353,7 +363,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 5,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   skillPill: {
     backgroundColor: '#F3F4F6',
@@ -366,17 +376,19 @@ const styles = StyleSheet.create({
   applyBoxRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 4,
   },
   applyBox: {
-    width: '48%',
+    flexGrow: 1,
+    flexBasis: 0,
     borderRadius: 8,
     padding: 10,
     border: `1.5 solid ${TEAL}`,
   },
   campusBox: {
-    width: '48%',
+    flexGrow: 1,
+    flexBasis: 0,
     borderRadius: 8,
     padding: 10,
     border: `1.5 solid ${ORANGE}`,
@@ -432,6 +444,46 @@ const styles = StyleSheet.create({
   },
 })
 
+/** Keep a heading with enough following content; move whole block if near page end. */
+const SectionHeading = ({ children }: { children: React.ReactNode }) => (
+  <Text style={styles.sectionTitle} minPresenceAhead={72}>
+    {children}
+  </Text>
+)
+
+/** Keep section title with the first list row so headings are never orphaned at page bottom. */
+const NumberedListSection = ({
+  title,
+  items,
+  bullet = false,
+}: {
+  title: string
+  items: string[]
+  bullet?: boolean
+}) => {
+  if (!items.length) return null
+  const [first, ...rest] = items
+  return (
+    <View style={styles.sectionContainer}>
+      <View wrap={false} minPresenceAhead={56}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <View style={styles.numberedRow}>
+          <Text style={styles.numberedIndex}>{bullet ? '•' : '01'}</Text>
+          <Text style={styles.numberedText}>{first}</Text>
+        </View>
+      </View>
+      {rest.map((item, idx) => (
+        <View key={idx + 1} style={styles.numberedRow} wrap={false} minPresenceAhead={18}>
+          <Text style={styles.numberedIndex}>
+            {bullet ? '•' : String(idx + 2).padStart(2, '0')}
+          </Text>
+          <Text style={styles.numberedText}>{item}</Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
 const PDFHeader = ({
   logoUrl,
   companyName,
@@ -456,7 +508,7 @@ const PDFHeader = ({
           <Text style={{ fontSize: 7, color: '#D6DEE8' }}>LOGO</Text>
         </View>
       )}
-      <View>
+      <View style={{ flexShrink: 1 }}>
         {companyNameImageUrl ? (
           <Image src={companyNameImageUrl} style={styles.companyNameImage} />
         ) : (
@@ -481,10 +533,11 @@ const PDFFooter = ({ hirekarmaLogoUrl }: { hirekarmaLogoUrl?: string | null }) =
     const year = date.getFullYear()
     return `${day} ${date.toLocaleString('en-GB', { month: 'short' })} ${year}`
   }
+  const generatedOn = formatFooterDate(new Date())
 
   return (
     <View style={styles.footer} fixed>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, maxWidth: '70%' }}>
         <Text>Generated by DISHA job portal powered by</Text>
         {hirekarmaLogoUrl ? (
           <Image src={hirekarmaLogoUrl} style={styles.footerLogo} />
@@ -493,7 +546,10 @@ const PDFFooter = ({ hirekarmaLogoUrl }: { hirekarmaLogoUrl?: string | null }) =
         )}
       </View>
       <View style={styles.footerColumn}>
-        <Text>Date: {formatFooterDate(new Date())}</Text>
+        <Text>Date: {generatedOn}</Text>
+        <Text
+          render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+        />
       </View>
     </View>
   )
@@ -525,13 +581,24 @@ const formatExperience = (min?: number, max?: number): string => {
 
 const formatDate = (dateString: string): string => {
   try {
+    // Use the calendar date from the ISO string so IST offsets do not shift the day.
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateString).trim())
+    if (match) {
+      const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC',
+      })
+    }
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })
-  } catch (error) {
+  } catch {
     return dateString
   }
 }
@@ -608,15 +675,17 @@ const JobDescriptionDocument = ({
         />
         <PDFFooter hirekarmaLogoUrl={hirekarmaLogoUrl} />
 
-        <Text style={styles.kicker}>WE ARE HIRING</Text>
-        <Text style={styles.jobTitle}>{job.title}</Text>
-        <View style={styles.pillRow}>
-          {pills.map((pill) => (
-            <Text key={pill} style={styles.pill}>{pill}</Text>
-          ))}
+        <View wrap={false}>
+          <Text style={styles.kicker}>WE ARE HIRING</Text>
+          <Text style={styles.jobTitle}>{job.title}</Text>
+          <View style={styles.pillRow}>
+            {pills.map((pill) => (
+              <Text key={pill} style={styles.pill}>{pill}</Text>
+            ))}
+          </View>
         </View>
 
-        <View style={styles.statsRow}>
+        <View style={styles.statsRow} wrap={false}>
           <View style={styles.statCell}>
             <Text style={styles.statLabel}>Salary</Text>
             <Text style={styles.statValue}>{formatSalaryRange(job.salary_min, job.salary_max)}</Text>
@@ -637,93 +706,79 @@ const JobDescriptionDocument = ({
           </View>
         </View>
 
-        <View style={styles.twoCol}>
-          <View style={styles.col}>
-            <Text style={styles.sectionTitle}>About the role</Text>
-            <Text style={styles.bodyText}>{job.description || 'Role details will be shared with shortlisted candidates.'}</Text>
-          </View>
-          <View style={styles.col}>
-            <Text style={styles.sectionTitle}>About {resolvedName || 'the company'}</Text>
-            <Text style={styles.bodyText}>{companyAbout}</Text>
-          </View>
+        {/* Full-width sequential sections — two-column rows split badly across pages in react-pdf. */}
+        <View style={styles.sectionContainer}>
+          <SectionHeading>About the role</SectionHeading>
+          <Text style={styles.bodyText}>
+            {job.description || 'Role details will be shared with shortlisted candidates.'}
+          </Text>
+        </View>
+        <View style={styles.sectionContainer}>
+          <SectionHeading>About {resolvedName || 'the company'}</SectionHeading>
+          <Text style={styles.bodyText}>{companyAbout}</Text>
         </View>
 
-        {responsibilitiesList.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Responsibilities</Text>
-            {responsibilitiesList.map((item, idx) => (
-              <View key={idx} style={styles.numberedRow}>
-                <Text style={styles.numberedIndex}>{String(idx + 1).padStart(2, '0')}</Text>
-                <Text style={styles.numberedText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <NumberedListSection title="Responsibilities" items={responsibilitiesList} />
 
         {job.skills_required && job.skills_required.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Skills</Text>
+            <SectionHeading>Skills</SectionHeading>
             <View style={styles.skillsWrap}>
               {job.skills_required.map((skill) => (
-                <Text key={skill} style={styles.skillPill}>{skill}</Text>
+                <Text key={skill} style={styles.skillPill} wrap={false}>
+                  {skill}
+                </Text>
               ))}
             </View>
           </View>
         )}
 
         {(educationLevel || educationDegree || educationBranch || eligibilityList.length > 0) && (
-          <View style={styles.whoBox}>
-            <Text style={styles.sectionTitle}>Who can apply</Text>
-            {educationLevel ? (
-              <View style={styles.whoRow}>
-                <Text style={styles.whoLabel}>Level</Text>
-                <Text style={styles.whoValue}>{educationLevel}</Text>
-              </View>
-            ) : null}
-            {educationDegree ? (
-              <View style={styles.whoRow}>
-                <Text style={styles.whoLabel}>Degree</Text>
-                <Text style={styles.whoValue}>{educationDegree}</Text>
-              </View>
-            ) : null}
-            {educationBranch ? (
-              <View style={styles.whoRow}>
-                <Text style={styles.whoLabel}>Branch</Text>
-                <Text style={styles.whoValue}>{educationBranch}</Text>
-              </View>
-            ) : null}
-            {eligibilityList.map((item, idx) => (
-              <Text key={idx} style={styles.bodyText}>• {item}</Text>
-            ))}
-          </View>
-        )}
-
-        {perksList.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Perks and benefits</Text>
-            {perksList.map((item, idx) => (
-              <View key={idx} style={styles.numberedRow}>
-                <Text style={styles.numberedIndex}>•</Text>
-                <Text style={styles.numberedText}>{item}</Text>
-              </View>
+            <View wrap={false} minPresenceAhead={80}>
+              <Text style={styles.sectionTitle}>Who can apply</Text>
+              {(educationLevel || educationDegree || educationBranch) ? (
+                <View style={styles.whoBox}>
+                  {educationLevel ? (
+                    <View style={styles.whoRow}>
+                      <Text style={styles.whoLabel}>Level</Text>
+                      <Text style={styles.whoValue}>{educationLevel}</Text>
+                    </View>
+                  ) : null}
+                  {educationDegree ? (
+                    <View style={styles.whoRow}>
+                      <Text style={styles.whoLabel}>Degree</Text>
+                      <Text style={styles.whoValue}>{educationDegree}</Text>
+                    </View>
+                  ) : null}
+                  {educationBranch ? (
+                    <View style={styles.whoRow}>
+                      <Text style={styles.whoLabel}>Branch</Text>
+                      <Text style={styles.whoValue}>{educationBranch}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : eligibilityList.length > 0 ? (
+                <Text style={styles.bodyText}>• {eligibilityList[0]}</Text>
+              ) : null}
+            </View>
+            {(educationLevel || educationDegree || educationBranch
+              ? eligibilityList
+              : eligibilityList.slice(1)
+            ).map((item, idx) => (
+              <Text key={idx} style={[styles.bodyText, { marginBottom: 3 }]} minPresenceAhead={16}>
+                • {item}
+              </Text>
             ))}
           </View>
         )}
 
-        {selectionProcessList.length > 0 && (
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Selection process</Text>
-            {selectionProcessList.map((item, idx) => (
-              <View key={idx} style={styles.numberedRow}>
-                <Text style={styles.numberedIndex}>{String(idx + 1).padStart(2, '0')}</Text>
-                <Text style={styles.numberedText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <NumberedListSection title="Perks and benefits" items={perksList} bullet />
+        <NumberedListSection title="Selection process" items={selectionProcessList} />
 
+        {/* Keep Apply By + Campus Drive as one atomic block so they never split into the footer. */}
         {(job.application_deadline || job.campus_drive_date) && (
-          <View style={styles.applyBoxRow}>
+          <View style={styles.applyBoxRow} wrap={false} minPresenceAhead={72}>
             {job.application_deadline ? (
               <View style={styles.applyBox}>
                 <Text style={styles.applyLabel}>Apply by</Text>
