@@ -512,25 +512,15 @@ const PDFHeader = ({
         {companyNameImageUrl ? (
           <Image src={companyNameImageUrl} style={styles.companyNameImage} />
         ) : (
-          <Text style={styles.headerCompany} numberOfLines={1}>
-            {companyName || 'Hiring Company'}
-          </Text>
+          <Text style={styles.headerCompany}>{companyName || 'Hiring Company'}</Text>
         )}
-        {tagline ? (
-          <Text style={styles.headerTagline} numberOfLines={1}>
-            {tagline}
-          </Text>
-        ) : null}
+        {tagline ? <Text style={styles.headerTagline}>{tagline}</Text> : null}
       </View>
     </View>
     {(rightLabel || rightValue) && (
       <View style={styles.headerRight}>
         {rightLabel ? <Text style={styles.headerRightLabel}>{rightLabel}</Text> : null}
-        {rightValue ? (
-          <Text style={styles.headerRightValue} numberOfLines={2}>
-            {rightValue}
-          </Text>
-        ) : null}
+        {rightValue ? <Text style={styles.headerRightValue}>{rightValue}</Text> : null}
       </View>
     )}
   </View>
