@@ -116,6 +116,14 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
         (user.user_type === 'admin' || user.user_type === 'corporate' || user.user_type === 'university')
 
     useEffect(() => {
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [])
+
+    useEffect(() => {
         const fetchCorporateProfile = async () => {
             // Validate corporate_id - check for null, undefined, empty string, or "None" string
             const corporateId = job.corporate_id;
@@ -335,7 +343,9 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
+                // Above admin mobile bottom nav (z-index 9999) so Download PDF is never covered.
+                className="fixed inset-0 z-[10050] flex items-end justify-center bg-black/50 px-0 pt-2 sm:items-center sm:p-4"
+                style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}
                 onClick={onClose}
             >
                 <motion.div
@@ -343,39 +353,41 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+                    className="flex max-h-[min(96dvh,100%)] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-2 border-b border-primary-200 dark:border-primary-700">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-1 items-start gap-3">
+                    <div className="shrink-0 border-b border-primary-200 bg-gradient-to-r from-primary-50 to-primary-100 p-3 dark:border-primary-700 dark:from-primary-900/20 dark:to-primary-800/20 sm:p-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 flex-1 items-start gap-3">
                                 <CompanyLogo
                                     logoUrl={job.company_logo || corporateProfile?.company_logo}
                                     companyName={job.company_name || job.corporate_name || corporateProfile?.company_name}
                                     size="lg"
                                 />
                                 <div className="min-w-0 flex-1">
-                                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{job.title}</h2>
+                                <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white sm:mb-2 sm:text-2xl md:text-3xl">{job.title}</h2>
                                 {(job.company_name || job.corporate_name) && (
-                                    <p className="text-lg text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                                        <Building className="w-5 h-5" />
-                                        {job.company_name || job.corporate_name}
+                                    <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 sm:text-lg">
+                                        <Building className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                                        <span className="truncate">{job.company_name || job.corporate_name}</span>
                                     </p>
                                 )}
                                 </div>
                             </div>
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                aria-label="Close job details"
+                                className="shrink-0 rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                                <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                                <X className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                    {/* Content — independent scroll; footer stays pinned below */}
+                    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-6">
                         {/* Quick Info Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -1101,56 +1113,58 @@ export function JobDescriptionModal({ job, onClose, onApply, isApplying = false,
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="bg-white dark:bg-gray-800 p-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex flex-col sm:flex-row gap-3 justify-end items-center">
-                            <div className="flex gap-3">
-                                {canDownloadPdf && (
+                    {/* Sticky action bar — always visible above mobile bottom nav / safe area */}
+                    {(canDownloadPdf || showApplyButton) && (
+                    <div className="shrink-0 border-t border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 sm:p-4">
+                        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                            {canDownloadPdf && (
                                 <Button
+                                    type="button"
                                     variant="outline"
                                     onClick={handleDownloadPDF}
                                     disabled={isDownloadingPDF}
-                                    className="border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md text-blue-600 dark:text-blue-400"
+                                    className="h-11 w-full border-blue-200 text-blue-600 transition-all duration-200 hover:border-blue-300 hover:shadow-md dark:border-blue-700 dark:text-blue-400 dark:hover:border-blue-600 sm:h-10 sm:w-auto"
                                 >
                                     {isDownloadingPDF ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600" />
                                             Generating...
                                         </>
                                     ) : (
                                         <>
-                                            <Download className="w-4 h-4 mr-2" />
+                                            <Download className="mr-2 h-4 w-4" />
                                             Download PDF
                                         </>
                                     )}
                                 </Button>
-                                )}
-                                {showApplyButton && (
-                                    <Button
-                                        onClick={onApply}
-                                        disabled={!canApply() || isApplying}
-                                        className={cn(
-                                            "bg-primary-500 hover:bg-primary-600 text-white",
-                                            !canApply() && "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
-                                        )}
-                                    >
-                                        {isApplying ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                                                Applying...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                {applicationStatus === 'applied' ? 'Already Applied' : isDeadlineExpired() ? 'Expired' : 'Apply'}
-                                                {applyButtonLabel()}
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                            </div>
+                            )}
+                            {showApplyButton && (
+                                <Button
+                                    type="button"
+                                    onClick={onApply}
+                                    disabled={!canApply() || isApplying}
+                                    className={cn(
+                                        "h-11 w-full bg-primary-500 text-white hover:bg-primary-600 sm:h-10 sm:w-auto",
+                                        !canApply() && "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
+                                    )}
+                                >
+                                    {isApplying ? (
+                                        <>
+                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                            Applying...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            {applicationStatus === 'applied' ? 'Already Applied' : isDeadlineExpired() ? 'Expired' : 'Apply'}
+                                            {applyButtonLabel()}
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </div>
+                    )}
                 </motion.div>
             </motion.div>
 
