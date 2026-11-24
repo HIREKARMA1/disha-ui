@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -104,17 +104,6 @@ function parseLocal(value: string) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-function currentDatetimeLocalMin() {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
-}
-
-function laterDatetimeMin(floor: string, other?: string) {
-  if (!other) return floor
-  return other > floor ? other : floor
-}
-
 /** Digits, and one leading + — the characters validatePhone accepts. */
 function sanitizePhoneInput(value: string) {
   let next = ''
@@ -125,13 +114,6 @@ function sanitizePhoneInput(value: string) {
   return next.slice(0, 16)
 }
 
-const EMPTY_DATES = {
-  registration_start_date: '',
-  registration_end_date: '',
-  event_start_date: '',
-  event_end_date: '',
-}
-
 export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
   const router = useRouter()
   const [form, setForm] = useState<FormState>(emptyForm)
@@ -140,13 +122,6 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const savedDates = useRef(EMPTY_DATES)
-  const [nowMin, setNowMin] = useState(currentDatetimeLocalMin)
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMin(currentDatetimeLocalMin()), 30000)
-    return () => window.clearInterval(timer)
-  }, [])
 
   useEffect(() => {
     if (!driveId) return
@@ -154,17 +129,6 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
       .getAdmin(driveId)
       .then((drive) => {
         setPublished((drive.publication_status || 'draft') === 'published')
-        const dates = {
-          registration_start_date: drive.registration_start_date
-            ? utcIsoToDatetimeLocal(drive.registration_start_date)
-            : '',
-          registration_end_date: drive.registration_end_date
-            ? utcIsoToDatetimeLocal(drive.registration_end_date)
-            : '',
-          event_start_date: drive.event_start_date ? utcIsoToDatetimeLocal(drive.event_start_date) : '',
-          event_end_date: drive.event_end_date ? utcIsoToDatetimeLocal(drive.event_end_date) : '',
-        }
-        savedDates.current = dates
         setForm({
           title: drive.title || '',
           slug: drive.slug || '',
@@ -180,8 +144,15 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
           organizer_phone: sanitizePhoneInput(drive.organizer_phone || ''),
           venue: drive.venue || '',
           mode: campusDriveModeValue(drive.mode) || 'virtual',
+          registration_start_date: drive.registration_start_date
+            ? utcIsoToDatetimeLocal(drive.registration_start_date)
+            : '',
+          registration_end_date: drive.registration_end_date
+            ? utcIsoToDatetimeLocal(drive.registration_end_date)
+            : '',
+          event_start_date: drive.event_start_date ? utcIsoToDatetimeLocal(drive.event_start_date) : '',
+          event_end_date: drive.event_end_date ? utcIsoToDatetimeLocal(drive.event_end_date) : '',
           event_link: drive.event_link || '',
-          ...dates,
           visibility: drive.visibility,
           listing_status:
             drive.listing_status === 'inactive' || drive.listing_status === 'hidden'
@@ -221,18 +192,6 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  const commitDate = (key: keyof typeof EMPTY_DATES, value: string) => {
-    if (value && value < nowMin && value !== savedDates.current[key]) {
-      toast.error(
-        key.startsWith('registration')
-          ? `${key === 'registration_start_date' ? 'Registration Start' : 'Registration End'} cannot be in the past`
-          : `${key === 'event_start_date' ? 'Campus Drive Start' : 'Campus Drive End'} cannot be in the past`
-      )
-      return
-    }
-    update(key, value)
   }
 
   const handleUpload = async (file: File, type: 'banner' | 'logo', field: 'banner_url' | 'organizer_logo_url') => {
@@ -277,20 +236,6 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
     if (form.support_email.trim() && !emailPattern.test(form.support_email.trim())) {
       toast.error('Support Email must be a valid email address, including an @ sign')
       return false
-    }
-    const dates = [
-      ['registration_start_date', 'Registration Start'],
-      ['registration_end_date', 'Registration End'],
-      ['event_start_date', 'Campus Drive Start'],
-      ['event_end_date', 'Campus Drive End'],
-    ] as const
-    for (const [key, label] of dates) {
-      const value = form[key]
-      if (!value) continue
-      if (value < nowMin && value !== savedDates.current[key]) {
-        toast.error(`${label} cannot be in the past`)
-        return false
-      }
     }
     if (form.organizer_phone.trim() && !validatePhone(form.organizer_phone.trim())) {
       toast.error('Organizer Phone: Please enter a valid phone number.')
@@ -550,10 +495,10 @@ export function CampusDriveCreateForm({ driveId }: { driveId?: string }) {
       <Card>
         <CardHeader><CardTitle>Dates & Registration</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div><label className="text-sm font-medium">Registration Start</label><Input type="datetime-local" min={nowMin} step={60} value={form.registration_start_date} onChange={(e) => commitDate('registration_start_date', e.target.value)} /></div>
-          <div><label className="text-sm font-medium">Registration End</label><Input type="datetime-local" min={laterDatetimeMin(nowMin, form.registration_start_date)} step={60} value={form.registration_end_date} onChange={(e) => commitDate('registration_end_date', e.target.value)} /></div>
-          <div><label className="text-sm font-medium">Campus Drive Start *</label><Input type="datetime-local" min={nowMin} step={60} value={form.event_start_date} onChange={(e) => commitDate('event_start_date', e.target.value)} required /></div>
-          <div><label className="text-sm font-medium">Campus Drive End</label><Input type="datetime-local" min={laterDatetimeMin(nowMin, form.event_start_date)} step={60} value={form.event_end_date} onChange={(e) => commitDate('event_end_date', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Registration Start</label><Input type="datetime-local" step={60} value={form.registration_start_date} onChange={(e) => update('registration_start_date', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Registration End</label><Input type="datetime-local" min={form.registration_start_date || undefined} step={60} value={form.registration_end_date} onChange={(e) => update('registration_end_date', e.target.value)} /></div>
+          <div><label className="text-sm font-medium">Campus Drive Start *</label><Input type="datetime-local" step={60} value={form.event_start_date} onChange={(e) => update('event_start_date', e.target.value)} required /></div>
+          <div><label className="text-sm font-medium">Campus Drive End</label><Input type="datetime-local" min={form.event_start_date || undefined} step={60} value={form.event_end_date} onChange={(e) => update('event_end_date', e.target.value)} /></div>
         </CardContent>
       </Card>
 
