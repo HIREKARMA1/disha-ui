@@ -14,7 +14,7 @@ A modern, responsive frontend application built with Next.js, TypeScript, and Ta
 
 ## 🎨 Design System
 
-### Color Palette
+### Color Palette..
 
 Based on the HireKarma logo:
 
