@@ -94,13 +94,23 @@ export function decodeAccessToken(accessToken: string): Record<string, unknown> 
   }
 }
 
+function jwtExpirySeconds(exp: unknown): number | null {
+  if (typeof exp === 'number' && Number.isFinite(exp)) return exp
+  if (typeof exp === 'string' && exp.trim()) {
+    const asNumber = Number(exp)
+    if (Number.isFinite(asNumber) && asNumber > 0) return asNumber
+    const asDate = Date.parse(exp)
+    if (Number.isFinite(asDate)) return asDate / 1000
+  }
+  return null
+}
+
 export function isAccessTokenValid(accessToken: string): boolean {
   if (accessToken === TEMP_ACCESS_TOKEN) return true
   const payload = decodeAccessToken(accessToken)
   if (!payload) return false
-  const exp = payload.exp
-  // Missing/invalid exp must not be treated as a valid session
-  if (typeof exp !== 'number') return false
+  const exp = jwtExpirySeconds(payload.exp)
+  if (exp === null) return false
   return exp > Date.now() / 1000
 }
 

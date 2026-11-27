@@ -29,6 +29,7 @@ import {
 
 class ApiClient {
   public client: AxiosInstance;
+  private inflightGets = new Map<string, Promise<AxiosResponse>>();
 
   constructor() {
     this.client = axios.create({
@@ -50,25 +51,31 @@ class ApiClient {
           return config;
         }
         const token = readAccessToken();
-
-        // Expired access token: log out before the call (skip auth endpoints)
-        if (
-          token &&
-          token !== TEMP_ACCESS_TOKEN &&
-          !isAccessTokenValid(token) &&
-          !isAuthRetryExcludedUrl(requestUrl)
-        ) {
-          getStore().dispatch(logoutUser());
-          if (typeof window !== 'undefined') {
-            window.location.href = buildAuthPath('/auth/login');
-          }
-          return Promise.reject(
-            new Error('Session expired. Please log in again.')
-          );
-        }
-
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        const method = (config.method || 'get').toLowerCase();
+        if (method === 'get') {
+          const key = `${config.baseURL || ''}${config.url || ''}?${JSON.stringify(config.params ?? {})}`;
+          const existing = this.inflightGets.get(key);
+          if (existing) {
+            config.adapter = () => existing;
+            return config;
+          }
+          let defaultAdapter: unknown = config.adapter || axios.defaults.adapter;
+          if (Array.isArray(defaultAdapter)) {
+            defaultAdapter = defaultAdapter.find((item) => typeof item === 'function');
+          }
+          if (typeof defaultAdapter !== 'function') {
+            return config;
+          }
+          const runAdapter = defaultAdapter as (cfg: typeof config) => Promise<AxiosResponse>;
+          const pending = Promise.resolve(runAdapter(config)).finally(() => {
+            this.inflightGets.delete(key);
+          }) as Promise<AxiosResponse>;
+          this.inflightGets.set(key, pending);
+          config.adapter = () => pending;
         }
         return config;
       },
@@ -441,8 +448,26 @@ class ApiClient {
   }
 
   // Admin job management endpoints
+  private allJobsAdminInflight: Promise<any> | null = null;
+
   async getAllJobsAdmin(): Promise<any> {
-    const response: AxiosResponse = await this.client.get('/admins/jobs');
+    if (!this.allJobsAdminInflight) {
+      this.allJobsAdminInflight = this.client
+        .get('/admins/jobs')
+        .then((response: AxiosResponse) => response.data)
+        .finally(() => {
+          this.allJobsAdminInflight = null;
+        });
+    }
+    return this.allJobsAdminInflight;
+  }
+
+  async getAdminJobStats(): Promise<{
+    total_jobs: number;
+    active_jobs: number;
+    total_applications: number;
+  }> {
+    const response: AxiosResponse = await this.client.get('/admins/jobs/stats');
     return response.data;
   }
 
