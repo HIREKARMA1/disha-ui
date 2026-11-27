@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { config } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 import { useExamFullscreen, exitExamFullscreen } from '@/hooks/useExamFullscreen';
 import { useExamCamera } from '@/hooks/useExamCamera';
@@ -37,6 +38,28 @@ import {
   createProctoringEventReporter,
   type ProctoringEventReporter,
 } from '@/lib/proctoringEvents';
+
+function isShortlistedExamSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean(window.sessionStorage.getItem('disha_sl_exam_token'));
+}
+
+function redirectAfterExam(router: { replace: (href: string) => void }) {
+  if (isShortlistedExamSession()) {
+    try {
+      window.sessionStorage.removeItem('disha_sl_exam_token');
+    } catch {
+      /* ignore */
+    }
+    const base = (config.shortlisted.frontendUrl || 'http://localhost:3003').replace(
+      /\/$/,
+      ''
+    );
+    window.location.assign(`${base}/dashboard/student/assessments`);
+    return;
+  }
+  router.replace('/dashboard/student');
+}
 
 type Phase = 'camera' | 'exam' | 'round_break' | 'warning' | 'ending';
 type ScreenShareStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'unsupported' | 'ended';
@@ -874,7 +897,7 @@ export function AssessmentExam({ assessmentId, attemptId }: Props) {
         stopScreenShare(false);
         stopCamera();
         await exitExamFullscreen();
-        router.replace('/dashboard/student');
+        redirectAfterExam(router);
       }
     },
     [

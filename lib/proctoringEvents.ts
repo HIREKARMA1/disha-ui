@@ -3,6 +3,19 @@
 import { config } from './config';
 import { getAccessToken } from './authSession';
 
+/**
+ * Prefer the Shortlisted exam JWT (`sl_exam` → sessionStorage) for attempt APIs.
+ * ApiClient already does this for `/attempts/` routes; this raw-fetch reporter must
+ * match, otherwise a leftover Disha login token causes "Attempt not found" (404).
+ */
+function resolveAttemptAuthToken(): string | null {
+  if (typeof window !== 'undefined') {
+    const examToken = window.sessionStorage.getItem('disha_sl_exam_token');
+    if (examToken) return examToken;
+  }
+  return getAccessToken();
+}
+
 export const PROCTORING_EVENT_TYPES = [
   'SCREEN_SHARE_STARTED',
   'SCREEN_SHARE_STOPPED',
@@ -115,7 +128,7 @@ export function createProctoringEventReporter({
   };
 
   const postBatch = async (events: QueuedProctoringEvent[], keepalive: boolean) => {
-    const token = getAccessToken();
+    const token = resolveAttemptAuthToken();
     if (!token) throw new Error('No auth token available for proctoring event report.');
 
     const response = await fetch(endpointUrl(assessmentId, attemptId), {
