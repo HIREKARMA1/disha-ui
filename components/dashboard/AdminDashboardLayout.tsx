@@ -40,6 +40,12 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
     const isAdmin = user?.user_type === 'admin'
     const isLoading = isAdmin && (isUserStatsLoading || isJobStatsLoading)
     const error = isAdmin ? userStatsError : null
+    const displayUserStats = userStats ?? {
+        total_users: 0,
+        total_corporates: 0,
+        total_students: 0,
+        total_universities: 0,
+    }
 
     useEffect(() => {
         if (!isAdmin) return
@@ -48,30 +54,19 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
         const fetchJobStats = async () => {
             setIsJobStatsLoading(true)
             try {
-                const [jobs, licenseRequests] = await Promise.all([
-                    apiClient.getAllJobsAdmin(),
+                const [jobCounts, licenseRequests] = await Promise.all([
+                    apiClient.getAdminJobStats(),
                     apiClient.getLicenseRequests({
                         status: 'pending',
                         page: 1,
                         page_size: 1,
                     }),
                 ])
-                const list = Array.isArray(jobs) ? jobs : jobs?.jobs || []
                 if (cancelled) return
 
-                const total_jobs = list.length
-                const active_jobs = list.filter(
-                    (j: { status?: string; is_active?: boolean }) =>
-                        j.is_active === true ||
-                        j.status === 'active' ||
-                        j.status === 'published' ||
-                        j.status === 'open'
-                ).length
-                const total_applications = list.reduce(
-                    (sum: number, j: { applications_count?: number; current_applications?: number }) =>
-                        sum + (j.applications_count ?? j.current_applications ?? 0),
-                    0
-                )
+                const total_jobs = Number(jobCounts?.total_jobs) || 0
+                const active_jobs = Number(jobCounts?.active_jobs) || 0
+                const total_applications = Number(jobCounts?.total_applications) || 0
                 // Same source of truth as License Management: LicenseRequest status === 'pending'
                 const pendingTotal = Number(licenseRequests?.total)
                 const pendingFromRows = Array.isArray(licenseRequests?.requests)
@@ -116,13 +111,7 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
                         <div className="space-y-4 md:space-y-6 max-w-[1600px] mx-auto">
                             <EventPopup />
 
-                            {isLoading && (
-                                <div className="flex items-center justify-center py-16">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
-                                </div>
-                            )}
-
-                            {error && !isLoading && (
+                            {error && (
                                 <div className="rounded-[18px] border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-6">
                                     <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
                                         Error Loading Dashboard
@@ -131,23 +120,23 @@ function AdminDashboardContent({ children }: AdminDashboardLayoutProps) {
                                 </div>
                             )}
 
-                            {userStats && !isLoading && (
+                            {!error && (
                                 <>
                                     <AdminWelcomeMessage
-                                        totalUsers={userStats.total_users}
-                                        totalStudents={userStats.total_students}
+                                        totalUsers={displayUserStats.total_users}
+                                        totalStudents={displayUserStats.total_students}
                                     />
 
                                     <AdminDashboardStats
-                                        userStats={userStats}
+                                        userStats={displayUserStats}
                                         jobStats={jobStats}
-                                        isLoading={false}
+                                        isLoading={isLoading}
                                     />
 
                                     <div className="grid grid-cols-1 xl:grid-cols-10 gap-6">
                                         <div className="xl:col-span-7 space-y-6">
                                             <AdminAnalyticsChart
-                                                userStats={userStats}
+                                                userStats={displayUserStats}
                                                 jobStats={jobStats}
                                             />
                                             <AdminRecentActivities activities={[]} />
