@@ -27,15 +27,14 @@ function AdminAnalyticsContent() {
     const load = async () => {
       setJobsLoading(true)
       try {
-        const [jobs, licenseRequests] = await Promise.all([
-          apiClient.getAllJobsAdmin(),
+        const [jobCounts, licenseRequests] = await Promise.all([
+          apiClient.getAdminJobStats(),
           apiClient.getLicenseRequests({
             status: 'pending',
             page: 1,
             page_size: 1,
           }),
         ])
-        const list = Array.isArray(jobs) ? jobs : jobs?.jobs || []
         if (cancelled) return
         const pendingTotal = Number(licenseRequests?.total)
         const pendingFromRows = Array.isArray(licenseRequests?.requests)
@@ -44,19 +43,9 @@ function AdminAnalyticsContent() {
             ).length
           : 0
         setJobStats({
-          total_jobs: list.length,
-          active_jobs: list.filter(
-            (j: { status?: string; is_active?: boolean }) =>
-              j.is_active === true ||
-              j.status === 'active' ||
-              j.status === 'published' ||
-              j.status === 'open'
-          ).length,
-          total_applications: list.reduce(
-            (sum: number, j: { applications_count?: number; current_applications?: number }) =>
-              sum + (j.applications_count ?? j.current_applications ?? 0),
-            0
-          ),
+          total_jobs: Number(jobCounts?.total_jobs) || 0,
+          active_jobs: Number(jobCounts?.active_jobs) || 0,
+          total_applications: Number(jobCounts?.total_applications) || 0,
           pending_approvals: Number.isFinite(pendingTotal)
             ? pendingTotal
             : pendingFromRows,

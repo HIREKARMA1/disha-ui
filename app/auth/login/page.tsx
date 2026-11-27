@@ -39,6 +39,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { buildAuthPath, parseAuthUserType } from '@/lib/authLinks'
 import { resolveSafeAuthRedirect } from '@/lib/supabaseClient'
+import { hasValidAccessSession } from '@/lib/authSession'
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -218,8 +219,18 @@ function LoginPageContent() {
         setIsLoading(true)
         try {
             const response = await apiClient.login(data)
+            if (!response?.access_token || !response?.refresh_token) {
+                toast.error('Login did not return a session token. Please try again.')
+                return
+            }
 
             apiClient.setAuthTokens(response.access_token, response.refresh_token)
+            if (!hasValidAccessSession()) {
+                toast.error(
+                    'Login succeeded but this browser could not keep the session. Open the app at the same host as the UI (localhost vs LAN IP) and try again.'
+                )
+                return
+            }
 
             login(
                 {
